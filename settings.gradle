@@ -1,0 +1,5 @@
+rootProject.name = 'vantiq-opcua-source'
+include 'client-examples'	// For reference for the moment
+include 'opcuaSource'
+include 'extjsdk'
+
