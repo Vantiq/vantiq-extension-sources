@@ -148,9 +148,35 @@ public class ExtensionWebSocketClient {
                     .readTimeout(0, TimeUnit.MILLISECONDS)
                     .writeTimeout(0, TimeUnit.MILLISECONDS)
                     .build();
-            WebSocketCall.create(client, new Request.Builder().url(url).build()).enqueue(listener);
+            WebSocketCall.create(client, new Request.Builder()
+                    .url(validifyUrl(url))
+                    .build()).enqueue(listener);
         }
         return webSocketFuture;
+    }
+    
+    private String validifyUrl(String url) {
+        // Ensure prepended by wss:// and not http:// or https://
+        if (url.startsWith("http://")) {
+            url.substring("http://".length(), url.length());
+        }
+        if (url.startsWith("https://")) {
+            url.substring("https://".length(), url.length());
+        }
+        if (!url.startsWith("ws://") && !url.startsWith("wss://")) {
+            url = "wss://" + url;
+        }
+        
+        // Ensure it ends with /api/v1/wsock/websocket
+        if (!url.matches("/api/v[0-9]+/wsock/websocket$")) {
+         // Sometimes generic urls end with a '/' already, so we only want to add one if it does not already exist
+            if (!url.endsWith("/")) { 
+                url = url + "/";
+            }
+            url = url + "api/v1/wsock/websocket";
+        }
+        
+        return url;
     }
 
     /**
