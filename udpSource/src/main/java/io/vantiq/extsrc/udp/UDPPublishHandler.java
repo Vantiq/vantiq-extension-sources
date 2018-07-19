@@ -40,6 +40,10 @@ import java.util.Map;
  *                          the message to be sent. Any values not transformed will not be passed unless
  *                          {@code passUnspecifiedOut} is set to {@code true}, and any values that are transformed will
  *                          not appear in their original location regardless of settings</li>
+ *      <li>{@code passBytesOutFrom}: Optional. The location from which you would like to place the outgoing data. 
+ *                          This will take in the String at the location and send it using the byte values of the 
+ *                          characters contained within. This will not add quotation marks around the output. Default
+ *                          is null.</li>
  * </ul>
  */
 public class UDPPublishHandler extends Handler<Map>{

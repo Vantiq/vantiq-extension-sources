@@ -62,6 +62,10 @@ import java.util.Map;
  *                          the message to be sent. Any values not transformed will only be passed if
  *                          {@code passUnspecifiedIn} is set to {@code true}, and any values that are transformed will
  *                          not appear in their original location regardless of settings</li>
+ *      <li>{@code passBytesInAs}: Optional. The location to which you would like to place the incoming data. 
+ *                          This will take in the raw bytes received from the source and place them as chars of
+ *                          the same value in a String. This is only useful if the source does not send JSON. 
+ *                          Default is null.</li>
  * </ul>
  */
 public class UDPNotificationHandler extends Handler<DatagramPacket>{

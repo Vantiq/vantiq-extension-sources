@@ -67,6 +67,10 @@ import org.slf4j.LoggerFactory;
  *                          the message to be sent. Any values not transformed will not be passed unless
  *                          {@code passUnspecifiedOut} is set to {@code true}, and any values that are transformed will
  *                          not appear in the final message regardless of settings. Default is {@code null}</li>
+ *      <li>{@code passBytesOutFrom}: Optional. The location from which you would like to place the outgoing data. 
+ *                          This will take in the String at the location and send it using the byte values of the 
+ *                          characters contained within. This will not add quotation marks around the output. Default
+ *                          is null.</li>
  * </ul>
  * <br>
  * Options for Notifications (a.k.a. incoming messages) are as follows. If no options are valid then no Notifications will be sent,
@@ -110,6 +114,10 @@ import org.slf4j.LoggerFactory;
  *                     the message to be sent. Any values not transformed will not be passed unless
  *                     {@code passUnspecifiedIn} is set to {@code true}, and any values that are transformed will
  *                     not appear in the final message regardless of settings</li>
+ *      <li>{@code passBytesInAs}: Optional. The location to which you would like to place the incoming data. 
+ *                          This will take in the raw bytes received from the source and place them as chars of
+ *                          the same value in a String. This is only useful if the source does not send JSON. 
+ *                          Default is null.</li>
  * </ul>
  */
 public class ConfigurableUDPSource {
