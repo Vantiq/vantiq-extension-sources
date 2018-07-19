@@ -1,0 +1,2 @@
+include ':extjsdk'
+project(':extjsdk').projectDir = new File('../extjsdk')
