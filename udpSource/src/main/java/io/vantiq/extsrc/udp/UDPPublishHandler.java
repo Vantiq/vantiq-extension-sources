@@ -90,6 +90,8 @@ public class UDPPublishHandler extends Handler<Map>{
      * @param socket    The {@link DatagramSocket} through which data will be sent
      */
     public UDPPublishHandler(Map outgoing, DatagramSocket socket) {
+        this.outgoing = outgoing;
+        this.socket = socket;
         try {
             this.address = InetAddress.getByName((String) outgoing.get("targetAddress"));
         }
@@ -97,9 +99,8 @@ public class UDPPublishHandler extends Handler<Map>{
             log.error("Failed to retrieve IP of Address", e);
             return;
         }
-        this.outgoing = outgoing;
-        this.socket = socket;
         this.port = (Integer) outgoing.get("targetPort");
+
         List<List> transforms = null;
         if (hasOutgoingTransformations(outgoing)) {
             transforms = MapTransformer.getValidTransforms((List) outgoing.get("transformations"));
