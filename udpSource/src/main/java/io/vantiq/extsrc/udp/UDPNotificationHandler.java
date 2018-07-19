@@ -5,8 +5,11 @@ package io.vantiq.extsrc.udp;
 
 import io.vantiq.extjsdk.*;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.xml.XmlMapper;
+import com.fasterxml.jackson.dataformat.xml.deser.FromXmlParser;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -14,6 +17,8 @@ import java.net.DatagramPacket;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+
+import javax.xml.stream.XMLInputFactory;
 
 /**
  * This class is a customizable handler that will convert UDP messages to a Notification message to a Vantiq deployment.
@@ -71,6 +76,9 @@ import java.util.Map;
  *                          Note that this will throw away the name of the root element. If data is contained in the
  *                          root element, it will be placed in the location "" before transformations.
  *                          Default is false.</li>
+ *      <li>{@code passXmlRootNameIn}: Optional. Specifies the location to which the name of the root element should
+ *                          be placed. Does nothing if {@code expectXMLIn} is not set to {@code true}. 
+ *                          Default is {@code null}.</li>
  * </ul>
  */
 public class UDPNotificationHandler extends Handler<DatagramPacket>{
@@ -171,7 +179,7 @@ public class UDPNotificationHandler extends Handler<DatagramPacket>{
         else {
             try {
                 receivedMsg = mapper.readValue(packet.getData(), Map.class);
-            }
+            } 
             catch (Exception e) {
                 if (incoming.get("expectXMLIn") instanceof Boolean && (boolean) incoming.get("expectXMLIn")) {
                     log.warn("Failed to interpret UDP message as Map. Most likely the data was not sent as a XML object.", e);
@@ -207,6 +215,18 @@ public class UDPNotificationHandler extends Handler<DatagramPacket>{
             this.transformer.transform(receivedMsg, sendMsg, false);
         }
 
+        if (incoming.get("passXmlRootName") instanceof String 
+                && incoming.get("expectXMLIn") instanceof Boolean && (boolean) incoming.get("expectXMLIn")) {
+            try {
+                FromXmlParser p = (FromXmlParser) mapper.getFactory().createParser(packet.getData());
+                log.debug(p.getStaxReader().getLocalName());
+                MapTransformer.createTransformVal(sendMsg, (String) incoming.get("passXmlRootName"), p.getStaxReader().getLocalName());
+            }
+            catch (Exception e) {
+                log.error("Failed to interpret name of root", e);
+            }
+        }
+        
         // Add the address and port that the packet came from if the config demands it
         if (recAddressKey != null) {
             MapTransformer.createTransformVal(sendMsg, recAddressKey, packet.getAddress().getHostAddress());

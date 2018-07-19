@@ -125,6 +125,9 @@ import org.slf4j.LoggerFactory;
  *                          Note that this will throw away the name of the root element. If data is contained in the
  *                          root element, it will be placed in the location "" before transformations.
  *                          Default is false.</li>
+ *      <li>{@code passXmlRootNameIn}: Optional. Specifies the location to which the name of the root element should
+ *                          be placed. Does nothing if {@code expectXMLIn} is not set to {@code true}. 
+ *                          Default is {@code null}.</li>
  * </ul>
  */
 public class ConfigurableUDPSource {
