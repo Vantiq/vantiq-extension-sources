@@ -167,8 +167,8 @@ public class ExtensionWebSocketClient {
             url = "wss://" + url;
         }
         
-        // Ensure it ends with /api/v1/wsock/websocket
-        if (!url.matches("/api/v[0-9]+/wsock/websocket$")) {
+        // Ensure it ends with /api/v{version number}/wsock/websocket
+        if (!url.matches(".*/api/v[0-9]+/wsock/websocket")) {
          // Sometimes generic urls end with a '/' already, so we only want to add one if it does not already exist
             if (!url.endsWith("/")) { 
                 url = url + "/";
