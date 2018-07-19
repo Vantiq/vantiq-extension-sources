@@ -122,6 +122,8 @@ import org.slf4j.LoggerFactory;
  *                          the same value in a String. This is only useful if the source does not send JSON. 
  *                          Default is null.</li>
  *      <li>{@code expectXMLIn}: Optional. Specifies that the data incoming from the UDP source will be in an XML format.
+ *                          Note that this will throw away the name of the root element. If data is contained in the
+ *                          root element, it will be placed in the location "" before transformations.
  *                          Default is false.</li>
  * </ul>
  */
