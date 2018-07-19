@@ -23,7 +23,8 @@ import org.slf4j.LoggerFactory;
 
 /**
  *
- * This class creates a UDP source customizable by a Configuration document.
+ * This class creates a UDP source customizable by a Configuration document. It can send and receive in JSON, XML, or 
+ * pure bytes.
  * 
  * The Configuration document looks as below:<br>
  *     
@@ -71,6 +72,8 @@ import org.slf4j.LoggerFactory;
  *                          This will take in the String at the location and send it using the byte values of the 
  *                          characters contained within. This will not add quotation marks around the output. Default
  *                          is null.</li>
+ *      <li>{@code sendXMLRoot}: Optional. The name of the root element for the generated XML object. When set this will
+ *                          send the entire object received as XML. Default is {@code null}.
  * </ul>
  * <br>
  * Options for Notifications (a.k.a. incoming messages) are as follows. If no options are valid then no Notifications will be sent,

@@ -8,6 +8,9 @@ package io.vantiq.extsrc.udp;
 import io.vantiq.extjsdk.Handler;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.ObjectWriter;
+import com.fasterxml.jackson.dataformat.xml.XmlMapper;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -43,7 +46,9 @@ import java.util.Map;
  *      <li>{@code passBytesOutFrom}: Optional. The location from which you would like to place the outgoing data. 
  *                          This will take in the String at the location and send it using the byte values of the 
  *                          characters contained within. This will not add quotation marks around the output. Default
- *                          is null.</li>
+ *                          is {@code null}.</li>
+ *      <li>{@code sendXMLRoot}: Optional. The name of the root element for the generated XML object. When set this will
+ *                          send the entire object received as XML. Default is {@code null}.
  * </ul>
  */
 public class UDPPublishHandler extends Handler<Map>{
@@ -71,7 +76,7 @@ public class UDPPublishHandler extends Handler<Map>{
     /**
      * The {@link ObjectMapper} used to turn a message into bytes before sending it with {@link #socket}.
      */
-    private ObjectMapper mapper = new ObjectMapper();
+    private ObjectWriter writer = new ObjectMapper().writer();
 
     /**
      * An Slf4j logger.
@@ -98,6 +103,9 @@ public class UDPPublishHandler extends Handler<Map>{
         List<List> transforms = null;
         if (hasOutgoingTransformations(outgoing)) {
             transforms = MapTransformer.getValidTransforms((List) outgoing.get("transformations"));
+        }
+        if (outgoing.get("sendXMLRoot") instanceof String) {
+            writer = new XmlMapper().writer().withRootName((String)outgoing.get("sendXMLRoot"));
         }
 
         if (transforms != null && !isPassingPure(outgoing)) {
@@ -140,7 +148,7 @@ public class UDPPublishHandler extends Handler<Map>{
 
         // Translate the message as requested in the Configuration document
         if (outgoing.get("passBytesOutFrom") instanceof String && receivedMsg.get(outgoing.get("passBytesOutFrom")) instanceof String) {
-				sendBytes = ((String)receivedMsg.get((String)outgoing.get("passBytesOutFrom"))).getBytes();
+            sendBytes = ((String)receivedMsg.get((String)outgoing.get("passBytesOutFrom"))).getBytes();
         }
         else if (outgoing.get("passPureMapOut") instanceof Boolean && (boolean) outgoing.get("passPureMapOut")) {
             sendMsg = receivedMsg;
@@ -164,7 +172,9 @@ public class UDPPublishHandler extends Handler<Map>{
                 + " with contents: " + sendMsg);
         // Turn the message into bytes for a UDP message then send it
         try {
-            sendBytes = mapper.writeValueAsBytes(sendMsg);
+            if (sendBytes == null) {
+                sendBytes = writer.writeValueAsBytes(sendMsg);
+            }
             DatagramPacket packet = new DatagramPacket(sendBytes, sendBytes.length, address, port);
             socket.send(packet);
         }
