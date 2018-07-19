@@ -6,6 +6,7 @@ package io.vantiq.extsrc.udp;
 import io.vantiq.extjsdk.*;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.dataformat.xml.XmlMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -64,8 +65,10 @@ import java.util.Map;
  *                          not appear in their original location regardless of settings</li>
  *      <li>{@code passBytesInAs}: Optional. The location to which you would like to place the incoming data. 
  *                          This will take in the raw bytes received from the source and place them as chars of
- *                          the same value in a String. This is only useful if the source does not send JSON. 
+ *                          the same value in a String. This is only useful if the source does not send JSON or XML. 
  *                          Default is null.</li>
+ *      <li>{@code expectXMLIn}: Optional. Specifies that the data incoming from the UDP source will be in an XML format.
+ *                          Default is false.</li>
  * </ul>
  */
 public class UDPNotificationHandler extends Handler<DatagramPacket>{
@@ -96,7 +99,7 @@ public class UDPNotificationHandler extends Handler<DatagramPacket>{
      * A Slf4j logger.
      */
     final private Logger log = LoggerFactory.getLogger(this.getClass());
-    final private ObjectMapper mapper = new ObjectMapper();
+    private ObjectMapper mapper = new ObjectMapper();
 
     /**
      * Sets up the handler based on the configuration document passed.
@@ -112,6 +115,9 @@ public class UDPNotificationHandler extends Handler<DatagramPacket>{
         }
         if (this.incoming.get("passRecPort") instanceof String) {
             recPortKey = (String) incoming.get("passRecPort");
+        }
+        if (incoming.get("expectXMLIn") instanceof Boolean && (boolean) incoming.get("expectXMLIn")) {
+            mapper = new XmlMapper();
         }
 
         List<List> transforms = null;
@@ -157,19 +163,28 @@ public class UDPNotificationHandler extends Handler<DatagramPacket>{
     public void handleMessage(DatagramPacket packet) {
         Map receivedMsg = null;
         Map<String,Object> sendMsg = new LinkedHashMap<>();
-        try {
-            receivedMsg = mapper.readValue(packet.getData(), Map.class);
+        if (incoming.get("passBytesInAs") instanceof String) {
+            // Do nothing, conversion will happen later
         }
-        catch (Exception e) {
-        	if (!(incoming.get("passBytesInAs") instanceof String)) {
-        		log.warn("Failed to interpret UDP message as Map. Most likely the data was not sent as a Json object.", e);
-        		return;
-        	}
+        else {
+            try {
+                receivedMsg = mapper.readValue(packet.getData(), Map.class);
+            }
+            catch (Exception e) {
+                if (incoming.get("expectXMLIn") instanceof Boolean && (boolean) incoming.get("expectXMLIn")) {
+                    log.warn("Failed to interpret UDP message as Map. Most likely the data was not sent as a XML object.", e);
+                }
+                else {  // expecting JSON
+                    log.warn("Failed to interpret UDP message as Map. Most likely the data was not sent as a JSON object.", e);
+                }
+                return;
+            }
         }
+        
 
         // Transforms the message as requested by the Configuration document
         if (incoming.get("passBytesInAs") instanceof String) {
-        	sendMsg.put((String) incoming.get("passBytesInAs"), new String(packet.getData()));
+            sendMsg.put((String) incoming.get("passBytesInAs"), new String(packet.getData()));
         }
         else if (incoming.get("passPureMapIn") instanceof Boolean && (boolean) incoming.get("passPureMapIn")) {
             sendMsg = receivedMsg;

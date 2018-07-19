@@ -118,6 +118,8 @@ import org.slf4j.LoggerFactory;
  *                          This will take in the raw bytes received from the source and place them as chars of
  *                          the same value in a String. This is only useful if the source does not send JSON. 
  *                          Default is null.</li>
+ *      <li>{@code expectXMLIn}: Optional. Specifies that the data incoming from the UDP source will be in an XML format.
+ *                          Default is false.</li>
  * </ul>
  */
 public class ConfigurableUDPSource {
