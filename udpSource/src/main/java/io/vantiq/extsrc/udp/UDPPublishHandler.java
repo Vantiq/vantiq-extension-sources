@@ -82,7 +82,10 @@ public class UDPPublishHandler extends Handler<Map>{
      * An Slf4j logger.
      */
     final private Logger log = LoggerFactory.getLogger(this.getClass());
-
+    private boolean passingPureMap = false;
+    private boolean passingUnspecified = false;
+    private String bytesLocation = null;
+    
     /**
      * Sets up the handler based on the configuration document passed
      *
@@ -108,8 +111,17 @@ public class UDPPublishHandler extends Handler<Map>{
         if (outgoing.get("sendXMLRoot") instanceof String) {
             writer = new XmlMapper().writer().withRootName((String)outgoing.get("sendXMLRoot"));
         }
+        if (outgoing.get("passPureMapOut") instanceof Boolean && (boolean) outgoing.get("passPureMapOut")) {
+            passingPureMap = true;
+        }
+        if (outgoing.get("passUnspecifiedOut") instanceof Boolean && (boolean) outgoing.get("passUnspecifiedOut")) {
+            passingUnspecified = true;
+        }
+        if (outgoing.get("passBytesOutFrom") instanceof String) {
+            bytesLocation = (String) outgoing.get("passBytesOutFrom");
+        }
 
-        if (transforms != null && !isPassingPure(outgoing)) {
+        if (transforms != null && passingPureMap) {
             transformer = new MapTransformer(transforms);
         }
     }
@@ -124,17 +136,7 @@ public class UDPPublishHandler extends Handler<Map>{
     private static boolean hasOutgoingTransformations(Map outgoing) {
         return  (outgoing.get("transformations") instanceof List && ((List)outgoing.get("transformations")).size() > 0);
     }
-
-    /**
-     * Checks to see if the config says to pass the data on without changing it
-     *
-     * @param outgoing  The {@code incoming} object of the configuration document from the server
-     * @return          {@code true} if outgoing.get("passPureMapOut") is a boolean and {@code true}, {@code false} otherwise
-     */
-    private static boolean isPassingPure(Map outgoing) {
-        return (outgoing.get("passPureMapOut") instanceof Boolean && (boolean) outgoing.get("passPureMapOut"));
-    }
-
+    
     /**
      * Takes in the data from the {@link ExtensionServiceMessage}, transforms it as requested by the configuration document
      * specified in the constructor, then sends it to the UDP server specified in the configuration document
@@ -148,13 +150,13 @@ public class UDPPublishHandler extends Handler<Map>{
         byte[] sendBytes = null;
 
         // Translate the message as requested in the Configuration document
-        if (outgoing.get("passBytesOutFrom") instanceof String && receivedMsg.get(outgoing.get("passBytesOutFrom")) instanceof String) {
-            sendBytes = ((String)receivedMsg.get((String)outgoing.get("passBytesOutFrom"))).getBytes();
+        if (bytesLocation != null) {
+            sendBytes = ((String)receivedMsg.get(bytesLocation)).getBytes();
         }
-        else if (outgoing.get("passPureMapOut") instanceof Boolean && (boolean) outgoing.get("passPureMapOut")) {
+        else if (passingPureMap) {
             sendMsg = receivedMsg;
         }
-        else if (outgoing.get("passUnspecifiedOut") instanceof Boolean && (boolean) outgoing.get("passUnspecifiedOut")) {
+        else if (passingUnspecified) {
             sendMsg = receivedMsg;
             if (this.transformer != null) {
                 this.transformer.transform(receivedMsg, sendMsg, true);
