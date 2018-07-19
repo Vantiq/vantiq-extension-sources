@@ -34,12 +34,12 @@ public abstract class Handler<T> {
 
     /**
      * Creates a {@link Handler} with {@link #variable} equal to {@code config}
+     *
+     * @param variable    The Map that will be the initial value of {@link #variable}
      */
-    public Handler(Map config) {
-        this.variable = config != null ? config : new LinkedHashMap<>();
+    public Handler(Map variable) {
+        this.variable = variable;
     }
-
-    // Methods to edit the config
 
     /**
      * Adds {@code val} to {@link #variable} with key {@code key}
@@ -50,7 +50,6 @@ public abstract class Handler<T> {
     public void addVariable(String key, Object val) {
         variable.put(key, val);
     }
-
     /**
      * Removes {@code val} from {@link #variable} if it is at key {@code key}. See {@link Map#remove(Object, Object)} for more
      * detailed information.
@@ -59,20 +58,18 @@ public abstract class Handler<T> {
      * @param val   The value to be removed from {@link #variable}
      * @return      Returns the Object removed
      */
-    public Object removeConfig(String key, Object val) {
+    public Object removeVariable(String key, Object val) {
         return variable.remove(key ,val);
     }
-
     /**
      * Removes the object at {@code key} in  {@link #variable}
      *
      * @param key   The key to remove the {@code Object} from
      * @return      The Object removed from {@link #variable}
      */
-    public Object removeConfig(String key) {
+    public Object removeVariable(String key) {
         return variable.remove(key);
     }
-
     /**
      * Sets the {@link #variable} for the {@link Handler} to the argument {@code variable}
      *
@@ -87,7 +84,7 @@ public abstract class Handler<T> {
      *
      * @return  {@link #variable}
      */
-    public Map getConfig() {
+    public Map getVariable() {
         return variable;
     }
 }
