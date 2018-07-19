@@ -104,12 +104,16 @@ public class UDPNotificationHandler extends Handler<DatagramPacket>{
      * The location in the output message where the port of the message sender should be placed. null if not requested.
      */
     private String recPortKey = null;
-
     /**
      * A Slf4j logger.
      */
     final private Logger log = LoggerFactory.getLogger(this.getClass());
     private ObjectMapper mapper = new ObjectMapper();
+    private boolean expectingXml = false;
+    private String xmlRootLoc = null;
+    private String bytesLocation = null;
+    private boolean passingPureMap = false;
+    private boolean passingUnspecified = false;
 
     /**
      * Sets up the handler based on the configuration document passed.
@@ -127,7 +131,20 @@ public class UDPNotificationHandler extends Handler<DatagramPacket>{
             recPortKey = (String) incoming.get("passRecPort");
         }
         if (incoming.get("expectXMLIn") instanceof Boolean && (boolean) incoming.get("expectXMLIn")) {
+            expectingXml = true;
             mapper = new XmlMapper();
+        }
+        if (incoming.get("expectXMLIn") instanceof String) {
+            xmlRootLoc = (String) incoming.get("expectXMLIn");
+        }
+        if (incoming.get("passBytesInAs") instanceof String) {
+            bytesLocation = (String) incoming.get("passBytesInAs");
+        }
+        if (incoming.get("passPureMapIn") instanceof Boolean && (boolean) incoming.get("passPureMapIn")) {
+            passingPureMap = true;
+        }
+        if(incoming.get("passUnspecifiedIn") instanceof Boolean && (boolean) incoming.get("passUnspecifiedIn")) {
+            passingUnspecified = true;
         }
 
         List<List> transforms = null;
@@ -137,7 +154,7 @@ public class UDPNotificationHandler extends Handler<DatagramPacket>{
 
         // We only need a transformer if the Configuration doc has transforms for us and it does not want us to
         // pass the object along
-        if (transforms != null && !transforms.isEmpty() && !isPassingPure(incoming)) {
+        if (transforms != null && !transforms.isEmpty() && !passingPureMap && bytesLocation == null) {
             transformer = new MapTransformer(transforms);
         }
     }
@@ -153,16 +170,6 @@ public class UDPNotificationHandler extends Handler<DatagramPacket>{
     }
 
     /**
-     * Checks to see if the configuration document says to pass the data on without changing it.
-     *
-     * @param incoming  The {@code incoming} object in the configuration document from the server
-     * @return          {@code true} if {@code passPureMapIn} is true, {@code false} otherwise
-     */
-    private static boolean isPassingPure(Map incoming) {
-        return (incoming.get("passPureMapIn") instanceof Boolean && (boolean) incoming.get("passPureMapIn"));
-    }
-
-    /**
      * Takes in the data from the {@link DatagramPacket}, transforms it as requested by the configuration document
      * specified in the constructor, then sends it to the source using the
      * {@link ExtensionWebSocketClient} specified in the constructor
@@ -173,7 +180,7 @@ public class UDPNotificationHandler extends Handler<DatagramPacket>{
     public void handleMessage(DatagramPacket packet) {
         Map receivedMsg = null;
         Map<String,Object> sendMsg = new LinkedHashMap<>();
-        if (incoming.get("passBytesInAs") instanceof String) {
+        if (bytesLocation != null) {
             // Do nothing, conversion will happen later
         }
         else {
@@ -181,7 +188,7 @@ public class UDPNotificationHandler extends Handler<DatagramPacket>{
                 receivedMsg = mapper.readValue(packet.getData(), Map.class);
             } 
             catch (Exception e) {
-                if (incoming.get("expectXMLIn") instanceof Boolean && (boolean) incoming.get("expectXMLIn")) {
+                if (expectingXml) {
                     log.warn("Failed to interpret UDP message as Map. Most likely the data was not sent as a XML object.", e);
                 }
                 else {  // expecting JSON
@@ -193,13 +200,13 @@ public class UDPNotificationHandler extends Handler<DatagramPacket>{
         
 
         // Transforms the message as requested by the Configuration document
-        if (incoming.get("passBytesInAs") instanceof String) {
-            sendMsg.put((String) incoming.get("passBytesInAs"), new String(packet.getData()));
+        if (bytesLocation != null) {
+            sendMsg.put(bytesLocation, new String(packet.getData()));
         }
-        else if (incoming.get("passPureMapIn") instanceof Boolean && (boolean) incoming.get("passPureMapIn")) {
+        else if (passingPureMap) {
             sendMsg = receivedMsg;
         }
-        else if (incoming.get("passUnspecifiedIn") instanceof Boolean && (boolean) incoming.get("passUnspecifiedIn")) {
+        else if (passingUnspecified) {
             // Set the messages to the same map so any untransformed values stay, and tell it to destroy any values removed
             sendMsg = receivedMsg;
             if (this.transformer != null) {
@@ -215,12 +222,11 @@ public class UDPNotificationHandler extends Handler<DatagramPacket>{
             this.transformer.transform(receivedMsg, sendMsg, false);
         }
 
-        if (incoming.get("passXmlRootName") instanceof String 
-                && incoming.get("expectXMLIn") instanceof Boolean && (boolean) incoming.get("expectXMLIn")) {
+        if (expectingXml && xmlRootLoc != null) {
             try {
                 FromXmlParser p = (FromXmlParser) mapper.getFactory().createParser(packet.getData());
                 log.debug(p.getStaxReader().getLocalName());
-                MapTransformer.createTransformVal(sendMsg, (String) incoming.get("passXmlRootName"), p.getStaxReader().getLocalName());
+                MapTransformer.createTransformVal(sendMsg, xmlRootLoc, p.getStaxReader().getLocalName());
             }
             catch (Exception e) {
                 log.error("Failed to interpret name of root", e);
