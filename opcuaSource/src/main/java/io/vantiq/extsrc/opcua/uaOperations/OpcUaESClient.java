@@ -97,7 +97,7 @@ public class OpcUaESClient {
      *
      * @param theConfig The config document to use
      */
-    OpcUaESClient(Map theConfig) throws OpcExtConfigException, Exception   // FIXME
+    public OpcUaESClient(Map theConfig) throws OpcExtConfigException, Exception   // FIXME
     {
         // FIXME -- Hook up SLF4J to log4J via config, etc.
         // Want to put logs into ${theConfig.opcUAInformation.storageDirectory}
