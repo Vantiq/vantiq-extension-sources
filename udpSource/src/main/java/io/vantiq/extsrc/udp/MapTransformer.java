@@ -1,4 +1,4 @@
-package io.vantiq.sourcemgr.sampleExtensions;
+package io.vantiq.extsrc.udp;
 
 // Author: Alex Blumer
 // Email: alex.j.blumer@gmail.com

@@ -1,9 +1,11 @@
-package io.vantiq.sourcemgr.sampleExtensions;
+package io.vantiq.extsrc.udp;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
+
 
 // Author: Alex Blumer
 // Email: alex.j.blumer@gmail.com
+
+import io.vantiq.extjsdk.Handler;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;

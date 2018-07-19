@@ -1,7 +1,10 @@
-package io.vantiq.sourcemgr.sampleExtensions;
+package io.vantiq.extsrc.udp;
 
 // Author: Alex Blumer
 // Email: alex.j.blumer@gmail.com
+
+import io.vantiq.extjsdk.Handler;
+import io.vantiq.extjsdk.ExtensionWebSocketClient;
 
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.LoggerContext;
@@ -200,8 +203,7 @@ public class ConfigurableUDPSource {
             // Setup Publish handler as the configuration document requests
             if (isConfiguredToSend(outgoing)) {
                 UDPPublishHandler handler = new UDPPublishHandler(outgoing, socket);
-                ExtensionWebSocketListener listener = clients.get(sourceName).getListener();
-                listener.setPublishHandler(handler);
+                clients.get(sourceName).setPublishHandler(handler);
                 log.debug("Publish handler created for source '" + sourceName + "'");
             }
 

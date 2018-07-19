@@ -1,7 +1,9 @@
-package io.vantiq.sourcemgr.sampleExtensions;
+package io.vantiq.extsrc.udp;
 
 // Author: Alex Blumer
 // Email: alex.j.blumer@gmail.com
+
+import io.vantiq.extjsdk.*;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
@@ -11,8 +13,6 @@ import java.net.DatagramPacket;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-
-import static io.vantiq.sourcemgr.sampleExtensions.MapTransformer.getValidTransforms;
 
 /**
  * This class is a customizable handler that will convert UDP messages to a Notification message to a Vantiq deployment.
@@ -112,7 +112,7 @@ public class UDPNotificationHandler extends Handler<DatagramPacket>{
 
         List<List> transforms = null;
         if (hasIncomingTransformations(incoming)) {
-            transforms = getValidTransforms((List) incoming.get("transformations"));
+            transforms = MapTransformer.getValidTransforms((List) incoming.get("transformations"));
         }
 
         // We only need a transformer if the Configuration doc has transforms for us and it does not want us to
