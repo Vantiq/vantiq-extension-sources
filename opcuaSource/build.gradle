@@ -11,6 +11,7 @@ repositories {
 }
 
 dependencies {
+    compile project(":extjsdk")
     compile 'org.codehaus.groovy:groovy-all:2.3.11'
     compile "org.eclipse.milo:sdk-client:${eclipseMiloVersion}"
     compile "org.eclipse.milo:server-examples:${eclipseMiloVersion}" // Remove -- needed for HostnameUtils in KeyStoreManager at the moment...
