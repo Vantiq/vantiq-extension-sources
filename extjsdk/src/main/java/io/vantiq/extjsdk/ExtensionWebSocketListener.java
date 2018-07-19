@@ -271,7 +271,6 @@ public class ExtensionWebSocketListener implements WebSocketListener{
         log.info("WebSocket open");
     }
 
-    private final String CONNECT_ERROR = "io.vantiq.sourcemgr.connectExtension";
     
     /**
      * Translate the received message and pass it on to the related handler. Additionally, updates the client about
@@ -319,12 +318,7 @@ public class ExtensionWebSocketListener implements WebSocketListener{
                 // Is an error message before successful connection to the target source
                 // This is most likely a failure related to a source connection request
                 if (!client.isConnected() && (Integer) msg.get("status") >= 300) {
-                    if (msg.get("body") instanceof Map && ((Map)msg.get("body")).get("code") instanceof String) {
-                        String errorCode = (String) ((Map)msg.get("body")).get("code");
-                        if (errorCode.startsWith(CONNECT_ERROR)) {
-                            client.sourceFuture.complete(false);
-                        }
-                    }
+                    client.sourceFuture.complete(false);
                 }
                 if (this.httpHandler != null) {
                     this.httpHandler.handleMessage(msg);
