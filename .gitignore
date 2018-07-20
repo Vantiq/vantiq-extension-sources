@@ -39,3 +39,4 @@ trace.db/
 *.orig
 *.swp
 *config.json
+*.log

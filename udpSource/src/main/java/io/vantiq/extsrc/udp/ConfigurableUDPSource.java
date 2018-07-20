@@ -8,6 +8,12 @@ import io.vantiq.extjsdk.ExtensionWebSocketClient;
 
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.LoggerContext;
+import ch.qos.logback.classic.PatternLayout;
+import ch.qos.logback.classic.encoder.PatternLayoutEncoder;
+import ch.qos.logback.classic.spi.ILoggingEvent;
+import ch.qos.logback.core.Appender;
+import ch.qos.logback.core.FileAppender;
+import ch.qos.logback.core.util.StatusPrinter;
 
 import java.io.File;
 import java.net.*;
@@ -570,18 +576,44 @@ public class ConfigurableUDPSource {
     /**
      * The desired level of log statements
      */
-    private static final Level logLevel = Level.DEBUG;
     private static String targetVantiqServer = null;
     private static String authToken = null;
 
     /**
-     * Sets the package's log level to {@link #logLevel}
+     * Sets the log level and logfile of the UDP source and the Extension Source SDK 
+     * 
+     * 
      */
-    private static void setupLogger() {
+    private static void setupLogger(Level logLevel, String logTarget) {
+        
+        
         // Sets logging level for the example. You may wish to use a different logger or setup method
         String loggerName = ConfigurableUDPSource.class.getPackage().getName();
         LoggerContext loggerContext = (LoggerContext) LoggerFactory.getILoggerFactory();
+
+        // Set logging level for both the UDP source and the Extension Source SDK
         loggerContext.getLogger(loggerName).setLevel(logLevel);
+        loggerContext.getLogger("io.vantiq.extjsdk").setLevel(logLevel);
+        
+        if (logTarget != null && !logTarget.equalsIgnoreCase("STDOUT")) {
+            // setup pattern for the file logger. This is the same as the basic pattern in logback.xml
+            PatternLayoutEncoder e = new PatternLayoutEncoder();
+            e.setPattern("%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n");
+            e.setContext(loggerContext);
+            e.start();
+            
+            // Setup the Appender that will write to the target file
+            FileAppender<ILoggingEvent> a = new FileAppender<>();
+            a.setFile(logTarget);
+            a.setName("FILE");
+            a.setContext(loggerContext);
+            a.setEncoder(e);
+            a.start();
+            
+            // Add the Appender to the UDP source and the Extension Source SDK
+            loggerContext.getLogger(loggerName).addAppender(a);
+            loggerContext.getLogger("io.vantiq.extjsdk").addAppender(a);
+        }
     }
 
     private static Map obtainServerConfig(String fileName) {
@@ -609,6 +641,11 @@ public class ConfigurableUDPSource {
         authToken = config.get("authToken") instanceof String ? (String) config.get("authToken") : "";
 
         // TODO log related subjects
+        if (config.get("logLevel") instanceof String || config.get("logTarget") instanceof String) {
+            Level logLevel = Level.toLevel((String) config.get("logLevel"), Level.WARN);
+            String logTarget = (String) config.get("logTarget");
+            setupLogger(logLevel, logTarget);
+        }
 
         if (config.get("defaultListenAddress") instanceof String) {
             try {
@@ -649,7 +686,6 @@ public class ConfigurableUDPSource {
             config = obtainServerConfig("config.json");
         }
         setupServer(config);
-        setupLogger();
         /*
          * The names of the sources we want to connect to and the address to which {@link ExtensionWebSocketClient} should
          * connect. For target, replace "ws" with "wss" to access the secure connection, and "localhost:8080" with

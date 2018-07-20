@@ -3,6 +3,8 @@
   "defaultListenPort" : 3141,
   "defaultListenAddress" : "localhost",
   "authToken" : "1234567890abcz=",
+  "logTarget" : "udpSource.log",
+  "logLevel" : "debug",
   "sources" : [
     "sampleUDP"
   ]
