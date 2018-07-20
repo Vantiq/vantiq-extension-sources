@@ -14,9 +14,13 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.net.DatagramPacket;
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.regex.MatchResult;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import javax.xml.stream.XMLInputFactory;
 
@@ -72,6 +76,18 @@ import javax.xml.stream.XMLInputFactory;
  *                          This will take in the raw bytes received from the source and place them as chars of
  *                          the same value in a String. This is only useful if the source does not send JSON or XML. 
  *                          Default is null.</li>
+ *      <li>{@code regexParser}: Optional. The settings to use for parsing the incoming byte data using regex. This is
+ *                          not used when {@code passBytesInAs} is not set. It contains the following options.
+ *                          <ul>
+ *                              <li>{@code pattern}: Required. The regex pattern that will be used to parse the incoming data.
+ *                                      The parser will use the first match that appears in the data. See {@link Pattern}
+ *                                      for specifics on what constitutes a valid pattern.</li>
+ *                              <li>{@code locations}: Required. An array of the locations in which to place the capture groups 
+ *                                      from {@code pattern}. These will override the location in {@code passBytesInAs}.
+ *                                      </li>
+ *                              <li>{@code flags}: Not yet implemented. An array of the regex flags you would like 
+ *                                      enabled. See {@link Pattern} for descriptions of the flags available.
+ *                          </ul> 
  *      <li>{@code expectXMLIn}: Optional. Specifies that the data incoming from the UDP source will be in an XML format.
  *                          Note that this will throw away the name of the root element. If data is contained in the
  *                          root element, it will be placed in the location "" before transformations.
@@ -114,6 +130,8 @@ public class UDPNotificationHandler extends Handler<DatagramPacket>{
     private String bytesLocation = null;
     private boolean passingPureMap = false;
     private boolean passingUnspecified = false;
+    private Pattern regexPattern = null; // TODO create from options
+    private String[] patternLocations = null;
 
     /**
      * Sets up the handler based on the configuration document passed.
@@ -145,6 +163,29 @@ public class UDPNotificationHandler extends Handler<DatagramPacket>{
         }
         if(incoming.get("passUnspecifiedIn") instanceof Boolean && (boolean) incoming.get("passUnspecifiedIn")) {
             passingUnspecified = true;
+        }
+        if (incoming.get("regexParser") instanceof Map) {
+            Map regexParser = (Map) incoming.get("regexParser");
+            
+            if (regexParser.get("pattern") instanceof String && regexParser.get("locations") instanceof List) {
+                // TODO add flags
+                regexPattern = Pattern.compile( (String) regexParser.get("pattern"));
+                List<String> l = new ArrayList<>();
+                List locations = (List)regexParser.get("locations");
+                for (Object loc :locations) {
+                    if (loc instanceof String) {
+                        l.add((String)loc);
+                    }
+                }
+                patternLocations = l.toArray(new String[0]);
+                
+                if (patternLocations.length > regexPattern.matcher("").groupCount()) {
+                    regexPattern = null;
+                    patternLocations = null;
+                    log.error("Regex options dictate more locations than capture groups. Please either reduce the "
+                            + "number of locations or increase the number of captures");
+                }
+            }
         }
 
         List<List> transforms = null;
@@ -181,7 +222,7 @@ public class UDPNotificationHandler extends Handler<DatagramPacket>{
         Map receivedMsg = null;
         Map<String,Object> sendMsg = new LinkedHashMap<>();
         if (bytesLocation != null) {
-            // Do nothing, conversion will happen later
+            
         }
         else {
             try {
@@ -201,7 +242,10 @@ public class UDPNotificationHandler extends Handler<DatagramPacket>{
 
         // Transforms the message as requested by the Configuration document
         if (bytesLocation != null) {
-            sendMsg.put(bytesLocation, new String(packet.getData()));
+            MapTransformer.createTransformVal(sendMsg, bytesLocation, new String(packet.getData()));
+            if (regexPattern != null) {
+                sendMsg = getRegexResults(new String(packet.getData()));
+            }
         }
         else if (passingPureMap) {
             sendMsg = receivedMsg;
@@ -242,5 +286,23 @@ public class UDPNotificationHandler extends Handler<DatagramPacket>{
         }
 
         client.sendNotification(sendMsg);
+    }
+
+    private Map<String,Object> getRegexResults(String str) {
+        Map<String,Object> output = new LinkedHashMap<>();
+        
+        Matcher regexMatcher = regexPattern.matcher(str);
+        if (!regexMatcher.find()) {
+            log.warn("Message failed to match the requested pattern"); // TODO allow EWSClient to reveal sourceName 
+            log.debug("String '" + str + "' failed to match pattern '" + regexPattern.pattern() + "'");
+            return output;
+        }
+        
+        for (int i = 0; i < patternLocations.length; i++) {
+            MapTransformer.createTransformVal(output, patternLocations[i], regexMatcher.group(i + 1));
+        }
+        
+        
+        return output;
     }
 }

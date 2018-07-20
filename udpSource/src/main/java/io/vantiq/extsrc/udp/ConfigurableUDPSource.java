@@ -22,6 +22,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.*;
+import java.util.regex.Pattern;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
@@ -78,6 +79,18 @@ import org.slf4j.LoggerFactory;
  *                          This will take in the String at the location and send it using the byte values of the 
  *                          characters contained within. This will not add quotation marks around the output. Default
  *                          is null.</li>
+ *      <li>{@code regexParser}: Optional. The settings to use for parsing the incoming byte data using regex. This is
+ *                          not used when {@code passBytesInAs} is not set. It contains the following options.
+ *                          <ul>
+ *                              <li>{@code pattern}: Required. The regex pattern that will be used to parse the incoming data.
+ *                                      The parser will use the first match that appears in the data. See {@link Pattern}
+ *                                      for specifics on what constitutes a valid pattern.</li>
+ *                              <li>{@code locations}: Required. An array of the locations in which to place the capture groups 
+ *                                      from {@code pattern}. These will override the location in {@code passBytesInAs}.
+ *                                      </li>
+ *                              <li>{@code flags}: Not yet implemented. An array of the regex flags you would like 
+ *                                      enabled. See {@link Pattern} for descriptions of the flags available.
+ *                          </ul> 
  *      <li>{@code sendXMLRoot}: Optional. The name of the root element for the generated XML object. When set this will
  *                          send the entire object received as XML. Default is {@code null}.
  * </ul>
@@ -679,7 +692,7 @@ public class ConfigurableUDPSource {
      */
     public static void main(String[] args) {
         Map config;
-        if (args.length != 0) {
+        if (args != null && args.length != 0) {
             config = obtainServerConfig(args[0]);
         }
         else {
