@@ -44,12 +44,33 @@ public class ExtensionWebSocketClient {
      * The listener that receives and interprets responses from the Vantiq deployment for this client's connection.
      */
     private ExtensionWebSocketListener listener;
-    // TODO comment, initialize, use
+    /**
+     * A {@link CompletableFuture} that will return true when connected over a websocket, and false when the connection
+     * is closed or has failed
+     */
     CompletableFuture<Boolean> webSocketFuture;
+    /**
+     * A {@link CompletableFuture} that will return true when authenticated with Vantiq, and false when the WebSocket
+     * connection is closed or has failed
+     */
     CompletableFuture<Boolean> authFuture;
+    /**
+     * A {@link CompletableFuture} that will return true when connected to source {@code sourceName}, and false when the
+     * WebSocket connection is closed or has failed
+     */
     CompletableFuture<Boolean> sourceFuture;
+    /**
+     * Used to signal that an authentication message has been requested
+     */
     CompletableFuture<Void> authRequested;
+    /**
+     * Used to signal that a source connection has been requested
+     */
     CompletableFuture<Void> sourceRequested;
+    /**
+     * The data to be used for authentication. This will be either a {@link String} containing an authentication token or
+     * a {@link Map} containing the username and password.
+     */
     Object authData;
 
     /**
@@ -72,7 +93,6 @@ public class ExtensionWebSocketClient {
         initializeFutures();
     }
 
-    // TODO figure out what the futures should look like
     private void initializeFutures() {
         webSocketFuture = new CompletableFuture<>();
         authRequested = new CompletableFuture<>();
@@ -88,7 +108,7 @@ public class ExtensionWebSocketClient {
         // If the connection succeeded, then it will create a new Future that will be completed upon receiving an
         // authentication request. If the connection failed, then it will return a Future with the value false.
         authFuture = authRequested
-                .thenApply(
+                .thenApplyAsync(
                         (unused) -> {
                             try {
                                 return webSocketFuture.get();
@@ -98,7 +118,7 @@ public class ExtensionWebSocketClient {
                                 return false;
                             }
                         }
-                ).thenCompose(
+                ).thenComposeAsync(
                         (success) -> {
                             if (success) {
                                 doAuthentication();
@@ -113,7 +133,7 @@ public class ExtensionWebSocketClient {
         // If the authentication succeeded, then it will create a new Future that will be completed upon receiving a
         // configuration response. If the authentication failed, then it will return a Future with the value false.
         sourceFuture = sourceRequested
-                .thenApply(
+                .thenApplyAsync(
                         (unused) -> {
                             try {
                                 return authFuture.get();
@@ -123,7 +143,7 @@ public class ExtensionWebSocketClient {
                                 return false;
                             }
                         }
-                ).thenCompose(
+                ).thenComposeAsync(
                         (success) -> {
                             if (success) {
                                 doConnectionToSource();
@@ -208,9 +228,7 @@ public class ExtensionWebSocketClient {
      * @param replyAddress  The address where the reply will go. This is a UUID that must be obtained from the original
      *                      query message
      * @param body          The data to be sent back as the result of the query
-     * @throws Exception    Throws {@link Exception} when it is unable parse {@code body}
      */
-    // TODO pick between using generic vs Vantiq messages
     public void sendQueryResponse(int httpCode, String replyAddress, Map body){
         Response response = new Response()
                 .status(httpCode)
@@ -228,7 +246,6 @@ public class ExtensionWebSocketClient {
      * @param replyAddress  The address where the reply will go. This is a UUID that must be obtained from the original
      *                      query message
      * @param body          An array of the data to be sent back as the result of the query
-     * @throws Exception    Throws {@link Exception} when it is unable parse {@code body}
      */
     public void sendQueryResponse(int httpCode, String replyAddress, Map[] body) {
         Response response = new Response()
@@ -249,7 +266,6 @@ public class ExtensionWebSocketClient {
      *                          substituted are represented by {#}, where the # is replaced by the number of the
      *                          parameters array (see below), beginning at 0.
      * @param parameters An array of parameters for the messageTemplate.
-     * @throws Exception    Throws {@link Exception} when it is unable parse {@code body}
      */
     public void sendQueryError(String replyAddress, String messageCode, String messageTemplate, Object[] parameters) {
         // Create the body
@@ -428,9 +444,9 @@ public class ExtensionWebSocketClient {
         webSocket = null;
         // TODO better to obtrude null or false?
         // Make sure anything still using these futures know that they are no longer valid
-        webSocketFuture.obtrudeValue(null);
-        authFuture.obtrudeValue(null);
-        sourceFuture.obtrudeValue(null);
+        webSocketFuture.obtrudeValue(false);
+        authFuture.obtrudeValue(false);
+        sourceFuture.obtrudeValue(false);
         initializeFutures();
         log.info("Websocket closed for source " + sourceName);
         sourceName = null;
