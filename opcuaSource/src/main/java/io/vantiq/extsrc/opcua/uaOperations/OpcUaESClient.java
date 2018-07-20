@@ -114,11 +114,12 @@ public class OpcUaESClient {
 
         validateConfiguration(theConfig);
         config = theConfig; // Store for later use
-        storageDirectory = config.get(CONFIG_STORAGE_DIRECTORY) != null
-                ? (String) config.get(CONFIG_STORAGE_DIRECTORY) : defaultStorageDirectory;
 
         // Extract OPC information and create the client.
         Map<String, Object> opcConfig = (Map<String, Object>) theConfig.get(CONFIG_OPC_UA_INFORMATION);
+        storageDirectory = opcConfig.get(CONFIG_STORAGE_DIRECTORY) != null
+                ? (String) opcConfig.get(CONFIG_STORAGE_DIRECTORY) : defaultStorageDirectory;
+
 
         client = createClient(opcConfig);
     }
@@ -219,6 +220,9 @@ public class OpcUaESClient {
 
     private OpcUaClient createClient(Map<String, Object> config) throws OpcExtConfigException, Exception {
 
+        if (storageDirectory == null) {
+
+        }
         SecurityPolicy securityPolicy = getSecurityPolicy(config);
 
         File securityDir = new File(storageDirectory, SECURITY_DIRECTORY);
