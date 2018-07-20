@@ -1,6 +1,7 @@
 package io.vantiq.extsrc.opcua.uaOperations;
 
 import com.google.common.collect.ImmutableList;
+import lombok.extern.slf4j.Slf4j;
 import org.eclipse.milo.opcua.sdk.client.OpcUaClient;
 import org.eclipse.milo.opcua.sdk.client.api.config.OpcUaClientConfig;
 import org.eclipse.milo.opcua.sdk.client.api.identity.AnonymousProvider;
@@ -26,8 +27,6 @@ import org.eclipse.milo.opcua.stack.core.types.structured.EndpointDescription;
 import org.eclipse.milo.opcua.stack.core.types.structured.MonitoredItemCreateRequest;
 import org.eclipse.milo.opcua.stack.core.types.structured.MonitoringParameters;
 import org.eclipse.milo.opcua.stack.core.types.structured.ReadValueId;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.slf4j.helpers.MessageFormatter;
 
 import java.io.File;
@@ -44,7 +43,7 @@ import java.util.function.BiConsumer;
 
 import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.uint;
 
-
+@Slf4j
 public class OpcUaESClient {
 
     // Constants for use in perusing the configuration Map.
@@ -58,14 +57,13 @@ public class OpcUaESClient {
     public static final String CONFIG_MI_NAMESPACE_INDEX = "ns";        // Short, but the OPCUA Conventiion
     public static final String CONFIG_MI_NAMESPACE_URN = "nsu";
     public static final String CONFIG_SECURITY_POLICY = "securityPolicy";
-    public static final String CONFIG_DISCOVERY_ENDPOINT = "discoveryEndpoing";
+    public static final String CONFIG_DISCOVERY_ENDPOINT = "discoveryEndpoint";
     public static final String CONFIG_STORAGE_DIRECTORY = "storageDirectory";
 
 
     public static final String ERROR_PREFIX = "io.vantiq.extsrc.opcua.uaOperations" + "OpcuaClient";
     private static final String SECURITY_DIRECTORY = "security";
     protected Map<String, Object> config;
-    protected Logger logger;
     protected OpcUaClient client;
     protected UaSubscription subscription = null;
     protected BiConsumer<String, Object> subscriptionHandler;
@@ -78,6 +76,15 @@ public class OpcUaESClient {
     public Map<String, Object> getConfig() {
         return config;
     }
+
+    private static String defaultStorageDirectory = null;
+    private String storageDirectory = null;
+
+    public static void setDefaultStorageDirectory(String dir) {
+        defaultStorageDirectory = dir;
+    }
+
+
 
     /**
      * Create a client from information in the config document.  This config document is expected
@@ -99,23 +106,25 @@ public class OpcUaESClient {
      */
     public OpcUaESClient(Map theConfig) throws OpcExtConfigException, Exception   // FIXME
     {
-        // FIXME -- Hook up SLF4J to log4J via config, etc.
-        // Want to put logs into ${theConfig.opcUAInformation.storageDirectory}
-        logger = LoggerFactory.getLogger(getClass());
-
         if (theConfig == null) {
             String errMsg = ERROR_PREFIX + ".nullConfig: Configuration was null";
-            logger.error(errMsg);
+            log.error(errMsg);
             throw new OpcExtConfigException(errMsg);
         }
 
         validateConfiguration(theConfig);
         config = theConfig; // Store for later use
+        storageDirectory = config.get(CONFIG_STORAGE_DIRECTORY) != null
+                ? (String) config.get(CONFIG_STORAGE_DIRECTORY) : defaultStorageDirectory;
 
         // Extract OPC information and create the client.
         Map<String, Object> opcConfig = (Map<String, Object>) theConfig.get(CONFIG_OPC_UA_INFORMATION);
 
         client = createClient(opcConfig);
+    }
+
+    public boolean isConnected() {
+        return connected;
     }
 
     public void connect() throws Exception {
@@ -144,7 +153,7 @@ public class OpcUaESClient {
             try {
                 client.disconnect().get();  // Disconnect client & await completion thereof
             } catch (Throwable e) {
-                logger.error(ERROR_PREFIX + ".disconnectFailure: " + e.getMessage());
+                log.error(ERROR_PREFIX + ".disconnectFailure: " + e.getMessage());
             }
         }
         connected = false;
@@ -153,7 +162,7 @@ public class OpcUaESClient {
     private void validateConfiguration(Map config) throws OpcExtConfigException {
         if (config == null) {
             String errMsg = ERROR_PREFIX + ".nullConfig: No configuration was provided.";
-            logger.error(errMsg);
+            log.error(errMsg);
             throw new OpcExtConfigException(errMsg);
         } else if (config.get(CONFIG_OPC_UA_INFORMATION) == null) {
             String errMsg = ERROR_PREFIX + ".noOPCInformation: Configuration contained no OPC Information.";
@@ -162,12 +171,16 @@ public class OpcUaESClient {
         Map<String, String> opcConfig = (Map<String, String>) config.get(CONFIG_OPC_UA_INFORMATION);
 
         String errMsg = null;
-        if (!opcConfig.containsKey(CONFIG_STORAGE_DIRECTORY)) {
-            errMsg = ERROR_PREFIX + ".noStorageSpecified: No storageDirectory provided in configuration.";
+        if (!opcConfig.containsKey(CONFIG_STORAGE_DIRECTORY) && defaultStorageDirectory == null) {
+            errMsg = ERROR_PREFIX + ".noStorageSpecified: No storageDirectory provided in configuration. " +
+                    "The configuration should contain a property: " + CONFIG_STORAGE_DIRECTORY;
         } else if (!opcConfig.containsKey(CONFIG_DISCOVERY_ENDPOINT)) {
-            errMsg = ".noDiscoveryEndpoint: No discovery endpoint was provided in the configuration.";
+            errMsg = ".noDiscoveryEndpoint: No discovery endpoint was provided in the configuration. " +
+                    "The configuration should contain a property: " +
+                    CONFIG_DISCOVERY_ENDPOINT;
         } else if (!opcConfig.containsKey(CONFIG_SECURITY_POLICY)) {
-            errMsg = ".noSecurityPolicy: No OPC UA Security policy was specified in the configuration.";
+            errMsg = ".noSecurityPolicy: No OPC UA Security policy was specified in the configuration. "
+            + "The configuration should contain a property: " + CONFIG_SECURITY_POLICY;
         }
 
         if (errMsg != null) {
@@ -177,7 +190,7 @@ public class OpcUaESClient {
     }
 
     private void throwError(String msg) throws OpcExtConfigException {
-        logger.error(msg);
+        log.error(msg);
         throw new OpcExtConfigException(msg);
     }
 
@@ -185,9 +198,9 @@ public class OpcUaESClient {
         // config.securityPolicy should be the URI for the appropriate security policy.
 
         String secPolURI = (String) config.get(CONFIG_SECURITY_POLICY);
-        if (secPolURI == null) {
+        if (secPolURI == null || secPolURI.isEmpty()) {
             // No security policy will default to #NONE.  We will, however, log a warning
-            logger.warn(ERROR_PREFIX + ".defaultingSecurityPolicy: No OPC UA Security policy was specified in the configuration.  Defaulting to #NONE");
+            log.warn(ERROR_PREFIX + ".defaultingSecurityPolicy: No OPC UA Security policy was specified in the configuration.  Defaulting to #NONE");
             secPolURI = SecurityPolicy.None.getSecurityPolicyUri();
         }
         try {
@@ -195,11 +208,11 @@ public class OpcUaESClient {
             return SecurityPolicy.fromUri(secPolURI);
         } catch (IllegalArgumentException e) {
             String errMsg = ERROR_PREFIX + ".invalidSecurityPolicySyntax: " + secPolURI + " is not a syntactically correct URI";
-            logger.error(errMsg);
+            log.error(errMsg);
             throw new OpcExtConfigException(errMsg, e);
         } catch (UaException e) {
             String errMsg = ERROR_PREFIX + ".invalidSecurityPolicy: " + secPolURI + " is not a valid security URI";
-            logger.error(errMsg);
+            log.error(errMsg);
             throw new OpcExtConfigException(errMsg, e);
         }
     }
@@ -208,11 +221,11 @@ public class OpcUaESClient {
 
         SecurityPolicy securityPolicy = getSecurityPolicy(config);
 
-        File securityDir = new File((String) config.get(CONFIG_STORAGE_DIRECTORY), SECURITY_DIRECTORY);
+        File securityDir = new File(storageDirectory, SECURITY_DIRECTORY);
         if (!securityDir.exists() && !securityDir.mkdirs()) {
             throw new OpcExtConfigException(ERROR_PREFIX + ".invalidStorageDirectory: unable to create security dir: " + securityDir);
         }
-        logger.info("security temp dir: {}", securityDir.getAbsolutePath());
+        log.info("security temp dir: {}", securityDir.getAbsolutePath());
 
         KeyStoreManager loader = new KeyStoreManager().load(securityDir);
 
@@ -221,7 +234,7 @@ public class OpcUaESClient {
         String discoveryEndpoint = (String) config.get(CONFIG_DISCOVERY_ENDPOINT);
         if (discoveryEndpoint == null) {
             String errorMsg = ERROR_PREFIX + ".noDiscoveryEndpoint: No discovery endpoint was provided in the configuration.";
-            logger.error(errorMsg);
+            log.error(errorMsg);
             throw new OpcExtConfigException(errorMsg);
         }
         try {
@@ -232,13 +245,13 @@ public class OpcUaESClient {
             try {
                 // try the explicit discovery endpoint as well
                 String discoveryUrl = discoveryEndpoint + "/discovery";
-                logger.info("Trying explicit discovery URL: {}", discoveryUrl);
+                log.info("Trying explicit discovery URL: {}", discoveryUrl);
                 endpoints = UaTcpStackClient
                         .getEndpoints(discoveryUrl)
                         .get();
             } catch (ExecutionException e) {
                 String errMsg = ERROR_PREFIX + ".discoveryError: Could not discovery OPC Endpoints.";
-                logger.error(ERROR_PREFIX + ".discoveryError: Could not discover OPC Endpoints: {}", e.getClass().getName() + "::" + e.getMessage());
+                log.error(ERROR_PREFIX + ".discoveryError: Could not discover OPC Endpoints: {}", e.getClass().getName() + "::" + e.getMessage());
                 throw new OpcExtConfigException(errMsg, e);
             }
         }
@@ -247,7 +260,7 @@ public class OpcUaESClient {
                 .filter(e -> e.getSecurityPolicyUri().equals(securityPolicy.getSecurityPolicyUri()))
                 .findFirst().orElseThrow(() -> new Exception("no desired endpoints returned"));
 
-        logger.info("Using endpoint: {} [{}]", endpoint.getEndpointUrl(), securityPolicy);
+        log.info("Using endpoint: {} [{}]", endpoint.getEndpointUrl(), securityPolicy);
 
         OpcUaClientConfig opcConfig = OpcUaClientConfig.builder()
                 .setApplicationName(LocalizedText.english("eclipse milo opc-ua client"))
@@ -322,11 +335,11 @@ public class OpcUaESClient {
             throw new OpcExtRuntimeException(ERROR_PREFIX + ".unexpectedException: OPC UA Error", e);
         }
         if (status != null && status.isGood()) {
-            logger.debug("Wrote value '{}' to nodeId={}", v, nodesToWrite.get(0));
+            log.debug("Wrote value '{}' to nodeId={}", v, nodesToWrite.get(0));
         } else {
             String errMsg = MessageFormatter.arrayFormat(ERROR_PREFIX + ".writeError: OPC UA Error '{}' performing writeValues() for nodeId={}, value={}",
                     new Object[]{status, nodesToWrite.get(0), value}).getMessage();
-            logger.error(errMsg);
+            log.error(errMsg);
             throw new OpcExtRuntimeException(errMsg);
         }
     }
@@ -404,7 +417,7 @@ public class OpcUaESClient {
             Map<String, Map<String, String>> newMonitoredItems =
                     (Map<String, Map<String, String>>) ((Map<String, Object>)
                             config.get(CONFIG_OPC_UA_INFORMATION)).get(CONFIG_OPC_MONITORED_ITEMS);
-            logger.debug("Config requesting {} monitored items", newMonitoredItems.size());
+            log.debug("Config requesting {} monitored items", newMonitoredItems.size());
 
             if (currentMonitoredItemList != null && !currentMonitoredItemList.isEmpty()) {
                 // First, if we're currently monitoring anything, remove them.
@@ -486,7 +499,7 @@ public class OpcUaESClient {
 
                 MonitoredItemCreateRequest request = new MonitoredItemCreateRequest(
                         readValueId, MonitoringMode.Reporting, parms);
-                logger.debug("MonitoredItemCreateRequest for {} added to list", readValueId.toString());
+                log.debug("MonitoredItemCreateRequest for {} added to list", readValueId.toString());
                 reqList.add(request);
             }
 
@@ -503,10 +516,10 @@ public class OpcUaESClient {
 
             for (UaMonitoredItem item : items) {
                 if (item.getStatusCode().isGood()) {
-                    logger.debug("item created for nodeId={}", item.getReadValueId().getNodeId());
+                    log.debug("item created for nodeId={}", item.getReadValueId().getNodeId());
                     currentMonitoredItemList.add(item.getMonitoredItemId());
                 } else {
-                    logger.warn(
+                    log.warn(
                             "failed to create item for nodeId={} (status={})",
                             item.getReadValueId().getNodeId(), item.getStatusCode());
                 }
@@ -517,7 +530,7 @@ public class OpcUaESClient {
     }
 
     private void onDataChange(UaMonitoredItem item, DataValue value) {
-        logger.debug(
+        log.debug(
                 "Update event on subscription {} value received: item={}, value={}",
                 subscription.getSubscriptionId(), item.getReadValueId().getNodeId().toParseableString(), value.getValue());
         subscriptionHandler.accept(item.getReadValueId().getNodeId().toParseableString(), value.getValue().getValue());

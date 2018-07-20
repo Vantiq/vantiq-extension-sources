@@ -14,6 +14,7 @@
 
 package io.vantiq.extsrc.opcua.uaOperations;
 
+import lombok.extern.slf4j.Slf4j;
 import org.eclipse.milo.opcua.sdk.server.util.HostnameUtil;
 import org.eclipse.milo.opcua.stack.core.util.SelfSignedCertificateBuilder;
 import org.eclipse.milo.opcua.stack.core.util.SelfSignedCertificateGenerator;
@@ -31,6 +32,7 @@ import java.security.PublicKey;
 import java.security.cert.X509Certificate;
 import java.util.regex.Pattern;
 
+@Slf4j
 class KeyStoreManager {
 
     private static final Pattern IP_ADDR_PATTERN = Pattern.compile(
@@ -38,8 +40,6 @@ class KeyStoreManager {
 
     private static final String CLIENT_ALIAS = "vantiq-opcua-extension";
     private static final char[] PASSWORD = "password".toCharArray();
-
-    private final Logger logger = LoggerFactory.getLogger(getClass());
 
     private X509Certificate clientCertificate;
     private KeyPair clientKeyPair;
@@ -49,7 +49,7 @@ class KeyStoreManager {
 
         File serverKeyStore = baseDir.toPath().resolve("opcuaESKeystore.pfx").toFile();
 
-        logger.info("Loading KeyStore at {}", serverKeyStore);
+        log.info("Loading KeyStore at {}", serverKeyStore);
 
         if (!serverKeyStore.exists()) {
             keyStore.load(null, PASSWORD);
