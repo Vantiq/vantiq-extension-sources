@@ -331,6 +331,8 @@ public class ExtensionWebSocketListener implements WebSocketListener{
                 if ((int) msg.get("status") == 200 && !client.isAuthed()) {
                     // Forcibly setting in case an error occurred before succeeding
                     client.authFuture.obtrudeValue(true);
+                    // Signal that an authentication has succeeded
+                    client.authSuccess.complete(null);
                 }
                 else {
                     client.authFuture.complete(false);
@@ -339,7 +341,7 @@ public class ExtensionWebSocketListener implements WebSocketListener{
                     this.authHandler.handleMessage(msg);
                 }
                 else {
-                    log.warn("Authorization received with no handler set");
+                    log.warn("Authentication received with no handler set");
                 }
 
             }
