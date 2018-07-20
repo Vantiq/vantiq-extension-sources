@@ -79,18 +79,26 @@ import org.slf4j.LoggerFactory;
  *                          This will take in the String at the location and send it using the byte values of the 
  *                          characters contained within. This will not add quotation marks around the output. Default
  *                          is null.</li>
- *      <li>{@code regexParser}: Optional. The settings to use for parsing the incoming byte data using regex. This is
- *                          not used when {@code passBytesInAs} is not set. It contains the following options.
+ *      <li>{@code formatParser}: Optional. The settings for sending data as Ascii encoded bytes.
  *                          <ul>
- *                              <li>{@code pattern}: Required. The regex pattern that will be used to parse the incoming data.
- *                                      The parser will use the first match that appears in the data. See {@link Pattern}
- *                                      for specifics on what constitutes a valid pattern.</li>
- *                              <li>{@code locations}: Required. An array of the locations in which to place the capture groups 
- *                                      from {@code pattern}. These will override the location in {@code passBytesInAs}.
- *                                      </li>
- *                              <li>{@code flags}: Not yet implemented. An array of the regex flags you would like 
- *                                      enabled. See {@link Pattern} for descriptions of the flags available.
- *                          </ul> 
+ *                              <li>{@code pattern}: Required. The printf-style pattern that you wish the data to be 
+ *                                      sent as. Any format arguments that are replaced with "null". See 
+ *                                      {@link Formatter} for specifics on what is allowed.</li>
+ *                              <li>{@code locations}: Required. An array of the locations from which the format 
+ *                                      arguments should be pulled.</li>
+ *                              <li>{@code altPatternLocation}: Optional. The location in a Publish message in which alternate 
+ *                                      patterns may be placed. If a String is found in the given location of a Publish
+ *                                      object, then that pattern will be used in place of {@code pattern}. This 
+ *                                      pattern may be included directly in the Published object, but it is 
+ *                                      recommended that it is placed in the object specified by the "Using" keyword,
+ *                                      for purposes of readability.</li>
+ *                              <li>{@code altLocations}: Optional. The location in a Publish message in which an 
+ *                                      alternate set of locations may be placed. If an array of Strings is found in the
+ *                                      given location of a Publish message, then those locations will be used instead 
+ *                                      of {@code locations}. These locations may be included directly in the Published 
+ *                                      object, but it is recommended that they are placed in the object specified by 
+ *                                      the "Using" keyword, for purposes of readability.</li>
+ *                          </ul>
  *      <li>{@code sendXMLRoot}: Optional. The name of the root element for the generated XML object. When set this will
  *                          send the entire object received as XML. Default is {@code null}.
  * </ul>
@@ -140,6 +148,18 @@ import org.slf4j.LoggerFactory;
  *                          This will take in the raw bytes received from the source and place them as chars of
  *                          the same value in a String. This is only useful if the source does not send JSON. 
  *                          Default is null.</li>
+ *      <li>{@code regexParser}: Optional. The settings to use for parsing the incoming byte data using regex. This is
+ *                          not used when {@code passBytesInAs} is not set. It contains the following options.
+ *                          <ul>
+ *                              <li>{@code pattern}: Required. The regex pattern that will be used to parse the incoming data.
+ *                                      The parser will use the first match that appears in the data. See {@link Pattern}
+ *                                      for specifics on what constitutes a valid pattern.</li>
+ *                              <li>{@code locations}: Required. An array of the locations in which to place the capture groups 
+ *                                      from {@code pattern}. These will override the location in {@code passBytesInAs}.
+ *                                      </li>
+ *                              <li>{@code flags}: Not yet implemented. An array of the regex flags you would like 
+ *                                      enabled. See {@link Pattern} for descriptions of the flags available.
+ *                          </ul> 
  *      <li>{@code expectXMLIn}: Optional. Specifies that the data incoming from the UDP source will be in an XML format.
  *                          Note that this will throw away the name of the root element. If data is contained in the
  *                          root element, it will be placed in the location "" before transformations.

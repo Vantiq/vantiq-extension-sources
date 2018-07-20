@@ -17,9 +17,12 @@ import org.slf4j.LoggerFactory;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
+import java.util.ArrayList;
+import java.util.Formatter;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.MissingFormatArgumentException;
 
 /**
  * This class is a customizable handler that will convert Publish messages from a Vantiq deployment to a UDP message.
@@ -47,8 +50,28 @@ import java.util.Map;
  *                          This will take in the String at the location and send it using the byte values of the 
  *                          characters contained within. This will not add quotation marks around the output. Default
  *                          is {@code null}.</li>
+ *      <li>{@code formatParser}: Optional. The settings for sending data as Ascii encoded bytes.
+ *                          <ul>
+ *                              <li>{@code pattern}: Required. The printf-style pattern that you wish the data to be 
+ *                                      sent as. Any format arguments that are replaced with "null". See 
+ *                                      {@link Formatter} for specifics on what is allowed.</li>
+ *                              <li>{@code locations}: Required. An array of the locations from which the format 
+ *                                      arguments should be pulled.</li>
+ *                              <li>{@code altPatternLocation}: Optional. The location in a Publish message in which alternate 
+ *                                      patterns may be placed. If a String is found in the given location of a Publish
+ *                                      object, then that pattern will be used in place of {@code pattern}. This 
+ *                                      pattern may be included directly in the Published object, but it is 
+ *                                      recommended that it is placed in the object specified by the "Using" keyword,
+ *                                      for purposes of readability.</li>
+ *                              <li>{@code altLocations}: Optional. The location in a Publish message in which an 
+ *                                      alternate set of locations may be placed. If an array of Strings is found in the
+ *                                      given location of a Publish message, then those locations will be used instead 
+ *                                      of {@code locations}. These locations may be included directly in the Published 
+ *                                      object, but it is recommended that they are placed in the object specified by 
+ *                                      the "Using" keyword, for purposes of readability.</li>
+ *                          </ul>
  *      <li>{@code sendXMLRoot}: Optional. The name of the root element for the generated XML object. When set this will
- *                          send the entire object received as XML. Default is {@code null}.
+ *                          send the output as XML instead of JSON. Default is {@code null}.
  * </ul>
  */
 public class UDPPublishHandler extends Handler<Map>{
@@ -85,6 +108,12 @@ public class UDPPublishHandler extends Handler<Map>{
     private boolean passingPureMap = false;
     private boolean passingUnspecified = false;
     private String bytesLocation = null;
+    private String formatPattern = null;
+    private Formatter formatter = null;
+    private String[] formatLocations = null;
+    private StringBuilder formattedString = null;
+    private String altPatternLocation = null;
+    private String altLocations = null;
     
     /**
      * Sets up the handler based on the configuration document passed
@@ -120,6 +149,23 @@ public class UDPPublishHandler extends Handler<Map>{
         if (outgoing.get("passBytesOutFrom") instanceof String) {
             bytesLocation = (String) outgoing.get("passBytesOutFrom");
         }
+        if (outgoing.get("formatParser") instanceof Map) {
+            Map formatParser = (Map) outgoing.get("formatParser");
+            
+            if (formatParser.get("pattern") instanceof String && formatParser.get("locations") instanceof List) {
+                formatPattern = (String) formatParser.get("pattern");
+                formattedString = new StringBuilder();
+                formatter = new Formatter(formattedString); 
+                formatLocations = retrieveLocationsFrom((List)formatParser.get("locations"));
+                
+                if (formatParser.get("altPatternLocation") instanceof String) {
+                    altPatternLocation = (String) formatParser.get("altPatternLocation");
+                }
+                if (formatParser.get("altLocations") instanceof String) {
+                    altLocations = (String) formatParser.get("altLocations");
+                }
+            }
+        }
 
         if (transforms != null && passingPureMap) {
             transformer = new MapTransformer(transforms);
@@ -150,7 +196,10 @@ public class UDPPublishHandler extends Handler<Map>{
         byte[] sendBytes = null;
 
         // Translate the message as requested in the Configuration document
-        if (bytesLocation != null) {
+        if (formatLocations != null) {
+            sendBytes = getFormattedOutput(receivedMsg);
+        }
+        else if (bytesLocation != null) {
             sendBytes = ((String)receivedMsg.get(bytesLocation)).getBytes();
         }
         else if (passingPureMap) {
@@ -171,12 +220,17 @@ public class UDPPublishHandler extends Handler<Map>{
             this.transformer.transform(receivedMsg, sendMsg, false);
         }
 
-        log.debug("Sending message to address " + address.getHostAddress() + " and port " + port
-                + " with contents: " + sendMsg);
+        
         // Turn the message into bytes for a UDP message then send it
         try {
             if (sendBytes == null) {
+                log.debug("Sending message to address " + address.getHostAddress() + " and port " + port
+                        + " with contents: " + sendMsg);
                 sendBytes = writer.writeValueAsBytes(sendMsg);
+            }
+            else {
+                log.debug("Sending message to address " + address.getHostAddress() + " and port " + port
+                        + " with contents: " + new String(sendBytes));
             }
             DatagramPacket packet = new DatagramPacket(sendBytes, sendBytes.length, address, port);
             socket.send(packet);
@@ -184,5 +238,46 @@ public class UDPPublishHandler extends Handler<Map>{
         catch (Exception e) {
             log.warn("Failed trying to translate and send the message.", e);
         }
+    }
+    
+    private byte[] getFormattedOutput(Map receivedData) {
+        byte[] resultBytes = null;
+        List<Object> args = new ArrayList<>();
+        String[] locations = formatLocations;
+        if (altLocations != null && receivedData.get(altLocations) instanceof List) {
+            locations = retrieveLocationsFrom((List) receivedData.get(altLocations));
+        }
+        for (String loc: locations) {
+            args.add(MapTransformer.getTransformVal(receivedData, loc));
+        }
+        
+        // Synchronized so that messages will not be mixed if they are sent too fast and interrupt each other
+        synchronized(this) {
+            try {
+                String pattern = formatPattern;
+                if (altPatternLocation != null && receivedData.get(altPatternLocation) instanceof String) {
+                    pattern = (String) receivedData.get(altPatternLocation);
+                }
+                formatter.format(pattern, args.toArray());
+            }
+            catch (MissingFormatArgumentException e) {
+                log.error("Insufficient arguments for pattern '" + formatPattern + "'");
+            }
+            resultBytes = formattedString.toString().getBytes();
+            log.debug(formattedString.toString());
+            formattedString.setLength(0);;
+        }
+        
+        return resultBytes;
+    }
+    
+    private String[] retrieveLocationsFrom(List potentialLocations) {
+        List<String> locations = new ArrayList<>();
+        for (Object loc :potentialLocations) {
+            if (loc instanceof String) {
+                locations.add((String)loc);
+            }
+        }
+        return locations.toArray(new String[0]);
     }
 }
