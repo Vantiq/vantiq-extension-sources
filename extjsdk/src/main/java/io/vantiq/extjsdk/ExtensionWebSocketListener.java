@@ -271,6 +271,7 @@ public class ExtensionWebSocketListener implements WebSocketListener{
         log.info("WebSocket open");
     }
 
+    
     /**
      * Translate the received message and pass it on to the related handler. Additionally, updates the client about
      * successful authentications and source connections.
@@ -314,6 +315,11 @@ public class ExtensionWebSocketListener implements WebSocketListener{
         else if (msg.get("op") == null) {
             log.debug("Http response received");
             if (client.isAuthed()) {
+                // Is an error message before successful connection to the target source
+                // This is most likely a failure related to a source connection request
+                if (!client.isConnected() && (Integer) msg.get("status") >= 300) {
+                    client.sourceFuture.complete(false);
+                }
                 if (this.httpHandler != null) {
                     this.httpHandler.handleMessage(msg);
                 }
@@ -323,14 +329,19 @@ public class ExtensionWebSocketListener implements WebSocketListener{
             }
             else {
                 if ((int) msg.get("status") == 200 && !client.isAuthed()) {
-                    // TODO should this be completed on all receipts or only for success?
-                    client.authFuture.complete(true);
+                    // Forcibly setting in case an error occurred before succeeding
+                    client.authFuture.obtrudeValue(true);
+                    // Signal that an authentication has succeeded
+                    client.authSuccess.complete(null);
+                }
+                else {
+                    client.authFuture.complete(false);
                 }
                 if (authHandler != null) {
                     this.authHandler.handleMessage(msg);
                 }
                 else {
-                    log.warn("Authorization received with no handler set");
+                    log.warn("Authentication received with no handler set");
                 }
 
             }
@@ -349,7 +360,6 @@ public class ExtensionWebSocketListener implements WebSocketListener{
                     }
                 }
                 else if (msg.get("op").equals(ExtensionServiceMessage.OP_QUERY)) {
-                    // note: fromMap does not set messageHeaders
                     if (this.queryHandler != null) {
                         this.queryHandler.handleMessage(msg);
                     }
@@ -361,9 +371,10 @@ public class ExtensionWebSocketListener implements WebSocketListener{
                     log.warn("ExtensionServiceMessage with unknown/unexpected op '" + msg.get("op") + "'");
                 }
             }
-            else if (msg.get("op").equals(ExtensionServiceMessage.OP_CONFIGURE_EXTENSION)) {
+            else if (msg.get("op").equals(ExtensionServiceMessage.OP_CONFIGURE_EXTENSION) && client.isAuthed()) {
+                // Forcibly setting in case an error occurred before succeeding
+                client.sourceFuture.obtrudeValue(true); 
                 log.info("Successful connection to " + msg.get("resourceId").toString());
-                client.sourceFuture.complete(true);
                 if (this.configHandler != null) {
                     this.configHandler.handleMessage(msg);
                 }
