@@ -1,5 +1,6 @@
 package io.vantiq.extsrc.opcua.opcUaSource;
 
+import io.vantiq.extsrc.opcua.uaOperations.OpcUaESClient;
 import org.apache.commons.cli.*;
 import lombok.extern.slf4j.Slf4j;
 
@@ -64,13 +65,15 @@ public class OpcUaServer {
         String sourceName = cmd.getOptionValue("source");
 
 
-        Map<String, String> connectInfo = getConfig(homeDir, sourceName, vantiqUrl, user, pw, token);
+        Map<String, String> connectInfo = constructConfig(homeDir, sourceName, vantiqUrl, user, pw, token);
+        OpcUaESClient.setDefaultStorageDirectory(homeDir);
 
         OpcUaSource aSource = new OpcUaSource();
 
         String sourceToUse = connectInfo.get(OpcUaSource.VANTIQ_SOURCENAME);
 
         boolean itWorked = aSource.connectToVantiq(sourceToUse, connectInfo);
+
         log.info("It worked: {}", itWorked);
 
         if (aSource != null) {
@@ -79,7 +82,7 @@ public class OpcUaServer {
         System.exit(0);
     }
 
-    public static Map<String, String> getConfig(String location, String sourceOpt, String vantiqUrlOpt, String userOpt, String pwOpt, String tokenOpt) {
+    public static Map<String, String> constructConfig(String location, String sourceOpt, String vantiqUrlOpt, String userOpt, String pwOpt, String tokenOpt) {
 
         if (location == null) {
             log.error("Missing location of configuration information");
@@ -158,6 +161,10 @@ public class OpcUaServer {
             if (sourceOpt != null) {
                 configMap.put(OpcUaSource.VANTIQ_SOURCENAME, sourceOpt);
             }
+            if (tokenOpt != null) {
+                configMap.put(OpcUaSource.VANTIQ_SOURCENAME, tokenOpt);
+            }
+
         }
         return configMap;
     }
