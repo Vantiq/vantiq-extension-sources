@@ -67,6 +67,7 @@ public class ExtensionWebSocketClient {
      * Used to signal that a source connection has been requested
      */
     CompletableFuture<Void> sourceRequested;
+    CompletableFuture<Void> authSuccess;
     /**
      * The data to be used for authentication. This will be either a {@link String} containing an authentication token or
      * a {@link Map} containing the username and password.
@@ -97,11 +98,8 @@ public class ExtensionWebSocketClient {
         webSocketFuture = new CompletableFuture<>();
         authRequested = new CompletableFuture<>();
         sourceRequested = new CompletableFuture<>();
+        authSuccess = new CompletableFuture<>();
 
-
-        // theoretical chain
-        // requires a CompletableFuture authRequested that is called
-        // authData would need to be saved to an Object on
 
         // When authRequested is completed by calling authenticate(), it will check if the WebSocket connection succeeded,
         // waiting if necessary.
@@ -128,30 +126,19 @@ public class ExtensionWebSocketClient {
                         }
                 );
 
-        // When sourceRequested is completed by calling connectToSource(), it will check if the WebSocket authentication
-        // succeeded, waiting if necessary.
-        // If the authentication succeeded, then it will create a new Future that will be completed upon receiving a
-        // configuration response. If the authentication failed, then it will return a Future with the value false.
-        sourceFuture = sourceRequested
-                .thenApplyAsync(
-                        (unused) -> {
-                            try {
-                                return authFuture.get();
-                            }
-                            catch (Exception e) {
-                                log.error("Error waiting for WebSocket connection", e);
-                                return false;
-                            }
-                        }
-                ).thenComposeAsync(
+        // If authentication succeeded, become a Future that will be set upon succeed or failure of a source connection
+        // If authentication failed, complete as false in order to propagate the failure
+        sourceFuture = authFuture.thenComposeAsync(
                         (success) -> {
                             if (success) {
-                                doConnectionToSource();
-                                return new CompletableFuture<>();
+                                return new CompletableFuture<Boolean>();
                             }
                             return CompletableFuture.completedFuture(false);
                         }
                 );
+        
+        // Try to connect to source once both it has been requested and authentication has succeeded
+        sourceRequested.runAfterBoth(authSuccess, () -> doConnectionToSource());
     }
 
     /**
@@ -168,9 +155,35 @@ public class ExtensionWebSocketClient {
                     .readTimeout(0, TimeUnit.MILLISECONDS)
                     .writeTimeout(0, TimeUnit.MILLISECONDS)
                     .build();
-            WebSocketCall.create(client, new Request.Builder().url(url).build()).enqueue(listener);
+            WebSocketCall.create(client, new Request.Builder()
+                    .url(validifyUrl(url))
+                    .build()).enqueue(listener);
         }
         return webSocketFuture;
+    }
+    
+    private String validifyUrl(String url) {
+        // Ensure prepended by wss:// and not http:// or https://
+        if (url.startsWith("http://")) {
+            url.substring("http://".length(), url.length());
+        }
+        if (url.startsWith("https://")) {
+            url.substring("https://".length(), url.length());
+        }
+        if (!url.startsWith("ws://") && !url.startsWith("wss://")) {
+            url = "wss://" + url;
+        }
+        
+        // Ensure it ends with /api/v{version number}/wsock/websocket
+        if (!url.matches(".*/api/v[0-9]+/wsock/websocket")) {
+         // Sometimes generic urls end with a '/' already, so we only want to add one if it does not already exist
+            if (!url.endsWith("/")) { 
+                url = url + "/";
+            }
+            url = url + "api/v1/wsock/websocket";
+        }
+        
+        return url;
     }
 
     /**
