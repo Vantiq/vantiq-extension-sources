@@ -5,8 +5,10 @@ package io.vantiq.extsrc.udp;
 
 import io.vantiq.extjsdk.*;
 
-import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.dataformat.csv.CsvMapper;
+import com.fasterxml.jackson.dataformat.csv.CsvParser;
+import com.fasterxml.jackson.dataformat.csv.CsvSchema;
 import com.fasterxml.jackson.dataformat.xml.XmlMapper;
 import com.fasterxml.jackson.dataformat.xml.deser.FromXmlParser;
 
@@ -18,11 +20,9 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.regex.MatchResult;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import javax.xml.stream.XMLInputFactory;
 
 /**
  * This class is a customizable handler that will convert UDP messages to a Notification message to a Vantiq deployment.
@@ -95,6 +95,8 @@ import javax.xml.stream.XMLInputFactory;
  *      <li>{@code passXmlRootNameIn}: Optional. Specifies the location to which the name of the root element should
  *                          be placed. Does nothing if {@code expectXMLIn} is not set to {@code true}. 
  *                          Default is {@code null}.</li>
+ *      <li>{@code expectCsvIn}: Optional. Specifies that the expected UDP data will be in CSV format. Expects that the
+ *                          data will use a header specifying the name of each object. Default is {@code false}.</li>
  * </ul>
  */
 public class UDPNotificationHandler extends Handler<DatagramPacket>{
@@ -103,10 +105,6 @@ public class UDPNotificationHandler extends Handler<DatagramPacket>{
      * configuration document.
      */
     private MapTransformer transformer = null;
-    /**
-     * The {@code incoming} section of the source configuration document.
-     */
-    private Map incoming;
     /**
      * The {@link ExtensionWebSocketClient} for the source this handler is associated with. Used to send the message
      * to the source.
@@ -127,10 +125,11 @@ public class UDPNotificationHandler extends Handler<DatagramPacket>{
     private ObjectMapper mapper = new ObjectMapper();
     private boolean expectingXml = false;
     private String xmlRootLoc = null;
+    private boolean expectingCsv = false;
     private String bytesLocation = null;
     private boolean passingPureMap = false;
     private boolean passingUnspecified = false;
-    private Pattern regexPattern = null; // TODO create from options
+    private Pattern regexPattern = null;
     private String[] patternLocations = null;
 
     /**
@@ -140,20 +139,23 @@ public class UDPNotificationHandler extends Handler<DatagramPacket>{
      * @param client        The {@link ExtensionWebSocketClient} through which data will be sent
      */
     public UDPNotificationHandler(Map incoming, ExtensionWebSocketClient client) {
-        this.incoming = incoming;
         this.client = client;
         if (incoming.get("passRecAddress") instanceof String) {
             recAddressKey = (String) incoming.get("passRecAddress");
         }
-        if (this.incoming.get("passRecPort") instanceof String) {
+        if (incoming.get("passRecPort") instanceof String) {
             recPortKey = (String) incoming.get("passRecPort");
         }
         if (incoming.get("expectXMLIn") instanceof Boolean && (boolean) incoming.get("expectXMLIn")) {
             expectingXml = true;
             mapper = new XmlMapper();
         }
-        if (incoming.get("expectXMLIn") instanceof String) {
+        if (incoming.get("passXmlRootNameIn") instanceof String) {
             xmlRootLoc = (String) incoming.get("expectXMLIn");
+        }
+        if (incoming.get("expectCsvIn") instanceof Boolean && (boolean) incoming.get("expectCsvIn")) {
+            expectingCsv = true;
+            mapper = new CsvMapper().enable(CsvParser.Feature.WRAP_AS_ARRAY);
         }
         if (incoming.get("passBytesInAs") instanceof String) {
             bytesLocation = (String) incoming.get("passBytesInAs");
@@ -221,10 +223,21 @@ public class UDPNotificationHandler extends Handler<DatagramPacket>{
     public void handleMessage(DatagramPacket packet) {
         Map receivedMsg = null;
         Map<String,Object> sendMsg = new LinkedHashMap<>();
-        if (bytesLocation != null) {
-            
+        if (bytesLocation != null || regexPattern != null) {
+            // None of the parsable formats. 
         }
-        else {
+        else if (expectingCsv) {
+            try  {
+                List<Object> csv = mapper.readerFor(List.class).with(CsvSchema.emptySchema().withHeader())
+                        .readValue(packet.getData());
+                client.sendNotification(csv);
+            }
+            catch (Exception e){
+                log.warn("Failed to interpret UDP message as Csv. Most likely the data was not sent as Csv.", e);
+            }
+            return;
+        }
+        else{
             try {
                 receivedMsg = mapper.readValue(packet.getData(), Map.class);
             } 
@@ -241,11 +254,11 @@ public class UDPNotificationHandler extends Handler<DatagramPacket>{
         
 
         // Transforms the message as requested by the Configuration document
-        if (bytesLocation != null) {
+        if (regexPattern != null) {
+            sendMsg = getRegexResults(new String(packet.getData()));
+        }
+        else if (bytesLocation != null) {
             MapTransformer.createTransformVal(sendMsg, bytesLocation, new String(packet.getData()));
-            if (regexPattern != null) {
-                sendMsg = getRegexResults(new String(packet.getData()));
-            }
         }
         else if (passingPureMap) {
             sendMsg = receivedMsg;

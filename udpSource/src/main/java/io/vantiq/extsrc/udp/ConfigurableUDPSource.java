@@ -167,6 +167,8 @@ import org.slf4j.LoggerFactory;
  *      <li>{@code passXmlRootNameIn}: Optional. Specifies the location to which the name of the root element should
  *                          be placed. Does nothing if {@code expectXMLIn} is not set to {@code true}. 
  *                          Default is {@code null}.</li>
+ *      <li>{@code expectCsvIn}: Optional. Specifies that the expected UDP data will be in CSV format. Expects that the
+ *                          data will use a header specifying the name of each object. Default is {@code false}.</li>
  * </ul>
  */
 public class ConfigurableUDPSource {
@@ -657,8 +659,7 @@ public class ConfigurableUDPSource {
         try {
             config = mapper.readValue(configFile, Map.class);
         } catch (Exception e) {
-            log.error("Could not find valid server config file. Expected location: '" + configFile.getAbsolutePath() + "'");
-            log.debug("Error was: " + e.getClass(), e);
+            log.error("Could not find valid server config file. Expected location: '" + configFile.getAbsolutePath() + "'", e);
         }
 
         return config;

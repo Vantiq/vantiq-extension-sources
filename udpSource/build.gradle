@@ -39,9 +39,9 @@ dependencies {
     compile 'ch.qos.logback:logback-classic:1.2.3'
     
     compile "com.fasterxml.jackson.core:jackson-databind:2.9.5"
-    compile "com.fasterxml.jackson.core:jackson-annotations:2.9.5"
-    compile "com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.9.5"
-    compile "com.fasterxml.jackson.dataformat:jackson-dataformat-xml:2.9.5"	//XML parssing
+    compile "com.fasterxml.jackson.dataformat:jackson-dataformat-xml:2.9.5"	//XML parsing
+    compile "com.fasterxml.jackson.dataformat:jackson-dataformat-csv:2.9.5"
+    
 
     // This dependency is used internally, and not exposed to consumers on their own compile classpath.
     implementation 'com.google.guava:guava:23.0'
