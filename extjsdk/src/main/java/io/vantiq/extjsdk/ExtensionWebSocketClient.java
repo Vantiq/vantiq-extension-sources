@@ -278,7 +278,9 @@ public class ExtensionWebSocketClient {
         log.trace("Sending message");
         try {
             byte[] bytes = mapper.writeValueAsBytes(obj);
-            this.webSocket.sendMessage(RequestBody.create(WebSocket.BINARY, bytes));
+            synchronized (this) {
+                this.webSocket.sendMessage(RequestBody.create(WebSocket.BINARY, bytes));
+            }
         }
         catch (Exception e) {
             log.warn("Error sending to WebSocket", e);
