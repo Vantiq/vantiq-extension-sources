@@ -83,6 +83,15 @@ public class ExtensionWebSocketClient {
     public ExtensionWebSocketListener getListener() {
         return listener;
     }
+    
+    /**
+     * Obtain the name of the source this client is assigned to.
+     * 
+     * @return  The name of the source this client is assigned to.
+     */
+    public String getSourceName() {
+        return sourceName;
+    }
 
     /**
      * Creates an {@link ExtensionWebSocketClient} that will connect to the source {@code sourceName}.
@@ -165,10 +174,10 @@ public class ExtensionWebSocketClient {
     private String validifyUrl(String url) {
         // Ensure prepended by wss:// and not http:// or https://
         if (url.startsWith("http://")) {
-            url.substring("http://".length(), url.length());
+            url = url.substring("http://".length());
         }
-        if (url.startsWith("https://")) {
-            url.substring("https://".length(), url.length());
+        else if (url.startsWith("https://")) {
+            url = url.substring("https://".length());
         }
         if (!url.startsWith("ws://") && !url.startsWith("wss://")) {
             url = "wss://" + url;
@@ -438,7 +447,6 @@ public class ExtensionWebSocketClient {
         sourceFuture.obtrudeValue(false);
         initializeFutures();
         log.info("Websocket closed for source " + sourceName);
-        sourceName = null;
     }
 
     /**
