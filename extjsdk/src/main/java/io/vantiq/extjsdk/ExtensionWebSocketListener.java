@@ -51,6 +51,10 @@ public class ExtensionWebSocketListener implements WebSocketListener{
      */
     private Handler<Map> authHandler = null;
     /**
+     * {@link Handler} that handles reconnect messages. Set by {@link #setReconnectHandler}
+     */
+    private Handler<Map> reconnectHandler = null;
+    /**
      * {@link Handler} that handles every message received by this listener, regardless of type or situation. When set
      * this handler keeps all other handlers and related logic from firing. Setting this before a successful connection
      * will stop the connected {@link ExtensionWebSocketClient} from functioning correctly by keeping it from recording
@@ -234,7 +238,7 @@ public class ExtensionWebSocketListener implements WebSocketListener{
      * and the result of the authentication attempt.
      * <p>
      * The handler will receive a {@link Map} of the message received. If the authentication was successful,
-     * then message.status.code() should equal 200. On success, the most significant part is msg.body['userInfo'] which
+     * then message.status should equal 200. On success, the most significant part is msg.body['userInfo'] which
      * is a Map of various data about the user you logged in as. On failure, msg.body will be an Object containing
      * error messages.
      *
@@ -242,6 +246,19 @@ public class ExtensionWebSocketListener implements WebSocketListener{
      */
     public void setAuthHandler(Handler<Map> authHandler) {
         this.authHandler = authHandler;
+    }
+    /**
+     * Set the {@link Handler} that will deal with any reconnect messages received. These will occur when an event 
+     * happens on the Vantiq servers that requires the source to shut down. To restart the connection, just call 
+     * {@link ExtensionWebSocketClient#connectToSource}, or have the client set to automatically reconnect with 
+     * {@link ExtensionWebSocketClient#setAutoReconnect}.
+     * <p>
+     * The handler will receive a {@link Map} of the message received. 
+     * 
+     * @param reconnectHandler
+     */
+    public void setReconnectHandler(Handler<Map> reconnectHandler) {
+        this.reconnectHandler = reconnectHandler;
     }
     /**
      * Set a {@link Handler} for all messages received. When set
@@ -370,6 +387,21 @@ public class ExtensionWebSocketListener implements WebSocketListener{
                         log.warn("Query received with no handler set");
                     }
                 }
+                else if (msg.get("op").equals(ExtensionServiceMessage.OP_RECONNECT_REQUIRED)) {
+                    client.sourceHasDisconnected(); // Resets to pre source connection state
+                    if (this.reconnectHandler != null) {
+                        this.reconnectHandler.handleMessage(msg);
+                    }
+                    if (client.autoReconnect) {
+                        log.info("Automatically attempting to reconnect to source '" + client.getSourceName() + "'");
+                        client.connectToSource();
+                    }
+                    // Warn when cannot reconnect or know that the connection has failed 
+                    if (!client.autoReconnect && this.reconnectHandler == null) {
+                        log.warn("Reconnect received with no handler set and no autoconnect. Can no longer "
+                                + "communicate with source '" + client.getSourceName() + "'");
+                    }
+                }
                 else {
                     log.warn("ExtensionServiceMessage with unknown/unexpected op '" + msg.get("op") + "'");
                 }
@@ -386,7 +418,7 @@ public class ExtensionWebSocketListener implements WebSocketListener{
                 }
             }
             else {
-                log.warn("ExtensionServiceMessage with unknown/unexpected op '" + msg.get("op") + "'");
+                log.warn("ExtensionServiceMessage received when not connected");
             }
         }
     }
