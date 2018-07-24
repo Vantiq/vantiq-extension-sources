@@ -171,7 +171,7 @@ public class ExtensionWebSocketClient {
         return webSocketFuture;
     }
     
-    private String validifyUrl(String url) {
+    protected String validifyUrl(String url) {
         // Ensure prepended by wss:// and not http:// or https://
         if (url.startsWith("http://")) {
             url = url.substring("http://".length());
@@ -296,7 +296,7 @@ public class ExtensionWebSocketClient {
         }
     }
 
-    private void doAuthentication() {
+    protected void doAuthentication() {
         Map<String, Object> authMsg = new LinkedHashMap<>();
         // If this is username and password combo, use authenticate op
         if (authData instanceof Map) {
@@ -365,7 +365,7 @@ public class ExtensionWebSocketClient {
         return authFuture;
     }
 
-    private void doConnectionToSource() {
+    protected void doConnectionToSource() {
         ExtensionServiceMessage connectMessage = new ExtensionServiceMessage("");
         connectMessage.connectExtension(ExtensionServiceMessage.RESOURCE_NAME_SOURCES, sourceName, null);
         send(connectMessage);
