@@ -1,0 +1,4 @@
+rootProject.name = 'vantiq-extension-source'
+include 'opcuaSource'
+include 'extjsdk'
+include 'udpSource'
