@@ -23,6 +23,7 @@ public class ExtensionServiceMessage {
     public static final String OP_PUBLISH = "publish";
     public static final String OP_NOTIFICATION = "notification";
     public static final String OP_QUERY = "query";
+    public static final String OP_RECONNECT_REQUIRED = "reconnectRequired";
     public static final MediaType CONTENT_TYPE_JSON = MediaType.parse("application/json; charset=utf-8");
     public static final String RETURN_HEADER = "REPLY_ADDR_HEADER";
     public static final String REPLY_ADDRESS = "X-Reply-Address";
