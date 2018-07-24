@@ -318,6 +318,8 @@ public class ExtensionWebSocketListener implements WebSocketListener{
                 // Is an error message before successful connection to the target source
                 // This is most likely a failure related to a source connection request
                 if (!client.isConnected() && (Integer) msg.get("status") >= 300) {
+                    log.warn("Error occurred attempting to connect to source " + client.getSourceName());
+                    log.debug("Error was: "+ msg);
                     client.sourceFuture.complete(false);
                 }
                 if (this.httpHandler != null) {
@@ -336,6 +338,7 @@ public class ExtensionWebSocketListener implements WebSocketListener{
                 }
                 else {
                     client.authFuture.complete(false);
+                    log.warn("Error occurred attempting to authenticate");
                 }
                 if (authHandler != null) {
                     this.authHandler.handleMessage(msg);
