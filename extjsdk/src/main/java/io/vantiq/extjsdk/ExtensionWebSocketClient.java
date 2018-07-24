@@ -115,15 +115,9 @@ public class ExtensionWebSocketClient {
         // If the connection succeeded, then it will create a new Future that will be completed upon receiving an
         // authentication request. If the connection failed, then it will return a Future with the value false.
         authFuture = authRequested
-                .thenApplyAsync(
-                        (unused) -> {
-                            try {
-                                return webSocketFuture.get();
-                            }
-                            catch (Exception e) {
-                                log.error("Error waiting for WebSocket connection", e);
-                                return false;
-                            }
+                .thenCombineAsync(webSocketFuture, 
+                        (unused, success) -> {
+                            return success;
                         }
                 ).thenComposeAsync(
                         (success) -> {
