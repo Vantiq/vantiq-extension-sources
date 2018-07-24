@@ -68,6 +68,7 @@ public class ExtensionWebSocketClient {
      */
     CompletableFuture<Void> sourceRequested;
     CompletableFuture<Void> authSuccess;
+    boolean autoReconnect = false;
     /**
      * The data to be used for authentication. This will be either a {@link String} containing an authentication token or
      * a {@link Map} containing the username and password.
@@ -389,6 +390,31 @@ public class ExtensionWebSocketClient {
         }
         return sourceFuture;
     }
+    
+    /**
+     * Signals that this is no longer connected to the source, and sends a Connect message if autoreconnect has 
+     * been set.
+     */
+    public void sourceReconnection() {
+        sourceFuture.obtrudeValue(false);
+        if (autoReconnect) {
+            doConnectionToSource();
+        }
+        else {
+            sourceRequested = new CompletableFuture<Void>();
+            sourceRequested.thenAccept((NULL) -> doConnectionToSource()); 
+        }
+    }
+    
+    /**
+     * Specify if the client should automatically reconnect to the source upon receipt of a Reconnect message. Initially
+     * set to {@code false}.
+     * 
+     * @param value Should the client automatically reconnect
+     */
+    public void setAutoReconnect(boolean value) {
+        autoReconnect = value;
+    }
 
     /**
      * Check if the WebSocket connection is open
@@ -555,6 +581,19 @@ public class ExtensionWebSocketClient {
      */
     public void setAuthHandler(Handler<Map> authHandler) {
         this.listener.setAuthHandler(authHandler);
+    }
+    /**
+     * Set the {@link Handler} that will deal with any reconnect messages received. These will occur when an event 
+     * happens on the Vantiq servers that requires the source to shut down. To restart the connection, just call 
+     * {@link ExtensionWebSocketClient#connectToSource}, or have the client set to automatically reconnect with 
+     * {@link ExtensionWebSocketClient#setAutoReconnect}.
+     * <p>
+     * The handler will receive a {@link Map} of the message received. 
+     * 
+     * @param reconnectHandler
+     */
+    public void setReconnectHandler(Handler<Map> reconnectHandler) {
+        this.listener.setReconnectHandler(reconnectHandler);
     }
     /**
      * Set a {@link Handler} for all messages received. When set
