@@ -83,8 +83,7 @@ public class TestExtensionWebSocketClient {
         client.webSocketFuture.complete(true);
         
         client.authenticate(user, pass);
-        // do twice because the initial attempt is asynchronous, so the data will not be ready for the asserts 
-        client.authenticate(user, pass);  
+        Thread.sleep(100); // Wait for asynchronous action to complete 
         
         assert socket.compareData("object.username", user);
         assert socket.compareData("object.password", pass);
@@ -98,9 +97,7 @@ public class TestExtensionWebSocketClient {
         
         String token = "ajeoslvkencmvkejshegwt=";
         client.authenticate(token);
-        
-        // do twice because the initial attempt is asynchronous, so the data will not be ready for the asserts 
-        client.authenticate(token);  
+        Thread.sleep(15); // Wait for asynchronous action to complete 
         
         assert socket.compareData("object", token);
         assert socket.compareData("op", "validate");
@@ -113,8 +110,7 @@ public class TestExtensionWebSocketClient {
         client.authSuccess.complete(null);
         
         client.connectToSource();
-        // do twice because the initial attempt is asynchronous, so the data will not be ready for the asserts 
-        client.connectToSource();  
+        Thread.sleep(10); // Wait for asynchronous action to complete
         
         assert socket.compareData("op", ExtensionServiceMessage.OP_CONNECT_EXTENSION);
         assert socket.compareData("resourceName", ExtensionServiceMessage.RESOURCE_NAME_SOURCES);
@@ -177,16 +173,6 @@ public class TestExtensionWebSocketClient {
         @Override
         public String validifyUrl(String url) {
             return super.validifyUrl(url);
-        }
-        
-        @Override
-        public void doAuthentication() {
-            super.doAuthentication();
-        }
-        
-        @Override
-        public void doConnectionToSource() {
-            super.doConnectionToSource();
         }
     }
     
