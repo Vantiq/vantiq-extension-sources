@@ -101,6 +101,13 @@ import org.slf4j.LoggerFactory;
  *                          </ul>
  *      <li>{@code sendXMLRoot}: Optional. The name of the root element for the generated XML object. When set this will
  *                          send the entire object received as XML. Default is {@code null}.
+ *      <li>{@code passCsvOutFrom}: Optional. A string specifying the location of an array of objects that will be 
+ *                          converted into CSV format. Requires {@code useCsvSchema} to be set. Default is {@code null}
+ *                          </li>
+ *      <li>{@code useCsvSchema}: Optional. Defines the values that will be sent as CSV. Can be either A) an array of
+ *                          the names of the values that will be taken from the objects and placed in CSV, or B) the 
+ *                          location in which the previous will be for *all* Publishes. The values in the array will 
+ *                          be placed as the header for the CSV document. Default is {@code null}</li>
  * </ul>
  * <br>
  * Options for Notifications (a.k.a. incoming messages) are as follows. If no options are valid then no Notifications will be sent,

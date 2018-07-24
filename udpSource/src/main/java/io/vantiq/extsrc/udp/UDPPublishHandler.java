@@ -7,8 +7,12 @@ package io.vantiq.extsrc.udp;
 
 import io.vantiq.extjsdk.Handler;
 
+import com.fasterxml.jackson.core.JsonGenerator.Feature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
+import com.fasterxml.jackson.dataformat.csv.CsvGenerator;
+import com.fasterxml.jackson.dataformat.csv.CsvMapper;
+import com.fasterxml.jackson.dataformat.csv.CsvSchema;
 import com.fasterxml.jackson.dataformat.xml.XmlMapper;
 
 import org.slf4j.Logger;
@@ -71,7 +75,14 @@ import java.util.MissingFormatArgumentException;
  *                                      the "Using" keyword, for purposes of readability.</li>
  *                          </ul>
  *      <li>{@code sendXMLRoot}: Optional. The name of the root element for the generated XML object. When set this will
- *                          send the output as XML instead of JSON. Default is {@code null}.
+ *                          send the output as XML instead of JSON. Default is {@code null}.</li>
+ *      <li>{@code passCsvOutFrom}: Optional. A string specifying the location of an array of objects that will be 
+ *                          converted into CSV format. Requires {@code useCsvSchema} to be set. Default is {@code null}
+ *                          </li>
+ *      <li>{@code useCsvSchema}: Optional. Defines the values that will be sent as CSV. Can be either A) an array of
+ *                          the names of the values that will be taken from the objects and placed in CSV, or B) the 
+ *                          location in which the previous will be for *all* Publishes. The values in the array will 
+ *                          be placed as the header for the CSV document. Default is {@code null}</li>
  * </ul>
  */
 public class UDPPublishHandler extends Handler<Map>{
@@ -114,6 +125,9 @@ public class UDPPublishHandler extends Handler<Map>{
     private StringBuilder formattedString = null;
     private String altPatternLocation = null;
     private String altLocations = null;
+    private String csvSource = null;
+    private CsvSchema csvSchema = null;
+    private String csvSchemaLocation = null;
     
     /**
      * Sets up the handler based on the configuration document passed
@@ -166,6 +180,24 @@ public class UDPPublishHandler extends Handler<Map>{
                 }
             }
         }
+        if (outgoing.get("passCsvOutFrom") instanceof String && outgoing.get("useCsvSchema") != null) {
+            csvSource = (String) outgoing.get("passCsvOutFrom");
+            if (outgoing.get("useCsvSchema") instanceof List) {
+                CsvSchema.Builder csvSchemaBuilder = CsvSchema.builder();
+                for (Object col : (List) outgoing.get("useCsvSchema")) {
+                    if (col instanceof String) {
+                        csvSchemaBuilder.addColumn((String) col);
+                    }
+                }
+                csvSchema = csvSchemaBuilder.setUseHeader(true).build();
+            }
+            else if (outgoing.get("useCsvSchema") instanceof String) {
+                csvSchemaLocation = (String) outgoing.get("useCsvSchema");
+            }
+            else { // We need either a schema or location for a potential schema
+                csvSource = null;
+            }
+        }
 
         if (transforms != null && passingPureMap) {
             transformer = new MapTransformer(transforms);
@@ -198,6 +230,10 @@ public class UDPPublishHandler extends Handler<Map>{
         // Translate the message as requested in the Configuration document
         if (formatLocations != null) {
             sendBytes = getFormattedOutput(receivedMsg);
+        }
+        else if (csvSource != null) {
+            String str = buildCsv(receivedMsg);
+            sendBytes = str.getBytes();
         }
         else if (bytesLocation != null) {
             sendBytes = ((String)receivedMsg.get(bytesLocation)).getBytes();
@@ -238,6 +274,34 @@ public class UDPPublishHandler extends Handler<Map>{
         catch (Exception e) {
             log.warn("Failed trying to translate and send the message.", e);
         }
+    }
+    
+    private String buildCsv(Map<String,Object> map) {
+        String out = null;
+        
+        try {
+            CsvMapper mapper = new CsvMapper();
+            mapper.enable(CsvGenerator.Feature.STRICT_CHECK_FOR_QUOTING).enable(Feature.IGNORE_UNKNOWN);
+            if (csvSchemaLocation != null && map.get(csvSchemaLocation) instanceof List) {
+                CsvSchema.Builder csvSchemaBuilder = CsvSchema.builder();
+                for (Object col : (List) outgoing.get(csvSchemaLocation)) {
+                    if (col instanceof String) {
+                        csvSchemaBuilder.addColumn((String) col);
+                    }
+                }
+                csvSchema = csvSchemaBuilder.setUseHeader(true).build();
+            }
+            else if (csvSchemaLocation != null) { // A location is set but no valid schema given
+                return null;
+            }
+            out = mapper.writer().with(csvSchema).writeValueAsString(map.get(csvSource));
+        }
+        catch (Exception e) {
+            log.warn("Failed to create CSV message", e);
+        }
+        
+        
+        return out;
     }
     
     private byte[] getFormattedOutput(Map receivedData) {
