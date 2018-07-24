@@ -26,6 +26,7 @@ public class ExtensionServiceMessage {
     public static final MediaType CONTENT_TYPE_JSON = MediaType.parse("application/json; charset=utf-8");
     public static final String RETURN_HEADER = "REPLY_ADDR_HEADER";
     public static final String REPLY_ADDRESS = "X-Reply-Address";
+    public static final String PROPERTY_MESSAGE_HEADERS = "messageHeaders";
 
     public String address;
     public Map    messageHeaders;
