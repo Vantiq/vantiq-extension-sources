@@ -10,6 +10,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.function.Supplier;
 
 import org.junit.After;
 import org.junit.Before;
@@ -26,6 +27,8 @@ public class TestExtensionWebSocketClient {
     String srcName;
     String queryAddress;
     FalseWebSocket socket;
+    
+    int WAIT_PERIOD = 10; // Milliseconds to wait between checks on async actions
     
     @Before
     public void setup() {
@@ -83,8 +86,8 @@ public class TestExtensionWebSocketClient {
         client.webSocketFuture.complete(true);
         
         client.authenticate(user, pass);
-        // do twice because the initial attempt is asynchronous, so the data will not be ready for the asserts 
-        client.authenticate(user, pass);  
+        // Wait up to 5 seconds for asynchronous action to complete
+        waitUntilTrue(5 * 1000, () -> socket.receivedMessage());
         
         assert socket.compareData("object.username", user);
         assert socket.compareData("object.password", pass);
@@ -98,9 +101,8 @@ public class TestExtensionWebSocketClient {
         
         String token = "ajeoslvkencmvkejshegwt=";
         client.authenticate(token);
-        
-        // do twice because the initial attempt is asynchronous, so the data will not be ready for the asserts 
-        client.authenticate(token);  
+        // Wait up to 5 seconds for asynchronous action to complete
+        waitUntilTrue(5 * 1000, () -> socket.receivedMessage());
         
         assert socket.compareData("object", token);
         assert socket.compareData("op", "validate");
@@ -113,8 +115,8 @@ public class TestExtensionWebSocketClient {
         client.authSuccess.complete(null);
         
         client.connectToSource();
-        // do twice because the initial attempt is asynchronous, so the data will not be ready for the asserts 
-        client.connectToSource();  
+        // Wait up to 5 seconds for asynchronous action to complete
+        waitUntilTrue(5 * 1000, () -> socket.receivedMessage());
         
         assert socket.compareData("op", ExtensionServiceMessage.OP_CONNECT_EXTENSION);
         assert socket.compareData("resourceName", ExtensionServiceMessage.RESOURCE_NAME_SOURCES);
@@ -146,7 +148,7 @@ public class TestExtensionWebSocketClient {
         
         client.sendQueryResponse(200, queryAddress, queryData);
         
-     // The ArrayList creation is necessary since JSON interprets arrays as ArrayList
+        // The ArrayList creation is necessary since JSON interprets arrays as ArrayList
         assert socket.compareData("body", new ArrayList<Map>(Arrays.asList(queryData)));
         assert socket.compareData("headers." + ExtensionServiceMessage.REPLY_ADDRESS, queryAddress);
         assert socket.compareData("status", 200);
@@ -168,6 +170,22 @@ public class TestExtensionWebSocketClient {
         assert socket.compareData("body.messageCode", errorCode);
     }
     
+    
+    public void waitUntilTrue(int msTimeout, Supplier<Boolean> condition) {
+        for (int i = 0; i < msTimeout / WAIT_PERIOD; i++) {
+            if (condition.get() == true) {
+                return;
+            }
+            
+            try {
+                Thread.sleep(WAIT_PERIOD);
+            } catch (InterruptedException e) {
+                // TODO Auto-generated catch block
+                e.printStackTrace();
+            }
+        }
+    }
+    
     // Merely makes several private functions public
     private class OpenExtensionWebSocketClient extends ExtensionWebSocketClient{
         public OpenExtensionWebSocketClient(String sourceName) {
@@ -178,16 +196,6 @@ public class TestExtensionWebSocketClient {
         public String validifyUrl(String url) {
             return super.validifyUrl(url);
         }
-        
-        @Override
-        public void doAuthentication() {
-            super.doAuthentication();
-        }
-        
-        @Override
-        public void doConnectionToSource() {
-            super.doConnectionToSource();
-        }
     }
     
     
@@ -196,6 +204,7 @@ public class TestExtensionWebSocketClient {
         
         RequestBody lastBody = null;
         Map<String,Object> lastData = null;
+        boolean messageReceived = false;
         
         
         @Override
@@ -214,11 +223,17 @@ public class TestExtensionWebSocketClient {
                 // TODO Auto-generated catch block
                 e.printStackTrace();
             }
+            
+            messageReceived = true;
         }
         
         public boolean compareData(String key, Object expectedVal) {
             Object actualVal = getTransformVal(lastData, key);
             return expectedVal.equals(actualVal);
+        }
+        
+        public boolean receivedMessage() {
+            return messageReceived;
         }
 
         @Override
