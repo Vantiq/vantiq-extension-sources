@@ -335,6 +335,39 @@ public class ConfigurableUDPSource {
                     || incoming.get("transformations") instanceof List);
         }
     };
+    
+    static Handler<Map> UDPReconnectHandler = new Handler<Map>() {
+
+        @Override
+        public void handleMessage(Map message) {
+            String sourceName = (String) message.get("resourceId");
+            ExtensionWebSocketClient client = clients.get(sourceName);
+
+            // Disassociate the source from the socket
+            for (Map.Entry<DatagramSocket,List<String>> entry : udpSocketToSources.entrySet()) {
+                synchronized (this) { // Don't want to edit while another is adding to or removing from UDPSocket
+                    List<String> list = entry.getValue();
+                    if (list.contains(client)) {
+                        list.remove(client);
+                        if (list.isEmpty()) {
+                            // Get rid of the socket if it's the only one left
+                            DatagramSocket socket = entry.getKey();
+                            udpSocketToSources.remove(socket);
+                            socket.close();
+                        }
+                        
+                        break;
+                    }
+                }
+            }
+            // Clear the handlers associated with the source
+            notificationHandlers.remove(sourceName);
+            client.setPublishHandler(UDPDefaultPublish);
+            
+            client.connectToSource();
+        }
+        
+    };
 
     /**
      * Attempts to create a {@link DatagramSocket} on a given port and address. If successful it will create a
@@ -757,6 +790,7 @@ public class ConfigurableUDPSource {
             client.setPublishHandler(UDPDefaultPublish);
             client.setQueryHandler(UDPDefaultQuery);
             client.setConfigHandler(UDPConfig);
+            client.setReconnectHandler(UDPReconnectHandler);
 
             // Initiate the WebSocket connection, authentication, and source connection for the source
             CompletableFuture<Boolean> future;
