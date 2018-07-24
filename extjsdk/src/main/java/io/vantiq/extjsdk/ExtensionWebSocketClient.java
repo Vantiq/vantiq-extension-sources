@@ -385,7 +385,7 @@ public class ExtensionWebSocketClient {
         else if (!isConnected() && isAuthed()) {
             // We could instead recreate sourceFuture, but this way anyone holding onto the original will still
             // receive the results
-            doAuthentication();
+            doConnectionToSource();
         }
         return sourceFuture;
     }
