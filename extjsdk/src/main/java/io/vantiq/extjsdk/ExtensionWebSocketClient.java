@@ -115,15 +115,9 @@ public class ExtensionWebSocketClient {
         // If the connection succeeded, then it will create a new Future that will be completed upon receiving an
         // authentication request. If the connection failed, then it will return a Future with the value false.
         authFuture = authRequested
-                .thenApplyAsync(
-                        (unused) -> {
-                            try {
-                                return webSocketFuture.get();
-                            }
-                            catch (Exception e) {
-                                log.error("Error waiting for WebSocket connection", e);
-                                return false;
-                            }
+                .thenCombineAsync(webSocketFuture, 
+                        (unused, success) -> {
+                            return success;
                         }
                 ).thenComposeAsync(
                         (success) -> {
@@ -171,7 +165,7 @@ public class ExtensionWebSocketClient {
         return webSocketFuture;
     }
     
-    private String validifyUrl(String url) {
+    protected String validifyUrl(String url) {
         // Ensure prepended by wss:// and not http:// or https://
         if (url.startsWith("http://")) {
             url = url.substring("http://".length());
@@ -296,7 +290,7 @@ public class ExtensionWebSocketClient {
         }
     }
 
-    private void doAuthentication() {
+    protected void doAuthentication() {
         Map<String, Object> authMsg = new LinkedHashMap<>();
         // If this is username and password combo, use authenticate op
         if (authData instanceof Map) {
@@ -365,7 +359,7 @@ public class ExtensionWebSocketClient {
         return authFuture;
     }
 
-    private void doConnectionToSource() {
+    protected void doConnectionToSource() {
         ExtensionServiceMessage connectMessage = new ExtensionServiceMessage("");
         connectMessage.connectExtension(ExtensionServiceMessage.RESOURCE_NAME_SOURCES, sourceName, null);
         send(connectMessage);
@@ -391,7 +385,7 @@ public class ExtensionWebSocketClient {
         else if (!isConnected() && isAuthed()) {
             // We could instead recreate sourceFuture, but this way anyone holding onto the original will still
             // receive the results
-            doAuthentication();
+            doConnectionToSource();
         }
         return sourceFuture;
     }
