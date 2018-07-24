@@ -392,18 +392,15 @@ public class ExtensionWebSocketClient {
     }
     
     /**
-     * Signals that this is no longer connected to the source, and sends a Connect message if autoreconnect has 
-     * been set.
+     * Signals that this is no longer connected to the source, and resets to before a source connection has been 
+     * requested.
      */
-    public void sourceReconnection() {
+    public void sourceHasDisconnected() {
         sourceFuture.obtrudeValue(false);
-        if (autoReconnect) {
-            doConnectionToSource();
-        }
-        else {
-            sourceRequested = new CompletableFuture<Void>();
-            sourceRequested.thenAccept((NULL) -> doConnectionToSource()); 
-        }
+        
+        // Reset the asynchronous system 
+        sourceRequested = new CompletableFuture<Void>();
+        sourceRequested.thenAccept((NULL) -> doConnectionToSource()); 
     }
     
     /**

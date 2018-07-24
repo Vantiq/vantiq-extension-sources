@@ -388,17 +388,19 @@ public class ExtensionWebSocketListener implements WebSocketListener{
                     }
                 }
                 else if (msg.get("op").equals(ExtensionServiceMessage.OP_RECONNECT_REQUIRED)) {
+                    client.sourceHasDisconnected(); // Resets to pre source connection state
                     if (this.reconnectHandler != null) {
                         this.reconnectHandler.handleMessage(msg);
                     }
-                    else if (!client.autoReconnect) {
+                    if (client.autoReconnect) {
+                        log.info("Automatically attempting to reconnect to source '" + client.getSourceName() + "'");
+                        client.connectToSource();
+                    }
+                    // Warn when cannot reconnect or know that the connection has failed 
+                    if (!client.autoReconnect && this.reconnectHandler == null) {
                         log.warn("Reconnect received with no handler set and no autoconnect. Can no longer "
                                 + "communicate with source '" + client.getSourceName() + "'");
                     }
-                    if (client.autoReconnect) {
-                        log.info("Automatically attempting to reconnect to source '" + client.getSourceName() + "'");
-                    }
-                    client.sourceReconnection();
                 }
                 else {
                     log.warn("ExtensionServiceMessage with unknown/unexpected op '" + msg.get("op") + "'");
