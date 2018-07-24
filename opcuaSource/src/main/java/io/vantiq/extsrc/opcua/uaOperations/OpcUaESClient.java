@@ -143,8 +143,14 @@ public class OpcUaESClient {
 
     public CompletableFuture<Void> connectAsync() throws Exception {
         return CompletableFuture.runAsync(() -> {
-                    client.connect().join();
-                    connected = true;
+                    try {
+                        client.connect().join();
+                        connected = true;
+                    }
+                    catch (Throwable t) {
+                        log.error("Failed to connect to OPC: ", t);
+                        throw t;    // We'll rethrow this so that the future will complete (exceptionally)
+                    }
                 }
         );
     }
@@ -357,17 +363,35 @@ public class OpcUaESClient {
      * Errors result in OpcExtRuntimeExceptions.
      *
      * @param namespaceURN The identity of the OPC UA namespace from which the read is to occur
-     * @param identifier   The node to be read
+     * @param identifier   The node to be read.  The identifier is assumed to be of type 's' (String).
      * @return the read value (as a Java Object).
      * @throws OpcExtRuntimeException wraps any errors returned by the server.  May also be thrown if the namespace is not found.
      */
 
     public Object readValue(String namespaceURN, String identifier) throws OpcExtRuntimeException {
+        return readValue(namespaceURN, identifier, "s");
+    }
+
+    /**
+     * Read a value from an OPC UA server.
+     * <p>
+     * This method reads the value attribute of a node via the connected OPC US server. Only reads of non-indexed data
+     * are supported (i.e.) one cannot read  some particular index in an array).
+     * The information necessary to read this value is specified by the parameters listed below.
+     * Errors result in OpcExtRuntimeExceptions.
+     *
+     * @param namespaceURN The identity of the OPC UA namespace from which the read is to occur
+     * @param identifier   The node to be read
+     * @param identifierType The (OPC) type of the identifier (i, s, g, b) (s/String is the default)
+     * @return the read value (as a Java Object).
+     * @throws OpcExtRuntimeException wraps any errors returned by the server.  May also be thrown if the namespace is not found.
+     */
+    public Object readValue(String namespaceURN, String identifier, String identifierType) throws OpcExtRuntimeException {
         UShort nsIndex = client.getNamespaceTable().getIndex(namespaceURN);
         if (nsIndex == null) {
             throw new OpcExtRuntimeException(ERROR_PREFIX + ".badNamespaceURN:  Namespace URN " + namespaceURN + " does not exist in the OPC server.");
         } else {
-            return readValue(nsIndex, identifier);
+            return readValue(nsIndex, identifier, identifierType);
         }
     }
 
@@ -385,8 +409,12 @@ public class OpcUaESClient {
      * @throws OpcExtRuntimeException wraps any errors returned by the server.
      */
     public Object readValue(UShort nsIndex, String identifier) throws OpcExtRuntimeException {
+        return readValue(nsIndex, identifier, "s");
+    }
+
+    public Object readValue(UShort nsIndex, String identifier, String identifierType) throws OpcExtRuntimeException {
         try {
-            VariableNode theNode = client.getAddressSpace().getVariableNode(new NodeId(nsIndex, identifier)).get();
+            VariableNode theNode = client.getAddressSpace().getVariableNode(constructNodeId(nsIndex, identifier, identifierType)).get();
             return theNode.readValue().get().getValue().getValue();
         } catch (Exception e) {
             throw new OpcExtRuntimeException(ERROR_PREFIX + ".unexpectedException: OPC UA Error", e);
@@ -467,24 +495,7 @@ public class OpcUaESClient {
                     if (ent.getValue().containsKey(CONFIG_MI_IDENTIFIER_TYPE)) {
                         nodeIdType = ent.getValue().get(CONFIG_MI_IDENTIFIER_TYPE);
                     }
-                    switch (nodeIdType) {
-                        case "s":
-                            nodeIdentifier = new NodeId(nsIndex, ent.getValue().get(CONFIG_MI_IDENTIFIER));
-                            break;
-                        case "i":
-                            nodeIdentifier = new NodeId(nsIndex, Integer.valueOf(ent.getValue().get(CONFIG_MI_IDENTIFIER)));
-                            break;
-                        case "g":
-                            nodeIdentifier = new NodeId(nsIndex, UUID.fromString(ent.getValue().get(CONFIG_MI_IDENTIFIER)));
-                            break;
-                        case "b":
-                            nodeIdentifier = new NodeId(nsIndex, new ByteString(ent.getValue().get(CONFIG_MI_IDENTIFIER).getBytes()));
-                            break;
-                        default:
-                            String errMsg = MessageFormatter.arrayFormat(ERROR_PREFIX + ".invalidMonitoredItemIdType: Monitored Item {} has provided an invalid {} property: {}.  It must be either s, i, g, or b",
-                                    new Object[]{ent.getKey(), CONFIG_MI_IDENTIFIER_TYPE, ent.getValue().get(CONFIG_MI_IDENTIFIER_TYPE)}).getMessage();
-                            throw new OpcExtRuntimeException(errMsg);
-                    }
+                    nodeIdentifier = constructNodeId(nsIndex, ent.getValue().get(CONFIG_MI_IDENTIFIER), nodeIdType);
                 }
                 ReadValueId readValueId = new ReadValueId(
                         nodeIdentifier,
@@ -539,6 +550,29 @@ public class OpcUaESClient {
                 subscription.getSubscriptionId(), item.getReadValueId().getNodeId().toParseableString(), value.getValue());
         subscriptionHandler.accept(item.getReadValueId().getNodeId().toParseableString(), value.getValue().getValue());
     }
+
+    private NodeId constructNodeId(UShort nsIndex, String identifier, String identifierType) throws OpcExtRuntimeException {
+        NodeId nodeIdentifier;
+        switch (identifierType) {
+            case "s":
+                nodeIdentifier = new NodeId(nsIndex, identifier);
+                break;
+            case "i":
+                nodeIdentifier = new NodeId(nsIndex, UInteger.valueOf(identifier));
+                break;
+            case "g":
+                nodeIdentifier = new NodeId(nsIndex, UUID.fromString(identifier));
+                break;
+            case "b":
+                nodeIdentifier = new NodeId(nsIndex, new ByteString(identifier.getBytes()));
+                break;
+            default:
+                String errMsg = MessageFormatter.arrayFormat(ERROR_PREFIX + ".invalidNodeIdType: {}.  It must be either s, i, g, or b",
+                        new Object[]{identifier}).getMessage();
+                throw new OpcExtRuntimeException(errMsg);
+        }
+        return nodeIdentifier;
+   }
 
     /**
      *

@@ -1,5 +1,7 @@
 package io.vantiq.extsrc.opcua.opcUaSource;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import io.vantiq.extjsdk.ExtensionServiceMessage;
 import io.vantiq.extjsdk.ExtensionWebSocketClient;
 import io.vantiq.extjsdk.Handler;
 import io.vantiq.extsrc.opcua.uaOperations.OpcExtConfigException;
@@ -8,6 +10,8 @@ import io.vantiq.extsrc.opcua.uaOperations.OpcUaESClient;
 import lombok.extern.slf4j.Slf4j;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UShort;
 
+import java.net.HttpURLConnection;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
@@ -23,6 +27,7 @@ public class OpcUaSource {
     public static final String VANTIQ_PASSWORD = "password";
     public static final String VANTIQ_TOKEN = "token";
     public static final String VANTIQ_SOURCENAME = "sourceName";
+    public static final String OPC_VALUE_IN_VANTIQ = "dataValue";
 
     private static Map<String, Map> configurations = new ConcurrentHashMap<String, Map>();
 
@@ -30,6 +35,7 @@ public class OpcUaSource {
     OpcUaESClient opcClient = null;
     String sourceName = null;
     Map configurationDoc = null;
+    ObjectMapper oMapper = new ObjectMapper();
 
     public void connectToOpc(Map config) {
         try {
@@ -203,15 +209,17 @@ public class OpcUaSource {
     private Handler<Map> queryHandler = new Handler<Map>() {
         @Override
         public void handleMessage(Map msg) {
-            String RETURN_HEADER = "REPLY_ADDR_HEADER";  // header containing the return address for a query
-            String srcName = (String) msg.get("resourceId");
-//                // Prepare a response with an empty body, so that the query doesn't wait for a timeout
-//                clients.get(srcName).sendQueryResponse(200,
-//                        (String) ((Map) msg.get("messageHeaders")).get(RETURN_HEADER),
-//                        new LinkedHashMap<>());
-//
-//                // Allow the system to stop
-//                stopLatch.countDown();
+            log.debug("Query handler:  Got query: {}", msg);
+            String replyAddress = ExtensionWebSocketClient.extractReplyAddress(msg);
+            if (opcClient.isConnected()) {
+                log.debug("Sending query request to OPC");
+                performQuery(msg);
+
+            } else {
+                log.warn("OPC client not yet connected.  Query dropped.");
+                vantiqClient.sendQueryError(replyAddress, this.getClass().getName() + ".opcNoConnection",
+                        "OPC client not yet connected.  Query services are not available.", new Object[] {});
+            }
         }
     };
 
@@ -268,40 +276,138 @@ public class OpcUaSource {
     void performPublish(Map msg) {
         log.debug("performPublish -- given message: {}", msg);
         CompletableFuture.runAsync(() -> {
-                    Map pubMsg = (Map) msg.get("object");
-                    log.debug("Published msg[object] == {}", pubMsg);
-                    String intent = (String) pubMsg.get("intent");
-                    if ("subscribe".equalsIgnoreCase(intent)) {
-                        log.error("Publish.intent == subscribe is not yet implemented.");
-                    } else if ("unsubscribe".equalsIgnoreCase(intent)) {
-                        log.error("Publish.intent == unsubscribe is not yet implemented.");
-                    } else if ("upsert".equalsIgnoreCase(intent)) {
-                        String nsu = (String) pubMsg.get("nsu");
-                        String nsIndex = (String) pubMsg.get("nsIndex");
-                        String identifier = (String) pubMsg.get("identifier");
-                        Object entity = pubMsg.get("dataValue");
+            Map pubMsg;
+            Object maybeMap = msg.get("object");
+            if (!(maybeMap instanceof Map)) {
+                log.error("Publish Failed: Message format error -- 'object' was a {}, should be Map.  Overall message: {}",
+                        maybeMap.getClass().getName(), msg);
+            } else {
+                pubMsg = (Map) msg.get("object");
+                log.debug("Published msg[object] == {}", pubMsg);
+                String intent = (String) pubMsg.get("intent");
+                if ("subscribe".equalsIgnoreCase(intent) || "unsubscribe".equalsIgnoreCase(intent)) {
+                    log.error("Publish.intent == {} is not yet implemented.", intent);
+                } else if ("upsert".equalsIgnoreCase(intent)) {
+                    String nsu = (String) pubMsg.get("nsu");
+                    String nsIndex = (String) pubMsg.get("nsIndex");
+                    String identifier = (String) pubMsg.get("identifier");
+                    Object entity = pubMsg.get(OPC_VALUE_IN_VANTIQ);
 
-                        if (identifier == null) {
-                            log.error("Publish failed:  no node identifier specified.");
-                        } else if (nsu == null && nsIndex == null) {
-                            log.error("Publish failed:  no namespace provided.");
+                    checkNodeId(ExtensionServiceMessage.OP_PUBLISH, nsu, nsIndex, identifier);
+
+                    try {
+                        // Vantiq will send us a map here.  We'll need to convert our Map (representind JSON)
+                        // into our underlying object format.
+                        if (nsu == null) {
+                            // Then we have a numeric index.  These are not permanent, but we'll
+                            // hope our client knows what they are doing
+                            opcClient.writeValue(UShort.valueOf(nsIndex), identifier, null, entity);
+                        } else {
+                            opcClient.writeValue(nsu, identifier, null, entity);
                         }
-                        try {
-                            if (nsu == null) {
-                                // Then we have a numeric index.  These are not permanent, but we'll
-                                // hope our client knows what they are doing
-                                opcClient.writeValue(UShort.valueOf(nsIndex), identifier, null, entity);
-                            } else {
-                                opcClient.writeValue(nsu, identifier, null, entity);
-                            }
-                            log.debug("Publish of {}:{} :: {} appears to have succeeded", (nsu != null ? nsu : nsIndex), identifier, entity);
-                        } catch (OpcExtRuntimeException e) {
-                            log.error("Unable to perform publish: {}", e.getMessage());
-                        }
-                    } else {
-                        log.error("Publish failed:  Unknown intent: {}", intent);
+                        log.debug("Publish of {}:{} :: {} appears to have succeeded", (nsu != null ? nsu : nsIndex), identifier, entity);
+                    } catch (OpcExtRuntimeException e) {
+                        log.error("Unable to perform publish: {}", e.getMessage());
                     }
+                } else {
+                    log.error("Publish failed:  Unknown intent: {}", intent);
                 }
-        );
+            }
+        });
+    }
+
+    /**
+     * Decode the query request & have the OpcClient perform the work.
+     *
+     * @param msg query message containing the request
+     */
+    void performQuery(Map msg) {
+        log.debug("performQuery -- given message: {}", msg);
+        CompletableFuture.runAsync(() -> {
+            String replyAddress = ExtensionWebSocketClient.extractReplyAddress(msg);
+            Map qryMsg;
+            Object maybeMap = msg.get("object");
+            if (!(maybeMap instanceof Map)) {
+                log.error("Query Failed: Message format error -- 'object' was a {}, should be Map.  Overall message: {}",
+                        maybeMap.getClass().getName(), msg);
+            } else {
+                qryMsg = (Map) maybeMap;
+                String style = (String) qryMsg.get("queryStyle");
+                if ("browse".equalsIgnoreCase(style) || "query".equalsIgnoreCase(style)) {
+                    log.error("Query.style == {} is not yet implemented.", style);
+                }
+                else if ("NodeId".equalsIgnoreCase(style)) {
+                    try {
+                        // For a NodeId query, we simply extract the node id & call the appropriate
+                        // opcClient.readValue() method.  Then, create the response message and return
+                        // it to the server.  Since readValue() will return a single node (by definition),
+                        // we don't have to worry about chunking issues here.
+
+                        String nsu = (String) qryMsg.get("nsu");
+                        String nsIndex = (String) qryMsg.get("nsIndex");
+                        String identifier = (String) qryMsg.get("identifier");
+                        String identifierType = (String) qryMsg.get("identifierType");
+
+                        if (identifierType == null) {
+                            identifierType = "s";   // String is our default
+                        }
+
+                        checkNodeId(ExtensionServiceMessage.OP_QUERY, nsu, nsIndex, identifier);
+
+                        Object result;
+                        if (nsIndex == null) {
+                            result = opcClient.readValue(nsu, identifier, identifierType);
+                        } else {
+                            result = opcClient.readValue(nsIndex, identifier, identifierType);
+                        }
+                        log.debug("Query Result: " + result);
+
+                        if (result == null) {
+                            vantiqClient.sendQueryResponse(HttpURLConnection.HTTP_NO_CONTENT, replyAddress, (Map) null);
+                        } else {
+                            Map<String, Object> objectMap = null;
+                            try {
+                                objectMap = oMapper.convertValue(result, Map.class);
+                            }
+                            catch (IllegalArgumentException e) {
+                                // In this case, our entity is a native type.  We'll just include the value directly.
+                            }
+                            Map<String, Object> mapToSend = new HashMap<>();
+                            if (objectMap == null) {
+                                mapToSend.put(OPC_VALUE_IN_VANTIQ, result);
+                            } else {
+                                mapToSend.put(OPC_VALUE_IN_VANTIQ, objectMap);
+                            }
+                            log.debug("Sending result object: " + mapToSend);
+                            vantiqClient.sendQueryResponse(HttpURLConnection.HTTP_OK, replyAddress, mapToSend);
+                        }
+                    }
+                    catch (OpcExtRuntimeException e) {
+                        log.error("Failed to perform query by nodeId: " + e.getMessage());
+                        Object[] parms = new Object[] {e.getMessage()};
+                        vantiqClient.sendQueryError(replyAddress, this.getClass().getName() + ".opcQueryFailure",
+                                "OPC read by node id failed: {0}", parms);
+                    }
+                    catch (IllegalArgumentException e) {
+                        log.error("Failed to perform query by nodeId: " + e.getMessage());
+                        Object[] parms = new Object[] {e.getMessage()};
+                        vantiqClient.sendQueryError(replyAddress, this.getClass().getName() + ".opcQueryFailure",
+                                "OPC read by node id failed: {0}", parms);
+                    }
+                } else {
+                    log.error("Query failed: Unknown queryStyle: ", style);
+                }
+            }
+        });
+    }
+
+    private static void checkNodeId(String operation, String nsu, String nsIndex, String identifier) {
+        if (identifier == null) {
+            throw new IllegalArgumentException(operation + " operation failed:  no node identifier specified.");
+
+        } else if (nsu == null && nsIndex == null) {
+            throw new IllegalArgumentException(operation + " operation failed:  no namespace provided.");
+        }
+
     }
 }
