@@ -83,6 +83,15 @@ public class ExtensionWebSocketClient {
     public ExtensionWebSocketListener getListener() {
         return listener;
     }
+    
+    /**
+     * Obtain the name of the source this client is assigned to.
+     * 
+     * @return  The name of the source this client is assigned to.
+     */
+    public String getSourceName() {
+        return sourceName;
+    }
 
     /**
      * Creates an {@link ExtensionWebSocketClient} that will connect to the source {@code sourceName}.
@@ -106,15 +115,9 @@ public class ExtensionWebSocketClient {
         // If the connection succeeded, then it will create a new Future that will be completed upon receiving an
         // authentication request. If the connection failed, then it will return a Future with the value false.
         authFuture = authRequested
-                .thenApplyAsync(
-                        (unused) -> {
-                            try {
-                                return webSocketFuture.get();
-                            }
-                            catch (Exception e) {
-                                log.error("Error waiting for WebSocket connection", e);
-                                return false;
-                            }
+                .thenCombineAsync(webSocketFuture, 
+                        (unused, success) -> {
+                            return success;
                         }
                 ).thenComposeAsync(
                         (success) -> {
@@ -162,13 +165,13 @@ public class ExtensionWebSocketClient {
         return webSocketFuture;
     }
     
-    private String validifyUrl(String url) {
+    protected String validifyUrl(String url) {
         // Ensure prepended by wss:// and not http:// or https://
         if (url.startsWith("http://")) {
-            url.substring("http://".length(), url.length());
+            url = url.substring("http://".length());
         }
-        if (url.startsWith("https://")) {
-            url.substring("https://".length(), url.length());
+        else if (url.startsWith("https://")) {
+            url = url.substring("https://".length());
         }
         if (!url.startsWith("ws://") && !url.startsWith("wss://")) {
             url = "wss://" + url;
@@ -278,14 +281,16 @@ public class ExtensionWebSocketClient {
         log.trace("Sending message");
         try {
             byte[] bytes = mapper.writeValueAsBytes(obj);
-            this.webSocket.sendMessage(RequestBody.create(WebSocket.BINARY, bytes));
+            synchronized (this) {
+                this.webSocket.sendMessage(RequestBody.create(WebSocket.BINARY, bytes));
+            }
         }
         catch (Exception e) {
             log.warn("Error sending to WebSocket", e);
         }
     }
 
-    private void doAuthentication() {
+    protected void doAuthentication() {
         Map<String, Object> authMsg = new LinkedHashMap<>();
         // If this is username and password combo, use authenticate op
         if (authData instanceof Map) {
@@ -354,7 +359,7 @@ public class ExtensionWebSocketClient {
         return authFuture;
     }
 
-    private void doConnectionToSource() {
+    protected void doConnectionToSource() {
         ExtensionServiceMessage connectMessage = new ExtensionServiceMessage("");
         connectMessage.connectExtension(ExtensionServiceMessage.RESOURCE_NAME_SOURCES, sourceName, null);
         send(connectMessage);
@@ -380,7 +385,7 @@ public class ExtensionWebSocketClient {
         else if (!isConnected() && isAuthed()) {
             // We could instead recreate sourceFuture, but this way anyone holding onto the original will still
             // receive the results
-            doAuthentication();
+            doConnectionToSource();
         }
         return sourceFuture;
     }
@@ -436,7 +441,6 @@ public class ExtensionWebSocketClient {
         sourceFuture.obtrudeValue(false);
         initializeFutures();
         log.info("Websocket closed for source " + sourceName);
-        sourceName = null;
     }
 
     /**
