@@ -479,7 +479,7 @@ public class ExtensionWebSocketClient {
      *
      * @param httpHandler   {@link Handler} that deals with Http responses
      */
-    public void setHttpHandler(Handler<Map> httpHandler) {
+    public void setHttpHandler(Handler<Response> httpHandler) {
         this.listener.setHttpHandler(httpHandler);
     }
     /**
@@ -494,7 +494,7 @@ public class ExtensionWebSocketClient {
      * @param publishHandler    {@link Handler} that deals with any publishes from a source without its own publish
      *                          {@link Handler}
      */
-    public void setPublishHandler(Handler<Map> publishHandler) {
+    public void setPublishHandler(Handler<ExtensionServiceMessage> publishHandler) {
         this.listener.setPublishHandler(publishHandler);
     }
     /**
@@ -511,7 +511,7 @@ public class ExtensionWebSocketClient {
      * @param queryHandler   {@link Handler} that deals with any queries from a source without its own query
      *                       {@link Handler}
      */
-    public void setQueryHandler(Handler<Map> queryHandler) {
+    public void setQueryHandler(Handler<ExtensionServiceMessage> queryHandler) {
         this.listener.setQueryHandler(queryHandler);
     }
     /**
@@ -527,7 +527,7 @@ public class ExtensionWebSocketClient {
      * @param configHandler {@link Handler} that deals with any configurations from a source without its own
      *                      configuration {@link Handler}
      */
-    public void setConfigHandler(Handler<Map> configHandler) {
+    public void setConfigHandler(Handler<ExtensionServiceMessage> configHandler) {
         this.listener.setConfigHandler(configHandler);
     }
     /**
@@ -541,7 +541,7 @@ public class ExtensionWebSocketClient {
      *
      * @param authHandler   {@link Handler} that deals with the results of authentication messages
      */
-    public void setAuthHandler(Handler<Map> authHandler) {
+    public void setAuthHandler(Handler<Response> authHandler) {
         this.listener.setAuthHandler(authHandler);
     }
     /**
@@ -554,7 +554,7 @@ public class ExtensionWebSocketClient {
      * 
      * @param reconnectHandler
      */
-    public void setReconnectHandler(Handler<Map> reconnectHandler) {
+    public void setReconnectHandler(Handler<ExtensionServiceMessage> reconnectHandler) {
         this.listener.setReconnectHandler(reconnectHandler);
     }
     /**
@@ -568,7 +568,7 @@ public class ExtensionWebSocketClient {
      *
      * @param overrideHandler   {@link Handler} that deals with every message received from the Vantiq server
      */
-    public void setOverrideHandler(Handler<Map> overrideHandler) {
+    public void setOverrideHandler(Handler<Map<String,Object>> overrideHandler) {
         this.listener.setOverrideHandler(overrideHandler);
     }
 }
