@@ -202,7 +202,7 @@ public class UDPPublishHandler extends Handler<ExtensionServiceMessage>{
             }
         }
 
-        if (transforms != null && passingPureMap) {
+        if (transforms != null && !passingPureMap) {
             transformer = new MapTransformer(transforms);
         }
     }

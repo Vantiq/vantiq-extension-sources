@@ -21,7 +21,7 @@ public class TestUDPPublishHandler {
     // Objects used by test objects
     FalseSocket fakeSocket;
     String sourceName;
-    Map extMsg;
+    ExtensionServiceMessage extMsg;
     ObjectMapper mapper = new ObjectMapper();
     int port;
     String address;
@@ -212,13 +212,13 @@ public class TestUDPPublishHandler {
     }
 
     private void createMessage(Map data) {
-        try {
-            extMsg = new LinkedHashMap<>();
-            extMsg.put("op", ExtensionServiceMessage.OP_PUBLISH);
-            extMsg.put("resourceId", sourceName);
-            extMsg.put("resourceName", "sources");
-            extMsg.put("object", data);
-        }catch (Exception e){}
+        Map m = new LinkedHashMap<>();
+        m.put("op", ExtensionServiceMessage.OP_PUBLISH);
+        m.put("resourceId", sourceName);
+        m.put("resourceName", "sources");
+        m.put("object", data);
+        
+        extMsg = new ExtensionServiceMessage("").fromMap(m);
     }
 
 
