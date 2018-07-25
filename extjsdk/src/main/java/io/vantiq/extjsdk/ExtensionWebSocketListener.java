@@ -119,7 +119,7 @@ public class ExtensionWebSocketListener implements WebSocketListener{
                 log.debug("Full message: " + msg);
                 // Prepare a response with an empty body, so that the query doesn't wait for a timeout
                 Object[] body = {msg.getSourceName()};
-                client.sendQueryError(ExtensionServiceMessage.extractReplyAddress(msg),
+                client.sendQueryError(msg.extractQueryAddress(),
                         "Unset Handler",
                         "No handler has been set for source {0}",
                         body);

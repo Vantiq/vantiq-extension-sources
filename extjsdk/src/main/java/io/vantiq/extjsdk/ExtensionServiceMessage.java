@@ -152,7 +152,7 @@ public class ExtensionServiceMessage {
      * @throws IllegalArgumentException if the msg parameter with neither a Map nor an ExtensionServiceMessage
      *
      */
-    public static String extractReplyAddress(Object msg) {
+    public static String extractQueryAddressFromMaybeMap(Object msg) {
         String repAddr = null;
         Object maybeRepAddr = null;
         if (msg instanceof Map) {
@@ -170,6 +170,24 @@ public class ExtensionServiceMessage {
         } else {
             throw new IllegalArgumentException("extractReplyAddress requires either a Map or ExtensionServiceMessage; received " + msg.getClass().getName());
         }
+        if (maybeRepAddr instanceof String) {
+            repAddr = (String) maybeRepAddr;
+        }
+        return repAddr;
+    }
+    
+    /**
+     * Extract reply address from a message.
+     *
+     * @param msg Message from which to extract the reply address
+     * @return String The reply address (or null if absent).
+     */
+    public String extractQueryAddress() {
+        String repAddr = null;
+        Object maybeRepAddr = null;
+
+        maybeRepAddr = this.messageHeaders.get(ExtensionServiceMessage.ORIGIN_ADDRESS_LOCATION);
+
         if (maybeRepAddr instanceof String) {
             repAddr = (String) maybeRepAddr;
         }
