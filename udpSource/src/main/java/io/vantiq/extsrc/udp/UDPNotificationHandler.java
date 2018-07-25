@@ -16,6 +16,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.net.DatagramPacket;
+import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -255,7 +256,7 @@ public class UDPNotificationHandler extends Handler<DatagramPacket>{
 
         // Transforms the message as requested by the Configuration document
         if (regexPattern != null) {
-            sendMsg = getRegexResults(new String(packet.getData()));
+            sendMsg = getRegexResults(new String(packet.getData(), Charset.forName("UTF-8")));
         }
         else if (bytesLocation != null) {
             MapTransformer.createTransformVal(sendMsg, bytesLocation, new String(packet.getData()));
