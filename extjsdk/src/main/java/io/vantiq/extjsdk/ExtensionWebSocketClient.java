@@ -163,6 +163,10 @@ public class ExtensionWebSocketClient {
                     .url(validifyUrl(url))
                     .build()).enqueue(listener);
         }
+        return getWebsocketConnectionFuture();
+    }
+    
+    public CompletableFuture<Boolean> getWebsocketConnectionFuture() {
         return webSocketFuture;
     }
     
@@ -333,7 +337,7 @@ public class ExtensionWebSocketClient {
             // receive the results
             doAuthentication();
         }
-        return authFuture;
+        return getAuthenticationFuture();
     }
 
     /**
@@ -357,6 +361,15 @@ public class ExtensionWebSocketClient {
             // receive the results
             doAuthentication();
         }
+        return getAuthenticationFuture();
+    }
+    
+    /**
+     * 
+     * @return      A {@link CompletableFuture} that will return true when the authentication succeeds, or false
+     *              when the WebSocket connection fails before authentication can occur.
+     */
+    public CompletableFuture<Boolean> getAuthenticationFuture() {
         return authFuture;
     }
 
@@ -388,6 +401,15 @@ public class ExtensionWebSocketClient {
             // receive the results
             doConnectionToSource();
         }
+        return getSourceConnectionFuture();
+    }
+    
+    /**
+     * 
+     * @return  A {@link CompletableFuture} that will return true when a connection succeeds, or false when
+     *          either the WebSocket connection or authentication fails before the source can connect.
+     */
+    public CompletableFuture<Boolean> getSourceConnectionFuture() {
         return sourceFuture;
     }
     
