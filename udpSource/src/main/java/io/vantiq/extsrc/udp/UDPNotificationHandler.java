@@ -152,7 +152,7 @@ public class UDPNotificationHandler extends Handler<DatagramPacket>{
             mapper = new XmlMapper();
         }
         if (incoming.get("passXmlRootNameIn") instanceof String) {
-            xmlRootLoc = (String) incoming.get("expectXMLIn");
+            xmlRootLoc = (String) incoming.get("passXmlRootNameIn");
         }
         if (incoming.get("expectCsvIn") instanceof Boolean && (boolean) incoming.get("expectCsvIn")) {
             expectingCsv = true;
@@ -225,7 +225,7 @@ public class UDPNotificationHandler extends Handler<DatagramPacket>{
         Map receivedMsg = null;
         Map<String,Object> sendMsg = new LinkedHashMap<>();
         if (bytesLocation != null || regexPattern != null) {
-            // None of the parsable formats. 
+            // Can't be parsed with Object mapper 
         }
         else if (expectingCsv) {
             try  {

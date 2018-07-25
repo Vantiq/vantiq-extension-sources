@@ -85,7 +85,7 @@ public class TestUDPNotificationHandler {
         assert Pattern.matches(pattern, testMessage);
         
         nHandler = new UDPNotificationHandler(incoming, fakeClient);
-        int runCount = 1000 * 1000;
+        int runCount = 10 * 1000;
         long currentTime = System.currentTimeMillis();
         
         for (int i = 0; i < runCount; i ++) {
@@ -232,6 +232,55 @@ public class TestUDPNotificationHandler {
 
         assert fakeClient.compareData(expectedData);
         assert fakeClient.compareSource(sourceName);
+    }
+    
+    @Test
+    public void testXML() {
+        incoming.put("expectXMLIn", true);
+        incoming.put("passXmlRootNameIn", "root");
+        incoming.put("passPureMapIn", true);
+        
+        nHandler = new UDPNotificationHandler(incoming, fakeClient);
+        
+        String address = "localhost";
+        int port = 1234;
+        String testStr = "<rootElem><front>frontVal</front><back>backVal</back></rootElem>";
+        
+        Map<String,Object> expectedData = new LinkedHashMap<>();
+        expectedData.put("front", "frontVal");
+        expectedData.put("back", "backVal");
+        expectedData.put("root", "rootElem");
+        
+        createPacket(testStr, address, port);
+        nHandler.handleMessage(pack);
+        
+        assert fakeClient.compareData(expectedData);
+    }
+    
+    @Test
+    public void testCSV() {
+        incoming.put("expectCsvIn", true);
+        
+        nHandler = new UDPNotificationHandler(incoming, fakeClient);
+        
+        String address = "localhost";
+        int port = 1234;
+        String testStr = "first,second,last\na,b,c\nd,e,f";
+        
+        Map<String,Object> subMap1 = new LinkedHashMap<>();
+        subMap1.put("first", "a");
+        subMap1.put("second", "b");
+        subMap1.put("last", "c");
+        Map<String,Object> subMap2 = new LinkedHashMap<>();
+        subMap2.put("first", "d");
+        subMap2.put("second", "e");
+        subMap2.put("last", "f");
+        Map[] expectedData = {subMap1,subMap2}; 
+        
+        createPacket(testStr, address, port);
+        nHandler.handleMessage(pack);
+        
+        assert fakeClient.compareData(Arrays.asList(expectedData));
     }
 
     private void createPacket(String testStr, String address, int port) {
