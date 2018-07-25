@@ -9,12 +9,9 @@ import io.vantiq.extjsdk.ExtensionWebSocketClient;
 
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.LoggerContext;
-import ch.qos.logback.classic.PatternLayout;
 import ch.qos.logback.classic.encoder.PatternLayoutEncoder;
 import ch.qos.logback.classic.spi.ILoggingEvent;
-import ch.qos.logback.core.Appender;
 import ch.qos.logback.core.FileAppender;
-import ch.qos.logback.core.util.StatusPrinter;
 
 import java.io.File;
 import java.net.*;
@@ -205,7 +202,7 @@ public class ConfigurableUDPSource {
             String srcName = msg.getSourceName();
             // Prepare a response with an empty body, so that the query doesn't wait for a timeout
             clients.get(srcName).sendQueryResponse(200,
-                    msg.extractQueryAddress(),
+                    ExtensionServiceMessage.extractReplyAddress(msg),
                     new LinkedHashMap<>());
 
             // Allow the system to stop
@@ -221,7 +218,7 @@ public class ConfigurableUDPSource {
         @Override
         public void handleMessage(ExtensionServiceMessage message) {
             String sourceName = message.getSourceName();
-            Map srcConfig = (Map) ((Map)message.getObject).get("config");
+            Map srcConfig = (Map) ((Map)message.getObject()).get("config");
             if (!(srcConfig.get("extSrcConfig") instanceof Map)) {
                 log.error("Unable to obtain server configuration for '" + sourceName + "'. Source '" +
                         sourceName  + "' is terminating.");
@@ -733,10 +730,10 @@ public class ConfigurableUDPSource {
                 log.warn("Given default listening address could not be found. Using 'localhost' instead");
             }
         }
-        // There was no valid defaultListenAddress use the default of "localhost"
+        // There was no valid defaultListenAddress use the default of localhost
         if (LISTENING_ADDRESS == null) {
             try {
-                LISTENING_ADDRESS = InetAddress.getByName("localhost");
+                LISTENING_ADDRESS = InetAddress.getLocalHost();
             } catch (UnknownHostException e) {
                 log.error("Failed to identify localhost", e);
             }
