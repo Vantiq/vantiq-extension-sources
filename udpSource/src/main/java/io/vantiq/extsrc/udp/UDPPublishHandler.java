@@ -2,10 +2,13 @@ package io.vantiq.extsrc.udp;
 
 
 
+
+
 // Author: Alex Blumer
 // Email: alex.j.blumer@gmail.com
 
 import io.vantiq.extjsdk.Handler;
+import io.vantiq.extjsdk.ExtensionServiceMessage;
 
 import com.fasterxml.jackson.core.JsonGenerator.Feature;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -85,7 +88,7 @@ import java.util.MissingFormatArgumentException;
  *                          be placed as the header for the CSV document. Default is {@code null}</li>
  * </ul>
  */
-public class UDPPublishHandler extends Handler<Map>{
+public class UDPPublishHandler extends Handler<ExtensionServiceMessage>{
     /**
      * The {@link MapTransformer} used to perform transformations based on the {@code transformations} portion of the
      * configuration document.
@@ -222,8 +225,8 @@ public class UDPPublishHandler extends Handler<Map>{
      * @param message   The Publish message received from this {@link Handler}'s source
      */
     @Override
-    public void handleMessage(Map message) {
-        Map receivedMsg = (Map) message.get("object");
+    public void handleMessage(ExtensionServiceMessage message) {
+        Map receivedMsg = (Map) message.getObject();
         Map sendMsg = new LinkedHashMap<String,Object>();
         byte[] sendBytes = null;
 

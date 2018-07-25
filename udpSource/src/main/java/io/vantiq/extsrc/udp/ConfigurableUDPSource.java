@@ -4,6 +4,7 @@ package io.vantiq.extsrc.udp;
 // Email: alex.j.blumer@gmail.com
 
 import io.vantiq.extjsdk.Handler;
+import io.vantiq.extjsdk.ExtensionServiceMessage;
 import io.vantiq.extjsdk.ExtensionWebSocketClient;
 
 import ch.qos.logback.classic.Level;
@@ -165,7 +166,7 @@ import org.slf4j.LoggerFactory;
  *                                      from {@code pattern}. These will override the location in {@code passBytesInAs}.
  *                                      </li>
  *                              <li>{@code flags}: Not yet implemented. An array of the regex flags you would like 
- *                                      enabled. See {@link Pattern} for descriptions of the flags available.
+ *                                      enabled. See {@link Pattern} for descriptions of the flags available.</li>
  *                          </ul> 
  *      <li>{@code expectXMLIn}: Optional. Specifies that the data incoming from the UDP source will be in an XML format.
  *                          Note that this will throw away the name of the root element. If data is contained in the
@@ -185,11 +186,11 @@ public class ConfigurableUDPSource {
      * which source sent the Publish.
      */
     // Passes data to the UDP server or tells the program to stop
-    static Handler<Map> UDPDefaultPublish = new Handler<Map>() {
+    static Handler<ExtensionServiceMessage> UDPDefaultPublish = new Handler<ExtensionServiceMessage>() {
         @Override
-        public void handleMessage(Map message) {
+        public void handleMessage(ExtensionServiceMessage message) {
             // Translate the data from the Publish message to what we want it to be
-            log.warn("Vantiq requesting message sent from" +  message.get("resourceId").toString()
+            log.warn("Vantiq requesting message sent from" +  message.getSourceName()
                     + ", but no handler is set up for it");
         }
     };
@@ -198,14 +199,13 @@ public class ConfigurableUDPSource {
      *  Shuts down the server when a query is received. This is largely a debug decision, as a) queries are not expected
      *  for UDP sources, and b) problems occur when the WebSocket connection is violently shut down
      */
-    static Handler<Map> UDPDefaultQuery = new Handler<Map>() {
+    static Handler<ExtensionServiceMessage> UDPDefaultQuery = new Handler<ExtensionServiceMessage>() {
         @Override
-        public void handleMessage(Map msg) {
-            String RETURN_HEADER = "REPLY_ADDR_HEADER";  // header containing the return address for a query
-            String srcName = (String) msg.get("resourceId");
+        public void handleMessage(ExtensionServiceMessage msg) {
+            String srcName = msg.getSourceName();
             // Prepare a response with an empty body, so that the query doesn't wait for a timeout
             clients.get(srcName).sendQueryResponse(200,
-                    (String) ((Map) msg.get("messageHeaders")).get(RETURN_HEADER),
+                    msg.extractQueryAddress(),
                     new LinkedHashMap<>());
 
             // Allow the system to stop
@@ -217,11 +217,11 @@ public class ConfigurableUDPSource {
      * Creates publish and notification handlers for any messages relating to a source based on the configuration
      * document
      */
-    static Handler<Map> UDPConfig = new Handler<Map>() {
+    static Handler<ExtensionServiceMessage> UDPConfig = new Handler<ExtensionServiceMessage>() {
         @Override
-        public void handleMessage(Map message) {
-            String sourceName = (String) message.get("resourceId");
-            Map srcConfig = (Map) ((Map)message.get("object")).get("config");
+        public void handleMessage(ExtensionServiceMessage message) {
+            String sourceName = message.getSourceName();
+            Map srcConfig = (Map) ((Map)message.getObject).get("config");
             if (!(srcConfig.get("extSrcConfig") instanceof Map)) {
                 log.error("Unable to obtain server configuration for '" + sourceName + "'. Source '" +
                         sourceName  + "' is terminating.");
@@ -336,11 +336,11 @@ public class ConfigurableUDPSource {
         }
     };
     
-    static Handler<Map> UDPReconnectHandler = new Handler<Map>() {
+    static Handler<ExtensionServiceMessage> UDPReconnectHandler = new Handler<ExtensionServiceMessage>() {
 
         @Override
-        public void handleMessage(Map message) {
-            String sourceName = (String) message.get("resourceId");
+        public void handleMessage(ExtensionServiceMessage message) {
+            String sourceName = (String) message.getSourceName();
             ExtensionWebSocketClient client = clients.get(sourceName);
 
             synchronized (socketLock) { // Don't want to edit while another is adding to or removing from UDPSocket
