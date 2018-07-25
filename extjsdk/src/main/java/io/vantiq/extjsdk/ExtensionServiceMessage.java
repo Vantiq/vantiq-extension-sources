@@ -25,8 +25,8 @@ public class ExtensionServiceMessage {
     public static final String OP_QUERY = "query";
     public static final String OP_RECONNECT_REQUIRED = "reconnectRequired";
     public static final MediaType CONTENT_TYPE_JSON = MediaType.parse("application/json; charset=utf-8");
-    public static final String ORIGIN_ADDRESS_LOCATION = "REPLY_ADDR_HEADER";
-    public static final String RESPONSE_ADDRESS_LOCATION = "X-Reply-Address";
+    public static final String ORIGIN_ADDRESS_HEADER = "REPLY_ADDR_HEADER";
+    public static final String RESPONSE_ADDRESS_HEADER = "X-Reply-Address";
     public static final String PROPERTY_MESSAGE_HEADERS = "messageHeaders";
 
     public String address;
@@ -152,42 +152,24 @@ public class ExtensionServiceMessage {
      * @throws IllegalArgumentException if the msg parameter with neither a Map nor an ExtensionServiceMessage
      *
      */
-    public static String extractQueryAddressFromMaybeMap(Object msg) {
+    public static String extractReplyAddress(Object msg) {
         String repAddr = null;
         Object maybeRepAddr = null;
         if (msg instanceof Map) {
             Map msgMap = (Map) msg;
             Object maybeMap = msgMap.get(ExtensionServiceMessage.PROPERTY_MESSAGE_HEADERS);
             if (maybeMap instanceof Map) {
-                maybeRepAddr = ((Map) msgMap.get(ExtensionServiceMessage.PROPERTY_MESSAGE_HEADERS)).get(ExtensionServiceMessage.ORIGIN_ADDRESS_LOCATION);
+                maybeRepAddr = ((Map) msgMap.get(ExtensionServiceMessage.PROPERTY_MESSAGE_HEADERS)).get(ExtensionServiceMessage.ORIGIN_ADDRESS_HEADER);
                 if (maybeRepAddr != null && maybeRepAddr instanceof String) {
                     repAddr = (String) maybeRepAddr;
                 }
             }
         } else if (msg instanceof ExtensionServiceMessage) {
             ExtensionServiceMessage esm = (ExtensionServiceMessage) msg;
-            maybeRepAddr = esm.messageHeaders.get(ExtensionServiceMessage.ORIGIN_ADDRESS_LOCATION);
+            maybeRepAddr = esm.messageHeaders.get(ExtensionServiceMessage.ORIGIN_ADDRESS_HEADER);
         } else {
             throw new IllegalArgumentException("extractReplyAddress requires either a Map or ExtensionServiceMessage; received " + msg.getClass().getName());
         }
-        if (maybeRepAddr instanceof String) {
-            repAddr = (String) maybeRepAddr;
-        }
-        return repAddr;
-    }
-    
-    /**
-     * Extract reply address from a message.
-     *
-     * @param msg Message from which to extract the reply address
-     * @return String The reply address (or null if absent).
-     */
-    public String extractQueryAddress() {
-        String repAddr = null;
-        Object maybeRepAddr = null;
-
-        maybeRepAddr = this.messageHeaders.get(ExtensionServiceMessage.ORIGIN_ADDRESS_LOCATION);
-
         if (maybeRepAddr instanceof String) {
             repAddr = (String) maybeRepAddr;
         }

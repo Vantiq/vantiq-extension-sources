@@ -227,7 +227,7 @@ public class ExtensionWebSocketClient {
     public void sendQueryResponse(int httpCode, String replyAddress, Map body){
         Response response = new Response()
                 .status(httpCode)
-                .addHeader(ExtensionServiceMessage.RESPONSE_ADDRESS_LOCATION, replyAddress)
+                .addHeader(ExtensionServiceMessage.RESPONSE_ADDRESS_HEADER, replyAddress)
                 .body(body);
         send(response);
     }
@@ -245,7 +245,7 @@ public class ExtensionWebSocketClient {
     public void sendQueryResponse(int httpCode, String replyAddress, Map[] body) {
         Response response = new Response()
                 .status(httpCode)
-                .addHeader(ExtensionServiceMessage.RESPONSE_ADDRESS_LOCATION, replyAddress)
+                .addHeader(ExtensionServiceMessage.RESPONSE_ADDRESS_HEADER, replyAddress)
                 .body(body);
         send(response);
     }
@@ -578,19 +578,5 @@ public class ExtensionWebSocketClient {
      */
     public void setReconnectHandler(Handler<ExtensionServiceMessage> reconnectHandler) {
         this.listener.setReconnectHandler(reconnectHandler);
-    }
-    /**
-     * Set a {@link Handler} for all messages received. When set
-     * this handler keeps all other handlers and related logic from firing. Setting this before a successful connection
-     * will stop the connected {@link ExtensionWebSocketClient} from functioning correctly by keeping it from recording
-     * successful connections and authorizations. As such, this must be used only when A) you want to decouple
-     * this listener from {@link ExtensionWebSocketClient} or B) the client has already successfully authed.
-     * <p>
-     * The handler will receive a {@link Map} of the message received
-     *
-     * @param overrideHandler   {@link Handler} that deals with every message received from the Vantiq server
-     */
-    public void setOverrideHandler(Handler<Map<String,Object>> overrideHandler) {
-        this.listener.setOverrideHandler(overrideHandler);
     }
 }

@@ -21,8 +21,8 @@ import java.util.Map;
  * to allow users to specify how different types of messages are dealt with.
  */
 public class ExtensionWebSocketListener implements WebSocketListener{
-    // Each Handler effectively says what to do in the case of ____
-    // The overrideHandler will block all the others and take in a map of the json object received
+    // Each Handler effectively says what to do when receiving a message of its message type, or a response to its
+    // message type in the case of authenticationHandler
     /**
      * {@link Handler} that handles Http responses received by this listener after a successful authorization. This
      * should consist purely of confirmations (messages with status 200 and an empty body) and error messages. Set by
@@ -53,15 +53,6 @@ public class ExtensionWebSocketListener implements WebSocketListener{
      * {@link Handler} that handles reconnect messages. Set by {@link #setReconnectHandler}
      */
     private Handler<ExtensionServiceMessage> reconnectHandler = null;
-    /**
-     * {@link Handler} that handles every message received by this listener, regardless of type or situation. When set
-     * this handler keeps all other handlers and related logic from firing. Setting this before a successful connection
-     * will stop the connected {@link ExtensionWebSocketClient} from functioning correctly by keeping it from recording
-     * successful connections and authorizations. As such, this must be used only when A) you want to decouple
-     * this listener from {@link ExtensionWebSocketClient} or B) the client has already successfully authed. Set by
-     * {@link #setOverrideHandler}
-     */
-    private Handler<Map<String,Object>> overrideHandler = null;
     /**
      * An Slf4j logger
      */
@@ -119,7 +110,7 @@ public class ExtensionWebSocketListener implements WebSocketListener{
                 log.debug("Full message: " + msg);
                 // Prepare a response with an empty body, so that the query doesn't wait for a timeout
                 Object[] body = {msg.getSourceName()};
-                client.sendQueryError(msg.extractQueryAddress(),
+                client.sendQueryError(ExtensionServiceMessage.extractReplyAddress(msg),
                         "Unset Handler",
                         "No handler has been set for source {0}",
                         body);
@@ -133,7 +124,7 @@ public class ExtensionWebSocketListener implements WebSocketListener{
             new Handler<ExtensionServiceMessage>() {
                 @Override
                 public void handleMessage(ExtensionServiceMessage msg) {
-                    log.info("Message received type: " + msg.getOp());
+                    log.debug("Message received type: " + msg.getOp());
                     log.debug("Data\n " + msg.getObject());
                 }
             }
@@ -259,20 +250,6 @@ public class ExtensionWebSocketListener implements WebSocketListener{
     public void setReconnectHandler(Handler<ExtensionServiceMessage> reconnectHandler) {
         this.reconnectHandler = reconnectHandler;
     }
-    /**
-     * Set a {@link Handler} for all messages received. When set
-     * this handler keeps all other handlers and related logic from firing. Setting this before a successful connection
-     * will stop the connected {@link ExtensionWebSocketClient} from functioning correctly by keeping it from recording
-     * successful connections and authorizations. As such, this must be used only when A) you want to decouple
-     * this listener from {@link ExtensionWebSocketClient} or B) the client has already successfully authed.
-     * <p>
-     * The handler will receive a {@link Map} of the message received
-     *
-     * @param overrideHandler   {@link Handler} that deals with every message received from the Vantiq server
-     */
-    public void setOverrideHandler(Handler<Map<String, Object>> overrideHandler) {
-        this.overrideHandler = overrideHandler;
-    }
 
     /**
      * Log that the connection is open, save the WebSocket for {@link #client} and signal the successful opening
@@ -322,13 +299,13 @@ public class ExtensionWebSocketListener implements WebSocketListener{
             return;
         }
         log.debug("Map of the received message: " + msg);
-        // Pass the map to the handler setup by the source interpreter
-        if (this.overrideHandler != null) {
-            this.overrideHandler.handleMessage(msg);
-        }
+        
+        
+        // Now we figure out which handler should receive the message
+        
         // The message received has no op, and thus is not an ExtensionServiceMethod
         // Since we're acting through the WebSocket interface, this means it should be a Http response
-        else if (msg.get("op") == null) {
+        if (msg.get("op") == null) {
             Response message = Response.fromMap(msg);
             log.debug("Http response received");
             if (client.isAuthed()) {
