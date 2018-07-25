@@ -12,6 +12,7 @@ import org.junit.Test;
 import java.net.DatagramPacket;
 import java.net.InetAddress;
 import java.util.*;
+import java.util.regex.Pattern;
 
 public class TestUDPNotificationHandler {
 
@@ -41,6 +42,8 @@ public class TestUDPNotificationHandler {
         fakeClient = new FalseClient(sourceName);
     }
 
+    
+    
     @Test
     public void testEmptyConfig() {
         // Fill the three parts of a config document
@@ -57,6 +60,45 @@ public class TestUDPNotificationHandler {
         nHandler.handleMessage(pack);
         assert fakeClient.compareData(new LinkedHashMap());
         assert fakeClient.compareSource(sourceName);
+    }
+    
+    @Test
+    public void testRegexSpeed() {
+        incoming.put("passAllAddresses", true);
+        Map<String, Object> regexParser = new LinkedHashMap<>();
+        String pattern = "<(\\d{1,3})>([1-9]\\d{0,2}) (?:(-)|(\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(?:\\."
+                + "\\d{1,6})?(?:Z|[-+]\\d{2}:\\d{2}))) (-|[!-~]{1,255}) (-|[!-~]{1,48}) (-|[!-~]{1,128}) (-|[!-~]{1,32}"
+                + ") (?:(-)|((?:\\[[!-~&&[^ =\\]]]{1,32}(?: [!-~&&[^ =\\]]]{1,32}=\"(?:[\\u0000-\\uffff&&[^\"\\\\\\]]]|"
+                + "(?:\\\\[\\\\\"\\]]))*\")*])+))(?: (?:((?!\\xef\\xbb\\xbf).*)|(?:\\xef\\xbb\\xbf([\\u0000-\\uffff]*))"
+                + "))?";
+        regexParser.put("pattern", pattern);
+        String[] locations = {"priority", "version", "noTimestamp", "timestamp", "hostName", "appName", "processId", 
+                              "messageId", "noStructuredData", "structuredData", "standardMessage", "utfMessage"};
+        regexParser.put("locations", Arrays.asList("priority", "version", "noTimestamp", "timestamp", "hostName", 
+                            "appName", "processId", "messageId", "noStructuredData", 
+                            "structuredData", "standardMessage", "utfMessage"));
+        incoming.put("regexParser", regexParser);
+        String testMessage = "<0>198 2018-07-23T15:26:20-07:00 remote iApp user branch [name] Here be a message for ya!";
+        byte[] packetBytes = testMessage.getBytes();
+        DatagramPacket packet= new DatagramPacket(packetBytes, packetBytes.length);
+        
+        assert Pattern.matches(pattern, testMessage);
+        
+        nHandler = new UDPNotificationHandler(incoming, fakeClient);
+        int runCount = 1000 * 1000;
+        long currentTime = System.currentTimeMillis();
+        
+        for (int i = 0; i < runCount; i ++) {
+            packetBytes[1] = (byte) ((i & 7) + 48);
+            nHandler.handleMessage(packet);
+        }
+        
+        long timeTaken = System.currentTimeMillis() - currentTime;
+        
+        
+        System.out.println("Time taken for " + runCount + " messages was " + timeTaken + " ms");
+        System.out.println("This is " + ((double)timeTaken) / runCount + " ms per message and "
+                    + (int) (1.0 / timeTaken * runCount) + " thousand messages per second");
     }
 
     @Test
@@ -81,8 +123,6 @@ public class TestUDPNotificationHandler {
         String testStr = "{\"str\":\"msg\"}";
         createPacket(testStr, address, port);
         nHandler.handleMessage(pack);
-        System.out.println("Expected Data: " + expectedData);
-        System.out.println("Actual Data: " + fakeClient.latestData);
         assert fakeClient.compareData(expectedData);
         assert fakeClient.compareSource(sourceName);
     }
@@ -106,8 +146,6 @@ public class TestUDPNotificationHandler {
         createPacket(testStr, address, port);
 
         nHandler.handleMessage(pack);
-        System.out.println("Expected Data: " + expectedData);
-        System.out.println("Actual Data: " + fakeClient.latestData);
         assert fakeClient.compareData(expectedData);
         assert fakeClient.compareSource(sourceName);
     }
@@ -149,8 +187,6 @@ public class TestUDPNotificationHandler {
         createPacket(testStr, address, port);
 
         nHandler.handleMessage(pack);
-        System.out.println("Expected Data: " + expectedData);
-        System.out.println("Actual Data: " + fakeClient.latestData);
         assert fakeClient.compareData(expectedData);
         assert fakeClient.compareSource(sourceName);
     }
@@ -194,8 +230,6 @@ public class TestUDPNotificationHandler {
         nHandler.handleMessage(pack);
 
 
-        System.out.println("Expected Data: " + expectedData);
-        System.out.println("Actual Data: " + fakeClient.latestData);
         assert fakeClient.compareData(expectedData);
         assert fakeClient.compareSource(sourceName);
     }
