@@ -66,6 +66,7 @@ public class OpcUaESClient {
     protected Map<String, Object> config;
     protected OpcUaClient client;
     protected UaSubscription subscription = null;
+    protected String discoveryEndpoint = null;
     protected BiConsumer<String, Object> subscriptionHandler;
     protected List<UInteger> currentMonitoredItemList = null;
     private final AtomicLong clientToMILink = new AtomicLong(1);
@@ -241,7 +242,7 @@ public class OpcUaESClient {
 
         EndpointDescription[] endpoints;
 
-        String discoveryEndpoint = (String) config.get(CONFIG_DISCOVERY_ENDPOINT);
+        discoveryEndpoint = (String) config.get(CONFIG_DISCOVERY_ENDPOINT);
         if (discoveryEndpoint == null) {
             String errorMsg = ERROR_PREFIX + ".noDiscoveryEndpoint: No discovery endpoint was provided in the configuration.";
             log.error(errorMsg);
@@ -273,8 +274,8 @@ public class OpcUaESClient {
         log.info("Using endpoint: {} [{}]", endpoint.getEndpointUrl(), securityPolicy);
 
         OpcUaClientConfig opcConfig = OpcUaClientConfig.builder()
-                .setApplicationName(LocalizedText.english("eclipse milo opc-ua client"))
-                .setApplicationUri("urn:eclipse:milo:examples:client")
+                .setApplicationName(LocalizedText.english("VANTIQ OPC-UA Source"))
+                .setApplicationUri("urn:io:vantiq:extsrc:opcua:client")
                 .setCertificate(loader.getClientCertificate())
                 .setKeyPair(loader.getClientKeyPair())
                 .setEndpoint(endpoint)
@@ -446,98 +447,109 @@ public class OpcUaESClient {
                 isNewSubscription = true;
             }
 
-            Map<String, Map<String, String>> newMonitoredItems =
-                    (Map<String, Map<String, String>>) ((Map<String, Object>)
-                            config.get(CONFIG_OPC_UA_INFORMATION)).get(CONFIG_OPC_MONITORED_ITEMS);
-            log.debug("Config requesting {} monitored items", newMonitoredItems.size());
+            Map<String, Object> opcConf = (Map<String, Object>) config.get(CONFIG_OPC_UA_INFORMATION);
+            Object mis = opcConf.get(CONFIG_OPC_MONITORED_ITEMS);
 
-            if (currentMonitoredItemList != null && !currentMonitoredItemList.isEmpty()) {
-                // First, if we're currently monitoring anything, remove them.
-                // This can be improved to compare new vs old, but this overkill version is sufficient for now.
-                client.deleteMonitoredItems(subscription.getSubscriptionId(), currentMonitoredItemList).get();
-            }
-            currentMonitoredItemList = new ArrayList<>();
+            if (mis instanceof Map) {
+                Map<String, Map<String, String>> newMonitoredItems = (Map<String, Map<String, String>>) mis;
 
-            // First, create a list of MI requests from our config file.
-            ArrayList<MonitoredItemCreateRequest> reqList = new ArrayList<MonitoredItemCreateRequest>();
-            for (Map.Entry<String, Map<String, String>> ent : newMonitoredItems.entrySet()) {
-                UShort nsIndex;
-                NodeId nodeIdentifier = null;
-
-                // Determine node we wish to monitor...
-
-                // Nodes can be defined in a couple of major ways.  The first includes a nodeId field, which
-                // combines (standard nomenclature in OPC UA) the namespace index & identifer: "ns=3;s=someNode/identifier";
-                // If this nodeId field is present, we ignore other fields as it is a complete specification.
-                // Otherwise, we'll look for the namespace specification (either ns for a numeric namespace index or
-                // nsu for the namespace URN) and a node identifier.  The node identifier can be augmented with a type
-                // (s, i, g, or b for String, Numeric (integer), GUID, or ByteString, respectively) to describe how
-                // the identifier is encoded.  If this is missing, it is assumed to be a string.
-
-                if (ent.getValue().containsKey(CONFIG_MI_NODEID)) {
-                    String nodeIdSpec = ent.getValue().get(CONFIG_MI_NODEID);
-                    nodeIdentifier = NodeId.parse(nodeIdSpec);
+                if (newMonitoredItems == null) {
+                    log.info("No monitoring requested for OPC UA server with discovery endpoint: {}", discoveryEndpoint);
                 } else {
-                    if (ent.getValue().containsKey(CONFIG_MI_NAMESPACE_URN)) {
-                        nsIndex = client.getNamespaceTable().getIndex(ent.getValue().get(CONFIG_MI_NAMESPACE_URN));
-                        if (nsIndex == null) {
-                            throw new OpcExtRuntimeException(ERROR_PREFIX + ".badNamespaceURN:  Namespace URN "
-                                    + ent.getValue().get(CONFIG_MI_NAMESPACE_URN) + " does not exist in the OPC server.");
+                    log.debug("Config requesting {} monitored items", newMonitoredItems.size());
+
+                    if (currentMonitoredItemList != null && !currentMonitoredItemList.isEmpty()) {
+                        // First, if we're currently monitoring anything, remove them.
+                        // This can be improved to compare new vs old, but this overkill version is sufficient for now.
+                        client.deleteMonitoredItems(subscription.getSubscriptionId(), currentMonitoredItemList).get();
+                    }
+                    currentMonitoredItemList = new ArrayList<>();
+
+                    // First, create a list of MI requests from our config file.
+                    ArrayList<MonitoredItemCreateRequest> reqList = new ArrayList<MonitoredItemCreateRequest>();
+                    for (Map.Entry<String, Map<String, String>> ent : newMonitoredItems.entrySet()) {
+                        UShort nsIndex;
+                        NodeId nodeIdentifier = null;
+
+                        // Determine node we wish to monitor...
+
+                        // Nodes can be defined in a couple of major ways.  The first includes a nodeId field, which
+                        // combines (standard nomenclature in OPC UA) the namespace index & identifer: "ns=3;s=someNode/identifier";
+                        // If this nodeId field is present, we ignore other fields as it is a complete specification.
+                        // Otherwise, we'll look for the namespace specification (either ns for a numeric namespace index or
+                        // nsu for the namespace URN) and a node identifier.  The node identifier can be augmented with a type
+                        // (s, i, g, or b for String, Numeric (integer), GUID, or ByteString, respectively) to describe how
+                        // the identifier is encoded.  If this is missing, it is assumed to be a string.
+
+                        if (ent.getValue().containsKey(CONFIG_MI_NODEID)) {
+                            String nodeIdSpec = ent.getValue().get(CONFIG_MI_NODEID);
+                            nodeIdentifier = NodeId.parse(nodeIdSpec);
+                        } else {
+                            if (ent.getValue().containsKey(CONFIG_MI_NAMESPACE_URN)) {
+                                nsIndex = client.getNamespaceTable().getIndex(ent.getValue().get(CONFIG_MI_NAMESPACE_URN));
+                                if (nsIndex == null) {
+                                    throw new OpcExtRuntimeException(ERROR_PREFIX + ".badNamespaceURN:  Namespace URN "
+                                            + ent.getValue().get(CONFIG_MI_NAMESPACE_URN) + " does not exist in the OPC server.");
+                                }
+                            } else if (ent.getValue().containsKey(CONFIG_MI_NAMESPACE_INDEX)) { // FIXME -- should we disallow this form since it's not stable over reboots?  I think yes, but it is convenient
+                                nsIndex = UShort.valueOf(ent.getValue().get(CONFIG_MI_NAMESPACE_INDEX));
+                            } else {
+                                String errMsg = MessageFormatter.arrayFormat(ERROR_PREFIX + ".invalidMonitoredItem: Monitored Item {} has no namespace index: {}",
+                                        new Object[]{ent.getKey(), ent.getValue()}).getMessage();
+                                throw new OpcExtRuntimeException(errMsg);
+                            }
+                            String nodeIdType = "s";
+                            if (ent.getValue().containsKey(CONFIG_MI_IDENTIFIER_TYPE)) {
+                                nodeIdType = ent.getValue().get(CONFIG_MI_IDENTIFIER_TYPE);
+                            }
+                            nodeIdentifier = constructNodeId(nsIndex, ent.getValue().get(CONFIG_MI_IDENTIFIER), nodeIdType);
                         }
-                    } else if (ent.getValue().containsKey(CONFIG_MI_NAMESPACE_INDEX)) { // FIXME -- should we disallow this form since it's not stable over reboots?  I think yes, but it is convenient
-                        nsIndex = UShort.valueOf(ent.getValue().get(CONFIG_MI_NAMESPACE_INDEX));
-                    } else {
-                        String errMsg = MessageFormatter.arrayFormat(ERROR_PREFIX + ".invalidMonitoredItem: Monitored Item {} has no namespace index: {}",
-                                new Object[]{ent.getKey(), ent.getValue()}).getMessage();
-                        throw new OpcExtRuntimeException(errMsg);
+                        ReadValueId readValueId = new ReadValueId(
+                                nodeIdentifier,
+                                AttributeId.Value.uid(), null, QualifiedName.NULL_VALUE);
+
+                        // important: client handle must be unique per item
+                        UInteger localHandle = uint(clientToMILink.getAndIncrement());
+
+                        MonitoringParameters parms = new MonitoringParameters(
+                                localHandle,
+                                1000.0,     // sampling interval // FIXME -- We should allow this to be adjustable
+                                null,       // filter, null means use default
+                                uint(10),   // queue size
+                                true        // discard oldest
+                        );
+
+                        MonitoredItemCreateRequest request = new MonitoredItemCreateRequest(
+                                readValueId, MonitoringMode.Reporting, parms);
+                        log.debug("MonitoredItemCreateRequest for {} added to list", readValueId.toString());
+                        reqList.add(request);
                     }
-                    String nodeIdType = "s";
-                    if (ent.getValue().containsKey(CONFIG_MI_IDENTIFIER_TYPE)) {
-                        nodeIdType = ent.getValue().get(CONFIG_MI_IDENTIFIER_TYPE);
+
+                    BiConsumer<UaMonitoredItem, Integer> monitoringCreated =
+                            (item, id) -> item.setValueConsumer(this::onDataChange);
+
+                    this.subscriptionHandler = handler;
+                    // Having created the list, add it to the subscription
+                    List<UaMonitoredItem> items = subscription.createMonitoredItems(
+                            TimestampsToReturn.Both,
+                            reqList,
+                            monitoringCreated
+                    ).get();
+
+                    for (UaMonitoredItem item : items) {
+                        if (item.getStatusCode().isGood()) {
+                            log.debug("item created for nodeId={}", item.getReadValueId().getNodeId());
+                            currentMonitoredItemList.add(item.getMonitoredItemId());
+                        } else {
+                            log.warn(
+                                    "failed to create item for nodeId={} (status={})",
+                                    item.getReadValueId().getNodeId(), item.getStatusCode());
+                        }
                     }
-                    nodeIdentifier = constructNodeId(nsIndex, ent.getValue().get(CONFIG_MI_IDENTIFIER), nodeIdType);
                 }
-                ReadValueId readValueId = new ReadValueId(
-                        nodeIdentifier,
-                        AttributeId.Value.uid(), null, QualifiedName.NULL_VALUE);
-
-                // important: client handle must be unique per item
-                UInteger localHandle = uint(clientToMILink.getAndIncrement());
-
-                MonitoringParameters parms = new MonitoringParameters(
-                        localHandle,
-                        1000.0,     // sampling interval // FIXME -- We should allow this to be adjustable
-                        null,       // filter, null means use default
-                        uint(10),   // queue size
-                        true        // discard oldest
-                );
-
-                MonitoredItemCreateRequest request = new MonitoredItemCreateRequest(
-                        readValueId, MonitoringMode.Reporting, parms);
-                log.debug("MonitoredItemCreateRequest for {} added to list", readValueId.toString());
-                reqList.add(request);
-            }
-
-            BiConsumer<UaMonitoredItem, Integer> monitoringCreated =
-                    (item, id) -> item.setValueConsumer(this::onDataChange);
-
-            this.subscriptionHandler = handler;
-            // Having created the list, add it to the subscription
-            List<UaMonitoredItem> items = subscription.createMonitoredItems(
-                    TimestampsToReturn.Both,
-                    reqList,
-                    monitoringCreated
-            ).get();
-
-            for (UaMonitoredItem item : items) {
-                if (item.getStatusCode().isGood()) {
-                    log.debug("item created for nodeId={}", item.getReadValueId().getNodeId());
-                    currentMonitoredItemList.add(item.getMonitoredItemId());
-                } else {
-                    log.warn(
-                            "failed to create item for nodeId={} (status={})",
-                            item.getReadValueId().getNodeId(), item.getStatusCode());
-                }
+            } else {
+                log.error("Illegal format for {}.{} in configuration document.  Expecting a Map of Maps of Strings.",
+                        CONFIG_OPC_UA_INFORMATION, CONFIG_OPC_MONITORED_ITEMS);
             }
         } catch (Exception e) {
             throw new OpcExtRuntimeException(ERROR_PREFIX + ".unexpectedException", e);

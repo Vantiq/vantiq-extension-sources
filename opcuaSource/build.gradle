@@ -6,12 +6,17 @@ apply plugin: 'java'
 
 sourceCompatibility = 1.8
 
+ext {
+    jacksonVersion = '2.9.3'
+}
+
 repositories {
     mavenCentral()
 }
 
 dependencies {
     compile project(":extjsdk")
+    compile "com.fasterxml.jackson.core:jackson-databind:${jacksonVersion}"
     compile 'commons-cli:commons-cli:1.4'
     compile 'org.codehaus.groovy:groovy-all:2.3.11'
     compile "org.eclipse.milo:sdk-client:${eclipseMiloVersion}"

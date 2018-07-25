@@ -173,7 +173,6 @@ public class OpcUaSource {
             localClient.close();
         }
 
-
         return sourcesSucceeded;
     }
 
@@ -193,7 +192,6 @@ public class OpcUaSource {
             if (opcClient.isConnected()) {
                 log.debug("Sending publish request to OPC");
                 performPublish(message);
-
             } else {
                 log.warn("OPC client not yet connected.  Publish dropped.");
                 // FIXME
@@ -253,9 +251,24 @@ public class OpcUaSource {
     CompletableFuture<Void> connectToOpc() {
         Map cf = configurationDoc;
 
+        if (opcClient != null && opcClient.isConnected()) {
+            try {
+                opcClient.disconnect();
+            }
+            catch (Exception e) {
+                log.error("Error disconnecting from OPC", e);
+            }
+            finally {
+                opcClient = null;
+            }
+        }
+
         try {
             opcClient = new OpcUaESClient(cf);
-            return opcClient.connectAsync();
+            opcClient.connectAsync().thenRunAsync(() ->
+                    new Thread(() -> {
+                        performMonitoring(configurationDoc);
+                    }).start());
         }
         catch (OpcExtConfigException e) {
             log.error("Could not connect to opc error due to configuration error: {}", e.getMessage());
@@ -264,6 +277,35 @@ public class OpcUaSource {
             log.error("Error connecting to OPC Server: {}", e, null);
         }
         return CompletableFuture.completedFuture(null); // Null is the Void...
+    }
+
+    /**
+     * Extract monitoring requirements from the configuration document and set up
+     * the monitoring
+     *
+     */
+
+    void performMonitoring(Map config) {
+        try {
+            opcClient.updateMonitoredItems(config, this::handleMonitorUpdates);
+        }
+        catch (Exception e) {
+            log.error("Error updating monitored items", e);
+        }
+    }
+
+    private void handleMonitorUpdates(String nodeInfo, Object newValue) {
+        try {
+            log.debug(">>>> Update: Node: {}, newValue: {} ", nodeInfo, newValue.toString());
+            Map<String, Object> updateMsg = new HashMap<>();
+
+            updateMsg.put("nodeIdentification", nodeInfo);
+            updateMsg.put("entity", newValue);
+            vantiqClient.sendNotification(updateMsg);
+        }
+        catch (Throwable e) {
+            log.error("Trapped unexpected error during event processing: ", e);
+        }
     }
 
     /**
