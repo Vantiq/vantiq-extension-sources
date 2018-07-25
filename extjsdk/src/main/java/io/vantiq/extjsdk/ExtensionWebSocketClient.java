@@ -223,7 +223,7 @@ public class ExtensionWebSocketClient {
     public void sendQueryResponse(int httpCode, String replyAddress, Map body){
         Response response = new Response()
                 .status(httpCode)
-                .addHeader(ExtensionServiceMessage.REPLY_ADDRESS, replyAddress)
+                .addHeader(ExtensionServiceMessage.RESPONSE_ADDRESS_LOCATION, replyAddress)
                 .body(body);
         send(response);
     }
@@ -241,7 +241,7 @@ public class ExtensionWebSocketClient {
     public void sendQueryResponse(int httpCode, String replyAddress, Map[] body) {
         Response response = new Response()
                 .status(httpCode)
-                .addHeader(ExtensionServiceMessage.REPLY_ADDRESS, replyAddress)
+                .addHeader(ExtensionServiceMessage.RESPONSE_ADDRESS_LOCATION, replyAddress)
                 .body(body);
         send(response);
     }
@@ -466,41 +466,6 @@ public class ExtensionWebSocketClient {
         log.info("Websocket closed for source " + sourceName);
     }
 
-    /**
-     * Extract reply address from a message.
-     *
-     * This is a utility method that examines the various forms a message may take and
-     * extracts the reply address if present.
-     *
-     * @param msg Message from which to extract the reply address
-     * @return String The reply address (or null if absent from msg).
-     *
-     * @throws IllegalArgumentException if the msg parameter with neither a Map nor an ExtensionServiceMessage
-     *
-     */
-    public static String extractReplyAddress(Object msg) {
-        String repAddr = null;
-        Object maybeRepAddr = null;
-        if (msg instanceof Map) {
-            Map msgMap = (Map) msg;
-            Object maybeMap = msgMap.get(ExtensionServiceMessage.PROPERTY_MESSAGE_HEADERS);
-            if (maybeMap instanceof Map) {
-                maybeRepAddr = ((Map) msgMap.get(ExtensionServiceMessage.PROPERTY_MESSAGE_HEADERS)).get(ExtensionServiceMessage.RETURN_HEADER);
-                if (maybeRepAddr != null && maybeRepAddr instanceof String) {
-                    repAddr = (String) maybeRepAddr;
-                }
-            }
-        } else if (msg instanceof ExtensionServiceMessage) {
-            ExtensionServiceMessage esm = (ExtensionServiceMessage) msg;
-            maybeRepAddr = esm.messageHeaders.get(ExtensionServiceMessage.RETURN_HEADER);
-        } else {
-            throw new IllegalArgumentException("extractReplyAddress requires either a Map or ExtensionServiceMessage; received " + msg.getClass().getName());
-        }
-        if (maybeRepAddr instanceof String) {
-            repAddr = (String) maybeRepAddr;
-        }
-        return repAddr;
-    }
 
     /**
      * Set the {@link Handler} for any standard Http response that are received after authentication has completed
