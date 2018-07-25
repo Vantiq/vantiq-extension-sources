@@ -132,7 +132,7 @@ public class TestExtensionWebSocketClient {
         client.sendQueryResponse(200, queryAddress, queryData);
         
         assert socket.compareData("body", queryData);
-        assert socket.compareData("headers." + ExtensionServiceMessage.REPLY_ADDRESS, queryAddress);
+        assert socket.compareData("headers." + ExtensionServiceMessage.RESPONSE_ADDRESS_HEADER, queryAddress);
         assert socket.compareData("status", 200);
     }
     
@@ -150,7 +150,7 @@ public class TestExtensionWebSocketClient {
         
         // The ArrayList creation is necessary since JSON interprets arrays as ArrayList
         assert socket.compareData("body", new ArrayList<Map>(Arrays.asList(queryData)));
-        assert socket.compareData("headers." + ExtensionServiceMessage.REPLY_ADDRESS, queryAddress);
+        assert socket.compareData("headers." + ExtensionServiceMessage.RESPONSE_ADDRESS_HEADER, queryAddress);
         assert socket.compareData("status", 200);
     }
     
@@ -162,7 +162,7 @@ public class TestExtensionWebSocketClient {
         
         client.sendQueryError(queryAddress, errorCode, errorMessage, params);
         
-        assert socket.compareData("headers." + ExtensionServiceMessage.REPLY_ADDRESS, queryAddress);
+        assert socket.compareData("headers." + ExtensionServiceMessage.RESPONSE_ADDRESS_HEADER, queryAddress);
         assert socket.compareData("status", 400);
         // The ArrayList creation is necessary since JSON interprets arrays as ArrayList
         assert socket.compareData("body.parameters", new ArrayList<String>(Arrays.asList(params)));
