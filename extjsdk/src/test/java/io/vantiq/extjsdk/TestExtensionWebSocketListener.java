@@ -16,22 +16,22 @@ public class TestExtensionWebSocketListener {
 
     ExtensionWebSocketListener listener;
     FalseClient client;
-    TestHandler pHandler;
-    TestHandler aHandler;
-    TestHandler cHandler;
-    TestHandler qHandler;
-    TestHandler rHandler;
+    TestHandlerESM pHandler;
+    TestHandlerResp aHandler;
+    TestHandlerESM cHandler;
+    TestHandlerESM qHandler;
+    TestHandlerResp rHandler;
     String srcName;
     @Before
     public void setUp() {
         srcName = "src";
         client = new FalseClient(srcName);
         listener = new ExtensionWebSocketListener(client);
-        pHandler = new TestHandler();
-        aHandler = new TestHandler();
-        cHandler = new TestHandler();
-        qHandler = new TestHandler();
-        rHandler = new TestHandler();
+        pHandler = new TestHandlerESM();
+        aHandler = new TestHandlerResp();
+        cHandler = new TestHandlerESM();
+        qHandler = new TestHandlerESM();
+        rHandler = new TestHandlerResp();
 
         listener.setPublishHandler(pHandler);
         listener.setAuthHandler(aHandler);
@@ -57,23 +57,20 @@ public class TestExtensionWebSocketListener {
         authenticate(true);
 
         assert client.isAuthed();
-        assert aHandler.compareOp("");
-        assert aHandler.compareValue("status", 200);
+        assert aHandler.compareStatus(200);
     }
     
     @Test
     public void testAuthenticateFailFirst() {
         authenticate(false); // Create failing message
 
-        assert aHandler.compareOp("");
-        assert aHandler.compareValue("status", 400);
+        assert aHandler.compareStatus(400);
         assert !client.authenticate("").getNow(true); // It should be set to false now
         
         authenticate(true);
         
         assert client.isAuthed();
-        assert aHandler.compareOp("");
-        assert aHandler.compareValue("status", 200);
+        assert aHandler.compareStatus(200);
     }
     
     @Test
@@ -87,8 +84,8 @@ public class TestExtensionWebSocketListener {
 
         assert client.isConnected();
         assert cHandler.compareOp(ExtensionServiceMessage.OP_CONFIGURE_EXTENSION);
-        assert cHandler.compareValue("resourceId", srcName);
-        assert cHandler.compareValue("object.config." + key, val);
+        assert cHandler.compareSourceName(srcName);
+        assert cHandler.compareValue("config", config);
     }
     
     @Test
@@ -107,8 +104,8 @@ public class TestExtensionWebSocketListener {
         
         assert client.isConnected();
         assert cHandler.compareOp(ExtensionServiceMessage.OP_CONFIGURE_EXTENSION);
-        assert cHandler.compareValue("resourceId", srcName);
-        assert cHandler.compareValue("object.config." + key, val);
+        assert cHandler.compareSourceName(srcName);
+        assert cHandler.compareValue("config",config);
     }
     
     @Test
@@ -137,8 +134,8 @@ public class TestExtensionWebSocketListener {
         
         assert client.isConnected();
         assert cHandler.compareOp(ExtensionServiceMessage.OP_CONFIGURE_EXTENSION);
-        assert cHandler.compareValue("resourceId", srcName);
-        assert cHandler.compareValue("object.config." + key, val);
+        assert cHandler.compareSourceName(srcName);
+        assert cHandler.compareValue("config", config);
     }
     
     @Test
@@ -154,8 +151,8 @@ public class TestExtensionWebSocketListener {
         listener.onMessage(body);
         
         assert pHandler.compareOp(ExtensionServiceMessage.OP_PUBLISH);
-        assert pHandler.compareValue("resourceId", srcName);
-        assert pHandler.compareValue("object." + key, val);
+        assert pHandler.compareSourceName(srcName);
+        assert pHandler.compareValue( key, val);
     }
     
     @Test
@@ -171,8 +168,8 @@ public class TestExtensionWebSocketListener {
         listener.onMessage(body);
         
         assert qHandler.compareOp(ExtensionServiceMessage.OP_QUERY);
-        assert qHandler.compareValue("resourceId", srcName);
-        assert qHandler.compareValue("object." + key, val);
+        assert qHandler.compareSourceName( srcName);
+        assert qHandler.compareValue(key, val);
     }
     
     @Test public void testHttp() {
@@ -183,8 +180,7 @@ public class TestExtensionWebSocketListener {
         
         listener.onMessage(body);
         
-        assert rHandler.compareOp("");
-        assert rHandler.compareValue("status", 200);
+        assert rHandler.compareStatus(200);
     }
     
     @Test public void testHttpHandlerOnFailedConnection() {
@@ -196,8 +192,7 @@ public class TestExtensionWebSocketListener {
         listener.onMessage(body);
         
         assert !client.connectToSource().getNow(true); // It should be set to false now
-        assert rHandler.compareOp("");
-        assert rHandler.compareValue("status", 403);
+        assert rHandler.compareStatus(403);
     }
 
 // ====================================================================================================================
@@ -304,46 +299,47 @@ public class TestExtensionWebSocketListener {
         }
     }
 
-    private class TestHandler extends Handler<Map> {
+    private class TestHandlerESM extends Handler<ExtensionServiceMessage> {
         public String lastOp = "";
-        public Map lastMessage = new LinkedHashMap();
+        public ExtensionServiceMessage lastMessage = null;
         @Override
-        public void handleMessage(Map message) {
-            if (message.get("op") instanceof String) {
-                lastOp = (String) message.get("op");
-            }
-            else {
-                lastOp = "";
-            }
+        public void handleMessage(ExtensionServiceMessage message) {
+            lastOp = message.getOp();
             lastMessage = message;
         }
 
         public boolean compareOp(String expectedOp) {
             return lastOp.equals(expectedOp);
         }
-        public boolean compareMessage(Map expectedMessage) {
+        public boolean compareMessage(ExtensionServiceMessage expectedMessage) {
             return lastMessage.equals(expectedMessage);
         }
+        public boolean compareSourceName(String sourceName) {
+            return lastMessage.getSourceName().equals(sourceName);
+        }
         public boolean compareValue(String key, Object expectedVal) {
-            Object actualVal = getTransformVal(lastMessage, key);
+            Object actualVal = ((Map)lastMessage.getObject()).get(key);
             return expectedVal.equals(actualVal);
         }
     }
     
-    public static Object getTransformVal(Map map, String loc) {
-        Object result;
-        Map currentLvl = map;
-        String[] levelNames = loc.split("\\.");
-
-        int level;
-        for (level = 0; level < levelNames.length - 1; level++) {
-            if (!(currentLvl.get(levelNames[level]) instanceof Map)) {
-                return null;
-            }
-            currentLvl = (Map) currentLvl.get(levelNames[level]);
+    private class TestHandlerResp extends Handler<Response> {
+        public Response lastMessage = null;
+        @Override
+        public void handleMessage(Response message) {
+            lastMessage = message;
         }
-        result = currentLvl.get(levelNames[level]);
-        return result;
+
+        public boolean compareStatus(Integer expectedStatus) {
+            return expectedStatus.equals(lastMessage.getStatus());
+        }
+        public boolean compareBody(Object expectedBody) {
+            return lastMessage.getBody().equals(expectedBody);
+        }
+        public boolean compareHeader(String headerName, String expectedVal) {
+            Object actualVal = lastMessage.getHeader(headerName);
+            return expectedVal.equals(actualVal);
+        }
     }
 
     private String sampleAuthResponseBody = "{\"status\":200, \"contentType\":\"application/json\", \"body\":{\"anonymous\":false, " +
