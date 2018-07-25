@@ -279,7 +279,7 @@ public class ConfigurableUDPSource {
                 setNotificationHandler(handler, sourceName, incoming); // This function is part of ConfigurableUDPSource
                 log.debug("Notification handler created for source '" + sourceName + "'");
             }
-            log.trace("Finished creating handlers for source '" + sourceName + "'");
+            log.info("Source '" + sourceName + "' setup and ready to go.");
         }
 
         private int getListeningPort(Map general,String sourceName) {
@@ -343,9 +343,9 @@ public class ConfigurableUDPSource {
             String sourceName = (String) message.get("resourceId");
             ExtensionWebSocketClient client = clients.get(sourceName);
 
-            // Disassociate the source from the socket
-            for (Map.Entry<DatagramSocket,List<String>> entry : udpSocketToSources.entrySet()) {
-                synchronized (this) { // Don't want to edit while another is adding to or removing from UDPSocket
+            synchronized (socketLock) { // Don't want to edit while another is adding to or removing from UDPSocket
+                // Disassociate the source from the socket
+                for (Map.Entry<DatagramSocket,List<String>> entry : udpSocketToSources.entrySet()) {
                     List<String> list = entry.getValue();
                     if (list.contains(client)) {
                         list.remove(client);
@@ -612,6 +612,10 @@ public class ConfigurableUDPSource {
      * A {@link Map} keyed by source that contains the socket the source is using
      */
     private static Map<DatagramSocket, List<String>> udpSocketToSources = new LinkedHashMap<>();
+    /**
+     * An Object used to ensure only one source edits udpSocketToSources at once
+     */
+    private static Object socketLock = new Object();
     /**
      * The {@link ExtensionWebSocketClient} that communicates with Vantiq
      */

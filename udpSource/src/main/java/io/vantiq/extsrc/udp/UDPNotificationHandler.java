@@ -282,7 +282,6 @@ public class UDPNotificationHandler extends Handler<DatagramPacket>{
         if (expectingXml && xmlRootLoc != null) {
             try {
                 FromXmlParser p = (FromXmlParser) mapper.getFactory().createParser(packet.getData());
-                log.debug(p.getStaxReader().getLocalName());
                 MapTransformer.createTransformVal(sendMsg, xmlRootLoc, p.getStaxReader().getLocalName());
             }
             catch (Exception e) {
@@ -306,7 +305,7 @@ public class UDPNotificationHandler extends Handler<DatagramPacket>{
         
         Matcher regexMatcher = regexPattern.matcher(str);
         if (!regexMatcher.find()) {
-            log.warn("Message failed to match the requested pattern"); // TODO allow EWSClient to reveal sourceName 
+            log.warn("Message failed to match the requested pattern for source '" + client.getSourceName() + "'");
             log.debug("String '" + str + "' failed to match pattern '" + regexPattern.pattern() + "'");
             return output;
         }
