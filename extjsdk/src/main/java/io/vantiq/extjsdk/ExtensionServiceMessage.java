@@ -103,14 +103,14 @@ public class ExtensionServiceMessage {
      */
     boolean isExternal;
 
-    ExtensionServiceMessage(String address) {
+    public ExtensionServiceMessage(String address) {
         super();
         this.address = address;
         this.messageHeaders = new HashMap();
     }
 
 
-    ExtensionServiceMessage connectExtension(String resourceName, String resourceId, Object announcement) {
+    public ExtensionServiceMessage connectExtension(String resourceName, String resourceId, Object announcement) {
         this.op = OP_CONNECT_EXTENSION;
         this.resourceName = resourceName;
         this.resourceId = resourceId;
@@ -183,7 +183,7 @@ public class ExtensionServiceMessage {
      *
      * @return - the DataMessage as a map
      */
-    Map asMap() {
+    public Map asMap() {
         Map<String, Object> m = new HashMap<>();
         m.put("address", address);
         if (namespaceName != null) m.put("namespaceName", namespaceName);
@@ -211,7 +211,7 @@ public class ExtensionServiceMessage {
      * @param mapOfMessage - the map representation of the message.
      * @return - the DataMessage populated with the mapOfMessage contents.
      */
-    ExtensionServiceMessage fromMap(Map mapOfMessage) {
+    public ExtensionServiceMessage fromMap(Map mapOfMessage) {
         Map m = mapOfMessage;
         if (m.containsKey("namespaceName")) namespaceName = (String) m.get("namespaceName");
         if (m.containsKey("locale")) locale = (String) m.get("locale");

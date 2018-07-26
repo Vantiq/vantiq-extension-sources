@@ -67,7 +67,13 @@ public class ExtensionWebSocketClient {
      * Used to signal that a source connection has been requested
      */
     CompletableFuture<Void> sourceRequested;
+    /**
+     * A {@link CompletableFuture CompletableFuture<Void>} that is completed when authorization succeeds.
+     */
     CompletableFuture<Void> authSuccess;
+    /**
+     * Whether it should automatically send a connection message after receiving a reconnect message
+     */
     boolean autoReconnect = false;
     /**
      * The data to be used for authentication. This will be either a {@link String} containing an authentication token or
@@ -166,10 +172,24 @@ public class ExtensionWebSocketClient {
         return getWebsocketConnectionFuture();
     }
     
+    /**
+     * Returns a {@link CompletableFuture} that will return true when the  succeeds, or false
+     * when the connection fails.
+     * 
+     * @return      A {@link CompletableFuture} that will return true when the websocket connection succeeds, or false
+     *              when the connection fails.
+     */
     public CompletableFuture<Boolean> getWebsocketConnectionFuture() {
         return webSocketFuture;
     }
     
+    /**
+     * Ensures that the target address is correctly prepended by "wss://" and appended by 
+     * "/api/v{version number}/wsock/websocket"
+     * 
+     * @param url   The url to be made valid
+     * @return      A valid url for websocket connections
+     */
     protected String validifyUrl(String url) {
         // Ensure prepended by wss:// and not http:// or https://
         if (url.startsWith("http://")) {
@@ -295,6 +315,9 @@ public class ExtensionWebSocketClient {
         }
     }
 
+    /** 
+     * Send the authentication message based on the auth data passed through {@link #authenticate}
+     */
     protected void doAuthentication() {
         Map<String, Object> authMsg = new LinkedHashMap<>();
         // If this is username and password combo, use authenticate op
@@ -365,6 +388,8 @@ public class ExtensionWebSocketClient {
     }
     
     /**
+     * Returns a {@link CompletableFuture} that will return true when the authentication succeeds, or false
+     * when authentication fails.
      * 
      * @return      A {@link CompletableFuture} that will return true when the authentication succeeds, or false
      *              when the WebSocket connection fails before authentication can occur.
@@ -373,6 +398,9 @@ public class ExtensionWebSocketClient {
         return authFuture;
     }
 
+    /**
+     * Send the connection message
+     */
     protected void doConnectionToSource() {
         ExtensionServiceMessage connectMessage = new ExtensionServiceMessage("");
         connectMessage.connectExtension(ExtensionServiceMessage.RESOURCE_NAME_SOURCES, sourceName, null);
@@ -405,6 +433,8 @@ public class ExtensionWebSocketClient {
     }
     
     /**
+     * Returns a {@link CompletableFuture} that will return true when a connection succeeds, or false when
+     * it fails.
      * 
      * @return  A {@link CompletableFuture} that will return true when a connection succeeds, or false when
      *          either the WebSocket connection or authentication fails before the source can connect.
@@ -574,7 +604,7 @@ public class ExtensionWebSocketClient {
      * <p>
      * The handler will receive a {@link Map} of the message received. 
      * 
-     * @param reconnectHandler
+     * @param reconnectHandler  {@link Handler} that deals with reconnect messages
      */
     public void setReconnectHandler(Handler<ExtensionServiceMessage> reconnectHandler) {
         this.listener.setReconnectHandler(reconnectHandler);

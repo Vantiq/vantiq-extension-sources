@@ -245,7 +245,7 @@ public class ExtensionWebSocketListener implements WebSocketListener{
      * <p>
      * The handler will receive a {@link Map} of the message received. 
      * 
-     * @param reconnectHandler
+     * @param reconnectHandler  {@link Handler} that deals with reconnect messages
      */
     public void setReconnectHandler(Handler<ExtensionServiceMessage> reconnectHandler) {
         this.reconnectHandler = reconnectHandler;
@@ -255,7 +255,7 @@ public class ExtensionWebSocketListener implements WebSocketListener{
      * Log that the connection is open, save the WebSocket for {@link #client} and signal the successful opening
      *
      * @param webSocket The {@link WebSocket} that opened this listener.
-     * @param response  The {@link Response} associated with the opening of the connection. Currently not used.
+     * @param response  The {@link okhttp3.Response} associated with the opening of the connection. Currently not used.
      */
     @Override
     public void onOpen(WebSocket webSocket, okhttp3.Response response) {
@@ -427,7 +427,7 @@ public class ExtensionWebSocketListener implements WebSocketListener{
      * Logs the error and closes the client. Only closes the client on an {@link EOFException} with no message, as that appears to
      * be the result of closing the connection with the Vantiq deployment.
      * @param e         The {@link IOException} that initiated the failure.
-     * @param response  The {@link Response} that caused the failure, if any.
+     * @param response  The {@link okhttp3.Response} that caused the failure, if any.
      */
     @Override
     public void onFailure(IOException e, okhttp3.Response response) {
