@@ -715,7 +715,6 @@ public class ConfigurableUDPSource {
                 3141;
         authToken = config.get("authToken") instanceof String ? (String) config.get("authToken") : "";
 
-        // TODO log related subjects
         if (config.get("logLevel") instanceof String || config.get("logTarget") instanceof String) {
             Level logLevel = Level.toLevel((String) config.get("logLevel"), Level.WARN);
             String logTarget = (String) config.get("logTarget");
@@ -782,7 +781,7 @@ public class ConfigurableUDPSource {
          * Then, it sets the default {@link Handler} defined earlier for several situations
          */
         // A CompletableFuture that will return false unless every source connects fully
-        CompletableFuture<Boolean> connectionWaiter = CompletableFuture.completedFuture(true); // TODO rename
+        CompletableFuture<Boolean> connectionWaiter = CompletableFuture.completedFuture(true);
         for (String sourceName : sources) {
             // Create an ExtensionWebSocketClient for the source
             ExtensionWebSocketClient client = new ExtensionWebSocketClient(sourceName);
@@ -918,7 +917,7 @@ public class ConfigurableUDPSource {
      */
     // Translates the UDP DatagramPacket into a format that the Vantiq server expects
     public static void sendFromDatagram(DatagramPacket packet, List<String> sources) {
-        log.info("UDP Packet received");
+        log.debug("UDP Packet received");
         log.trace (new String(packet.getData()));
         InetAddress address = packet.getAddress();
         int port = packet.getPort();

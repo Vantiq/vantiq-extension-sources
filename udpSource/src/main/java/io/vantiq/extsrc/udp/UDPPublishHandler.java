@@ -331,7 +331,7 @@ public class UDPPublishHandler extends Handler<ExtensionServiceMessage>{
                 log.error("Insufficient arguments for pattern '" + formatPattern + "'");
             }
             resultBytes = formattedString.toString().getBytes();
-            log.debug(formattedString.toString());
+            log.debug("Formatted result is " + formattedString.toString());
             formattedString.setLength(0);;
         }
         

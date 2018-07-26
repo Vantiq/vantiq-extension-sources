@@ -188,7 +188,7 @@ public class UDPNotificationHandler extends Handler<DatagramPacket>{
                     log.error("Regex options dictate more locations than capture groups. Please either reduce the "
                             + "number of locations or increase the number of captures");
                 }
-            }
+            } 
         }
 
         List<List> transforms = null;
@@ -301,20 +301,26 @@ public class UDPNotificationHandler extends Handler<DatagramPacket>{
         client.sendNotification(sendMsg);
     }
 
+    /**
+     * Returns a map created from the results of {@link #regexPattern} being applied to the input string. The capture 
+     * groups are placed in the locations specified by {@link #patternLocations}.
+     * 
+     * @param str   The string to check for matches to the regex.
+     * @return      A {@code Map} that contains the capture groups, or null if the pattern could not be found.
+     */
     private Map<String,Object> getRegexResults(String str) {
         Map<String,Object> output = new LinkedHashMap<>();
         
         Matcher regexMatcher = regexPattern.matcher(str);
         if (!regexMatcher.find()) {
             log.warn("Message failed to match the requested pattern for source '" + client.getSourceName() + "'");
-            log.debug("String '" + str + "' failed to match pattern '" + regexPattern.pattern() + "'");
-            return output;
+            log.debug("String '" + str + "' \nfailed to match pattern '" + regexPattern.pattern() + "'");
+            return null;
         }
         
         for (int i = 0; i < patternLocations.length; i++) {
             MapTransformer.createTransformVal(output, patternLocations[i], regexMatcher.group(i + 1));
         }
-        
         
         return output;
     }

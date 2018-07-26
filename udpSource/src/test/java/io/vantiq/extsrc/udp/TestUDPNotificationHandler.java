@@ -85,11 +85,14 @@ public class TestUDPNotificationHandler {
         assert Pattern.matches(pattern, testMessage);
         
         nHandler = new UDPNotificationHandler(incoming, fakeClient);
-        int runCount = 10 * 1000;
+        nHandler.handleMessage(packet);
+        int runCount = 100 * 1000;
         long currentTime = System.currentTimeMillis();
         
         for (int i = 0; i < runCount; i ++) {
+            packetBytes = testMessage.getBytes();
             packetBytes[1] = (byte) ((i & 7) + 48);
+            packet = new DatagramPacket(packetBytes, packetBytes.length);
             nHandler.handleMessage(packet);
         }
         
