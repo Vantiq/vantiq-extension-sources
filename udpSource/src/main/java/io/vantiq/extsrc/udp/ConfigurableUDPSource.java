@@ -653,12 +653,16 @@ public class ConfigurableUDPSource {
      * The desired level of log statements
      */
     private static String targetVantiqServer = null;
+    /**
+     * The authentication token used to connect to Vantiq
+     */
     private static String authToken = null;
 
     /**
-     * Sets the log level and logfile of the UDP source and the Extension Source SDK 
+     * Sets the log level and logfile of the UDP source and the Extension Source SDK.
      * 
-     * 
+     * @param logLevel  An instance of {@link Level} at which the log will be reporting
+     * @param logTarget The location of the output file. {@code null} will not create a file
      */
     private static void setupLogger(Level logLevel, String logTarget) {
         
@@ -692,10 +696,16 @@ public class ConfigurableUDPSource {
         }
     }
 
-    private static Map obtainServerConfig(String fileName) {
+    /**
+     * Turn the given JSON file into a {@link Map}. 
+     * 
+     * @param fileName  The name of the JSON file holding the server configuration.
+     * @return          A {@link Map} that holds the contents of the JSON file.
+     */
+    private static Map<String, Object> obtainServerConfig(String fileName) {
         File configFile = new File(fileName);
         log.debug(configFile.getAbsolutePath());
-        Map config = new LinkedHashMap();
+        Map<String, Object>  config = new LinkedHashMap();
         ObjectMapper mapper = new ObjectMapper();
         try {
             config = mapper.readValue(configFile, Map.class);
@@ -707,6 +717,11 @@ public class ConfigurableUDPSource {
 
     }
 
+    /**
+     * Sets up the defaults for the server based on the configuration file
+     *
+     * @param config    The {@link Map} obtained from the config file
+     */
     private static void setupServer(Map config) {
         targetVantiqServer = config.get("targetServer") instanceof String ? (String) config.get("targetServer") :
                 "wss://dev.vantiq.com/api/v1/wsock/websocket";

@@ -123,14 +123,41 @@ public class UDPNotificationHandler extends Handler<DatagramPacket>{
      * A Slf4j logger.
      */
     final private Logger log = LoggerFactory.getLogger(this.getClass());
+    /**
+     * An {@link ObjectMapper} used to translate received objects into {@link Map}
+     */
     private ObjectMapper mapper = new ObjectMapper();
+    /**
+     * Whether the incoming data will be in XML format
+     */
     private boolean expectingXml = false;
+    /**
+     * Where to place the name of the root object of an XML object
+     */
     private String xmlRootLoc = null;
+    /**
+     * Whether the incoming data will be in CSV format
+     */
     private boolean expectingCsv = false;
+    /**
+     * Where to place the Ascii translation of the incoming bytes.
+     */
     private String bytesLocation = null;
+    /**
+     * Whether to pass the incoming data out unchanged, except for becoming a JSON object if it wasn't already
+     */
     private boolean passingPureMap = false;
+    /**
+     * Whether to pass along unchanged any incoming data that was not specified in {@code transformations}
+     */
     private boolean passingUnspecified = false;
+    /**
+     * The regex pattern to apply to incoming messages
+     */
     private Pattern regexPattern = null;
+    /**
+     * The locations to which each capture group will be placed
+     */
     private String[] patternLocations = null;
 
     /**

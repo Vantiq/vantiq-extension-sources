@@ -119,17 +119,53 @@ public class UDPPublishHandler extends Handler<ExtensionServiceMessage>{
      * An Slf4j logger.
      */
     final private Logger log = LoggerFactory.getLogger(this.getClass());
+    /**
+     * Whether to pass the outgoing data unchanged, except for becoming a a different data-format if requested
+     */
     private boolean passingPureMap = false;
+    /**
+     * Whether to pass along unchanged any outgoing data that was not specified in {@code transformations}
+     */
     private boolean passingUnspecified = false;
+    /**
+     * Where to take the output bytes from 
+     */
     private String bytesLocation = null;
+    /**
+     * The {@link Formatter} pattern used to create an outbound message
+     */
     private String formatPattern = null;
+    /**
+     * The {@link Formatter} used to create an outbound message
+     */
     private Formatter formatter = null;
+    /**
+     * The locations from which the arguments for {@link #formatPattern} will be taken
+     */
     private String[] formatLocations = null;
+    /**
+     * The results of the formatting done by {@link #formatter}
+     */
     private StringBuilder formattedString = null;
+    /**
+     * The location in which an alternate formatting pattern may be placed in a Publish message.
+     */
     private String altPatternLocation = null;
+    /**
+     * The location in which alternate argument locations for the formatting pattern may be placed in a Publish message.
+     */
     private String altLocations = null;
+    /**
+     * The location of the array of objects that will be translated into CSV
+     */
     private String csvSource = null;
+    /**
+     * The schema for the objects that will be translated into CSV
+     */
     private CsvSchema csvSchema = null;
+    /**
+     * The location where an alternate configuration for {@link #csvSchema} may be placed in a Publish message.
+     */
     private String csvSchemaLocation = null;
     
     /**
@@ -279,6 +315,12 @@ public class UDPPublishHandler extends Handler<ExtensionServiceMessage>{
         }
     }
     
+    /**
+     * Build a CSV message from the given map
+     * 
+     * @param map   Map containing the array of objects to be translated
+     * @return      A string representing the CSV to be sent out
+     */
     private String buildCsv(Map<String,Object> map) {
         String out = null;
         
@@ -307,6 +349,12 @@ public class UDPPublishHandler extends Handler<ExtensionServiceMessage>{
         return out;
     }
     
+    /**
+     * Format the received data to create a customized string
+     * 
+     * @param receivedData  The map containing the values to fill the formatted String with
+     * @return              The byte representation of the formatted String
+     */
     private byte[] getFormattedOutput(Map receivedData) {
         byte[] resultBytes = null;
         List<Object> args = new ArrayList<>();
