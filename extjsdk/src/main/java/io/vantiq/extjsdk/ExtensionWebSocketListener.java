@@ -323,22 +323,31 @@ public class ExtensionWebSocketListener implements WebSocketListener{
                     log.warn("Http response received with no handler set");
                 }
             }
-            else {
-                if ((int) message.getStatus() == 200 && !client.isAuthed()) {
-                    // Forcibly setting in case an error occurred before succeeding
-                    client.authFuture.obtrudeValue(true);
-                    // Signal that an authentication has succeeded
-                    client.authSuccess.complete(null);
-                }
-                else {
-                    client.authFuture.complete(false);
-                    log.warn("Error occurred attempting to authenticate");
-                }
-                if (authHandler != null) {
-                    this.authHandler.handleMessage(message);
-                }
-                else {
-                    log.warn("Authentication received with no handler set");
+            // Quick check to ensure that the socket didn't close while auth message was being translated
+            else if (client.isOpen()){
+                // Resetting authFuture is also sync'd on client, so this way they won't interfere with each other
+                synchronized (client) {
+                    // Rechecking isOpen() while sync'd in case of concurrency problems
+                    if (!client.isOpen()) {
+                        return;
+                    }
+
+                    if ((int) message.getStatus() == 200 && !client.isAuthed()) {
+                        // Forcibly setting in case an error occurred before succeeding
+                        client.authFuture.obtrudeValue(true);
+                        // Signal that an authentication has succeeded
+                        client.authSuccess.complete(null);
+                    }
+                    else {
+                        client.authFuture.complete(false);
+                        log.warn("Error occurred attempting to authenticate");
+                    }
+                    if (authHandler != null) {
+                        this.authHandler.handleMessage(message);
+                    }
+                    else {
+                        log.warn("Authentication received with no handler set");
+                    }
                 }
 
             }
@@ -385,14 +394,22 @@ public class ExtensionWebSocketListener implements WebSocketListener{
                 }
             }
             else if (msg.get("op").equals(ExtensionServiceMessage.OP_CONFIGURE_EXTENSION) && client.isAuthed()) {
-                // Forcibly setting in case an error occurred before succeeding
-                client.sourceFuture.obtrudeValue(true); 
-                log.info("Successful connection to " + msg.get("resourceId").toString());
-                if (this.configHandler != null) {
-                    this.configHandler.handleMessage(message);
-                }
-                else {
-                    log.warn("Configuration received with no handler set");
+                // Resetting sourceFuture is also sync'd on client, so this way they won't interfere with each other
+                synchronized (client) {
+                    // Rechecking isAuthed() while sync'd in case of concurrency problems
+                    if (!client.isAuthed()) {
+                        return;
+                    }
+
+                    // Forcibly setting in case an error occurred before succeeding
+                    client.sourceFuture.obtrudeValue(true);
+                    log.info("Successful connection to " + msg.get("resourceId").toString());
+                    if (this.configHandler != null) {
+                        this.configHandler.handleMessage(message);
+                    }
+                    else {
+                        log.warn("Configuration received with no handler set");
+                    }
                 }
             }
             else {

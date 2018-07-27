@@ -508,13 +508,14 @@ public class ExtensionWebSocketClient {
                 }
             }
         }
-        webSocket = null;
-        // TODO better to obtrude null or false?
-        // Make sure anything still using these futures know that they are no longer valid
-        webSocketFuture.obtrudeValue(false);
-        authFuture.obtrudeValue(false);
-        sourceFuture.obtrudeValue(false);
-        initializeFutures();
+        synchronized (this) {
+            webSocket = null;
+            // Make sure anything still using these futures know that they are no longer valid
+            webSocketFuture.obtrudeValue(false);
+            authFuture.obtrudeValue(false);
+            sourceFuture.obtrudeValue(false);
+            initializeFutures();
+        }
         log.info("Websocket closed for source " + sourceName);
     }
 
