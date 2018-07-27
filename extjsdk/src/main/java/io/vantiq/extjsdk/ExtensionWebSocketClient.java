@@ -128,7 +128,7 @@ public class ExtensionWebSocketClient {
                         }
                 ).thenComposeAsync(
                         (success) -> {
-                            if (success) {
+                            if (success != null && success) { // In case a user assigns null
                                 doAuthentication();
                                 return new CompletableFuture<>();
                             }
@@ -140,7 +140,7 @@ public class ExtensionWebSocketClient {
         // If authentication failed, complete as false in order to propagate the failure
         sourceFuture = authFuture.thenComposeAsync(
                         (success) -> {
-                            if (success) {
+                            if (success != null && success) { // In case a user assigns null
                                 return new CompletableFuture<Boolean>();
                             }
                             return CompletableFuture.completedFuture(false);
