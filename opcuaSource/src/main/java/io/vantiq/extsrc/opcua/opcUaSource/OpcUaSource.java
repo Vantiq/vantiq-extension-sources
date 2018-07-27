@@ -185,9 +185,9 @@ public class OpcUaSource {
      * which source sent the Publish.
      */
     // Passes data to the UDP server or tells the program to stop
-    private Handler<Map> publishHandler = new Handler<Map>() {
+    private Handler<ExtensionServiceMessage> publishHandler = new Handler<ExtensionServiceMessage>() {
         @Override
-        public void handleMessage(Map message) {
+        public void handleMessage(ExtensionServiceMessage message) {
 
             if (opcClient.isConnected()) {
                 log.debug("Sending publish request to OPC");
@@ -204,11 +204,11 @@ public class OpcUaSource {
      * Shuts down the server when a query is received. This is largely a debug decision, as a) queries are not expected
      * for UDP sources, and b) problems occur when the WebSocket connection is violently shut down
      */
-    private Handler<Map> queryHandler = new Handler<Map>() {
+    private Handler<ExtensionServiceMessage> queryHandler = new Handler<ExtensionServiceMessage>() {
         @Override
-        public void handleMessage(Map msg) {
+        public void handleMessage(ExtensionServiceMessage msg) {
             log.debug("Query handler:  Got query: {}", msg);
-            String replyAddress = ExtensionWebSocketClient.extractReplyAddress(msg);
+            String replyAddress = ExtensionServiceMessage.extractReplyAddress(msg);
             if (opcClient.isConnected()) {
                 log.debug("Sending query request to OPC");
                 performQuery(msg);
@@ -225,16 +225,16 @@ public class OpcUaSource {
      * Creates publish and notification handlers for any messages relating to a source based on the configuration
      * document
      */
-    private Handler<Map> configHandler = new Handler<Map>() {
+    private Handler<ExtensionServiceMessage> configHandler = new Handler<ExtensionServiceMessage>() {
         @Override
-        public void handleMessage(Map message) {
-            String sourceName = (String) message.get("resourceId");
-            configurationDoc = (Map) ((Map) message.get("object")).get("config");
+        public void handleMessage(ExtensionServiceMessage message) {
+            String sourceName = message.getSourceName();
+            configurationDoc = (Map) ((Map) message.getObject()).get("config");
 
             // FIXME -- Need to qualify source name (i.e. resourceId) with namespace name.
             // Save the config away so that we can refer to it in the future...
             configurations.put(sourceName, configurationDoc);
-            log.info("Received configuration document for source {}: {}", sourceName, message.get("object"));
+            log.info("Received configuration document for source {}: {}", sourceName, message.getObject());
 
             connectToOpc();
         }
@@ -315,16 +315,16 @@ public class OpcUaSource {
      *
      * @param msg publish message initiating the workflow
      */
-    void performPublish(Map msg) {
+    void performPublish(ExtensionServiceMessage msg) {
         log.debug("performPublish -- given message: {}", msg);
         CompletableFuture.runAsync(() -> {
             Map pubMsg;
-            Object maybeMap = msg.get("object");
+            Object maybeMap = msg.getObject();
             if (!(maybeMap instanceof Map)) {
                 log.error("Publish Failed: Message format error -- 'object' was a {}, should be Map.  Overall message: {}",
                         maybeMap.getClass().getName(), msg);
             } else {
-                pubMsg = (Map) msg.get("object");
+                pubMsg = (Map) msg.getObject();
                 log.debug("Published msg[object] == {}", pubMsg);
                 String intent = (String) pubMsg.get("intent");
                 if ("subscribe".equalsIgnoreCase(intent) || "unsubscribe".equalsIgnoreCase(intent)) {
@@ -363,12 +363,12 @@ public class OpcUaSource {
      *
      * @param msg query message containing the request
      */
-    void performQuery(Map msg) {
+    void performQuery(ExtensionServiceMessage msg) {
         log.debug("performQuery -- given message: {}", msg);
         CompletableFuture.runAsync(() -> {
-            String replyAddress = ExtensionWebSocketClient.extractReplyAddress(msg);
+            String replyAddress = ExtensionServiceMessage.extractReplyAddress(msg);
             Map qryMsg;
-            Object maybeMap = msg.get("object");
+            Object maybeMap = msg.getObject();
             if (!(maybeMap instanceof Map)) {
                 log.error("Query Failed: Message format error -- 'object' was a {}, should be Map.  Overall message: {}",
                         maybeMap.getClass().getName(), msg);
