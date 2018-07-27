@@ -111,7 +111,7 @@ public class ExtensionWebSocketListener implements WebSocketListener{
                 // Prepare a response with an empty body, so that the query doesn't wait for a timeout
                 Object[] body = {msg.getSourceName()};
                 client.sendQueryError(ExtensionServiceMessage.extractReplyAddress(msg),
-                        "Unset Handler",
+                        "io.vantiq.extjsdk.unsetQueryHandler",
                         "No handler has been set for source {0}",
                         body);
             }
@@ -366,7 +366,7 @@ public class ExtensionWebSocketListener implements WebSocketListener{
                         log.warn("Publish received with no handler set");
                     }
                 }
-                else if (msg.get("op").equals(ExtensionServiceMessage.OP_QUERY)) {
+                else if (message.getOp().equals(ExtensionServiceMessage.OP_QUERY)) {
                     if (this.queryHandler != null) {
                         this.queryHandler.handleMessage(message);
                     }
@@ -374,7 +374,7 @@ public class ExtensionWebSocketListener implements WebSocketListener{
                         log.warn("Query received with no handler set");
                     }
                 }
-                else if (msg.get("op").equals(ExtensionServiceMessage.OP_RECONNECT_REQUIRED)) {
+                else if (message.getOp().equals(ExtensionServiceMessage.OP_RECONNECT_REQUIRED)) {
                     client.sourceHasDisconnected(); // Resets to pre source connection state
                     if (this.reconnectHandler != null) {
                         this.reconnectHandler.handleMessage(message);
