@@ -1,12 +1,9 @@
 package io.vantiq.extsrc.opcua.io.vantiq.extsrc.opcua.sampleServer;
 
-import io.vantiq.extsrc.opcua.categories.OnlyHandTests;
-import io.vantiq.extsrc.opcua.uaOperations.OpcUaTestBase;
+
 import io.vantiq.extsrc.opcua.uaOperations.Utils;
 import lombok.extern.slf4j.Slf4j;
 import org.eclipse.milo.examples.server.ExampleServer;
-import org.junit.Test;
-import org.junit.experimental.categories.Category;
 
 import java.util.concurrent.TimeUnit;
 
@@ -51,7 +48,14 @@ public class RunExampleServer {
     }
 
     public static void main(String[] argv) {
-        durationOfRun = DURATION_1_DAY;
+        if (argv.length < 1) {
+            durationOfRun = DURATION_1_DAY;
+        } else {
+            String durationSpec = argv[0];
+            int minTime = Integer.valueOf(durationSpec);
+
+            durationOfRun = TimeUnit.MINUTES.toMillis(minTime);
+        }
         RunExampleServer server = new RunExampleServer();
         server.testRunAWhile();
     }
