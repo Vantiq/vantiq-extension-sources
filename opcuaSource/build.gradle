@@ -30,3 +30,8 @@ test {
         excludeCategories 'io.vantiq.extsrc.opcua.categories.OnlyHandTests'
     }
 }
+
+task runExampleServer(type: JavaExec) {
+    main = "io.vantiq.extsrc.opcua.io.vantiq.extsrc.opcua.sampleServer.RunExampleServer"
+    classpath = sourceSets.test.runtimeClasspath
+}
