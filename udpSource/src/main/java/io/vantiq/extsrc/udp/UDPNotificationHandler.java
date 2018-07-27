@@ -283,10 +283,19 @@ public class UDPNotificationHandler extends Handler<DatagramPacket>{
 
         // Transforms the message as requested by the Configuration document
         if (regexPattern != null) {
-            sendMsg = getRegexResults(new String(packet.getData(), Charset.forName("UTF-8")));
+            
+            // Create a String from the byte data, but remove unfilled locations
+            String recString = new String(packet.getData());
+            recString = new String(packet.getData(), 0, recString.indexOf("\0"), Charset.forName("UTF-8"));
+            
+            sendMsg = getRegexResults(recString);
         }
         else if (bytesLocation != null) {
-            MapTransformer.createTransformVal(sendMsg, bytesLocation, new String(packet.getData()));
+         // Create a String from the byte data, but remove unfilled locations
+            String recString = new String(packet.getData());
+            recString = new String(packet.getData(), 0, recString.indexOf("\0"), Charset.forName("UTF-8"));
+            
+            MapTransformer.createTransformVal(sendMsg, bytesLocation, recString);
         }
         else if (passingPureMap) {
             sendMsg = receivedMsg;
