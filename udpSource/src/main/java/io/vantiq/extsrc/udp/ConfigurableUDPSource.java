@@ -361,6 +361,11 @@ public class ConfigurableUDPSource {
             notificationHandlers.remove(sourceName);
             client.setPublishHandler(UDPDefaultPublish);
             
+            // Clear all source address ports
+            sourceAddresses.remove(sourceName);
+            sourcePorts.remove(sourceName);
+            sourceServers.remove(sourceName);
+            
             client.connectToSource();
         }
         
