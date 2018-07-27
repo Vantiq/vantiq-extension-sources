@@ -25,8 +25,8 @@ public class ExtensionServiceMessage {
     public static final String OP_QUERY = "query";
     public static final String OP_RECONNECT_REQUIRED = "reconnectRequired";
     public static final MediaType CONTENT_TYPE_JSON = MediaType.parse("application/json; charset=utf-8");
-    public static final String RETURN_HEADER = "REPLY_ADDR_HEADER";
-    public static final String REPLY_ADDRESS = "X-Reply-Address";
+    public static final String ORIGIN_ADDRESS_HEADER = "REPLY_ADDR_HEADER";
+    public static final String RESPONSE_ADDRESS_HEADER = "X-Reply-Address";
     public static final String PROPERTY_MESSAGE_HEADERS = "messageHeaders";
 
     public String address;
@@ -103,14 +103,14 @@ public class ExtensionServiceMessage {
      */
     boolean isExternal;
 
-    ExtensionServiceMessage(String address) {
+    public ExtensionServiceMessage(String address) {
         super();
         this.address = address;
         this.messageHeaders = new HashMap();
     }
 
 
-    ExtensionServiceMessage connectExtension(String resourceName, String resourceId, Object announcement) {
+    public ExtensionServiceMessage connectExtension(String resourceName, String resourceId, Object announcement) {
         this.op = OP_CONNECT_EXTENSION;
         this.resourceName = resourceName;
         this.resourceId = resourceId;
@@ -124,6 +124,58 @@ public class ExtensionServiceMessage {
         return asMap().toString();
     }
 
+    public Object getObject() {
+        return this.object;
+    }
+    
+    public String getSourceName() {
+        return this.resourceId;
+    }
+    
+    public Map<String,Object> getMessageHeaders() {
+        return this.messageHeaders;
+    }
+    
+    public String getOp() {
+        return this.op;
+    }
+    
+    /**
+     * Extract reply address from a message.
+     *
+     * This is a utility method that examines the various forms a message may take and
+     * extracts the reply address if present.
+     *
+     * @param msg Message from which to extract the reply address
+     * @return String The reply address (or null if absent from msg).
+     *
+     * @throws IllegalArgumentException if the msg parameter with neither a Map nor an ExtensionServiceMessage
+     *
+     */
+    public static String extractReplyAddress(Object msg) {
+        String repAddr = null;
+        Object maybeRepAddr = null;
+        if (msg instanceof Map) {
+            Map msgMap = (Map) msg;
+            Object maybeMap = msgMap.get(ExtensionServiceMessage.PROPERTY_MESSAGE_HEADERS);
+            if (maybeMap instanceof Map) {
+                maybeRepAddr = ((Map) msgMap.get(ExtensionServiceMessage.PROPERTY_MESSAGE_HEADERS)).get(ExtensionServiceMessage.ORIGIN_ADDRESS_HEADER);
+                if (maybeRepAddr != null && maybeRepAddr instanceof String) {
+                    repAddr = (String) maybeRepAddr;
+                }
+            }
+        } else if (msg instanceof ExtensionServiceMessage) {
+            ExtensionServiceMessage esm = (ExtensionServiceMessage) msg;
+            maybeRepAddr = esm.messageHeaders.get(ExtensionServiceMessage.ORIGIN_ADDRESS_HEADER);
+        } else {
+            throw new IllegalArgumentException("extractReplyAddress requires either a Map or ExtensionServiceMessage; received " + msg.getClass().getName());
+        }
+        if (maybeRepAddr instanceof String) {
+            repAddr = (String) maybeRepAddr;
+        }
+        return repAddr;
+    }
+    
     /**
      * Convert this DataMessage into a Java Map.
      * Primarily used to transform the message into a form that can be
@@ -131,7 +183,7 @@ public class ExtensionServiceMessage {
      *
      * @return - the DataMessage as a map
      */
-    Map asMap() {
+    public Map asMap() {
         Map<String, Object> m = new HashMap<>();
         m.put("address", address);
         if (namespaceName != null) m.put("namespaceName", namespaceName);
@@ -159,7 +211,7 @@ public class ExtensionServiceMessage {
      * @param mapOfMessage - the map representation of the message.
      * @return - the DataMessage populated with the mapOfMessage contents.
      */
-    ExtensionServiceMessage fromMap(Map mapOfMessage) {
+    public ExtensionServiceMessage fromMap(Map mapOfMessage) {
         Map m = mapOfMessage;
         if (m.containsKey("namespaceName")) namespaceName = (String) m.get("namespaceName");
         if (m.containsKey("locale")) locale = (String) m.get("locale");

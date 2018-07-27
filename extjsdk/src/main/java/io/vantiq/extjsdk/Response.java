@@ -31,7 +31,7 @@ import java.util.HashMap;
 
 public class Response {
     public int status;
-    public Map headers;
+    public Map<String,String> headers;
     public Object body;
     public String contentType;
 
@@ -55,5 +55,47 @@ public class Response {
     public Response addHeader(String name, String value) {
         headers.put(name, value);
         return this;
+    }
+    
+    public String getHeader(String name) {
+        return this.headers.get(name);
+    }
+    
+    public Object getBody() {
+        return this.body;
+    }
+    
+    public int getStatus() {
+        return this.status;
+    }
+    
+    public String getContentType() {
+        return this.contentType;
+    }
+
+    @Override
+    public String toString() {
+        return this.asMap().toString();
+    }
+    
+    public static Response fromMap(Map<String,Object> m) {
+        Response resp = new Response();
+        if (m.get("body") instanceof Object) resp.body = m.get("body");
+        if (m.get("status") instanceof Integer) resp.status = (int) m.get("status");
+        if (m.get("headers") instanceof Map) resp.headers = (Map) m.get("headers");
+        if (m.get("contentType") instanceof String) resp.contentType = (String) m.get("contentType");
+        
+        return resp;
+    }
+    
+    public Map<String,Object> asMap() {
+        Map<String, Object> m = new HashMap<>();
+        
+        if (this.body != null) m.put("body", this.body);
+        if (this.status != 0) m.put("status", this.status);
+        if (this.headers != null) m.put("headers", this.headers);
+        if (this.contentType != null) m.put("contentType", this.contentType);
+        
+        return m;
     }
 }

@@ -67,7 +67,13 @@ public class ExtensionWebSocketClient {
      * Used to signal that a source connection has been requested
      */
     CompletableFuture<Void> sourceRequested;
+    /**
+     * A {@link CompletableFuture CompletableFuture<Void>} that is completed when authorization succeeds.
+     */
     CompletableFuture<Void> authSuccess;
+    /**
+     * Whether it should automatically send a connection message after receiving a reconnect message
+     */
     boolean autoReconnect = false;
     /**
      * The data to be used for authentication. This will be either a {@link String} containing an authentication token or
@@ -163,9 +169,27 @@ public class ExtensionWebSocketClient {
                     .url(validifyUrl(url))
                     .build()).enqueue(listener);
         }
+        return getWebsocketConnectionFuture();
+    }
+    
+    /**
+     * Returns a {@link CompletableFuture} that will return true when the  succeeds, or false
+     * when the connection fails.
+     * 
+     * @return      A {@link CompletableFuture} that will return true when the websocket connection succeeds, or false
+     *              when the connection fails.
+     */
+    public CompletableFuture<Boolean> getWebsocketConnectionFuture() {
         return webSocketFuture;
     }
     
+    /**
+     * Ensures that the target address is correctly prepended by "wss://" and appended by 
+     * "/api/v{version number}/wsock/websocket"
+     * 
+     * @param url   The url to be made valid
+     * @return      A valid url for websocket connections
+     */
     protected String validifyUrl(String url) {
         // Ensure prepended by wss:// and not http:// or https://
         if (url.startsWith("http://")) {
@@ -223,7 +247,7 @@ public class ExtensionWebSocketClient {
     public void sendQueryResponse(int httpCode, String replyAddress, Map body){
         Response response = new Response()
                 .status(httpCode)
-                .addHeader(ExtensionServiceMessage.REPLY_ADDRESS, replyAddress)
+                .addHeader(ExtensionServiceMessage.RESPONSE_ADDRESS_HEADER, replyAddress)
                 .body(body);
         send(response);
     }
@@ -241,7 +265,7 @@ public class ExtensionWebSocketClient {
     public void sendQueryResponse(int httpCode, String replyAddress, Map[] body) {
         Response response = new Response()
                 .status(httpCode)
-                .addHeader(ExtensionServiceMessage.REPLY_ADDRESS, replyAddress)
+                .addHeader(ExtensionServiceMessage.RESPONSE_ADDRESS_HEADER, replyAddress)
                 .body(body);
         send(response);
     }
@@ -291,6 +315,9 @@ public class ExtensionWebSocketClient {
         }
     }
 
+    /** 
+     * Send the authentication message based on the auth data passed through {@link #authenticate}
+     */
     protected void doAuthentication() {
         Map<String, Object> authMsg = new LinkedHashMap<>();
         // If this is username and password combo, use authenticate op
@@ -333,7 +360,7 @@ public class ExtensionWebSocketClient {
             // receive the results
             doAuthentication();
         }
-        return authFuture;
+        return getAuthenticationFuture();
     }
 
     /**
@@ -357,9 +384,23 @@ public class ExtensionWebSocketClient {
             // receive the results
             doAuthentication();
         }
+        return getAuthenticationFuture();
+    }
+    
+    /**
+     * Returns a {@link CompletableFuture} that will return true when the authentication succeeds, or false
+     * when authentication fails.
+     * 
+     * @return      A {@link CompletableFuture} that will return true when the authentication succeeds, or false
+     *              when the WebSocket connection fails before authentication can occur.
+     */
+    public CompletableFuture<Boolean> getAuthenticationFuture() {
         return authFuture;
     }
 
+    /**
+     * Send the connection message
+     */
     protected void doConnectionToSource() {
         ExtensionServiceMessage connectMessage = new ExtensionServiceMessage("");
         connectMessage.connectExtension(ExtensionServiceMessage.RESOURCE_NAME_SOURCES, sourceName, null);
@@ -388,6 +429,17 @@ public class ExtensionWebSocketClient {
             // receive the results
             doConnectionToSource();
         }
+        return getSourceConnectionFuture();
+    }
+    
+    /**
+     * Returns a {@link CompletableFuture} that will return true when a connection succeeds, or false when
+     * it fails.
+     * 
+     * @return  A {@link CompletableFuture} that will return true when a connection succeeds, or false when
+     *          either the WebSocket connection or authentication fails before the source can connect.
+     */
+    public CompletableFuture<Boolean> getSourceConnectionFuture() {
         return sourceFuture;
     }
     
@@ -466,41 +518,6 @@ public class ExtensionWebSocketClient {
         log.info("Websocket closed for source " + sourceName);
     }
 
-    /**
-     * Extract reply address from a message.
-     *
-     * This is a utility method that examines the various forms a message may take and
-     * extracts the reply address if present.
-     *
-     * @param msg Message from which to extract the reply address
-     * @return String The reply address (or null if absent from msg).
-     *
-     * @throws IllegalArgumentException if the msg parameter with neither a Map nor an ExtensionServiceMessage
-     *
-     */
-    public static String extractReplyAddress(Object msg) {
-        String repAddr = null;
-        Object maybeRepAddr = null;
-        if (msg instanceof Map) {
-            Map msgMap = (Map) msg;
-            Object maybeMap = msgMap.get(ExtensionServiceMessage.PROPERTY_MESSAGE_HEADERS);
-            if (maybeMap instanceof Map) {
-                maybeRepAddr = ((Map) msgMap.get(ExtensionServiceMessage.PROPERTY_MESSAGE_HEADERS)).get(ExtensionServiceMessage.RETURN_HEADER);
-                if (maybeRepAddr != null && maybeRepAddr instanceof String) {
-                    repAddr = (String) maybeRepAddr;
-                }
-            }
-        } else if (msg instanceof ExtensionServiceMessage) {
-            ExtensionServiceMessage esm = (ExtensionServiceMessage) msg;
-            maybeRepAddr = esm.messageHeaders.get(ExtensionServiceMessage.RETURN_HEADER);
-        } else {
-            throw new IllegalArgumentException("extractReplyAddress requires either a Map or ExtensionServiceMessage; received " + msg.getClass().getName());
-        }
-        if (maybeRepAddr instanceof String) {
-            repAddr = (String) maybeRepAddr;
-        }
-        return repAddr;
-    }
 
     /**
      * Set the {@link Handler} for any standard Http response that are received after authentication has completed
@@ -514,7 +531,7 @@ public class ExtensionWebSocketClient {
      *
      * @param httpHandler   {@link Handler} that deals with Http responses
      */
-    public void setHttpHandler(Handler<Map> httpHandler) {
+    public void setHttpHandler(Handler<Response> httpHandler) {
         this.listener.setHttpHandler(httpHandler);
     }
     /**
@@ -529,7 +546,7 @@ public class ExtensionWebSocketClient {
      * @param publishHandler    {@link Handler} that deals with any publishes from a source without its own publish
      *                          {@link Handler}
      */
-    public void setPublishHandler(Handler<Map> publishHandler) {
+    public void setPublishHandler(Handler<ExtensionServiceMessage> publishHandler) {
         this.listener.setPublishHandler(publishHandler);
     }
     /**
@@ -546,7 +563,7 @@ public class ExtensionWebSocketClient {
      * @param queryHandler   {@link Handler} that deals with any queries from a source without its own query
      *                       {@link Handler}
      */
-    public void setQueryHandler(Handler<Map> queryHandler) {
+    public void setQueryHandler(Handler<ExtensionServiceMessage> queryHandler) {
         this.listener.setQueryHandler(queryHandler);
     }
     /**
@@ -562,7 +579,7 @@ public class ExtensionWebSocketClient {
      * @param configHandler {@link Handler} that deals with any configurations from a source without its own
      *                      configuration {@link Handler}
      */
-    public void setConfigHandler(Handler<Map> configHandler) {
+    public void setConfigHandler(Handler<ExtensionServiceMessage> configHandler) {
         this.listener.setConfigHandler(configHandler);
     }
     /**
@@ -576,7 +593,7 @@ public class ExtensionWebSocketClient {
      *
      * @param authHandler   {@link Handler} that deals with the results of authentication messages
      */
-    public void setAuthHandler(Handler<Map> authHandler) {
+    public void setAuthHandler(Handler<Response> authHandler) {
         this.listener.setAuthHandler(authHandler);
     }
     /**
@@ -587,23 +604,9 @@ public class ExtensionWebSocketClient {
      * <p>
      * The handler will receive a {@link Map} of the message received. 
      * 
-     * @param reconnectHandler
+     * @param reconnectHandler  {@link Handler} that deals with reconnect messages
      */
-    public void setReconnectHandler(Handler<Map> reconnectHandler) {
+    public void setReconnectHandler(Handler<ExtensionServiceMessage> reconnectHandler) {
         this.listener.setReconnectHandler(reconnectHandler);
-    }
-    /**
-     * Set a {@link Handler} for all messages received. When set
-     * this handler keeps all other handlers and related logic from firing. Setting this before a successful connection
-     * will stop the connected {@link ExtensionWebSocketClient} from functioning correctly by keeping it from recording
-     * successful connections and authorizations. As such, this must be used only when A) you want to decouple
-     * this listener from {@link ExtensionWebSocketClient} or B) the client has already successfully authed.
-     * <p>
-     * The handler will receive a {@link Map} of the message received
-     *
-     * @param overrideHandler   {@link Handler} that deals with every message received from the Vantiq server
-     */
-    public void setOverrideHandler(Handler<Map> overrideHandler) {
-        this.listener.setOverrideHandler(overrideHandler);
     }
 }
