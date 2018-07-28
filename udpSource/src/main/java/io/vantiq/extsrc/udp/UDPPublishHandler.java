@@ -77,7 +77,7 @@ import java.util.MissingFormatArgumentException;
  *                                      object, but it is recommended that they are placed in the object specified by 
  *                                      the "Using" keyword, for purposes of readability.</li>
  *                          </ul>
- *      <li>{@code sendXMLRoot}: Optional. The name of the root element for the generated XML object. When set this will
+ *      <li>{@code sendXmlRoot}: Optional. The name of the root element for the generated XML object. When set this will
  *                          send the output as XML instead of JSON. Default is {@code null}.</li>
  *      <li>{@code passCsvOutFrom}: Optional. A string specifying the location of an array of objects that will be 
  *                          converted into CSV format. Requires {@code useCsvSchema} to be set. Default is {@code null}
@@ -190,8 +190,8 @@ public class UDPPublishHandler extends Handler<ExtensionServiceMessage>{
         if (hasOutgoingTransformations(outgoing)) {
             transforms = MapTransformer.getValidTransforms((List) outgoing.get("transformations"));
         }
-        if (outgoing.get("sendXMLRoot") instanceof String) {
-            writer = new XmlMapper().writer().withRootName((String)outgoing.get("sendXMLRoot"));
+        if (outgoing.get("sendXmlRoot") instanceof String) {
+            writer = new XmlMapper().writer().withRootName((String)outgoing.get("sendXmlRoot"));
         }
         if (outgoing.get("passPureMapOut") instanceof Boolean && (boolean) outgoing.get("passPureMapOut")) {
             passingPureMap = true;
@@ -327,12 +327,17 @@ public class UDPPublishHandler extends Handler<ExtensionServiceMessage>{
         try {
             CsvMapper mapper = new CsvMapper();
             mapper.enable(CsvGenerator.Feature.STRICT_CHECK_FOR_QUOTING).enable(Feature.IGNORE_UNKNOWN);
-            if (csvSchemaLocation != null && map.get(csvSchemaLocation) instanceof List) {
+            if (csvSchemaLocation != null) {
                 CsvSchema.Builder csvSchemaBuilder = CsvSchema.builder();
-                for (Object col : (List) outgoing.get(csvSchemaLocation)) {
-                    if (col instanceof String) {
-                        csvSchemaBuilder.addColumn((String) col);
+                if (map.get(csvSchemaLocation) instanceof List) {
+                    for (Object col : (List) outgoing.get(csvSchemaLocation)) {
+                        if (col instanceof String) {
+                            csvSchemaBuilder.addColumn((String) col);
+                        }
                     }
+                }
+                else {
+                    log.warn("No schema found for CSV message. Sending emptty CSV message");
                 }
                 csvSchema = csvSchemaBuilder.setUseHeader(true).build();
             }

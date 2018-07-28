@@ -230,8 +230,9 @@ public class UDPNotificationHandler extends Handler<DatagramPacket>{
         }
 
         // We only need a transformer if the Configuration doc has transforms for us and it does not want us to
-        // pass the object along
-        if (transforms != null && !transforms.isEmpty() && !passingPureMap && bytesLocation == null) {
+        // pass the object along untransformed
+        if (transforms != null && !transforms.isEmpty() && !passingPureMap && bytesLocation == null 
+                && regexPattern == null && expectingCsv == false) {
             transformer = new MapTransformer(transforms);
         }
     }

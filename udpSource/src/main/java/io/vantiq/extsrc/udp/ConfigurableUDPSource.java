@@ -97,7 +97,7 @@ import org.slf4j.LoggerFactory;
  *                                      object, but it is recommended that they are placed in the object specified by 
  *                                      the "Using" keyword, for purposes of readability.</li>
  *                          </ul>
- *      <li>{@code sendXMLRoot}: Optional. The name of the root element for the generated XML object. When set this will
+ *      <li>{@code sendXmlRoot}: Optional. The name of the root element for the generated XML object. When set this will
  *                          send the entire object received as XML. Default is {@code null}.
  *      <li>{@code passCsvOutFrom}: Optional. A string specifying the location of an array of objects that will be 
  *                          converted into CSV format. Requires {@code useCsvSchema} to be set. Default is {@code null}
