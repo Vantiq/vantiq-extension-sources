@@ -165,12 +165,12 @@ import org.slf4j.LoggerFactory;
  *                              <li>{@code flags}: Not yet implemented. An array of the regex flags you would like 
  *                                      enabled. See {@link Pattern} for descriptions of the flags available.</li>
  *                          </ul> 
- *      <li>{@code expectXMLIn}: Optional. Specifies that the data incoming from the UDP source will be in an XML format.
+ *      <li>{@code expectXmlIn}: Optional. Specifies that the data incoming from the UDP source will be in an XML format.
  *                          Note that this will throw away the name of the root element. If data is contained in the
  *                          root element, it will be placed in the location "" before transformations.
  *                          Default is false.</li>
  *      <li>{@code passXmlRootNameIn}: Optional. Specifies the location to which the name of the root element should
- *                          be placed. Does nothing if {@code expectXMLIn} is not set to {@code true}. 
+ *                          be placed. Does nothing if {@code expectXmlIn} is not set to {@code true}. 
  *                          Default is {@code null}.</li>
  *      <li>{@code expectCsvIn}: Optional. Specifies that the expected UDP data will be in CSV format. Expects that the
  *                          data will use a header specifying the name of each object. Default is {@code false}.</li>
@@ -243,6 +243,12 @@ public class ConfigurableUDPSource {
             }
             if (config.get("outgoing") instanceof Map) {
                 outgoing = (Map) config.get("outgoing");
+            }
+            
+            if (!isConfiguredToSend(outgoing) && !isConfiguredToReceive(incoming)) {
+                log.error("Source '" + sourceName + "' is not configured to send or receive. Killing the connection");
+                clients.get(sourceName).close();
+                return;
             }
 
             // Synchronization necessary because createUDPSocket creates a list which findUDPSocket will add to.
@@ -324,12 +330,98 @@ public class ConfigurableUDPSource {
 
         boolean isConfiguredToReceive(Map incoming) {
             return incoming != null &&
-                    (incoming.get("receivePorts") instanceof List || incoming.get("receiveAddresses") instanceof List ||
-                    valueIsTrue(incoming, "receiveAllPorts") || valueIsTrue(incoming, "receiveAllAddresses") ||
-                    incoming.get("receiveServers") instanceof List ||
+                    (valueIsTrue(incoming, "receiveAllPorts") || valueIsTrue(incoming, "receiveAllAddresses") ||
                     valueIsTrue(incoming, "passPureMapIn") || valueIsTrue(incoming, "passUnspecifiedIn") ||
-                    incoming.get("passRecAddress") instanceof String || incoming.get("passRecPort") instanceof String
-                    || incoming.get("transformations") instanceof List);
+                    valueIsTrue(incoming,"expectCsvIn") || valueIsTrue(incoming,"expectXmlIn") ||
+                    incoming.get("passRecAddress") instanceof String || incoming.get("passRecPort") instanceof String ||
+                    incoming.get("passBytesInAs") instanceof String ||
+                    (incoming.get("receivePorts") instanceof List  
+                            && hasValidPort((List) incoming.get("receivePorts"))) ||
+                    (incoming.get("receiveAddresses") instanceof List 
+                            && hasValidAddress((List) incoming.get("receiveAddresses"))) ||
+                    (incoming.get("receiveServers") instanceof List 
+                            && hasValidServer((List) incoming.get("receiveServers"))) ||
+                    (incoming.get("transformations") instanceof List 
+                            && hasValidTransform((List) incoming.get("transformations"))) || 
+                    (incoming.get("regexParser") instanceof Map && 
+                            isValidRegexParser((Map)incoming.get("regexParser")))
+                    );
+        }
+        
+        boolean hasValidAddress(List potentialAddresses) {
+            for (Object name : potentialAddresses) {
+                if (name instanceof String) {
+                    try {
+                        InetAddress a = InetAddress.getByName((String) name);
+                        return true;
+                    }
+                    catch (UnknownHostException e) {
+                        
+                    }
+                }
+            }
+            return false;
+        }
+        
+        boolean hasValidPort(List potentialPorts) {
+            for (Object port : potentialPorts) {
+                if (port instanceof Integer && (int) port >= 0 && (int) port <= 65535) {
+                    return true;
+                }
+            }
+            return false;
+        }
+        
+        boolean hasValidServer(List potentialServers) {
+            for (Object server : potentialServers) {
+                if (isValidServer(server)) {
+                    List<Object> s = (List) server;
+                    String addressName = (String) ((List) server).get(0);
+                    try {
+                        InetAddress.getByName(addressName);
+                        return true;
+                    }
+                    catch (UnknownHostException e) {
+                        
+                    }
+                }
+            }
+            return false;
+        }
+        
+        boolean hasValidTransform(List potentialTransformations) {
+            for (Object obj : potentialTransformations) {
+                if (obj instanceof List) {
+                    List list = (List) obj;
+                    if (list.size() == 2 && list.get(0) instanceof String && list.get(1) instanceof String) {
+                        return true;
+                    }
+                }
+            }
+            return false;
+        }
+        
+        boolean isValidRegexParser(Map potentialParser) {
+            Pattern p;
+            try {
+                p = Pattern.compile((String) potentialParser.get("pattern"));
+            }
+            catch (Throwable t) {
+                return false;
+            }
+            if (potentialParser.get("locations") instanceof List) {
+                List locs = (List)potentialParser.get("locations");
+                int strings = 0;
+                for (Object obj : locs) {
+                    if (obj instanceof String) {
+                        strings++;
+                    }
+                }
+                if (strings == p.matcher("").groupCount()) {
+                    return true;
+                }
+            }
+            return false;
         }
     };
     

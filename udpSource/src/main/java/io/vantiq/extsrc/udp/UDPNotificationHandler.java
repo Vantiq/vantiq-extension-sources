@@ -89,12 +89,12 @@ import java.util.regex.Pattern;
  *                              <li>{@code flags}: Not yet implemented. An array of the regex flags you would like 
  *                                      enabled. See {@link Pattern} for descriptions of the flags available.
  *                          </ul> 
- *      <li>{@code expectXMLIn}: Optional. Specifies that the data incoming from the UDP source will be in an XML format.
+ *      <li>{@code expectXmlIn}: Optional. Specifies that the data incoming from the UDP source will be in an XML format.
  *                          Note that this will throw away the name of the root element. If data is contained in the
  *                          root element, it will be placed in the location "" before transformations.
  *                          Default is false.</li>
  *      <li>{@code passXmlRootNameIn}: Optional. Specifies the location to which the name of the root element should
- *                          be placed. Does nothing if {@code expectXMLIn} is not set to {@code true}. 
+ *                          be placed. Does nothing if {@code expectXmlIn} is not set to {@code true}. 
  *                          Default is {@code null}.</li>
  *      <li>{@code expectCsvIn}: Optional. Specifies that the expected UDP data will be in CSV format. Expects that the
  *                          data will use a header specifying the name of each object. Default is {@code false}.</li>
@@ -174,7 +174,7 @@ public class UDPNotificationHandler extends Handler<DatagramPacket>{
         if (incoming.get("passRecPort") instanceof String) {
             recPortKey = (String) incoming.get("passRecPort");
         }
-        if (incoming.get("expectXMLIn") instanceof Boolean && (boolean) incoming.get("expectXMLIn")) {
+        if (incoming.get("expectXmlIn") instanceof Boolean && (boolean) incoming.get("expectXmlIn")) {
             expectingXml = true;
             mapper = new XmlMapper();
         }
@@ -199,21 +199,27 @@ public class UDPNotificationHandler extends Handler<DatagramPacket>{
             
             if (regexParser.get("pattern") instanceof String && regexParser.get("locations") instanceof List) {
                 // TODO add flags
-                regexPattern = Pattern.compile( (String) regexParser.get("pattern"));
-                List<String> l = new ArrayList<>();
-                List locations = (List)regexParser.get("locations");
-                for (Object loc :locations) {
-                    if (loc instanceof String) {
-                        l.add((String)loc);
+                try {
+                    regexPattern = Pattern.compile( (String) regexParser.get("pattern"));
+                    List<String> l = new ArrayList<>();
+                    List locations = (List)regexParser.get("locations");
+                    for (Object loc :locations) {
+                        if (loc instanceof String) {
+                            l.add((String)loc);
+                        }
+                    }
+                    patternLocations = l.toArray(new String[0]);
+                    
+                    if (patternLocations.length != regexPattern.matcher("").groupCount()) {
+                        regexPattern = null;
+                        patternLocations = null;
+                        log.error("The number of capture groups in the regex pattern and the number of locations do "
+                                + "not match. Found " + regexPattern.matcher("").groupCount() + "capture groups and "
+                                + patternLocations.length + "locations.");
                     }
                 }
-                patternLocations = l.toArray(new String[0]);
-                
-                if (patternLocations.length > regexPattern.matcher("").groupCount()) {
-                    regexPattern = null;
-                    patternLocations = null;
-                    log.error("Regex options dictate more locations than capture groups. Please either reduce the "
-                            + "number of locations or increase the number of captures");
+                catch (Exception e) {
+                    log.error("Could not compile regex pattern", e);
                 }
             } 
         }
