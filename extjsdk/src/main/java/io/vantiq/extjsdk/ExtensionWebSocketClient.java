@@ -197,8 +197,7 @@ public class ExtensionWebSocketClient {
      */
     protected String validifyUrl(String url) {
         if (url == null) {
-            log.warn("No websocket url given. Using default of 'wss://dev.vantiq.com/api/v1/wsock/websocket'");
-            return "wss://dev.vantiq.com/api/v1/wsock/websocket";
+            throw new IllegalArgumentException("Must give a valid URL to connect to the websocket");
         }
         
         // Ensure prepended by wss:// and not http:// or https://
