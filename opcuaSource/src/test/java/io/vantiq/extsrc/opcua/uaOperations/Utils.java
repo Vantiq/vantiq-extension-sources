@@ -24,7 +24,7 @@ public class Utils {
 
     public static String OPC_PUBLIC_SERVER_1 = "opc.tcp://opcuaserver.com:48010";
     public static String OPC_PUBLIC_SERVER_2 = "opc.tcp://opcuademo.sterfive.com:26543";
-    public static String OPC_PUBLIC_SERVER_3 = "opc.tcp://opcua.demo-this.com:51210/UA/SampleServer";
+    public static String OPC_PUBLIC_SERVER_3 = "http://opcua.demo-this.com:51211/UA/SampleServer";
     public static String OPC_INPROCESS_SERVER = "opc.tcp://localhost:12686/example";
     public static String OPC_PUBLIC_SERVER_NO_GOOD = "opc.tcp://opcuaserver.com:4840";
 

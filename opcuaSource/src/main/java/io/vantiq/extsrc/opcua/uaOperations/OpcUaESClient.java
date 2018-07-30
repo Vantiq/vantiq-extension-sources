@@ -261,8 +261,9 @@ public class OpcUaESClient {
                         .getEndpoints(discoveryUrl)
                         .get();
             } catch (ExecutionException e) {
-                String errMsg = ERROR_PREFIX + ".discoveryError: Could not discovery OPC Endpoints.";
-                log.error(ERROR_PREFIX + ".discoveryError: Could not discover OPC Endpoints: {}", e.getClass().getName() + "::" + e.getMessage());
+                String errMsg = ERROR_PREFIX + ".discoveryError: Could not discover OPC Endpoints:"
+                        + e.getClass().getName() + "::" + e.getMessage();
+                log.error(ERROR_PREFIX + ".discoveryError: Could not discover OPC Endpoints: {} :: {}", e.getClass().getName(), e.getMessage());
                 throw new OpcExtConfigException(errMsg, e);
             }
         }
