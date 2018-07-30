@@ -95,10 +95,6 @@ public class UDPPublishHandler extends Handler<ExtensionServiceMessage>{
      */
     private MapTransformer transformer = null;
     /**
-     * The {@code outgoing} section of the source configuration document.
-     */
-    private Map outgoing;
-    /**
      * The address to which messages should be sent.
      */
     private InetAddress address;
@@ -175,7 +171,6 @@ public class UDPPublishHandler extends Handler<ExtensionServiceMessage>{
      * @param socket    The {@link DatagramSocket} through which data will be sent
      */
     public UDPPublishHandler(Map outgoing, DatagramSocket socket) {
-        this.outgoing = outgoing;
         this.socket = socket;
         try {
             this.address = InetAddress.getByName((String) outgoing.get("targetAddress"));
@@ -330,7 +325,7 @@ public class UDPPublishHandler extends Handler<ExtensionServiceMessage>{
             if (csvSchemaLocation != null) {
                 CsvSchema.Builder csvSchemaBuilder = CsvSchema.builder();
                 if (map.get(csvSchemaLocation) instanceof List) {
-                    for (Object col : (List) outgoing.get(csvSchemaLocation)) {
+                    for (Object col : (List) map.get(csvSchemaLocation)) {
                         if (col instanceof String) {
                             csvSchemaBuilder.addColumn((String) col);
                         }
