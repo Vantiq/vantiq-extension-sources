@@ -264,7 +264,6 @@ public class ConfigurableUDPSource {
                 if (socket == null) {
                     log.error("Failed to obtain UDP socket at address '" + address + "' and port '" + port +
                             "' for source '" + sourceName + "'");
-                    clients.get(sourceName).close();
                     return;
                 }
             }
@@ -462,7 +461,23 @@ public class ConfigurableUDPSource {
         }
         
     };
-
+    
+    static Handler<ExtensionWebSocketClient> UDPCloseHandler = new Handler<ExtensionWebSocketClient>() {
+        @Override
+        public void handleMessage(ExtensionWebSocketClient client) {
+            client.initiateWebsocketConnection(targetVantiqServer);
+            client.authenticate(authToken);
+            client.connectToSource();
+            try {
+                if (client.getSourceConnectionFuture().get() == false) {
+                    client.stop();
+                }
+            } catch (InterruptedException | ExecutionException e) {
+                client.stop();
+                e.printStackTrace();
+            }
+        }
+    };
     /**
      * Attempts to create a {@link DatagramSocket} on a given port and address. If successful it will create a
      * {@link List} with {@code sourceName} in it, and add it to {@link #udpSocketToSources} to keep track of which
@@ -903,6 +918,7 @@ public class ConfigurableUDPSource {
             client.setQueryHandler(UDPDefaultQuery);
             client.setConfigHandler(UDPConfig);
             client.setReconnectHandler(UDPReconnectHandler);
+            client.setCloseHandler(UDPCloseHandler);
 
             // Initiate the WebSocket connection, authentication, and source connection for the source
             CompletableFuture<Boolean> future;
@@ -939,7 +955,7 @@ public class ConfigurableUDPSource {
                 else if (!clients.get(sourceName).isConnected()) {
                     log.error("Failed to connect to '" + sourceName + "' within 5 seconds");
                 }
-                clients.get(sourceName).close();
+                clients.get(sourceName).stop();
             }
             log.error("All clients closed. Done exiting.\n");
             return;
@@ -966,7 +982,7 @@ public class ConfigurableUDPSource {
          */
         for (String sourceName : sources) {
             if (clients.get(sourceName).isOpen()) {
-                clients.get(sourceName).close();
+                clients.get(sourceName).stop();
             }
         }
         for (Map.Entry<DatagramSocket,List<String>> entry : udpSocketToSources.entrySet()) {
