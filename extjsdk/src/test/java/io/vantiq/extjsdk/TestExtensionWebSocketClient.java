@@ -10,6 +10,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 import java.util.function.Supplier;
 
 import org.junit.After;
@@ -22,7 +23,7 @@ public class TestExtensionWebSocketClient {
     
     // Note: testing of connections occurs in TestExtensionWebSocketListener, as more of the relevant interactions occur
     // through ExtensionWebSocketListener
-    
+
     OpenExtensionWebSocketClient client; // OpenExtensionWebSocketClient just makes a few functions public
     String srcName;
     String queryAddress;
@@ -83,7 +84,7 @@ public class TestExtensionWebSocketClient {
         String user = "myName";
         String pass = "p@s$w0rd";
         
-        client.webSocketFuture.complete(true);
+        client.webSocketFuture = CompletableFuture.completedFuture(true);
         
         client.authenticate(user, pass);
         // Wait up to 5 seconds for asynchronous action to complete
@@ -97,7 +98,7 @@ public class TestExtensionWebSocketClient {
     
     @Test
     public void testAuthenticateWithToken() throws InterruptedException {
-        client.webSocketFuture.complete(true);
+        client.webSocketFuture = CompletableFuture.completedFuture(true);
         
         String token = "ajeoslvkencmvkejshegwt=";
         client.authenticate(token);
@@ -111,9 +112,8 @@ public class TestExtensionWebSocketClient {
     
     @Test
     public void testConnectToSource() throws InterruptedException {
-        client.webSocketFuture.complete(true);
-        client.authFuture.complete(true);
-        client.authSuccess.complete(null);
+        client.webSocketFuture = CompletableFuture.completedFuture(true);
+        client.authFuture = CompletableFuture.completedFuture(true);
         
         client.connectToSource();
         // Wait up to 5 seconds for asynchronous action to complete
@@ -130,7 +130,7 @@ public class TestExtensionWebSocketClient {
         queryData.put("msg", "val");
         queryData.put("val", "msg");
         
-        client.webSocketFuture.complete(true);
+        client.webSocketFuture = CompletableFuture.completedFuture(true);
         client.sendQueryResponse(200, queryAddress, queryData);
         
         assert socket.compareData("body", queryData);
@@ -148,7 +148,7 @@ public class TestExtensionWebSocketClient {
         queryData[1].put("message", "value");
         queryData[1].put("value", "message");
         
-        client.webSocketFuture.complete(true);
+        client.webSocketFuture = CompletableFuture.completedFuture(true);
         client.sendQueryResponse(200, queryAddress, queryData);
         
         // The ArrayList creation is necessary since JSON interprets arrays as ArrayList
@@ -163,7 +163,7 @@ public class TestExtensionWebSocketClient {
         String errorMessage = "Message with params {}='p1' {}='param2'.";
         String errorCode = "io.vantiq.extjsdk.ExampleErrorName";
         
-        client.webSocketFuture.complete(true);
+        client.webSocketFuture = CompletableFuture.completedFuture(true);
         client.sendQueryError(queryAddress, errorCode, errorMessage, params);
         
         assert socket.compareData("headers." + ExtensionServiceMessage.RESPONSE_ADDRESS_HEADER, queryAddress);
