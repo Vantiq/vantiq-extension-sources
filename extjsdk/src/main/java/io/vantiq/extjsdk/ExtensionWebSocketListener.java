@@ -67,6 +67,10 @@ public class ExtensionWebSocketListener implements WebSocketListener{
      * {@link ObjectMapper} used to translate the received message into a {@link Map}
      */
     ObjectMapper mapper = new ObjectMapper();
+    /**
+     * Whether this listener has been closed, and should not make any more changes to its client.
+     */
+    public boolean isClosed = false;
 
     /**
      * Creates a new {@link ExtensionWebSocketListener} connected to {@code client}
@@ -250,6 +254,10 @@ public class ExtensionWebSocketListener implements WebSocketListener{
     public void setReconnectHandler(Handler<ExtensionServiceMessage> reconnectHandler) {
         this.reconnectHandler = reconnectHandler;
     }
+    
+    public void close() {
+        isClosed = true;
+    }
 
     /**
      * Log that the connection is open, save the WebSocket for {@link #client} and signal the successful opening
@@ -329,12 +337,11 @@ public class ExtensionWebSocketListener implements WebSocketListener{
                     log.warn("Http response received with no handler set");
                 }
             }
-            // Quick check to ensure that the socket didn't close while auth message was being translated
-            else if (client.isOpen()){
+            else {
                 // Resetting authFuture is also sync'd on client, so this way they won't interfere with each other
                 synchronized (client) {
-                    // Rechecking isOpen() while sync'd in case of concurrency problems
-                    if (!client.isOpen()) {
+                    // Checking isOpen() while sync'd in case of concurrency problems
+                    if (!client.isOpen() || this.isClosed) {
                         return;
                     }
 
@@ -399,24 +406,30 @@ public class ExtensionWebSocketListener implements WebSocketListener{
                     }
                 }
                 else if (message.getOp().equals(ExtensionServiceMessage.OP_RECONNECT_REQUIRED)) {
-                    client.sourceHasDisconnected(); // Resets to pre source connection state
-                    if (this.reconnectHandler != null) {
-                        try {
-                            this.reconnectHandler.handleMessage(message);
+                    synchronized (client) {
+                        // Do not alert client of reconnect message if this client ahs been closed  
+                        if (this.isClosed) {
+                            return; 
                         }
-                        catch (Exception e) {
-                            log.error("Error occurred when running the Reconnect handler for source '" + 
-                                    client.getSourceName() + "'");
+                        client.sourceHasDisconnected(); // Resets to pre source connection state
+                        if (this.reconnectHandler != null) {
+                            try {
+                                this.reconnectHandler.handleMessage(message);
+                            }
+                            catch (Exception e) {
+                                log.error("Error occurred when running the Reconnect handler for source '" + 
+                                        client.getSourceName() + "'");
+                            }
                         }
-                    }
-                    if (client.autoReconnect) {
-                        log.info("Automatically attempting to reconnect to source '" + client.getSourceName() + "'");
-                        client.connectToSource();
-                    }
-                    // Warn when cannot reconnect or know that the connection has failed 
-                    if (!client.autoReconnect && this.reconnectHandler == null) {
-                        log.warn("Reconnect received with no handler set and no autoconnect. Can no longer "
-                                + "communicate with source '" + client.getSourceName() + "'");
+                        if (client.autoReconnect) {
+                            log.info("Automatically attempting to reconnect to source '" + client.getSourceName() + "'");
+                            client.connectToSource();
+                        }
+                        // Warn when cannot reconnect or know that the connection has failed 
+                        if (!client.autoReconnect && this.reconnectHandler == null) {
+                            log.warn("Reconnect received with no handler set and no autoconnect. Can no longer "
+                                    + "communicate with source '" + client.getSourceName() + "'");
+                        }
                     }
                 }
                 else {
@@ -490,7 +503,7 @@ public class ExtensionWebSocketListener implements WebSocketListener{
     public void onClose(int code, String reason) {
         log.info("Closing websocket code: " + code);
         log.debug(reason);
-        if (!client.isClosed()) {
+        if (client.isOpen()) {
             client.close();
         }
     }

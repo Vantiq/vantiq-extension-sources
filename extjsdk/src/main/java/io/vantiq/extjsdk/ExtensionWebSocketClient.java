@@ -33,7 +33,7 @@ public class ExtensionWebSocketClient {
      */
     WebSocket webSocket = null;
     /**
-     * The name of ths source this client is connected to.
+     * The name of the source this client is connected to.
      */
     private String sourceName;
     /**
@@ -72,10 +72,6 @@ public class ExtensionWebSocketClient {
      */
     CompletableFuture<Void> authSuccess;
     /**
-     * True after {@link #close} has been called.
-     */
-    CompletableFuture<Boolean> closedFuture;
-    /**
      * Whether it should automatically send a connection message after receiving a reconnect message
      */
     boolean autoReconnect = false;
@@ -84,6 +80,10 @@ public class ExtensionWebSocketClient {
      * a {@link Map} containing the username and password.
      */
     Object authData;
+    /**
+     * An {@link Handler} that is called when the websocket connection is closed
+     */
+    Handler<Void> closeHandler;
 
     /**
      * Obtain the {@link ExtensionWebSocketListener} listening to this client's source on Vantiq. Necessary to set
@@ -119,7 +119,6 @@ public class ExtensionWebSocketClient {
         authRequested = new CompletableFuture<>();
         sourceRequested = new CompletableFuture<>();
         authSuccess = new CompletableFuture<>();
-        closedFuture = new CompletableFuture<>();
 
 
         // When authRequested is completed by calling authenticate(), it will check if the WebSocket connection succeeded,
@@ -165,7 +164,7 @@ public class ExtensionWebSocketClient {
      *              WebSocket fails to connect.
      */
     public CompletableFuture<Boolean> initiateWebsocketConnection(String url) {
-        if (webSocket == null && !isClosed()) {
+        if (webSocket == null) {
             OkHttpClient client = new OkHttpClient.Builder()
                     .readTimeout(0, TimeUnit.MILLISECONDS)
                     .writeTimeout(0, TimeUnit.MILLISECONDS)
@@ -312,7 +311,7 @@ public class ExtensionWebSocketClient {
      * @param obj   The object you wish to send to the Vantiq server
      */
     public void send(Object obj) {
-        if (isClosed()) {
+        if (!isOpen()) {
             return;
         }
         log.trace("Sending message");
@@ -331,9 +330,6 @@ public class ExtensionWebSocketClient {
      * Send the authentication message based on the auth data passed through {@link #authenticate}
      */
     protected void doAuthentication() {
-        if (isClosed()) {
-            return;
-        }
         Map<String, Object> authMsg = new LinkedHashMap<>();
         // If this is username and password combo, use authenticate op
         if (authData instanceof Map) {
@@ -417,9 +413,6 @@ public class ExtensionWebSocketClient {
      * Send the connection message
      */
     protected void doConnectionToSource() {
-        if (isClosed()) {
-            return;
-        }
         ExtensionServiceMessage connectMessage = new ExtensionServiceMessage("");
         connectMessage.connectExtension(ExtensionServiceMessage.RESOURCE_NAME_SOURCES, sourceName, null);
         send(connectMessage);
@@ -509,26 +502,13 @@ public class ExtensionWebSocketClient {
     public boolean isConnected() {
         return sourceFuture.getNow(false);
     }
-    
-    /**
-     * Check if the client has been closed, and thus is no longer functional
-     *  
-     * @return  true if {@link close} has been called by either the user or the websocket, false otherwise
-     */
-    public boolean isClosed() {
-        return closedFuture.getNow(false);
-    }
-    
-    public CompletableFuture<Boolean> getClosedFuture() {
-        return closedFuture;
-    }
 
     /**
-     * Orders the close of the websocket connection. Resets to pre-WebSocket connection state. Additionally, completes
-     * all {@link CompletableFuture} obtained from the connection and authentication functions as false.
+     * Orders the close of the websocket connection, resets to pre-WebSocket connection state and calls the close 
+     * handler. Additionally, completes all {@link CompletableFuture} obtained from the connection and authentication 
+     * functions as false.
      */
     public void close() {
-        closedFuture.complete(true);
         if (this.webSocket != null) {
             try {
                 this.webSocket.close(1000, "Closed by client");
@@ -546,9 +526,45 @@ public class ExtensionWebSocketClient {
             webSocketFuture.obtrudeValue(false);
             authFuture.obtrudeValue(false);
             sourceFuture.obtrudeValue(false);
+            initializeFutures();
+            
+            ExtensionWebSocketListener oldListener = listener;
+            oldListener.close();
+            listener = new ExtensionWebSocketListener(this);
+            listener.useHandlersFromListener(oldListener);
         }
-        listener = null;
         log.info("Websocket closed for source " + sourceName);
+        if (this.closeHandler != null) {
+            this.closeHandler.handleMessage(null);
+        }
+    }
+    
+    /**
+     * Orders the close of the websocket connection with the expectation that it will not reopen. Additionally,
+     * completes all {@link CompletableFuture} obtained from the connection and authentication functions as false.
+     */
+    public void stop() {
+        if (this.webSocket != null) {
+            try {
+                this.webSocket.close(1000, "Closed by client");
+            } catch (Exception e) {
+                if (!e.getMessage().equals("Socket closed")) {
+                    log.warn("Websocket has already been closed");
+                } else {
+                    log.error("Error trying to close WebSocket", e);
+                }
+            }
+        }
+        synchronized (this) {
+            webSocket = null;
+            // Make sure anything still using these futures know that they are no longer valid
+            webSocketFuture.obtrudeValue(false);
+            authFuture.obtrudeValue(false);
+            sourceFuture.obtrudeValue(false);
+            
+            listener.close();
+        }
+        log.info("Websocket closed for source '" + sourceName + "'");
     }
 
     /**
@@ -571,6 +587,10 @@ public class ExtensionWebSocketClient {
         this.listener.useHandlersFromListener(client);
     }
 
+    public void setCloseHandler(Handler<Void> closeHandler) {
+        this.closeHandler = closeHandler;
+    }
+    
     /**
      * Set the {@link Handler} for any standard Http response that are received after authentication has completed
      * <br>
