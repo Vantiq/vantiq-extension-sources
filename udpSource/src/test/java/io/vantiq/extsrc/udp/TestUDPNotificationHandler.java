@@ -74,9 +74,7 @@ public class TestUDPNotificationHandler {
         regexParser.put("pattern", pattern);
         String[] locations = {"priority", "version", "noTimestamp", "timestamp", "hostName", "appName", "processId", 
                               "messageId", "noStructuredData", "structuredData", "standardMessage", "utfMessage"};
-        regexParser.put("locations", Arrays.asList("priority", "version", "noTimestamp", "timestamp", "hostName", 
-                            "appName", "processId", "messageId", "noStructuredData", 
-                            "structuredData", "standardMessage", "utfMessage"));
+        regexParser.put("locations", Arrays.asList(locations));
         incoming.put("regexParser", regexParser);
         String testMessage = "<0>198 2018-07-23T15:26:20-07:00 remote iApp user branch [name] Here be a message for ya!";
         byte[] packetBytes = testMessage.getBytes();

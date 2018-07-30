@@ -351,7 +351,7 @@ public class ConfigurableUDPSource {
             for (Object name : potentialAddresses) {
                 if (name instanceof String) {
                     try {
-                        InetAddress a = InetAddress.getByName((String) name);
+                        InetAddress.getByName((String) name);
                         return true;
                     }
                     catch (UnknownHostException e) {
@@ -375,7 +375,7 @@ public class ConfigurableUDPSource {
             for (Object server : potentialServers) {
                 if (isValidServer(server)) {
                     List<Object> s = (List) server;
-                    String addressName = (String) ((List) server).get(0);
+                    String addressName = (String) s.get(0);
                     try {
                         InetAddress.getByName(addressName);
                         return true;
@@ -435,8 +435,8 @@ public class ConfigurableUDPSource {
                 // Disassociate the source from the socket
                 for (Map.Entry<DatagramSocket,List<String>> entry : udpSocketToSources.entrySet()) {
                     List<String> list = entry.getValue();
-                    if (list.contains(client)) {
-                        list.remove(client);
+                    if (list.contains(client.getSourceName())) {
+                        list.remove(client.getSourceName());
                         if (list.isEmpty()) {
                             // Get rid of the socket if it's the only one left
                             DatagramSocket socket = entry.getKey();

@@ -241,12 +241,6 @@ public class TestUDPPublishHandler {
         public boolean compareAddress(String expectedAddress) {
             return expectedAddress.equals(latestPacket.getAddress().getHostAddress());
         }
-        public boolean compareData(String expectedData) {
-            return expectedData.equals(new String(latestPacket.getData()));
-        }
-        public boolean compareData(byte[] expectedData) {
-            return Arrays.equals(expectedData, latestPacket.getData());
-        }
         public boolean compareData(Map expectedData) {
             try {
                 return expectedData.equals(mapper.readValue(latestPacket.getData(), Map.class));
