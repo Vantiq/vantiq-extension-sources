@@ -455,6 +455,32 @@ public class ExtensionWebSocketListener implements WebSocketListener{
     }
 
     /**
+     * Sets this Listener's handlers to the same as {@code listener}. This function is intended to allow handlers to
+     * maintain state even if the parent {@link ExtensionWebSocketClient} is closed due to websocket issues.
+     * 
+     * @param listener  The {@link ExtensionWebSocketListener} to copy the handlers from.
+     */
+    public void useHandlersFromListener(ExtensionWebSocketListener listener) {
+        this.authHandler = listener.authHandler;
+        this.configHandler = listener.configHandler;
+        this.publishHandler = listener.publishHandler;
+        this.httpHandler = listener.httpHandler;
+        this.queryHandler = listener.queryHandler;
+        this.reconnectHandler = listener.reconnectHandler;
+    }
+    
+    /**
+     * Sets this Listener's handlers to the same as the listener of {@code client}. This function is intended to allow 
+     * handlers to maintain state even if the parent {@link ExtensionWebSocketClient} is closed due to websocket issues.
+     * 
+     * @param client    The {@link ExtensionWebSocketClient} to copy the handlers from.
+     */
+    public void useHandlersFromListener(ExtensionWebSocketClient client) {
+        ExtensionWebSocketListener listener = client.getListener();
+        this.useHandlersFromListener(listener);
+    }
+    
+    /**
      * Logs the code and reason for this listener closing.
      *
      * @param code      The WebSocket code for why this listener is closing
@@ -464,6 +490,9 @@ public class ExtensionWebSocketListener implements WebSocketListener{
     public void onClose(int code, String reason) {
         log.info("Closing websocket code: " + code);
         log.debug(reason);
+        if (!client.isClosed()) {
+            client.close();
+        }
     }
 
     /**
