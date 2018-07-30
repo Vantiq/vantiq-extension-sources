@@ -83,7 +83,7 @@ public class ExtensionWebSocketClient {
     /**
      * An {@link Handler} that is called when the websocket connection is closed
      */
-    Handler<Void> closeHandler;
+    Handler<ExtensionWebSocketClient> closeHandler;
 
     /**
      * Obtain the {@link ExtensionWebSocketListener} listening to this client's source on Vantiq. Necessary to set
@@ -535,7 +535,7 @@ public class ExtensionWebSocketClient {
         }
         log.info("Websocket closed for source " + sourceName);
         if (this.closeHandler != null) {
-            this.closeHandler.handleMessage(null);
+            this.closeHandler.handleMessage(this);
         }
     }
     
@@ -587,7 +587,13 @@ public class ExtensionWebSocketClient {
         this.listener.useHandlersFromListener(client);
     }
 
-    public void setCloseHandler(Handler<Void> closeHandler) {
+    /**
+     * Set the {@link Handler} for when the websocket connection closes. This handler will receive the client whose
+     * websocket closed.
+     * 
+     * @param closeHandler
+     */
+    public void setCloseHandler(Handler<ExtensionWebSocketClient> closeHandler) {
         this.closeHandler = closeHandler;
     }
     
