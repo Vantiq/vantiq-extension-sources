@@ -17,10 +17,9 @@ import static org.junit.Assert.fail;
 public class Utils {
 
     // This set of public servers is known to work as of 5 July 2018
-    // In the future, errors
+    // In the future, errors may occur if these are taken offline, etc.
     //
-    // At present, we'll check the write value stuff only on our internal server.  Not sure of permissions,
-    // etc.  // FIXME
+    // At present, we'll check the write value stuff only on our internal server.
 
     public static String OPC_PUBLIC_SERVER_1 = "opc.tcp://opcuaserver.com:48010";
     public static String OPC_PUBLIC_SERVER_2 = "opc.tcp://opcuademo.sterfive.com:26543";
