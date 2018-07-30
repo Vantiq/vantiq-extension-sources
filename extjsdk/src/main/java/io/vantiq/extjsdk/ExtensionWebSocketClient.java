@@ -312,8 +312,9 @@ public class ExtensionWebSocketClient {
         authData.put("password", pass);
         this.authData = authData;
 
-        // Only create the authFuture if there has been no request or a failed request
-        if (authFuture == null || !authFuture.getNow(true)) {
+        // Only create the authFuture if there has been no request or a failed request, and a websocket request has 
+        // been made
+        if (webSocketFuture != null && (authFuture == null || !authFuture.getNow(true))) {
             // Builds a Future that sends an authentication message and waits for the result if the websocket
             // connection succeeded, or is immediately false if the websocket connection failed
             authFuture = webSocketFuture.thenComposeAsync(
@@ -341,8 +342,9 @@ public class ExtensionWebSocketClient {
      */
     synchronized public CompletableFuture<Boolean> authenticate(String token) {
         authData = token;
-        // Only create the authFuture if there has been no request or a failed request
-        if (authFuture == null || !authFuture.getNow(true)) {
+        // Only create the authFuture if there has been no request or a failed request, and a websocket request has 
+        // been made
+        if (webSocketFuture != null && (authFuture == null || !authFuture.getNow(true))) {
             // Builds a Future that sends an authentication message and waits for the result if the websocket
             // connection succeeded, or is immediately false if the websocket connection failed
             authFuture = webSocketFuture.thenComposeAsync(
@@ -392,8 +394,9 @@ public class ExtensionWebSocketClient {
     // Send a connection request for the source
     // Note that this client MUST already be authenticated or else the message will be ignored
     synchronized public CompletableFuture<Boolean> connectToSource() {
-        // Only create the sourceFuture if there has been no request or a failed request
-        if (sourceFuture == null || !sourceFuture.getNow(true)) {
+        // Only create the authFuture if there has been no request or a failed request, and a websocket request has 
+        // been made
+        if (authFuture != null && (sourceFuture == null || !sourceFuture.getNow(true))) {
             // Builds a Future that sends a connection message and waits for the result if authentication succeeded,
             // or is immediately false if authentication (or by extension the websocket connection) failed
             sourceFuture = authFuture.thenComposeAsync(
