@@ -524,6 +524,13 @@ public class ExtensionWebSocketListener implements WebSocketListener{
         else {
             log.error("Failure occurred in listener", e);
         }
-        client.close();
+        
+        // The error occurred during an unknown point during execution. We don't have enough information to determine
+        // what caused it, so we will close
+        if (client.isOpen()) { 
+            client.close();
+        } else { // The websocket never opened, so it must be a problem connecting. Mark the failure and let the user handle it
+            client.webSocketFuture.complete(false);
+        }
     }
 }
