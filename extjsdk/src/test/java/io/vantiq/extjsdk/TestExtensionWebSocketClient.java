@@ -111,6 +111,7 @@ public class TestExtensionWebSocketClient {
     
     @Test
     public void testConnectToSource() throws InterruptedException {
+        client.webSocketFuture.complete(true);
         client.authFuture.complete(true);
         client.authSuccess.complete(null);
         
@@ -129,6 +130,7 @@ public class TestExtensionWebSocketClient {
         queryData.put("msg", "val");
         queryData.put("val", "msg");
         
+        client.webSocketFuture.complete(true);
         client.sendQueryResponse(200, queryAddress, queryData);
         
         assert socket.compareData("body", queryData);
@@ -146,6 +148,7 @@ public class TestExtensionWebSocketClient {
         queryData[1].put("message", "value");
         queryData[1].put("value", "message");
         
+        client.webSocketFuture.complete(true);
         client.sendQueryResponse(200, queryAddress, queryData);
         
         // The ArrayList creation is necessary since JSON interprets arrays as ArrayList
@@ -160,6 +163,7 @@ public class TestExtensionWebSocketClient {
         String errorMessage = "Message with params {}='p1' {}='param2'.";
         String errorCode = "io.vantiq.extjsdk.ExampleErrorName";
         
+        client.webSocketFuture.complete(true);
         client.sendQueryError(queryAddress, errorCode, errorMessage, params);
         
         assert socket.compareData("headers." + ExtensionServiceMessage.RESPONSE_ADDRESS_HEADER, queryAddress);
