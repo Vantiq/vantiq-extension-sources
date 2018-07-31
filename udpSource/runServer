@@ -1,0 +1,7 @@
+#!/bin/bash
+
+if [ %1 != null ]; then
+	./gradlew run --args "$1"
+else 
+	./gradlew run
+fi
