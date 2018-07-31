@@ -348,8 +348,6 @@ public class ExtensionWebSocketListener implements WebSocketListener{
                     if ((int) message.getStatus() == 200 && !client.isAuthed()) {
                         // Forcibly setting in case an error occurred before succeeding
                         client.authFuture.obtrudeValue(true);
-                        // Signal that an authentication has succeeded
-                        client.authSuccess.complete(null);
                     }
                     else {
                         client.authFuture.complete(false);

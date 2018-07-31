@@ -26,6 +26,11 @@ public class TestExtensionWebSocketListener {
     public void setUp() {
         srcName = "src";
         client = new FalseClient(srcName);
+        // Create the connected Futures
+        client.initiateWebsocketConnection("unused");
+        client.authenticate("");
+        client.connectToSource();
+        
         listener = new ExtensionWebSocketListener(client);
         pHandler = new TestHandlerESM();
         aHandler = new TestHandlerResp();
@@ -65,7 +70,7 @@ public class TestExtensionWebSocketListener {
         authenticate(false); // Create failing message
 
         assert aHandler.compareStatus(400);
-        assert !client.authenticate("").getNow(true); // It should be set to false now
+        assert !client.getAuthenticationFuture().getNow(true); // It should be set to false now
         
         authenticate(true);
         
@@ -94,7 +99,7 @@ public class TestExtensionWebSocketListener {
         
         listener.onMessage(errorMessage());
         
-        assert !client.connectToSource().getNow(true); // It should be set to false now
+        assert !client.getSourceConnectionFuture().getNow(true); // It should be set to false now
         
         Map<String,Object> config = new LinkedHashMap<>();
         String key = "key";
@@ -110,21 +115,17 @@ public class TestExtensionWebSocketListener {
     
     @Test
     public void testSourceConnectionFailFirstAndAuthFailFirst() {
+        client.connectToSource();
         authenticate(false);
-        try {
-            // Give it a little bit of time to run asynchronously
-            assert !client.connectToSource().get(5, TimeUnit.MILLISECONDS); // It should be set to false now
-        }
-        catch (Exception e) {
-            print("ConnectToSource took to long to fail");
-            assert false;
-        }
+        
+        assert !client.getSourceConnectionFuture().getNow(true); // It should be set to false now
+
         
         authenticate(true);
         
         listener.onMessage(errorMessage());
         
-        assert !client.connectToSource().getNow(true); // It should be set to false now
+        assert !client.getSourceConnectionFuture().getNow(true); // It should be set to false now
         
         Map<String,Object> config = new LinkedHashMap<>();
         String key = "key";
@@ -191,14 +192,14 @@ public class TestExtensionWebSocketListener {
         
         listener.onMessage(body);
         
-        assert !client.connectToSource().getNow(true); // It should be set to false now
+        assert !client.getSourceConnectionFuture().getNow(true); // It should be set to false now
         assert rHandler.compareStatus(403);
     }
 
 // ====================================================================================================================
 // --------------------------------------------------- Test Helpers ---------------------------------------------------
     private void open() {
-        listener.onOpen(null, null);
+        client.webSocketFuture.complete(true);
     }
     private void authenticate(boolean success) {
         if (!client.isOpen()) {
@@ -289,7 +290,7 @@ public class TestExtensionWebSocketListener {
 
         @Override
         public CompletableFuture<Boolean> initiateWebsocketConnection(String url) {
-            // do nothing
+            webSocketFuture = new CompletableFuture<Boolean>();
             return null;
         }
 

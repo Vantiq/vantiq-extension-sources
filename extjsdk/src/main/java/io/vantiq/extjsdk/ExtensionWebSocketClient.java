@@ -60,18 +60,6 @@ public class ExtensionWebSocketClient {
      */
     CompletableFuture<Boolean> sourceFuture;
     /**
-     * Used to signal that an authentication message has been requested
-     */
-    CompletableFuture<Void> authRequested;
-    /**
-     * Used to signal that a source connection has been requested
-     */
-    CompletableFuture<Void> sourceRequested;
-    /**
-     * A {@link CompletableFuture CompletableFuture<Void>} that is completed when authorization succeeds.
-     */
-    CompletableFuture<Void> authSuccess;
-    /**
      * Whether it should automatically send a connection message after receiving a reconnect message
      */
     boolean autoReconnect = false;
@@ -111,48 +99,6 @@ public class ExtensionWebSocketClient {
     public ExtensionWebSocketClient (String sourceName) {
         this.sourceName = sourceName;
         listener = new ExtensionWebSocketListener(this);
-        initializeFutures();
-    }
-
-    private void initializeFutures() {
-        webSocketFuture = new CompletableFuture<>();
-        authRequested = new CompletableFuture<>();
-        sourceRequested = new CompletableFuture<>();
-        authSuccess = new CompletableFuture<>();
-
-
-        // When authRequested is completed by calling authenticate(), it will check if the WebSocket connection succeeded,
-        // waiting if necessary.
-        // If the connection succeeded, then it will create a new Future that will be completed upon receiving an
-        // authentication request. If the connection failed, then it will return a Future with the value false.
-        authFuture = authRequested
-                .thenCombineAsync(webSocketFuture, 
-                        (unused, success) -> {
-                            return success;
-                        }
-                ).thenComposeAsync(
-                        (success) -> {
-                            if (success != null && success) { // In case a user assigns null
-                                doAuthentication();
-                                return new CompletableFuture<>();
-                            }
-                            return CompletableFuture.completedFuture(false);
-                        }
-                );
-
-        // If authentication succeeded, become a Future that will be set upon succeed or failure of a source connection
-        // If authentication failed, complete as false in order to propagate the failure
-        sourceFuture = authFuture.thenComposeAsync(
-                        (success) -> {
-                            if (success != null && success) { // In case a user assigns null
-                                return new CompletableFuture<Boolean>();
-                            }
-                            return CompletableFuture.completedFuture(false);
-                        }
-                );
-        
-        // Try to connect to source once both it has been requested and authentication has succeeded
-        sourceRequested.runAfterBoth(authSuccess, () -> doConnectionToSource());
     }
 
     /**
@@ -163,8 +109,11 @@ public class ExtensionWebSocketClient {
      * @return      A {@link CompletableFuture} that will return true when the connection succeeds, or false
      *              WebSocket fails to connect.
      */
-    public CompletableFuture<Boolean> initiateWebsocketConnection(String url) {
-        if (webSocket == null) {
+    synchronized public CompletableFuture<Boolean> initiateWebsocketConnection(String url) {
+        // Only create the webSocketFuture if the websocket connection has completed or it has failed
+        if (webSocket == null || !webSocketFuture.getNow(true)) {
+
+            // Start the connection attempt
             OkHttpClient client = new OkHttpClient.Builder()
                     .readTimeout(0, TimeUnit.MILLISECONDS)
                     .writeTimeout(0, TimeUnit.MILLISECONDS)
@@ -173,15 +122,15 @@ public class ExtensionWebSocketClient {
                     .url(validifyUrl(url))
                     .build()).enqueue(listener);
         }
-        return getWebsocketConnectionFuture();
+        return webSocketFuture;
     }
     
     /**
-     * Returns a {@link CompletableFuture} that will return true when the  succeeds, or false
-     * when the connection fails.
+     * Returns a {@link CompletableFuture} that will return true when the websocket connection succeeds, or false
+     * when the connection fails. Returns {@code null} if {@link #initiateWebsocketConnection} has not been called yet
      * 
      * @return      A {@link CompletableFuture} that will return true when the websocket connection succeeds, or false
-     *              when the connection fails.
+     *              when the connection fails. {@code null} if {@link #initiateWebsocketConnection} has not been called yet
      */
     public CompletableFuture<Boolean> getWebsocketConnectionFuture() {
         return webSocketFuture;
@@ -318,7 +267,9 @@ public class ExtensionWebSocketClient {
         try {
             byte[] bytes = mapper.writeValueAsBytes(obj);
             synchronized (this) {
-                this.webSocket.sendMessage(RequestBody.create(WebSocket.BINARY, bytes));
+                if (webSocket != null) {
+                    this.webSocket.sendMessage(RequestBody.create(WebSocket.BINARY, bytes));
+                }
             }
         }
         catch (Exception e) {
@@ -360,18 +311,25 @@ public class ExtensionWebSocketClient {
         authData.put("username", user);
         authData.put("password", pass);
         this.authData = authData;
-        // No need to complete it if it is already completed
-        if (!authRequested.isDone()) {
-            authRequested.complete(null);
+
+        // Only create the authFuture if there has been no request or a failed request, and a websocket request has 
+        // been made
+        if (webSocketFuture != null && (authFuture == null || !authFuture.getNow(true))) {
+            // Builds a Future that sends an authentication message and waits for the result if the websocket
+            // connection succeeded, or is immediately false if the websocket connection failed
+            authFuture = webSocketFuture.thenComposeAsync(
+                    (wsSuccess) ->
+                        {
+                            if (wsSuccess) {
+                                doAuthentication();
+                                return new CompletableFuture<Boolean>();
+                            } else {
+                                return CompletableFuture.completedFuture(false);
+                            }
+                        }
+                    );
         }
-        // If this is a re-request and the client is connected but not authenticated through WebSocket.
-        // This most likely means that an authentication has been sent and failed, in which case we should send again.
-        else if (!isAuthed() && isOpen()) {
-            // We could instead recreate authFuture, but this way anyone holding onto the original will still
-            // receive the results
-            doAuthentication();
-        }
-        return getAuthenticationFuture();
+        return authFuture;
     }
 
     /**
@@ -382,28 +340,35 @@ public class ExtensionWebSocketClient {
      * @return      A {@link CompletableFuture} that will return true when the authentication succeeds, or false
      *              when the WebSocket connection fails before authentication can occur.
      */
-    public CompletableFuture<Boolean> authenticate(String token) {
+    synchronized public CompletableFuture<Boolean> authenticate(String token) {
         authData = token;
-        // No need to complete it if it is already completed
-        if (!authRequested.isDone()) {
-            authRequested.complete(null);
+        // Only create the authFuture if there has been no request or a failed request, and a websocket request has 
+        // been made
+        if (webSocketFuture != null && (authFuture == null || !authFuture.getNow(true))) {
+            // Builds a Future that sends an authentication message and waits for the result if the websocket
+            // connection succeeded, or is immediately false if the websocket connection failed
+            authFuture = webSocketFuture.thenComposeAsync(
+                    (wsSuccess) ->
+                        {
+                            if (wsSuccess) {
+                                doAuthentication();
+                                return new CompletableFuture<Boolean>();
+                            } else {
+                                return CompletableFuture.completedFuture(false);
+                            }
+                        }
+                    );
         }
-        // If this is a re-request and the client is connected but not authenticated through WebSocket.
-        // This most likely means that an authentication has been sent and failed, in which case we should send again.
-        else if (!isAuthed() && isOpen()) {
-            // We could instead recreate authFuture, but this way anyone holding onto the original will still
-            // receive the results
-            doAuthentication();
-        }
-        return getAuthenticationFuture();
+        return authFuture;
     }
     
     /**
      * Returns a {@link CompletableFuture} that will return true when the authentication succeeds, or false
-     * when authentication fails.
+     * when authentication fails. Returns {@code null} if {@link #authenticate} has not been called yet
      * 
      * @return      A {@link CompletableFuture} that will return true when the authentication succeeds, or false
-     *              when the WebSocket connection fails before authentication can occur.
+     *              when the WebSocket connection fails before authentication can occur. Returns {@code null} if
+     *              {@link #authenticate} has not been called yet
      */
     public CompletableFuture<Boolean> getAuthenticationFuture() {
         return authFuture;
@@ -428,27 +393,34 @@ public class ExtensionWebSocketClient {
      */
     // Send a connection request for the source
     // Note that this client MUST already be authenticated or else the message will be ignored
-    public CompletableFuture<Boolean> connectToSource() {
-        // No need to complete it if it is already completed
-        if (!sourceRequested.isDone()) {
-            sourceRequested.complete(null);
+    synchronized public CompletableFuture<Boolean> connectToSource() {
+        // Only create the authFuture if there has been no request or a failed request, and a websocket request has 
+        // been made
+        if (authFuture != null && (sourceFuture == null || !sourceFuture.getNow(true))) {
+            // Builds a Future that sends a connection message and waits for the result if authentication succeeded,
+            // or is immediately false if authentication (or by extension the websocket connection) failed
+            sourceFuture = authFuture.thenComposeAsync(
+                    (authSuccess) ->
+                        {
+                            if (authSuccess) {
+                                doConnectionToSource();
+                                return new CompletableFuture<Boolean>();
+                            } else {
+                                return CompletableFuture.completedFuture(false);
+                            }
+                        }
+                    );
         }
-        // If this is a re-request and the client is authenticated but not connected to.
-        // This most likely means that a connection message has been sent and failed, in which case we should send again.
-        else if (!isConnected() && isAuthed()) {
-            // We could instead recreate sourceFuture, but this way anyone holding onto the original will still
-            // receive the results
-            doConnectionToSource();
-        }
-        return getSourceConnectionFuture();
+        return sourceFuture;
     }
     
     /**
      * Returns a {@link CompletableFuture} that will return true when a connection succeeds, or false when
-     * it fails.
+     * it fails. Returns {@code null} if {@link #connectToSource} has not been called yet.
      * 
      * @return  A {@link CompletableFuture} that will return true when a connection succeeds, or false when
      *          either the WebSocket connection or authentication fails before the source can connect.
+     *          Returns {@code null} if {@link #connectToSource} has not been called yet.
      */
     public CompletableFuture<Boolean> getSourceConnectionFuture() {
         return sourceFuture;
@@ -460,10 +432,6 @@ public class ExtensionWebSocketClient {
      */
     public void sourceHasDisconnected() {
         sourceFuture.obtrudeValue(false);
-        
-        // Reset the asynchronous system 
-        sourceRequested = new CompletableFuture<Void>();
-        sourceRequested.thenAccept((NULL) -> doConnectionToSource()); 
     }
     
     /**
@@ -523,10 +491,18 @@ public class ExtensionWebSocketClient {
         synchronized (this) {
             webSocket = null;
             // Make sure anything still using these futures know that they are no longer valid
-            webSocketFuture.obtrudeValue(false);
-            authFuture.obtrudeValue(false);
-            sourceFuture.obtrudeValue(false);
-            initializeFutures();
+            if (webSocketFuture != null) {
+                webSocketFuture.obtrudeValue(false);
+                webSocketFuture = null;
+            }
+            if (authFuture != null) {
+                authFuture.obtrudeValue(false);
+                authFuture = null;
+            }
+            if (sourceFuture != null) {
+                sourceFuture.obtrudeValue(false);
+                sourceFuture = null;
+            }
             
             ExtensionWebSocketListener oldListener = listener;
             oldListener.close();
@@ -558,9 +534,18 @@ public class ExtensionWebSocketClient {
         synchronized (this) {
             webSocket = null;
             // Make sure anything still using these futures know that they are no longer valid
-            webSocketFuture.obtrudeValue(false);
-            authFuture.obtrudeValue(false);
-            sourceFuture.obtrudeValue(false);
+            if (webSocketFuture != null) {
+                webSocketFuture.obtrudeValue(false);
+                webSocketFuture = null;
+            }
+            if (authFuture != null) {
+                authFuture.obtrudeValue(false);
+                authFuture = null;
+            }
+            if (sourceFuture != null) {
+                sourceFuture.obtrudeValue(false);
+                sourceFuture = null;
+            }
             
             listener.close();
         }
