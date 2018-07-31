@@ -51,7 +51,7 @@ import org.slf4j.LoggerFactory;
  * <br>
  * The options for general are below:<br>
  * <ul>
- *      <li>{@code listenAddress}: Optional. A String representing address on which UDP messages will be sent and received.
+ *      <li>{@code listenAddress}: Optional. A String representing the address on which UDP messages will be sent and received.
  *                      Typically only the localhost and the host's assigned IP address will work. Default is localhost</li>
  *      <li>{@code listenPort}: Optional. The port number on which UDP messages will be sent and received. Default is 3141.</li>
  * </ul>
@@ -846,10 +846,14 @@ public class ConfigurableUDPSource {
         MAX_UDP_DATA = config.get("maxPacketSize") instanceof Integer ? (int) config.get("maxPacketSize") : 1024;
         LISTENING_PORT = config.get("defaultListenPort") instanceof Integer ? (int) config.get("defaultListenPort") :
                 3141;
-        authToken = config.get("authToken") instanceof String ? (String) config.get("authToken") : "";
+        if (config.get("authToken") instanceof String) {
+            authToken = (String) config.get("authToken") ;
+        } else {
+            throw new RuntimeException("Missing authentication token in config file. Please place in 'authToken'.");
+        }
 
         if (config.get("logLevel") instanceof String || config.get("logTarget") instanceof String) {
-            Level logLevel = Level.toLevel((String) config.get("logLevel"), Level.WARN);
+            Level logLevel = Level.toLevel((String) config.get("logLevel"), Level.INFO);
             String logTarget = (String) config.get("logTarget");
             setupLogger(logLevel, logTarget);
         }
@@ -859,7 +863,7 @@ public class ConfigurableUDPSource {
                 String address = (String) config.get("defaultListenAddress");
                 LISTENING_ADDRESS = InetAddress.getByName(address);
             } catch (UnknownHostException e) {
-                log.warn("Given default listening address could not be found. Using 'localhost' instead");
+                log.error("Given default listening address could not be found. Using 'localhost' instead");
             }
         }
         // There was no valid defaultListenAddress use the default of localhost
@@ -867,7 +871,7 @@ public class ConfigurableUDPSource {
             try {
                 LISTENING_ADDRESS = InetAddress.getLocalHost();
             } catch (UnknownHostException e) {
-                log.error("Failed to identify localhost", e);
+                throw new RuntimeException("Could not find a valid local address for the default listening address.",e);
             }
         }
     }
@@ -899,12 +903,14 @@ public class ConfigurableUDPSource {
          * your Vantiq deployment's address, typically "dev.vantiq.com"
          */
         if (!(config.get("sources") instanceof List)) {
-            log.error("There must be an array of sources");
-            log.error("Exiting...\n");
-            return;
+            throw new RuntimeException("No source names given.");
         }
         ((List<Object>) config.get("sources")).removeIf((obj) -> !(obj instanceof String));
         List<String> sources = ((List<String>) config.get("sources"));
+        
+        if (sources.isEmpty()) {
+            throw new RuntimeException("No source names given.");
+        }
 
 
         /*
