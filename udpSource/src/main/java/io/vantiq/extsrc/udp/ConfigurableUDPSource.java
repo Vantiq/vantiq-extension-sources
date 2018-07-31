@@ -424,39 +424,43 @@ public class ConfigurableUDPSource {
         }
     };
     
+    static void clearSourceHandlers(String sourceName) {
+        ExtensionWebSocketClient client = clients.get(sourceName);
+
+        synchronized (socketLock) { // Don't want to edit while another is adding to or removing from UDPSocket
+            // Disassociate the source from the socket
+            for (Map.Entry<DatagramSocket,List<String>> entry : udpSocketToSources.entrySet()) {
+                List<String> list = entry.getValue();
+                if (list.contains(client.getSourceName())) {
+                    list.remove(client.getSourceName());
+                    if (list.isEmpty()) {
+                        // Get rid of the socket if it's the only one left
+                        DatagramSocket socket = entry.getKey();
+                        udpSocketToSources.remove(socket);
+                        socket.close();
+                    }
+                    
+                    break;
+                }
+            }
+        }
+        // Clear the handlers associated with the source
+        notificationHandlers.remove(sourceName);
+        client.setPublishHandler(UDPDefaultPublish);
+        
+        // Clear all source address ports
+        sourceAddresses.remove(sourceName);
+        sourcePorts.remove(sourceName);
+        sourceServers.remove(sourceName);
+    }
+
     static Handler<ExtensionServiceMessage> UDPReconnectHandler = new Handler<ExtensionServiceMessage>() {
 
         @Override
         public void handleMessage(ExtensionServiceMessage message) {
-            String sourceName = (String) message.getSourceName();
-            ExtensionWebSocketClient client = clients.get(sourceName);
-
-            synchronized (socketLock) { // Don't want to edit while another is adding to or removing from UDPSocket
-                // Disassociate the source from the socket
-                for (Map.Entry<DatagramSocket,List<String>> entry : udpSocketToSources.entrySet()) {
-                    List<String> list = entry.getValue();
-                    if (list.contains(client.getSourceName())) {
-                        list.remove(client.getSourceName());
-                        if (list.isEmpty()) {
-                            // Get rid of the socket if it's the only one left
-                            DatagramSocket socket = entry.getKey();
-                            udpSocketToSources.remove(socket);
-                            socket.close();
-                        }
-                        
-                        break;
-                    }
-                }
-            }
-            // Clear the handlers associated with the source
-            notificationHandlers.remove(sourceName);
-            client.setPublishHandler(UDPDefaultPublish);
+            clearSourceHandlers(message.getSourceName());
             
-            // Clear all source address ports
-            sourceAddresses.remove(sourceName);
-            sourcePorts.remove(sourceName);
-            sourceServers.remove(sourceName);
-            
+            ExtensionWebSocketClient client = clients.get(message.getSourceName());
             client.connectToSource();
         }
         
@@ -465,6 +469,8 @@ public class ConfigurableUDPSource {
     static Handler<ExtensionWebSocketClient> UDPCloseHandler = new Handler<ExtensionWebSocketClient>() {
         @Override
         public void handleMessage(ExtensionWebSocketClient client) {
+            clearSourceHandlers(client.getSourceName());
+            
             client.initiateWebsocketConnection(targetVantiqServer);
             client.authenticate(authToken);
             client.connectToSource();
