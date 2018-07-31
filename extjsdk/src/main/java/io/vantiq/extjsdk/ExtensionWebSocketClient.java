@@ -112,6 +112,7 @@ public class ExtensionWebSocketClient {
     synchronized public CompletableFuture<Boolean> initiateWebsocketConnection(String url) {
         // Only create the webSocketFuture if the websocket connection has completed or it has failed
         if (webSocket == null || !webSocketFuture.getNow(true)) {
+            webSocketFuture = new CompletableFuture<>();
 
             // Start the connection attempt
             OkHttpClient client = new OkHttpClient.Builder()
