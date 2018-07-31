@@ -24,7 +24,7 @@ The server config file must be in JSON format. ConfigurableUDPSource runs using 
 
 ### Logging Options
 
-For more granular options, edit logback.xml, documentation for which can be found at <a>logback.qos.ch</a>.
+For more granular options, edit logback.xml using its [documentation](https://logback.qos.ch/manual/configuration.html).
 *	logLevel -- The level of log outputs desired. One of: "ERROR","WARN","INFO","DEBUG","TRACE". Not case-sensitive. Defaults to "INFO".
 *	logTarget -- A file to which the logs will be written to in addition to stdout. 
 
@@ -124,7 +124,7 @@ These options interpret data as pure bytes or a string in byte form. These two o
 	* locations: Required. An array of the locations in which to place the capture groups from pattern.
 
 
-## <a name="MapTransformer"></a>MapTransformer
+## <a name="MapTransformer" id="MapTransformer"></a>MapTransformer
 
 MapTransformer is designed to deal with getting and putting for nested Maps. 
 
