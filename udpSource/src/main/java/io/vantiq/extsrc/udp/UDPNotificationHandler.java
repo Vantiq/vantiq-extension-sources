@@ -293,7 +293,9 @@ public class UDPNotificationHandler extends Handler<DatagramPacket>{
             
             // Create a String from the byte data, but remove unfilled locations
             String recString = new String(packet.getData());
-            recString = new String(packet.getData(), 0, recString.indexOf("\0"), Charset.forName("UTF-8"));
+            int endIndex = recString.indexOf("\0");
+            if (endIndex == -1) {endIndex = packet.getData().length;}
+            recString = new String(packet.getData(), 0, endIndex, Charset.forName("UTF-8"));
             
             sendMsg = getRegexResults(recString);
         }

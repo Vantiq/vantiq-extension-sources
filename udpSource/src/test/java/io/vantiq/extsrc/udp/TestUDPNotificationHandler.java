@@ -237,7 +237,7 @@ public class TestUDPNotificationHandler {
     
     @Test
     public void testXML() {
-        incoming.put("expectXMLIn", true);
+        incoming.put("expectXmlIn", true);
         incoming.put("passXmlRootNameIn", "root");
         incoming.put("passPureMapIn", true);
         

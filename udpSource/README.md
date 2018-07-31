@@ -8,8 +8,10 @@
 
 ## How to Run ConfigurableUDPSource
 
-1.	Clone this repository
-2.	
+1.	Clone this repository (vantiq-extension-sources)
+2.	Navigate to <repo location>/vantiq-extension-sources/udpsource
+3.	If you are on a Linux operating system run 'runServer', if you are on Windows run 'runServerWin.bat'. Both of these commands will also accept an argument identifying where the server config file is. 
+4.	To stop the program, run 'gradlew --stop'
 
 ## Server Config File
 
@@ -59,14 +61,14 @@ Options for Publishes (a.k.a. outgoing messages) are below. Options for differen
 
 #### UDP options
 These options specify where to send messages to. These are the only options that are required to be set.
-* 	targetAddress: Required to send Publishes. A {@link String} containing either the URL or IP address to which outgoing UDP messages should be sent
+* 	targetAddress: Required to send Publishes. A string containing either the URL or IP address to which outgoing UDP messages should be sent
 * 	targetPort: Required to send Publishes. An integer that is the port # to which outgoing UDP messages should be sent
 
 #### General Object Options
 These options affect data to be sent in JSON(default) or XML. If none of these are set then the resulting object will be empty of data.
 * 	passPureMapOut: Optional. A boolean specifying that the Json object in Publish messages should be passed through without changes. Default is false.
 * 	passUnspecifiedOut: Optional. A boolean specifying that any values not transformed through the transformations specified in transformations should be sent as part of the outgoing message. If no transformations are specified then this is functionally identical to passPureMapOut. Default is false
-* 	transformations: Optional. An array of transformations (see MapTransformer documentation) to perform on the message to be sent. Any values not transformed will not be passed unless passUnspecifiedOut is set to true, and any values that are transformed will not appear in the final message regardless of settings. Default is null
+* 	transformations: Optional. An array of transformations (see [MapTransformer](#MapTransformer)) to perform on the message to be sent. Any values not transformed will not be passed unless passUnspecifiedOut is set to true, and any values that are transformed will not appear in the final message regardless of settings. Default is null
 
 #### XML Options
 * 	sendXmlRoot: Optional. The name of the root element for the generated XML object. When set this will send the entire object received as XML. Default is null.
@@ -101,9 +103,9 @@ These select which ports and addresses to accept data from. If none of these are
 These options affect data received in JSON(default) or XML. If none of these are set then the resulting object will be empty of data. Note that passRecAddress and passRecPort occur for every datatype except CSV, and will overwrite any data already in those locations.
 * passPureMapIn: Optional. A boolean specifying that the Json object in Publish messages should be passed through without changes. Default is false.
 * passUnspecifiedIn: Optional. A boolean specifying that any values not transformed through the transformations specified in transformations should be sent as part of the outgoing message. If no transformations are specified in transformations then this is identical to passPureMapOut. Default is false
-* passRecAddress: Optional. A {@link String} representation of the location in which you want the IP address from which the UDP message originated. Default is null, where the address will not be recorded
-* passRecPort: Optional. A {@link String} representation of the location in which you want the port from which the UDP message originated. Default is null, where the port will not be recorded.
-* transformations: Optional. An array of transformations (see {@link MapTransformer}) to perform on the message to be sent. Any values not transformed will not be passed unless passUnspecifiedIn is set to true, and any values that are transformed will not appear in the final message regardless of settings
+* passRecAddress: Optional. A string representation of the location in which you want the IP address from which the UDP message originated. Default is null, where the address will not be recorded
+* passRecPort: Optional. A string representation of the location in which you want the port from which the UDP message originated. Default is null, where the port will not be recorded.
+* transformations: Optional. An array of transformations (see [MapTransformer](#MapTransformer)) to perform on the message to be sent. Any values not transformed will not be passed unless passUnspecifiedIn is set to true, and any values that are transformed will not appear in the final message regardless of settings
 
 #### XML Options
 These options specify how XML is translated.
@@ -118,5 +120,65 @@ This option specifies how CSV is translated.
 These options interpret data as pure bytes or a string in byte form. These two options are mutually exclusive.
 * passBytesInAs: Optional. The location to which you would like to place the incoming data. This will take in the raw bytes received from the source and place them as chars of the same value in a String. Default is null.
 * regexParser: Optional. The settings to use for parsing the incoming byte data using regex. This is not used when passBytesInAs is not set. It contains the following options. 
-	* pattern: Required. The regex pattern that will be used to parse the incoming data. The parser will use the first match that appears in the data. See {@link Pattern} for specifics on what constitutes a valid pattern.
+	* pattern: Required. The regex pattern that will be used to parse the incoming data. The parser will use the first match that appears in the data. See java.util.regex.Pattern for specifics on what constitutes a valid pattern.
 	* locations: Required. An array of the locations in which to place the capture groups from pattern.
+
+
+## <a name="MapTransformer"></a>MapTransformer
+
+MapTransformer is designed to deal with getting and putting for nested Maps. 
+
+### Locations
+A location is written as period separated key names starting from the inital map, e.g. "level1.level2.level3" would be the location of "Hello World" in the Map represented by the following JSON object.
+```
+{
+    level1: {
+        level2: {
+            level3: {
+                "Hello World"
+            }
+        }
+    }
+}
+```
+
+### Transformations
+A transformation copies an object from a location in the input Map to a location in the output Map, overwriting anything in the path for the output map. If the input location is invalid or null, nothing is written in the output Map. It is written as an array with the location in the input as the first element and the desired location in the output as the second element.
+Example: Using the transformation ["level1.level2", "lvl1.lvl2"] on the input map
+```
+{
+	level1: {
+		level2: "Hello World"
+	}
+}
+```
+and the output map
+```
+{
+	lvl1: "Sir Not-Appearing-In-This-Result",
+	string: "Hello"
+}
+```
+would result in the output map looking like
+```
+{
+	lvl1: {
+		lvl2: "Hello World"
+	},
+	string: "Hello"
+}
+```
+since the value in lvl1 was overwritten by the Map created to contain lvl2 and the transformed value.
+<br>
+Additionally, if the output map had instead been
+```
+{
+	lvl1: {
+		lvl2: {
+			lvl3: "Sir Not-Appearing-In-This-Result"
+		}
+	},
+	string: "Hello"
+}
+```
+then the resulting map would be exactly the same, as the Map in lvl2 would have been overwritten by the new value.
