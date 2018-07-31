@@ -8,10 +8,9 @@
 
 ## How to Run ConfigurableUDPSource
 
-1.	Clone this repository (vantiq-extension-sources)
-2.	Navigate to <repo location>/vantiq-extension-sources/udpsource
-3.	If you are on a Linux operating system run 'runServer', if you are on Windows run 'runServerWin.bat'. Both of these commands will also accept an argument identifying where the server config file is. 
-4.	To stop the program, run 'gradlew --stop'
+1.	Clone this repository (vantiq-extension-sources) and navigate into <repo location>/vantiq-extension-sources/udpsource
+2.	If you want to run the program in place, call `runServer` or `runServer.bat` depending on whether you're on a Unix/Mac or Windows system. Both of these commands will also accept an argument identifying where the server config file is. To stop the program, run `gradlew --stop`
+3.	If you want to take the program and run it elsewhere, call `gradlew assemble` and then navigate to `<repo location>/vantiq-extension-sources/udpSource/build/distributions`. The zip and tar files both contain the same files, so choose whichever you prefer. Uncompress the file in the resulting location and navigate to `udpSource/bin`. From there, run either `udpSource` or `udpSource.bat` with a local config.json file or specifying the file as an argument.
 
 ## Server Config File
 
