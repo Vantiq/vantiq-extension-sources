@@ -13,6 +13,7 @@ version 'unspecified'
 apply plugin: 'groovy'
 apply plugin: 'java'
 apply plugin: 'java-library'
+apply plugin: 'application'
 
 sourceCompatibility = 1.8
 
@@ -24,6 +25,7 @@ repositories {
     jcenter()
 }
 
+mainClassName = 'io.vantiq.extsrc.udp.ConfigurableUDPSource'
 
 
 dependencies {

@@ -6,6 +6,11 @@
 *	MapTransformer -- Shifts contents of Maps and nested Maps
 *	config.sample.json -- A sample configuration file for ConfigurableUDPSource
 
+## How to Run ConfigurableUDPSource
+
+1.	Clone this repository
+2.	
+
 ## Server Config File
 
 The server config file must be in JSON format. ConfigurableUDPSource runs using either the config file specified as the first argument or the file 'config.json' in the working directory. The options are as follows
@@ -50,7 +55,7 @@ The Configuration document looks as below:
 * listenPort: Optional. The port number on which UDP messages will be sent and received. Default is set by the server config document.
 
 ### Options Available for Outgoing
-Options for Publishes (a.k.a. outgoing messages) are below. 
+Options for Publishes (a.k.a. outgoing messages) are below. Options for different data types are mutually exclusive.
 
 #### UDP options
 These options specify where to send messages to. These are the only options that are required to be set.
@@ -72,7 +77,7 @@ These options allow data to be sent in CSV format. Both must be set in order for
 *	useCsvSchema: Optional. Defines the values that will be sent as CSV. Can be either A) an array of the names of the values that will be taken from the objects and placed in CSV, or B) the location in which the previous will be for *all* Publishes. The values in the array will be placed as the header for the CSV document. Default is null
 
 #### Byte/String Options
-These options send data out as a string in byte form. They do not include quotation marks unless they are part of the message.
+These options send data out as a string in byte form. They do not include quotation marks unless they are part of the message. These two options are mutually exclusive.
 * 	passBytesOutFrom: Optional. The location from which you would like to place the outgoing data. This will take in the String at the location and send it using the byte values of the characters contained within. Default is null.
 * 	formatParser: Optional. The settings for sending data as Ascii encoded bytes using printf-style formatting.
     * 	pattern: Required. The printf-style pattern that you wish the data to be sent as. Any format arguments that are replaced with "null". See java.util.Formatter for specifics on what is allowed.
@@ -82,7 +87,7 @@ These options send data out as a string in byte form. They do not include quotat
 	
 
 ### Options Available for Incoming 
-Options for Notifications (a.k.a. incoming messages) are as follows. If no options are valid then no Notifications will be sent, but if even one is set then their defaults are used. 
+Options for Notifications (a.k.a. incoming messages) are as follows. If no options are valid then no Notifications will be sent, but if even one is set then their defaults are used. Options for different data types are mutually exclusive.
 
 #### UDP Options
 These select which ports and addresses to accept data from. If none of these are set but other incoming options are, then messages will be accepted from any port and address. Messages can be received from any address and port combination that exists in receiveAddresses and receivePorts, as well as any server specified in receiveServers
@@ -110,8 +115,8 @@ This option specifies how CSV is translated.
 * expectCsvIn: Optional. Specifies that the expected UDP data will be in CSV format. Expects that the data will use a header specifying the name of each object. Data will be received as an array of JSON Objects. Default is false.
 
 #### Byte/String Options
-These options interpret data as pure bytes or a string in byte form.
+These options interpret data as pure bytes or a string in byte form. These two options are mutually exclusive.
 * passBytesInAs: Optional. The location to which you would like to place the incoming data. This will take in the raw bytes received from the source and place them as chars of the same value in a String. Default is null.
 * regexParser: Optional. The settings to use for parsing the incoming byte data using regex. This is not used when passBytesInAs is not set. It contains the following options. 
 	* pattern: Required. The regex pattern that will be used to parse the incoming data. The parser will use the first match that appears in the data. See {@link Pattern} for specifics on what constitutes a valid pattern.
-	* locations: Required. An array of the locations in which to place the capture groups from pattern. These will override the location in passBytesInAs.  
+	* locations: Required. An array of the locations in which to place the capture groups from pattern.
