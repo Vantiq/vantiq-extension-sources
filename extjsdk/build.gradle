@@ -1,8 +1,16 @@
 group 'io.vantiq'
 version 'unspecified'
 
+buildscript {
+    repositories {jcenter() }
+    dependencies {
+        classpath 'com.github.jengelman.gradle.plugins:shadow:2.0.0'
+    }
+}
+
 apply plugin: 'groovy'
 apply plugin: 'java'
+apply plugin: 'com.github.johnrengelman.shadow'
 
 sourceCompatibility = 1.8
 
