@@ -102,6 +102,20 @@ public class ExtensionWebSocketClient {
     }
 
     /**
+     * Attempts to connect to the source using the given target url and authentication token.
+     *
+     * @param url   The url of the target Vantiq server.
+     * @param token The authentication token for the target namespace.
+     * @return      An {@link CompletableFuture} that completes as {@code true} when the connection to the source is
+     *              fully completed, or {@code false} when the connection fails at any point along the way.
+     */
+    public CompletableFuture<Boolean> inititiateFullConnection(String url, String token) {
+        initiateWebsocketConnection(url);
+        authenticate(token);
+        return connectToSource();
+    }
+
+    /**
      * Creates a WebSocket connection to the given URL. Does nothing if a connection has already been established
      *
      * @param url   The url of the Vantiq system to which you wish to connect.
