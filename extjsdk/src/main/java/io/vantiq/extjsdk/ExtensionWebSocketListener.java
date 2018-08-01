@@ -70,7 +70,7 @@ public class ExtensionWebSocketListener implements WebSocketListener{
     /**
      * Whether this listener has been closed, and should not make any more changes to its client.
      */
-    public boolean isClosed = false;
+    boolean isClosed = false;
 
     /**
      * Creates a new {@link ExtensionWebSocketListener} connected to {@code client}
@@ -217,6 +217,10 @@ public class ExtensionWebSocketListener implements WebSocketListener{
     
     public void close() {
         isClosed = true;
+    }
+    
+    public boolean isStopped() {
+        return isClosed;
     }
 
     /**

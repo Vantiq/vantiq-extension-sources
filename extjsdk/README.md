@@ -1,10 +1,10 @@
 ## Repository Contents
 
-*	ExtensionWebSocketClient -- Acts as a translator between Vantiq and the generic source. Formats and sends messages to Vantiq.
-*	ExtensionWebSocketListener -- A listener for the Vantiq deployment. Translates Vantiq messages before passing them off to handlers. Also helps ExtensionWebSocketClient keep track of what stage in the connection it is at.
-*	Handler -- A simple message handler interface, designed for simple anonymous implementation. Used by ExtensionWebSocketListener to handle various message types.
-*	ExtensionServiceMessage -- A class that represents source-related messages sent from the Vantiq server.
-*	Response -- A class that represents non source-related messages sent from the Vantiq server.
+*	[ExtensionWebSocketClient](#client) -- Acts as a translator between Vantiq and the generic source. Formats and sends messages to Vantiq.
+*	[ExtensionWebSocketListener](#listener) -- A listener for the Vantiq deployment. Translates Vantiq messages before passing them off to handlers. Also helps ExtensionWebSocketClient keep track of what stage in the connection it is at. 
+*	[Handler](#handler) -- A simple message handler interface, designed for simple anonymous implementation. Used by ExtensionWebSocketListener to handle various message types.
+*	[ExtensionServiceMessage](#extSvcMsg) -- A class that represents source-related messages sent from the Vantiq server.
+*	[Response](#response) -- A class that represents non source-related messages sent from the Vantiq server.
 
 ## How to Include In Your Own Project
 
@@ -25,7 +25,7 @@
 	*	[com.fasterxml.jackson.core:jackson-databind Version 2.9.3](https://mvnrepository.com/artifact/com.fasterxml.jackson.core/jackson-databind/2.9.3)
 
 
-## Using ExtensionWebSocketClient
+## <a name="client" id="client"></a>Using ExtensionWebSocketClient
 Every ExtensionWebSocketClient (Client) deals with a single source across its own WebSocket connection. 
 
 ### Connecting to a source
@@ -37,13 +37,13 @@ There are three types of messages that can be sent to a source: Notifications, Q
 #### Notifications
 Notifications are messages, typically Maps, that the source will pass on to any Vantiq rules saying `WHEN MESSAGE ARRIVES FROM SOURCE <source name>`. To send one, simply call `client.sendNotification(<object to be sent>)`, which will translate the message into JSON and add everything Vantiq needs to recognize the message. 
 
-#### Query Responses
+#### <a name="queryResponse" id="queryResponse"></a>Query Responses
 Query responses are responses to a `SELECT` request from Vantiq that targets a source, and can either be a Map or an array of Maps. They only mean anything in relation to an intial Query message received from Vantiq, and thus should only be sent as part of a [Query handler](#queryHandler). To send a Query response, call `client.sendQueryResponse(<HTTP status code>, <Query address>, <Map>/<Map array>)`. The Query address can be obtained using `ExtensionServiceMessage.extractReplyAddress(<Query message>)`. The HTTP status code can be one of 
 *	100 - This indicates that there is more data to be delivered. If more than one Map is delivered across multiple iterations they will all be placed into a single array before the Vantiq `SELECT` command receives the data.
 *	200 - There is some data in the message, and this is the last or only message. This can be used to complete a string of responses that used code 100.
 *	204 - There were no problems, but there is also no data to be sent. When this code is used any data sent along with it will be ignored. This can be used to complete a string of responses that used code 100.
 
-#### Query Errors
+#### <a name="queryError" id="queryError"></a>Query Errors
 Query errors are sent when a Query cannot be completed successfully. To send a Query error, call `client.sendQueryError(<Query address>, <error code>, <message template>, <message parametares>)`. 
 *	The Query address is obtained the same way as for a Query response, `ExtensionServiceMessage.extractReplyAddress(<Query message>)`.
 *	The error code is a string intended to help identify where the error occurred. Possible error codes are the full class name of the class that caused the error, the class name of the Exception that caused it, or the name of the server where the error occurred. 
@@ -51,7 +51,7 @@ Query errors are sent when a Query cannot be completed successfully. To send a Q
 *	The parameters are an Object array of that will be translated into strings and inserted into the message template based anywhere that `{<array index>}` is located.
 
 
-### Receiving Messages
+### <a name="handler" id="handler"></a>Receiving Messages
 All messages received from the Vantiq server are dealt with using handlers attached to the ExtensionWebSocketListener, typically through setters in Client. There are seven different handlers, three for the WebSocket connection, two for the source connection, and two for the source messages. The three WebSocket handlers are authentication, HTTP, closure. The source connection handlers are configuration and reconnection. The source message handlers are Publish and Query. It is strongly advised that any handlers you wish to use are set before attempting to connect to the source.
 
 #### Authentication
@@ -60,8 +60,8 @@ The authentication handler receives all messages until and including the message
 #### HTTP
 The HTTP handler receives all non source-related messages after authentication has succeeded. The majority of these messages will be confirmations of receipt for a message sent to the Vantiq server, and consist of a status of 200 and little else. Any other messages are likely to be an error of some sort, with status code 300+ and a body containing a message describing the error. The HTTP handler receives Response objects.
 
-#### Closure
-The closure handler does not deal with a specific message or type of message, but instead is called when either your code calls `client.close()` or the WebSocket connection is forced to close, most likely due to a problem with the connection. This handler is called after everything but the handlers are reset, essentially creating a new Client targeting the same source. The closure handler receives the Client whose connection closed.
+#### <a name="closeHandler" id="closeHandler">Closure
+The closure handler does not deal with a specific message or type of message, but instead is called when either your code calls `client.close()` or the WebSocket connection is forced to close, most likely due to a problem with the connection. This handler is called after everything but the handlers are reset, essentially creating a new Client targeting the same source. If you have saved a reference to the Client's Listener, be aware that the Listener is stopped and replaced with a functionally identical Listener just before this handler is called. The closure handler receives the Client whose connection closed.
 
 #### Configuration
 The configuration handler receives the message containing a configuration document created on the Vantiq client. This message is only received upon a successful source connection, and contains the source's configuration document as a Map at `((Map) <message>.getObject()).get("config")`. The configuration handler receives an ExtensionServiceMessage.
@@ -72,17 +72,20 @@ Under certain circumstances, typically a change to the source's configuration do
 #### Publish
 The Publish handler is called when a message is received that was generated by Vantiq with `PUBLISH <object> TO SOURCE <source name>`. The published object can be retrieved through `<message>.getObject()`. Note that anything declared with the `USING` keyword will also be placed into the same location, e.g. `PUBLISH {"hello":"world"} TO SOURCE <sourceName> USING {"option":"one"}` will generate an object that looks like `{"hello":"world","option":"one"}`. The Publish handler receives an ExtensionServiceMessage.
 
-#### Query
+#### <a name="queryHandler" id="queryHandler"></a>Query
 The Query handler is called when a message is received that was generated by Vantiq with `SELECT <keys> FROM SOURCE <source name>`. Query messages expect a response, either [data](#queryResponse) or an [error](#queryError), so every Client has a default handler is created that sends back an error stating that no Query handler was set. Options specified using the `WITH` keyword are received as a Map obtained with `<message>.getObject()`.
 
-### ExtensionServiceMessage
+### <a name="listener" id="listener"></a>ExtensionWebSocketListener
+The ExtensionWebSocketListener class should only be accessed and used indirectly through handlers. If you do find a reason to access it directly, you can use `ExtensionWebSocketClient.getListener()`, but all functionality interactions with a Listener should be performed through an ExtensionWebSocketClient. If you do need to save a reference to a listener, be aware that a Client's Listener is stopped and replaced with a functionally identical Listener just before the [close handler](#closeHandler) is called. Call `listener.isStopped()` to check if this has occurred.
+
+### <a name="extSvcMsg" id="extSvcMsg"></a>ExtensionServiceMessage
 The ExtensionServiceMessage class is a helper that tightly defines what can be in a message to or from a source, and has getters for the most relevant properties. 
 *	`getSourceName()` returns the name of the source that sent or is receiving the message. This can be useful for identifying which Client received a message.
 *	`getObject()` returns the object that is included in many messages. 
 *	`getOp()` returns a string that states what operation is requested. Constants for each operation are provided if you wish to compare the messages.
 *	`ExtensionServiceMessage.extractReplyAddress(<message>)` returns the reply address for operations that require a reply. Currently this is only relevant for Query messages.
 
-### Response
+### <a name="response" id="response"></a>Response
 The Response class is a helper that tightly defines what can be in a WebSocket message to or from the Vantiq server, and has getters for each of its properties.
 *	`getStatus()` returns the HTTP code number for the message.
 *	`getBody()` the object contained in the body of the message.
