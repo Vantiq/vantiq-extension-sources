@@ -87,64 +87,24 @@ public class ExtensionWebSocketListener implements WebSocketListener{
      * Set the default {@link Handler} for each response type. What each does is specified in its respective setter.
      */
     private void initializeDefaultHandlers() {
-        // Prints the status of the Http response and its body if there is one
-        this.setHttpHandler(
-            new Handler<Response>() {
-                @Override
-                public void handleMessage(Response msg) {
-                    // Empty body is probably just a confirmation of receipt
-                    if (msg.getBody() == null) {
-                        log.debug("Confirmation received with status: " + msg.getStatus());
-                    }
-                    else {
-                        log.debug("");
-                        log.debug("Unexpected response with status: " + msg.getStatus());
-                        log.debug("Other data\n" + msg.getBody());
-                        log.debug("");
-                    }
-                }
-            }
-        );
 
         // Respond to all queries with an empty body
         Handler<ExtensionServiceMessage> defaultQueryHandler = new Handler<ExtensionServiceMessage>() {
             @Override
             public void handleMessage(ExtensionServiceMessage msg) {
-                log.info("Message received type: " + msg.getOp());
+                log.warn("Query received with no user-set handler");
                 log.debug("Full message: " + msg);
                 // Prepare a response with an empty body, so that the query doesn't wait for a timeout
                 Object[] body = {msg.getSourceName()};
-                client.sendQueryError(ExtensionServiceMessage.extractReplyAddress(msg),
-                        "io.vantiq.extjsdk.unsetQueryHandler",
-                        "No handler has been set for source {0}",
-                        body);
+                if (!isClosed) {
+                    client.sendQueryError(ExtensionServiceMessage.extractReplyAddress(msg),
+                            "io.vantiq.extjsdk.unsetQueryHandler",
+                            "No handler has been set for source {0}",
+                            body);
+                }
             }
         };
         this.setQueryHandler(defaultQueryHandler);
-        // Add ourselves to the Handler so it can send a response
-
-
-        this.setPublishHandler(
-            new Handler<ExtensionServiceMessage>() {
-                @Override
-                public void handleMessage(ExtensionServiceMessage msg) {
-                    log.debug("Message received type: " + msg.getOp());
-                    log.debug("Data\n " + msg.getObject());
-                }
-            }
-        );
-
-        // Prints out the config message when received
-        this.setConfigHandler(
-            new Handler<ExtensionServiceMessage>() {
-                @Override
-                public void handleMessage(ExtensionServiceMessage msg) {
-                    log.info("Config successful for '" + msg.getSourceName() + "'");
-                    log.debug("Config: " + ((Map)msg.getObject()).get("config"));
-                    log.debug("");
-                }
-            }
-        );
 
         // Logs both failed and successful authentications
         this.setAuthHandler(
@@ -291,7 +251,7 @@ public class ExtensionWebSocketListener implements WebSocketListener{
             }
         }
         catch (IOException e) {
-            log.warn("Error trying to interpret WebSocket message", e);
+            log.error("Error trying to interpret WebSocket message", e);
             return;
         }
         body.close();
@@ -334,7 +294,7 @@ public class ExtensionWebSocketListener implements WebSocketListener{
                     }
                 }
                 else {
-                    log.warn("Http response received with no handler set");
+                    log.debug("Http response received with no handler set");
                 }
             }
             else {
@@ -363,7 +323,7 @@ public class ExtensionWebSocketListener implements WebSocketListener{
                         }
                     }
                     else {
-                        log.warn("Authentication received with no handler set");
+                        log.debug("Authentication received with no handler set");
                     }
                 }
 
@@ -386,7 +346,7 @@ public class ExtensionWebSocketListener implements WebSocketListener{
                         }
                     }
                     else {
-                        log.warn("Publish received with no handler set");
+                        log.debug("Publish received with no handler set");
                     }
                 }
                 else if (message.getOp().equals(ExtensionServiceMessage.OP_QUERY)) {
@@ -398,9 +358,6 @@ public class ExtensionWebSocketListener implements WebSocketListener{
                             log.error("Error occurred when running the Query handler for source '" + 
                                     client.getSourceName() + "'");
                         }
-                    }
-                    else {
-                        log.warn("Query received with no handler set");
                     }
                 }
                 else if (message.getOp().equals(ExtensionServiceMessage.OP_RECONNECT_REQUIRED)) {
