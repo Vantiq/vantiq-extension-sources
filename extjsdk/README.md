@@ -38,13 +38,13 @@ There are three types of messages that can be sent to a source: Notifications, Q
 Notifications are messages, typically Maps, that the source will pass on to any Vantiq rules saying `WHEN MESSAGE ARRIVES FROM SOURCE <source name>`. To send one, simply call `client.sendNotification(<object to be sent>)`, which will translate the message into JSON and add everything Vantiq needs to recognize the message. 
 
 #### <a name="queryResponse" id="queryResponse"></a>Query Responses
-Query responses are responses to a `SELECT` request from Vantiq that targets a source, and can either be a Map or an array of Maps. They only mean anything in relation to an intial Query message received from Vantiq, and thus should only be sent as part of a [Query handler](#queryHandler). To send a Query response, call `client.sendQueryResponse(<HTTP status code>, <Query address>, <Map>/<Map array>)`. The Query address can be obtained using `ExtensionServiceMessage.extractReplyAddress(<Query message>)`. The HTTP status code can be one of 
+Query responses are responses to a `SELECT` request from Vantiq that targets a source, and can either be a Map or an array of Maps. They only mean anything in relation to an initial Query message received from Vantiq, and thus should only be sent as part of a [Query handler](#queryHandler). To send a Query response, call `client.sendQueryResponse(<HTTP status code>, <Query address>, <Map>/<Map array>)`. The Query address can be obtained using `ExtensionServiceMessage.extractReplyAddress(<Query message>)`. The HTTP status code can be one of 
 *	100 - This indicates that there is more data to be delivered. If more than one Map is delivered across multiple iterations they will all be placed into a single array before the Vantiq `SELECT` command receives the data.
 *	200 - There is some data in the message, and this is the last or only message. This can be used to complete a string of responses that used code 100.
 *	204 - There were no problems, but there is also no data to be sent. When this code is used any data sent along with it will be ignored. This can be used to complete a string of responses that used code 100.
 
 #### <a name="queryError" id="queryError"></a>Query Errors
-Query errors are sent when a Query cannot be completed successfully. To send a Query error, call `client.sendQueryError(<Query address>, <error code>, <message template>, <message parametares>)`. 
+Query errors are sent when a Query cannot be completed successfully. To send a Query error, call `client.sendQueryError(<Query address>, <error code>, <message template>, <message parameters>)`. 
 *	The Query address is obtained the same way as for a Query response, `ExtensionServiceMessage.extractReplyAddress(<Query message>)`.
 *	The error code is a string intended to help identify where the error occurred. Possible error codes are the full class name of the class that caused the error, the class name of the Exception that caused it, or the name of the server where the error occurred. 
 *	The message template is the message that will accompany the error, ideally describing what happened and why. The message template can carry parameters, which can be specified using `{#}` inside the string, where `#` is the location of the intended parameter in the message parameters section, beginning at 0.
@@ -60,7 +60,7 @@ The authentication handler receives all messages until and including the message
 #### HTTP
 The HTTP handler receives all non source-related messages after authentication has succeeded. The majority of these messages will be confirmations of receipt for a message sent to the Vantiq server, and consist of a status of 200 and little else. Any other messages are likely to be an error of some sort, with status code 300+ and a body containing a message describing the error. The HTTP handler receives Response objects.
 
-#### <a name="closeHandler" id="closeHandler">Closure
+#### <a name="closeHandler" id="closeHandler"></a>Closure
 The closure handler does not deal with a specific message or type of message, but instead is called when either your code calls `client.close()` or the WebSocket connection is forced to close, most likely due to a problem with the connection. This handler is called after everything but the handlers are reset, essentially creating a new Client targeting the same source. If you have saved a reference to the Client's Listener, be aware that the Listener is stopped and replaced with a functionally identical Listener just before this handler is called. The closure handler receives the Client whose connection closed.
 
 #### Configuration
