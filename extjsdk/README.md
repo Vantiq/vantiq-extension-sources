@@ -29,7 +29,7 @@
 Every ExtensionWebSocketClient (Client) deals with a single source across its own WebSocket connection. 
 
 ### Connecting to a source
-Connection is as simple as creating a client with `new ExtensionWebSocketClient(<source name>)` and then calling `client.inititiateFullConnection(<vantiq url>, <authentication token>)`, where the authentication token is created by an admin using Vantiq's browser interface. The call returns a CompletableFuture that will return whether or not the connection succeeded. If it succeeds, you can now send and receive messages from the source. If it fails, you can either try connecting again, or call `isOpen()`, `isAuthed()`, and `isConnected()` to see if the connection succeeded or failed at the WebSocket, authentication, and source levels respectively.
+Connection is as simple as creating a client with `new ExtensionWebSocketClient(<source name>)` and then calling `client.inititiateFullConnection(<vantiq url>, <authentication token>)`, where the authentication token is created by an admin using the Vantiq client. The call returns a CompletableFuture that will return whether or not the connection succeeded. If it succeeds, you can now send and receive messages from the source. If it fails, you can either try connecting again, or call `isOpen()`, `isAuthed()`, and `isConnected()` to see if the connection succeeded or failed at the WebSocket, authentication, and source levels respectively.
 
 ### Sending Messages
 There are three types of messages that can be sent to a source: Notifications, Query responses, and Query errors. 
@@ -45,7 +45,32 @@ Query responses are responses to a `SELECT` request from Vantiq that targets a s
 
 #### Query Errors
 Query errors are sent when a Query cannot be completed successfully. To send a Query error, call `client.sendQueryError(<Query address>, <error code>, <message template>, <message parametares>)`. 
-*	The Query address is obtained the same way as for a Query response. 
+*	The Query address is obtained the same way as for a Query response, `ExtensionServiceMessage.extractReplyAddress(<Query message>)`.
 *	The error code is a string intended to help identify where the error occurred. Possible error codes are the full class name of the class that caused the error, the class name of the Exception that caused it, or the name of the server where the error occurred. 
 *	The message template is the message that will accompany the error, ideally describing what happened and why. The message template can carry parameters, which can be specified using `{#}` inside the string, where `#` is the location of the intended parameter in the message parameters section, beginning at 0.
-*	The parameters
+*	The parameters are an Object array of that will be translated into strings and inserted into the message template based anywhere that `{<array index>}` is located.
+
+
+### Receiving Messages
+All messages received from the Vantiq server are dealt with using handlers attached to the ExtensionWebSocketListener, typically through setters in Client. There are seven different handlers, three for the WebSocket connection, two for the source connection, and two for the source messages. The three WebSocket handlers are authentication, HTTP, closure. The source connection handlers are configuration and reconnection. The source message handlers are Publish and Query. It is strongly advised that any handlers you wish to use are set before attempting to connect to the source.
+
+#### Authentication
+The authentication handler receives all messages until and including the message that marks the authentication as successful. A response to a successful authentication has a status code of 200 and includes a mass of information about the connection and its privileges inside the message body, none of which is necessary to know for the purposes of connecting to the source. A response to a failed authentication will have a status code of 300+, typically 400, and the body may contain a message specifying why the authentication failed. The authentication handler receives Response objects.
+
+#### HTTP
+The HTTP handler receives all non source-related messages after authentication has succeeded. The majority of these messages will be confirmations of receipt for a message sent to the Vantiq server, and consist of a status of 200 and little else. Any other messages are likely to be an error of some sort, with status code 300+ and a body containing a message describing the error. The HTTP handler receives Response objects.
+
+#### Closure
+The closure handler does not deal with a specific message or type of message, but instead is called when either your code calls `client.close()` or the WebSocket connection is forced to close, most likely due to a problem with the connection. This handler is called after everything but the handlers are reset, essentially creating a new Client targeting the same source. The closure handler receives the Client whose connection closed.
+
+#### Configuration
+The configuration handler receives the message containing a configuration document created on the Vantiq client. This message is only received upon a successful source connection, and contains the source's configuration document as a Map at `((Map) <message>.getObject()).get("config")`. The configuration handler receives an ExtensionServiceMessage.
+
+#### Reconnection
+Under certain circumstances, typically a change to the source's configuration document, the Vantiq server may disconnect from the source. The reconnection handler is called when this occurs. It is suggested that in this handler you reset any changes caused by the configuration document and then reconnect using `client.connectToSource()`. The reconnection handler receives an ExtensionServiceMessage.
+
+#### Publish
+The Publish handler is called when a message is received that was generated by Vantiq with `PUBLISH <object> TO SOURCE <source name>`. The published object can be retrieved through `<message>.getObject()`. Note that anything declared with the `USING` keyword will also be placed into the same location, e.g. `PUBLISH {"hello":"world"} TO SOURCE <sourceName> USING {"option":"one"}` will generate an object that looks like `{"hello":"world","option":"one"}`. The Publish handler receives an ExtensionServiceMessage.
+
+#### Query
+The Query handler is called when a message is received that was generated by Vantiq with `SELECT <keys> FROM SOURCE <source name>`. Query messages expect a response, either [data](#queryResponse) or an [error](#queryError), so a default handler is created that sends back an error stating that no Query handler was set. Options specified using the `WITH` keyword are placed 
