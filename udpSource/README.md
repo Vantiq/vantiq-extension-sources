@@ -1,18 +1,20 @@
 ## Repository Contents
 
-*	ConfigurableUDPSource -- The main file that sets up Handlers for ExtensionWebSocketClient and interacts with UDP messages
-*	UDPPublishHandler -- A configurable Handler that details how to deal with publish requests
-*	UDPNotificationHandler -- A configurable Handler that details how to deal with UDP messages
-*	MapTransformer -- Shifts contents of Maps and nested Maps
-*	config.sample.json -- A sample configuration file for ConfigurableUDPSource
+*	[ConfigurableUDPSource](#udpSource) -- The main file that sets up Handlers for ExtensionWebSocketClient and interacts with UDP messages
+*	[UDPPublishHandler](#publishHandler) -- A configurable Handler that details how to deal with publish requests
+*	[UDPNotificationHandler](#notificationHandler) -- A configurable Handler that details how to deal with UDP messages
+*	[MapTransformer](#mapTransformer) -- Shifts contents of Maps and nested Maps
+*	[config.sample.json](#serverConfig) -- A sample configuration file for ConfigurableUDPSource
 
 ## How to Run ConfigurableUDPSource
 
-1.	Clone this repository (vantiq-extension-sources) and navigate into <repo location>/vantiq-extension-sources/udpsource
-2.	If you want to run the program in place, call `runServer` or `runServer.bat` depending on whether you're on a Unix/Mac or Windows system. Both of these commands will also accept an argument identifying where the server config file is. To stop the program, run `gradlew --stop`
-3.	If you want to take the program and run it elsewhere, call `gradlew assemble` and then navigate to `<repo location>/vantiq-extension-sources/udpSource/build/distributions`. The zip and tar files both contain the same files, so choose whichever you prefer. Uncompress the file in the resulting location and navigate to `udpSource/bin`. From there, run either `udpSource` or `udpSource.bat` with a local config.json file or specifying the file as an argument.
+1.	Clone this repository (vantiq-extension-sources) and navigate into `<repo location>/vantiq-extension-sources`
+2.	Run `./gradlew udpSource:assemble` or `gradlew udpSource:assemble` depending on your OS.
+3.	Then navigate to `<repo location>/vantiq-extension-sources/udpSource/build/distributions`. The zip and tar files both contain the same files, so choose whichever you prefer.
+4. Uncompress the file in the location that you would like to install it and navigate to `udpSource/bin`. 
+5. From there, run either `./udpSource` or `udpSource` with a local config.json file or specifying the server config file as an argument.
 
-## Server Config File
+## Server Config File<a name="serverConfig" id="serverConfig"></a>
 
 The server config file must be in JSON format. ConfigurableUDPSource runs using either the config file specified as the first argument or the file 'config.json' in the working directory. The options are as follows
 
@@ -33,7 +35,7 @@ For more granular options, edit logback.xml using its [documentation](https://lo
 *	maxPacketSize -- Sets the maximum number of data bytes that the UDP socket can receive in a single message. Defaults to 1024 when not set.
 
 
-## Source Configuration Document
+## Source Configuration Document<a name="udpSource" id="udpSource"></a>
 
 The Configuration document looks as below:
 
@@ -55,7 +57,7 @@ The Configuration document looks as below:
 * listenAddress: Optional. A String representing the address on which UDP messages will be sent and received. Typically only the localhost and the host's assigned IP address will work. Default is set by the server config document.
 * listenPort: Optional. The port number on which UDP messages will be sent and received. Default is set by the server config document.
 
-### Options Available for Outgoing
+### Options Available for Outgoing<a name="publishHandler" id="publishHandler"></a>
 Options for Publishes (a.k.a. outgoing messages) are below. Options for different data types are mutually exclusive.
 
 #### UDP options
@@ -67,7 +69,7 @@ These options specify where to send messages to. These are the only options that
 These options affect data to be sent in JSON(default) or XML. If none of these are set then the resulting object will be empty of data.
 * 	passPureMapOut: Optional. A boolean specifying that the Json object in Publish messages should be passed through without changes. Default is false.
 * 	passUnspecifiedOut: Optional. A boolean specifying that any values not transformed through the transformations specified in transformations should be sent as part of the outgoing message. If no transformations are specified then this is functionally identical to passPureMapOut. Default is false
-* 	transformations: Optional. An array of transformations (see [MapTransformer](#MapTransformer)) to perform on the message to be sent. Any values not transformed will not be passed unless passUnspecifiedOut is set to true, and any values that are transformed will not appear in the final message regardless of settings. Default is null
+* 	transformations: Optional. An array of transformations (see [MapTransformer](#mapTransformer)) to perform on the message to be sent. Any values not transformed will not be passed unless passUnspecifiedOut is set to true, and any values that are transformed will not appear in the final message regardless of settings. Default is null
 
 #### XML Options
 * 	sendXmlRoot: Optional. The name of the root element for the generated XML object. When set this will send the entire object received as XML. Default is null.
@@ -87,7 +89,7 @@ These options send data out as a string in byte form. They do not include quotat
     *	altLocations: Optional. The location in a Publish message in which an alternate set of locations may be placed. If an array of Strings is found in the given location of a Publish message, then those locations will be used instead of locations. These locations may be included directly in the Published object, but it is recommended that they are placed in the object specified by the "Using" keyword, for purposes of readability.
 	
 
-### Options Available for Incoming 
+### Options Available for Incoming<a name="notificationHandler" id="notificationHandler"></a>
 Options for Notifications (a.k.a. incoming messages) are as follows. If no options are valid then no Notifications will be sent, but if even one is set then their defaults are used. Options for different data types are mutually exclusive.
 
 #### UDP Options
@@ -104,7 +106,7 @@ These options affect data received in JSON(default) or XML. If none of these are
 * passUnspecifiedIn: Optional. A boolean specifying that any values not transformed through the transformations specified in transformations should be sent as part of the outgoing message. If no transformations are specified in transformations then this is identical to passPureMapOut. Default is false
 * passRecAddress: Optional. A string representation of the location in which you want the IP address from which the UDP message originated. Default is null, where the address will not be recorded
 * passRecPort: Optional. A string representation of the location in which you want the port from which the UDP message originated. Default is null, where the port will not be recorded.
-* transformations: Optional. An array of transformations (see [MapTransformer](#MapTransformer)) to perform on the message to be sent. Any values not transformed will not be passed unless passUnspecifiedIn is set to true, and any values that are transformed will not appear in the final message regardless of settings
+* transformations: Optional. An array of transformations (see [MapTransformer](#mapTransformer)) to perform on the message to be sent. Any values not transformed will not be passed unless passUnspecifiedIn is set to true, and any values that are transformed will not appear in the final message regardless of settings
 
 #### XML Options
 These options specify how XML is translated.
@@ -123,7 +125,7 @@ These options interpret data as pure bytes or a string in byte form. These two o
 	* locations: Required. An array of the locations in which to place the capture groups from pattern.
 
 
-## <a name="MapTransformer" id="MapTransformer"></a>MapTransformer
+## <a name="mapTransformer" id="mapTransformer"></a>MapTransformer
 
 MapTransformer is designed to deal with getting and putting for nested Maps. 
 
