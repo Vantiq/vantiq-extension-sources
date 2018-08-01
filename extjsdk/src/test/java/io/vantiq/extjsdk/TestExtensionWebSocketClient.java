@@ -29,8 +29,6 @@ public class TestExtensionWebSocketClient {
     String queryAddress;
     FalseWebSocket socket;
     
-    int WAIT_PERIOD = 10; // Milliseconds to wait between checks on async actions
-    
     @Before
     public void setup() {
         srcName = "src";
@@ -174,7 +172,7 @@ public class TestExtensionWebSocketClient {
         assert socket.compareData("body.messageCode", errorCode);
     }
     
-    
+    int WAIT_PERIOD = 10; // Milliseconds to wait between checks on async actions
     public void waitUntilTrue(int msTimeout, Supplier<Boolean> condition) {
         for (int i = 0; i < msTimeout / WAIT_PERIOD; i++) {
             if (condition.get() == true) {

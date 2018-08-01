@@ -11,6 +11,7 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Supplier;
 
 public class TestExtensionWebSocketListener {
 
@@ -115,8 +116,10 @@ public class TestExtensionWebSocketListener {
     
     @Test
     public void testSourceConnectionFailFirstAndAuthFailFirst() {
-        client.connectToSource();
         authenticate(false);
+        
+        // Wait for the Async on the sourceConnectionFuture to complete
+        waitUntilTrue(5 * 1000, () -> client.getSourceConnectionFuture().isDone());
         
         assert !client.getSourceConnectionFuture().getNow(true); // It should be set to false now
 
@@ -275,6 +278,22 @@ public class TestExtensionWebSocketListener {
         catch (Exception e) {
             print("Error processing Map for createPublishMessage");
             return null;
+        }
+    }
+    
+    int WAIT_PERIOD = 10; // Milliseconds to wait between checks on async actions
+    public void waitUntilTrue(int msTimeout, Supplier<Boolean> condition) {
+        for (int i = 0; i < msTimeout / WAIT_PERIOD; i++) {
+            if (condition.get() == true) {
+                return;
+            }
+            
+            try {
+                Thread.sleep(WAIT_PERIOD);
+            } catch (InterruptedException e) {
+                // TODO Auto-generated catch block
+                e.printStackTrace();
+            }
         }
     }
 

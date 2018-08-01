@@ -102,6 +102,23 @@ public class ExtensionWebSocketClient {
     }
 
     /**
+     * Attempts to connect to the source using the given target url and authentication token. If the connection fails, 
+     * {@link #isOpen}, {@link #isAuthed}, and {@link #isConnected} can be used to identify if the connection failed
+     * or succeeded at the WebSocket, authentication attempt, and source, respectively. This function may be called
+     * again regardless of where the failure occurred.
+     *
+     * @param url   The url of the target Vantiq server.
+     * @param token The authentication token for the target namespace.
+     * @return      An {@link CompletableFuture} that completes as {@code true} when the connection to the source is
+     *              fully completed, or {@code false} when the connection fails at any point along the way.
+     */
+    public CompletableFuture<Boolean> inititiateFullConnection(String url, String token) {
+        initiateWebsocketConnection(url);
+        authenticate(token);
+        return connectToSource();
+    }
+
+    /**
      * Creates a WebSocket connection to the given URL. Does nothing if a connection has already been established
      *
      * @param url   The url of the Vantiq system to which you wish to connect.
@@ -451,7 +468,11 @@ public class ExtensionWebSocketClient {
      * @return  true if a WebSocket connection to the target address is open, false otherwise
      */
     public boolean isOpen() {
-        return webSocketFuture.getNow(false);
+        if (webSocketFuture != null) {
+            return webSocketFuture.getNow(false);
+        } else {
+            return false;
+        }
     }
 
     /**
@@ -460,7 +481,11 @@ public class ExtensionWebSocketClient {
      * @return  true if authentication has succeeded, false otherwise
      */
     public boolean isAuthed() {
-        return authFuture.getNow(false);
+        if (authFuture != null) {
+            return authFuture.getNow(false);
+        } else {
+            return false;
+        }
     }
 
     /**
@@ -469,7 +494,11 @@ public class ExtensionWebSocketClient {
      * @return              true if a Configuration message has been received from the source, false otherwise
      */
     public boolean isConnected() {
-        return sourceFuture.getNow(false);
+        if (sourceFuture != null) {
+            return sourceFuture.getNow(false);
+        } else {
+            return false;
+        }
     }
 
     /**
