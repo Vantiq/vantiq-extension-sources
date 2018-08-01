@@ -96,12 +96,10 @@ public class ExtensionWebSocketListener implements WebSocketListener{
                 log.debug("Full message: " + msg);
                 // Prepare a response with an empty body, so that the query doesn't wait for a timeout
                 Object[] body = {msg.getSourceName()};
-                if (!isClosed) {
-                    client.sendQueryError(ExtensionServiceMessage.extractReplyAddress(msg),
-                            "io.vantiq.extjsdk.unsetQueryHandler",
-                            "No handler has been set for source {0}",
-                            body);
-                }
+                client.sendQueryError(ExtensionServiceMessage.extractReplyAddress(msg),
+                        "io.vantiq.extjsdk.unsetQueryHandler",
+                        "No handler has been set for source {0}",
+                        body);
             }
         };
         this.setQueryHandler(defaultQueryHandler);
