@@ -465,7 +465,11 @@ public class ExtensionWebSocketClient {
      * @return  true if a WebSocket connection to the target address is open, false otherwise
      */
     public boolean isOpen() {
-        return webSocketFuture.getNow(false);
+        if (webSocketFuture != null) {
+            return webSocketFuture.getNow(false);
+        } else {
+            return false;
+        }
     }
 
     /**
@@ -474,7 +478,11 @@ public class ExtensionWebSocketClient {
      * @return  true if authentication has succeeded, false otherwise
      */
     public boolean isAuthed() {
-        return authFuture.getNow(false);
+        if (authFuture != null) {
+            return authFuture.getNow(false);
+        } else {
+            return false;
+        }
     }
 
     /**
@@ -483,7 +491,11 @@ public class ExtensionWebSocketClient {
      * @return              true if a Configuration message has been received from the source, false otherwise
      */
     public boolean isConnected() {
-        return sourceFuture.getNow(false);
+        if (sourceFuture != null) {
+            return sourceFuture.getNow(false);
+        } else {
+            return false;
+        }
     }
 
     /**
