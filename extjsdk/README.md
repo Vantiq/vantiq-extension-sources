@@ -4,7 +4,7 @@
 *	[ExtensionWebSocketListener](#listener) -- A listener for the Vantiq deployment. Translates Vantiq messages before passing them off to handlers. Also helps ExtensionWebSocketClient keep track of what stage in the connection it is at. 
 *	[Handler](#handler) -- A simple message handler interface, designed for simple anonymous implementation. Used by ExtensionWebSocketListener to handle various message types.
 *	[ExtensionServiceMessage](#extSvcMsg) -- A class that represents source-related messages sent from the Vantiq server.
-*	[Response](#response) -- A class that represents non source-related messages sent from the Vantiq server.
+*	[Response](#httpResponse) -- A class that represents non source-related messages sent from the Vantiq server.
 
 ## How to Include In Your Own Project
 
@@ -85,7 +85,7 @@ The ExtensionServiceMessage class is a helper that tightly defines what can be i
 *	`getOp()` returns a string that states what operation is requested. Constants for each operation are provided if you wish to compare the messages.
 *	`ExtensionServiceMessage.extractReplyAddress(<message>)` returns the reply address for operations that require a reply. Currently this is only relevant for Query messages.
 
-### <a name="response" id="response"></a>Response
+### <a name="httpResponse" id="httpResponse"></a>Response
 The Response class is a helper that tightly defines what can be in a WebSocket message to or from the Vantiq server, and has getters for each of its properties.
 *	`getStatus()` returns the HTTP code number for the message.
 *	`getBody()` the object contained in the body of the message.
