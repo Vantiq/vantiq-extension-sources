@@ -10,9 +10,7 @@ version 'unspecified'
  */
 
 // Apply the java-library plugin to add support for Java Library
-apply plugin: 'groovy'
 apply plugin: 'java'
-apply plugin: 'java-library'
 apply plugin: 'application'
 
 sourceCompatibility = 1.8
@@ -29,9 +27,6 @@ mainClassName = 'io.vantiq.extsrc.udp.ConfigurableUDPSource'
 
 
 dependencies {
-    // This dependency is exported to consumers, that is to say found on their compile classpath.
-    api 'org.apache.commons:commons-math3:3.6.1'
-    
     compile project(':extjsdk')
     
     compile 'com.squareup.okhttp3:okhttp:3.4.1'
@@ -40,9 +35,9 @@ dependencies {
     compile "org.slf4j:slf4j-api:1.7.25"
     compile 'ch.qos.logback:logback-classic:1.2.3'
     
-    compile "com.fasterxml.jackson.core:jackson-databind:2.9.5"
-    compile "com.fasterxml.jackson.dataformat:jackson-dataformat-xml:2.9.5"	//XML parsing
-    compile "com.fasterxml.jackson.dataformat:jackson-dataformat-csv:2.9.5"
+    compile "com.fasterxml.jackson.core:jackson-databind:2.9.3"
+    compile "com.fasterxml.jackson.dataformat:jackson-dataformat-xml:2.9.3"	//XML parsing
+    compile "com.fasterxml.jackson.dataformat:jackson-dataformat-csv:2.9.3"
     
 
     // This dependency is used internally, and not exposed to consumers on their own compile classpath.
