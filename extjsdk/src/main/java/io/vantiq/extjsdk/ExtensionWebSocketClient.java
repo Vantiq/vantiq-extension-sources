@@ -102,7 +102,10 @@ public class ExtensionWebSocketClient {
     }
 
     /**
-     * Attempts to connect to the source using the given target url and authentication token.
+     * Attempts to connect to the source using the given target url and authentication token. If the connection fails, 
+     * {@link #isOpen}, {@link #isAuthed}, and {@link #isConnected} can be used to identify if the connection failed
+     * or succeeded at the WebSocket, authentication attempt, and source, respectively. This function may be called
+     * again regardless of where the failure occurred.
      *
      * @param url   The url of the target Vantiq server.
      * @param token The authentication token for the target namespace.
