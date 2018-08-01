@@ -25,11 +25,27 @@
 	*	[com.fasterxml.jackson.core:jackson-databind Version 2.9.3](https://mvnrepository.com/artifact/com.fasterxml.jackson.core/jackson-databind/2.9.3)
 
 
+## Program Flow
+1.	Create a new ExtensionWebSocketClient for a source.
+2.	Setup and add any handlers through `client.set<type>Handler`. See the [Receiving Messages](#handler) section for more information on what they do. The handlers can be set and reset at any point in time, but you should do so here, or in step 6 through the configuration handler if its setup depends on the contents configuration document.
+3.	Call `client.initiateFullConnection`. Note that all the following steps happen asynchronously relative to the caller, but in the order specified relative to each other.
+4.	The WebSocket connection either succeeds or fails. If it succeeds, the Future returned by `client.getWebSocketFuture()` completes as true and the program continues. If it fails, the CompletableFuture returned from the call in step 3 will complete as false and you should exit or restart at step 3.
+5.	The authentication either succeeds or fails. If it succeeds, the Future returned by `client.getAuthenticationFuture()` completes as true. If it fails, the Future from step 3 completes as false and you should exit or call `client.authenticate; client.connectToSource` or `client.initiateFullConnection` to retry step 5. Regardless of success or failure, authHandler is then called. If the authentication succeeded, the program continues.
+6.	The source connection either succeeds or fails. If it succeeds, the Future returned by `client.getSourceConnectionFuture()` completes as true as does the Future from step 3, configHandler is called, and the program continues. If it fails, the Future from step 3 completes as false, httpHandler is called, and then you should exit or call `client.connectToSource` or `client.initiateFullConnection` to retry step 6.
+7.	The source is now connected. Query, Publish, and reconnection messages will be received by their respective handlers. Notification and Query responses/errors can be sent. If a reconnect message is received then the program returns to just before step 6 (but will not proceed to 6 unless you tell it to), reconnectHandler is called, and if the Client's autoReconnect option has been set to true it will proceed to step 6.
+
+If the WebSocket connection closes through any means other than a call of `client.stop` then all Futures are forcibly completed as false, the program is reset to just before step 3 (maintaining any changes to handlers) and closeHandler is called. At this point, you should start step 3 again.
+
+### Details on initiateFullConnection
+The call `future = client.initiateFullConnection` is identical to `client.initiateWebSocketConnection; client.authenticate; future = client.connectToSource`. Each of these functions returns their own CompletableFuture, which is created whenever a call to it is made and either no previous call has been made or the previous call has already failed. These Futures can be obtained without the risk of (re)creating them through their own getters. Before the first call and after a Websocket connection closure each Future is null. <br>
+The Futures for these three functions are chained together. That is, if all three are called one of the three fails, then its Future completes as false and so do the futures of all the subsequent steps. Also, if a step is called before the previous connection step completes (but after the previous function has been called) then that step will automatically startup once the previous Future completes successfully.
+
+	
 ## <a name="client" id="client"></a>Using ExtensionWebSocketClient
 Every ExtensionWebSocketClient (Client) deals with a single source across its own WebSocket connection. 
 
 ### Connecting to a source
-Connection is as simple as creating a client with `new ExtensionWebSocketClient(<source name>)` and then calling `client.inititiateFullConnection(<vantiq url>, <authentication token>)`, where the authentication token is created by an admin using the Vantiq client. The call returns a CompletableFuture that will return whether or not the connection succeeded. If it succeeds, you can now send and receive messages from the source. If it fails, you can either try connecting again, or call `isOpen()`, `isAuthed()`, and `isConnected()` to see if the connection succeeded or failed at the WebSocket, authentication, and source levels respectively.
+Connection is as simple as creating a client with `new ExtensionWebSocketClient(<source name>)` and then calling `client.initiateFullConnection(<vantiq url>, <authentication token>)`, where the authentication token is created by an admin using the Vantiq client. The call returns a CompletableFuture that will return whether or not the connection succeeded. If it succeeds, you can now send and receive messages from the source. If it fails, you can either try connecting again, or call `isOpen()`, `isAuthed()`, and `isConnected()` to see if the connection succeeded or failed at the WebSocket, authentication, and source levels respectively.
 
 ### Sending Messages
 There are three types of messages that can be sent to a source: Notifications, Query responses, and Query errors. 
