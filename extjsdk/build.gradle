@@ -8,7 +8,6 @@ buildscript {
     }
 }
 
-apply plugin: 'groovy'
 apply plugin: 'java'
 apply plugin: 'com.github.johnrengelman.shadow'
 
