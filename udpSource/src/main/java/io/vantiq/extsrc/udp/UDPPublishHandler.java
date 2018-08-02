@@ -177,8 +177,7 @@ public class UDPPublishHandler extends Handler<ExtensionServiceMessage>{
             this.address = InetAddress.getByName((String) outgoing.get("targetAddress"));
         }
         catch (Exception e) {
-            log.error("Failed to retrieve IP of Address", e);
-            return;
+            // Wont happen. Checked in ConfigurableUDPSource
         }
         this.port = (Integer) outgoing.get("targetPort");
 
@@ -333,7 +332,7 @@ public class UDPPublishHandler extends Handler<ExtensionServiceMessage>{
                     }
                 }
                 else {
-                    log.warn("No schema found for CSV message. Sending emptty CSV message");
+                    log.warn("No schema found for CSV message. Sending empty CSV message");
                 }
                 csvSchema = csvSchemaBuilder.setUseHeader(true).build();
             }

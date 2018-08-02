@@ -325,8 +325,21 @@ public class ConfigurableUDPSource {
         }
 
         boolean isConfiguredToSend(Map outgoing) {
-            return outgoing != null && outgoing.get("targetAddress") instanceof String &&
-                    outgoing.get("targetPort") instanceof Integer;
+            if (outgoing == null || !(outgoing.get("targetAddress") instanceof String) ||
+                    !(outgoing.get("targetPort") instanceof Integer)) {
+                return false;
+            }
+            int port = (Integer) outgoing.get("targetPort");
+            String addr = (String) outgoing.get("targetAddress");
+            if (port < 0 || port > 65535) {
+                return false;
+            }
+            try {
+                InetAddress.getByName(addr);
+                return true;
+            } catch (Exception e) {
+                return false;
+            }
         }
 
         boolean isConfiguredToReceive(Map incoming) {
