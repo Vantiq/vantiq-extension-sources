@@ -24,7 +24,7 @@ import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-
+// TODO change to match README
 /**
  * This class is a customizable handler that will convert UDP messages to a Notification message to a Vantiq deployment.
  * The target server and transformations are defined by a Configuration document passed into the constructor

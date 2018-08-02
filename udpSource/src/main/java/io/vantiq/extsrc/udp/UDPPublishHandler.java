@@ -31,6 +31,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.MissingFormatArgumentException;
 
+// TODO change to match README
 /**
  * This class is a customizable handler that will convert Publish messages from a Vantiq deployment to a UDP message.
  * The target server and transformations are defined by a Configuration document passed into the constructor
