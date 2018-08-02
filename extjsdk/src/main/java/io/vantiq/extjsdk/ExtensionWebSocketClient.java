@@ -112,7 +112,7 @@ public class ExtensionWebSocketClient {
      * @return      An {@link CompletableFuture} that completes as {@code true} when the connection to the source is
      *              fully completed, or {@code false} when the connection fails at any point along the way.
      */
-    public CompletableFuture<Boolean> inititiateFullConnection(String url, String token) {
+    public CompletableFuture<Boolean> initiateFullConnection(String url, String token) {
         initiateWebsocketConnection(url);
         authenticate(token);
         return connectToSource();
@@ -509,38 +509,12 @@ public class ExtensionWebSocketClient {
      * functions as false.
      */
     public void close() {
-        if (this.webSocket != null) {
-            try {
-                this.webSocket.close(1000, "Closed by client");
-            } catch (Exception e) {
-                if (!e.getMessage().equals("Socket closed")) {
-                    log.warn("Websocket has already been closed");
-                } else {
-                    log.error("Error trying to close WebSocket", e);
-                }
-            }
-        }
-        synchronized (this) {
-            webSocket = null;
-            // Make sure anything still using these futures know that they are no longer valid
-            if (webSocketFuture != null) {
-                webSocketFuture.obtrudeValue(false);
-                webSocketFuture = null;
-            }
-            if (authFuture != null) {
-                authFuture.obtrudeValue(false);
-                authFuture = null;
-            }
-            if (sourceFuture != null) {
-                sourceFuture.obtrudeValue(false);
-                sourceFuture = null;
-            }
-            
-            ExtensionWebSocketListener oldListener = listener;
-            oldListener.close();
-            listener = new ExtensionWebSocketListener(this);
-            listener.useHandlersFromListener(oldListener);
-        }
+        this.stop();
+
+        ExtensionWebSocketListener oldListener = listener;
+        listener = new ExtensionWebSocketListener(this);
+        listener.useHandlersFromListener(oldListener);
+
         log.info("Websocket closed for source " + sourceName);
         if (this.closeHandler != null) {
             this.closeHandler.handleMessage(this);
@@ -552,9 +526,12 @@ public class ExtensionWebSocketClient {
      * completes all {@link CompletableFuture} obtained from the connection and authentication functions as false.
      */
     public void stop() {
-        if (this.webSocket != null) {
+        // Saving and nulling before closing so EWSListener can know when it is closed by the client 
+        WebSocket socket = webSocket;
+        webSocket = null;
+        if (socket != null) {
             try {
-                this.webSocket.close(1000, "Closed by client");
+                socket.close(1000, "Closed by client");
             } catch (Exception e) {
                 if (!e.getMessage().equals("Socket closed")) {
                     log.warn("Websocket has already been closed");
@@ -564,7 +541,6 @@ public class ExtensionWebSocketClient {
             }
         }
         synchronized (this) {
-            webSocket = null;
             // Make sure anything still using these futures know that they are no longer valid
             if (webSocketFuture != null) {
                 webSocketFuture.obtrudeValue(false);

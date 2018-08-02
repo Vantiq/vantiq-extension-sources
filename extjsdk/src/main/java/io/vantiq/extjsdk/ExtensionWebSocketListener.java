@@ -125,9 +125,6 @@ public class ExtensionWebSocketListener implements WebSocketListener{
     /**
      * Set the {@link Handler} for any standard Http response that are received after authentication has completed
      * <br>
-     * Upon initialization, a default Handler is created that will log the Http response received, and whether it is
-     * likely a confirmation or an error.
-     * <br>
      * The handler will receive a {@link Map} that represents the message. Note that the Vantiq system will
      * send acknowledgements of Notification messages and Configuration messages that will have no body or headers
      * and msg.status.code() will equal 200
@@ -139,9 +136,6 @@ public class ExtensionWebSocketListener implements WebSocketListener{
     }
     /**
      * Set the {@link Handler} for any Publish messages that are received.
-     * <br>
-     * Upon initialization a default {@link Handler} is created that will log that a Publish was received, and its
-     * contents.
      * <br>
      * The handler will receive a {@link Map} that represents the Publish message. The most
      * significant part will be msg.object which contains the data published to the source
@@ -188,6 +182,8 @@ public class ExtensionWebSocketListener implements WebSocketListener{
     /**
      * Set the {@link Handler} for the result of any message received before a successful authentication attempt,
      * and the result of the authentication attempt.
+     * <p>
+     * Upon initialization a default Handler is set that logs if the authentication succeeded or not
      * <p>
      * The handler will receive a {@link Map} of the message received. If the authentication was successful,
      * then message.status should equal 200. On success, the most significant part is msg.body['userInfo'] which
@@ -334,9 +330,7 @@ public class ExtensionWebSocketListener implements WebSocketListener{
                                     client.getSourceName() + "'");
                         }
                     }
-                    else {
-                        log.debug("Authentication received with no handler set");
-                    }
+                    // No message is logged for a null handler because the user must explicitly null the handler
                 }
 
             }
@@ -371,6 +365,7 @@ public class ExtensionWebSocketListener implements WebSocketListener{
                                     client.getSourceName() + "'");
                         }
                     }
+                    // No message is logged for a null handler because the user must explicitly null the handler
                 }
                 else if (message.getOp().equals(ExtensionServiceMessage.OP_RECONNECT_REQUIRED)) {
                     synchronized (client) {
@@ -470,7 +465,7 @@ public class ExtensionWebSocketListener implements WebSocketListener{
     public void onClose(int code, String reason) {
         log.info("Closing websocket code: " + code);
         log.debug(reason);
-        if (client.isOpen()) {
+        if (client.isOpen() && client.webSocket != null) {
             client.close();
         }
     }
