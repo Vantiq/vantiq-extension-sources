@@ -213,11 +213,21 @@ public class ExtensionWebSocketListener implements WebSocketListener{
         this.reconnectHandler = reconnectHandler;
     }
     
+    /**
+     * Called when its {@link ExtensionWebSocketClient} is closed. Stops this listener from dealing with any future 
+     * auth, config, Query, or reconnect messages. It keeps its handlers and will finish any Publish messages in 
+     * progress.
+     */
     public void close() {
         isClosed = true;
     }
     
-    public boolean isStopped() {
+    /**
+     * Checks to see if {@link #close} had been called. 
+     * 
+     * @return
+     */
+    public boolean isClosed() {
         return isClosed;
     }
 
@@ -352,7 +362,7 @@ public class ExtensionWebSocketListener implements WebSocketListener{
                     }
                 }
                 else if (message.getOp().equals(ExtensionServiceMessage.OP_QUERY)) {
-                    if (this.queryHandler != null) {
+                    if (this.queryHandler != null && !isClosed) {
                         try {
                             this.queryHandler.handleMessage(message);
                         }
