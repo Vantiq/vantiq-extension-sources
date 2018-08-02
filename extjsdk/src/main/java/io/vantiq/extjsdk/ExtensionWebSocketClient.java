@@ -526,9 +526,12 @@ public class ExtensionWebSocketClient {
      * completes all {@link CompletableFuture} obtained from the connection and authentication functions as false.
      */
     public void stop() {
-        if (this.webSocket != null) {
+        // Saving and nulling before closing so EWSListener can know when it is closed by the client 
+        WebSocket socket = webSocket;
+        webSocket = null;
+        if (socket != null) {
             try {
-                this.webSocket.close(1000, "Closed by client");
+                socket.close(1000, "Closed by client");
             } catch (Exception e) {
                 if (!e.getMessage().equals("Socket closed")) {
                     log.warn("Websocket has already been closed");
@@ -538,7 +541,6 @@ public class ExtensionWebSocketClient {
             }
         }
         synchronized (this) {
-            webSocket = null;
             // Make sure anything still using these futures know that they are no longer valid
             if (webSocketFuture != null) {
                 webSocketFuture.obtrudeValue(false);

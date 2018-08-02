@@ -465,7 +465,7 @@ public class ExtensionWebSocketListener implements WebSocketListener{
     public void onClose(int code, String reason) {
         log.info("Closing websocket code: " + code);
         log.debug(reason);
-        if (client.isOpen()) {
+        if (client.isOpen() && client.webSocket != null) {
             client.close();
         }
     }
