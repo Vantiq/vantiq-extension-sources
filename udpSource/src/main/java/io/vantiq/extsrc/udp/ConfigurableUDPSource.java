@@ -14,6 +14,7 @@ import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.FileAppender;
 
 import java.io.File;
+import java.io.IOException;
 import java.net.*;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -26,6 +27,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+// TODO change to match README
 /**
  *
  * This class creates a UDP source customizable by a Configuration document. It can send and receive in JSON, XML, or 
@@ -201,7 +203,7 @@ public class ConfigurableUDPSource {
         public void handleMessage(ExtensionServiceMessage msg) {
             String srcName = msg.getSourceName();
             // Prepare a response with an empty body, so that the query doesn't wait for a timeout
-            clients.get(srcName).sendQueryResponse(200,
+            clients.get(srcName).sendQueryResponse(204,
                     ExtensionServiceMessage.extractReplyAddress(msg),
                     new LinkedHashMap<>());
 
@@ -251,7 +253,7 @@ public class ConfigurableUDPSource {
                 return;
             }
 
-            // Synchronization necessary because createUDPSocket creates a list which findUDPSocket will add to.
+            // Synchronization necessary because createUDPSocket creates a list which listenOnUDPSocket will add to.
             // If threads change between the creation of the UDP socket and the assignation of the list or while
             // a source is being added to the list, an error is likely to occur
             DatagramSocket socket;
@@ -259,7 +261,7 @@ public class ConfigurableUDPSource {
                 // Create the socket that the source will use for UDP messages
                 socket = createUDPSocket(port, address, sourceName);
                 if (socket == null) { // No socket could be created for the given port and address
-                    socket = findUDPSocket(port, address, sourceName);
+                    socket = listenOnUDPSocket(port, address, sourceName);
                 }
                 if (socket == null) {
                     log.error("Failed to obtain UDP socket at address '" + address + "' and port '" + port +
@@ -427,7 +429,7 @@ public class ConfigurableUDPSource {
     static void clearSourceHandlers(String sourceName) {
         ExtensionWebSocketClient client = clients.get(sourceName);
 
-        synchronized (socketLock) { // Don't want to edit while another is adding to or removing from UDPSocket
+        synchronized (socketLock) { // Don't want to edit while another is adding to or removing from the udpSocket Map
             // Disassociate the source from the socket
             for (Map.Entry<DatagramSocket,List<String>> entry : udpSocketToSources.entrySet()) {
                 List<String> list = entry.getValue();
@@ -471,9 +473,7 @@ public class ConfigurableUDPSource {
         public void handleMessage(ExtensionWebSocketClient client) {
             clearSourceHandlers(client.getSourceName());
             
-            client.initiateWebsocketConnection(targetVantiqServer);
-            client.authenticate(authToken);
-            client.connectToSource();
+            client.initiateFullConnection(targetVantiqServer, authToken);
             try {
                 if (client.getSourceConnectionFuture().get() == false) {
                     client.stop();
@@ -527,7 +527,7 @@ public class ConfigurableUDPSource {
      * @return              The {@link DatagramSocket} listening on the given port and address, or null if none could
      *                      be found
      */
-    public static DatagramSocket findUDPSocket(int port, InetAddress address, String sourceName) {
+    public static DatagramSocket listenOnUDPSocket(int port, InetAddress address, String sourceName) {
         for (Map.Entry<DatagramSocket,List<String>> entry : udpSocketToSources.entrySet()) {
             DatagramSocket sock = entry.getKey();
             if (sock.getLocalAddress().equals(address) && sock.getLocalPort() == port) {
@@ -630,7 +630,7 @@ public class ConfigurableUDPSource {
                 }
                 catch (UnknownHostException e) {
                     log.warn("Requested receiving address '" + name + "' specified for source '" + sourceName +
-                            "'" + "could not be found. This address will be ignored");
+                            "' could not be found. This address will be ignored");
                 }
             }
         }
@@ -665,7 +665,7 @@ public class ConfigurableUDPSource {
      *                              {@code potentialServers}, or null if no valid servers were found
      */
     private static List<List> getValidServers(List potentialServers) {
-        if (!(potentialServers != null && !potentialServers.isEmpty())) {
+        if (potentialServers == null || potentialServers.isEmpty()) {
             return null;
         }
 
@@ -827,8 +827,12 @@ public class ConfigurableUDPSource {
         ObjectMapper mapper = new ObjectMapper();
         try {
             config = mapper.readValue(configFile, Map.class);
+        } catch (IOException e) {
+            throw new RuntimeException("Could not find valid server config file. Expected location: '" 
+                    + configFile.getAbsolutePath() + "'", e);
         } catch (Exception e) {
-            log.error("Could not find valid server config file. Expected location: '" + configFile.getAbsolutePath() + "'", e);
+            throw new RuntimeException("Error occurred when trying to read the server config file. "
+                    + "Please ensure it is proper JSON.", e);
         }
 
         return config;
@@ -903,7 +907,7 @@ public class ConfigurableUDPSource {
          * your Vantiq deployment's address, typically "dev.vantiq.com"
          */
         if (!(config.get("sources") instanceof List)) {
-            throw new RuntimeException("No source names given.");
+            throw new RuntimeException("No source names given in server config file.");
         }
         ((List<Object>) config.get("sources")).removeIf((obj) -> !(obj instanceof String));
         List<String> sources = ((List<String>) config.get("sources"));
@@ -1040,7 +1044,7 @@ public class ConfigurableUDPSource {
                 }
             }
             catch (Exception e) {
-                log.warn("Error occurred on notification attempt for " + udpSocketToSources.get(socket), e);
+                log.warn("Error occurred on notification attempt for sources " + udpSocketToSources.get(socket), e);
             }
 
         }
@@ -1160,7 +1164,7 @@ public class ConfigurableUDPSource {
             return (boolean) val;
         }
         else {
-            return val != null;
+            return false;
         }
     }
 }
