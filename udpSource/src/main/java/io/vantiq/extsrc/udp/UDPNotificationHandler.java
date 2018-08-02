@@ -86,8 +86,6 @@ import java.util.regex.Pattern;
  *                              <li>{@code locations}: Required. An array of the locations in which to place the capture groups 
  *                                      from {@code pattern}. These will override the location in {@code passBytesInAs}.
  *                                      </li>
- *                              <li>{@code flags}: Not yet implemented. An array of the regex flags you would like 
- *                                      enabled. See {@link Pattern} for descriptions of the flags available.
  *                          </ul> 
  *      <li>{@code expectXmlIn}: Optional. Specifies that the data incoming from the UDP source will be in an XML format.
  *                          Note that this will throw away the name of the root element. If data is contained in the
@@ -198,7 +196,6 @@ public class UDPNotificationHandler extends Handler<DatagramPacket>{
             Map regexParser = (Map) incoming.get("regexParser");
             
             if (regexParser.get("pattern") instanceof String && regexParser.get("locations") instanceof List) {
-                // TODO add flags
                 try {
                     regexPattern = Pattern.compile( (String) regexParser.get("pattern"));
                     List<String> l = new ArrayList<>();
@@ -268,7 +265,7 @@ public class UDPNotificationHandler extends Handler<DatagramPacket>{
                 client.sendNotification(csv);
             }
             catch (Exception e){
-                log.warn("Failed to interpret UDP message as Csv. Most likely the data was not sent as Csv.", e);
+                log.warn("Failed to interpret UDP message as CSV.", e);
             }
             return;
         }
@@ -278,10 +275,10 @@ public class UDPNotificationHandler extends Handler<DatagramPacket>{
             } 
             catch (Exception e) {
                 if (expectingXml) {
-                    log.warn("Failed to interpret UDP message as Map. Most likely the data was not sent as a XML object.", e);
+                    log.warn("Failed to interpret UDP message as a XML object.", e);
                 }
                 else {  // expecting JSON
-                    log.warn("Failed to interpret UDP message as Map. Most likely the data was not sent as a JSON object.", e);
+                    log.warn("Failed to interpret UDP message as a JSON object.", e);
                 }
                 return;
             }
@@ -291,7 +288,7 @@ public class UDPNotificationHandler extends Handler<DatagramPacket>{
         // Transforms the message as requested by the Configuration document
         if (regexPattern != null) {
             
-            // Create a String from the byte data, but remove unfilled locations
+            // Create a String from the byte data, but remove unused bytes
             String recString = new String(packet.getData());
             int endIndex = recString.indexOf("\0");
             if (endIndex == -1) {endIndex = packet.getData().length;}
@@ -300,7 +297,7 @@ public class UDPNotificationHandler extends Handler<DatagramPacket>{
             sendMsg = getRegexResults(recString);
         }
         else if (bytesLocation != null) {
-         // Create a String from the byte data, but remove unfilled locations
+            // Create a String from the byte data, but remove unused bytes
             String recString = new String(packet.getData());
             recString = new String(packet.getData(), 0, recString.indexOf("\0"), Charset.forName("UTF-8"));
             
