@@ -509,38 +509,12 @@ public class ExtensionWebSocketClient {
      * functions as false.
      */
     public void close() {
-        if (this.webSocket != null) {
-            try {
-                this.webSocket.close(1000, "Closed by client");
-            } catch (Exception e) {
-                if (!e.getMessage().equals("Socket closed")) {
-                    log.warn("Websocket has already been closed");
-                } else {
-                    log.error("Error trying to close WebSocket", e);
-                }
-            }
-        }
-        synchronized (this) {
-            webSocket = null;
-            // Make sure anything still using these futures know that they are no longer valid
-            if (webSocketFuture != null) {
-                webSocketFuture.obtrudeValue(false);
-                webSocketFuture = null;
-            }
-            if (authFuture != null) {
-                authFuture.obtrudeValue(false);
-                authFuture = null;
-            }
-            if (sourceFuture != null) {
-                sourceFuture.obtrudeValue(false);
-                sourceFuture = null;
-            }
-            
-            ExtensionWebSocketListener oldListener = listener;
-            oldListener.close();
-            listener = new ExtensionWebSocketListener(this);
-            listener.useHandlersFromListener(oldListener);
-        }
+        this.stop();
+
+        ExtensionWebSocketListener oldListener = listener;
+        listener = new ExtensionWebSocketListener(this);
+        listener.useHandlersFromListener(oldListener);
+
         log.info("Websocket closed for source " + sourceName);
         if (this.closeHandler != null) {
             this.closeHandler.handleMessage(this);
