@@ -844,7 +844,7 @@ public class ConfigurableUDPSource {
         targetVantiqServer = config.get("targetServer") instanceof String ? (String) config.get("targetServer") :
                 "wss://dev.vantiq.com/api/v1/wsock/websocket";
         MAX_UDP_DATA = config.get("maxPacketSize") instanceof Integer ? (int) config.get("maxPacketSize") : 1024;
-        LISTENING_PORT = config.get("defaultListenPort") instanceof Integer ? (int) config.get("defaultListenPort") :
+        LISTENING_PORT = config.get("defaultBindPort") instanceof Integer ? (int) config.get("defaultBindPort") :
                 3141;
         if (config.get("authToken") instanceof String) {
             authToken = (String) config.get("authToken") ;
@@ -858,20 +858,20 @@ public class ConfigurableUDPSource {
             setupLogger(logLevel, logTarget);
         }
 
-        if (config.get("defaultListenAddress") instanceof String) {
+        if (config.get("defaultBindAddress") instanceof String) {
             try {
-                String address = (String) config.get("defaultListenAddress");
+                String address = (String) config.get("defaultBindAddress");
                 LISTENING_ADDRESS = InetAddress.getByName(address);
             } catch (UnknownHostException e) {
-                log.error("Given default listening address could not be found. Using 'localhost' instead");
+                log.error("Given default bind address could not be found. Using 'localhost' instead");
             }
         }
-        // There was no valid defaultListenAddress use the default of localhost
+        // There was no valid defaultBindAddress use the default of localhost
         if (LISTENING_ADDRESS == null) {
             try {
                 LISTENING_ADDRESS = InetAddress.getLocalHost();
             } catch (UnknownHostException e) {
-                throw new RuntimeException("Could not find a valid local address for the default listening address.",e);
+                throw new RuntimeException("Could not find a valid local address for the default bind address.",e);
             }
         }
     }
