@@ -2,7 +2,6 @@ package io.vantiq.extjsdk;
 
 import okhttp3.ws.WebSocket;
 import okio.Buffer;
-import okio.BufferedSink;
 import okhttp3.RequestBody;
 
 import java.io.IOException;
@@ -11,15 +10,13 @@ import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
-import java.util.function.Supplier;
 
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 
-public class TestExtensionWebSocketClient {
+public class TestExtensionWebSocketClient extends ExtjsdkTestBase{
     
     // Note: testing of connections occurs in TestExtensionWebSocketListener, as more of the relevant interactions occur
     // through ExtensionWebSocketListener
@@ -172,22 +169,6 @@ public class TestExtensionWebSocketClient {
         assert socket.compareData("body.messageCode", errorCode);
     }
     
-    int WAIT_PERIOD = 10; // Milliseconds to wait between checks on async actions
-    public void waitUntilTrue(int msTimeout, Supplier<Boolean> condition) {
-        for (int i = 0; i < msTimeout / WAIT_PERIOD; i++) {
-            if (condition.get() == true) {
-                return;
-            }
-            
-            try {
-                Thread.sleep(WAIT_PERIOD);
-            } catch (InterruptedException e) {
-                // TODO Auto-generated catch block
-                e.printStackTrace();
-            }
-        }
-    }
-    
     // Merely makes several private functions public
     private class OpenExtensionWebSocketClient extends ExtensionWebSocketClient{
         public OpenExtensionWebSocketClient(String sourceName) {
@@ -200,29 +181,23 @@ public class TestExtensionWebSocketClient {
         }
     }
     
-    
-    ObjectMapper mapper = new ObjectMapper();
     private class FalseWebSocket implements WebSocket {
         
-        RequestBody lastBody = null;
         Map<String,Object> lastData = null;
         boolean messageReceived = false;
         
         
         @Override
         public void sendMessage(RequestBody body) {
-            lastBody = body;
             Buffer buf = new Buffer();
             try {
                 body.writeTo(buf);
             } catch (IOException e) {
-                // TODO Auto-generated catch block
                 e.printStackTrace();
             }
             try {
                 lastData = mapper.readValue(buf.inputStream(), Map.class);
             } catch (IOException e) {
-                // TODO Auto-generated catch block
                 e.printStackTrace();
             }
             
