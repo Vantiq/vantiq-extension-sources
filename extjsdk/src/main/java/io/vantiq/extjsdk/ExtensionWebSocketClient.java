@@ -112,7 +112,7 @@ public class ExtensionWebSocketClient {
      * @return      An {@link CompletableFuture} that completes as {@code true} when the connection to the source is
      *              fully completed, or {@code false} when the connection fails at any point along the way.
      */
-    public CompletableFuture<Boolean> inititiateFullConnection(String url, String token) {
+    public CompletableFuture<Boolean> initiateFullConnection(String url, String token) {
         initiateWebsocketConnection(url);
         authenticate(token);
         return connectToSource();
