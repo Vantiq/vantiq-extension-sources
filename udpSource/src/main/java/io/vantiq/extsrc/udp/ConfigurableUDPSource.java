@@ -919,7 +919,7 @@ public class ConfigurableUDPSource {
          * It opens the UDP socket on the localhost at port 3141 and opens ExtensionWebSocketClient at the target address
          * Then, it sets the default {@link Handler} defined earlier for several situations
          */
-        // A CompletableFuture that will return false unless every source connects fully
+        // A CompletableFuture that will return true only if every source connects fully
         CompletableFuture<Boolean> connectionWaiter = CompletableFuture.completedFuture(true);
         for (String sourceName : sources) {
             // Create an ExtensionWebSocketClient for the source
@@ -934,9 +934,7 @@ public class ConfigurableUDPSource {
 
             // Initiate the WebSocket connection, authentication, and source connection for the source
             CompletableFuture<Boolean> future;
-            client.initiateWebsocketConnection(targetVantiqServer);
-            client.authenticate(authToken);
-            future = client.connectToSource();
+            future = client.initiateFullConnection(targetVantiqServer, authToken);
 
             // Add the result of the source connection to the chain
             connectionWaiter = connectionWaiter.thenCombineAsync(future,
@@ -965,7 +963,7 @@ public class ConfigurableUDPSource {
                     log.error("Failed to auth within 10 seconds using the given auth data for source '" + sourceName + "'");
                 }
                 else if (!clients.get(sourceName).isConnected()) {
-                    log.error("Failed to connect to '" + sourceName + "' within 5 seconds");
+                    log.error("Failed to connect to '" + sourceName + "' within 10 seconds");
                 }
                 clients.get(sourceName).stop();
             }
