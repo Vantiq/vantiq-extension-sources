@@ -819,7 +819,7 @@ public class ConfigurableUDPSource {
      * 1) Sets up the WebSocket connection through {@link ExtensionWebSocketClient} and sets up the UDP socket<br>
      * 2) Stalls until the WebSocket connection completes then authenticates, exiting on a failure<br>
      * 3) Stalls until it connects as a source. Once connected, any information received from publish messages
-     *      is automatically dealt with through handlers in {@link ExtensionWebSocketListener}<br>
+     *      is automatically dealt with through handlers in {@link ExtensionWebSocketClient}<br>
      * 4) Reads data through the UDP connection, passing it through {@link #sendFromDatagram} to notify Vantiq as a source.<br>
      *    The current maximum size for the received data is {@link #MAX_UDP_DATA}, and is set in {@link #MAX_UDP_DATA}<br>
      * 5) Exits upon receiving a query from any source

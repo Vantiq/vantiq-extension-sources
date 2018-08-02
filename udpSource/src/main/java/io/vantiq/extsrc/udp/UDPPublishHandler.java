@@ -34,60 +34,82 @@ import java.util.MissingFormatArgumentException;
 // TODO change to match README
 /**
  * This class is a customizable handler that will convert Publish messages from a Vantiq deployment to a UDP message.
- * The target server and transformations are defined by a Configuration document passed into the constructor
+ * The target server and transformations are defined by a configuration document passed into the constructor
  *
- * Options for Publishes (a.k.a. outgoing messages) are below. Note that if neither {@code passOut} option is set and
- *    {@code transformations} is not set or empty, then an empty Json message is sent to the target.
- * <ul>
- *      <li>{@code targetAddress}: Required to send Publishes. A {@link String} containing either the URL or IP address
- *                          to which outgoing UDP messages should be sent</li>
- *      <li>{@code targetPort}: Required to send Publishes. An integer that is the port # to which outgoing UDP messages
- *                          should be sent</li>
- *      <li>{@code passPureMapOut}: Optional. A boolean specifying that the Json object in Publish messages should be
- *                          passed through without changes. Default is {@code false}.</li>
+ * Options for Publishes (a.k.a. outgoing messages) are below. Options for different data types are mutually exclusive.
+ * 
+ * <dl>
+ * <dt><span class="strong">UDP options</span></dt>
+ *  <dd>
+ *  These options specify where to send messages to. These are the only options that are required to be set.
+ *  <ul>
+ *      <li>{@code targetAddress}: Required to send Publishes. A string containing either the URL or IP address to
+ *                      which outgoing UDP messages should be sent.</li>
+ *      <li>{@code targetPort}: Required to send Publishes. An integer that is the port # to which outgoing UDP
+ *                      messages should be sent.</li>
+ *  </ul></dd>
+ * 
+ * <dt><span class="strong">General Object Options</span></dt>
+ *  <dd>
+ *  These options affect data to be sent in JSON(default) or XML. If none of these are set then the resulting object
+ *  will be empty of data.
+ *  <ul>
+ *      <li>{@code passPureMapOut}: Optional. A boolean specifying that the Json object in Publish messages should
+ *                      be passed through without changes. Default is false.</li>
  *      <li>{@code passUnspecifiedOut}: Optional. A boolean specifying that any values not transformed through the
- *                          transformations specified in {@code transformations} should be sent as part of the outgoing
- *                          message. If no transformations are specified in {@code transformations} then this is
- *                          identical to {@code passPureMapOut}. Overridden by {@code passPureMapOut}. Default is
- *                          {@code false}</li>
- *      <li>{@code transformations}: Optional. An array of transformations (see {@link MapTransformer}) to perform on
- *                          the message to be sent. Any values not transformed will not be passed unless
- *                          {@code passUnspecifiedOut} is set to {@code true}, and any values that are transformed will
- *                          not appear in their original location regardless of settings</li>
- *      <li>{@code passBytesOutFrom}: Optional. The location from which you would like to place the outgoing data. 
- *                          This will take in the String at the location and send it using the byte values of the 
- *                          characters contained within. This will not add quotation marks around the output. Default
- *                          is {@code null}.</li>
- *      <li>{@code formatParser}: Optional. The settings for sending data as Ascii encoded bytes.
- *                          <ul>
- *                              <li>{@code pattern}: Required. The printf-style pattern that you wish the data to be 
- *                                      sent as. Any format arguments that are replaced with "null". See 
- *                                      {@link Formatter} for specifics on what is allowed.</li>
- *                              <li>{@code locations}: Required. An array of the locations from which the format 
- *                                      arguments should be pulled.</li>
- *                              <li>{@code altPatternLocation}: Optional. The location in a Publish message in which alternate 
- *                                      patterns may be placed. If a String is found in the given location of a Publish
- *                                      object, then that pattern will be used in place of {@code pattern}. This 
- *                                      pattern may be included directly in the Published object, but it is 
- *                                      recommended that it is placed in the object specified by the "Using" keyword,
- *                                      for purposes of readability.</li>
- *                              <li>{@code altLocations}: Optional. The location in a Publish message in which an 
- *                                      alternate set of locations may be placed. If an array of Strings is found in the
- *                                      given location of a Publish message, then those locations will be used instead 
- *                                      of {@code locations}. These locations may be included directly in the Published 
- *                                      object, but it is recommended that they are placed in the object specified by 
- *                                      the "Using" keyword, for purposes of readability.</li>
- *                          </ul>
- *      <li>{@code sendXmlRoot}: Optional. The name of the root element for the generated XML object. When set this will
- *                          send the output as XML instead of JSON. Default is {@code null}.</li>
- *      <li>{@code passCsvOutFrom}: Optional. A string specifying the location of an array of objects that will be 
- *                          converted into CSV format. Requires {@code useCsvSchema} to be set. Default is {@code null}
- *                          </li>
- *      <li>{@code useCsvSchema}: Optional. Defines the values that will be sent as CSV. Can be either A) an array of
- *                          the names of the values that will be taken from the objects and placed in CSV, or B) the 
- *                          location in which the previous will be for *all* Publishes. The values in the array will 
- *                          be placed as the header for the CSV document. Default is {@code null}</li>
- * </ul>
+ *                      specified transformations should be sent as part of the outgoing message. If no transformations
+ *                      are specified then this is functionally identical to passPureMapOut. Default is false.</li>
+ *      <li>{@code transformations}: Optional. An array of transformations (see [MapTransformer](#mapTransformer)) to
+ *                      perform on the message to be sent. Any values not transformed will not be passed unless
+ *                      passUnspecifiedOut is set to true, and any values that are transformed will not appear in the
+ *                      final message regardless of settings. Default is null.</li>
+ *  </ul></dd>
+ * 
+ * <dt><span class="strong">XML Options</span></dt>
+ *  <dd><ul>
+ *      <li>{@code sendXmlRoot}: Optional. The name of the root element for the generated XML object. When set this
+ *                      will send the entire object received as XML. Default is null.</li>
+ *  </ul></dd>
+ * 
+ * <dt><span class="strong">CSV Options</span></dt>
+ *  <dd>
+ *  These options allow data to be sent in CSV format. Both must be set in order for it to work.
+ *  <ul>
+ *      <li>{@code passCsvOutFrom}: Optional. A string specifying the location of an array of objects that will be
+ *                      converted into CSV format. Default is null.</li>
+ *      <li>{@code useCsvSchema}: Optional. Defines the values that will be sent as CSV. Can be either an array of the
+ *                      names of the values that will be taken from the objects and placed in CSV, or the location in
+ *                      which such an array will be for *all* Publishes. The values in the array will be placed as the
+ *                      header for the CSV document. Default is null.</li>
+ *  </ul></dd>
+ * 
+ * <dt><span class="strong">Byte/String Options</span></dt>
+ *  <dd>
+ *  These options send data out as a string in byte form. They do not include quotation marks unless they are part of
+ *  the message. These two options are mutually exclusive.
+ *  <ul>
+ *      <li>{@code passBytesOutFrom}: Optional. The location from which you would like to place the outgoing data.
+ *                      This will take in the String at the location and send it using the byte values of the characters
+ *                      contained within. Default is null.</li>
+ *      <li>{@code formatParser}: Optional. The settings for sending data as Ascii encoded bytes using printf-style
+ *                      formatting.
+ *      <ul>
+ *          <li>{@code pattern}: Required. The printf-style pattern that you wish the data to be sent as.
+ *                          See java.util.Formatter for specifics on what is allowed.</li>
+ *          <li>{@code locations}: Required. An array of the locations from which the format arguments should be pulled.</li>
+ *          <li>{@code altPatternLocation}: Optional. The location in a Publish message in which alternate patterns may
+ *                          be placed. If a String is found in the given location of a Publish object, then that pattern
+ *                          will be used in place of pattern. This pattern may be included directly in the Published
+ *                          object, but it is recommended that it is placed in the object specified by the "Using"
+ *                          keyword, for purposes of readability.</li>
+ *          <li>{@code altLocations}: Optional. The location in a Publish message in which an alternate set of locations
+ *                          may be placed. If an array of Strings is found in the given location of a Publish message,
+ *                          then those locations will be used instead of locations. These locations may be included
+ *                          directly in the Published object, but it is recommended that they are placed in the object
+ *                          specified by the "Using" keyword, for purposes of readability.</li>
+ *      </ul></li>
+ *  </ul></dd>
+ * </dl>
  */
 public class UDPPublishHandler extends Handler<ExtensionServiceMessage>{
     /**
