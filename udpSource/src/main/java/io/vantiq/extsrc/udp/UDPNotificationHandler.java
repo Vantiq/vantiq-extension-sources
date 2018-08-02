@@ -31,72 +31,84 @@ import java.util.regex.Pattern;
  *
  *
  * Options for Notifications (a.k.a. incoming messages) are as follows. If no options are valid then no Notifications
- *    will be sent, but if even one is set then their defaults are used. If none of the {@code passIn} options are set
- *    and {@code transformations} is not set or empty, then an empty Json message is sent to the Vantiq deployment, with
- *    {@code passRecAddress} or {@code passRecPort} added if they are set. Messages can be received from any address and
- *    port combination that exists in {@code receiveAddresses} and {@code receivePorts}, as well as any server specified
- *    in {@code receiveServers}
+ * will be sent, but if even one is set then their defaults are used. Options for different data types are mutually
+ * exclusive.
+ * 
+ * <dl>
+ * <dt><span class="strong">UDP Options</span></dt>
+ * <dd>
+ * These select which ports and addresses to accept data from. If none of these are set but other incoming options are,
+ * then messages will be accepted from any port and address. Messages can be received from any address and port
+ * combination that exists in receiveAddresses and receivePorts, as well as any server specified in receiveServers.
+ *  <ul>
+ *      <li>receiveAddresses: Optional. An array of strings containing either the URL or IP addresses from which the
+ *                      source will receive messages. If left empty, it is ignored and the default of
+ *                      receiveAllAddresses is used.
+ *      <li>receiveAllAddresses: Optional. A boolean stating whether you would like to receive Notifications of UDP
+ *                      messages from any address. Overridden by a non-empty receivingAddress. Default is true, unless
+ *                      receiveServers is the only receive option set, i.e receiveServers is non-empty, receivePorts
+ *                      is empty, and receiveAllPorts is not explicitly set to true.
+ *      <li>receivePorts: Optional. An array of the port numbers from which the source will receive messages. If left
+ *                      empty, it is ignored and the default of receiveAllPorts is used.
+ *      <li>receiveAllPorts: Optional. A boolean stating whether you would like to receive Notifications of UDP
+ *                      messages from any port. Overridden by a non-empty receivingPorts. Default is true, unless
+ *                      receiveServers is the only receive option set, i.e receiveServers is non-empty, receiveAddresses
+ *                      is empty, and receiveAllAddresses is not explicitly set to true.
+ *      <li>receiveServers: Optional. An array of pairs that specify both an address and port to receive UDP messages
+ *                      from. A pair is formatted as an array containing first the address as either the URL or IP
+ *                      address, and second the port number. If left empty, defers to the other address and port
+ *                      settings.
+ * </ul></dd>
+ * 
+ * <dt><span class="strong">General Object Options</span></dt>
+ * <dd>
+ * These options affect data received in JSON(default) or XML. If none of these are set then the resulting object will
+ * be empty of data. Note that passRecAddress and passRecPort occur for every datatype except CSV, and will overwrite
+ * any data already in those locations.
  * <ul>
- *      <li>{@code receiveAddresses}: Optional. An array of {@link String} containing either the URL or IP addresses
- *                          from which the source will receive messages. If left empty, defers to the other address
- *                          and server settings.</li>
- *      <li>{@code receiveAllAddresses}: Optional. A boolean stating whether you would like to receive Notifications of
- *                          UDP messages from any address. Overridden by a non-empty {@code receivingAddress}. Default
- *                          is {@code true}, unless {@code receiveServers} is the only {@code receive} option set, i.e
- *                          {@code receiveServers} is non-empty, {@code receivePorts} is empty,
- *                          and {@code receiveAllPorts} is not explicitly set to true.</li>
- *      <li>{@code receivePorts}: Optional. An array of the port numbers from which the source will receive messages.
- *                          If left empty, defers to the other port and server settings.</li>
- *      <li>{@code receiveAllPorts}: Optional. A boolean stating whether you would like to receive Notifications of
- *                          UDP messages from any port. Overridden by a non-empty {@code receivingPorts}. Default is
- *                          {@code true}, unless {@code receiveServers} is the only {@code receive} option set, i.e
- *                          {@code receiveServers} is non-empty, {@code receiveAddresses} is empty,
- *                          and {@code receiveAllAddresses} is not explicitly set to true.</li>
- *      <li>{@code receiveServers}: Optional. An array of pairs that specify both an address and port to receive
- *                          UDP messages from. A pair is formatted as an array containing first the address as a
- *                          {@link String} containing either the URL or IP address, and second the port number. If left
- *                          empty, defers to the other address and port settings</li>
- *      <li>{@code passPureMapIn}: Optional. A boolean specifying that the Json object in Notification messages should be
- *                          passed through without changes. Default is {@code false}.</li>
- *      <li>{@code passUnspecifiedIn}: Optional. A boolean specifying that any values not transformed through the
- *                          transformations specified in {@code transformations} should be sent as part of the outgoing
- *                          message. If no transformations are specified in {@code transformations} then this is
- *                          identical to {@code passPureMapIn}. Overridden by {@code passPureMapIn}. Default is
- *                          {@code false}</li>
- *      <li>{@code passRecAddress}: Optional. A {@link String} representation of the location in which you want the
- *                          IP address from which the UDP message originated. Default is {@code null}, where the address
- *                          will not be recorded.</li>
- *      <li>{@code passRecPort}: Optional. A {@link String} representation of the location in which you want the port
- *                          from which the UDP message originated. Default is {@code null}, where the port will not be
- *                          recorded.</li>
- *      <li>{@code transformations}: Optional. An array of transformations (see {@link MapTransformer}) to perform on
- *                          the message to be sent. Any values not transformed will only be passed if
- *                          {@code passUnspecifiedIn} is set to {@code true}, and any values that are transformed will
- *                          not appear in their original location regardless of settings</li>
- *      <li>{@code passBytesInAs}: Optional. The location to which you would like to place the incoming data. 
- *                          This will take in the raw bytes received from the source and place them as chars of
- *                          the same value in a String. This is only useful if the source does not send JSON or XML. 
- *                          Default is null.</li>
- *      <li>{@code regexParser}: Optional. The settings to use for parsing the incoming byte data using regex. This is
- *                          not used when {@code passBytesInAs} is not set. It contains the following options.
- *                          <ul>
- *                              <li>{@code pattern}: Required. The regex pattern that will be used to parse the incoming data.
- *                                      The parser will use the first match that appears in the data. See {@link Pattern}
- *                                      for specifics on what constitutes a valid pattern.</li>
- *                              <li>{@code locations}: Required. An array of the locations in which to place the capture groups 
- *                                      from {@code pattern}. These will override the location in {@code passBytesInAs}.
- *                                      </li>
- *                          </ul> 
- *      <li>{@code expectXmlIn}: Optional. Specifies that the data incoming from the UDP source will be in an XML format.
- *                          Note that this will throw away the name of the root element. If data is contained in the
- *                          root element, it will be placed in the location "" before transformations.
- *                          Default is false.</li>
- *      <li>{@code passXmlRootNameIn}: Optional. Specifies the location to which the name of the root element should
- *                          be placed. Does nothing if {@code expectXmlIn} is not set to {@code true}. 
- *                          Default is {@code null}.</li>
- *      <li>{@code expectCsvIn}: Optional. Specifies that the expected UDP data will be in CSV format. Expects that the
- *                          data will use a header specifying the name of each object. Default is {@code false}.</li>
- * </ul>
+ *      <li>passPureMapIn: Optional. A boolean specifying that the Json object in Publish messages should be passed
+ *                      through without changes. Default is false.
+ *      <li>passUnspecifiedIn: Optional. A boolean specifying that any values not transformed through the
+ *                      transformations specified in transformations should be sent as part of the outgoing message.
+ *                      If no transformations are specified in transformations then this is identical to passPureMapOut.
+ *                      Default is false.
+ *      <li>passRecAddress: Optional. A string representation of the location in which you want the IP address from
+ *                      which the UDP message originated. Default is null, where the address will not be recorded
+ *      <li>passRecPort: Optional. A string representation of the location in which you want the port from which the
+ *                      UDP message originated. Default is null, where the port will not be recorded.
+ *      <li>transformations: Optional. An array of transformations (see [MapTransformer](#mapTransformer)) to perform
+ *                      on the message to be sent. Any values not transformed will not be passed unless
+ *                      passUnspecifiedIn is set to true, and any values that are transformed will not appear in the
+ *                      final message regardless of settings.
+ * </ul></dd>
+ * 
+ * <dt><span class="strong">XML Options</span></dt>
+ * <dd>
+ * These options specify how XML is translated.
+ * <ul>
+ *      <li>expectXmlIn: Optional. Specifies that the data incoming from the UDP source will be in an XML format. Note that this will throw away the name of the root element. If data is contained in the root element, it will be placed in the location "" before transformations. Default is false.
+ *      <li>passXmlRootNameIn: Optional. Specifies the location to which the name of the root element should be placed. Does nothing if expectXmlIn is not set to true. Default is null.
+ * </ul></dd>
+ * 
+ * <dt><span class="strong">CSV Options</span></dt>
+ * <dd>
+ * This option specifies how CSV is translated.
+ * <ul>
+ *      <li>expectCsvIn: Optional. Specifies that the expected UDP data will be in CSV format. Expects that the data will use a header specifying the name of each object. Data will be received as an array of JSON Objects. Default is false.
+ * </ul></dd>
+ * 
+ * <dt><span class="strong">Byte/String Options</span></dt>
+ * <dd>
+ * These options interpret data as pure bytes or a string in byte form. These two options are mutually exclusive.
+ * <ul>
+ *      <li>passBytesInAs: Optional. The location to which you would like to place the incoming data. This will take in the raw bytes received from the source and place them as chars of the same value in a String. Default is null.
+ *      <li>regexParser: Optional. The settings to use for parsing the incoming byte data using regex. It contains the following options.
+ *      <ul>
+ *          <li>pattern: Required. The regex pattern that will be used to parse the incoming data. The parser will use the first match that appears in the data. See java.util.regex.Pattern for specifics on what constitutes a valid pattern.
+ *          <li>locations: Required. An array of the locations in which to place the capture groups from pattern.
+ *      </ul>
+ * </ul></dd>
+ * </dl>
  */
 public class UDPNotificationHandler extends Handler<DatagramPacket>{
     /**
