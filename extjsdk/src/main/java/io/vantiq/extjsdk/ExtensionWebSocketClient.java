@@ -317,14 +317,16 @@ public class ExtensionWebSocketClient {
 
     /**
      * Requests that an authentication message be sent to Vantiq using the given username and password. If the WebSocket
-     * connection has not finished yet, the message will not be sent until the connection is finished.
+     * connection has not finished yet, the message will not be sent until the connection is finished. Be aware that 
+     * this can connect you to <b>any</b> of the namespaces the credentials have access to, typically the one the user
+     * last logged into.
      *
      * @param user  The username of a user capable of logging into your namespace
      * @param pass  The password of the supplies user
      * @return      A {@link CompletableFuture} that will return true when the authentication succeeds, or false
      *              when the WebSocket connection fails before authentication can occur.
      */
-    public CompletableFuture<Boolean> authenticate(String user, String pass) {
+    synchronized public CompletableFuture<Boolean> authenticate(String user, String pass) {
         Map<String, String> authData = new LinkedHashMap<>();
         authData.put("username", user);
         authData.put("password", pass);

@@ -1,6 +1,5 @@
 package io.vantiq.extjsdk;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import okhttp3.MediaType;
 import okhttp3.ResponseBody;
 import org.junit.After;
@@ -10,10 +9,8 @@ import org.junit.Test;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.TimeUnit;
-import java.util.function.Supplier;
 
-public class TestExtensionWebSocketListener {
+public class TestExtensionWebSocketListener extends ExtjsdkTestBase{
 
     ExtensionWebSocketListener listener;
     FalseClient client;
@@ -223,7 +220,7 @@ public class TestExtensionWebSocketListener {
     private ResponseBody errorMessage() {
         return ResponseBody.create(JSON, "{\"status\":400}");
     }
-    ObjectMapper mapper = new ObjectMapper();
+    
     private ResponseBody createAuthenticationResponse(boolean success) {
         if (success) {
             return ResponseBody.create(JSON, sampleAuthResponseBody);
@@ -278,22 +275,6 @@ public class TestExtensionWebSocketListener {
         catch (Exception e) {
             print("Error processing Map for createPublishMessage");
             return null;
-        }
-    }
-    
-    int WAIT_PERIOD = 10; // Milliseconds to wait between checks on async actions
-    public void waitUntilTrue(int msTimeout, Supplier<Boolean> condition) {
-        for (int i = 0; i < msTimeout / WAIT_PERIOD; i++) {
-            if (condition.get() == true) {
-                return;
-            }
-            
-            try {
-                Thread.sleep(WAIT_PERIOD);
-            } catch (InterruptedException e) {
-                // TODO Auto-generated catch block
-                e.printStackTrace();
-            }
         }
     }
 
