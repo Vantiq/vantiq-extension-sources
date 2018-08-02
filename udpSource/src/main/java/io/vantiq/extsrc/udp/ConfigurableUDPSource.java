@@ -32,19 +32,55 @@ import org.slf4j.LoggerFactory;
  *
  * This class creates a UDP source customizable by a Configuration document. It can send and receive in JSON, XML, or 
  * pure bytes.
+ * <br>
+ * The configuration document for this program is a JSON file either in the working directory or specified as the 
+ * first argument when running this program.
  * 
- * The Configuration document looks as below:<br>
+ * <dl>
+ * <dt><span class="strong">Vantiq Options</span></dt>
+ * <dd><ul>
+ * <li>{@code targetServer} -- The Vantiq site that hosts the projects to which the sources will connect. 
+ *              Defaults to "dev.vantiq.com" when not set.</li>
+ * <li>{@code authToken} -- The authentication token that will allow this server to connect to Vantiq. Be aware that 
+ *              this is namespace specific, so if you intend to connect to sources across several namespaces then 
+ *              multiple config files will be required, each with its own instance of ConfigurableUDPSource. 
+ *              Throws a RuntimeException when not set.</li>
+ * <li>{@code sources} -- An array containing the names of the sources that will be connected to. 
+ *              Throws a RuntimeException when not set.</li>
+ * </ul></dd>
+ * 
+ * <dt><span class="strong">Logging Options</span></dt>
+ * <dd><ul>
+ * <li>{@code logLevel} -- The level of log outputs desired. One of: "ERROR","WARN","INFO","DEBUG","TRACE". 
+ *              Not case-sensitive. Defaults to "INFO" if incorrect, or the settings in logback.xml(initially "INFO")
+ *              if neither this nor logTarget are set.</li>
+ * <li>{@code logTarget} -- A file to which the logs will be written to in addition to stdout.</li>
+ * </ul></dd>
+ * 
+ * <dt><span class="strong">UDP Options</span></dt>
+ * <dd><ul>
+ * <li>{@code defaultBindPort} -- Sets the default port to which sources will bind if no other port is specified.
+ *              Defaults to 3141 when not set</li>
+ * <li>{@code defaultBindAddress} -- Sets the default address to which the sources will bind if no other address is
+ *              specified. Attempts to find a valid local address if it cannot find the given address. Typically only
+ *              localhost and the computer's IP address will work.</li>
+ * <li>{@code maxPacketSize} -- Sets the maximum number of data bytes that the UDP socket can receive in a single 
+ *              message. Defaults to 1024 when not set.</li>
+ * </ul></dd>
+ * </dl>
+ * 
+ * The source Configuration document looks as below:<br>
  *     
  * <pre>{
  *     extSrcConfig: {
  *         general:{
- *             &lt;options&gt;
+ *             &lt;general options&gt;
  *         },
  *         incoming:{
- *             &lt;options&gt;
+ *             &lt;incoming/Notification options&gt;
  *         },
  *         outgoing:{
- *             &lt;options&gt;
+ *             &lt;outgoing/Publish options&gt;
  *         }
  *     }
  *}</pre>
@@ -53,130 +89,15 @@ import org.slf4j.LoggerFactory;
  * <br>
  * The options for general are below:<br>
  * <ul>
- *      <li>{@code listenAddress}: Optional. A String representing the address on which UDP messages will be sent and received.
- *                      Typically only the localhost and the host's assigned IP address will work. Default is localhost</li>
- *      <li>{@code listenPort}: Optional. The port number on which UDP messages will be sent and received. Default is 3141.</li>
+ *      <li>{@code listenAddress}: Optional. A String representing the address on which UDP messages will be sent and 
+ *                      received. Typically only the localhost and the host's assigned IP address will work.
+ *                      Default is set by the server config document.</li>
+ *      <li>{@code listenPort}: Optional. The port number on which UDP messages will be sent and received. 
+ *                      Default is set by the server config document.</li>
  * </ul>
  * <br>
- * Options for Publishes (a.k.a. outgoing messages) are below. Note that if neither {@code passOut} option is set and
- *    {@code transformations} is not set or empty, then an empty Json message is sent to the target.
- * <ul>
- *      <li>{@code targetAddress}: Required to send Publishes. A {@link String} containing either the URL or IP address
- *                          to which outgoing UDP messages should be sent</li>
- *      <li>{@code targetPort}: Required to send Publishes. An integer that is the port # to which outgoing UDP messages
- *                          should be sent</li>
- *      <li>{@code passPureMapOut}: Optional. A boolean specifying that the Json object in Publish messages should be
- *                          passed through without changes. Default is {@code false}.</li>
- *      <li>{@code passUnspecifiedOut}: Optional. A boolean specifying that any values not transformed through the transformations specified in
- *                          {@code transformations} should be sent as part of the outgoing message. If no transformations are
- *                          specified in {@code transformations} then this is identical to passPureMapOut. Default is
- *                          {@code false}</li>
- *      <li>{@code transformations}: Optional. An array of transformations (see {@link MapTransformer}) to perform on
- *                          the message to be sent. Any values not transformed will not be passed unless
- *                          {@code passUnspecifiedOut} is set to {@code true}, and any values that are transformed will
- *                          not appear in the final message regardless of settings. Default is {@code null}</li>
- *      <li>{@code passBytesOutFrom}: Optional. The location from which you would like to place the outgoing data. 
- *                          This will take in the String at the location and send it using the byte values of the 
- *                          characters contained within. This will not add quotation marks around the output. Default
- *                          is null.</li>
- *      <li>{@code formatParser}: Optional. The settings for sending data as Ascii encoded bytes.
- *                          <ul>
- *                              <li>{@code pattern}: Required. The printf-style pattern that you wish the data to be 
- *                                      sent as. Any format arguments that are replaced with "null". See 
- *                                      {@link Formatter} for specifics on what is allowed.</li>
- *                              <li>{@code locations}: Required. An array of the locations from which the format 
- *                                      arguments should be pulled.</li>
- *                              <li>{@code altPatternLocation}: Optional. The location in a Publish message in which alternate 
- *                                      patterns may be placed. If a String is found in the given location of a Publish
- *                                      object, then that pattern will be used in place of {@code pattern}. This 
- *                                      pattern may be included directly in the Published object, but it is 
- *                                      recommended that it is placed in the object specified by the "Using" keyword,
- *                                      for purposes of readability.</li>
- *                              <li>{@code altLocations}: Optional. The location in a Publish message in which an 
- *                                      alternate set of locations may be placed. If an array of Strings is found in the
- *                                      given location of a Publish message, then those locations will be used instead 
- *                                      of {@code locations}. These locations may be included directly in the Published 
- *                                      object, but it is recommended that they are placed in the object specified by 
- *                                      the "Using" keyword, for purposes of readability.</li>
- *                          </ul>
- *      <li>{@code sendXmlRoot}: Optional. The name of the root element for the generated XML object. When set this will
- *                          send the entire object received as XML. Default is {@code null}.
- *      <li>{@code passCsvOutFrom}: Optional. A string specifying the location of an array of objects that will be 
- *                          converted into CSV format. Requires {@code useCsvSchema} to be set. Default is {@code null}
- *                          </li>
- *      <li>{@code useCsvSchema}: Optional. Defines the values that will be sent as CSV. Can be either A) an array of
- *                          the names of the values that will be taken from the objects and placed in CSV, or B) the 
- *                          location in which the previous will be for *all* Publishes. The values in the array will 
- *                          be placed as the header for the CSV document. Default is {@code null}</li>
- * </ul>
- * <br>
- * Options for Notifications (a.k.a. incoming messages) are as follows. If no options are valid then no Notifications will be sent,
- *    but if even one is set then their defaults are used. If none of the {@code passIn} options are set and
- *    {@code transformations} is not set or empty, then an empty Json message is sent to the Vantiq deployment, with
- *    {@code passRecAddress} or {@code passRecPort} added if they are set. Messages can be received from any address and
- *    port combination that exists in {@code receiveAddresses} and {@code receivePorts}, as well as any server specified
- *    in {@code receiveServers}
- * <ul>
- *      <li>{@code receiveAddresses}: Optional. An array of {@link String} containing either the URL or IP addresses
- *                        from which the source will receive messages. If left empty, it is ignored and the default
- *                        of {@code receiveAllAddresses} is used.</li>
- *      <li>{@code receiveAllAddresses}: Optional. A boolean stating whether you would like to receive Notifications of UDP messages
- *                          from any address. Overridden by a non-empty {@code receivingAddress}. Default is
- *                          {@code true}, unless {@code receiveServers} is the only {@code receive} option set, i.e
- *                          {@code receiveServers} is non-empty, {@code receivePorts} is empty,
- *                          and {@code receiveAllPorts} is not explicitly set to true.</li>
- *      <li>{@code receivePorts}: Optional. An array of the port numbers from which the source will receive messages.
- *                      If left empty, it is ignored and the default of {@code receiveAllPorts} is used.</li>
- *      <li>{@code receiveAllPorts}: Optional. A boolean stating whether you would like to receive Notifications of UDP messages
- *                          from any port. Overridden by a non-empty {@code receivingPorts}. Default is {@code true},
- *                          unless {@code receiveServers} is the only {@code receive} option set, i.e
- *                          {@code receiveServers} is non-empty, {@code receiveAddresses} is empty,
- *                          and {@code receiveAllAddresses} is not explicitly set to true.</li>
- *      <li>{@code receiveServers}: Optional. An array of pairs that specify both an address and port to receive
- *                          UDP messages from. A pair is formatted as an array containing first the address as a
- *                          {@link String} containing either the URL or IP address, and second the port number. If left
- *                          empty, defers to the other address and port settings</li>
- *      <li>{@code passPureMapIn}: Optional. A boolean specifying that the Json object in Publish messages should be passed through without changes.
- *                      Default is {@code false}.</li>
- *      <li>{@code passUnspecifiedIn}: Optional. A boolean specifying that any values not transformed through the transformations specified in
- *                          {@code transformations} should be sent as part of the outgoing message. If no transformations are
- *                          specified in {@code transformations} then this is identical to passPureMapOut. Default is {@code false}</li>
- *      <li>{@code passRecAddress}: Optional. A {@link String} representation of the location in which you want the
- *                          IP address from which the UDP message originated. Default is {@code null}, where the address
- *                          will not be recorded</li>
- *      <li>{@code passRecPort}: Optional. A {@link String} representation of the location in which you want the port
- *                          from which the UDP message originated. Default is {@code null}, where the port will not be
- *                          recorded.</li>
- *      <li>{@code transformations}: Optional. An array of transformations (see {@link MapTransformer}) to perform on
- *                     the message to be sent. Any values not transformed will not be passed unless
- *                     {@code passUnspecifiedIn} is set to {@code true}, and any values that are transformed will
- *                     not appear in the final message regardless of settings</li>
- *      <li>{@code passBytesInAs}: Optional. The location to which you would like to place the incoming data. 
- *                          This will take in the raw bytes received from the source and place them as chars of
- *                          the same value in a String. This is only useful if the source does not send JSON. 
- *                          Default is null.</li>
- *      <li>{@code regexParser}: Optional. The settings to use for parsing the incoming byte data using regex. This is
- *                          not used when {@code passBytesInAs} is not set. It contains the following options.
- *                          <ul>
- *                              <li>{@code pattern}: Required. The regex pattern that will be used to parse the incoming data.
- *                                      The parser will use the first match that appears in the data. See {@link Pattern}
- *                                      for specifics on what constitutes a valid pattern.</li>
- *                              <li>{@code locations}: Required. An array of the locations in which to place the capture groups 
- *                                      from {@code pattern}. These will override the location in {@code passBytesInAs}.
- *                                      </li>
- *                              <li>{@code flags}: Not yet implemented. An array of the regex flags you would like 
- *                                      enabled. See {@link Pattern} for descriptions of the flags available.</li>
- *                          </ul> 
- *      <li>{@code expectXmlIn}: Optional. Specifies that the data incoming from the UDP source will be in an XML format.
- *                          Note that this will throw away the name of the root element. If data is contained in the
- *                          root element, it will be placed in the location "" before transformations.
- *                          Default is false.</li>
- *      <li>{@code passXmlRootNameIn}: Optional. Specifies the location to which the name of the root element should
- *                          be placed. Does nothing if {@code expectXmlIn} is not set to {@code true}. 
- *                          Default is {@code null}.</li>
- *      <li>{@code expectCsvIn}: Optional. Specifies that the expected UDP data will be in CSV format. Expects that the
- *                          data will use a header specifying the name of each object. Default is {@code false}.</li>
- * </ul>
+ * The options for incoming and outgoing are described in {@link UDPNotificationHandler} and {@link UDPPublishHandler}
+ * respectively.
  */
 public class ConfigurableUDPSource {
 
