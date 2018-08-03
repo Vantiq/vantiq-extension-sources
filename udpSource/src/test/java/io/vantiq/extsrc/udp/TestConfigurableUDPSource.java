@@ -31,6 +31,9 @@ public class TestConfigurableUDPSource extends ExtjsdkTestBase{
         client = null;
         ConfigurableUDPSource.clients.clear();
         ConfigurableUDPSource.notificationHandlers.clear();
+        ConfigurableUDPSource.sourcePorts.clear();
+        ConfigurableUDPSource.sourceAddresses.clear();
+        ConfigurableUDPSource.sourceServers.clear();
         
         for (DatagramSocket s : ConfigurableUDPSource.udpSocketToSources.keySet()) {
             s.close();
@@ -185,15 +188,49 @@ public class TestConfigurableUDPSource extends ExtjsdkTestBase{
     }
     
     @Test
-    public void testSendFromDatagram() {
-        assert false;
+    public void testReceivingFromServer() throws UnknownHostException {
+        InetAddress address = InetAddress.getByName("localhost");
+        int port = 100;
+        
+        ConfigurableUDPSource.sourceAddresses.put(sourceName, ConfigurableUDPSource.ALL_ADDR);
+        ConfigurableUDPSource.sourcePorts.put(sourceName, ConfigurableUDPSource.ALL_PORTS);
+        assert ConfigurableUDPSource.receivingFromServer(sourceName, port, address);
+        
+        List<Object> l = new ArrayList<>(); l.add(123);
+        ConfigurableUDPSource.sourcePorts.put(sourceName, l);
+        assert !ConfigurableUDPSource.receivingFromServer(sourceName, port, address);
+        
+        l.add(port);
+        ConfigurableUDPSource.sourcePorts.put(sourceName, l);
+        assert ConfigurableUDPSource.receivingFromServer(sourceName, port, address);
+        
+        l = new ArrayList<>(); l.add(InetAddress.getLocalHost()); // getLocalHost() != getByName("localhost") 
+        ConfigurableUDPSource.sourceAddresses.put(sourceName, l);
+        assert !ConfigurableUDPSource.receivingFromServer(sourceName, port, address);
+        
+        l.add(address);
+        ConfigurableUDPSource.sourceAddresses.put(sourceName, l);
+        assert ConfigurableUDPSource.receivingFromServer(sourceName, port, address);
+        
+        ConfigurableUDPSource.sourcePorts.put(sourceName, ConfigurableUDPSource.NO_PORTS);
+        assert !ConfigurableUDPSource.receivingFromServer(sourceName, port, address);
+        
+        List<List> list = new ArrayList<>();
+        List<Object> subl = new ArrayList<>(); subl.add(InetAddress.getLocalHost()); subl.add(port); list.add(subl);
+        subl = new ArrayList<>(); subl.add(InetAddress.getLocalHost()); subl.add(123); list.add(subl);
+        subl = new ArrayList<>(); subl.add(address); subl.add(123); list.add(subl);
+        ConfigurableUDPSource.sourceServers.put(sourceName, list);
+        assert !ConfigurableUDPSource.receivingFromServer(sourceName, port, address);
+        
+        subl = new ArrayList<>(); subl.add(address); subl.add(port); list.add(subl);
+        ConfigurableUDPSource.sourceServers.put(sourceName, list);
+        assert ConfigurableUDPSource.receivingFromServer(sourceName, port, address);
     }
     
     @Test
-    public void testReceivingFromServer() {
+    public void testSendFromDatagram() {
         assert false;
     }
-    
     
 // ====================================================================================================================
 // --------------------------------------------------- Test Helpers ---------------------------------------------------
