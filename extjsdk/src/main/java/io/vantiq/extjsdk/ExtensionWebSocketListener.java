@@ -28,31 +28,31 @@ public class ExtensionWebSocketListener implements WebSocketListener{
      * should consist purely of confirmations (messages with status 200 and an empty body) and error messages. Set by
      * {@link #setHttpHandler}
      */
-    private Handler<Response> httpHandler = null;
+    Handler<Response> httpHandler = null;
     /**
      * {@link Handler} that handles Publish requests received by this listener. Set by {@link #setPublishHandler}
      */
-    private Handler<ExtensionServiceMessage> publishHandler = null;
+    Handler<ExtensionServiceMessage> publishHandler = null;
     /**
      * {@link Handler} that handles Query requests received by this listener. Set by {@link #setQueryHandler}
      */
-    private Handler<ExtensionServiceMessage> queryHandler = null;
+    Handler<ExtensionServiceMessage> queryHandler = null;
     /**
      * {@link Handler} that handles Configuration messages received by this listener. Configuration messages are sent
      * in response to connection messages, so this should be sent before sending the connection message to a source. Set
      * by {@link #setConfigHandler}
      */
-    private Handler<ExtensionServiceMessage> configHandler = null;
+    Handler<ExtensionServiceMessage> configHandler = null;
     /**
      * {@link Handler} that handles responses to auth messages, both successful and not. Strictly speaking, it handles
      * all Http responses received by this listener before and upon successful authentication, as no other
      * Http responses are expected until after authorization. Set by {@link #setAuthHandler}
      */
-    private Handler<Response> authHandler = null;
+    Handler<Response> authHandler = null;
     /**
      * {@link Handler} that handles reconnect messages. Set by {@link #setReconnectHandler}
      */
-    private Handler<ExtensionServiceMessage> reconnectHandler = null;
+    Handler<ExtensionServiceMessage> reconnectHandler = null;
     /**
      * An Slf4j logger
      */
@@ -265,6 +265,10 @@ public class ExtensionWebSocketListener implements WebSocketListener{
         body.close();
 
 
+        if (this.isClosed) {
+            return; // Do nothing if closed at this point
+        }
+        
         // Convert the data from a Json string/byte array to a map
         Map msg;
         try {
@@ -369,7 +373,7 @@ public class ExtensionWebSocketListener implements WebSocketListener{
                 }
                 else if (message.getOp().equals(ExtensionServiceMessage.OP_RECONNECT_REQUIRED)) {
                     synchronized (client) {
-                        // Do not alert client of reconnect message if this client ahs been closed  
+                        // Do not alert client of reconnect message if this listener has been closed
                         if (this.isClosed) {
                             return; 
                         }

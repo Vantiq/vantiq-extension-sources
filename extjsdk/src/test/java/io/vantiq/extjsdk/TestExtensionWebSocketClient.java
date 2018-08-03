@@ -143,7 +143,7 @@ public class TestExtensionWebSocketClient extends ExtjsdkTestBase{
         queryData[1].put("message", "value");
         queryData[1].put("value", "message");
         
-        client.webSocketFuture = CompletableFuture.completedFuture(true);
+        markWsConnected(true);
         client.sendQueryResponse(200, queryAddress, queryData);
         
         // The ArrayList creation is necessary since JSON interprets arrays as ArrayList
@@ -158,7 +158,7 @@ public class TestExtensionWebSocketClient extends ExtjsdkTestBase{
         String errorMessage = "Message with params {}='p1' {}='param2'.";
         String errorCode = "io.vantiq.extjsdk.ExampleErrorName";
         
-        client.webSocketFuture = CompletableFuture.completedFuture(true);
+        markWsConnected(true);
         client.sendQueryError(queryAddress, errorCode, errorMessage, params);
         
         assert socket.compareData("headers." + ExtensionServiceMessage.RESPONSE_ADDRESS_HEADER, queryAddress);
@@ -167,6 +167,106 @@ public class TestExtensionWebSocketClient extends ExtjsdkTestBase{
         assert socket.compareData("body.parameters", new ArrayList<String>(Arrays.asList(params)));
         assert socket.compareData("body.messageTemplate", errorMessage);
         assert socket.compareData("body.messageCode", errorCode);
+    }
+    
+    @Test
+    public void testStop() {
+        markSourceConnected(true);
+        
+        assert !client.getListener().isClosed();
+        
+        client.stop();
+        
+        assert client.getListener().isClosed();
+    }
+    
+    @Test
+    public void testClose() {
+        markSourceConnected(true);
+        
+        assert !client.getListener().isClosed();
+        
+        CompletableFuture<Boolean> wsFut = client.getWebsocketConnectionFuture();
+        CompletableFuture<Boolean> aFut = client.getAuthenticationFuture();
+        CompletableFuture<Boolean> sFut = client.getSourceConnectionFuture();
+        
+        assert wsFut.getNow(false);
+        assert aFut.getNow(false);
+        assert sFut.getNow(false);
+        
+        ExtensionWebSocketListener oldListen = client.getListener();
+        client.close();
+        
+        assert !client.getListener().isClosed();
+        assert oldListen.isClosed();
+        
+        ExtensionWebSocketListener newListen = client.getListener();
+        
+        // '==' and not '.equals()' because they should be the exact same object
+        assert newListen.authHandler == oldListen.authHandler;
+        assert newListen.httpHandler == oldListen.httpHandler;
+        assert newListen.configHandler == oldListen.configHandler;
+        assert newListen.reconnectHandler == oldListen.reconnectHandler;
+        assert newListen.publishHandler == oldListen.publishHandler;
+        assert newListen.queryHandler == oldListen.queryHandler;
+        
+        // Should be set to false now
+        assert !wsFut.getNow(true);
+        assert !aFut.getNow(true);
+        assert !sFut.getNow(true);
+        
+        // The old Futures should have been removed from client
+        assert client.getWebsocketConnectionFuture() == null;
+        assert client.getAuthenticationFuture() == null;
+        assert client.getSourceConnectionFuture() == null;
+    }
+    
+    @Test
+    public void testIsOpenOnNull() {
+        assert !client.isOpen();
+        assert !client.isAuthed();
+        assert !client.isConnected();
+    }
+    
+    @Test
+    public void testAutoReconnect() {
+        markSourceConnected(true);
+        
+        assert client.getSourceConnectionFuture().getNow(false);
+        
+        // Should make sourceConnection be recreated
+        client.setAutoReconnect(true);
+        client.getListener().onMessage(createReconnectMessage(""));
+
+        assert !client.isConnected();
+        assert !client.getSourceConnectionFuture().isDone(); 
+    }
+    
+    @Test
+    public void testNotification() {
+        markSourceConnected(true);
+
+        Map<String,Object> m = new LinkedHashMap<>();
+        m.put("msg", "str");
+
+        client.sendNotification(m);
+
+        assert socket.compareData("op", ExtensionServiceMessage.OP_NOTIFICATION);
+        assert socket.compareData("object.msg", "str");
+        assert socket.compareData("resourceId", srcName);
+    }
+    
+// ============================== Helper functions ==============================
+    private void markWsConnected(boolean success) {
+        client.webSocketFuture = CompletableFuture.completedFuture(success);
+    }
+    private void markAuthSuccess(boolean success) {
+        markWsConnected(true);
+        client.authFuture = CompletableFuture.completedFuture(success);
+    }
+    private void markSourceConnected(boolean success) {
+        markAuthSuccess(true);
+        client.sourceFuture = CompletableFuture.completedFuture(success);
     }
     
     // Merely makes several private functions public
@@ -216,7 +316,7 @@ public class TestExtensionWebSocketClient extends ExtjsdkTestBase{
         @Override
         public void sendPing(Buffer payload) throws IOException {}
         @Override
-        public void close(int code, String reason) throws IOException {}
+        public void close(int code, String reason) throws IOException {client.getListener().onClose(code,reason);}
     }
     
     public static Object getTransformVal(Map map, String loc) {
