@@ -3,6 +3,7 @@ package io.vantiq.extsrc.udp;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -113,9 +114,84 @@ public class TestConfigurableUDPSource extends ExtjsdkTestBase{
         assert !ConfigurableUDPSource.udpSocketToSources.containsKey(socket);
         assert !ConfigurableUDPSource.notificationHandlers.containsKey(secondSource);
         assert socket.isClosed();
+    }
+    
+    @Test
+    public void testSetNotificationHandler() throws UnknownHostException {
+        InetAddress address = InetAddress.getByName("localhost");
+        int port = 100;
         
+        // ============== Use a map where all each has one valid entry ===============
+        Map<String,Object> incoming = new LinkedHashMap<>();
+        List<Object> l = new ArrayList<>(); l.add("localhost"); l.add("notValidAddress"); l.add(1354);
+        incoming.put("receiveAddresses", l);
+        l = new ArrayList<>(); l.add(port); l.add(-1); l.add(123456789);
+        incoming.put("receivePorts", l);
+        l = new ArrayList<>();
+        List<Object> subl = new ArrayList<>(); subl.add("invalid address"); subl.add(2000); l.add(subl); // bad address
+        subl = new ArrayList<>(); subl.add("localhost"); subl.add(-1); l.add(subl); // bad port
+        subl = new ArrayList<>(); subl.add(2000); subl.add("localhost"); l.add(subl); // wrong order
+        subl = new ArrayList<>(); subl.add("localhost"); subl.add(port); l.add(subl);
+        incoming.put("receiveServers", l);
         
+        UDPNotificationHandler handler = new UDPNotificationHandler(incoming, client);
         
+        ConfigurableUDPSource.setNotificationHandler(handler, sourceName, incoming);
+        
+        assert ConfigurableUDPSource.notificationHandlers.get(sourceName) == handler;
+        l = (List) ConfigurableUDPSource.sourcePorts.get(sourceName);
+        assert l.contains(port);
+        assert l.size() == 1;
+        l = (List) ConfigurableUDPSource.sourceAddresses.get(sourceName);
+        assert l.contains(address);
+        assert l.size() == 1;
+        subl = new ArrayList<>(); subl.add(address); subl.add(port);
+        l = (List) ConfigurableUDPSource.sourceServers.get(sourceName);
+        assert l.contains(subl);
+        assert l.size() == 1;
+        
+        // =================== Use a map with ALL_ADDR/PORT set =================
+        ConfigurableUDPSource.sourceServers.clear(); // Don't need to clear the rest, they will be overwritten
+        incoming = new LinkedHashMap<>();
+        incoming.put("receiveAllAddresses", true);
+        incoming.put("receiveAllPorts", true);
+        
+        handler = new UDPNotificationHandler(incoming, client);
+        ConfigurableUDPSource.setNotificationHandler(handler, sourceName, incoming);
+        
+        assert ConfigurableUDPSource.notificationHandlers.get(sourceName) == handler;
+        String addr = (String) ConfigurableUDPSource.sourceAddresses.get(sourceName);
+        assert addr.equals(ConfigurableUDPSource.ALL_ADDR);
+        int prt = (Integer) ConfigurableUDPSource.sourcePorts.get(sourceName);
+        assert prt == ConfigurableUDPSource.ALL_PORTS;
+        
+        // =================== Use a map with only Servers set ==========================
+        incoming = new LinkedHashMap<>();
+        subl = new ArrayList<>(); subl.add("localhost"); subl.add(port); l.add(subl);
+        incoming.put("receiveServers", l);
+        
+        handler = new UDPNotificationHandler(incoming, client);
+        ConfigurableUDPSource.setNotificationHandler(handler, sourceName, incoming);
+        
+        assert ConfigurableUDPSource.notificationHandlers.get(sourceName) == handler;
+        addr = (String) ConfigurableUDPSource.sourceAddresses.get(sourceName);
+        assert addr.equals(ConfigurableUDPSource.NO_ADDR);
+        prt = (Integer) ConfigurableUDPSource.sourcePorts.get(sourceName);
+        assert prt == ConfigurableUDPSource.NO_PORTS;
+        subl = new ArrayList<>(); subl.add(address); subl.add(port);
+        l = (List) ConfigurableUDPSource.sourceServers.get(sourceName);
+        assert l.contains(subl);
+        assert l.size() == 1;
+    }
+    
+    @Test
+    public void testSendFromDatagram() {
+        assert false;
+    }
+    
+    @Test
+    public void testReceivingFromServer() {
+        assert false;
     }
     
     

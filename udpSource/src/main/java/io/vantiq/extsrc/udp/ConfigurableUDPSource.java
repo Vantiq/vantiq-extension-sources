@@ -259,9 +259,9 @@ public class ConfigurableUDPSource {
      *
      * @param handler       The {@link UDPNotificationHandler} for the source to use
      * @param sourceName    The name of the source
-     * @param general        The 'general' section source's Configuration document
+     * @param incoming      The 'incoming' section source's Configuration document
      */
-    public static void setNotificationHandler(UDPNotificationHandler handler, String sourceName, Map general) {
+    public static void setNotificationHandler(UDPNotificationHandler handler, String sourceName, Map incoming) {
         log.trace("Setting Notification handler for '" + sourceName + "'");
         notificationHandlers.put(sourceName, handler);
 
@@ -270,15 +270,15 @@ public class ConfigurableUDPSource {
         List<List> servers = null;
 
         // Obtain all valid addresses, ports, and servers from the respective arrays specified in the configuration document
-        if (general != null) {
-            if (general.get("receiveAddresses") instanceof List) {
-                addresses = getValidInetAddresses((List) general.get("receiveAddresses"), sourceName);
+        if (incoming != null) {
+            if (incoming.get("receiveAddresses") instanceof List) {
+                addresses = getValidInetAddresses((List) incoming.get("receiveAddresses"), sourceName);
             }
-            if (general.get("receivePorts") instanceof List) {
-                ports = getValidPorts((List) general.get("receivePorts"));
+            if (incoming.get("receivePorts") instanceof List) {
+                ports = getValidPorts((List) incoming.get("receivePorts"));
             }
-            if (general.get("receiveServers") instanceof List) {
-                servers = getValidServers((List) general.get("receiveServers"));
+            if (incoming.get("receiveServers") instanceof List) {
+                servers = getValidServers((List) incoming.get("receiveServers"));
             }
         }
 
@@ -288,8 +288,8 @@ public class ConfigurableUDPSource {
             log.debug("Source '" + sourceName + "' listening for addresses " + addresses);
         }
         // We should ignore all addresses only if there are requested servers and no valid settings for addresses or ports
-        else if (servers != null && !valueIsTrue(general, "receiveAllAddresses")
-                && !valueIsTrue(general, "receiveAllPorts") && ports == null) {
+        else if (servers != null && !valueIsTrue(incoming, "receiveAllAddresses")
+                && !valueIsTrue(incoming, "receiveAllPorts") && ports == null) {
             sourceAddresses.put(sourceName, NO_ADDR);
         }
         // Either receiveAllAddresses is set to true with no addresses specified
@@ -305,8 +305,8 @@ public class ConfigurableUDPSource {
             log.debug("Source '" + sourceName + "' listening on ports " + ports);
         }
         // We should ignore all ports only if there are requested servers and no valid settings for addresses or ports
-        else if (servers != null && !valueIsTrue(general, "receiveAllAddresses")
-                && !valueIsTrue(general, "receiveAllPorts") && addresses == null) {
+        else if (servers != null && !valueIsTrue(incoming, "receiveAllAddresses")
+                && !valueIsTrue(incoming, "receiveAllPorts") && addresses == null) {
             sourcePorts.put(sourceName, NO_PORTS);
         }
         // Either receiveAllPorts is set to true with no ports specified or the settings allow defaulting to all ports
@@ -387,6 +387,7 @@ public class ConfigurableUDPSource {
                 String addressName = (String) ((List) server).get(0);
                 try {
                     s.set(0, InetAddress.getByName(addressName));
+                    servers.add(s);
                 }
                 catch (UnknownHostException e) {
                     log.warn("Requested receiving address '" + addressName + "' specified for server '" + server +
