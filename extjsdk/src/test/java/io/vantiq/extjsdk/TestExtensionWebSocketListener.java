@@ -2,6 +2,8 @@ package io.vantiq.extjsdk;
 
 import okhttp3.MediaType;
 import okhttp3.ResponseBody;
+import okhttp3.ws.WebSocket;
+
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -18,7 +20,8 @@ public class TestExtensionWebSocketListener extends ExtjsdkTestBase{
     TestHandlerResp aHandler;
     TestHandlerESM cHandler;
     TestHandlerESM qHandler;
-    TestHandlerResp rHandler;
+    TestHandlerESM rHandler;
+    TestHandlerResp hHandler;
     String srcName;
     @Before
     public void setUp() {
@@ -30,17 +33,20 @@ public class TestExtensionWebSocketListener extends ExtjsdkTestBase{
         client.connectToSource();
         
         listener = new ExtensionWebSocketListener(client);
+        client.listener = listener;
         pHandler = new TestHandlerESM();
         aHandler = new TestHandlerResp();
         cHandler = new TestHandlerESM();
         qHandler = new TestHandlerESM();
-        rHandler = new TestHandlerResp();
+        rHandler = new TestHandlerESM();
+        hHandler = new TestHandlerResp();
 
-        listener.setPublishHandler(pHandler);
-        listener.setAuthHandler(aHandler);
-        listener.setConfigHandler(cHandler);
-        listener.setQueryHandler(qHandler);
-        listener.setHttpHandler(rHandler);
+        client.setPublishHandler(pHandler);
+        client.setAuthHandler(aHandler);
+        client.setConfigHandler(cHandler);
+        client.setQueryHandler(qHandler);
+        client.setHttpHandler(hHandler);
+        client.setReconnectHandler(rHandler);
     }
 
     @After
@@ -52,6 +58,7 @@ public class TestExtensionWebSocketListener extends ExtjsdkTestBase{
         aHandler = null;
         cHandler = null;
         qHandler = null;
+        hHandler = null;
         rHandler = null;
     }
 
@@ -173,7 +180,8 @@ public class TestExtensionWebSocketListener extends ExtjsdkTestBase{
         assert qHandler.compareValue(key, val);
     }
     
-    @Test public void testHttp() {
+    @Test 
+    public void testHttp() {
         connectToSource(srcName, null);
         
         Response resp = new Response().status(200);
@@ -181,10 +189,11 @@ public class TestExtensionWebSocketListener extends ExtjsdkTestBase{
         
         listener.onMessage(body);
         
-        assert rHandler.compareStatus(200);
+        assert hHandler.compareStatus(200);
     }
     
-    @Test public void testHttpHandlerOnFailedConnection() {
+    @Test 
+    public void testHttpHandlerOnFailedConnection() {
         authenticate(true);
         
         Response resp = new Response().status(403);
@@ -193,7 +202,53 @@ public class TestExtensionWebSocketListener extends ExtjsdkTestBase{
         listener.onMessage(body);
         
         assert !client.getSourceConnectionFuture().getNow(true); // It should be set to false now
-        assert rHandler.compareStatus(403);
+        assert hHandler.compareStatus(403);
+    }
+    
+    @Test 
+    public void testReconnectHandler() {
+        connectToSource(srcName, null);
+        
+        ResponseBody body = createReconnectMessage(srcName);
+        
+        listener.onMessage(body);
+        
+        assert !client.isConnected();
+        assert rHandler.compareOp(ExtensionServiceMessage.OP_RECONNECT_REQUIRED);
+    }
+    
+    @Test
+    public void testClose() {
+        connectToSource(srcName, null);
+        
+        listener.close();
+        
+        ResponseBody body = createReconnectMessage(srcName);
+        listener.onMessage(body);
+        assert rHandler.compareMessage(null);
+        
+        body = createHttpMessage(new Response().status(200));
+        listener.onMessage(body);
+        assert hHandler.compareMessage(null);
+        
+        aHandler.lastMessage = null; // Resetting from auth in connectToSource
+        body = createAuthenticationResponse(true);
+        listener.onMessage(body);
+        assert aHandler.compareMessage(null);
+        
+        body = createQueryMessage(new LinkedHashMap(), srcName);
+        listener.onMessage(body);
+        assert qHandler.compareMessage(null);
+        
+        body = createPublishMessage(new LinkedHashMap(), srcName);
+        listener.onMessage(body);
+        assert pHandler.compareMessage(null);
+        
+        cHandler.lastMessage = null; // Resetting from message in connectToSource
+        body = createConfigResponse(new LinkedHashMap(), srcName);
+        listener.onMessage(body);
+        assert cHandler.compareMessage(null);
+        
     }
 
 // ====================================================================================================================
@@ -267,6 +322,7 @@ public class TestExtensionWebSocketListener extends ExtjsdkTestBase{
             return null;
         }
     }
+    
 
     private ResponseBody createHttpMessage(Response resp) {
         try {
@@ -278,9 +334,6 @@ public class TestExtensionWebSocketListener extends ExtjsdkTestBase{
         }
     }
 
-    private void print(String str) {
-        System.out.println(str);
-    }
 
 
     private class FalseClient extends ExtensionWebSocketClient {
@@ -291,6 +344,7 @@ public class TestExtensionWebSocketListener extends ExtjsdkTestBase{
         @Override
         public CompletableFuture<Boolean> initiateWebsocketConnection(String url) {
             webSocketFuture = new CompletableFuture<Boolean>();
+            webSocket = new FalseWebSocket();
             return null;
         }
 
@@ -313,6 +367,7 @@ public class TestExtensionWebSocketListener extends ExtjsdkTestBase{
             return lastOp.equals(expectedOp);
         }
         public boolean compareMessage(ExtensionServiceMessage expectedMessage) {
+            if (lastMessage == expectedMessage) return true; // null case
             return lastMessage.equals(expectedMessage);
         }
         public boolean compareSourceName(String sourceName) {
@@ -331,6 +386,10 @@ public class TestExtensionWebSocketListener extends ExtjsdkTestBase{
             lastMessage = message;
         }
 
+        public boolean compareMessage(Response expectedMessage) {
+            if (lastMessage == expectedMessage) {return true;} // null case
+            return expectedMessage.equals(lastMessage);
+        }
         public boolean compareStatus(Integer expectedStatus) {
             return expectedStatus.equals(lastMessage.getStatus());
         }

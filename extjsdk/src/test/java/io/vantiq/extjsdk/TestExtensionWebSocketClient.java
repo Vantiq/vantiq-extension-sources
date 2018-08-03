@@ -143,7 +143,7 @@ public class TestExtensionWebSocketClient extends ExtjsdkTestBase{
         queryData[1].put("message", "value");
         queryData[1].put("value", "message");
         
-        client.webSocketFuture = CompletableFuture.completedFuture(true);
+        markWsConnected(true);
         client.sendQueryResponse(200, queryAddress, queryData);
         
         // The ArrayList creation is necessary since JSON interprets arrays as ArrayList
@@ -158,7 +158,7 @@ public class TestExtensionWebSocketClient extends ExtjsdkTestBase{
         String errorMessage = "Message with params {}='p1' {}='param2'.";
         String errorCode = "io.vantiq.extjsdk.ExampleErrorName";
         
-        client.webSocketFuture = CompletableFuture.completedFuture(true);
+        markWsConnected(true);
         client.sendQueryError(queryAddress, errorCode, errorMessage, params);
         
         assert socket.compareData("headers." + ExtensionServiceMessage.RESPONSE_ADDRESS_HEADER, queryAddress);
@@ -167,6 +167,75 @@ public class TestExtensionWebSocketClient extends ExtjsdkTestBase{
         assert socket.compareData("body.parameters", new ArrayList<String>(Arrays.asList(params)));
         assert socket.compareData("body.messageTemplate", errorMessage);
         assert socket.compareData("body.messageCode", errorCode);
+    }
+    
+    @Test
+    public void testStop() {
+        markSourceConnected(true);
+        
+        assert !client.getListener().isClosed();
+        
+        client.stop();
+        
+        assert client.getListener().isClosed();
+    }
+    
+    @Test
+    public void testClose() {
+        markSourceConnected(true);
+        
+        assert !client.getListener().isClosed();
+        
+        ExtensionWebSocketListener oldListen = client.getListener();
+        client.close();
+        
+        assert !client.getListener().isClosed();
+        assert oldListen.isClosed();
+        
+        ExtensionWebSocketListener newListen = client.getListener();
+        
+        // '==' and not '.equals()' because they should be the exact same object
+        assert newListen.authHandler == oldListen.authHandler;
+        assert newListen.httpHandler == oldListen.httpHandler;
+        assert newListen.configHandler == oldListen.configHandler;
+        assert newListen.reconnectHandler == oldListen.reconnectHandler;
+        assert newListen.publishHandler == oldListen.publishHandler;
+        assert newListen.queryHandler == oldListen.queryHandler;
+    }
+    
+    @Test
+    public void testIsOpenOnNull() {
+        assert !client.isOpen();
+        assert !client.isAuthed();
+        assert !client.isConnected();
+    }
+    
+    @Test
+    public void testAutoReconnect() {
+        FalseWebSocket socket = new FalseWebSocket();
+        client.webSocket = socket;
+        markSourceConnected(true);
+        
+        assert client.getSourceConnectionFuture().getNow(false);
+        
+        // Should make sourceConnection be recreated
+        client.getListener().onMessage(createReconnectMessage(""));
+
+        assert !client.isConnected();
+        assert !client.getSourceConnectionFuture().getNow(true);
+    }
+    
+// ============================== Helper functions ==============================
+    private void markWsConnected(boolean success) {
+        client.webSocketFuture = CompletableFuture.completedFuture(success);
+    }
+    private void markAuthSuccess(boolean success) {
+        markWsConnected(true);
+        client.authFuture = CompletableFuture.completedFuture(success);
+    }
+    private void markSourceConnected(boolean success) {
+        markAuthSuccess(true);
+        client.sourceFuture = CompletableFuture.completedFuture(success);
     }
     
     // Merely makes several private functions public
