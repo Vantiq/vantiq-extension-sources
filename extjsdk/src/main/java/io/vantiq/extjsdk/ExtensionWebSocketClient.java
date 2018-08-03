@@ -43,7 +43,7 @@ public class ExtensionWebSocketClient {
     /**
      * The listener that receives and interprets responses from the Vantiq deployment for this client's connection.
      */
-    private ExtensionWebSocketListener listener;
+    ExtensionWebSocketListener listener;
     /**
      * A {@link CompletableFuture} that will return true when connected over a websocket, and false when the connection
      * is closed or has failed
