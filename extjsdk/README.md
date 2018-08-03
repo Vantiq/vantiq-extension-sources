@@ -108,3 +108,6 @@ The Response class is a helper that defines what can be in a WebSocket message t
 *	`getBody()` the object contained in the body of the message.
 *	`getHeader(<header name>)` returns the String value of the requested header.
 *	`getContentType()` returns the MIME type of the message body. Currently, only JSON is possible for sent or received messages.
+
+## Licenses
+This library uses two licensed libraries, okhttp3 and jackson-databind. They are both licensed under [Apache Version 2.0 License](http://www.apache.org/licenses/LICENSE-2.0).	
