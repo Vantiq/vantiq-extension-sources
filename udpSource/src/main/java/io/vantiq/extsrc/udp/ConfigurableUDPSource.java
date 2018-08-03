@@ -7,12 +7,6 @@ import io.vantiq.extjsdk.Handler;
 import io.vantiq.extjsdk.ExtensionServiceMessage;
 import io.vantiq.extjsdk.ExtensionWebSocketClient;
 
-import ch.qos.logback.classic.Level;
-import ch.qos.logback.classic.LoggerContext;
-import ch.qos.logback.classic.encoder.PatternLayoutEncoder;
-import ch.qos.logback.classic.spi.ILoggingEvent;
-import ch.qos.logback.core.FileAppender;
-
 import java.io.File;
 import java.io.IOException;
 import java.net.*;
@@ -45,14 +39,6 @@ import org.slf4j.LoggerFactory;
  *              Throws a RuntimeException when not set.</li>
  * <li>{@code sources} -- An array containing the names of the sources that will be connected to. 
  *              Throws a RuntimeException when not set.</li>
- * </ul></dd>
- * 
- * <dt><span class="strong">Logging Options</span></dt>
- * <dd><ul>
- * <li>{@code logLevel} -- The level of log outputs desired. One of: "ERROR","WARN","INFO","DEBUG","TRACE". 
- *              Not case-sensitive. Defaults to "INFO" if incorrect, or the settings in logback.xml(initially "INFO")
- *              if neither this nor logTarget are set.</li>
- * <li>{@code logTarget} -- A file to which the logs will be written to in addition to stdout.</li>
  * </ul></dd>
  * 
  * <dt><span class="strong">UDP Options</span></dt>
@@ -489,44 +475,6 @@ public class ConfigurableUDPSource {
     static String authToken = null;
 
     /**
-     * Sets the log level and logfile of the UDP source and the Extension Source SDK.
-     * 
-     * @param logLevel  An instance of {@link Level} at which the log will be reporting
-     * @param logTarget The location of the output file. {@code null} will not create a file
-     */
-    static void setupLogger(Level logLevel, String logTarget) {
-        
-        
-        // Sets logging level for the example. You may wish to use a different logger or setup method
-        String loggerName = ConfigurableUDPSource.class.getPackage().getName();
-        LoggerContext loggerContext = (LoggerContext) LoggerFactory.getILoggerFactory();
-
-        // Set logging level for both the UDP source and the Extension Source SDK
-        loggerContext.getLogger(loggerName).setLevel(logLevel);
-        loggerContext.getLogger("io.vantiq.extjsdk").setLevel(logLevel);
-        
-        if (logTarget != null && !logTarget.equalsIgnoreCase("STDOUT")) {
-            // setup pattern for the file logger. This is the same as the basic pattern in logback.xml
-            PatternLayoutEncoder e = new PatternLayoutEncoder();
-            e.setPattern("%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n");
-            e.setContext(loggerContext);
-            e.start();
-            
-            // Setup the Appender that will write to the target file
-            FileAppender<ILoggingEvent> a = new FileAppender<>();
-            a.setFile(logTarget);
-            a.setName("FILE");
-            a.setContext(loggerContext);
-            a.setEncoder(e);
-            a.start();
-            
-            // Add the Appender to the UDP source and the Extension Source SDK
-            loggerContext.getLogger(loggerName).addAppender(a);
-            loggerContext.getLogger("io.vantiq.extjsdk").addAppender(a);
-        }
-    }
-
-    /**
      * Turn the given JSON file into a {@link Map}. 
      * 
      * @param fileName  The name of the JSON file holding the server configuration.
@@ -566,12 +514,6 @@ public class ConfigurableUDPSource {
             authToken = (String) config.get("authToken") ;
         } else {
             throw new RuntimeException("Missing authentication token in config file. Please place in 'authToken'.");
-        }
-
-        if (config.get("logLevel") instanceof String || config.get("logTarget") instanceof String) {
-            Level logLevel = Level.toLevel((String) config.get("logLevel"), Level.INFO);
-            String logTarget = (String) config.get("logTarget");
-            setupLogger(logLevel, logTarget);
         }
 
         if (config.get("defaultBindAddress") instanceof String) {
@@ -772,7 +714,7 @@ public class ConfigurableUDPSource {
     // Translates the UDP DatagramPacket into a format that the Vantiq server expects
     public static void sendFromDatagram(DatagramPacket packet, List<String> sources) {
         log.debug("UDP Packet received");
-        log.trace (new String(packet.getData()));
+        log.trace("{}", new String(packet.getData()));
         InetAddress address = packet.getAddress();
         int port = packet.getPort();
         log.debug("UDP message received from address '" + address + "' and port '" + port + "' for sources " + sources);
