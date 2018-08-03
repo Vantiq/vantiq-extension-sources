@@ -9,20 +9,32 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-public class TestUDPConfigHandler {
+import io.vantiq.extjsdk.ExtensionServiceMessage;
+import io.vantiq.extjsdk.ExtjsdkTestBase;
+
+public class TestUDPConfigHandler extends ExtjsdkTestBase{
     UDPConfigHandler udpConfig;
     String srcName;
+    FalseClient client;
+    ExtensionServiceMessage msg;
     
     @Before
     public void setup() {
         udpConfig = new UDPConfigHandler();
         srcName = "src";
+        client = new FalseClient(srcName);
+        msg = new ExtensionServiceMessage("");
+        msg.resourceId = srcName;
+        ConfigurableUDPSource.clients.put(srcName, client);
     }
     
     @After
     public void tearDown() {
         udpConfig = null;
         srcName = null;
+        client = null;
+        msg = null;
+        ConfigurableUDPSource.clients.clear();
     }
     
     @Test
