@@ -125,7 +125,6 @@ public class ExtjsdkTestBase {
         public BufferedSink writeInt(int i) throws IOException {return null;}
         @Override
         public BufferedSink writeIntLe(int i) throws IOException {return null;}
-
         @Override
         public BufferedSink writeLong(long v) throws IOException {return null;}
         @Override
