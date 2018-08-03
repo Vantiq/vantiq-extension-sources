@@ -8,7 +8,10 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
+import static org.junit.Assert.assertArrayEquals;
+
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
@@ -248,6 +251,29 @@ public class TestExtensionWebSocketListener extends ExtjsdkTestBase{
         body = createConfigResponse(new LinkedHashMap(), srcName);
         listener.onMessage(body);
         assert cHandler.compareMessage(null);
+    }
+    
+    @Test
+    public void testDefaultQuery() {
+        listener = new ExtensionWebSocketListener(client);
+        client.listener = listener;
+        
+        connectToSource(srcName, null);
+        
+        ResponseBody body = createQueryMessage(new LinkedHashMap(), srcName);
+        listener.onMessage(body);
+        Response resp = null;
+        try {
+            resp = mapper.readValue(client.getLastMessage(), Response.class);
+        } catch(Exception e) { e.printStackTrace();}
+        
+        assert resp.getBody() instanceof Map;
+        
+        Map<String,Object> m = (Map) resp.getBody();
+        
+        assert "io.vantiq.extjsdk.unsetQueryHandler".equals(m.get("messageCode"));
+        assert m.get("messageTemplate") instanceof String;
+        assert m.get("parameters") instanceof List;
         
     }
 
@@ -339,6 +365,7 @@ public class TestExtensionWebSocketListener extends ExtjsdkTestBase{
     private class FalseClient extends ExtensionWebSocketClient {
         FalseClient(String sourceName) {
             super(sourceName);
+            webSocket = new FalseWebSocket();
         }
 
         @Override
@@ -348,9 +375,8 @@ public class TestExtensionWebSocketListener extends ExtjsdkTestBase{
             return null;
         }
 
-        @Override
-        public void send(Object obj) {
-            // Do nothing
+        public byte[] getLastMessage() {
+            return ((FalseWebSocket) webSocket).getMessage();
         }
     }
 
