@@ -359,6 +359,8 @@ public class TestUDPPublishHandler {
         assert fakeSocket.compareData(expectedData);
     }
 
+// ====================================================================================================================
+// --------------------------------------------------- Test Helpers ---------------------------------------------------
     private void createMessage(Map data) {
         Map m = new LinkedHashMap<>();
         m.put("op", ExtensionServiceMessage.OP_PUBLISH);

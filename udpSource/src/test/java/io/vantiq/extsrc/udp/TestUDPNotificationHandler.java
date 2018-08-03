@@ -283,7 +283,28 @@ public class TestUDPNotificationHandler {
         
         assert fakeClient.compareData(Arrays.asList(expectedData));
     }
+    
+    @Test
+    public void testPureBytes() {
+        incoming.put("passBytesInAs", "bytes");
 
+        nHandler = new UDPNotificationHandler(incoming, fakeClient);
+
+        String address = "localhost";
+        int port = 1234;
+        String testStr = "I'm a test string";
+        
+        Map<String,Object> expectedData = new LinkedHashMap<>();
+        expectedData.put("bytes", testStr); 
+        
+        createPacket(testStr, address, port);
+        nHandler.handleMessage(pack);
+        
+        assert fakeClient.compareData(expectedData);
+    }
+
+// ====================================================================================================================
+// --------------------------------------------------- Test Helpers ---------------------------------------------------
     private void createPacket(String testStr, String address, int port) {
         byte[] msg;
         try {
