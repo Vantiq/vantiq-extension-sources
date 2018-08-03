@@ -1,5 +1,8 @@
 package io.vantiq.extsrc.udp;
 
+import java.net.DatagramSocket;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -14,27 +17,36 @@ import io.vantiq.extjsdk.ExtjsdkTestBase;
 
 public class TestUDPConfigHandler extends ExtjsdkTestBase{
     UDPConfigHandler udpConfig;
-    String srcName;
+    String sourceName;
     FalseClient client;
     ExtensionServiceMessage msg;
     
     @Before
     public void setup() {
         udpConfig = new UDPConfigHandler();
-        srcName = "src";
-        client = new FalseClient(srcName);
+        sourceName = "src";
+        client = new FalseClient(sourceName);
         msg = new ExtensionServiceMessage("");
-        msg.resourceId = srcName;
-        ConfigurableUDPSource.clients.put(srcName, client);
+        msg.resourceId = sourceName;
+        ConfigurableUDPSource.clients.put(sourceName, client);
     }
     
     @After
     public void tearDown() {
         udpConfig = null;
-        srcName = null;
+        sourceName = null;
         client = null;
         msg = null;
         ConfigurableUDPSource.clients.clear();
+        ConfigurableUDPSource.notificationHandlers.clear();
+        ConfigurableUDPSource.sourcePorts.clear();
+        ConfigurableUDPSource.sourceAddresses.clear();
+        ConfigurableUDPSource.sourceServers.clear();
+        
+        for (DatagramSocket s : ConfigurableUDPSource.udpSocketToSources.keySet()) {
+            s.close();
+        }
+        ConfigurableUDPSource.udpSocketToSources.clear();
     }
     
     @Test
@@ -105,5 +117,51 @@ public class TestUDPConfigHandler extends ExtjsdkTestBase{
         outgoing.put("targetPort", -100);
         
         assert !udpConfig.isConfiguredToSend(outgoing);
+    }
+    
+    @Test
+    public void testHandleMessage() throws UnknownHostException {
+        ExtensionServiceMessage msg = new ExtensionServiceMessage("");
+        msg.resourceId = sourceName;
+        Map<String,Object> object = new LinkedHashMap<>();
+        msg.object = object;
+        Map<String,Object> config = new LinkedHashMap<>();
+        object.put("config", config);
+        Map<String,Object> extSrcConfig = new LinkedHashMap<>();
+        config.put("extSrcConfig", extSrcConfig);
+        Map<String,Object> general = new LinkedHashMap<>();
+        Map<String,Object> incoming = new LinkedHashMap<>();
+        Map<String,Object> outgoing = new LinkedHashMap<>();
+        extSrcConfig.put("general", general);
+        extSrcConfig.put("incoming", incoming);
+        extSrcConfig.put("outgoing", outgoing);
+        
+        udpConfig.handleMessage(msg);
+        
+        assert !ConfigurableUDPSource.notificationHandlers.containsKey(sourceName);
+        assert ConfigurableUDPSource.udpSocketToSources.isEmpty();
+        
+        incoming.put("passPureMapIn", true);
+        outgoing.put("targetPort", 123);
+        outgoing.put("targetAddress", "localAddress");
+        
+        // initialize default address
+        ConfigurableUDPSource.LISTENING_ADDRESS = InetAddress.getLocalHost();
+        
+        udpConfig.handleMessage(msg);
+        
+        assert ConfigurableUDPSource.notificationHandlers.containsKey(sourceName);
+        DatagramSocket socket = (DatagramSocket) ConfigurableUDPSource.udpSocketToSources.keySet().toArray()[0];
+        assert socket.getLocalPort() == 3141;
+        print(socket.getLocalAddress().toString());
+        assert socket.getLocalAddress().equals(InetAddress.getLocalHost());
+        
+        int port = 123;
+        general.put("listenPort", port);
+        general.put("listenAddress", "localhost");
+        
+        udpConfig.handleMessage(msg);
+        
+        assert ConfigurableUDPSource.udpSocketToSources.keySet().size() == 2;
     }
 }
