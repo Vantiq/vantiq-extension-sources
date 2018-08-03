@@ -25,9 +25,7 @@ public class UDPConfigHandler  extends Handler<ExtensionServiceMessage> {
         String sourceName = message.getSourceName();
         Map srcConfig = (Map) ((Map)message.getObject()).get("config");
         if (!(srcConfig.get("extSrcConfig") instanceof Map)) {
-            log.error("Unable to obtain server configuration for '" + sourceName + "'. Source '" +
-                    sourceName  + "' is terminating.");
-            ConfigurableUDPSource.clients.get(sourceName).close();
+            log.error("Unable to obtain source configuration for '" + sourceName + "'.");
             return;
         }
         Map config = (Map) srcConfig.get("extSrcConfig");
@@ -51,8 +49,7 @@ public class UDPConfigHandler  extends Handler<ExtensionServiceMessage> {
         }
         
         if (!isConfiguredToSend(outgoing) && !isConfiguredToReceive(incoming)) {
-            log.error("Source '" + sourceName + "' is not configured to send or receive. Killing the connection");
-            ConfigurableUDPSource.clients.get(sourceName).close();
+            log.error("Source '" + sourceName + "' is not configured to send or receive.");
             return;
         }
 
@@ -83,7 +80,7 @@ public class UDPConfigHandler  extends Handler<ExtensionServiceMessage> {
         // Setup Notification handler as the configuration document requests
         if (isConfiguredToReceive(incoming)) {
             UDPNotificationHandler handler = new UDPNotificationHandler(incoming, ConfigurableUDPSource.clients.get(sourceName));
-            ConfigurableUDPSource.setNotificationHandler(handler, sourceName, incoming); // This function is part of ConfigurableUDPSource
+            ConfigurableUDPSource.setNotificationHandler(handler, sourceName, incoming);
             log.debug("Notification handler created for source '" + sourceName + "'");
         }
         log.info("Source '" + sourceName + "' setup and ready to go.");

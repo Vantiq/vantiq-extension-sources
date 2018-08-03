@@ -331,7 +331,7 @@ public class ConfigurableUDPSource {
      * @return                      A {@link List}&lt;{@link InetAddress}&gt; containing all addresses obtained from
      *                              {@code potentialAddresses}, or null if no such addresses could be found
      */
-    private static List<InetAddress> getValidInetAddresses(List potentialAddresses, String sourceName) {
+    static List<InetAddress> getValidInetAddresses(List potentialAddresses, String sourceName) {
         List<InetAddress> addresses = new ArrayList<>();
         for (Object name : potentialAddresses) {
             if (name instanceof String) {
@@ -356,7 +356,7 @@ public class ConfigurableUDPSource {
      * @return                  A {@link List}&lt;Integer&gt; containing all ports obtained from
      *                          {@code potentialPorts}, or null if no such ports could be found
      */
-    private static List<Integer> getValidPorts(List potentialPorts) {
+    static List<Integer> getValidPorts(List potentialPorts) {
         List<Integer> ports = new ArrayList<>();
         for (Object port : potentialPorts) {
             if (port instanceof Integer && (int) port >= 0 && (int) port <= 65535) {
@@ -375,7 +375,7 @@ public class ConfigurableUDPSource {
      * @return                      A {@link List}&lt;{@link List}&gt; that contains all the valid servers from
      *                              {@code potentialServers}, or null if no valid servers were found
      */
-    private static List<List> getValidServers(List potentialServers) {
+    static List<List> getValidServers(List potentialServers) {
         if (potentialServers == null || potentialServers.isEmpty()) {
             return null;
         }
@@ -414,30 +414,30 @@ public class ConfigurableUDPSource {
      * A {@link CountDownLatch} used to keep the program from ending until we want it to. Currently, allows the program
      * to gracefully end when a query is received on any connected source.
      */
-    private static CountDownLatch stopLatch = new CountDownLatch(1);
+    static CountDownLatch stopLatch = new CountDownLatch(1);
     /**
      * A set of {@link UDPNotificationHandler} keyed to the name of the source it is connected to
      */
-    private static Map<String, UDPNotificationHandler> notificationHandlers = new ConcurrentHashMap<>();
+    static Map<String, UDPNotificationHandler> notificationHandlers = new ConcurrentHashMap<>();
     /**
      * A map keyed by source containing either a {@link List} of {@link InetAddress} to accept transmissions from,
      * the value {@link #ALL_ADDR}, or the value {@link #NO_ADDR}.
      */
-    private static Map<String, Object> sourceAddresses = new LinkedHashMap<>();
+    static Map<String, Object> sourceAddresses = new LinkedHashMap<>();
     /**
      * A map keyed by source containing either a {@link List} of ports to accept transmissions from, the value
      * {@link #ALL_PORTS}, or the value {@link #NO_PORTS}.
      */
-    private static Map<String, Object> sourcePorts = new LinkedHashMap<>();
+    static Map<String, Object> sourcePorts = new LinkedHashMap<>();
     /**
      * A map keyed by source containing either a {@link List} of servers to accept transmissions from or null if
      * no servers were specified in the configuration document.
      */
-    private static Map<String, List<List>> sourceServers = new LinkedHashMap<>();
+    static Map<String, List<List>> sourceServers = new LinkedHashMap<>();
     /**
      * A {@link Map} keyed by source that contains the socket the source is using
      */
-    private static Map<DatagramSocket, List<String>> udpSocketToSources = new LinkedHashMap<>();
+    static Map<DatagramSocket, List<String>> udpSocketToSources = new LinkedHashMap<>();
     /**
      * An Object used to ensure only one source edits udpSocketToSources at once
      */
@@ -457,35 +457,35 @@ public class ConfigurableUDPSource {
     /**
      * Max byte size receivable through UDP servers
      */
-    private static int MAX_UDP_DATA = 1024;
+    static int MAX_UDP_DATA = 1024;
     /**
      * An Slf4j logger
      */
-    private static final Logger log = LoggerFactory.getLogger(ConfigurableUDPSource.class);
+    static final Logger log = LoggerFactory.getLogger(ConfigurableUDPSource.class);
     /**
      * A constant used to signify that a source is listening to all addresses. Used as a key in {@link #sourceAddresses}
      */
-    private static final String ALL_ADDR = "_ALL";
+    static final String ALL_ADDR = "_ALL";
     /**
      * A constant used to signify that a source is listening to all ports. Used as a key in {@link #sourceAddresses}
      */
-    private static final int ALL_PORTS = -1;
+    static final int ALL_PORTS = -1;
     /**
      * A constant used to signify that a source is listening to all addresses. Used as a key in {@link #sourceAddresses}
      */
-    private static final String NO_ADDR = "_NONE";
+    static final String NO_ADDR = "_NONE";
     /**
      * A constant used to signify that a source is listening to all ports. Used as a key in {@link #sourceAddresses}
      */
-    private static final int NO_PORTS = -2;
+    static final int NO_PORTS = -2;
     /**
      * The desired level of log statements
      */
-    private static String targetVantiqServer = null;
+    static String targetVantiqServer = null;
     /**
      * The authentication token used to connect to Vantiq
      */
-    private static String authToken = null;
+    static String authToken = null;
 
     /**
      * Sets the log level and logfile of the UDP source and the Extension Source SDK.
@@ -493,7 +493,7 @@ public class ConfigurableUDPSource {
      * @param logLevel  An instance of {@link Level} at which the log will be reporting
      * @param logTarget The location of the output file. {@code null} will not create a file
      */
-    private static void setupLogger(Level logLevel, String logTarget) {
+    static void setupLogger(Level logLevel, String logTarget) {
         
         
         // Sets logging level for the example. You may wish to use a different logger or setup method
@@ -531,7 +531,7 @@ public class ConfigurableUDPSource {
      * @param fileName  The name of the JSON file holding the server configuration.
      * @return          A {@link Map} that holds the contents of the JSON file.
      */
-    private static Map<String, Object> obtainServerConfig(String fileName) {
+    static Map<String, Object> obtainServerConfig(String fileName) {
         File configFile = new File(fileName);
         log.debug(configFile.getAbsolutePath());
         Map<String, Object>  config = new LinkedHashMap();
@@ -555,7 +555,7 @@ public class ConfigurableUDPSource {
      *
      * @param config    The {@link Map} obtained from the config file
      */
-    private static void setupServer(Map config) {
+    static void setupServer(Map config) {
         targetVantiqServer = config.get("targetServer") instanceof String ? (String) config.get("targetServer") :
                 "wss://dev.vantiq.com/api/v1/wsock/websocket";
         MAX_UDP_DATA = config.get("maxPacketSize") instanceof Integer ? (int) config.get("maxPacketSize") : 1024;
@@ -720,11 +720,11 @@ public class ConfigurableUDPSource {
      * An internal class intended to act as an asynchronous listener on a {@link DatagramSocket}.
      * Sends results to {@link ConfigurableUDPSource#sendFromDatagram}
      */
-    private static class UDPListener implements Runnable {
+    static class UDPListener implements Runnable {
         /**
          * The {@link DatagramSocket} to which this listener will receive data from.
          */
-        private DatagramSocket socket;
+        DatagramSocket socket;
 
         /**
          * Creates a {@link UDPListener} that will listen on the given {@code socket}.
@@ -795,7 +795,7 @@ public class ConfigurableUDPSource {
      * @param address       The {@link InetAddress} to check
      * @return              {@code true} if any server matches both the port and address, {@code false} otherwise
      */
-    private static boolean receivingFromServer(String sourceName, int port, InetAddress address) {
+    static boolean receivingFromServer(String sourceName, int port, InetAddress address) {
         return (matchesPort(sourceName, port) && matchesAddress(sourceName, address)) ||
                 matchesServer(sourceName, port, address);
     }
@@ -807,7 +807,7 @@ public class ConfigurableUDPSource {
      * @param port          The port number to check
      * @return              {@code true} if the source's config document said to receive from the port, {@code false} otherwise
      */
-    private static boolean matchesPort(String sourceName, int port) {
+    static boolean matchesPort(String sourceName, int port) {
         Object srcPorts = sourcePorts.get(sourceName);
         if (srcPorts instanceof Integer) {
             return (int) srcPorts == ALL_PORTS;
@@ -827,7 +827,7 @@ public class ConfigurableUDPSource {
      * @param address       The {@link InetAddress} to check
      * @return              {@code true} if the source's config document said to receive from the address, {@code false} otherwise
      */
-    private static boolean matchesAddress(String sourceName, InetAddress address) {
+    static boolean matchesAddress(String sourceName, InetAddress address) {
         Object srcAddr = sourceAddresses.get(sourceName);
         if (srcAddr instanceof String) {
             return srcAddr.equals(ALL_ADDR);
@@ -849,7 +849,7 @@ public class ConfigurableUDPSource {
      * @param address       The {@link InetAddress} to compare against the servers
      * @return              {@code true} if any server matches both the port and address, {@code false} otherwise
      */
-    private static boolean matchesServer(String sourceName, int port, InetAddress address) {
+    static boolean matchesServer(String sourceName, int port, InetAddress address) {
         if (sourceServers.get(sourceName) == null) {
             return false;
         }
