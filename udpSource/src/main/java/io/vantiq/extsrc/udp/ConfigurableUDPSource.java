@@ -27,7 +27,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-// TODO change to match README
 /**
  *
  * This class creates a UDP source customizable by a Configuration document. It can send and receive in JSON, XML, or 
