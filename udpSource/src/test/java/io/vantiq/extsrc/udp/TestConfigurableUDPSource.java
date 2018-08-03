@@ -1,5 +1,6 @@
 package io.vantiq.extsrc.udp;
 
+import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
@@ -12,6 +13,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
+import io.vantiq.extjsdk.ExtensionServiceMessage;
 import io.vantiq.extjsdk.ExtjsdkTestBase;
 
 public class TestConfigurableUDPSource extends ExtjsdkTestBase{
@@ -228,8 +230,56 @@ public class TestConfigurableUDPSource extends ExtjsdkTestBase{
     }
     
     @Test
-    public void testSendFromDatagram() {
-        assert false;
+    public void testSendFromDatagram() throws UnknownHostException {
+        InetAddress address = InetAddress.getByName("localhost");
+        int port = 15;
+        
+        // Handler that only records the data given
+        UDPNotificationHandler firstHandler = new UDPNotificationHandler(new LinkedHashMap<>(), client) {
+            @Override
+            public void handleMessage(DatagramPacket packet) {
+                variable.put("message", packet);
+                variable.put("data", packet.getData());
+            }
+        };
+        // New instance of the same handler as firstHandler
+        UDPNotificationHandler secondHandler = new UDPNotificationHandler(new LinkedHashMap<>(), client) {
+            @Override
+            public void handleMessage(DatagramPacket packet) {
+                variable.put("message", packet);
+                variable.put("data", packet.getData());
+            }
+        };
+        
+        String firstSource = "first";
+        client = new FalseClient(firstSource);
+        ConfigurableUDPSource.notificationHandlers.put(firstSource, firstHandler);
+        ConfigurableUDPSource.clients.put(firstSource, client);
+        String secondSource = "second";
+        client = new FalseClient(secondSource);
+        ConfigurableUDPSource.notificationHandlers.put(secondSource, secondHandler);
+        ConfigurableUDPSource.clients.put(secondSource, client);
+        
+        // firstSource set up to receive the packet, secondSource is not
+        ConfigurableUDPSource.sourceAddresses.put(firstSource, ConfigurableUDPSource.ALL_ADDR);
+        List l = new ArrayList<>(); l.add(port);
+        ConfigurableUDPSource.sourcePorts.put(firstSource, l);
+        
+        ConfigurableUDPSource.sourceAddresses.put(secondSource, ConfigurableUDPSource.ALL_ADDR);
+        l = new ArrayList<>(); l.add(123);
+        ConfigurableUDPSource.sourcePorts.put(secondSource, l);
+        
+        byte[] data = {10,53,27,-100};
+        DatagramPacket p = new DatagramPacket(data, data.length, address, port); 
+        
+        l = new ArrayList(); l.add(firstSource); l.add(secondSource);
+        ConfigurableUDPSource.sendFromDatagram(p, l);
+        
+        assert firstHandler.getVariable().get("message") == p;
+        assert firstHandler.getVariable().get("data") == data;
+        assert secondHandler.getVariable().get("message") == null;
+        assert secondHandler.getVariable().get("data") == null;
+        
     }
     
 // ====================================================================================================================
