@@ -274,7 +274,52 @@ public class TestExtensionWebSocketListener extends ExtjsdkTestBase{
         assert "io.vantiq.extjsdk.unsetQueryHandler".equals(m.get("messageCode"));
         assert m.get("messageTemplate") instanceof String;
         assert m.get("parameters") instanceof List;
+    }
+    
+    @Test
+    public void testExceptionThrowingHandlers() {
+        aHandler = new ExceptionalHandlerResp();
+        hHandler = new ExceptionalHandlerResp();
+        cHandler = new ExceptionalHandlerEsm();
+        pHandler = new ExceptionalHandlerEsm();
+        qHandler = new ExceptionalHandlerEsm();
+        rHandler = new ExceptionalHandlerEsm();
+
+        listener.setAuthHandler(aHandler);
+        listener.setHttpHandler(hHandler);
+        listener.setConfigHandler(cHandler);
+        listener.setPublishHandler(pHandler);
+        listener.setQueryHandler(qHandler);
+        listener.setReconnectHandler(rHandler);
         
+        authenticate(false);
+
+        // Every message should not error out due to EWSL catching and logging the error
+        // Every message should be saved before the error occurs.
+        ResponseBody body = createAuthenticationResponse(true);
+        listener.onMessage(body);
+        assert client.isAuthed();
+        assert aHandler.compareStatus(200);
+
+        body = createHttpMessage(new Response().status(200));
+        listener.onMessage(body);
+        assert hHandler.compareStatus(200);
+
+        body = createConfigResponse(new LinkedHashMap(), srcName);
+        listener.onMessage(body);
+        assert cHandler.compareOp(ExtensionServiceMessage.OP_CONFIGURE_EXTENSION);
+
+        body = createQueryMessage(new LinkedHashMap(), srcName);
+        listener.onMessage(body);
+        assert qHandler.compareOp(ExtensionServiceMessage.OP_QUERY);
+
+        body = createPublishMessage(new LinkedHashMap(), srcName);
+        listener.onMessage(body);
+        assert pHandler.compareOp(ExtensionServiceMessage.OP_PUBLISH);
+        
+        body = createReconnectMessage(srcName);
+        listener.onMessage(body);
+        assert rHandler.compareOp(ExtensionServiceMessage.OP_RECONNECT_REQUIRED);
     }
 
 // ====================================================================================================================
@@ -425,6 +470,22 @@ public class TestExtensionWebSocketListener extends ExtjsdkTestBase{
         public boolean compareHeader(String headerName, String expectedVal) {
             Object actualVal = lastMessage.getHeader(headerName);
             return expectedVal.equals(actualVal);
+        }
+    }
+
+    private class ExceptionalHandlerResp extends TestHandlerResp {
+        @Override
+        public void handleMessage(Response message) {
+            super.handleMessage(message);
+            throw new RuntimeException("This should be caught and logged.");
+        }
+    }
+    
+    private class ExceptionalHandlerEsm extends TestHandlerESM {
+        @Override
+        public void handleMessage(ExtensionServiceMessage message) {
+            super.handleMessage(message);
+            throw new RuntimeException("This should be caught and logged.");
         }
     }
 
