@@ -2,14 +2,12 @@ package io.vantiq.extjsdk;
 
 import okhttp3.MediaType;
 import okhttp3.ResponseBody;
-import okhttp3.ws.WebSocket;
 
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-import static org.junit.Assert.assertArrayEquals;
-
+import java.io.IOException;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -320,6 +318,54 @@ public class TestExtensionWebSocketListener extends ExtjsdkTestBase{
         body = createReconnectMessage(srcName);
         listener.onMessage(body);
         assert rHandler.compareOp(ExtensionServiceMessage.OP_RECONNECT_REQUIRED);
+    }
+    
+    @Test
+    public void testNullHandlers() {
+        listener.setAuthHandler(null);
+        listener.setHttpHandler(null);
+        listener.setConfigHandler(null);
+        listener.setPublishHandler(null);
+        listener.setQueryHandler(null);
+        listener.setReconnectHandler(null);
+
+        open();
+
+        // All that is expected is that no NPEs are thrown
+        ResponseBody body = createAuthenticationResponse(true);
+        listener.onMessage(body);
+
+        body = createHttpMessage(new Response().status(200));
+        listener.onMessage(body);
+
+        body = createConfigResponse(new LinkedHashMap(), srcName);
+        listener.onMessage(body);
+
+        body = createQueryMessage(new LinkedHashMap(), srcName);
+        listener.onMessage(body);
+
+        body = createPublishMessage(new LinkedHashMap(), srcName);
+        listener.onMessage(body);
+
+        body = createReconnectMessage(srcName);
+        listener.onMessage(body);
+        
+    }
+    
+    @Test
+    public void testWsFailure() {
+        connectToSource(srcName, null);
+
+        assert client.isOpen();
+        assert client.isAuthed();
+        assert client.isConnected();
+        
+        listener.onFailure(new IOException(), null);
+
+        assert listener.isClosed();
+        assert !client.isOpen();
+        assert !client.isAuthed();
+        assert !client.isConnected();
     }
 
 // ====================================================================================================================
