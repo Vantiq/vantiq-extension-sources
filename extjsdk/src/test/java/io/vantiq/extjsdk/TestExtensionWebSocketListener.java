@@ -451,26 +451,6 @@ public class TestExtensionWebSocketListener extends ExtjsdkTestBase{
         }
     }
 
-
-
-    private class FalseClient extends ExtensionWebSocketClient {
-        FalseClient(String sourceName) {
-            super(sourceName);
-            webSocket = new FalseWebSocket();
-        }
-
-        @Override
-        public CompletableFuture<Boolean> initiateWebsocketConnection(String url) {
-            webSocketFuture = new CompletableFuture<Boolean>();
-            webSocket = new FalseWebSocket();
-            return null;
-        }
-
-        public byte[] getLastMessage() {
-            return ((FalseWebSocket) webSocket).getMessage();
-        }
-    }
-
     private class TestHandlerESM extends Handler<ExtensionServiceMessage> {
         public String lastOp = "";
         public ExtensionServiceMessage lastMessage = null;

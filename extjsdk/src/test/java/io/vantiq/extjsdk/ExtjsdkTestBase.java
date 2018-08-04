@@ -5,6 +5,7 @@ import java.io.OutputStream;
 import java.nio.charset.Charset;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 import java.util.function.Supplier;
 
 import okio.BufferedSink;
@@ -50,10 +51,28 @@ public class ExtjsdkTestBase {
     }
     
 
-    void print(String str) {
+    public void print(String str) {
         System.out.println(str);
     }
     ObjectMapper mapper = new ObjectMapper();
+    
+    public class FalseClient extends ExtensionWebSocketClient {
+        public FalseClient(String sourceName) {
+            super(sourceName);
+            webSocket = new FalseWebSocket();
+        }
+
+        @Override
+        public CompletableFuture<Boolean> initiateWebsocketConnection(String url) {
+            webSocketFuture = new CompletableFuture<Boolean>();
+            webSocket = new FalseWebSocket();
+            return null;
+        }
+
+        public byte[] getLastMessage() {
+            return ((FalseWebSocket) webSocket).getMessage();
+        }
+    }
     
     public class FalseWebSocket implements WebSocket {
         FalseBufferedSink s = new FalseBufferedSink();
