@@ -1,12 +1,13 @@
 ## Repository Contents
 
 *	[ConfigurableUDPSource](#udpSource) -- The main file that sets up Handlers for ExtensionWebSocketClient and interacts with UDP messages
+*	[UDPConfigHandler](#udpConfig) -- The Handler that interprets the configuration document and sets up the Publish and Notification handlers.
 *	[UDPPublishHandler](#publishHandler) -- A configurable Handler that details how to deal with publish requests
 *	[UDPNotificationHandler](#notificationHandler) -- A configurable Handler that details how to deal with UDP messages
 *	[MapTransformer](#mapTransformer) -- Shifts contents of Maps and nested Maps
 *	[config.sample.json](#serverConfig) -- A sample configuration file for ConfigurableUDPSource
 
-## How to Run ConfigurableUDPSource
+## How to Run ConfigurableUDPSource<a name="udpSource" id="udpSource"></a>
 
 1.	Clone this repository (vantiq-extension-sources) and navigate into `<repo location>/vantiq-extension-sources`
 2.	Run `./gradlew udpSource:assemble` or `gradlew udpSource:assemble` depending on your OS.
@@ -31,7 +32,7 @@ The server config file must be in JSON format. ConfigurableUDPSource runs using 
 *	maxPacketSize -- Sets the maximum number of data bytes that the UDP socket can receive in a single message. Defaults to 1024 when not set.
 
 
-## Source Configuration Document<a name="udpSource" id="udpSource"></a>
+## Source Configuration Document<a name="udpConfig" id="udpConfig"></a>
 
 The Configuration document looks as below:
 
