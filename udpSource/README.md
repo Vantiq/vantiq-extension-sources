@@ -25,12 +25,6 @@ The server config file must be in JSON format. ConfigurableUDPSource runs using 
 *	authToken -- The authentication token that will allow this server to connect to Vantiq. Be aware that this is namespace specific, so if you intend to connect to sources across several namespaces then multiple config files will be required, each with its own instance of ConfigurableUDPSource. Throws a RuntimeException when not set.
 *	sources -- An array containing the names of the sources that will be connected to. Throws a RuntimeException when not set.
 
-### Logging Options
-
-For more granular options, edit `<install location>/udpSource/logback.xml`. Here is its [documentation](https://logback.qos.ch/manual/configuration.html). The logger names for each class is the class's fully qualified class name, e.g. "io.vantiq.extjsdk.ExtensionWebSocketClient".
-*	logLevel -- The level of log outputs desired. One of: "ERROR","WARN","INFO","DEBUG","TRACE". Not case-sensitive. Defaults to "INFO" if incorrect, or the settings in logback.xml(initially "INFO") if neither this nor logTarget are set.
-*	logTarget -- A file to which the logs will be written to in addition to stdout. 
-
 ### UDP Options
 *	defaultBindPort -- Sets the default port to which sources will bind if no other port is specified. Defaults to 3141 when not set
 *	defaultBindAddress -- Sets the default address to which the sources will bind if no other address is specified. Attempts to find a valid local address if it cannot find the given address. Typically only localhost and the computer's IP address will work.
