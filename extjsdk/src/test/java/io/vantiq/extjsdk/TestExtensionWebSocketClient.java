@@ -1,5 +1,8 @@
 package io.vantiq.extjsdk;
 
+//Author: Alex Blumer
+//Email: alex.j.blumer@gmail.com
+
 import okhttp3.ws.WebSocket;
 import okio.Buffer;
 import okhttp3.RequestBody;
@@ -236,7 +239,7 @@ public class TestExtensionWebSocketClient extends ExtjsdkTestBase{
         
         // Should make sourceConnection be recreated
         client.setAutoReconnect(true);
-        client.getListener().onMessage(createReconnectMessage(""));
+        client.getListener().onMessage(TestListener.createReconnectMessage(""));
 
         assert !client.isConnected();
         assert !client.getSourceConnectionFuture().isDone(); 
