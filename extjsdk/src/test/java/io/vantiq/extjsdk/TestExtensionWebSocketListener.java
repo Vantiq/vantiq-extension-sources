@@ -262,8 +262,8 @@ public class TestExtensionWebSocketListener extends ExtjsdkTestBase{
         listener.onMessage(body);
         Response resp = null;
         try {
-            resp = mapper.readValue(client.getLastMessage(), Response.class);
-        } catch(Exception e) { e.printStackTrace();}
+            resp = client.getLastMessageAsResponse();
+        } catch(Exception e) { e.printStackTrace(); assert false;}
         
         assert resp.getBody() instanceof Map;
         

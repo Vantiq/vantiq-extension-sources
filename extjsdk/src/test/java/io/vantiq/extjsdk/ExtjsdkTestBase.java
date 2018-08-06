@@ -18,6 +18,8 @@ import okhttp3.ResponseBody;
 import okhttp3.ws.WebSocket;
 import okio.Buffer;
 
+import com.fasterxml.jackson.core.JsonParseException;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 public class ExtjsdkTestBase {
@@ -126,9 +128,61 @@ public class ExtjsdkTestBase {
             }
         }
         
-
-        public byte[] getLastMessage() {
+        /**
+         * Returns the last message sent by the client as a JSON object represented by bytes.
+         *
+         * @return  The last message sent by the client as a JSON object represented by a byte array or null if no 
+         *          message has been sent.
+         */
+        public byte[] getLastMessageAsBytes() {
             return ((FalseWebSocket) webSocket).getMessage();
+        }
+        
+        /**
+         * Returns the last message sent by the client as a Map. Note that all arrays will have been turned into
+         * ArrayLists and internal byte arrays are Base-64 strings.
+         * 
+         * @return  The last message sent by the client as a Map, or null if no message has been sent yet.
+         */
+        public Map getLastMessageAsMap() {
+            try {
+                return mapper.readValue(((FalseWebSocket) webSocket).getMessage(), Map.class);
+            } catch(IOException e) {
+                return null;
+            }
+        }
+        
+        /**
+         * Returns the last message sent by the client as a {@link Response}. Note that all arrays will have been turned
+         * into ArrayLists and byte arrays are Base-64 strings.
+         * 
+         * @return  The last message sent by the client as a Response, or null if no message has been sent yet.
+         * @throws  IOException if the message could not be interpreted as a Response. This is most likely to occur if
+         *          the last message was not a Response.
+         */
+        public Response getLastMessageAsResponse() throws IOException{
+            byte[] bytes = ((FalseWebSocket) webSocket).getMessage();
+            if (bytes == null) {
+                return null;
+            }
+            return mapper.readValue(bytes, Response.class);
+        }
+        
+        /**
+         * Returns the last message sent by the client as a {@link ExtensionServiceMessage}. Note that all arrays will
+         * have been turned into ArrayLists and byte arrays are Base-64 strings.
+         * 
+         * @return  The last message sent by the client as a ExtensionServiceMessage, or null if no message has been 
+         *          sent yet.
+         * @throws  IOException if the message could not be interpreted as a ExtensionServiceMessage. This is most
+         *          likely to occur if the last message was not a ExtensionServiceMessage.
+         */
+        public ExtensionServiceMessage getLastMessageAsExtSvcMsg() throws IOException{
+            byte[] bytes = ((FalseWebSocket) webSocket).getMessage();
+            if (bytes == null) {
+                return null;
+            }
+            return mapper.readValue(bytes, ExtensionServiceMessage.class);
         }
     }
     
