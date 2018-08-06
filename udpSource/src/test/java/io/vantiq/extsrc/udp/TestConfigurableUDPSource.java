@@ -14,6 +14,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 import io.vantiq.extjsdk.ExtjsdkTestBase;
+import io.vantiq.extjsdk.FalseClient;
 
 public class TestConfigurableUDPSource extends ExtjsdkTestBase{
     FalseClient client;

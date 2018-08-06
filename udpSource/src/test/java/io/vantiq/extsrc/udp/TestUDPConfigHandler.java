@@ -14,6 +14,7 @@ import org.junit.Test;
 
 import io.vantiq.extjsdk.ExtensionServiceMessage;
 import io.vantiq.extjsdk.ExtjsdkTestBase;
+import io.vantiq.extjsdk.FalseClient;
 
 public class TestUDPConfigHandler extends ExtjsdkTestBase{
     UDPConfigHandler udpConfig;
