@@ -59,7 +59,6 @@ public class ExtjsdkTestBase {
     public class FalseClient extends ExtensionWebSocketClient {
         public FalseClient(String sourceName) {
             super(sourceName);
-            webSocket = new FalseWebSocket();
         }
 
         @Override
@@ -68,6 +67,65 @@ public class ExtjsdkTestBase {
             webSocket = new FalseWebSocket();
             return null;
         }
+        
+        /**
+         * Tries to signal that the webSocket connection completed with status {@success}. Returns true if this action
+         * could be completed successfully. 
+         * 
+         * @param success   Whether to mark the operation as a success.
+         * @return          True if it was completed successfully. False if one of: intiateWebSocketConnection() or
+         *                  initiateFullConnection() hasn't 
+         *                  been called since either initialization or the last close() call; the webSocket connection
+         *                  has already been completed.
+         */
+        public boolean completeWebSocketConnection(boolean success) {
+            if (webSocketFuture != null && !webSocketFuture.isDone())
+            {
+                webSocketFuture.complete(success);
+                return true;
+            } else {
+                return false;
+            }
+        }
+        /**
+         * Tries to signal that the authentication completed with status {@success}. Returns true if this action
+         * could be completed successfully. 
+         * 
+         * @param success   Whether to mark the operation as a success.
+         * @return          True if it was completed successfully. False if one of: initiateWebSocket()->authenticate()
+         *                  or initiateFullConnection() hasn't 
+         *                  been called since either initialization or the last close() call; theauthentication
+         *                  has already been completed.
+         */
+        public boolean completeAuthentication(boolean success) {
+            if (authFuture != null && !authFuture.isDone())
+            {
+                authFuture.complete(success);
+                return true;
+            } else {
+                return false;
+            }
+        }
+        /**
+         * Tries to signal that the source connection completed with status {@success}. Returns true if this action
+         * could be completed successfully. 
+         * 
+         * @param success   Whether to mark the operation as a success.
+         * @return          True if it was completed successfully. False if one of: initiateWebSocket()->authenticate()
+         *                  ->sourceConnection() or initiateFullConnection() hasn't 
+         *                  been called since either initialization or the last close() call; the source connection
+         *                  has already been completed.
+         */
+        public boolean completeSourceConnection(boolean success) {
+            if (sourceFuture != null && !sourceFuture.isDone())
+            {
+                sourceFuture.complete(success);
+                return true;
+            } else {
+                return false;
+            }
+        }
+        
 
         public byte[] getLastMessage() {
             return ((FalseWebSocket) webSocket).getMessage();

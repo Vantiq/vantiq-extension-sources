@@ -371,7 +371,7 @@ public class TestExtensionWebSocketListener extends ExtjsdkTestBase{
 // ====================================================================================================================
 // --------------------------------------------------- Test Helpers ---------------------------------------------------
     private void open() {
-        client.webSocketFuture.complete(true);
+        client.completeWebSocketConnection(true);
     }
     private void authenticate(boolean success) {
         if (!client.isOpen()) {
