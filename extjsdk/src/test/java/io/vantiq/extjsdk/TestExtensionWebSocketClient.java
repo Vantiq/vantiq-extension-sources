@@ -1,8 +1,10 @@
 package io.vantiq.extjsdk;
 
+//Author: Alex Blumer
+//Email: alex.j.blumer@gmail.com
+
 import okhttp3.ws.WebSocket;
 import okio.Buffer;
-import okio.BufferedSink;
 import okhttp3.RequestBody;
 
 import java.io.IOException;
@@ -10,25 +12,22 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.Map;
-import java.util.function.Supplier;
+import java.util.concurrent.CompletableFuture;
 
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 
-public class TestExtensionWebSocketClient {
+public class TestExtensionWebSocketClient extends ExtjsdkTestBase{
     
     // Note: testing of connections occurs in TestExtensionWebSocketListener, as more of the relevant interactions occur
     // through ExtensionWebSocketListener
-    
+
     OpenExtensionWebSocketClient client; // OpenExtensionWebSocketClient just makes a few functions public
     String srcName;
     String queryAddress;
     FalseWebSocket socket;
-    
-    int WAIT_PERIOD = 10; // Milliseconds to wait between checks on async actions
     
     @Before
     public void setup() {
@@ -83,7 +82,7 @@ public class TestExtensionWebSocketClient {
         String user = "myName";
         String pass = "p@s$w0rd";
         
-        client.webSocketFuture.complete(true);
+        client.webSocketFuture = CompletableFuture.completedFuture(true);
         
         client.authenticate(user, pass);
         // Wait up to 5 seconds for asynchronous action to complete
@@ -97,7 +96,7 @@ public class TestExtensionWebSocketClient {
     
     @Test
     public void testAuthenticateWithToken() throws InterruptedException {
-        client.webSocketFuture.complete(true);
+        client.webSocketFuture = CompletableFuture.completedFuture(true);
         
         String token = "ajeoslvkencmvkejshegwt=";
         client.authenticate(token);
@@ -111,8 +110,8 @@ public class TestExtensionWebSocketClient {
     
     @Test
     public void testConnectToSource() throws InterruptedException {
-        client.authFuture.complete(true);
-        client.authSuccess.complete(null);
+        client.webSocketFuture = CompletableFuture.completedFuture(true);
+        client.authFuture = CompletableFuture.completedFuture(true);
         
         client.connectToSource();
         // Wait up to 5 seconds for asynchronous action to complete
@@ -129,6 +128,7 @@ public class TestExtensionWebSocketClient {
         queryData.put("msg", "val");
         queryData.put("val", "msg");
         
+        client.webSocketFuture = CompletableFuture.completedFuture(true);
         client.sendQueryResponse(200, queryAddress, queryData);
         
         assert socket.compareData("body", queryData);
@@ -146,6 +146,7 @@ public class TestExtensionWebSocketClient {
         queryData[1].put("message", "value");
         queryData[1].put("value", "message");
         
+        markWsConnected(true);
         client.sendQueryResponse(200, queryAddress, queryData);
         
         // The ArrayList creation is necessary since JSON interprets arrays as ArrayList
@@ -160,6 +161,7 @@ public class TestExtensionWebSocketClient {
         String errorMessage = "Message with params {}='p1' {}='param2'.";
         String errorCode = "io.vantiq.extjsdk.ExampleErrorName";
         
+        markWsConnected(true);
         client.sendQueryError(queryAddress, errorCode, errorMessage, params);
         
         assert socket.compareData("headers." + ExtensionServiceMessage.RESPONSE_ADDRESS_HEADER, queryAddress);
@@ -170,20 +172,104 @@ public class TestExtensionWebSocketClient {
         assert socket.compareData("body.messageCode", errorCode);
     }
     
+    @Test
+    public void testStop() {
+        markSourceConnected(true);
+        
+        assert !client.getListener().isClosed();
+        
+        client.stop();
+        
+        assert client.getListener().isClosed();
+    }
     
-    public void waitUntilTrue(int msTimeout, Supplier<Boolean> condition) {
-        for (int i = 0; i < msTimeout / WAIT_PERIOD; i++) {
-            if (condition.get() == true) {
-                return;
-            }
-            
-            try {
-                Thread.sleep(WAIT_PERIOD);
-            } catch (InterruptedException e) {
-                // TODO Auto-generated catch block
-                e.printStackTrace();
-            }
-        }
+    @Test
+    public void testClose() {
+        markSourceConnected(true);
+        
+        assert !client.getListener().isClosed();
+        
+        CompletableFuture<Boolean> wsFut = client.getWebsocketConnectionFuture();
+        CompletableFuture<Boolean> aFut = client.getAuthenticationFuture();
+        CompletableFuture<Boolean> sFut = client.getSourceConnectionFuture();
+        
+        assert wsFut.getNow(false);
+        assert aFut.getNow(false);
+        assert sFut.getNow(false);
+        
+        ExtensionWebSocketListener oldListen = client.getListener();
+        client.close();
+        
+        assert !client.getListener().isClosed();
+        assert oldListen.isClosed();
+        
+        ExtensionWebSocketListener newListen = client.getListener();
+        
+        // '==' and not '.equals()' because they should be the exact same object
+        assert newListen.authHandler == oldListen.authHandler;
+        assert newListen.httpHandler == oldListen.httpHandler;
+        assert newListen.configHandler == oldListen.configHandler;
+        assert newListen.reconnectHandler == oldListen.reconnectHandler;
+        assert newListen.publishHandler == oldListen.publishHandler;
+        assert newListen.queryHandler == oldListen.queryHandler;
+        
+        // Should be set to false now
+        assert !wsFut.getNow(true);
+        assert !aFut.getNow(true);
+        assert !sFut.getNow(true);
+        
+        // The old Futures should have been removed from client
+        assert client.getWebsocketConnectionFuture() == null;
+        assert client.getAuthenticationFuture() == null;
+        assert client.getSourceConnectionFuture() == null;
+    }
+    
+    @Test
+    public void testIsOpenOnNull() {
+        assert !client.isOpen();
+        assert !client.isAuthed();
+        assert !client.isConnected();
+    }
+    
+    @Test
+    public void testAutoReconnect() {
+        markSourceConnected(true);
+        
+        assert client.getSourceConnectionFuture().getNow(false);
+        
+        // Should make sourceConnection be recreated
+        client.setAutoReconnect(true);
+        client.getListener().onMessage(TestListener.createReconnectMessage(""));
+
+        assert !client.isConnected();
+        assert !client.getSourceConnectionFuture().isDone(); 
+    }
+    
+    @Test
+    public void testNotification() {
+        markSourceConnected(true);
+
+        Map<String,Object> m = new LinkedHashMap<>();
+        m.put("msg", "str");
+
+        client.sendNotification(m);
+
+        assert socket.compareData("op", ExtensionServiceMessage.OP_NOTIFICATION);
+        assert socket.compareData("object.msg", "str");
+        assert socket.compareData("resourceId", srcName);
+    }
+    
+// ============================== Helper functions ==============================
+    private void markWsConnected(boolean success) {
+        client.webSocketFuture = CompletableFuture.completedFuture(success);
+    }
+    private void markAuthSuccess(boolean success) {
+        markWsConnected(true);
+        client.authFuture = CompletableFuture.completedFuture(success);
+    }
+    private void markSourceConnected(boolean success) {
+        markAuthSuccess(true);
+        client.sourceFuture = CompletableFuture.completedFuture(success);
     }
     
     // Merely makes several private functions public
@@ -198,29 +284,23 @@ public class TestExtensionWebSocketClient {
         }
     }
     
-    
-    ObjectMapper mapper = new ObjectMapper();
     private class FalseWebSocket implements WebSocket {
         
-        RequestBody lastBody = null;
         Map<String,Object> lastData = null;
         boolean messageReceived = false;
         
         
         @Override
         public void sendMessage(RequestBody body) {
-            lastBody = body;
             Buffer buf = new Buffer();
             try {
                 body.writeTo(buf);
             } catch (IOException e) {
-                // TODO Auto-generated catch block
                 e.printStackTrace();
             }
             try {
                 lastData = mapper.readValue(buf.inputStream(), Map.class);
             } catch (IOException e) {
-                // TODO Auto-generated catch block
                 e.printStackTrace();
             }
             
@@ -239,7 +319,7 @@ public class TestExtensionWebSocketClient {
         @Override
         public void sendPing(Buffer payload) throws IOException {}
         @Override
-        public void close(int code, String reason) throws IOException {}
+        public void close(int code, String reason) throws IOException {client.getListener().onClose(code,reason);}
     }
     
     public static Object getTransformVal(Map map, String loc) {

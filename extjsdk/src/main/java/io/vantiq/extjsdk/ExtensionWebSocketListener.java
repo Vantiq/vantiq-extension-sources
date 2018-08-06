@@ -28,31 +28,31 @@ public class ExtensionWebSocketListener implements WebSocketListener{
      * should consist purely of confirmations (messages with status 200 and an empty body) and error messages. Set by
      * {@link #setHttpHandler}
      */
-    private Handler<Response> httpHandler = null;
+    Handler<Response> httpHandler = null;
     /**
      * {@link Handler} that handles Publish requests received by this listener. Set by {@link #setPublishHandler}
      */
-    private Handler<ExtensionServiceMessage> publishHandler = null;
+    Handler<ExtensionServiceMessage> publishHandler = null;
     /**
      * {@link Handler} that handles Query requests received by this listener. Set by {@link #setQueryHandler}
      */
-    private Handler<ExtensionServiceMessage> queryHandler = null;
+    Handler<ExtensionServiceMessage> queryHandler = null;
     /**
      * {@link Handler} that handles Configuration messages received by this listener. Configuration messages are sent
      * in response to connection messages, so this should be sent before sending the connection message to a source. Set
      * by {@link #setConfigHandler}
      */
-    private Handler<ExtensionServiceMessage> configHandler = null;
+    Handler<ExtensionServiceMessage> configHandler = null;
     /**
      * {@link Handler} that handles responses to auth messages, both successful and not. Strictly speaking, it handles
      * all Http responses received by this listener before and upon successful authentication, as no other
      * Http responses are expected until after authorization. Set by {@link #setAuthHandler}
      */
-    private Handler<Response> authHandler = null;
+    Handler<Response> authHandler = null;
     /**
      * {@link Handler} that handles reconnect messages. Set by {@link #setReconnectHandler}
      */
-    private Handler<ExtensionServiceMessage> reconnectHandler = null;
+    Handler<ExtensionServiceMessage> reconnectHandler = null;
     /**
      * An Slf4j logger
      */
@@ -67,6 +67,10 @@ public class ExtensionWebSocketListener implements WebSocketListener{
      * {@link ObjectMapper} used to translate the received message into a {@link Map}
      */
     ObjectMapper mapper = new ObjectMapper();
+    /**
+     * Whether this listener has been closed, and should not make any more changes to its client.
+     */
+    boolean isClosed = false;
 
     /**
      * Creates a new {@link ExtensionWebSocketListener} connected to {@code client}
@@ -83,64 +87,22 @@ public class ExtensionWebSocketListener implements WebSocketListener{
      * Set the default {@link Handler} for each response type. What each does is specified in its respective setter.
      */
     private void initializeDefaultHandlers() {
-        // Prints the status of the Http response and its body if there is one
-        this.setHttpHandler(
-            new Handler<Response>() {
-                @Override
-                public void handleMessage(Response msg) {
-                    // Empty body is probably just a confirmation of receipt
-                    if (msg.getBody() == null) {
-                        log.debug("Confirmation received with status: " + msg.getStatus());
-                    }
-                    else {
-                        log.debug("");
-                        log.debug("Unexpected response with status: " + msg.getStatus());
-                        log.debug("Other data\n" + msg.getBody());
-                        log.debug("");
-                    }
-                }
-            }
-        );
 
         // Respond to all queries with an empty body
         Handler<ExtensionServiceMessage> defaultQueryHandler = new Handler<ExtensionServiceMessage>() {
             @Override
             public void handleMessage(ExtensionServiceMessage msg) {
-                log.info("Message received type: " + msg.getOp());
+                log.warn("Query received with no user-set handler");
                 log.debug("Full message: " + msg);
                 // Prepare a response with an empty body, so that the query doesn't wait for a timeout
                 Object[] body = {msg.getSourceName()};
                 client.sendQueryError(ExtensionServiceMessage.extractReplyAddress(msg),
-                        "Unset Handler",
+                        "io.vantiq.extjsdk.unsetQueryHandler",
                         "No handler has been set for source {0}",
                         body);
             }
         };
         this.setQueryHandler(defaultQueryHandler);
-        // Add ourselves to the Handler so it can send a response
-
-
-        this.setPublishHandler(
-            new Handler<ExtensionServiceMessage>() {
-                @Override
-                public void handleMessage(ExtensionServiceMessage msg) {
-                    log.debug("Message received type: " + msg.getOp());
-                    log.debug("Data\n " + msg.getObject());
-                }
-            }
-        );
-
-        // Prints out the config message when received
-        this.setConfigHandler(
-            new Handler<ExtensionServiceMessage>() {
-                @Override
-                public void handleMessage(ExtensionServiceMessage msg) {
-                    log.info("Config successful for '" + msg.getSourceName() + "'");
-                    log.debug("Config: " + ((Map)msg.getObject()).get("config"));
-                    log.debug("");
-                }
-            }
-        );
 
         // Logs both failed and successful authentications
         this.setAuthHandler(
@@ -163,9 +125,6 @@ public class ExtensionWebSocketListener implements WebSocketListener{
     /**
      * Set the {@link Handler} for any standard Http response that are received after authentication has completed
      * <br>
-     * Upon initialization, a default Handler is created that will log the Http response received, and whether it is
-     * likely a confirmation or an error.
-     * <br>
      * The handler will receive a {@link Map} that represents the message. Note that the Vantiq system will
      * send acknowledgements of Notification messages and Configuration messages that will have no body or headers
      * and msg.status.code() will equal 200
@@ -177,9 +136,6 @@ public class ExtensionWebSocketListener implements WebSocketListener{
     }
     /**
      * Set the {@link Handler} for any Publish messages that are received.
-     * <br>
-     * Upon initialization a default {@link Handler} is created that will log that a Publish was received, and its
-     * contents.
      * <br>
      * The handler will receive a {@link Map} that represents the Publish message. The most
      * significant part will be msg.object which contains the data published to the source
@@ -227,6 +183,8 @@ public class ExtensionWebSocketListener implements WebSocketListener{
      * Set the {@link Handler} for the result of any message received before a successful authentication attempt,
      * and the result of the authentication attempt.
      * <p>
+     * Upon initialization a default Handler is set that logs if the authentication succeeded or not
+     * <p>
      * The handler will receive a {@link Map} of the message received. If the authentication was successful,
      * then message.status should equal 200. On success, the most significant part is msg.body['userInfo'] which
      * is a Map of various data about the user you logged in as. On failure, msg.body will be an Object containing
@@ -249,6 +207,24 @@ public class ExtensionWebSocketListener implements WebSocketListener{
      */
     public void setReconnectHandler(Handler<ExtensionServiceMessage> reconnectHandler) {
         this.reconnectHandler = reconnectHandler;
+    }
+    
+    /**
+     * Called when its {@link ExtensionWebSocketClient} is closed. Stops this listener from dealing with any future 
+     * auth, config, Query, or reconnect messages. It keeps its handlers and will finish any Publish messages in 
+     * progress.
+     */
+    public void close() {
+        isClosed = true;
+    }
+    
+    /**
+     * Checks to see if {@link #close} had been called. 
+     * 
+     * @return
+     */
+    public boolean isClosed() {
+        return isClosed;
     }
 
     /**
@@ -283,12 +259,16 @@ public class ExtensionWebSocketListener implements WebSocketListener{
             }
         }
         catch (IOException e) {
-            log.warn("Error trying to interpret WebSocket message", e);
+            log.error("Error trying to interpret WebSocket message", e);
             return;
         }
         body.close();
 
 
+        if (this.isClosed) {
+            return; // Do nothing if closed at this point
+        }
+        
         // Convert the data from a Json string/byte array to a map
         Map msg;
         try {
@@ -317,28 +297,44 @@ public class ExtensionWebSocketListener implements WebSocketListener{
                     client.sourceFuture.complete(false);
                 }
                 if (this.httpHandler != null) {
-                    this.httpHandler.handleMessage(message);
+                    try {
+                        this.httpHandler.handleMessage(message);
+                    }
+                    catch (Exception e) {
+                        log.error("Error occurred when running the HTTP handler for source '" + 
+                                client.getSourceName() + "'");
+                    }
                 }
                 else {
-                    log.warn("Http response received with no handler set");
+                    log.debug("Http response received with no handler set");
                 }
             }
             else {
-                if ((int) message.getStatus() == 200 && !client.isAuthed()) {
-                    // Forcibly setting in case an error occurred before succeeding
-                    client.authFuture.obtrudeValue(true);
-                    // Signal that an authentication has succeeded
-                    client.authSuccess.complete(null);
-                }
-                else {
-                    client.authFuture.complete(false);
-                    log.warn("Error occurred attempting to authenticate");
-                }
-                if (authHandler != null) {
-                    this.authHandler.handleMessage(message);
-                }
-                else {
-                    log.warn("Authentication received with no handler set");
+                // Resetting authFuture is also sync'd on client, so this way they won't interfere with each other
+                synchronized (client) {
+                    // Checking isOpen() while sync'd in case of concurrency problems
+                    if (!client.isOpen() || this.isClosed) {
+                        return;
+                    }
+
+                    if ((int) message.getStatus() == 200 && !client.isAuthed()) {
+                        // Forcibly setting in case an error occurred before succeeding
+                        client.authFuture.obtrudeValue(true);
+                    }
+                    else {
+                        client.authFuture.complete(false);
+                        log.warn("Error occurred attempting to authenticate");
+                    }
+                    if (authHandler != null) {
+                        try {
+                            this.authHandler.handleMessage(message);
+                        }
+                        catch (Exception e) {
+                            log.error("Error occurred when running the authentication handler for source '" + 
+                                    client.getSourceName() + "'");
+                        }
+                    }
+                    // No message is logged for a null handler because the user must explicitly null the handler
                 }
 
             }
@@ -351,33 +347,55 @@ public class ExtensionWebSocketListener implements WebSocketListener{
                 if (message.getOp().equals(ExtensionServiceMessage.OP_PUBLISH))
                 {
                     if (this.publishHandler != null) {
-                        this.publishHandler.handleMessage(message);
+                        try {
+                            this.publishHandler.handleMessage(message);
+                        }
+                        catch (Exception e) {
+                            log.error("Error occurred when running the Publish handler for source '" + 
+                                    client.getSourceName() + "'");
+                        }
                     }
                     else {
-                        log.warn("Publish received with no handler set");
+                        log.debug("Publish received with no handler set");
                     }
                 }
-                else if (msg.get("op").equals(ExtensionServiceMessage.OP_QUERY)) {
-                    if (this.queryHandler != null) {
-                        this.queryHandler.handleMessage(message);
+                else if (message.getOp().equals(ExtensionServiceMessage.OP_QUERY)) {
+                    if (this.queryHandler != null && !isClosed) {
+                        try {
+                            this.queryHandler.handleMessage(message);
+                        }
+                        catch (Exception e) {
+                            log.error("Error occurred when running the Query handler for source '" + 
+                                    client.getSourceName() + "'");
+                        }
                     }
-                    else {
-                        log.warn("Query received with no handler set");
-                    }
+                    // No message is logged for a null handler because the user must explicitly null the handler
                 }
-                else if (msg.get("op").equals(ExtensionServiceMessage.OP_RECONNECT_REQUIRED)) {
-                    client.sourceHasDisconnected(); // Resets to pre source connection state
-                    if (this.reconnectHandler != null) {
-                        this.reconnectHandler.handleMessage(message);
-                    }
-                    if (client.autoReconnect) {
-                        log.info("Automatically attempting to reconnect to source '" + client.getSourceName() + "'");
-                        client.connectToSource();
-                    }
-                    // Warn when cannot reconnect or know that the connection has failed 
-                    if (!client.autoReconnect && this.reconnectHandler == null) {
-                        log.warn("Reconnect received with no handler set and no autoconnect. Can no longer "
-                                + "communicate with source '" + client.getSourceName() + "'");
+                else if (message.getOp().equals(ExtensionServiceMessage.OP_RECONNECT_REQUIRED)) {
+                    synchronized (client) {
+                        // Do not alert client of reconnect message if this listener has been closed
+                        if (this.isClosed) {
+                            return; 
+                        }
+                        client.sourceHasDisconnected(); // Resets to pre source connection state
+                        if (this.reconnectHandler != null) {
+                            try {
+                                this.reconnectHandler.handleMessage(message);
+                            }
+                            catch (Exception e) {
+                                log.error("Error occurred when running the Reconnect handler for source '" + 
+                                        client.getSourceName() + "'");
+                            }
+                        }
+                        if (client.autoReconnect) {
+                            log.info("Automatically attempting to reconnect to source '" + client.getSourceName() + "'");
+                            client.connectToSource();
+                        }
+                        // Warn when cannot reconnect or know that the connection has failed 
+                        if (!client.autoReconnect && this.reconnectHandler == null) {
+                            log.warn("Reconnect received with no handler set and no autoconnect. Can no longer "
+                                    + "communicate with source '" + client.getSourceName() + "'");
+                        }
                     }
                 }
                 else {
@@ -385,14 +403,28 @@ public class ExtensionWebSocketListener implements WebSocketListener{
                 }
             }
             else if (msg.get("op").equals(ExtensionServiceMessage.OP_CONFIGURE_EXTENSION) && client.isAuthed()) {
-                // Forcibly setting in case an error occurred before succeeding
-                client.sourceFuture.obtrudeValue(true); 
-                log.info("Successful connection to " + msg.get("resourceId").toString());
-                if (this.configHandler != null) {
-                    this.configHandler.handleMessage(message);
-                }
-                else {
-                    log.warn("Configuration received with no handler set");
+                // Resetting sourceFuture is also sync'd on client, so this way they won't interfere with each other
+                synchronized (client) {
+                    // Rechecking isAuthed() while sync'd in case of concurrency problems
+                    if (!client.isAuthed()) {
+                        return;
+                    }
+
+                    // Forcibly setting in case an error occurred before succeeding
+                    client.sourceFuture.obtrudeValue(true);
+                    log.info("Successful connection to " + msg.get("resourceId").toString());
+                    if (this.configHandler != null) {
+                        try {
+                            this.configHandler.handleMessage(message);
+                        }
+                        catch (Exception e) {
+                            log.error("Error occurred when running the Configuration handler for source '" + 
+                                    client.getSourceName() + "'");
+                        }
+                    }
+                    else {
+                        log.warn("Configuration received with no handler set");
+                    }
                 }
             }
             else {
@@ -401,6 +433,32 @@ public class ExtensionWebSocketListener implements WebSocketListener{
         }
     }
 
+    /**
+     * Sets this Listener's handlers to the same as {@code listener}. This function is intended to allow handlers to
+     * maintain state even if the parent {@link ExtensionWebSocketClient} is closed due to websocket issues.
+     * 
+     * @param listener  The {@link ExtensionWebSocketListener} to copy the handlers from.
+     */
+    public void useHandlersFromListener(ExtensionWebSocketListener listener) {
+        this.authHandler = listener.authHandler;
+        this.configHandler = listener.configHandler;
+        this.publishHandler = listener.publishHandler;
+        this.httpHandler = listener.httpHandler;
+        this.queryHandler = listener.queryHandler;
+        this.reconnectHandler = listener.reconnectHandler;
+    }
+    
+    /**
+     * Sets this Listener's handlers to the same as the listener of {@code client}. This function is intended to allow 
+     * handlers to maintain state even if the parent {@link ExtensionWebSocketClient} is closed due to websocket issues.
+     * 
+     * @param client    The {@link ExtensionWebSocketClient} to copy the handlers from.
+     */
+    public void useHandlersFromListener(ExtensionWebSocketClient client) {
+        ExtensionWebSocketListener listener = client.getListener();
+        this.useHandlersFromListener(listener);
+    }
+    
     /**
      * Logs the code and reason for this listener closing.
      *
@@ -411,6 +469,9 @@ public class ExtensionWebSocketListener implements WebSocketListener{
     public void onClose(int code, String reason) {
         log.info("Closing websocket code: " + code);
         log.debug(reason);
+        if (client.isOpen() && client.webSocket != null) {
+            client.close();
+        }
     }
 
     /**
@@ -442,6 +503,13 @@ public class ExtensionWebSocketListener implements WebSocketListener{
         else {
             log.error("Failure occurred in listener", e);
         }
-        client.close();
+        
+        // The error occurred during an unknown point during execution. We don't have enough information to determine
+        // what caused it, so we will close
+        if (client.isOpen()) { 
+            client.close();
+        } else { // The websocket never opened, so it must be a problem connecting. Mark the failure and let the user handle it
+            client.webSocketFuture.complete(false);
+        }
     }
 }
