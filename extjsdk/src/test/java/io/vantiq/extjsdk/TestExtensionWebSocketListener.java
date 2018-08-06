@@ -1,17 +1,20 @@
 package io.vantiq.extjsdk;
 
-import okhttp3.MediaType;
+//Author: Alex Blumer
+//Email: alex.j.blumer@gmail.com
+
 import okhttp3.ResponseBody;
 
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
+import static org.junit.Assert.fail;
+
 import java.io.IOException;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.CompletableFuture;
 
 public class TestExtensionWebSocketListener extends ExtjsdkTestBase{
 
@@ -103,7 +106,7 @@ public class TestExtensionWebSocketListener extends ExtjsdkTestBase{
     public void testSourceConnectionFailFirst() {
         authenticate(true);
         
-        listener.onMessage(errorMessage());
+        listener.onMessage(TestListener.errorMessage());
         
         assert !client.getSourceConnectionFuture().getNow(true); // It should be set to false now
         
@@ -131,7 +134,7 @@ public class TestExtensionWebSocketListener extends ExtjsdkTestBase{
         
         authenticate(true);
         
-        listener.onMessage(errorMessage());
+        listener.onMessage(TestListener.errorMessage());
         
         assert !client.getSourceConnectionFuture().getNow(true); // It should be set to false now
         
@@ -156,7 +159,7 @@ public class TestExtensionWebSocketListener extends ExtjsdkTestBase{
         String val = "info";
         publishMessage.put(key, val);
         
-        ResponseBody body = createPublishMessage(publishMessage, srcName);
+        ResponseBody body = TestListener.createPublishMessage(publishMessage, srcName);
         listener.onMessage(body);
         
         assert pHandler.compareOp(ExtensionServiceMessage.OP_PUBLISH);
@@ -173,7 +176,7 @@ public class TestExtensionWebSocketListener extends ExtjsdkTestBase{
         String val = "request";
         queryMessage.put(key, val);
         
-        ResponseBody body = createQueryMessage(queryMessage, srcName);
+        ResponseBody body = TestListener.createQueryMessage(queryMessage, srcName);
         listener.onMessage(body);
         
         assert qHandler.compareOp(ExtensionServiceMessage.OP_QUERY);
@@ -186,7 +189,7 @@ public class TestExtensionWebSocketListener extends ExtjsdkTestBase{
         connectToSource(srcName, null);
         
         Response resp = new Response().status(200);
-        ResponseBody body = createHttpMessage(resp);
+        ResponseBody body = TestListener.createHttpMessage(resp);
         
         listener.onMessage(body);
         
@@ -198,7 +201,7 @@ public class TestExtensionWebSocketListener extends ExtjsdkTestBase{
         authenticate(true);
         
         Response resp = new Response().status(403);
-        ResponseBody body = createHttpMessage(resp);
+        ResponseBody body = TestListener.createHttpMessage(resp);
         
         listener.onMessage(body);
         
@@ -210,7 +213,7 @@ public class TestExtensionWebSocketListener extends ExtjsdkTestBase{
     public void testReconnectHandler() {
         connectToSource(srcName, null);
         
-        ResponseBody body = createReconnectMessage(srcName);
+        ResponseBody body = TestListener.createReconnectMessage(srcName);
         
         listener.onMessage(body);
         
@@ -224,29 +227,29 @@ public class TestExtensionWebSocketListener extends ExtjsdkTestBase{
         
         listener.close();
         
-        ResponseBody body = createReconnectMessage(srcName);
+        ResponseBody body = TestListener.createReconnectMessage(srcName);
         listener.onMessage(body);
         assert rHandler.compareMessage(null);
         
-        body = createHttpMessage(new Response().status(200));
+        body = TestListener.createHttpMessage(new Response().status(200));
         listener.onMessage(body);
         assert hHandler.compareMessage(null);
         
         aHandler.lastMessage = null; // Resetting from auth in connectToSource
-        body = createAuthenticationResponse(true);
+        body = TestListener.createAuthenticationResponse(true);
         listener.onMessage(body);
         assert aHandler.compareMessage(null);
         
-        body = createQueryMessage(new LinkedHashMap(), srcName);
+        body = TestListener.createQueryMessage(new LinkedHashMap(), srcName);
         listener.onMessage(body);
         assert qHandler.compareMessage(null);
         
-        body = createPublishMessage(new LinkedHashMap(), srcName);
+        body = TestListener.createPublishMessage(new LinkedHashMap(), srcName);
         listener.onMessage(body);
         assert pHandler.compareMessage(null);
         
         cHandler.lastMessage = null; // Resetting from message in connectToSource
-        body = createConfigResponse(new LinkedHashMap(), srcName);
+        body = TestListener.createConfigResponse(new LinkedHashMap(), srcName);
         listener.onMessage(body);
         assert cHandler.compareMessage(null);
     }
@@ -258,12 +261,15 @@ public class TestExtensionWebSocketListener extends ExtjsdkTestBase{
         
         connectToSource(srcName, null);
         
-        ResponseBody body = createQueryMessage(new LinkedHashMap(), srcName);
+        ResponseBody body = TestListener.createQueryMessage(new LinkedHashMap(), srcName);
         listener.onMessage(body);
         Response resp = null;
         try {
-            resp = mapper.readValue(client.getLastMessage(), Response.class);
-        } catch(Exception e) { e.printStackTrace();}
+            resp = client.getLastMessageAsResponse();
+        } catch(Exception e) { 
+            e.printStackTrace();
+            fail("Could not interpret the default query handler response\n");
+        }
         
         assert resp.getBody() instanceof Map;
         
@@ -294,28 +300,28 @@ public class TestExtensionWebSocketListener extends ExtjsdkTestBase{
 
         // Every message should not error out due to EWSL catching and logging the error
         // Every message should be saved before the error occurs.
-        ResponseBody body = createAuthenticationResponse(true);
+        ResponseBody body = TestListener.createAuthenticationResponse(true);
         listener.onMessage(body);
         assert client.isAuthed();
         assert aHandler.compareStatus(200);
 
-        body = createHttpMessage(new Response().status(200));
+        body = TestListener.createHttpMessage(new Response().status(200));
         listener.onMessage(body);
         assert hHandler.compareStatus(200);
 
-        body = createConfigResponse(new LinkedHashMap(), srcName);
+        body = TestListener.createConfigResponse(new LinkedHashMap(), srcName);
         listener.onMessage(body);
         assert cHandler.compareOp(ExtensionServiceMessage.OP_CONFIGURE_EXTENSION);
 
-        body = createQueryMessage(new LinkedHashMap(), srcName);
+        body = TestListener.createQueryMessage(new LinkedHashMap(), srcName);
         listener.onMessage(body);
         assert qHandler.compareOp(ExtensionServiceMessage.OP_QUERY);
 
-        body = createPublishMessage(new LinkedHashMap(), srcName);
+        body = TestListener.createPublishMessage(new LinkedHashMap(), srcName);
         listener.onMessage(body);
         assert pHandler.compareOp(ExtensionServiceMessage.OP_PUBLISH);
         
-        body = createReconnectMessage(srcName);
+        body = TestListener.createReconnectMessage(srcName);
         listener.onMessage(body);
         assert rHandler.compareOp(ExtensionServiceMessage.OP_RECONNECT_REQUIRED);
     }
@@ -332,22 +338,22 @@ public class TestExtensionWebSocketListener extends ExtjsdkTestBase{
         open();
 
         // All that is expected is that no NPEs are thrown
-        ResponseBody body = createAuthenticationResponse(true);
+        ResponseBody body = TestListener.createAuthenticationResponse(true);
         listener.onMessage(body);
 
-        body = createHttpMessage(new Response().status(200));
+        body = TestListener.createHttpMessage(new Response().status(200));
         listener.onMessage(body);
 
-        body = createConfigResponse(new LinkedHashMap(), srcName);
+        body = TestListener.createConfigResponse(new LinkedHashMap(), srcName);
         listener.onMessage(body);
 
-        body = createQueryMessage(new LinkedHashMap(), srcName);
+        body = TestListener.createQueryMessage(new LinkedHashMap(), srcName);
         listener.onMessage(body);
 
-        body = createPublishMessage(new LinkedHashMap(), srcName);
+        body = TestListener.createPublishMessage(new LinkedHashMap(), srcName);
         listener.onMessage(body);
 
-        body = createReconnectMessage(srcName);
+        body = TestListener.createReconnectMessage(srcName);
         listener.onMessage(body);
         
     }
@@ -371,105 +377,25 @@ public class TestExtensionWebSocketListener extends ExtjsdkTestBase{
 // ====================================================================================================================
 // --------------------------------------------------- Test Helpers ---------------------------------------------------
     private void open() {
-        client.webSocketFuture.complete(true);
+        client.completeWebSocketConnection(true);
     }
     private void authenticate(boolean success) {
         if (!client.isOpen()) {
             open();
         }
         client.authenticate("unused");
-        listener.onMessage(createAuthenticationResponse(success));
+        listener.onMessage(TestListener.createAuthenticationResponse(success));
     }
     private void connectToSource(String sourceName, Map config) {
         if (!client.isAuthed()) {
             authenticate(true);
         }
         client.connectToSource();
-        listener.onMessage(createConfigResponse(config, sourceName));
+        listener.onMessage(TestListener.createConfigResponse(config, sourceName));
     }
 
-    MediaType JSON = MediaType.parse("application/json; charset=utf-8");
-    private ResponseBody errorMessage() {
-        return ResponseBody.create(JSON, "{\"status\":400}");
-    }
     
-    private ResponseBody createAuthenticationResponse(boolean success) {
-        if (success) {
-            return ResponseBody.create(JSON, sampleAuthResponseBody);
-        }
-        else {
-            return errorMessage();
-        }
-    }
-    private ResponseBody createConfigResponse(Map<String,Object> config, String sourceName) {
-        try {
-            Map<String,Object> body = mapper.readValue(sampleConfigBody, Map.class);
-            Map<String,Object> c = new LinkedHashMap<>();
-            c.put("config", config);
-            body.put("resourceId", sourceName);
-            body.put("object", c);
-            return ResponseBody.create(JSON, mapper.writeValueAsBytes(body));
-        }
-        catch (Exception e) {
-            print("Error processing Map for createConfigResponse");
-            return null;
-        }
-    }
-    private ResponseBody createPublishMessage(Map<String,Object> message, String sourceName) {
-        try {
-            Map<String,Object> body = mapper.readValue(samplePublishBody, Map.class);
-            body.put("resourceId", sourceName);
-            body.put("object", message);
-            return ResponseBody.create(JSON, mapper.writeValueAsBytes(body));
-        }
-        catch (Exception e) {
-            print("Error processing Map for createPublishMessage");
-            return null;
-        }
-    }
-    private ResponseBody createQueryMessage(Map<String,Object> message, String sourceName) {
-        try {
-            Map<String,Object> body = mapper.readValue(sampleQueryBody, Map.class);
-            body.put("resourceId", sourceName);
-            body.put("object", message);
-            return ResponseBody.create(JSON, mapper.writeValueAsBytes(body));
-        }
-        catch (Exception e) {
-            print("Error processing Map for createQueryMessage\n" +  e);
-            return null;
-        }
-    }
     
-
-    private ResponseBody createHttpMessage(Response resp) {
-        try {
-            return ResponseBody.create(JSON, mapper.writeValueAsBytes(resp));
-        }
-        catch (Exception e) {
-            print("Error processing Map for createPublishMessage");
-            return null;
-        }
-    }
-
-
-
-    private class FalseClient extends ExtensionWebSocketClient {
-        FalseClient(String sourceName) {
-            super(sourceName);
-            webSocket = new FalseWebSocket();
-        }
-
-        @Override
-        public CompletableFuture<Boolean> initiateWebsocketConnection(String url) {
-            webSocketFuture = new CompletableFuture<Boolean>();
-            webSocket = new FalseWebSocket();
-            return null;
-        }
-
-        public byte[] getLastMessage() {
-            return ((FalseWebSocket) webSocket).getMessage();
-        }
-    }
 
     private class TestHandlerESM extends Handler<ExtensionServiceMessage> {
         public String lastOp = "";
@@ -535,25 +461,5 @@ public class TestExtensionWebSocketListener extends ExtjsdkTestBase{
         }
     }
 
-    private String sampleAuthResponseBody = "{\"status\":200, \"contentType\":\"application/json\", \"body\":{\"anonymous\":false, " +
-            "\"userInfo\":{\"accessToken\":\"1c55ag9pyVZFa8k9BTGgI7XiI7nHTLTtLMRKBZ0=\", " +
-            "\"idToken\":\"yJ0eXAiOiJKV1QLCJhbGcOiJIUzI1NiJ9.eyJzdWIiOiJ1ZHBzb3VyY2V0b2tlbl9fc3lzdGVtIiwicHJlZmVycmVkVX" +
-            "lcm5hbWUiOiJ1ZHBzb3VyY2V0b2tlbl9fc3lzdGVtIiwiaXNzIjoiaHR0cHM6Ly92YW50aXEuY29tL2F1dGhlbnRpY2F0ZSIsInBy" +
-            "ZpbGVzIjpbInN5c3RlbS51c2VyIl0sInByZWZlcnJlZF91c2VybmFtZSI6InVkcHNvdXJZXRva2Vu19zeXN0ZW0iLCJob21lTmFtZNw" +
-            "YWNlIjoic3lzdGVtIiwiWRlbnRpdHlQcm92aWRlciI6IlZhbnRpcSIsImF1ZCI6InZhnRpcS1jbllbnQiLCJjcmVhdGVkQnkiOiJze" +
-            "XN0ZW0iLCJuYW1lc3BhY2UiOiJzeXN0ZW0iLCJ1c2VyVHlwZSI6Im5vZGUiLCJleHAiOj1OTM2NDYwNTAsImlhdCI6MTUzMTg2ODI0Cw" +
-            "ianRpIjoiYzRkMU0NDAtOGExNC0xMWU4LWI4ODAtNDgxNTJkNDRhNTg5IiwidXNlcm5hbWUiOiJ1ZHBzb3VyY20b2tlbl9fc3lzdGVtI" +
-            "n0.h9EVfLQcxVVfpuPKkr8bwcXuCrF2k8wgdkavfs-M\", " +
-            "\"username\":\"udpsourcetoken__system\", \"preferredUsername\":\"udpsourcetoken__system\", \"namespace\":\"system\", " +
-            "\"homeNamespace\":\"system\", \"createdBy\":\"system\", \"userType\":\"node\", \"profiles\":[\"system.user\"]}}}";
-    private String sampleConfigBody = "{\"op\":\"configureExtension\", \"resourceName\":\"sources\", \"isSystemResource\":true, " +
-            "\"parameters\":{}, \"contentType\":\"application/json\", \"skipMonitoring\":false, \"isExternal\":false, " +
-            "\"address\":\"c672e138-2915-433d-99fe-78a6661ea047\", \"messageHeaders\":{}}";
-    private String samplePublishBody = "{\"op\":\"publish\", \"resourceName\":\"sources\", \"isSystemResource\":true, " +
-            "\"contentType\":\"application/json\", \"skipMonitoring\":false, \"isExternal\":false, " +
-            "\"address\":\"c672e138-2915-433d-99fe-78a6661ea047\", \"messageHeaders\":{}}";
-    private String sampleQueryBody = "{\"op\":\"query\", \"resourceName\":\"sources\", \"isSystemResource\":true, " +
-            "\"contentType\":\"application/json\", \"skipMonitoring\":false, \"isExternal\":false, " +
-            "\"address\":\"c672e138-2915-433d-99fe-78a6661ea047\", " +
-            "\"messageHeaders\":{\"REPLY_ADDR_HEADER\":\"d15cf6b0-8a1f-11e8-b880-48152d44a589\"}}";
+    
 }
