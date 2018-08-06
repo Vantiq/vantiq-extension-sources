@@ -179,3 +179,6 @@ Additionally, if the output map had instead been
 }
 ```
 then the resulting map would be exactly the same, as the Map in lvl2 would have been overwritten by the new value.
+
+## Licensing
+This program uses three licensed libraries: slf4j, okhttp3, and jackson-databind. okhttp3 and jackson-databind are both licensed under [Apache Version 2.0 License](http://www.apache.org/licenses/LICENSE-2.0). slf4j is licensed under [terms](https://www.slf4j.org/license.html) identical to the [MIT License](https://opensource.org/licenses/MIT). This SDK will be licensed under the the Apache Version 2.0 License in order to conform with the used libraries.
