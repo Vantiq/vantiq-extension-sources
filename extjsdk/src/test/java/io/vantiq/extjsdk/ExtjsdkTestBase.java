@@ -1,5 +1,8 @@
 package io.vantiq.extjsdk;
 
+//Author: Alex Blumer
+//Email: alex.j.blumer@gmail.com
+
 import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.charset.Charset;
@@ -18,8 +21,6 @@ import okhttp3.ResponseBody;
 import okhttp3.ws.WebSocket;
 import okio.Buffer;
 
-import com.fasterxml.jackson.core.JsonParseException;
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 public class ExtjsdkTestBase {

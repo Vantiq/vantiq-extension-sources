@@ -1,5 +1,8 @@
 package io.vantiq.extjsdk;
 
+//Author: Alex Blumer
+//Email: alex.j.blumer@gmail.com
+
 import okhttp3.ws.WebSocket;
 import okio.Buffer;
 import okhttp3.RequestBody;

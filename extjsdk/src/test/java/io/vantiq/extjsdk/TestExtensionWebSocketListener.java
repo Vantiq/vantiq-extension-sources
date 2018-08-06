@@ -1,6 +1,8 @@
 package io.vantiq.extjsdk;
 
-import okhttp3.MediaType;
+//Author: Alex Blumer
+//Email: alex.j.blumer@gmail.com
+
 import okhttp3.ResponseBody;
 
 import org.junit.After;
@@ -11,7 +13,6 @@ import java.io.IOException;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.CompletableFuture;
 
 public class TestExtensionWebSocketListener extends ExtjsdkTestBase{
 
