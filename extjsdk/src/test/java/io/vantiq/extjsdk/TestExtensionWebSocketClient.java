@@ -239,7 +239,7 @@ public class TestExtensionWebSocketClient extends ExtjsdkTestBase{
         
         // Should make sourceConnection be recreated
         client.setAutoReconnect(true);
-        client.getListener().onMessage(createReconnectMessage(""));
+        client.getListener().onMessage(TestListener.createReconnectMessage(""));
 
         assert !client.isConnected();
         assert !client.getSourceConnectionFuture().isDone(); 

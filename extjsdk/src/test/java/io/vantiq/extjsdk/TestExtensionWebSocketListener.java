@@ -9,6 +9,8 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
+import static org.junit.Assert.fail;
+
 import java.io.IOException;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -211,7 +213,7 @@ public class TestExtensionWebSocketListener extends ExtjsdkTestBase{
     public void testReconnectHandler() {
         connectToSource(srcName, null);
         
-        ResponseBody body = createReconnectMessage(srcName);
+        ResponseBody body = TestListener.createReconnectMessage(srcName);
         
         listener.onMessage(body);
         
@@ -225,7 +227,7 @@ public class TestExtensionWebSocketListener extends ExtjsdkTestBase{
         
         listener.close();
         
-        ResponseBody body = createReconnectMessage(srcName);
+        ResponseBody body = TestListener.createReconnectMessage(srcName);
         listener.onMessage(body);
         assert rHandler.compareMessage(null);
         
@@ -264,7 +266,10 @@ public class TestExtensionWebSocketListener extends ExtjsdkTestBase{
         Response resp = null;
         try {
             resp = client.getLastMessageAsResponse();
-        } catch(Exception e) { e.printStackTrace(); assert false;}
+        } catch(Exception e) { 
+            e.printStackTrace();
+            fail("Could not interpret the default query handler response\n");
+        }
         
         assert resp.getBody() instanceof Map;
         
@@ -316,7 +321,7 @@ public class TestExtensionWebSocketListener extends ExtjsdkTestBase{
         listener.onMessage(body);
         assert pHandler.compareOp(ExtensionServiceMessage.OP_PUBLISH);
         
-        body = createReconnectMessage(srcName);
+        body = TestListener.createReconnectMessage(srcName);
         listener.onMessage(body);
         assert rHandler.compareOp(ExtensionServiceMessage.OP_RECONNECT_REQUIRED);
     }
@@ -348,7 +353,7 @@ public class TestExtensionWebSocketListener extends ExtjsdkTestBase{
         body = TestListener.createPublishMessage(new LinkedHashMap(), srcName);
         listener.onMessage(body);
 
-        body = createReconnectMessage(srcName);
+        body = TestListener.createReconnectMessage(srcName);
         listener.onMessage(body);
         
     }
