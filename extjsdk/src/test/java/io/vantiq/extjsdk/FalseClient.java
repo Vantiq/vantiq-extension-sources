@@ -37,8 +37,7 @@ public class FalseClient extends ExtensionWebSocketClient {
      *                  has already been completed.
      */
     public boolean completeWebSocketConnection(boolean success) {
-        if (webSocketFuture != null && !webSocketFuture.isDone())
-        {
+        if (webSocketFuture != null && !webSocketFuture.isDone()) {
             webSocketFuture.complete(success);
             return true;
         } else {
@@ -56,8 +55,7 @@ public class FalseClient extends ExtensionWebSocketClient {
      *                  has already been completed.
      */
     public boolean completeAuthentication(boolean success) {
-        if (authFuture != null && !authFuture.isDone())
-        {
+        if (authFuture != null && !authFuture.isDone()) {
             authFuture.complete(success);
             return true;
         } else {
@@ -75,8 +73,7 @@ public class FalseClient extends ExtensionWebSocketClient {
      *                  has already been completed.
      */
     public boolean completeSourceConnection(boolean success) {
-        if (sourceFuture != null && !sourceFuture.isDone())
-        {
+        if (sourceFuture != null && !sourceFuture.isDone()) {
             sourceFuture.complete(success);
             return true;
         } else {
