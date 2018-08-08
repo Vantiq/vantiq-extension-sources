@@ -1,6 +1,10 @@
 /*
- * FIXME -- Needs to be redone as it is currently cloned from the Eclipse Milo client examples
  * Copyright (c) 2018 Vantiq, Inc
+ *
+ * (Adapted from KeyStoreLoader in Milo project -- Copyright (c) 2017 Keven Herron)
+ *
+ * Adaptation of the KeyStoreLoader from the Milo project.
+ * Project/certificate names changed, etc.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
