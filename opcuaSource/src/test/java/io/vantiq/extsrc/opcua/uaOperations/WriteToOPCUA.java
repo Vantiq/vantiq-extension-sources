@@ -3,6 +3,7 @@ package io.vantiq.extsrc.opcua.uaOperations;
 import org.eclipse.milo.examples.server.ExampleNamespace;
 import org.eclipse.milo.opcua.stack.core.security.SecurityPolicy;
 
+import org.eclipse.milo.opcua.stack.core.types.enumerated.MessageSecurityMode;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -23,8 +24,9 @@ public class WriteToOPCUA extends OpcUaTestBase {
         Map<String, String> opcConfig = new HashMap<>();
 
         config.put(OpcUaESClient.CONFIG_OPC_UA_INFORMATION, opcConfig);
-        opcConfig.put(OpcUaESClient.CONFIG_STORAGE_DIRECTORY, "/tmp/opcua-storage");
-        opcConfig.put(OpcUaESClient.CONFIG_SECURITY_POLICY, SecurityPolicy.None.getSecurityPolicyUri());
+        opcConfig.put(OpcUaESClient.CONFIG_STORAGE_DIRECTORY, STANDARD_STORAGE_DIRECTORY);
+        opcConfig.put(OpcUaESClient.CONFIG_SECURITY_POLICY, SecurityPolicy.Basic256Sha256.getSecurityPolicyUri());
+        opcConfig.put(OpcUaESClient.CONFIG_MESSAGE_SECURITY_MODE, MessageSecurityMode.SignAndEncrypt.toString());
         opcConfig.put(OpcUaESClient.CONFIG_DISCOVERY_ENDPOINT, Utils.OPC_INPROCESS_SERVER);
 
         OpcUaESClient client = Utils.makeConnection(config, false);
@@ -45,7 +47,7 @@ public class WriteToOPCUA extends OpcUaTestBase {
         Map<String, String> opcConfig = new HashMap<>();
 
         config.put(OpcUaESClient.CONFIG_OPC_UA_INFORMATION, opcConfig);
-        opcConfig.put(OpcUaESClient.CONFIG_STORAGE_DIRECTORY, "/tmp/opcua-storage");
+        opcConfig.put(OpcUaESClient.CONFIG_STORAGE_DIRECTORY, STANDARD_STORAGE_DIRECTORY);
         opcConfig.put(OpcUaESClient.CONFIG_SECURITY_POLICY, SecurityPolicy.None.getSecurityPolicyUri());
         opcConfig.put(OpcUaESClient.CONFIG_DISCOVERY_ENDPOINT, Utils.OPC_INPROCESS_SERVER);
 
@@ -103,7 +105,7 @@ public class WriteToOPCUA extends OpcUaTestBase {
         Map<String, String> opcConfig = new HashMap<>();
 
         config.put(OpcUaESClient.CONFIG_OPC_UA_INFORMATION, opcConfig);
-        opcConfig.put(OpcUaESClient.CONFIG_STORAGE_DIRECTORY, "/tmp/opcua-storage");
+        opcConfig.put(OpcUaESClient.CONFIG_STORAGE_DIRECTORY, STANDARD_STORAGE_DIRECTORY);
         opcConfig.put(OpcUaESClient.CONFIG_SECURITY_POLICY, SecurityPolicy.None.getSecurityPolicyUri());
         opcConfig.put(OpcUaESClient.CONFIG_DISCOVERY_ENDPOINT, Utils.OPC_INPROCESS_SERVER);
 

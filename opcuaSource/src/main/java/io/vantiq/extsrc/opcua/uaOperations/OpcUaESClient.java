@@ -21,6 +21,7 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode;
 import org.eclipse.milo.opcua.stack.core.types.builtin.Variant;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UShort;
+import org.eclipse.milo.opcua.stack.core.types.enumerated.MessageSecurityMode;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.MonitoringMode;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.TimestampsToReturn;
 import org.eclipse.milo.opcua.stack.core.types.structured.EndpointDescription;
@@ -31,10 +32,12 @@ import org.slf4j.helpers.MessageFormatter;
 
 import java.io.File;
 import java.net.URI;
+import java.security.cert.X509Certificate;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
@@ -57,6 +60,7 @@ public class OpcUaESClient {
     public static final String CONFIG_MI_NAMESPACE_INDEX = "ns";        // Short, but the OPCUA Conventiion
     public static final String CONFIG_MI_NAMESPACE_URN = "nsu";
     public static final String CONFIG_SECURITY_POLICY = "securityPolicy";
+    public static final String CONFIG_MESSAGE_SECURITY_MODE = "messageSecurityMode";
     public static final String CONFIG_DISCOVERY_ENDPOINT = "discoveryEndpoint";
     public static final String CONFIG_STORAGE_DIRECTORY = "storageDirectory";
 
@@ -84,7 +88,7 @@ public class OpcUaESClient {
     public static void setDefaultStorageDirectory(String dir) {
         defaultStorageDirectory = dir;
     }
-
+    public static String getDefaultStorageDirectory() { return defaultStorageDirectory;}
 
 
     /**
@@ -125,6 +129,15 @@ public class OpcUaESClient {
         client = createClient(opcConfig);
     }
 
+    public X509Certificate getCertificate() {
+        Optional<X509Certificate> maybeCert = client.getConfig().getCertificate();
+        if (maybeCert.isPresent()) {
+            return maybeCert.get();
+        } else {
+            return null;
+        }
+    }
+
     public boolean isConnected() {
         return connected;
     }
@@ -147,8 +160,7 @@ public class OpcUaESClient {
                     try {
                         client.connect().join();
                         connected = true;
-                    }
-                    catch (Throwable t) {
+                    } catch (Throwable t) {
                         log.error("Failed to connect to OPC: ", t);
                         throw t;    // We'll rethrow this so that the future will complete (exceptionally)
                     }
@@ -188,7 +200,7 @@ public class OpcUaESClient {
                     CONFIG_DISCOVERY_ENDPOINT;
         } else if (!opcConfig.containsKey(CONFIG_SECURITY_POLICY)) {
             errMsg = ".noSecurityPolicy: No OPC UA Security policy was specified in the configuration. "
-            + "The configuration should contain a property: " + CONFIG_SECURITY_POLICY;
+                    + "The configuration should contain a property: " + CONFIG_SECURITY_POLICY;
         }
 
         if (errMsg != null) {
@@ -225,12 +237,41 @@ public class OpcUaESClient {
         }
     }
 
-    private OpcUaClient createClient(Map<String, Object> config) throws OpcExtConfigException, Exception {
+    private MessageSecurityMode getMessageSecurityMode(Map<String, Object> config) throws OpcExtConfigException {
+        // config.messageSecurityMode should be the URI for the appropriate security policy.
+
+        String msgSecModeSpec = (String) config.get(CONFIG_MESSAGE_SECURITY_MODE);
+        MessageSecurityMode msgSecMode;
+        if (msgSecModeSpec == null || msgSecModeSpec.isEmpty()) {
+            // No message security mode will default to either #NONE or #SignAndEncrypt, depending on the security policy.  We will, however, log a warning\
+            SecurityPolicy secPol = getSecurityPolicy(config);
+            if (secPol.equals(SecurityPolicy.None)) {
+                msgSecModeSpec = MessageSecurityMode.None.toString();
+            } else {
+                msgSecModeSpec = MessageSecurityMode.SignAndEncrypt.toString();
+            }
+            log.warn(ERROR_PREFIX + ".defaultMessageSecurityMode: No OPC UA message security mode was specified in the configuration. " +
+                    "Using default value of '{}' based on the securityPolicy value of '{}'",
+                    msgSecModeSpec,
+                    secPol.getSecurityPolicyUri());
+        }
+        try {
+            msgSecMode = MessageSecurityMode.valueOf(msgSecModeSpec);
+            return msgSecMode;
+        } catch (IllegalArgumentException e) {
+            String errMsg = ERROR_PREFIX + ".invalidMessageSecurityMode: " + msgSecModeSpec + " is not a valid message security mode.";
+            log.error(errMsg);
+            throw new OpcExtConfigException(errMsg, e);
+        }
+    }
+
+    private OpcUaClient createClient(Map<String, Object> config) throws Exception {
 
         if (storageDirectory == null) {
-
+            throw new OpcExtConfigException(ERROR_PREFIX + ".missingStorageDirectory: No storage directory specified.");
         }
         SecurityPolicy securityPolicy = getSecurityPolicy(config);
+        MessageSecurityMode msgSecMode = getMessageSecurityMode(config);
 
         File securityDir = new File(storageDirectory, SECURITY_DIRECTORY);
         if (!securityDir.exists() && !securityDir.mkdirs()) {
@@ -269,10 +310,10 @@ public class OpcUaESClient {
         }
 
         EndpointDescription endpoint = Arrays.stream(endpoints)
-                .filter(e -> e.getSecurityPolicyUri().equals(securityPolicy.getSecurityPolicyUri()))
-                .findFirst().orElseThrow(() -> new Exception("no desired endpoints returned"));
+                .filter(e -> e.getSecurityPolicyUri().equals(securityPolicy.getSecurityPolicyUri()) && e.getSecurityMode().equals(msgSecMode))
+                .findFirst().orElseThrow(() -> new Exception("no acceptable endpoints returned"));
 
-        log.info("Using endpoint: {} [{}]", endpoint.getEndpointUrl(), securityPolicy);
+        log.info("Using endpoint: {} [{}, {}]", endpoint.getEndpointUrl(), securityPolicy, msgSecMode.toString());
 
         OpcUaClientConfig opcConfig = OpcUaClientConfig.builder()
                 .setApplicationName(LocalizedText.english("VANTIQ OPC-UA Source"))
@@ -296,9 +337,9 @@ public class OpcUaESClient {
      * Errors result in OpcExtRuntimeExceptions.
      *
      * @param namespaceURN The identity of the OPC UA namespace into which the write is to occur
-     * @param identifier   The node to be written
-     * @param datatype     The datatype of the entity in question.
-     * @param value        The value to be written.
+     * @param identifier The node to be written
+     * @param datatype The datatype of the entity in question.
+     * @param value The value to be written.
      * @throws OpcExtRuntimeException wraps any errors returned by the server.  May also be thrown if the namespace is not found.
      */
     public void writeValue(String namespaceURN, String identifier, String datatype, Object value) throws OpcExtRuntimeException {
@@ -320,10 +361,10 @@ public class OpcUaESClient {
      * The information necessary to write this value is specified by the parameters listed below.
      * Errors result in OpcExtRuntimeExceptions.
      *
-     * @param nsIndex    The namespace index of the OPC UA namespace into which the write is to occur
+     * @param nsIndex The namespace index of the OPC UA namespace into which the write is to occur
      * @param identifier The node to be written
-     * @param datatype   The datatype of the entity in question.
-     * @param value      The value to be written.
+     * @param datatype The datatype of the entity in question.
+     * @param value The value to be written.
      * @throws OpcExtRuntimeException wraps any errors returned by the server.
      */
     public void writeValue(UShort nsIndex, String identifier, String datatype, Object value) throws OpcExtRuntimeException {
@@ -365,7 +406,7 @@ public class OpcUaESClient {
      * Errors result in OpcExtRuntimeExceptions.
      *
      * @param namespaceURN The identity of the OPC UA namespace from which the read is to occur
-     * @param identifier   The node to be read.  The identifier is assumed to be of type 's' (String).
+     * @param identifier The node to be read.  The identifier is assumed to be of type 's' (String).
      * @return the read value (as a Java Object).
      * @throws OpcExtRuntimeException wraps any errors returned by the server.  May also be thrown if the namespace is not found.
      */
@@ -383,7 +424,7 @@ public class OpcUaESClient {
      * Errors result in OpcExtRuntimeExceptions.
      *
      * @param namespaceURN The identity of the OPC UA namespace from which the read is to occur
-     * @param identifier   The node to be read
+     * @param identifier The node to be read
      * @param identifierType The (OPC) type of the identifier (i, s, g, b) (s/String is the default)
      * @return the read value (as a Java Object).
      * @throws OpcExtRuntimeException wraps any errors returned by the server.  May also be thrown if the namespace is not found.
@@ -405,7 +446,7 @@ public class OpcUaESClient {
      * The information necessary to read this value is specified by the parameters listed below.
      * Errors result in OpcExtRuntimeExceptions.
      *
-     * @param nsIndex    The namespace index of the OPC UA namespace from which the read is to occur
+     * @param nsIndex The namespace index of the OPC UA namespace from which the read is to occur
      * @param identifier The node to be read
      * @return the read value (as a Java Object).
      * @throws OpcExtRuntimeException wraps any errors returned by the server.
@@ -434,7 +475,7 @@ public class OpcUaESClient {
      * actual monitored items.  The result is that data value changes to those monitored items will
      * cause the calling of the provided handler.
      *
-     * @param config  The configuration specifying the items to monitor.
+     * @param config The configuration specifying the items to monitor.
      * @param handler The handler to call with data change updates
      * @throws OpcExtRuntimeException In case of errors, etc.
      */
@@ -585,7 +626,7 @@ public class OpcUaESClient {
                 throw new OpcExtRuntimeException(errMsg);
         }
         return nodeIdentifier;
-   }
+    }
 
     /**
      *

@@ -57,13 +57,13 @@ class KeyStoreManager {
             KeyPair keyPair = SelfSignedCertificateGenerator.generateRsaKeyPair(2048);
 
             SelfSignedCertificateBuilder builder = new SelfSignedCertificateBuilder(keyPair)
-                .setCommonName("VANTIQ OPC UA Extension Source:selfSignedCert")
+                .setCommonName("VANTIQ OPC UA Extension Source")
                 .setOrganization("vantiq")
                 .setOrganizationalUnit("dev")
                 .setLocalityName("Walnut Creek")
                 .setStateName("CA")
                 .setCountryCode("US")
-                .setApplicationUri("urn:vantiq:extsrc:opcua:selfSignedCert")
+                .setApplicationUri("urn:io:vantiq:extsrc:opcua:client")
                 .addDnsName("localhost")
                 .addIpAddress("127.0.0.1");
 

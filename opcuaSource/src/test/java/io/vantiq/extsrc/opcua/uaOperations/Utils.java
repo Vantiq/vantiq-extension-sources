@@ -4,6 +4,7 @@ import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.security.cert.X509Certificate;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
@@ -47,14 +48,23 @@ public class Utils {
      * @param config config to use in building the connection.
      */
     static public OpcUaESClient makeConnection(Map config, boolean runAsync) {
+        return makeConnection(config, runAsync, null);
+    }
+    static public OpcUaESClient makeConnection(Map config, boolean runAsync, OpcUaTestBase testInstance) {
         Map<String, String> opcConfig = (Map<String, String>) config.get(OpcUaESClient.CONFIG_OPC_UA_INFORMATION);
-        deleteStorage(opcConfig.get(OpcUaESClient.CONFIG_STORAGE_DIRECTORY));
+        //deleteStorage(opcConfig.get(OpcUaESClient.CONFIG_STORAGE_DIRECTORY));
         String discoveryPoint = opcConfig.get(OpcUaESClient.CONFIG_DISCOVERY_ENDPOINT);
 
         OpcUaESClient client = null;
         try {
             client = new OpcUaESClient(config);
             assert client != null;
+            X509Certificate clientCert = client.getCertificate();
+            assert clientCert != null;
+            if (testInstance != null) {
+                testInstance.trustCertificate(clientCert);
+            }
+
             if (runAsync) {
                 CompletableFuture<Void> cf = client.connectAsync();
                 Thread.sleep(1500);  // We'll stall here to let some complete on their own...
@@ -116,7 +126,7 @@ public class Utils {
      *
      * @param path -- Directory to recursively delete
      */
-    private static void deleteStorage(String path) {
+    public static void deleteStorage(String path) {
         try {
             Files.walk(Paths.get(path))
                     .map(Path::toFile)

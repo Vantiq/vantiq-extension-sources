@@ -3,10 +3,13 @@ package io.vantiq.extsrc.opcua.uaOperations;
 import static org.junit.Assert.fail;
 
 import org.eclipse.milo.opcua.stack.core.security.SecurityPolicy;
+import org.eclipse.milo.opcua.stack.core.types.enumerated.MessageSecurityMode;
+import org.eclipse.milo.opcua.stack.core.types.structured.EndpointDescription;
 import org.junit.Assert;
 import org.junit.Test;
 
 import java.util.Arrays;
+import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -121,7 +124,7 @@ public class Connection extends OpcUaTestBase {
 
         assert client == null;
 
-        opcConfig.put(OpcUaESClient.CONFIG_STORAGE_DIRECTORY, "/tmp/opcua-storage");
+        opcConfig.put(OpcUaESClient.CONFIG_STORAGE_DIRECTORY, STANDARD_STORAGE_DIRECTORY);
 
         try {
             client = new OpcUaESClient(config);
@@ -143,31 +146,92 @@ public class Connection extends OpcUaTestBase {
 
     @Test
     public void testConnectionSecNone() {
-        doSecNone(false);
+        makeConnection(false,
+                SecurityPolicy.None.getSecurityPolicyUri(),
+                null,
+                false);
+        makeConnection(false,
+                SecurityPolicy.None.getSecurityPolicyUri(),
+                MessageSecurityMode.None.toString(),
+                false);
+
+    }
+
+    @Test
+    public void testConnectionSecure() {
+        EnumSet<SecurityPolicy> serverSecPols = exampleServer.getServer().getConfig().getSecurityPolicies();
+        // Unfortunately, no good way to find out what security modes there are.  So we'll
+        // traverse the endpoints and act appropriately.
+
+        EndpointDescription[] eps = exampleServer.getServer().getEndpointDescriptions();
+        EnumSet<MessageSecurityMode> serverMsgModes = EnumSet.noneOf(MessageSecurityMode.class);
+
+        for (EndpointDescription ep : eps) {
+            serverMsgModes.add(ep.getSecurityMode());
+        }
+
+        // Below, we'll traverse the valid combinations.  None's must be paired and are tested elsewhere
+        for (SecurityPolicy secPol: serverSecPols) {
+            if (!secPol.equals(SecurityPolicy.None) && !secPol.equals(SecurityPolicy.Aes256_Sha256_RsaPss)) {
+                // TODO: don't know why the Aes256... policy fails, even with BouncyCastle added.
+                for (MessageSecurityMode msgSec: serverMsgModes) {
+                    if (!msgSec.equals(MessageSecurityMode.None)) {
+                        log.info("Attempting sync connection using [{}, {}]", secPol, msgSec);
+                        makeConnection(false,
+                                secPol.getSecurityPolicyUri(),
+                                msgSec.toString(),
+                                true);
+
+                        log.info("Attempting sync connection using [{}, {}]", secPol, "(missing)");
+                        makeConnection(false,
+                                secPol.getSecurityPolicyUri(),
+                                null,           // Also check that the defaulting works correctly
+                                true);
+
+                        log.info("Attempting async connection using [{}, {}]", secPol, msgSec);
+                        makeConnection(true,
+                                secPol.getSecurityPolicyUri(),
+                                msgSec.toString(),
+                                true);
+                    }
+                }
+            }
+        }
     }
 
     @Test
     public void testConnectionSecNoneAsync() {
-        doSecNone(true);
+        makeConnection(true,
+                SecurityPolicy.None.getSecurityPolicyUri(),
+                null,
+                false);
     }
 
 
-    public void doSecNone(boolean runAsync) {
+    public void makeConnection(boolean runAsync, String secPolicy, String msgSecMode, boolean inProcessOnly) {
         HashMap config = new HashMap();
         Map<String, String> opcConfig = new HashMap<>();
 
         config.put(OpcUaESClient.CONFIG_OPC_UA_INFORMATION, opcConfig);
-        opcConfig.put(OpcUaESClient.CONFIG_STORAGE_DIRECTORY, "/tmp/opcua-storage");
-        opcConfig.put(OpcUaESClient.CONFIG_SECURITY_POLICY, SecurityPolicy.None.getSecurityPolicyUri());
+        opcConfig.put(OpcUaESClient.CONFIG_STORAGE_DIRECTORY, STANDARD_STORAGE_DIRECTORY);
+        opcConfig.put(OpcUaESClient.CONFIG_SECURITY_POLICY, secPolicy);
+        if (msgSecMode != null && !msgSecMode.isEmpty()) {
+            opcConfig.put(OpcUaESClient.CONFIG_MESSAGE_SECURITY_MODE, msgSecMode);
+        }
 
         // We'll test against a set of servers.  Hopefully, this will allow us to verify if things work
         // externally as well as internally.
-        List<String> pubServers = Arrays.asList(Utils.OPC_INPROCESS_SERVER,
-                Utils.OPC_PUBLIC_SERVER_1,
-                Utils.OPC_PUBLIC_SERVER_2,
-                Utils.OPC_PUBLIC_SERVER_3,
-                Utils.OPC_PUBLIC_SERVER_NO_GOOD
-        );
+        List<String> pubServers;
+        if (!inProcessOnly) {
+            pubServers = Arrays.asList(Utils.OPC_INPROCESS_SERVER,
+                    Utils.OPC_PUBLIC_SERVER_1,
+                    Utils.OPC_PUBLIC_SERVER_2,
+                    Utils.OPC_PUBLIC_SERVER_3,
+                    Utils.OPC_PUBLIC_SERVER_NO_GOOD
+            );
+        } else {
+            pubServers = Arrays.asList(Utils.OPC_INPROCESS_SERVER);
+        }
 
         for (String discEP : pubServers) {
             log.info("Attempting connection to public server: " + discEP);
@@ -177,7 +241,7 @@ public class Connection extends OpcUaTestBase {
 
     }
     public void performConnection(Map config, boolean runAsync) {
-        OpcUaESClient client = Utils.makeConnection(config, runAsync);
+        OpcUaESClient client = Utils.makeConnection(config, runAsync, this);
         if (client != null) {
             client.disconnect();
         }
