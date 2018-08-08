@@ -5,8 +5,6 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.nio.file.Files;
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
 import org.opencv.core.Mat;
@@ -17,7 +15,6 @@ import org.slf4j.LoggerFactory;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import jep.Jep;
-import jep.JepConfig;
 import jep.JepException;
 import jep.NDArray;
 //import org.tensorflow.Graph;
