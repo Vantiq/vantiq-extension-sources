@@ -692,7 +692,8 @@ public class ConfigurableUDPSource {
                 ConfigurableUDPSource.sendFromDatagram(packet, sources);
             }
             catch (SocketException e) {
-                if (!e.getMessage().equals("socket closed")) { // "socket closed" is expected on shutdown, we can ignore
+                // "socket closed" is expected on shutdown, we can ignore
+                if (!e.getMessage().equalsIgnoreCase("socket closed")) {
                     log.error("Error occurred on listening to UDP. No longer listening for sources " +
                             udpSocketToSources.get(socket), e);
                 }
