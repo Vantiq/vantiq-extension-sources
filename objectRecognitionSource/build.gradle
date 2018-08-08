@@ -23,7 +23,7 @@ repositories {
     jcenter()
 }
 
-mainClassName = 'io.vantiq.extsrc.udp.ConfigurableUDPSource'
+mainClassName = 'io.vantiq.extsrc.udp.ObjectRecognitionCore'
 
 
 dependencies {
@@ -32,6 +32,8 @@ dependencies {
     compile "org.slf4j:slf4j-api:1.7.25"
     
     compile "black.ninia:jep:3.8.1"
+    
+    compile "org.tensorflow:tensorflow:1.10.0"
     
     compile "ch.qos.logback:logback-classic:1.2.3"
     
