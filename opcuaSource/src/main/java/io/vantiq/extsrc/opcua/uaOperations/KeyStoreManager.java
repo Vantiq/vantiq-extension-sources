@@ -15,11 +15,8 @@
 package io.vantiq.extsrc.opcua.uaOperations;
 
 import lombok.extern.slf4j.Slf4j;
-import org.eclipse.milo.opcua.sdk.server.util.HostnameUtil;
 import org.eclipse.milo.opcua.stack.core.util.SelfSignedCertificateBuilder;
 import org.eclipse.milo.opcua.stack.core.util.SelfSignedCertificateGenerator;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -39,7 +36,7 @@ class KeyStoreManager {
         "^(([01]?\\d\\d?|2[0-4]\\d|25[0-5])\\.){3}([01]?\\d\\d?|2[0-4]\\d|25[0-5])$");
 
     private static final String CLIENT_ALIAS = "vantiq-opcua-extension";
-    private static final char[] PASSWORD = "password".toCharArray();
+    private static final char[] PASSWORD = "vantiqOpcSource".toCharArray();
 
     private X509Certificate clientCertificate;
     private KeyPair clientKeyPair;
