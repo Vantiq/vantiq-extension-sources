@@ -86,25 +86,35 @@ import java.util.regex.Pattern;
  * <dd>
  * These options specify how XML is translated.
  * <ul>
- *      <li>expectXmlIn: Optional. Specifies that the data incoming from the UDP source will be in an XML format. Note that this will throw away the name of the root element. If data is contained in the root element, it will be placed in the location "" before transformations. Default is false.
- *      <li>passXmlRootNameIn: Optional. Specifies the location to which the name of the root element should be placed. Does nothing if expectXmlIn is not set to true. Default is null.
+ *      <li>expectXmlIn: Optional. Specifies that the data incoming from the UDP source will be in an XML format. Note
+ *                      that this will throw away the name of the root element. If data is contained in the root
+ *                      element, it will be placed in the location "" before transformations. Default is false.
+ *      <li>passXmlRootNameIn: Optional. Specifies the location to which the name of the root element should be placed.
+ *                      Does nothing if expectXmlIn is not set to true. Default is null.
  * </ul></dd>
  * 
  * <dt><span class="strong">CSV Options</span></dt>
  * <dd>
  * This option specifies how CSV is translated.
  * <ul>
- *      <li>expectCsvIn: Optional. Specifies that the expected UDP data will be in CSV format. Expects that the data will use a header specifying the name of each object. Data will be received as an array of JSON Objects. Default is false.
+ *      <li>expectCsvIn: Optional. Specifies that the expected UDP data will be in CSV format. Expects that the data
+ *                      will use a header specifying the name of each object. Data will be received as an array of
+ *                      JSON Objects. Default is false.
  * </ul></dd>
  * 
  * <dt><span class="strong">Byte/String Options</span></dt>
  * <dd>
  * These options interpret data as pure bytes or a string in byte form. These two options are mutually exclusive.
  * <ul>
- *      <li>passBytesInAs: Optional. The location to which you would like to place the incoming data. This will take in the raw bytes received from the source and place them as chars of the same value in a String. Default is null.
- *      <li>regexParser: Optional. The settings to use for parsing the incoming byte data using regex. It contains the following options.
+ *      <li>passBytesInAs: Optional. The location to which you would like to place the incoming data. This will take
+ *                      in the raw bytes received from the source and place them as chars of the same value in a
+ *                      String. Default is null.
+ *      <li>regexParser: Optional. The settings to use for parsing the incoming byte data using regex. It contains
+ *                      the following options.
  *      <ul>
- *          <li>pattern: Required. The regex pattern that will be used to parse the incoming data. The parser will use the first match that appears in the data. See java.util.regex.Pattern for specifics on what constitutes a valid pattern.
+ *          <li>pattern: Required. The regex pattern that will be used to parse the incoming data. The parser will use
+ *                          the first match that appears in the data. See java.util.regex.Pattern for specifics on
+ *                          what constitutes a valid pattern.
  *          <li>locations: Required. An array of the locations in which to place the capture groups from pattern.
  *      </ul>
  * </ul></dd>

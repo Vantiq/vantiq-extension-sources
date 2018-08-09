@@ -32,24 +32,24 @@ import org.slf4j.LoggerFactory;
  * <dt><span class="strong">Vantiq Options</span></dt>
  * <dd><ul>
  * <li>{@code targetServer} -- The Vantiq site that hosts the projects to which the sources will connect. 
- *              Defaults to "dev.vantiq.com" when not set.</li>
+ *              Defaults to "dev.vantiq.com" when not set.
  * <li>{@code authToken} -- The authentication token that will allow this server to connect to Vantiq. Be aware that 
  *              this is namespace specific, so if you intend to connect to sources across several namespaces then 
  *              multiple config files will be required, each with its own instance of ConfigurableUDPSource. 
- *              Throws a RuntimeException when not set.</li>
+ *              Throws a RuntimeException when not set.
  * <li>{@code sources} -- An array containing the names of the sources that will be connected to. 
- *              Throws a RuntimeException when not set.</li>
+ *              Throws a RuntimeException when not set.
  * </ul></dd>
  * 
  * <dt><span class="strong">UDP Options</span></dt>
  * <dd><ul>
  * <li>{@code defaultBindPort} -- Sets the default port to which sources will bind if no other port is specified.
- *              Defaults to 3141 when not set</li>
+ *              Defaults to 3141 when not set
  * <li>{@code defaultBindAddress} -- Sets the default address to which the sources will bind if no other address is
  *              specified. Attempts to find a valid local address if it cannot find the given address. Typically only
- *              localhost and the computer's IP address will work.</li>
+ *              localhost and the computer's IP address will work.
  * <li>{@code maxPacketSize} -- Sets the maximum number of data bytes that the UDP socket can receive in a single 
- *              message. Defaults to 1024 when not set.</li>
+ *              message. Defaults to 1024 when not set.
  * </ul></dd>
  * </dl>
  * 
@@ -75,9 +75,9 @@ import org.slf4j.LoggerFactory;
  * <ul>
  *      <li>{@code listenAddress}: Optional. A String representing the address on which UDP messages will be sent and 
  *                      received. Typically only the localhost and the host's assigned IP address will work.
- *                      Default is set by the server config document.</li>
+ *                      Default is set by the server config document.
  *      <li>{@code listenPort}: Optional. The port number on which UDP messages will be sent and received. 
- *                      Default is set by the server config document.</li>
+ *                      Default is set by the server config document.
  * </ul>
  * <br>
  * The options for incoming and outgoing are described in {@link UDPNotificationHandler} and {@link UDPPublishHandler}
@@ -388,8 +388,8 @@ public class ConfigurableUDPSource {
      * Checks to see if the given {@code Object} is a valid description of a server
      *
      * @param server    The {@code Object} to check for validity
-     * @return          {@code true} if {@code server} is a {@link List} of size 2 whose first entry is a {@link String} and
-     *                  whose second entry is an integer between 0 and 65535, inclusive
+     * @return          {@code true} if {@code server} is a {@link List} of size 2 whose first entry is a 
+     *                  {@link String} and whose second entry is an integer between 0 and 65535, inclusive
      */
     static boolean isValidServer(Object server) {
         return server instanceof List && ((List) server).size() == 2 && ((List) server).get(0) instanceof String &&
@@ -540,8 +540,7 @@ public class ConfigurableUDPSource {
      * 2) Stalls until the WebSocket connection completes then authenticates, exiting on a failure<br>
      * 3) Stalls until it connects as a source. Once connected, any information received from publish messages
      *      is automatically dealt with through handlers in {@link ExtensionWebSocketClient}<br>
-     * 4) Reads data through the UDP connection, passing it through {@link #sendFromDatagram} to notify Vantiq as a source.<br>
-     *    The current maximum size for the received data is {@link #MAX_UDP_DATA}, and is set in {@link #MAX_UDP_DATA}<br>
+     * 4) Reads data through the UDP connection, passing it through {@link #sendFromDatagram} to notify Vantiq
      * 5) Exits upon receiving a query from any source
      *
      * @param args  Not used
@@ -749,7 +748,8 @@ public class ConfigurableUDPSource {
      *
      * @param sourceName    Name of the source
      * @param port          The port number to check
-     * @return              {@code true} if the source's config document said to receive from the port, {@code false} otherwise
+     * @return              {@code true} if the source's config document said to receive from the port, {@code false}
+     *                      otherwise
      */
     static boolean matchesPort(String sourceName, int port) {
         Object srcPorts = sourcePorts.get(sourceName);
@@ -769,7 +769,8 @@ public class ConfigurableUDPSource {
      *
      * @param sourceName    Name of the source
      * @param address       The {@link InetAddress} to check
-     * @return              {@code true} if the source's config document said to receive from the address, {@code false} otherwise
+     * @return              {@code true} if the source's config document said to receive from the address,
+     *                      {@code false} otherwise
      */
     static boolean matchesAddress(String sourceName, InetAddress address) {
         Object srcAddr = sourceAddresses.get(sourceName);
@@ -810,8 +811,8 @@ public class ConfigurableUDPSource {
      *
      * @param map   The {@link Map} which you would like to check
      * @param key   The key which you would like to check
-     * @return      {@code true} if {@code map.get(key)} is either a boolean and {@code true}, or not a boolean and non-null,
-     *              {@code false} otherwise
+     * @return      {@code true} if {@code map.get(key)} is either a boolean and {@code true}, or not a boolean and
+     *              non-null, {@code false} otherwise
      */
     static boolean valueIsTrue(Map map, Object key) {
         Object val = map.get(key);
