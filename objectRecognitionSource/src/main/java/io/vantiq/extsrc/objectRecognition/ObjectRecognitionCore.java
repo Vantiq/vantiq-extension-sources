@@ -1,10 +1,11 @@
 package io.vantiq.extsrc.objectRecognition;
 
+import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Timer;
-import java.util.TimerTask;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
@@ -22,7 +23,7 @@ import io.vantiq.extjsdk.Handler;
 import io.vantiq.extjsdk.Response;
 
 public class ObjectRecognitionCore {
-    // TODO make configurable serverside
+    // vars for server configuration
     static String sourceName            = "Camera1";
     static String authToken             = "gcy1hHR39ge2PNCZeiUbYKAev-G7u-KyPh2Ns4gI0Y8=";
     static String targetVantiqServer    = "ws://localhost:8080";
@@ -41,87 +42,7 @@ public class ObjectRecognitionCore {
     static VideoCapture vidCapture      = null;
     
     
-    static Handler<ExtensionServiceMessage> objRecConfigHandler = new Handler<ExtensionServiceMessage>() {
-
-        @Override
-        public void handleMessage(ExtensionServiceMessage message) {
-            Map<String,Object> config = (Map) message.getObject();
-            Map<String,Object> dataSource;
-            Map<String,Object> neuralNet; // TODO rename
-            
-            // Obtain the Maps for each object
-            if ( !(config.get("extSrcConfig") instanceof Map) ) {
-                log.error("No configuration received for source ' " + sourceName + "'. Exiting...");
-                exit();
-            }
-            config = (Map) config.get("extSrcConfig");
-            if ( !(config.get("dataSource") instanceof Map)) {
-                log.error("No data source specified for source ' " + sourceName + "'. Exiting...");
-                exit();
-            }
-            dataSource = (Map) config.get("dataSource");
-            if ( !(config.get("neuralNet") instanceof Map)) {
-                log.error("No neural net specified for source ' " + sourceName + "'. Exiting...");
-                exit();
-            }
-            neuralNet = (Map) config.get("neuralNet");
-            
-            // Obtain the files for the net
-            if (neuralNet.get("pbFile") instanceof String && neuralNet.get("metaFile") instanceof String) {
-                pbFile = (String) neuralNet.get("pbFile");
-                metaFile = (String) neuralNet.get("metaFile");
-            } else if (neuralNet.get("cfgFile") instanceof String && neuralNet.get("weightsFile") instanceof String) {
-                cfgFile = (String) neuralNet.get("cfgFile");
-                weightsFile = (String) neuralNet.get("weightsFile");
-            } else {
-                log.error("No valid neural net combination of either pbFile and metaFile or cfgFile and weightsFile");
-                log.error("Exiting...");
-                exit();
-            }
-            
-            // Figure out where to receive the data from
-            if (dataSource.get("fileLocation") instanceof String) {
-                imageLocation = (String) dataSource.get("fileLocation");
-            } else if (dataSource.get("camera") instanceof Integer && (int) dataSource.get("camera") >= 0) {
-                cameraNumber =  (int) dataSource.get("camera");
-                vidCapture = new VideoCapture(cameraNumber); // Can add API preferences, found in Videoio
-            } else {
-                log.error("No valid polling target");
-                log.error("Exiting...");
-                exit();
-            }
-            
-            if (dataSource.get("polling") instanceof Integer) {
-                int polling = (int) dataSource.get("polling");
-                if (polling > 0) {
-                    pollRate = polling;
-                    TimerTask task = new TimerTask() {
-                        boolean isRunning = false;
-                        @Override
-                        public void run() {
-                            if (!isRunning) {
-                                isRunning = true;
-                                Mat image = getImage();
-                                sendDataFromImage(image);
-                                isRunning = false;
-                            }
-                        }
-                    };
-                    pollTimer = new Timer("dataCapture");
-                    pollTimer.scheduleAtFixedRate(task, 0, pollRate);
-                } else if (polling == 0) {
-                    constantPolling = true;
-                } else {
-                    // TODO snapshot on publish/query choice TBD
-                }
-            } else {
-                log.error("No valid polling rate");
-                log.error("Exiting...");
-                exit();
-            }
-        }
-        
-    };
+    static Handler<ExtensionServiceMessage> objRecConfigHandler;
     
     // vars for internal use
     public static boolean           stop    = false;
@@ -141,9 +62,10 @@ public class ObjectRecognitionCore {
     };
     
     public static void main(String[] args) {
-        setup(args); // TODO unwritten
+        setup(args);
         
         client = new ExtensionWebSocketClient(sourceName);
+        objRecConfigHandler = new ObjectRecognitionConfigHandler(sourceName);
         
         client.setConfigHandler(objRecConfigHandler);
         //client.setHttpHandler(httpHandler);
@@ -223,13 +145,67 @@ public class ObjectRecognitionCore {
             else {
                 log.error("Failed to connect to '" + sourceName + "' within 10 seconds");
             }
-            client.stop();
-            System.exit(0);
+            exit();
         }
     }
     
     public static void setup(String[] args) {
-        // TODO server setup
+        Map<String, Object> config = null;
+        if (args != null) {
+            obtainServerConfig(args[0]);
+        } else {
+            obtainServerConfig("config.json");
+        }
+        setupServer(config);
     }
     
+    
+    /**
+     * Turn the given JSON file into a {@link Map}. 
+     * 
+     * @param fileName  The name of the JSON file holding the server configuration.
+     * @return          A {@link Map} that holds the contents of the JSON file.
+     */
+    static Map<String, Object> obtainServerConfig(String fileName) {
+        File configFile = new File(fileName);
+        log.debug(configFile.getAbsolutePath());
+        Map<String, Object>  config = new LinkedHashMap();
+        ObjectMapper mapper = new ObjectMapper();
+        try {
+            config = mapper.readValue(configFile, Map.class);
+        } catch (IOException e) {
+            throw new RuntimeException("Could not find valid server config file. Expected location: '" 
+                    + configFile.getAbsolutePath() + "'", e);
+        } catch (Exception e) {
+            throw new RuntimeException("Error occurred when trying to read the server config file. "
+                    + "Please ensure it is proper JSON.", e);
+        }
+
+        return config;
+
+    }
+
+    /**
+     * Sets up the defaults for the server based on the configuration file
+     *
+     * @param config    The {@link Map} obtained from the config file
+     */
+    static void setupServer(Map config) {
+        targetVantiqServer = config.get("targetServer") instanceof String ? (String) config.get("targetServer") :
+                "wss://dev.vantiq.com/api/v1/wsock/websocket";
+        if (config.get("authToken") instanceof String) {
+            authToken = (String) config.get("authToken") ;
+        } else {
+            log.error("No valid authentication token in server settings");
+            log.error("Exiting...");
+            exit();
+        }
+        if (config.get("source") instanceof String) {
+            sourceName = (String) config.get("source");
+        } else {
+            log.error("No valid source in server settings");
+            log.error("Exiting...");
+            exit();
+        }
+    }
 }
