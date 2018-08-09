@@ -11,7 +11,7 @@ import org.slf4j.LoggerFactory;
 import jep.Jep;
 import jep.NDArray;
 
-public class DarkflowProcessor implements NeuralNetInterface{ // TODO rename to something not containing interface
+public class DarkflowProcessor implements NeuralNetInterface{
     
     Logger log = LoggerFactory.getLogger(this.getClass());
     Jep jep = null;

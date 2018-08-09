@@ -22,10 +22,18 @@ public class ObjectRecognitionConfigHandler extends Handler<ExtensionServiceMess
     String sourceName;
     boolean configComplete = false;
     
+    /**
+     * Initializes the Handler for a source 
+     * @param sourceName    The source that this handler is attached to
+     */
     public ObjectRecognitionConfigHandler(String sourceName) {
         this.sourceName = sourceName;
     }
     
+    
+    /**
+     * Interprets the configuration message sent by the Vantiq server and sets up the neural network and data stream.
+     */
     @Override
     public void handleMessage(ExtensionServiceMessage message) {
         Map<String,Object> config = (Map) message.getObject();
@@ -64,13 +72,13 @@ public class ObjectRecognitionConfigHandler extends Handler<ExtensionServiceMess
         
         
         // Figure out where to receive the data from
+        nu.pattern.OpenCV.loadShared();
         if (dataSource.get("fileLocation") instanceof String) {
             ObjectRecognitionCore.imageLocation = (String) dataSource.get("fileLocation");
         } else if (dataSource.get("camera") instanceof Integer && (int) dataSource.get("camera") >= 0) {
             int cameraNumber = (int) dataSource.get("camera");
             ObjectRecognitionCore.cameraNumber =  cameraNumber;
             
-            nu.pattern.OpenCV.loadShared();
             ObjectRecognitionCore.vidCapture = new VideoCapture(cameraNumber); // Can add API preferences, found in Videoio
         } else {
             log.error("No valid polling target");

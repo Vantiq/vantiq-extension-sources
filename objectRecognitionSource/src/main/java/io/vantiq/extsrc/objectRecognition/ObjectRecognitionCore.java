@@ -19,7 +19,6 @@ import org.slf4j.LoggerFactory;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-import io.vantiq.extjsdk.ExtensionServiceMessage;
 import io.vantiq.extjsdk.ExtensionWebSocketClient;
 import io.vantiq.extjsdk.Handler;
 import io.vantiq.extjsdk.Response;
@@ -62,8 +61,8 @@ public class ObjectRecognitionCore {
     };
     
     /**
-     * 
-     * @param args
+     * Connects to the Vantiq source and starts polling for data. Exits if 
+     * @param args  Should be either null or the first argument as a config file
      */
     public static void main(String[] args) {
         // setup(args); // TODO uncomment

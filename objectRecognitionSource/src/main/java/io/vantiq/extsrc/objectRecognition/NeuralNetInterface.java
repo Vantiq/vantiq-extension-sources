@@ -8,7 +8,7 @@ import org.opencv.core.Mat;
 /**
  * An interface for the neural net that will process the image and return a List of data representing the objects found.
  */
-public interface NeuralNetInterface { // TODO rename to something not containing interface
+public interface NeuralNetInterface {
     
     /**
      * Setup the neural net for image processing.
