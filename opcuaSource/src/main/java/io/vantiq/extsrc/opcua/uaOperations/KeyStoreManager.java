@@ -49,6 +49,7 @@ class KeyStoreManager {
     private X509Certificate clientCertificate;
     private KeyPair clientKeyPair;
     private KeyStore keyStore;
+    private File keyStoreFile;
 
     KeyStoreManager load(File baseDir, String password) throws Exception {
         providedPassword = password.toCharArray();
@@ -63,11 +64,11 @@ class KeyStoreManager {
     KeyStoreManager load(File baseDir) throws Exception {
         keyStore = KeyStore.getInstance("PKCS12");
 
-        File serverKeyStore = baseDir.toPath().resolve("opcuaESKeystore.pfx").toFile();
+        keyStoreFile = baseDir.toPath().resolve("opcuaESKeystore.pfx").toFile();
 
-        log.info("Loading KeyStore at {}", serverKeyStore);
+        log.info("Loading KeyStore at {}", keyStoreFile);
 
-        if (!serverKeyStore.exists()) {
+        if (!keyStoreFile.exists()) {
             keyStore.load(null, providedPassword);
 
             KeyPair keyPair = SelfSignedCertificateGenerator.generateRsaKeyPair(2048);
@@ -94,10 +95,9 @@ class KeyStoreManager {
 
             X509Certificate certificate = builder.build();
 
-            keyStore.setKeyEntry(CLIENT_ALIAS, keyPair.getPrivate(), providedPassword, new X509Certificate[]{certificate});
-            keyStore.store(new FileOutputStream(serverKeyStore), providedPassword);
+            addCert(CLIENT_ALIAS, keyPair.getPrivate(), certificate);
         } else {
-            keyStore.load(new FileInputStream(serverKeyStore), providedPassword);
+            keyStore.load(new FileInputStream(keyStoreFile), providedPassword);
         }
 
         Key serverPrivateKey = keyStore.getKey(CLIENT_ALIAS, providedPassword);
@@ -108,6 +108,11 @@ class KeyStoreManager {
         }
 
         return this;
+    }
+
+    void addCert(String alias, PrivateKey pKey, X509Certificate cert) throws Exception {
+        keyStore.setKeyEntry(alias, pKey, providedPassword, new X509Certificate[]{cert});
+        keyStore.store(new FileOutputStream(keyStoreFile), providedPassword);
     }
 
     X509Certificate getClientCertificate() {

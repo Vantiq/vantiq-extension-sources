@@ -8,6 +8,7 @@ import org.eclipse.milo.opcua.stack.core.types.structured.EndpointDescription;
 import org.junit.Assert;
 import org.junit.Test;
 
+import java.security.cert.X509Certificate;
 import java.util.Arrays;
 import java.util.EnumSet;
 import java.util.HashMap;
@@ -250,7 +251,7 @@ public class Connection extends OpcUaTestBase {
     }
 
     @Test
-    public void testConnectionSecure() {
+    public void testConnectionSecureUpw() {
         EnumSet<SecurityPolicy> serverSecPols = exampleServer.getServer().getConfig().getSecurityPolicies();
         // Unfortunately, no good way to find out what security modes there are.  So we'll
         // traverse the endpoints and act appropriately.
@@ -315,6 +316,50 @@ public class Connection extends OpcUaTestBase {
                                     msgSec.toString(),
                                     OpcUaESClient.CONFIG_IDENTITY_USERNAME_PASSWORD,
                                     uPw,
+                                    true);
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    @Test
+    public void testConnectionSecureCert() {
+        EnumSet<SecurityPolicy> serverSecPols = exampleServer.getServer().getConfig().getSecurityPolicies();
+        // Unfortunately, no good way to find out what security modes there are.  So we'll
+        // traverse the endpoints and act appropriately.
+
+        EndpointDescription[] eps = exampleServer.getServer().getEndpointDescriptions();
+        EnumSet<MessageSecurityMode> serverMsgModes = EnumSet.noneOf(MessageSecurityMode.class);
+
+        for (EndpointDescription ep : eps) {
+            serverMsgModes.add(ep.getSecurityMode());
+        }
+
+        // Below, we'll traverse the valid combinations.  None's must be paired and are tested elsewhere
+        for (SecurityPolicy secPol : serverSecPols) {
+            if (!secPol.equals(SecurityPolicy.None) && !secPol.equals(SecurityPolicy.Aes256_Sha256_RsaPss)) {
+                // TODO: don't know why the Aes256... policy fails, even with BouncyCastle added.
+                for (MessageSecurityMode msgSec : serverMsgModes) {
+                    if (!msgSec.equals(MessageSecurityMode.None)) {
+
+                        // Defaults tested in *Upw test...
+                        for (String certKey : trustedTestCerts) {
+                            log.info("Attempting sync connection using [{}, {}] using certificate: '{}'", secPol, msgSec, certKey);
+                            makeConnection(false,
+                                    secPol.getSecurityPolicyUri(),
+                                    msgSec.toString(),
+                                    OpcUaESClient.CONFIG_IDENTITY_CERTIFICATE,
+                                    certKey,
+                                    true);
+
+                            log.info("Attempting async connection using [{}, {}] using certificate: '{}'", secPol, msgSec, certKey);
+                            makeConnection(true,
+                                    secPol.getSecurityPolicyUri(),
+                                    msgSec.toString(),
+                                    OpcUaESClient.CONFIG_IDENTITY_CERTIFICATE,
+                                    certKey,
                                     true);
                         }
                     }

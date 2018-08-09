@@ -68,12 +68,6 @@ public class Utils {
         OpcUaESClient client = null;
         try {
             client = new OpcUaESClient(config);
-            assert client != null;
-            X509Certificate clientCert = client.getCertificate();
-            assert clientCert != null;
-            if (testInstance != null) {
-                testInstance.trustCertificate(clientCert);
-            }
 
             if (runAsync) {
                 CompletableFuture<Void> cf = client.connectAsync();
