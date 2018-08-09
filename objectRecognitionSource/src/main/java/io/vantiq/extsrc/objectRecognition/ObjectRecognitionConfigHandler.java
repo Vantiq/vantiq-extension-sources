@@ -59,7 +59,7 @@ public class ObjectRecognitionConfigHandler extends Handler<ExtensionServiceMess
 //        NeuralNetInterface tfInterface = getNeuralNet(neuralNetClassName);
         NeuralNetInterface neuralNet = new DarkflowProcessor(); // TODO replace with generic version
         ObjectRecognitionCore.neuralNet = neuralNet;
-        neuralNet.setupImageProcessing(neuralNetConfig);
+        neuralNet.setupImageProcessing(neuralNetConfig, ObjectRecognitionCore.modelDirectory);
         
         
         // Figure out where to receive the data from

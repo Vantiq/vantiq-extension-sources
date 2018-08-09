@@ -2,7 +2,6 @@ package io.vantiq.extsrc.objectRecognition;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -30,13 +29,10 @@ public class ObjectRecognitionCore {
     static String sourceName            = "Camera1";
     static String authToken             = "gcy1hHR39ge2PNCZeiUbYKAev-G7u-KyPh2Ns4gI0Y8=";
     static String targetVantiqServer    = "ws://localhost:8080";
+    static String modelDirectory        = "models/";
     
     
     // vars for source configuration
-    static String       pbFile          = null;
-    static String       metaFile        = null;
-    static String       cfgFile         = null;
-    static String       weightsFile     = null;
     static boolean      constantPolling = false;
     static int          pollRate        = 0;
     static Timer        pollTimer       = null;
@@ -65,6 +61,10 @@ public class ObjectRecognitionCore {
         
     };
     
+    /**
+     * 
+     * @param args
+     */
     public static void main(String[] args) {
         // setup(args); // TODO uncomment
         
@@ -88,15 +88,23 @@ public class ObjectRecognitionCore {
                 log.error("Exception occurred while waiting on the 'stop' Future", e);
             }
         }
+        log.info("Closing...");
         
         exit();
     }
     
+    /**
+     * Processes the image then sends the results to the Vatniq source
+     * @param image An OpenCV Mat representing the image to be translated
+     */
     protected static void sendDataFromImage(Mat image) {
         List<Map> imageResults = neuralNet.processImage(image);
         client.sendNotification(imageResults);
     }
     
+    /**
+     * Closes all resources held by this program and then closes the connection. 
+     */
     protected static void exit() {
         if (client != null && client.isOpen()) {
             client.stop();
@@ -112,18 +120,6 @@ public class ObjectRecognitionCore {
         }
         
         System.exit(0);
-    }
-
-    /**
-     * Processes the image with YOLO and returns the objects identified by the neural net.
-     * @param   image   The OpenCV Mat describing the image
-     * @return          An ArrayList of Maps containing the object identified. Each map will have a label specifying the
-     *                  object type, a confidence value represented as a float between 0 and 1 (inclusive), and the
-     *                  x-y coordinates for the top-left and bottom-right corners of the bounding box. 
-     */
-    public static ArrayList<Map> processImage(Mat image){
-        // TODO do image processing with tensorflow
-        return null;
     }
 
     /**
@@ -234,6 +230,9 @@ public class ObjectRecognitionCore {
             log.error("No valid source in server settings");
             log.error("Exiting...");
             exit();
+        }
+        if (config.get("modelDirectory") instanceof String) {
+            modelDirectory = (String) config.get("modelDirectory");
         }
     }
 }

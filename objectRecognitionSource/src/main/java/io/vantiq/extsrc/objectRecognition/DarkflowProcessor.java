@@ -16,21 +16,21 @@ public class DarkflowProcessor implements NeuralNetInterface{ // TODO rename to 
     Logger log = LoggerFactory.getLogger(this.getClass());
     Jep jep = null;
     
-    String modelLocation;
-    String weightsLocation;
+    String modelFile;
+    String weightsFile;
     double threshold;
     
-    public void setupImageProcessing(Map<String, ?> neuralNet) {
-        readConfig(neuralNet);
+    public void setupImageProcessing(Map<String, ?> neuralNet, String modelDirectory) {
+        setup(neuralNet, modelDirectory);
         
         setupJep();
     }
     
-    private void readConfig(Map<String, ?> neuralNet) {
+    private void setup(Map<String, ?> neuralNet, String modelDirectory) {
         // Obtain the files for the net
        if (neuralNet.get("cfgFile") instanceof String && neuralNet.get("weightsFile") instanceof String) {
-           modelLocation = (String) neuralNet.get("cfgFile");
-           weightsLocation = (String) neuralNet.get("weightsFile");
+           modelFile = modelDirectory + (String) neuralNet.get("cfgFile");
+           weightsFile = modelDirectory + (String) neuralNet.get("weightsFile");
        } else {
            log.error("No valid combination of cfgFile and weightsFile");
            log.error("Exiting...");
@@ -55,13 +55,13 @@ public class DarkflowProcessor implements NeuralNetInterface{ // TODO rename to 
         }
         
         try {
-            jep.eval("options = {\"model\":\"" + modelLocation + "\", "
-                    + "\"load\":\"" + weightsLocation + "\", "
+            jep.eval("options = {\"model\":\"" + modelFile + "\", "
+                    + "\"load\":\"" + weightsFile + "\", "
                     + "\"threshold\":" + threshold + "}");
             jep.eval("tfnet = TFNet(options)");
         } catch (Exception e) {
-            log.error("Could not create a net with the given options: model='" + modelLocation 
-                    + "', weights='" + weightsLocation + "', threshold=" + threshold);
+            log.error("Could not create a net with the given options: model='" + modelFile 
+                    + "', weights='" + weightsFile + "', threshold=" + threshold);
             ObjectRecognitionCore.exit();
         }
     }

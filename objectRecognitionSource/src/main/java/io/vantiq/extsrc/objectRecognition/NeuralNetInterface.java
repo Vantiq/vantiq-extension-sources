@@ -15,7 +15,7 @@ public interface NeuralNetInterface { // TODO rename to something not containing
      * @param neuralNetConfig   A map containing the configuration necessary to setup the neural net. This will be the
      *                          'neuralNet' object in the source configuration document.
      */
-    public void setupImageProcessing(Map<String,?> neuralNetConfig);
+    public void setupImageProcessing(Map<String,?> neuralNetConfig, String modelDirectory);
     
     /**
      * Process the image and return a List of Maps describing the objects identified
