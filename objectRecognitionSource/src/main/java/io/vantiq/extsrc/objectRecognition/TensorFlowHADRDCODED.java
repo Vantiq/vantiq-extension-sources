@@ -97,8 +97,8 @@ public class TensorFlowHADRDCODED {
     }
     
     public static void jepMain(String[] args) {
-        String modelName = "cfg/yolo.cfg";
-        String weightsLocation = "yolov2.weights";
+        String modelName = "models/cfg/yolo.cfg";
+        String weightsLocation = "models/yolov2.weights";
         double threshold = 0.1;
         String imageLocation = "./index.jpg";
 

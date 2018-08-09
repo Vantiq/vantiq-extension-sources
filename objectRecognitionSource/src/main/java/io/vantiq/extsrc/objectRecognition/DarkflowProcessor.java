@@ -15,26 +15,43 @@ public class DarkflowProcessor implements NeuralNetInterface{ // TODO rename to 
     
     Logger log = LoggerFactory.getLogger(this.getClass());
     Jep jep = null;
+    JepThread jepThread = null;
     
     String modelFile;
     String weightsFile;
-    double threshold;
+    double threshold = 0.5;
     
     public void setupImageProcessing(Map<String, ?> neuralNet, String modelDirectory) {
-        setup(neuralNet, modelDirectory);
-        
-        setupJep();
+        jepThread = new JepThread();
+        jepThread.setupImageProcessing(neuralNet, modelDirectory);
+        jepThread.start();
+        synchronized(jepThread) {
+            if (jepThread.neuralNet != null) {
+                try {
+                    jepThread.wait();
+                    log.info("awake");
+                } catch (InterruptedException e) {}
+            } else {
+                log.info("no need to wait");
+            }
+        }
     }
     
     private void setup(Map<String, ?> neuralNet, String modelDirectory) {
         // Obtain the files for the net
        if (neuralNet.get("cfgFile") instanceof String && neuralNet.get("weightsFile") instanceof String) {
-           modelFile = modelDirectory + (String) neuralNet.get("cfgFile");
+           modelFile = modelDirectory + "cfg/" + (String) neuralNet.get("cfgFile");
            weightsFile = modelDirectory + (String) neuralNet.get("weightsFile");
        } else {
            log.error("No valid combination of cfgFile and weightsFile");
            log.error("Exiting...");
            ObjectRecognitionCore.exit();
+       }
+       if (neuralNet.get("threshold") instanceof Double || neuralNet.get("threshold") instanceof Float) {
+           double thresh = (Double) neuralNet.get("threshold");
+           if (thresh > 0 && thresh <= 1) {
+               threshold = thresh;
+           }
        }
    }
     
@@ -61,12 +78,24 @@ public class DarkflowProcessor implements NeuralNetInterface{ // TODO rename to 
             jep.eval("tfnet = TFNet(options)");
         } catch (Exception e) {
             log.error("Could not create a net with the given options: model='" + modelFile 
-                    + "', weights='" + weightsFile + "', threshold=" + threshold);
+                    + "', weights='" + weightsFile + "', threshold=" + threshold, e);
             ObjectRecognitionCore.exit();
         }
     }
     
     public List<Map> processImage(Mat image) {
+        log.info("Trying to process image");
+        jepThread.processImage(image);
+        synchronized (jepThread) {
+            try {
+                jepThread.wait();
+            } catch (InterruptedException e) {
+            }
+        }
+        return jepThread.retrieveProcessedImage();
+    }
+    
+    public List<Map> doImageProcessing(Mat image) {
         if (image == null || image.empty()) {
             log.warn("Null or empty image sent to be processed. Returning empty ArrayList");
             return new ArrayList<>();
@@ -95,7 +124,7 @@ public class DarkflowProcessor implements NeuralNetInterface{ // TODO rename to 
                 return new ArrayList<>();
             }
         } catch (Exception e) {
-            log.error("Could not interpret message.", e);
+            log.error("Could not interpret image.", e);
             log.error("Returning empty ArayList");
             return new ArrayList<>();
         }
@@ -104,9 +133,70 @@ public class DarkflowProcessor implements NeuralNetInterface{ // TODO rename to 
     public void close() {
         if (jep != null) {
             try {
+                jep.eval("exit()");
+            } catch (Exception e) {}
+            try {
                 jep.close();
-            } catch (Exception e) {
-                // Do nothing with the exception
+            } catch (Exception e) {}
+        }
+        if (jepThread != null && jepThread.isAlive()) {
+            jepThread.threadStop = true;
+        }
+    }
+    
+    private class JepThread extends Thread {
+        Logger log = LoggerFactory.getLogger(this.getClass());
+        
+        boolean threadStop = false;
+        Mat image = null;
+        Map<String, ?> neuralNet = null;
+        String modelDirectory = null;
+        
+        List<Map> imageResults = new ArrayList<>();
+        
+        
+        public void setupImageProcessing(Map<String, ?> neuralNet, String modelDirectory) {
+            this.neuralNet = neuralNet;
+            this.modelDirectory = modelDirectory;
+            
+        }
+        
+        public void processImage(Mat image) {
+            this.image = image;
+            log.info("image set");
+        }
+        public List<Map> retrieveProcessedImage() {
+            List<Map> results = imageResults;
+            imageResults = new ArrayList<>();
+            return results;
+        }
+        
+        @Override
+        public void run() {
+            if (neuralNet == null) {
+                log.error("JepThread started without input data");
+            } else {
+                log.info("Setting up processing");
+                setup(neuralNet, modelDirectory);
+                
+                setupJep();
+                neuralNet = null;
+                modelDirectory = null;
+                log.info("pre-sync notifying");
+                synchronized (this) {
+                    log.info("post-sync notifying");
+                    this.notify();
+                }
+            }
+            while (!threadStop) {
+                if (image != null) {
+                    log.info("Processing image");
+                    imageResults = doImageProcessing(image);
+                    synchronized (this) {
+                        this.notify();
+                    }
+                }
+                Thread.yield();
             }
         }
     }

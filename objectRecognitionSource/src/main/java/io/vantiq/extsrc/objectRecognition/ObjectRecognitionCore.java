@@ -41,7 +41,7 @@ public class ObjectRecognitionCore {
     static VideoCapture vidCapture      = null;
     
     
-    static Handler<ExtensionServiceMessage> objRecConfigHandler;
+    static ObjectRecognitionConfigHandler objRecConfigHandler;
     
     // vars for internal use
     public static CompletableFuture<Void>   stop        = new CompletableFuture<>();
@@ -76,6 +76,10 @@ public class ObjectRecognitionCore {
         
         exitIfConnectionFails(client);
         
+        while (!objRecConfigHandler.isComplete()) {
+            Thread.yield();
+        }
+        
         if (constantPolling) {
             while (!stop.isDone()) {
                 Mat image = getImage();
@@ -94,7 +98,7 @@ public class ObjectRecognitionCore {
     }
     
     /**
-     * Processes the image then sends the results to the Vatniq source
+     * Processes the image then sends the results to the Vantiq source
      * @param image An OpenCV Mat representing the image to be translated
      */
     protected static void sendDataFromImage(Mat image) {

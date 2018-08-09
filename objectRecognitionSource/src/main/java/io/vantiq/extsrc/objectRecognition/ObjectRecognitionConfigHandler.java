@@ -20,6 +20,7 @@ public class ObjectRecognitionConfigHandler extends Handler<ExtensionServiceMess
     
     Logger log = LoggerFactory.getLogger(this.getClass());
     String sourceName;
+    boolean configComplete = false;
     
     public ObjectRecognitionConfigHandler(String sourceName) {
         this.sourceName = sourceName;
@@ -32,11 +33,11 @@ public class ObjectRecognitionConfigHandler extends Handler<ExtensionServiceMess
         Map<String,Object> neuralNetConfig; // TODO rename
         
         // Obtain the Maps for each object
-        if ( !(config.get("extSrcConfig") instanceof Map) ) {
+        if ( !(config.get("config") instanceof Map && ((Map)config.get("config")).get("extSrcConfig") instanceof Map) ) {
             log.error("No configuration received for source ' " + sourceName + "'. Exiting...");
             ObjectRecognitionCore.exit();
         }
-        config = (Map) config.get("extSrcConfig");
+        config = (Map) ((Map) config.get("config")).get("extSrcConfig");
         if ( !(config.get("dataSource") instanceof Map)) {
             log.error("No data source specified for source ' " + sourceName + "'. Exiting...");
             ObjectRecognitionCore.exit();
@@ -68,6 +69,8 @@ public class ObjectRecognitionConfigHandler extends Handler<ExtensionServiceMess
         } else if (dataSource.get("camera") instanceof Integer && (int) dataSource.get("camera") >= 0) {
             int cameraNumber = (int) dataSource.get("camera");
             ObjectRecognitionCore.cameraNumber =  cameraNumber;
+            
+            nu.pattern.OpenCV.loadShared();
             ObjectRecognitionCore.vidCapture = new VideoCapture(cameraNumber); // Can add API preferences, found in Videoio
         } else {
             log.error("No valid polling target");
@@ -104,6 +107,12 @@ public class ObjectRecognitionConfigHandler extends Handler<ExtensionServiceMess
             log.error("Exiting...");
             ObjectRecognitionCore.exit();
         }
+        
+        configComplete = true;
+    }
+    
+    public boolean isComplete() {
+        return configComplete;
     }
     
     NeuralNetInterface getNeuralNet(String className) {
