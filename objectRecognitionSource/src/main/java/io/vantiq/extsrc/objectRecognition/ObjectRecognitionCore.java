@@ -1,9 +1,7 @@
 package io.vantiq.extsrc.objectRecognition;
 
-import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.List;
 import java.util.Map;
 import java.util.Timer;
 import java.util.TimerTask;
@@ -11,6 +9,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 import org.opencv.core.Mat;
+import org.opencv.imgcodecs.Imgcodecs;
+import org.opencv.videoio.VideoCapture;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -29,15 +29,16 @@ public class ObjectRecognitionCore {
     
     
     // vars for source configuration
-    static String   pbFile          = null;
-    static String   metaFile        = null;
-    static String   cfgFile         = null;
-    static String   weightsFile     = null;
-    static boolean  constantPolling = false;
-    static int      pollRate        = 0;
-    static Timer    pollTimer       = null;
-    static String   imageLocation   = null;
-    static int      cameraNumber    = 0;
+    static String       pbFile          = null;
+    static String       metaFile        = null;
+    static String       cfgFile         = null;
+    static String       weightsFile     = null;
+    static boolean      constantPolling = false;
+    static int          pollRate        = 0;
+    static Timer        pollTimer       = null;
+    static String       imageLocation   = null;
+    static int          cameraNumber    = 0;
+    static VideoCapture vidCapture      = null;
     
     
     static Handler<ExtensionServiceMessage> objRecConfigHandler = new Handler<ExtensionServiceMessage>() {
@@ -83,7 +84,7 @@ public class ObjectRecognitionCore {
                 imageLocation = (String) dataSource.get("fileLocation");
             } else if (dataSource.get("camera") instanceof Integer && (int) dataSource.get("camera") >= 0) {
                 cameraNumber =  (int) dataSource.get("camera");
-                // TODO Setup openCV
+                vidCapture = new VideoCapture(cameraNumber); // Can add API preferences, found in Videoio
             } else {
                 log.error("No valid polling target");
                 log.error("Exiting...");
@@ -100,7 +101,7 @@ public class ObjectRecognitionCore {
                         public void run() {
                             if (!isRunning) {
                                 isRunning = true;
-                                Mat image = getImage(); // TODO unwritten
+                                Mat image = getImage();
                                 sendDataFromImage(image);
                                 isRunning = false;
                             }
@@ -140,7 +141,7 @@ public class ObjectRecognitionCore {
     };
     
     public static void main(String[] args) {
-        setup(); // TODO unwritten
+        setup(args); // TODO unwritten
         
         client = new ExtensionWebSocketClient(sourceName);
         
@@ -150,26 +151,9 @@ public class ObjectRecognitionCore {
         
         exitIfConnectionFails(client);
         
-        String sampleData = "["
-                + "{'label': 'tvmonitor', 'confidence': 0.80728817, 'topleft': {'x': 165, 'y': 91}, 'bottomright': {'x': 349, 'y': 275}}, "
-                + "{'label': 'tvmonitor', 'confidence': 0.18708503, 'topleft': {'x': 319, 'y': 132}, 'bottomright': {'x': 422, 'y': 311}}, "
-                + "{'label': 'mouse', 'confidence': 0.5298999, 'topleft': {'x': 422, 'y': 308}, 'bottomright': {'x': 485, 'y': 361}}, "
-                + "{'label': 'mouse', 'confidence': 0.30950272, 'topleft': {'x': 354, 'y': 341}, 'bottomright': {'x': 434, 'y': 374}}, "
-                + "{'label': 'keyboard', 'confidence': 0.83932924, 'topleft': {'x': 121, 'y': 255}, 'bottomright': {'x': 349, 'y': 372}}, "
-                + "{'label': 'refrigerator', 'confidence': 0.59843427, 'topleft': {'x': 0, 'y': 15}, 'bottomright': {'x': 121, 'y': 364}}"
-                + "]";
-        sampleData = sampleData.replace('\'', '"');
-        try {
-            List l = mapper.readValue(sampleData, List.class);
-            client.sendNotification(l);
-        } catch (IOException e) {
-            log.error("Could not send message", e);
-            System.exit(0);
-        }
-        
         if (constantPolling) {
             while (!stop) {
-                Mat image = getImage(); // TODO unwritten
+                Mat image = getImage();
                 sendDataFromImage(image);
             }
         } else {
@@ -181,10 +165,9 @@ public class ObjectRecognitionCore {
     protected static void sendDataFromImage(Mat image) {
         try {
             ArrayList<Map> imageResults= processImage(image);
-            //client.sendNotification(imageResults);
+            client.sendNotification(imageResults);
         } catch (IOException e) {
             log.error("Could not process image", e);
-            imageProcessingErrorHandling(); // TODO unwritten
         }
     }
     
@@ -195,12 +178,11 @@ public class ObjectRecognitionCore {
         if (pollTimer != null) {
             pollTimer.cancel();
         }
+        if (vidCapture != null) {
+            vidCapture.release();
+        }
         
         System.exit(0);
-    }
-
-    public static void imageProcessingErrorHandling() {
-        // TODO
     }
 
     public static ArrayList<Map> processImage(Mat image) throws IOException{
@@ -209,8 +191,14 @@ public class ObjectRecognitionCore {
     }
 
     public static Mat getImage() {
-        // TODO Use Namir's code
-        return null;
+        Mat mat = new Mat();
+        if (vidCapture != null) {
+            // Sets mat to the image
+            vidCapture.read(mat);
+        } else if (imageLocation == null) {
+            mat = Imgcodecs.imread(imageLocation);
+        }
+        return mat;
     }
 
     public static void exitIfConnectionFails(ExtensionWebSocketClient client) {
@@ -240,8 +228,8 @@ public class ObjectRecognitionCore {
         }
     }
     
-    public static void setup() {
-        // TODO
+    public static void setup(String[] args) {
+        // TODO server setup
     }
     
 }
