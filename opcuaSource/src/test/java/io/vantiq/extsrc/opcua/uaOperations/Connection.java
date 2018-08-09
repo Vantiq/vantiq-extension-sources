@@ -13,6 +13,8 @@ import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
 import java.util.concurrent.ExecutionException;
 
 import lombok.extern.slf4j.Slf4j;
@@ -132,11 +134,101 @@ public class Connection extends OpcUaTestBase {
             checkException(o, ".discoveryError");
             Assert.assertTrue("Incorrect exception cause", o.getCause() instanceof ExecutionException);
             ExecutionException e = (ExecutionException) o.getCause();
-            Assert.assertTrue("Missing UaException",  e.getMessage().contains("UaException"));
+            Assert.assertTrue("Missing UaException", e.getMessage().contains("UaException"));
             Assert.assertTrue("Missing bad status clause", e.getMessage().contains("status=Bad_"));
             Assert.assertTrue("Missing exception cause data", e.getMessage().contains("TcpEndpointUrlInvalid"));
             Assert.assertTrue("Missing message clause", e.getMessage().contains("message="));
             Assert.assertTrue("Improperly formatted Opc Exception", o.getMessage().contains(OpcUaESClient.ERROR_PREFIX));
+        } catch (Throwable e) {
+            fail("Unexpected exception thrown: " + Utils.errFromExc(e));
+        }
+
+        String invalidUPw = "Wynken, Blynken, and Nod";
+        opcConfig.put(OpcUaESClient.CONFIG_IDENTITY_USERNAME_PASSWORD, invalidUPw);
+        try {
+            client = new OpcUaESClient(config);
+        } catch (OpcExtConfigException o) {
+            checkException(o, ".invalidUserPasswordSpecification");
+            Assert.assertTrue("Wrong Message", o.getMessage().contains("must contain only a username AND password separated by a comma"));
+            Assert.assertTrue("Missing Information", o.getMessage().contains(invalidUPw));
+        } catch (Throwable e) {
+            fail("Unexpected exception thrown: " + Utils.errFromExc(e));
+        }
+
+        assert client == null;
+
+        opcConfig.put(OpcUaESClient.CONFIG_IDENTITY_ANONYMOUS, "anonymous");
+        try {
+            client = new OpcUaESClient(config);
+        } catch (OpcExtConfigException o) {
+            checkException(o, ".invalidIdentitySpecification");
+            Assert.assertTrue("Wrong Message", o.getMessage().contains("exactly one identity specification"));
+            Assert.assertTrue("Wrong Message(2)", o.getMessage().contains("is required."));
+            Assert.assertTrue("Missing Info -- Anon", o.getMessage().contains(OpcUaESClient.CONFIG_IDENTITY_ANONYMOUS));
+            Assert.assertTrue("Missing Info -- Cert", o.getMessage().contains(OpcUaESClient.CONFIG_IDENTITY_CERTIFICATE));
+            Assert.assertTrue("Missing Info -- UPW", o.getMessage().contains(OpcUaESClient.CONFIG_IDENTITY_USERNAME_PASSWORD));
+        } catch (Throwable e) {
+            fail("Unexpected exception thrown: " + Utils.errFromExc(e));
+        }
+
+        assert client == null;
+
+        opcConfig.put(OpcUaESClient.CONFIG_IDENTITY_ANONYMOUS, ""); // Presence is sufficient.  Verify
+        try {
+            client = new OpcUaESClient(config);
+        } catch (OpcExtConfigException o) {
+            checkException(o, ".invalidIdentitySpecification");
+            Assert.assertTrue("Wrong Message", o.getMessage().contains("exactly one identity specification"));
+            Assert.assertTrue("Wrong Message(2)", o.getMessage().contains("is required."));
+            Assert.assertTrue("Missing Info -- Anon", o.getMessage().contains(OpcUaESClient.CONFIG_IDENTITY_ANONYMOUS));
+            Assert.assertTrue("Missing Info -- Cert", o.getMessage().contains(OpcUaESClient.CONFIG_IDENTITY_CERTIFICATE));
+            Assert.assertTrue("Missing Info -- UPW", o.getMessage().contains(OpcUaESClient.CONFIG_IDENTITY_USERNAME_PASSWORD));
+        } catch (Throwable e) {
+            fail("Unexpected exception thrown: " + Utils.errFromExc(e));
+        }
+
+        assert client == null;
+
+        String bogusCertAlias = "someCertificate alias that is not there";
+        opcConfig.put(OpcUaESClient.CONFIG_IDENTITY_CERTIFICATE, bogusCertAlias);
+        try {
+            client = new OpcUaESClient(config);
+        } catch (OpcExtConfigException o) {
+            checkException(o, ".invalidIdentitySpecification");
+            Assert.assertTrue("Wrong Message", o.getMessage().contains("exactly one identity specification"));
+            Assert.assertTrue("Wrong Message(2)", o.getMessage().contains("is required."));
+            Assert.assertTrue("Missing Info -- Anon", o.getMessage().contains(OpcUaESClient.CONFIG_IDENTITY_ANONYMOUS));
+            Assert.assertTrue("Missing Info -- Cert", o.getMessage().contains(OpcUaESClient.CONFIG_IDENTITY_CERTIFICATE));
+            Assert.assertTrue("Missing Info -- UPW", o.getMessage().contains(OpcUaESClient.CONFIG_IDENTITY_USERNAME_PASSWORD));
+        } catch (Throwable e) {
+            fail("Unexpected exception thrown: " + Utils.errFromExc(e));
+        }
+
+        assert client == null;
+
+        opcConfig.remove(OpcUaESClient.CONFIG_IDENTITY_ANONYMOUS);
+        try {
+            client = new OpcUaESClient(config);
+        } catch (OpcExtConfigException o) {
+            checkException(o, ".invalidIdentitySpecification");
+            Assert.assertTrue("Wrong Message", o.getMessage().contains("exactly one identity specification"));
+            Assert.assertTrue("Wrong Message(2)", o.getMessage().contains("is required."));
+            Assert.assertTrue("Missing Info -- Anon", o.getMessage().contains(OpcUaESClient.CONFIG_IDENTITY_ANONYMOUS));
+            Assert.assertTrue("Missing Info -- Cert", o.getMessage().contains(OpcUaESClient.CONFIG_IDENTITY_CERTIFICATE));
+            Assert.assertTrue("Missing Info -- UPW", o.getMessage().contains(OpcUaESClient.CONFIG_IDENTITY_USERNAME_PASSWORD));
+        } catch (Throwable e) {
+            fail("Unexpected exception thrown: " + Utils.errFromExc(e));
+        }
+
+        assert client == null;
+
+        opcConfig.remove(OpcUaESClient.CONFIG_IDENTITY_USERNAME_PASSWORD);
+        try {
+            client = new OpcUaESClient(config);
+        } catch (OpcExtKeyStoreException o) {
+            checkException(o, ".fetchCertByAliasNoSuchCertificate");
+            Assert.assertTrue("Wrong Message: " + o.getMessage(), o.getMessage().contains("no X509 certificate for alias"));
+            Assert.assertTrue("Missing Info -- Cert Alias", o.getMessage().contains(bogusCertAlias));
         } catch (Throwable e) {
             fail("Unexpected exception thrown: " + Utils.errFromExc(e));
         }
@@ -171,10 +263,10 @@ public class Connection extends OpcUaTestBase {
         }
 
         // Below, we'll traverse the valid combinations.  None's must be paired and are tested elsewhere
-        for (SecurityPolicy secPol: serverSecPols) {
+        for (SecurityPolicy secPol : serverSecPols) {
             if (!secPol.equals(SecurityPolicy.None) && !secPol.equals(SecurityPolicy.Aes256_Sha256_RsaPss)) {
                 // TODO: don't know why the Aes256... policy fails, even with BouncyCastle added.
-                for (MessageSecurityMode msgSec: serverMsgModes) {
+                for (MessageSecurityMode msgSec : serverMsgModes) {
                     if (!msgSec.equals(MessageSecurityMode.None)) {
                         log.info("Attempting sync connection using [{}, {}]", secPol, msgSec);
                         makeConnection(false,
@@ -193,6 +285,103 @@ public class Connection extends OpcUaTestBase {
                                 secPol.getSecurityPolicyUri(),
                                 msgSec.toString(),
                                 true);
+
+                        log.info("Attempting async connection using [{}, {}] with explicit anonymous user", secPol, msgSec);
+                        makeConnection(true,
+                                secPol.getSecurityPolicyUri(),
+                                msgSec.toString(),
+                                OpcUaESClient.CONFIG_IDENTITY_ANONYMOUS,
+                                null,
+                                true);
+
+                        // Valid user/pw combos from ExampleServer:
+                        // "user, password1" & "admin, password2"
+                        String[] upwCombos = {"user, password1", "admin,password2", "user,                 password1"};
+
+                        for (String uPw : upwCombos) {
+                            log.info("Attempting sync connection using [{}, {}] using username/password: '{}'", secPol, msgSec, uPw);
+                            makeConnection(false,
+                                    secPol.getSecurityPolicyUri(),
+                                    msgSec.toString(),
+                                    OpcUaESClient.CONFIG_IDENTITY_USERNAME_PASSWORD,
+                                    uPw,
+                                    true);
+                        }
+
+                        for (String uPw : upwCombos) {
+                            log.info("Attempting async connection using [{}, {}] using username/password: '{}'", secPol, msgSec, uPw);
+                            makeConnection(true,
+                                    secPol.getSecurityPolicyUri(),
+                                    msgSec.toString(),
+                                    OpcUaESClient.CONFIG_IDENTITY_USERNAME_PASSWORD,
+                                    uPw,
+                                    true);
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    @Test
+    public void testConnectionBadIdentity() {
+        EnumSet<SecurityPolicy> serverSecPols = exampleServer.getServer().getConfig().getSecurityPolicies();
+        // Unfortunately, no good way to find out what security modes there are.  So we'll
+        // traverse the endpoints and act appropriately.
+
+        EndpointDescription[] eps = exampleServer.getServer().getEndpointDescriptions();
+        EnumSet<MessageSecurityMode> serverMsgModes = EnumSet.noneOf(MessageSecurityMode.class);
+
+        for (EndpointDescription ep : eps) {
+            serverMsgModes.add(ep.getSecurityMode());
+        }
+
+        String invalidCreds = "bogus1, bogus2";
+        // Below, we'll traverse the valid combinations.  None's must be paired and are tested elsewhere
+        for (SecurityPolicy secPol : serverSecPols) {
+            if (!secPol.equals(SecurityPolicy.None) && !secPol.equals(SecurityPolicy.Aes256_Sha256_RsaPss)) {
+                // TODO: don't know why the Aes256... policy fails, even with BouncyCastle added.
+                for (MessageSecurityMode msgSec : serverMsgModes) {
+                    if (!msgSec.equals(MessageSecurityMode.None)) {
+                        log.info("Attempting sync connection using [{}, {}] using username/password: '{}'", secPol, msgSec, invalidCreds);
+
+                        try {
+                            OpcUaESClient client = makeRawConnection(false,
+                                    secPol.getSecurityPolicyUri(),
+                                    msgSec.toString(),
+                                    OpcUaESClient.CONFIG_IDENTITY_USERNAME_PASSWORD,
+                                    invalidCreds);
+                            fail("Expected exception for invalid identity token");
+                        }
+                        catch (ExecutionException e) {
+                            assert e.getMessage().contains("UaServiceFaultException");
+                            assert e.getMessage().contains("status=Bad_IdentityTokenInvalid");
+                            assert e.getMessage().contains("message=The user identity token is not valid");
+                        }
+                        catch (Exception e) {
+                            Utils.unexpectedException(e);
+                        }
+
+                        log.info("Attempting aSync connection using [{}, {}] using username/password: '{}'", secPol, msgSec, invalidCreds);
+
+                        try {
+                            OpcUaESClient client= makeRawConnection(true,
+                                    secPol.getSecurityPolicyUri(),
+                                    msgSec.toString(),
+                                    OpcUaESClient.CONFIG_IDENTITY_USERNAME_PASSWORD,
+                                    invalidCreds);
+                            CompletableFuture<Void> cf = client.getConnectFuture();
+                            cf.join();  // Force exception to be thrown now...
+                        }
+                        catch (CompletionException e) {
+                            assert e.getMessage().contains("UaServiceFaultException");
+                            assert e.getMessage().contains("status=Bad_IdentityTokenInvalid");
+                            assert e.getMessage().contains("message=The user identity token is not valid");
+                        }
+                        catch (Exception e) {
+                            Utils.unexpectedException(e);
+                        }
+
                     }
                 }
             }
@@ -207,8 +396,41 @@ public class Connection extends OpcUaTestBase {
                 false);
     }
 
+    public OpcUaESClient makeRawConnection(boolean runAsync, String secPolicy, String msgSecMode, String identityType, String identityValue) throws ExecutionException {
+        HashMap config = new HashMap();
+        Map<String, String> opcConfig = new HashMap<>();
+
+        config.put(OpcUaESClient.CONFIG_OPC_UA_INFORMATION, opcConfig);
+        opcConfig.put(OpcUaESClient.CONFIG_STORAGE_DIRECTORY, STANDARD_STORAGE_DIRECTORY);
+        opcConfig.put(OpcUaESClient.CONFIG_SECURITY_POLICY, secPolicy);
+        opcConfig.put(OpcUaESClient.CONFIG_DISCOVERY_ENDPOINT, Utils.OPC_INPROCESS_SERVER);
+
+        if (msgSecMode != null && !msgSecMode.isEmpty()) {
+            opcConfig.put(OpcUaESClient.CONFIG_MESSAGE_SECURITY_MODE, msgSecMode);
+        }
+
+        if (identityType != null) {
+            opcConfig.put(identityType, (identityValue != null ? identityValue : ""));
+        }
+        OpcUaESClient client = Utils.makeConnection(config, runAsync, this, true);
+        return client;
+    }
 
     public void makeConnection(boolean runAsync, String secPolicy, String msgSecMode, boolean inProcessOnly) {
+        makeConnection(runAsync, secPolicy, msgSecMode, null, null, inProcessOnly);
+
+    }
+
+    public void makeConnection(boolean runAsync, String secPolicy, String msgSecMode, String identityType, String identityValue, boolean inProcessOnly) {
+        try {
+            makeConnection(runAsync, secPolicy, msgSecMode, identityType, identityValue, inProcessOnly, false);
+        } catch (ExecutionException e) {
+            fail("Unexpected Exception: " + e.getClass().getName() + " -- " + e.getMessage());
+        }
+    }
+
+    public void makeConnection(boolean runAsync, String secPolicy, String msgSecMode,
+                               String identityType, String identityValue, boolean inProcessOnly, boolean startProcessOnly) throws ExecutionException {
         HashMap config = new HashMap();
         Map<String, String> opcConfig = new HashMap<>();
 
@@ -217,6 +439,10 @@ public class Connection extends OpcUaTestBase {
         opcConfig.put(OpcUaESClient.CONFIG_SECURITY_POLICY, secPolicy);
         if (msgSecMode != null && !msgSecMode.isEmpty()) {
             opcConfig.put(OpcUaESClient.CONFIG_MESSAGE_SECURITY_MODE, msgSecMode);
+        }
+
+        if (identityType != null) {
+            opcConfig.put(identityType, (identityValue != null ? identityValue : ""));
         }
 
         // We'll test against a set of servers.  Hopefully, this will allow us to verify if things work
@@ -236,12 +462,21 @@ public class Connection extends OpcUaTestBase {
         for (String discEP : pubServers) {
             log.info("Attempting connection to public server: " + discEP);
             opcConfig.put(OpcUaESClient.CONFIG_DISCOVERY_ENDPOINT, discEP);
-            performConnection(config, runAsync);
+            try {
+                performConnection(config, runAsync, startProcessOnly);
+            } catch (ExecutionException e) {
+                if (startProcessOnly) {
+                    throw e;
+                } else {
+                    Utils.unexpectedException(e);
+                }
+            }
         }
 
     }
-    public void performConnection(Map config, boolean runAsync) {
-        OpcUaESClient client = Utils.makeConnection(config, runAsync, this);
+
+    public void performConnection(Map config, boolean runAsync, boolean startProcessOnly) throws ExecutionException {
+        OpcUaESClient client = Utils.makeConnection(config, runAsync, this, startProcessOnly);
         if (client != null) {
             client.disconnect();
         }
@@ -249,8 +484,14 @@ public class Connection extends OpcUaTestBase {
 
     private static void checkException(Exception e, String tagName) {
         Assert.assertTrue("Incorrect exception tag", e.getMessage().contains(tagName));
-        Assert.assertTrue("Improperly formatted Opc Config Exception", e.getMessage().contains(OpcUaESClient.ERROR_PREFIX));
-
+        String prefix = "bogusValue";
+        if (e instanceof OpcExtConfigException) {
+            prefix = OpcUaESClient.ERROR_PREFIX;
+        } else if (e instanceof OpcExtKeyStoreException) {
+            prefix = KeyStoreManager.ERROR_PREFIX;
+        } else {
+            Utils.unexpectedException(e);
+        }
+        Assert.assertTrue("Improperly formatted Opc Config Exception", e.getMessage().contains(prefix));
     }
-
 }

@@ -50,7 +50,17 @@ public class Utils {
     static public OpcUaESClient makeConnection(Map config, boolean runAsync) {
         return makeConnection(config, runAsync, null);
     }
+
     static public OpcUaESClient makeConnection(Map config, boolean runAsync, OpcUaTestBase testInstance) {
+        try {
+            return makeConnection(config, runAsync, testInstance, false);
+        } catch (ExecutionException e) {
+            Utils.unexpectedException(e);
+            return null;
+        }
+    }
+
+    static public OpcUaESClient makeConnection(Map config, boolean runAsync, OpcUaTestBase testInstance, boolean startProcessOnly) throws ExecutionException {
         Map<String, String> opcConfig = (Map<String, String>) config.get(OpcUaESClient.CONFIG_OPC_UA_INFORMATION);
         //deleteStorage(opcConfig.get(OpcUaESClient.CONFIG_STORAGE_DIRECTORY));
         String discoveryPoint = opcConfig.get(OpcUaESClient.CONFIG_DISCOVERY_ENDPOINT);
@@ -67,6 +77,9 @@ public class Utils {
 
             if (runAsync) {
                 CompletableFuture<Void> cf = client.connectAsync();
+                if (startProcessOnly) {
+                    return client;
+                }
                 Thread.sleep(1500);  // We'll stall here to let some complete on their own...
                 // 1.5 seconds usually has the first one connecting within time
                 // and the others having to perform the get.  So both mechanisms are tested.
@@ -79,6 +92,8 @@ public class Utils {
                 if (discoveryPoint == OPC_PUBLIC_SERVER_NO_GOOD) {
                     // This one will complete with an unreachable-style error
                     assert cf.isCompletedExceptionally();
+                } else {
+                    assert !cf.isCompletedExceptionally();
                 }
                 // Regardless of validity, by the time we get here, we should be completed.
                 assert cf.isDone();
@@ -104,6 +119,9 @@ public class Utils {
             }
         }
         catch (ExecutionException e) {
+            if (startProcessOnly) {
+                throw e;    // In this case, exceptions handled by caller
+            }
             if (runAsync) {
                 // Then we can get these exceptions when attempting to connect to the bad server.  If that's our
                 // connection target, this this is expected.  Otherwise, it's a failure.
@@ -135,5 +153,9 @@ public class Utils {
         } catch (Throwable t) {
             // Ignore for now
         }
+    }
+
+    public static void unexpectedException(Exception e) {
+        fail("Unexpected Exception: " + errFromExc(e));
     }
 }

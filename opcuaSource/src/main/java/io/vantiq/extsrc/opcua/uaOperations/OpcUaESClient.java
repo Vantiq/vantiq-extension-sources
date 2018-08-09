@@ -5,6 +5,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.eclipse.milo.opcua.sdk.client.OpcUaClient;
 import org.eclipse.milo.opcua.sdk.client.api.config.OpcUaClientConfig;
 import org.eclipse.milo.opcua.sdk.client.api.identity.AnonymousProvider;
+import org.eclipse.milo.opcua.sdk.client.api.identity.IdentityProvider;
+import org.eclipse.milo.opcua.sdk.client.api.identity.UsernameProvider;
+import org.eclipse.milo.opcua.sdk.client.api.identity.X509IdentityProvider;
 import org.eclipse.milo.opcua.sdk.client.api.nodes.VariableNode;
 import org.eclipse.milo.opcua.sdk.client.api.subscriptions.UaMonitoredItem;
 import org.eclipse.milo.opcua.sdk.client.api.subscriptions.UaSubscription;
@@ -32,6 +35,7 @@ import org.slf4j.helpers.MessageFormatter;
 
 import java.io.File;
 import java.net.URI;
+import java.security.PrivateKey;
 import java.security.cert.X509Certificate;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -63,9 +67,11 @@ public class OpcUaESClient {
     public static final String CONFIG_MESSAGE_SECURITY_MODE = "messageSecurityMode";
     public static final String CONFIG_DISCOVERY_ENDPOINT = "discoveryEndpoint";
     public static final String CONFIG_STORAGE_DIRECTORY = "storageDirectory";
-
-
-    public static final String ERROR_PREFIX = "io.vantiq.extsrc.opcua.uaOperations" + "OpcuaClient";
+    public static final String CONFIG_IDENTITY_ANONYMOUS = "identityAnonymous";
+    public static final String CONFIG_IDENTITY_CERTIFICATE = "identityCertificate";
+    public static final String CONFIG_IDENTITY_USERNAME_PASSWORD = "identityUsernamePassword";
+    
+    public static final String ERROR_PREFIX = "io.vantiq.extsrc.opcua.uaOperations" + "OpcuaESClient";
     private static final String SECURITY_DIRECTORY = "security";
     protected Map<String, Object> config;
     protected OpcUaClient client;
@@ -73,6 +79,8 @@ public class OpcUaESClient {
     protected String discoveryEndpoint = null;
     protected BiConsumer<String, Object> subscriptionHandler;
     protected List<UInteger> currentMonitoredItemList = null;
+    protected KeyStoreManager keyStoreManager = null;
+    protected CompletableFuture<Void> connectFuture = null;
     private final AtomicLong clientToMILink = new AtomicLong(1);
     private boolean connected = false;
 
@@ -142,7 +150,7 @@ public class OpcUaESClient {
         return connected;
     }
 
-    public void connect() throws Exception {
+    public void connect() throws ExecutionException, OpcExtConfigException, OpcExtRuntimeException {
         try {
             client.connect().get();
         } catch (ExecutionException e) {
@@ -153,10 +161,13 @@ public class OpcUaESClient {
                 throw e;
             }
         }
+        catch (InterruptedException e) {
+            throw new OpcExtRuntimeException("Connect call as interrupted", e);
+        }
     }
 
     public CompletableFuture<Void> connectAsync() throws Exception {
-        return CompletableFuture.runAsync(() -> {
+        connectFuture = CompletableFuture.runAsync(() -> {
                     try {
                         client.connect().join();
                         connected = true;
@@ -166,6 +177,11 @@ public class OpcUaESClient {
                     }
                 }
         );
+        return connectFuture;
+    }
+
+    public CompletableFuture<Void> getConnectFuture() {
+        return connectFuture;
     }
 
     public void disconnect() {
@@ -214,7 +230,7 @@ public class OpcUaESClient {
         throw new OpcExtConfigException(msg);
     }
 
-    private SecurityPolicy getSecurityPolicy(Map<String, Object> config) throws OpcExtConfigException {
+    private SecurityPolicy determineSecurityPolicy(Map<String, Object> config) throws OpcExtConfigException {
         // config.securityPolicy should be the URI for the appropriate security policy.
 
         String secPolURI = (String) config.get(CONFIG_SECURITY_POLICY);
@@ -237,14 +253,14 @@ public class OpcUaESClient {
         }
     }
 
-    private MessageSecurityMode getMessageSecurityMode(Map<String, Object> config) throws OpcExtConfigException {
+    private MessageSecurityMode determineMessageSecurityMode(Map<String, Object> config) throws OpcExtConfigException {
         // config.messageSecurityMode should be the URI for the appropriate security policy.
 
         String msgSecModeSpec = (String) config.get(CONFIG_MESSAGE_SECURITY_MODE);
         MessageSecurityMode msgSecMode;
         if (msgSecModeSpec == null || msgSecModeSpec.isEmpty()) {
             // No message security mode will default to either #NONE or #SignAndEncrypt, depending on the security policy.  We will, however, log a warning\
-            SecurityPolicy secPol = getSecurityPolicy(config);
+            SecurityPolicy secPol = determineSecurityPolicy(config);
             if (secPol.equals(SecurityPolicy.None)) {
                 msgSecModeSpec = MessageSecurityMode.None.toString();
             } else {
@@ -265,13 +281,62 @@ public class OpcUaESClient {
         }
     }
 
+    private static Boolean foundValue(String val) {
+        return val != null && !val.isEmpty();
+    }
+
+    private IdentityProvider constructIdentityProvider(Map<String, Object> config) throws OpcExtConfigException, OpcExtKeyStoreException {
+        IdentityProvider retVal = null;
+
+        String anonymous = (String) config.get(CONFIG_IDENTITY_ANONYMOUS);
+        boolean anonIsPresent = anonymous != null; // This can be empty -- presence is sufficient
+        String certAlias = (String) config.get(CONFIG_IDENTITY_CERTIFICATE);
+        boolean certIsPresent = foundValue(certAlias);
+        String userPass = (String) config.get(CONFIG_IDENTITY_USERNAME_PASSWORD);
+        boolean upwIsPresent = foundValue(userPass);
+        boolean exactlyOnePresent = (anonIsPresent ^ certIsPresent ^ upwIsPresent) ^ (anonIsPresent && certIsPresent && upwIsPresent);
+        // (^ is Java XOR -- I didn't remember it!)
+
+        if (!anonIsPresent && !certIsPresent && !upwIsPresent) {
+            log.warn(ERROR_PREFIX + ".noIdentitySpecification: No identity specification was provided.  Using Anonymous as default.");
+            retVal = new AnonymousProvider();
+        } else if (exactlyOnePresent) {
+            // Now we know there is exactly one of them set.
+            if (anonIsPresent) {
+                retVal = new AnonymousProvider();
+            } else if (certIsPresent) {
+                X509Certificate namedCert = keyStoreManager.fetchCertByAlias(certAlias);
+                PrivateKey pKey = keyStoreManager.fetchPrivateKeyByAlias(certAlias);
+                retVal = new X509IdentityProvider(namedCert, pKey);
+            } else if (upwIsPresent) {
+                String[] upw = userPass.split(",[ ]*");
+                if (upw.length != 2) {
+                    String errMsg = MessageFormatter.arrayFormat(ERROR_PREFIX + ".invalidUserPasswordSpecification: the {} ({}) must contain only a username AND password separated by a comma.",
+                            new Object[]{CONFIG_IDENTITY_USERNAME_PASSWORD, userPass}).getMessage();
+                    log.error(errMsg);
+                    throw new OpcExtConfigException(errMsg);
+                } else {
+                    retVal = new UsernameProvider(upw[0], upw[1]);
+                }
+            }
+
+        } else {
+                String errMsg = MessageFormatter.arrayFormat(ERROR_PREFIX + ".invalidIdentitySpecification: exactly one identity specification ({}, {}, {}) is required.",
+                        new Object[]{CONFIG_IDENTITY_ANONYMOUS, CONFIG_IDENTITY_CERTIFICATE, CONFIG_IDENTITY_USERNAME_PASSWORD}).getMessage();
+                log.error(errMsg);
+                throw new OpcExtConfigException(errMsg);
+        }
+
+        return retVal;
+    }
+
     private OpcUaClient createClient(Map<String, Object> config) throws Exception {
 
         if (storageDirectory == null) {
             throw new OpcExtConfigException(ERROR_PREFIX + ".missingStorageDirectory: No storage directory specified.");
         }
-        SecurityPolicy securityPolicy = getSecurityPolicy(config);
-        MessageSecurityMode msgSecMode = getMessageSecurityMode(config);
+        SecurityPolicy securityPolicy = determineSecurityPolicy(config);
+        MessageSecurityMode msgSecMode = determineMessageSecurityMode(config);
 
         File securityDir = new File(storageDirectory, SECURITY_DIRECTORY);
         if (!securityDir.exists() && !securityDir.mkdirs()) {
@@ -279,7 +344,9 @@ public class OpcUaESClient {
         }
         log.info("security temp dir: {}", securityDir.getAbsolutePath());
 
-        KeyStoreManager loader = new KeyStoreManager().load(securityDir);
+        keyStoreManager = new KeyStoreManager().load(securityDir);
+
+        IdentityProvider idProvider = constructIdentityProvider(config);
 
         EndpointDescription[] endpoints;
 
@@ -318,10 +385,10 @@ public class OpcUaESClient {
         OpcUaClientConfig opcConfig = OpcUaClientConfig.builder()
                 .setApplicationName(LocalizedText.english("VANTIQ OPC-UA Source"))
                 .setApplicationUri("urn:io:vantiq:extsrc:opcua:client")
-                .setCertificate(loader.getClientCertificate())
-                .setKeyPair(loader.getClientKeyPair())
+                .setCertificate(keyStoreManager.getClientCertificate())
+                .setKeyPair(keyStoreManager.getClientKeyPair())
                 .setEndpoint(endpoint)
-                .setIdentityProvider(new AnonymousProvider())   // FIXME
+                .setIdentityProvider(idProvider)
                 .setRequestTimeout(uint(5000))
                 .build();
 
