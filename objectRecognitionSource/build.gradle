@@ -11,23 +11,22 @@ repositories {
     jcenter()
 }
 
-mainClassName = 'io.vantiq.extsrc.udp.ConfigurableUDPSource'
+mainClassName = 'io.vantiq.extsrc.udp.ObjectRecognitionCore'
 
 
 dependencies {
     compile project(':extjsdk')
     
     compile "org.slf4j:slf4j-api:1.7.25"
+    compile "ch.qos.logback:logback-classic:1.2.3"
     
     compile "black.ninia:jep:3.8.1"
     
-    compile "ch.qos.logback:logback-classic:1.2.3"
+    compile "org.tensorflow:tensorflow:1.9.0"
     
     compile "org.openpnp:opencv:3.2.0-0"
     
     compile "com.fasterxml.jackson.core:jackson-databind:2.9.3"
-    compile "com.fasterxml.jackson.dataformat:jackson-dataformat-xml:2.9.3"	//XML parsing
-    compile "com.fasterxml.jackson.dataformat:jackson-dataformat-csv:2.9.3"
     
 
     // This dependency is used internally, and not exposed to consumers on their own compile classpath.

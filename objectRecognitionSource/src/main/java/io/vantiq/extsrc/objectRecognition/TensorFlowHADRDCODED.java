@@ -1,11 +1,8 @@
 package io.vantiq.extsrc.objectRecognition;
 
-import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
-import java.io.InputStreamReader;
 import java.nio.file.Files;
-import java.util.Arrays;
 import java.util.List;
 
 import org.opencv.core.Mat;
@@ -17,6 +14,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 import jep.Jep;
 import jep.JepException;
+import jep.NDArray;
 //import org.tensorflow.Graph;
 //import org.tensorflow.Tensor;
 
@@ -97,8 +95,8 @@ public class TensorFlowHADRDCODED {
     }
     
     public static void jepMain(String[] args) {
-        String modelName = "cfg/yolo.cfg";
-        String weightsLocation = "yolov2.weights";
+        String modelName = "models/cfg/yolo.cfg";
+        String weightsLocation = "models/yolov2.weights";
         double threshold = 0.1;
         String imageLocation = "./index.jpg";
 
@@ -107,6 +105,7 @@ public class TensorFlowHADRDCODED {
         Mat mat = new Mat();
         while (!capture.isOpened()) ;
         capture.read(mat);
+        capture.release();
         
         String darkflowLocation = "../../darkflow-master";
         try (Jep jep = new Jep()) {
@@ -115,33 +114,34 @@ public class TensorFlowHADRDCODED {
             String s = (String)jep.getValue("sys.version");
             System.out.println(s);
             
-            // Trying to easily convert stuff
-            byte [] b = new byte[mat.channels()*mat.cols()*mat.rows()];
-            mat.get(0,0,b);
-            jep.eval("img = " + Arrays.toString(b));
+            // Trying to quickly convert stuff
+            byte[] b = new byte[mat.channels()*mat.rows()*mat.cols()];
+            mat.get(0, 0, b);
+            NDArray<byte[]> ndBytes= new NDArray(b, mat.rows(),mat.cols() , mat.channels());
+            mat.release();
+            jep.set("img", ndBytes);
+            jep.eval("img = img.astype('uint8')");
             
-            
-            jep.eval("sys.path.insert(0,'" + darkflowLocation + "')");
+            // jep.eval("sys.path.insert(0,'" + darkflowLocation + "')");
             jep.eval("from darkflow.net.build import TFNet");
-            jep.eval("import cv2");
          // This is for darknet data. use pbLoad and metaLoad for tensorflow documents
             jep.eval("options = {\"model\":\"" + modelName + "\", "
                     + "\"load\":\"" + weightsLocation + "\", "
                     + "\"threshold\":" + threshold + "}");
             jep.eval("tfnet = TFNet(options)");
-            // jep.eval("img = cv2.imread(\"" + imageLocation + "\")"); 
             jep.eval("result = tfnet.return_predict(img)");
-            Object bytes = jep.getValue("result"); // GETS A LIST! ITS WORKING!!!!!!!!!
-            System.out.println(bytes.toString());
+            Object bytes = jep.getValue("result"); // gets a List
+            System.out.println("Result = \n"  + bytes.toString() + "\n\n");
+            jep.eval("exit()");
             //List<Object> results = mapper.readValue(bytes, List.class);
             //System.out.println(results);
         } catch (JepException e) {
-            // TODO Auto-generated catch block
             log.error("Jep failed", e);
         } //catch (IOException e) {
             // TODO Auto-generated catch block
             //log.error("Mapper", e);
         //}
+        
     }
     
     public static void tensorFlowMain(String[] args) {
