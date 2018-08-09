@@ -107,6 +107,7 @@ public class TensorFlowHADRDCODED {
         Mat mat = new Mat();
         while (!capture.isOpened()) ;
         capture.read(mat);
+        capture.release();
         
         String darkflowLocation = "../../darkflow-master";
         try (Jep jep = new Jep()) {
@@ -116,19 +117,15 @@ public class TensorFlowHADRDCODED {
             System.out.println(s);
             
             // Trying to quickly convert stuff
-            String matrix = "";
-            String setImage = "img = array(" + matrix + ", type='int8)";
             byte[] b = new byte[mat.channels()*mat.rows()*mat.cols()];
             mat.get(0, 0, b);
             NDArray<byte[]> ndBytes= new NDArray(b, mat.rows(),mat.cols() , mat.channels());
             mat.release();
             jep.set("img", ndBytes);
-            jep.eval("import numpy as np");
             jep.eval("img = img.astype('uint8')");
             
-            jep.eval("sys.path.insert(0,'" + darkflowLocation + "')");
+            // jep.eval("sys.path.insert(0,'" + darkflowLocation + "')");
             jep.eval("from darkflow.net.build import TFNet");
-            jep.eval("import cv2");
          // This is for darknet data. use pbLoad and metaLoad for tensorflow documents
             jep.eval("options = {\"model\":\"" + modelName + "\", "
                     + "\"load\":\"" + weightsLocation + "\", "

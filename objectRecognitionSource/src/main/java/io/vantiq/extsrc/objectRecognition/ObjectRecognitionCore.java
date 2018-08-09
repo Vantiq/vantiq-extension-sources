@@ -4,8 +4,11 @@ import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Timer;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
@@ -45,8 +48,9 @@ public class ObjectRecognitionCore {
     static Handler<ExtensionServiceMessage> objRecConfigHandler;
     
     // vars for internal use
-    public static boolean           stop    = false;
-    static ExtensionWebSocketClient client  = null;
+    public static CompletableFuture<Void>   stop        = new CompletableFuture<>();
+    static ExtensionWebSocketClient         client      = null;
+    static NeuralNetInterface               neuralNet  = null;
     
     // final vars
     static final Logger         log     = LoggerFactory.getLogger(ObjectRecognitionCore.class);
@@ -62,35 +66,35 @@ public class ObjectRecognitionCore {
     };
     
     public static void main(String[] args) {
-        setup(args);
+        // setup(args); // TODO uncomment
         
         client = new ExtensionWebSocketClient(sourceName);
         objRecConfigHandler = new ObjectRecognitionConfigHandler(sourceName);
         
         client.setConfigHandler(objRecConfigHandler);
-        //client.setHttpHandler(httpHandler);
         client.initiateFullConnection(targetVantiqServer, authToken);
         
         exitIfConnectionFails(client);
         
         if (constantPolling) {
-            while (!stop) {
+            while (!stop.isDone()) {
                 Mat image = getImage();
                 sendDataFromImage(image);
             }
         } else {
-            while (!stop);// let the thread do its thing
-            // TODO implement non-busy wait (CDLatch? CF? something else?)
+            try {
+                stop.get();
+            } catch(InterruptedException | ExecutionException e) {
+                log.error("Exception occurred while waiting on the 'stop' Future", e);
+            }
         }
+        
+        exit();
     }
     
     protected static void sendDataFromImage(Mat image) {
-        try {
-            ArrayList<Map> imageResults= processImage(image);
-            client.sendNotification(imageResults);
-        } catch (IOException e) {
-            log.error("Could not process image", e);
-        }
+        List<Map> imageResults = neuralNet.processImage(image);
+        client.sendNotification(imageResults);
     }
     
     protected static void exit() {
@@ -103,15 +107,29 @@ public class ObjectRecognitionCore {
         if (vidCapture != null) {
             vidCapture.release();
         }
+        if (neuralNet != null) {
+            neuralNet.close();
+        }
         
         System.exit(0);
     }
 
-    public static ArrayList<Map> processImage(Mat image) throws IOException{
-        // TODO do image processing with tensorflow/darkflow
+    /**
+     * Processes the image with YOLO and returns the objects identified by the neural net.
+     * @param   image   The OpenCV Mat describing the image
+     * @return          An ArrayList of Maps containing the object identified. Each map will have a label specifying the
+     *                  object type, a confidence value represented as a float between 0 and 1 (inclusive), and the
+     *                  x-y coordinates for the top-left and bottom-right corners of the bounding box. 
+     */
+    public static ArrayList<Map> processImage(Mat image){
+        // TODO do image processing with tensorflow
         return null;
     }
 
+    /**
+     * Obtains an image from either a camera or file. 
+     * @return  An OpenCV Mat containing the image specified.
+     */
     public static Mat getImage() {
         Mat mat = new Mat();
         if (vidCapture != null) {
@@ -123,6 +141,11 @@ public class ObjectRecognitionCore {
         return mat;
     }
 
+    /**
+     * Waits for the connection to succeed or fail, logs and exits if the connection does not succeed within 10 seconds.
+     *
+     * @param client    The client to watch for success or failure.
+     */
     public static void exitIfConnectionFails(ExtensionWebSocketClient client) {
         boolean sourcesSucceeded = false;
         try {
@@ -149,6 +172,11 @@ public class ObjectRecognitionCore {
         }
     }
     
+    /**
+     * Obtains and uses the configuration file specified in args.
+     * 
+     * @param args  The args for the program. Expected to be either null, or the first arg is the file path
+     */
     public static void setup(String[] args) {
         Map<String, Object> config = null;
         if (args != null) {
