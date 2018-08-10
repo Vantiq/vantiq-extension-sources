@@ -28,12 +28,10 @@ public class FrameCapture {
 			}
 		}
 	  
-		// Release camera
-	    capture.release();
-	    
 	    MatOfByte matOfByte = new MatOfByte();
 	    Imgcodecs.imencode(".jpg", matrix, matOfByte);
 	    byte [] imageByte = matOfByte.toArray();
+	    matOfByte.release();
 	    	    
 	    return imageByte;
 	}

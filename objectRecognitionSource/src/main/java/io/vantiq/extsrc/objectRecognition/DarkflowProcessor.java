@@ -190,7 +190,10 @@ public class DarkflowProcessor implements NeuralNetInterface{
             while (!threadStop) {
                 if (image != null) {
                     log.info("Processing image");
+                    long before = System.currentTimeMillis();
                     imageResults = doImageProcessing(image);
+                    long after = System.currentTimeMillis();
+                    log.info("Image processing time: " + (after - before) / 1000 + "." + (after - before) % 1000 + " seconds");
                     synchronized (this) {
                         this.notify();
                     }
