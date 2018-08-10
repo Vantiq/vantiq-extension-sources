@@ -1,6 +1,7 @@
 package io.vantiq.extsrc.objectRecognition;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -13,6 +14,10 @@ import org.slf4j.LoggerFactory;
 import jep.Jep;
 import jep.NDArray;
 
+/**
+ * Slightly faster than YoloProcessor, but cannot have multiple instances and difficult to install the dependencies
+ * correctly. 
+ */
 public class DarkflowProcessor extends NeuralNetInterface{
     
     Logger log = LoggerFactory.getLogger(this.getClass());
@@ -78,6 +83,13 @@ public class DarkflowProcessor extends NeuralNetInterface{
             throw new Exception("Could not create a net with the given options: model='" + modelFile 
                     + "', weights='" + weightsFile + "', threshold=" + threshold, e);
         }
+        
+        try {
+            jep.eval("def procImage(img):\n" +
+                    "\treturn tfnet.return_predict(img)\n");
+        } catch (Exception e) {
+            throw new Exception("Could not create python function.", e);
+        }
     }
     
     public List<Map> processImage(byte[] image) {
@@ -102,14 +114,12 @@ public class DarkflowProcessor extends NeuralNetInterface{
             Mat mat = Imgcodecs.imdecode(new MatOfByte(image), Imgcodecs.IMREAD_UNCHANGED);
             byte[] b = new byte[mat.channels()*mat.rows()*mat.cols()];
             mat.get(0, 0, b);
-            NDArray<byte[]> ndBytes= new NDArray(b, mat.rows(),mat.cols() , mat.channels());
+            NDArray<byte[]> ndBytes= new NDArray(b, true, mat.rows(),mat.cols() , mat.channels());
             mat.release();
-            jep.set("img", ndBytes);
-            jep.eval("img = img.astype('uint8')");
-            
             // Perform the TensorFlow ops on the image
-            jep.eval("result = tfnet.return_predict(img)");
-            Object bytes = jep.getValue("result"); // gets a List
+//            jep.eval("result = tfnet.return_predict(img)");
+//            Object bytes = jep.getValue("result"); // gets a List
+            Object bytes = jep.invoke("procImage", ndBytes);
             if (bytes instanceof List) {
                 return (List<Map>)bytes;
             } else {
