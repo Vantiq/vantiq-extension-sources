@@ -31,23 +31,21 @@ public class DarkflowProcessor implements NeuralNetInterface{
             if (jepThread.neuralNet != null) {
                 try {
                     jepThread.wait();
-                    log.info("awake");
                 } catch (InterruptedException e) {}
-            } else {
-                log.info("no need to wait");
             }
+        }
+        if (jepThread.exception != null) {
+            throw jepThread.exception;
         }
     }
     
-    private void setup(Map<String, ?> neuralNet, String modelDirectory) {
+    private void setup(Map<String, ?> neuralNet, String modelDirectory) throws Exception{
         // Obtain the files for the net
        if (neuralNet.get("cfgFile") instanceof String && neuralNet.get("weightsFile") instanceof String) {
            modelFile = modelDirectory + "cfg/" + (String) neuralNet.get("cfgFile");
            weightsFile = modelDirectory + (String) neuralNet.get("weightsFile");
        } else {
-           log.error("No valid combination of cfgFile and weightsFile");
-           log.error("Exiting...");
-           ObjectRecognitionCore.exit();
+           throw new Exception("No valid combination of cfgFile and weightsFile");
        }
        if (neuralNet.get("threshold") instanceof Double || neuralNet.get("threshold") instanceof Float) {
            double thresh = (Double) neuralNet.get("threshold");
@@ -57,20 +55,18 @@ public class DarkflowProcessor implements NeuralNetInterface{
        }
    }
     
-    private void setupJep() {
+    private void setupJep() throws Exception{
         try {
             jep = new Jep();
         } catch (Exception e) {
-            log.error("Could not create JEP instance", e);
-            ObjectRecognitionCore.exit();
+            throw new Exception("Could not create JEP instance", e);
         }
         
         try {
             jep.eval("import sys");
             jep.eval("from darkflow.net.build import TFNet");
         } catch (Exception e) {
-            log.error("Could not import darkflow.", e);
-            ObjectRecognitionCore.exit();
+            throw new Exception("Could not import darkflow.", e);
         }
         
         try {
@@ -79,14 +75,12 @@ public class DarkflowProcessor implements NeuralNetInterface{
                     + "\"threshold\":" + threshold + "}");
             jep.eval("tfnet = TFNet(options)");
         } catch (Exception e) {
-            log.error("Could not create a net with the given options: model='" + modelFile 
+            throw new Exception("Could not create a net with the given options: model='" + modelFile 
                     + "', weights='" + weightsFile + "', threshold=" + threshold, e);
-            ObjectRecognitionCore.exit();
         }
     }
     
     public List<Map> processImage(byte[] image) {
-        log.info("Trying to process image");
         jepThread.processImage(image);
         synchronized (jepThread) {
             try {
@@ -151,6 +145,8 @@ public class DarkflowProcessor implements NeuralNetInterface{
         Map<String, ?> neuralNet = null;
         String modelDirectory = null;
         
+        Exception exception = null;
+        
         List<Map> imageResults = new ArrayList<>();
         
         
@@ -162,7 +158,6 @@ public class DarkflowProcessor implements NeuralNetInterface{
         
         public void processImage(byte[] image) {
             this.image = image;
-            log.info("image set");
         }
         public List<Map> retrieveProcessedImage() {
             List<Map> results = imageResults;
@@ -175,21 +170,26 @@ public class DarkflowProcessor implements NeuralNetInterface{
             if (neuralNet == null) {
                 log.error("JepThread started without input data");
             } else {
-                log.info("Setting up processing");
-                setup(neuralNet, modelDirectory);
-                
-                setupJep();
+                try {
+                    setup(neuralNet, modelDirectory);
+                } catch (Exception e) {
+                    exception = new Exception("Could not use settings", e);
+                    threadStop = true;
+                }
+                try {
+                    setupJep();
+                } catch (Exception e) {
+                    exception = new Exception("Could not run Jep", e);
+                    threadStop = true;
+                }
                 neuralNet = null;
                 modelDirectory = null;
-                log.info("pre-sync notifying");
                 synchronized (this) {
-                    log.info("post-sync notifying");
                     this.notify();
                 }
             }
             while (!threadStop) {
                 if (image != null) {
-                    log.info("Processing image");
                     long before = System.currentTimeMillis();
                     imageResults = doImageProcessing(image);
                     long after = System.currentTimeMillis();
