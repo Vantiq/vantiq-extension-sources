@@ -72,7 +72,7 @@ public class ObjectRecognitionConfigHandler extends Handler<ExtensionServiceMess
         try {
             neuralNet.setupImageProcessing(neuralNetConfig, ObjectRecognitionCore.modelDirectory);
         } catch (Exception e) {
-            log.error("Exception occurred while setting up neural net", e);
+            log.error("Exception occurred while setting up neural net for source '" + sourceName + "'", e);
             ObjectRecognitionCore.exit();
         }
         

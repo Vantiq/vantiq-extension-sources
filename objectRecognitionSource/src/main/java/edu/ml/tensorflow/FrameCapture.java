@@ -14,7 +14,7 @@ public class FrameCapture {
 	    capture = new VideoCapture(camera);
     }
 	
-	public byte[] capureSnapShot() {
+	public byte[] captureSnapShot() {
 		// Reading the next video frame from the camera
 		Mat matrix = new Mat();
 		capture.read(matrix);

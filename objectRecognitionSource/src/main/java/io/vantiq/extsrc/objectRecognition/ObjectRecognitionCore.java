@@ -1,10 +1,12 @@
 package io.vantiq.extsrc.objectRecognition;
 
 import java.io.File;
+import java.io.FileReader;
 import java.io.IOException;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Properties;
 import java.util.Timer;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
@@ -131,7 +133,7 @@ public class ObjectRecognitionCore {
      * @return  An OpenCV Mat containing the image specified.
      */
     public static byte[] getImage() {
-        return frameCapture.capureSnapShot();
+        return frameCapture.captureSnapShot();
     }
 
     /**
@@ -171,65 +173,62 @@ public class ObjectRecognitionCore {
      * @param args  The args for the program. Expected to be either null, or the first arg is the file path
      */
     public static void setup(String[] args) {
-        Map<String, Object> config = null;
+        Properties config = null;
         if (args != null) {
-            obtainServerConfig(args[0]);
+            config = obtainServerConfig(args[0]);
         } else {
-            obtainServerConfig("config.json");
+            config = obtainServerConfig("server.config");
         }
         setupServer(config);
     }
     
     
     /**
-     * Turn the given JSON file into a {@link Map}. 
+     * Turn the given config file into a {@link Map}. 
      * 
-     * @param fileName  The name of the JSON file holding the server configuration.
-     * @return          A {@link Map} that holds the contents of the JSON file.
+     * @param fileName  The name of the config file holding the server configuration.
+     * @return          The properties specified in the file.
      */
-    static Map<String, Object> obtainServerConfig(String fileName) {
+    static Properties obtainServerConfig(String fileName) {
         File configFile = new File(fileName);
-        log.debug(configFile.getAbsolutePath());
-        Map<String, Object>  config = new LinkedHashMap();
-        ObjectMapper mapper = new ObjectMapper();
+        Properties properties = new Properties();
+        
         try {
-            config = mapper.readValue(configFile, Map.class);
+            properties.load(new FileReader(fileName));
         } catch (IOException e) {
             throw new RuntimeException("Could not find valid server config file. Expected location: '" 
                     + configFile.getAbsolutePath() + "'", e);
         } catch (Exception e) {
             throw new RuntimeException("Error occurred when trying to read the server config file. "
-                    + "Please ensure it is proper JSON.", e);
+                    + "Please ensure it is formatted properly.", e);
         }
 
-        return config;
+        return properties;
 
     }
 
     /**
      * Sets up the defaults for the server based on the configuration file
      *
-     * @param config    The {@link Map} obtained from the config file
+     * @param config    The Properties obtained from the config file
      */
-    static void setupServer(Map config) {
-        targetVantiqServer = config.get("targetServer") instanceof String ? (String) config.get("targetServer") :
-                "wss://dev.vantiq.com/api/v1/wsock/websocket";
-        if (config.get("authToken") instanceof String) {
-            authToken = (String) config.get("authToken") ;
-        } else {
+    static void setupServer(Properties config) {
+        targetVantiqServer = config.getProperty("targetServer", "wss://dev.vantiq.com/api/v1/wsock/websocket");
+        
+        authToken = config.getProperty("authToken");
+        if (authToken == null) {
             log.error("No valid authentication token in server settings");
             log.error("Exiting...");
             exit();
         }
-        if (config.get("source") instanceof String) {
-            sourceName = (String) config.get("source");
-        } else {
+        
+        sourceName = config.getProperty("source");
+        if (sourceName == null) {
             log.error("No valid source in server settings");
             log.error("Exiting...");
             exit();
         }
-        if (config.get("modelDirectory") instanceof String) {
-            modelDirectory = (String) config.get("modelDirectory");
-        }
+        
+        modelDirectory = config.getProperty("modelDirectory", "");
     }
 }

@@ -12,6 +12,8 @@ public interface NeuralNetInterface {
      * Setup the neural net for image processing.
      * @param neuralNetConfig   A map containing the configuration necessary to setup the neural net. This will be the
      *                          'neuralNet' object in the source configuration document.
+     * @param modelDirectory    The directory in which it should look for the models
+     * @throws Exception        Thrown when an error occurs during setup.
      */
     public void setupImageProcessing(Map<String,?> neuralNetConfig, String modelDirectory) throws Exception;
     
@@ -20,7 +22,7 @@ public interface NeuralNetInterface {
      *
      * @param image The bytes of a jpg file.
      * @return      A List returning Maps describing the objects identified. The ordering and contents of the Maps is
-     *              implementation dependent. 
+     *              implementation dependent.
      */
     public List<Map> processImage(byte[] image);
     

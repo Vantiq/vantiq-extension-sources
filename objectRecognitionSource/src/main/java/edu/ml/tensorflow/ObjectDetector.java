@@ -28,7 +28,7 @@ public class ObjectDetector {
     private final static Logger LOGGER = LoggerFactory.getLogger(ObjectDetector.class);
     private byte[] GRAPH_DEF;
     private List<String> LABELS;
-    
+
     private Graph yoloGraph;
     private Session yoloSession;
 
@@ -54,7 +54,6 @@ public class ObjectDetector {
      * Detect objects on the given image
      * @param imageLocation the location of the image
      */
-//    public void detect(byte[] namirTest, final String imageLocation) {
     public List<Map> detect(final byte[] image) {
         try (Tensor<Float> normalizedImage = normalizeImage(image)) {
             List<Recognition> recognitions = YOLOClassifier.getInstance().classifyImage(executeYOLOGraph(normalizedImage), LABELS);
@@ -101,7 +100,7 @@ public class ObjectDetector {
         g.importGraphDef(GRAPH_DEF);
         return g;
     }
-    
+
     /**
      * Executes graph on the given preprocessed image. 
      * <br> Edited to reduce runtime for repeated calls.
@@ -110,7 +109,7 @@ public class ObjectDetector {
      */
     private float[] executeYOLOGraph(final Tensor<Float> image) {
         // Reusing the same session reduces runtime by ~13x
-        try(Tensor<Float> result = 
+        try(Tensor<Float> result =
                 yoloSession.runner().feed("input", 0, image).fetch("output").run().get(0).expect(Float.class)) {
             float[] outputTensor = new float[YOLOClassifier.getInstance().getOutputSizeByShape(result)];
             FloatBuffer floatBuffer = FloatBuffer.wrap(outputTensor);
@@ -147,7 +146,7 @@ public class ObjectDetector {
     }
     
     /**
-     * Closes all the 
+     * Closes all the resources in use by the ObjectDetector
      * <br>Not part of original code.
      */
     public void close() {
@@ -160,7 +159,7 @@ public class ObjectDetector {
             yoloSession = null;
         }
     }
-    
+
     /**
      * Makes sure to close everything if/when this object is garbage collected
      * <br>Not part of original code.
