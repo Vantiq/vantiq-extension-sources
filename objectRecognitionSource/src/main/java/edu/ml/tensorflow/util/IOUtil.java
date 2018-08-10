@@ -16,6 +16,12 @@ public final class IOUtil {
     private final static Logger LOGGER = LoggerFactory.getLogger(IOUtil.class);
     private IOUtil() {}
 
+    /**
+     * Reads all the bytes from a file, throws a {@link ServiceException} if it fails.
+     * <br>Edited to read from working directory instead of classpath.
+     * @param fileName  The file to be read
+     * @return          The file's bytes
+     */
     public static byte[] readAllBytesOrExit(final String fileName) {
         try {
             File f = new File(fileName);
@@ -26,6 +32,12 @@ public final class IOUtil {
         }
     }
 
+    /**
+     * Reads all the bytes from a file, throws a {@link ServiceException} if it fails.
+     * <br>Edited to read from working directory instead of classpath.
+     * @param filename  The file to be read
+     * @return          A List containing the lines of the file
+     */
     public static List<String> readAllLinesOrExit(final String filename) {
         try {
             File file = new File(filename);
@@ -34,15 +46,5 @@ public final class IOUtil {
             LOGGER.error("Failed to read [{}]!", filename, ex.getMessage());
             throw new ServiceException("Failed to read [" + filename + "]!", ex);
         }
-    }
-
-    public static void createDirIfNotExists(final File directory) {
-        if (!directory.exists()) {
-            directory.mkdir();
-        }
-    }
-
-    public static String getFileName(final String path) {
-        return path.substring(path.lastIndexOf("/") + 1, path.length());
     }
 }

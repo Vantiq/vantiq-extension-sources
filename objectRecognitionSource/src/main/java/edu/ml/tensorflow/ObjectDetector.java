@@ -4,7 +4,6 @@ import edu.ml.tensorflow.classifier.YOLOClassifier;
 import edu.ml.tensorflow.model.Recognition;
 import edu.ml.tensorflow.util.GraphBuilder;
 import edu.ml.tensorflow.util.IOUtil;
-import edu.ml.tensorflow.util.ImageUtil;
 import edu.ml.tensorflow.util.ServiceException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -15,13 +14,10 @@ import org.tensorflow.Tensor;
 
 import java.nio.FloatBuffer;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import static edu.ml.tensorflow.Config.GRAPH_FILE;
-import static edu.ml.tensorflow.Config.LABEL_FILE;
 import static edu.ml.tensorflow.Config.MEAN;
 import static edu.ml.tensorflow.Config.SIZE;
 
@@ -35,20 +31,23 @@ public class ObjectDetector {
     
     private Graph yoloGraph;
     private Session yoloSession;
-    private Session.Runner yoloRunner;
 
+    /**
+     * Initializes the ObjectDetector with the given graph and and labels.
+     * <br>Edited to initialize and save the graph for reuse, and allow the files to be specified dynamically.
+     * @param graphFile The location of a proto buffer file describing the YOLO net 
+     * @param labelFile The location of the labels for the given net.
+     */
     public ObjectDetector(String graphFile, String labelFile) {
         try {
             GRAPH_DEF = IOUtil.readAllBytesOrExit(graphFile);
             LABELS = IOUtil.readAllLinesOrExit(labelFile);
         } catch (ServiceException ex) {
-            LOGGER.error("Download one of my graph file to run the program! \n" +
-                    "You can find my graphs here: https://drive.google.com/open?id=1GfS1Yle7Xari1tRUEi2EDYedFteAOaoN");
+            throw new IllegalArgumentException("Problem reading files for the yolo graph.", ex);
         }
         
         yoloGraph = createYoloGraph();
         yoloSession = new Session(yoloGraph);
-        yoloRunner = yoloSession.runner();
     }
 
     /**
@@ -92,6 +91,11 @@ public class ObjectDetector {
         }
     }
 
+    /**
+     * Creates a Graph that contains the specified neural net.
+     * <br>Not part of original code.
+     * @return  A graph created using the neural net specified through the constructor
+     */
     private Graph createYoloGraph() {
         Graph g = new Graph();
         g.importGraphDef(GRAPH_DEF);
@@ -99,28 +103,20 @@ public class ObjectDetector {
     }
     
     /**
-     * Executes graph on the given preprocessed image
+     * Executes graph on the given preprocessed image. 
+     * <br> Edited to reduce runtime for repeated calls.
      * @param image preprocessed image
      * @return output tensor returned by tensorFlow
      */
     private float[] executeYOLOGraph(final Tensor<Float> image) {
-//        long preSess = System.currentTimeMillis();
-//        try (Session s = new Session(yoloGraph)){
-//            Session.Runner r = s.runner().feed("input", image).fetch("output");
-//            long postSess = System.currentTimeMillis();
-//            LOGGER.debug("Session runner creation time: " + (postSess - preSess) / 1000 + "." + (postSess - preSess) % 1000 + " seconds");
-            long preRun = System.currentTimeMillis();
-            yoloRunner = yoloSession.runner().feed("input", 0, image).fetch("output");
-            try(Tensor<Float> result = 
-                    yoloRunner.run().get(0).expect(Float.class)) {
-                long postRun = System.currentTimeMillis();
-                LOGGER.debug("Session run time: " + (postRun - preRun) / 1000 + "." + (postRun - preRun) % 1000 + " seconds");
-                float[] outputTensor = new float[YOLOClassifier.getInstance().getOutputSizeByShape(result)];
-                FloatBuffer floatBuffer = FloatBuffer.wrap(outputTensor);
-                result.writeTo(floatBuffer);
-                return outputTensor;
-            }
-//        }
+        // Reusing the same session reduces runtime by ~13x
+        try(Tensor<Float> result = 
+                yoloSession.runner().feed("input", 0, image).fetch("output").run().get(0).expect(Float.class)) {
+            float[] outputTensor = new float[YOLOClassifier.getInstance().getOutputSizeByShape(result)];
+            FloatBuffer floatBuffer = FloatBuffer.wrap(outputTensor);
+            result.writeTo(floatBuffer);
+            return outputTensor;
+        }
     }
     
     /**
@@ -150,6 +146,10 @@ public class ObjectDetector {
         return jsonRecognitions;
     }
     
+    /**
+     * Closes all the 
+     * <br>Not part of original code.
+     */
     public void close() {
         if (yoloGraph != null) {
             yoloGraph.close();
@@ -159,9 +159,12 @@ public class ObjectDetector {
             yoloSession.close();
             yoloSession = null;
         }
-        yoloRunner = null;
     }
     
+    /**
+     * Makes sure to close everything if/when this object is garbage collected
+     * <br>Not part of original code.
+     */
     @Override
     protected void finalize() {
         close();
