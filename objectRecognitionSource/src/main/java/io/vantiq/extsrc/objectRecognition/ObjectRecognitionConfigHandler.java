@@ -6,12 +6,9 @@ import java.util.Map;
 import java.util.Timer;
 import java.util.TimerTask;
 
-import org.opencv.core.Mat;
-import org.opencv.videoio.VideoCapture;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import edu.ml.tensorflow.FrameCapture;
 import io.vantiq.extjsdk.ExtensionServiceMessage;
 import io.vantiq.extjsdk.Handler;
 

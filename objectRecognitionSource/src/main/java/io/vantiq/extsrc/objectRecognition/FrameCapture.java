@@ -1,10 +1,14 @@
-package edu.ml.tensorflow;
+package io.vantiq.extsrc.objectRecognition;
 
 import org.opencv.core.Mat;
 import org.opencv.core.MatOfByte;
 import org.opencv.imgcodecs.Imgcodecs;
 import org.opencv.videoio.VideoCapture;
 
+/**
+ * Captures images and returns them as jpeg encoded bytes
+ * <br>Not part of original code.
+ */
 public class FrameCapture {
 	Mat matrix = null;
 	VideoCapture capture;

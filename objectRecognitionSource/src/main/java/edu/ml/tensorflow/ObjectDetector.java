@@ -125,12 +125,12 @@ public class ObjectDetector {
 
     /**
      * Executes graph on the given preprocessed image. 
-     * <br> Edited to reduce runtime for repeated calls.
+     * <br>Edited forom orignal code to reduce runtime for repeated calls.
      * @param image preprocessed image
      * @return output tensor returned by tensorFlow
      */
     private float[] executeYOLOGraph(final Tensor<Float> image) {
-        // Reusing the same session reduces runtime by ~13x
+        // Reusing the same session reduces runtime significantly (by ~13x on the developer's computer)
         try(Tensor<Float> result =
                 yoloSession.runner().feed("input", 0, image).fetch("output").run().get(0).expect(Float.class)) {
             float[] outputTensor = new float[YOLOClassifier.getInstance().getOutputSizeByShape(result)];
@@ -161,7 +161,7 @@ public class ObjectDetector {
         	
         	jsonRecognitions.add(map);
         	
-        	LOGGER.info(map.toString());
+        	LOGGER.info("{}", map);
         }
         
         return jsonRecognitions;

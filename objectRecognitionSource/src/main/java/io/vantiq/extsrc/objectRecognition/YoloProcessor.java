@@ -53,7 +53,7 @@ public class YoloProcessor implements NeuralNetInterface {
         long before = System.currentTimeMillis();
         results = objectDetector.detect(image);
         after = System.currentTimeMillis();
-        log.info("Image processing time: " + (after - before) / 1000 + "." + (after - before) % 1000 + " seconds");
+        log.debug("Image processing time: " + (after - before) / 1000 + "." + (after - before) % 1000 + " seconds");
         return results;
     }
 
