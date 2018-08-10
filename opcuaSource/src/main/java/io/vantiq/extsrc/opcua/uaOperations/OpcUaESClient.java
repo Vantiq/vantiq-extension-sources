@@ -562,7 +562,7 @@ public class OpcUaESClient {
             if (mis instanceof Map) {
                 Map<String, Map<String, String>> newMonitoredItems = (Map<String, Map<String, String>>) mis;
 
-                if (newMonitoredItems == null) {
+                if (newMonitoredItems == null || newMonitoredItems.isEmpty()) {
                     log.info("No monitoring requested for OPC UA server with discovery endpoint: {}", discoveryEndpoint);
                 } else {
                     log.debug("Config requesting {} monitored items", newMonitoredItems.size());
