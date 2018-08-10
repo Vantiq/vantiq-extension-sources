@@ -31,6 +31,11 @@ public class ObjectDetector {
 
     private Graph yoloGraph;
     private Session yoloSession;
+    
+    private Graph normalizerGraph;
+    private Session normalizerSession;
+    private String normalizerInputName;
+    private String normalizerOutputName;
 
     /**
      * Initializes the ObjectDetector with the given graph and and labels.
@@ -48,6 +53,9 @@ public class ObjectDetector {
         
         yoloGraph = createYoloGraph();
         yoloSession = new Session(yoloGraph);
+        
+        normalizerGraph = createNormalizerGraph();
+        normalizerSession = new Session(normalizerGraph);
     }
 
     /**
@@ -65,28 +73,16 @@ public class ObjectDetector {
 
     /**
      * Pre-process input. It resize the image and normalize its pixels
+     * <br>Edited so that it reuses the Session rather than creating a new one.
      * @param imageBytes Input image
      * @return Tensor<Float> with shape [1][416][416][3]
      */
     private Tensor<Float> normalizeImage(final byte[] imageBytes) {
-        try (Graph graph = new Graph()) {
-            GraphBuilder graphBuilder = new GraphBuilder(graph);
-
-            final Output<Float> output =
-                graphBuilder.div( // Divide each pixels with the MEAN
-                    graphBuilder.resizeBilinear( // Resize using bilinear interpolation
-                            graphBuilder.expandDims( // Increase the output tensors dimension
-                                    graphBuilder.cast( // Cast the output to Float
-                                            graphBuilder.decodeJpeg(
-                                                    graphBuilder.constant("input", imageBytes), 3),
-                                            Float.class),
-                                    graphBuilder.constant("make_batch", 0)),
-                            graphBuilder.constant("size", new int[]{SIZE, SIZE})),
-                    graphBuilder.constant("scale", MEAN));
-
-            try (Session session = new Session(graph)) {
-                return session.runner().fetch(output.op().name()).run().get(0).expect(Float.class);
-            }
+        try (Tensor<String> input = Tensor.create(imageBytes, String.class)) {
+            return normalizerSession.runner()
+                    .feed(normalizerInputName, input)
+                    .fetch(normalizerOutputName)
+                    .run().get(0).expect(Float.class);
         }
     }
 
@@ -98,6 +94,32 @@ public class ObjectDetector {
     private Graph createYoloGraph() {
         Graph g = new Graph();
         g.importGraphDef(GRAPH_DEF);
+        return g;
+    }
+    
+    /**
+     * Creates a Graph that will normalize images.
+     * <br>Not part of original code. However, the production of the graph is taken directly from the original code
+     * and transplanted here in order to save time on reruns.
+     * @return  A graph that will normalize an image
+     */
+    private Graph createNormalizerGraph() {
+        Graph g = new Graph();
+        
+        GraphBuilder graphBuilder = new GraphBuilder(g); 
+        final Output<Float> output =
+                graphBuilder.div( // Divide each pixels with the MEAN
+                    graphBuilder.resizeBilinear( // Resize using bilinear interpolation
+                            graphBuilder.expandDims( // Increase the output tensors dimension
+                                    graphBuilder.cast( // Cast the output to Float
+                                            graphBuilder.decodeJpeg(
+                                                    graphBuilder.constant("input", new byte[0]), 3),
+                                            Float.class),
+                                    graphBuilder.constant("make_batch", 0)),
+                            graphBuilder.constant("size", new int[]{SIZE, SIZE})),
+                    graphBuilder.constant("scale", MEAN));
+        normalizerInputName = "input";
+        normalizerOutputName = output.op().name();
         return g;
     }
 
@@ -157,6 +179,15 @@ public class ObjectDetector {
         if (yoloSession != null) {
             yoloSession.close();
             yoloSession = null;
+        }
+        
+        if (normalizerGraph != null) {
+            normalizerGraph.close();
+            normalizerGraph = null;
+        }
+        if (normalizerSession != null) {
+            normalizerSession.close();
+            normalizerSession = null;
         }
     }
 
