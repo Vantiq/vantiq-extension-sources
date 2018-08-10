@@ -32,6 +32,10 @@ public class ObjectDetector {
     private final static Logger LOGGER = LoggerFactory.getLogger(ObjectDetector.class);
     private byte[] GRAPH_DEF;
     private List<String> LABELS;
+    
+    private Graph yoloGraph;
+    private Session yoloSession;
+    private Session.Runner yoloRunner;
 
     public ObjectDetector(String graphFile, String labelFile) {
         try {
@@ -41,6 +45,10 @@ public class ObjectDetector {
             LOGGER.error("Download one of my graph file to run the program! \n" +
                     "You can find my graphs here: https://drive.google.com/open?id=1GfS1Yle7Xari1tRUEi2EDYedFteAOaoN");
         }
+        
+        yoloGraph = createYoloGraph();
+        yoloSession = new Session(yoloGraph);
+        yoloRunner = yoloSession.runner();
     }
 
     /**
@@ -84,22 +92,35 @@ public class ObjectDetector {
         }
     }
 
+    private Graph createYoloGraph() {
+        Graph g = new Graph();
+        g.importGraphDef(GRAPH_DEF);
+        return g;
+    }
+    
     /**
      * Executes graph on the given preprocessed image
      * @param image preprocessed image
      * @return output tensor returned by tensorFlow
      */
     private float[] executeYOLOGraph(final Tensor<Float> image) {
-        try (Graph graph = new Graph()) {
-            graph.importGraphDef(GRAPH_DEF);
-            try (Session s = new Session(graph);
-                Tensor<Float> result = s.runner().feed("input", image).fetch("output").run().get(0).expect(Float.class)) {
+//        long preSess = System.currentTimeMillis();
+//        try (Session s = new Session(yoloGraph)){
+//            Session.Runner r = s.runner().feed("input", image).fetch("output");
+//            long postSess = System.currentTimeMillis();
+//            LOGGER.debug("Session runner creation time: " + (postSess - preSess) / 1000 + "." + (postSess - preSess) % 1000 + " seconds");
+            long preRun = System.currentTimeMillis();
+            yoloRunner = yoloSession.runner().feed("input", 0, image).fetch("output");
+            try(Tensor<Float> result = 
+                    yoloRunner.run().get(0).expect(Float.class)) {
+                long postRun = System.currentTimeMillis();
+                LOGGER.debug("Session run time: " + (postRun - preRun) / 1000 + "." + (postRun - preRun) % 1000 + " seconds");
                 float[] outputTensor = new float[YOLOClassifier.getInstance().getOutputSizeByShape(result)];
                 FloatBuffer floatBuffer = FloatBuffer.wrap(outputTensor);
                 result.writeTo(floatBuffer);
                 return outputTensor;
             }
-        }
+//        }
     }
     
     /**
@@ -130,6 +151,19 @@ public class ObjectDetector {
     }
     
     public void close() {
-        
+        if (yoloGraph != null) {
+            yoloGraph.close();
+            yoloGraph = null;
+        }
+        if (yoloSession != null) {
+            yoloSession.close();
+            yoloSession = null;
+        }
+        yoloRunner = null;
+    }
+    
+    @Override
+    protected void finalize() {
+        close();
     }
 }
