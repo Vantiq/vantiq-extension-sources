@@ -8,7 +8,7 @@ import org.slf4j.LoggerFactory;
 
 import edu.ml.tensorflow.ObjectDetector;
 
-public class YoloProcessor implements NeuralNetInterface {
+public class YoloProcessor extends NeuralNetInterface {
     
     Logger log = LoggerFactory.getLogger(this.getClass());
     String pbFile = null;

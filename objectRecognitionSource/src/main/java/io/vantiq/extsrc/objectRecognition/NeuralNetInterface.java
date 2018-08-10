@@ -6,7 +6,12 @@ import java.util.Map;
 /**
  * An interface for the neural net that will process the image and return a List of data representing the objects found.
  */
-public interface NeuralNetInterface {
+public abstract class NeuralNetInterface {
+    
+    protected boolean threadSafe = true;
+    public boolean isThreadSafe() {
+        return threadSafe;
+    }
     
     /**
      * Setup the neural net for image processing.
@@ -15,7 +20,7 @@ public interface NeuralNetInterface {
      * @param modelDirectory    The directory in which it should look for the models
      * @throws Exception        Thrown when an error occurs during setup.
      */
-    public void setupImageProcessing(Map<String,?> neuralNetConfig, String modelDirectory) throws Exception;
+    public abstract void setupImageProcessing(Map<String,?> neuralNetConfig, String modelDirectory) throws Exception;
     
     /**
      * Process the image and return a List of Maps describing the objects identified
@@ -24,10 +29,10 @@ public interface NeuralNetInterface {
      * @return      A List returning Maps describing the objects identified. The ordering and contents of the Maps is
      *              implementation dependent.
      */
-    public List<Map> processImage(byte[] image);
+    public abstract List<Map> processImage(byte[] image);
     
     /**
      * Safely close any resources obtained by the net
      */
-    public void close();
+    public abstract void close();
 }

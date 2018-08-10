@@ -13,7 +13,7 @@ import org.slf4j.LoggerFactory;
 import jep.Jep;
 import jep.NDArray;
 
-public class DarkflowProcessor implements NeuralNetInterface{
+public class DarkflowProcessor extends NeuralNetInterface{
     
     Logger log = LoggerFactory.getLogger(this.getClass());
     Jep jep = null;

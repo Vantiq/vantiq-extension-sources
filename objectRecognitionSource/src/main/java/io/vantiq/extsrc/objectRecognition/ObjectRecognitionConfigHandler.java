@@ -18,14 +18,16 @@ public class ObjectRecognitionConfigHandler extends Handler<ExtensionServiceMess
     
     Logger log = LoggerFactory.getLogger(this.getClass());
     String sourceName;
+    ObjectRecognitionCore source;
     boolean configComplete = false;
     
     /**
      * Initializes the Handler for a source 
      * @param sourceName    The source that this handler is attached to
      */
-    public ObjectRecognitionConfigHandler(String sourceName) {
-        this.sourceName = sourceName;
+    public ObjectRecognitionConfigHandler(ObjectRecognitionCore source) {
+        this.source = source;
+        this.sourceName = source.getSourceName();
     }
     
     
@@ -41,17 +43,17 @@ public class ObjectRecognitionConfigHandler extends Handler<ExtensionServiceMess
         // Obtain the Maps for each object
         if ( !(config.get("config") instanceof Map && ((Map)config.get("config")).get("extSrcConfig") instanceof Map) ) {
             log.error("No configuration received for source ' " + sourceName + "'. Exiting...");
-            ObjectRecognitionCore.exit();
+            source.close();
         }
         config = (Map) ((Map) config.get("config")).get("extSrcConfig");
         if ( !(config.get("dataSource") instanceof Map)) {
             log.error("No data source specified for source ' " + sourceName + "'. Exiting...");
-            ObjectRecognitionCore.exit();
+            source.close();
         }
         dataSource = (Map) config.get("dataSource");
         if ( !(config.get("neuralNet") instanceof Map)) {
             log.error("No neural net specified for source ' " + sourceName + "'. Exiting...");
-            ObjectRecognitionCore.exit();
+            source.close();
         }
         neuralNetConfig = (Map) config.get("neuralNet");
         
@@ -61,62 +63,62 @@ public class ObjectRecognitionConfigHandler extends Handler<ExtensionServiceMess
 //            neuralNetClassName = (String) neuralNet.get("className");
 //        } else {
 //            log.error("No class specified for the neural net of source ' " + sourceName + "'. Exiting...");
-//            ObjectRecognitionCore.exit();
+//            source.close();
 //        }
 //        NeuralNetInterface tfInterface = getNeuralNet(neuralNetClassName);
         NeuralNetInterface neuralNet = new YoloProcessor(); // TODO replace with generic version
-        ObjectRecognitionCore.neuralNet = neuralNet;
+        source.neuralNet = neuralNet;
         try {
-            neuralNet.setupImageProcessing(neuralNetConfig, ObjectRecognitionCore.modelDirectory);
+            neuralNet.setupImageProcessing(neuralNetConfig, source.modelDirectory);
         } catch (Exception e) {
             log.error("Exception occurred while setting up neural net for source '" + sourceName + "'", e);
-            ObjectRecognitionCore.exit();
+            source.close();
         }
         
         
         // Figure out where to receive the data from
         nu.pattern.OpenCV.loadShared();
         if (dataSource.get("fileLocation") instanceof String) {
-            ObjectRecognitionCore.imageLocation = (String) dataSource.get("fileLocation");
+            source.imageLocation = (String) dataSource.get("fileLocation");
         } else if (dataSource.get("camera") instanceof Integer && (int) dataSource.get("camera") >= 0) {
             int cameraNumber = (int) dataSource.get("camera");
-            ObjectRecognitionCore.cameraNumber =  cameraNumber;
+            source.cameraNumber =  cameraNumber;
             
-            ObjectRecognitionCore.frameCapture = new FrameCapture(cameraNumber); // Can add API preferences, found in Videoio
+            source.frameCapture = new FrameCapture(cameraNumber); // Can add API preferences, found in Videoio
         } else {
             log.error("No valid polling target");
             log.error("Exiting...");
-            ObjectRecognitionCore.exit();
+            source.close();
         }
         
         if (dataSource.get("polling") instanceof Integer) {
             int polling = (int) dataSource.get("polling");
             if (polling > 0) {
                 int pollRate = polling;
-                ObjectRecognitionCore.pollRate = pollRate;
+                source.pollRate = pollRate;
                 TimerTask task = new TimerTask() {
                     boolean isRunning = false;
                     @Override
                     public void run() {
                         if (!isRunning) {
                             isRunning = true;
-                            byte[] image = ObjectRecognitionCore.getImage();
-                            ObjectRecognitionCore.sendDataFromImage(image);
+                            byte[] image = source.getImage();
+                            source.sendDataFromImage(image);
                             isRunning = false;
                         }
                     }
                 };
-                ObjectRecognitionCore.pollTimer = new Timer("dataCapture");
-                ObjectRecognitionCore.pollTimer.scheduleAtFixedRate(task, 0, pollRate);
+                source.pollTimer = new Timer("dataCapture");
+                source.pollTimer.scheduleAtFixedRate(task, 0, pollRate);
             } else if (polling == 0) {
-                ObjectRecognitionCore.constantPolling = true;
+                source.constantPolling = true;
             } else {
                 // TODO snapshot on publish/query choice TBD
             }
         } else {
             log.error("No valid polling rate");
             log.error("Exiting...");
-            ObjectRecognitionCore.exit();
+            source.close();
         }
         
         configComplete = true;
@@ -134,14 +136,14 @@ public class ObjectRecognitionConfigHandler extends Handler<ExtensionServiceMess
             clazz = Class.forName(className);
         } catch (ClassNotFoundException e) {
             log.error("Could not find requested class '" + className + "'", e);
-            ObjectRecognitionCore.exit();
+            source.close();
         }
         
         try {
             constructor = clazz.getConstructor();
         } catch (NoSuchMethodException | SecurityException e) {
             log.error("Could not find public no argument constructor for '" + className + "'", e);
-            ObjectRecognitionCore.exit();
+            source.close();
         }
 
         try {
@@ -149,13 +151,13 @@ public class ObjectRecognitionConfigHandler extends Handler<ExtensionServiceMess
         } catch (InstantiationException | IllegalAccessException | IllegalArgumentException
                 | InvocationTargetException e) {
             log.error("Error occurred trying to instantiate class '" + className + "'", e);
-            ObjectRecognitionCore.exit();
+            source.close();
         }
         
         if ( !(object instanceof NeuralNetInterface) )
         {
             log.error("Class '" + className + "' is not an implementation of NeuralNetInterface");
-            ObjectRecognitionCore.exit();
+            source.close();
         }
         
         return (NeuralNetInterface) object;

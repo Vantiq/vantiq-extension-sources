@@ -1,21 +1,14 @@
 package io.vantiq.extsrc.objectRecognition;
 
-import java.io.File;
-import java.io.FileReader;
-import java.io.IOException;
 import java.util.List;
 import java.util.Map;
-import java.util.Properties;
 import java.util.Timer;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import com.fasterxml.jackson.databind.ObjectMapper;
 
 import io.vantiq.extjsdk.ExtensionWebSocketClient;
 import io.vantiq.extjsdk.Handler;
@@ -23,33 +16,32 @@ import io.vantiq.extjsdk.Response;
 
 public class ObjectRecognitionCore {
     // vars for server configuration
-    static String sourceName            = "Camera1";
-    static String authToken             = "gcy1hHR39ge2PNCZeiUbYKAev-G7u-KyPh2Ns4gI0Y8=";
-    static String targetVantiqServer    = "ws://localhost:8080";
-    static String modelDirectory        = "models/";
+    String sourceName            = "Camera1";
+    String authToken             = "gcy1hHR39ge2PNCZeiUbYKAev-G7u-KyPh2Ns4gI0Y8=";
+    String targetVantiqServer    = "ws://localhost:8080";
+    String modelDirectory        = "models/";
     
     
     // vars for source configuration
-    static boolean      constantPolling = false;
-    static int          pollRate        = 0;
-    static Timer        pollTimer       = null;
-    static String       imageLocation   = null;
-    static int          cameraNumber    = 0;
-    static FrameCapture frameCapture    = null;
+    boolean      constantPolling = false;
+    int          pollRate        = 0;
+    Timer        pollTimer       = null;
+    String       imageLocation   = null;
+    int          cameraNumber    = 0;
+    FrameCapture frameCapture    = null;
     
     
-    static ObjectRecognitionConfigHandler objRecConfigHandler;
+    ObjectRecognitionConfigHandler objRecConfigHandler;
     
     // vars for internal use
     public static CompletableFuture<Void>   stop        = new CompletableFuture<>();
-    static ExtensionWebSocketClient         client      = null;
-    static NeuralNetInterface               neuralNet  = null;
+    ExtensionWebSocketClient         client      = null;
+    NeuralNetInterface               neuralNet  = null;
     
     // final vars
-    static final Logger         log     = LoggerFactory.getLogger(ObjectRecognitionCore.class);
-    static final ObjectMapper   mapper  = new ObjectMapper();
+    final Logger log;
     
-    public static Handler<Response> httpHandler = new Handler<Response>() {
+    public Handler<Response> httpHandler = new Handler<Response>() {
 
         @Override
         public void handleMessage(Response message) {
@@ -58,47 +50,25 @@ public class ObjectRecognitionCore {
         
     };
     
-    /**
-     * Connects to the Vantiq source and starts polling for data. Exits if 
-     * @param args  Should be either null or the first argument as a config file
-     */
-    public static void main(String[] args) {
-        // setup(args); // TODO uncomment
-        
-        client = new ExtensionWebSocketClient(sourceName);
-        objRecConfigHandler = new ObjectRecognitionConfigHandler(sourceName);
-        
-        client.setConfigHandler(objRecConfigHandler);
-        client.initiateFullConnection(targetVantiqServer, authToken);
-        
-        exitIfConnectionFails(client);
-        
-        while (!objRecConfigHandler.isComplete()) {
-            Thread.yield();
-        }
-        
-        if (constantPolling) {
-            while (!stop.isDone()) {
-                byte[] image = getImage();
-                sendDataFromImage(image);
-            }
-        } else {
-            try {
-                stop.get();
-            } catch(InterruptedException | ExecutionException e) {
-                log.error("Exception occurred while waiting on the 'stop' Future", e);
-            }
-        }
-        log.info("Closing...");
-        
-        exit();
+    
+    
+    public ObjectRecognitionCore(String sourceName, String authToken, String targetVantiqServer, String modelDirectory) {
+        log = LoggerFactory.getLogger(this.getClass().getCanonicalName() + '#' + sourceName);
+        this.sourceName = sourceName;
+        this.authToken = authToken;
+        this.targetVantiqServer = targetVantiqServer;
+        this.modelDirectory = modelDirectory;
+    }
+    
+    public String getSourceName() {
+        return sourceName;
     }
     
     /**
      * Processes the image then sends the results to the Vantiq source
      * @param image An OpenCV Mat representing the image to be translated
      */
-    protected static void sendDataFromImage(byte[] image) {
+    protected void sendDataFromImage(byte[] image) {
         List<Map> imageResults = neuralNet.processImage(image);
         client.sendNotification(imageResults);
     }
@@ -106,7 +76,7 @@ public class ObjectRecognitionCore {
     /**
      * Closes all resources held by this program and then closes the connection. 
      */
-    protected static void exit() {
+    protected void close() {
         if (client != null && client.isOpen()) {
             client.stop();
         }
@@ -127,7 +97,7 @@ public class ObjectRecognitionCore {
      * Obtains an image from either a camera or file. 
      * @return  An OpenCV Mat containing the image specified.
      */
-    public static byte[] getImage() {
+    public byte[] getImage() {
         return frameCapture.captureSnapShot();
     }
 
@@ -136,7 +106,7 @@ public class ObjectRecognitionCore {
      *
      * @param client    The client to watch for success or failure.
      */
-    public static void exitIfConnectionFails(ExtensionWebSocketClient client) {
+    public void exitIfConnectionFails(ExtensionWebSocketClient client) {
         boolean sourcesSucceeded = false;
         try {
             sourcesSucceeded = client.getSourceConnectionFuture().get(10, TimeUnit.SECONDS);
@@ -158,72 +128,44 @@ public class ObjectRecognitionCore {
             else {
                 log.error("Failed to connect to '" + sourceName + "' within 10 seconds");
             }
-            exit();
+            close();
         }
     }
     
-    /**
-     * Obtains and uses the configuration file specified in args.
-     * 
-     * @param args  The args for the program. Expected to be either null, or the first arg is the file path
-     */
-    public static void setup(String[] args) {
-        Properties config = null;
-        if (args != null) {
-            config = obtainServerConfig(args[0]);
-        } else {
-            config = obtainServerConfig("server.config");
-        }
-        setupServer(config);
-    }
     
     
-    /**
-     * Turn the given config file into a {@link Map}. 
-     * 
-     * @param fileName  The name of the config file holding the server configuration.
-     * @return          The properties specified in the file.
-     */
-    static Properties obtainServerConfig(String fileName) {
-        File configFile = new File(fileName);
-        Properties properties = new Properties();
-        
-        try {
-            properties.load(new FileReader(fileName));
-        } catch (IOException e) {
-            throw new RuntimeException("Could not find valid server config file. Expected location: '" 
-                    + configFile.getAbsolutePath() + "'", e);
-        } catch (Exception e) {
-            throw new RuntimeException("Error occurred when trying to read the server config file. "
-                    + "Please ensure it is formatted properly.", e);
-        }
+    
+    
 
-        return properties;
-
-    }
-
+    
+    
     /**
      * Sets up the defaults for the server based on the configuration file
      *
      * @param config    The Properties obtained from the config file
      */
-    static void setupServer(Properties config) {
-        targetVantiqServer = config.getProperty("targetServer", "wss://dev.vantiq.com/api/v1/wsock/websocket");
+    void setup(Map<String,?> config) {
+        targetVantiqServer = config.get("targetServer") instanceof String ? (String) config.get("targetServer")
+                : "wss://dev.vantiq.com/api/v1/wsock/websocket";
         
-        authToken = config.getProperty("authToken");
-        if (authToken == null) {
+        if (config.get("authToken") instanceof String) {
+            authToken = (String) config.get("authToken");
+        } else {
             log.error("No valid authentication token in server settings");
             log.error("Exiting...");
-            exit();
+            close();
         }
         
-        sourceName = config.getProperty("source");
-        if (sourceName == null) {
+        if (config.get("source") instanceof String) {
+            sourceName = (String) config.get("source");
+        } else {
             log.error("No valid source in server settings");
             log.error("Exiting...");
-            exit();
+            close();
         }
         
-        modelDirectory = config.getProperty("modelDirectory", "");
+        if (config.get("modelDirectory") instanceof String) {
+            modelDirectory = (String) config.get("modelDirectory");
+        }
     }
 }
