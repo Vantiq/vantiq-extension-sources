@@ -61,7 +61,7 @@ public class YoloProcessor implements NeuralNetInterface {
 
     @Override
     public void close() {
-        objectDetector.finalize();
+        objectDetector.close();
     }
 
 }

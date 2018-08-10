@@ -1,13 +1,10 @@
 package edu.ml.tensorflow.util;
 
-import edu.ml.tensorflow.ObjectDetector;
-import org.apache.commons.io.IOUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.IOException;
-import java.net.URISyntaxException;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.util.List;
@@ -21,7 +18,8 @@ public final class IOUtil {
 
     public static byte[] readAllBytesOrExit(final String fileName) {
         try {
-            return IOUtils.toByteArray(ObjectDetector.class.getResourceAsStream(fileName));
+            File f = new File(fileName);
+            return Files.readAllBytes(f.toPath());
         } catch (IOException | NullPointerException ex) {
             LOGGER.error("Failed to read [{}]!", fileName);
             throw new ServiceException("Failed to read [" + fileName + "]!", ex);
@@ -30,9 +28,9 @@ public final class IOUtil {
 
     public static List<String> readAllLinesOrExit(final String filename) {
         try {
-            File file = new File(ObjectDetector.class.getResource(filename).toURI());
+            File file = new File(filename);
             return Files.readAllLines(file.toPath(), Charset.forName("UTF-8"));
-        } catch (IOException | URISyntaxException ex) {
+        } catch (IOException | NullPointerException ex) {
             LOGGER.error("Failed to read [{}]!", filename, ex.getMessage());
             throw new ServiceException("Failed to read [" + filename + "]!", ex);
         }

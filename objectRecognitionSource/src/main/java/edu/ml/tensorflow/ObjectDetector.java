@@ -33,10 +33,10 @@ public class ObjectDetector {
     private byte[] GRAPH_DEF;
     private List<String> LABELS;
 
-    public ObjectDetector() {
+    public ObjectDetector(String graphFile, String labelFile) {
         try {
-            GRAPH_DEF = IOUtil.readAllBytesOrExit(GRAPH_FILE);
-            LABELS = IOUtil.readAllLinesOrExit(LABEL_FILE);
+            GRAPH_DEF = IOUtil.readAllBytesOrExit(graphFile);
+            LABELS = IOUtil.readAllLinesOrExit(labelFile);
         } catch (ServiceException ex) {
             LOGGER.error("Download one of my graph file to run the program! \n" +
                     "You can find my graphs here: https://drive.google.com/open?id=1GfS1Yle7Xari1tRUEi2EDYedFteAOaoN");
@@ -48,13 +48,12 @@ public class ObjectDetector {
      * @param imageLocation the location of the image
      */
 //    public void detect(byte[] namirTest, final String imageLocation) {
-    public void detect(final byte[] image, final String imageName) {
+    public List<Map> detect(final byte[] image) {
         try (Tensor<Float> normalizedImage = normalizeImage(image)) {
             List<Recognition> recognitions = YOLOClassifier.getInstance().classifyImage(executeYOLOGraph(normalizedImage), LABELS);
             
             //Namir's Method
-            List<Map> json = returnJSON(recognitions);
-            ImageUtil.getInstance().labelImage(image, recognitions, imageName);
+            return returnJSON(recognitions);
         }
     }
 
