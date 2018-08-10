@@ -7,21 +7,21 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import io.vantiq.extjsdk.ExtensionWebSocketClient;
-
 public class ObjectRecognitionMain {
     static final Logger                         log         = LoggerFactory.getLogger(ObjectRecognitionMain.class);
     static       List<ObjectRecognitionCore>    sources;
-    static       List<String>                   sourceNames;
     
     static String authToken             = "gcy1hHR39ge2PNCZeiUbYKAev-G7u-KyPh2Ns4gI0Y8=";
     static String targetVantiqServer    = "ws://localhost:8080";
     static String modelDirectory        = "models/";
+    
+    public static CompletableFuture<Void> stop = new CompletableFuture<>();
     
     /**
      * Connects to the Vantiq source and starts polling for data. Exits if 
@@ -29,7 +29,7 @@ public class ObjectRecognitionMain {
      */
     public static void main(String[] args) {
         Properties config;
-        if (args != null) {
+        if (args != null && args.length > 0) {
             config = obtainServerConfig(args[0]);
         } else {
             config = obtainServerConfig("server.config");
@@ -39,27 +39,25 @@ public class ObjectRecognitionMain {
         
         startSources(sources);
         
-        client = new ExtensionWebSocketClient(sourceName);
-        objRecConfigHandler = new ObjectRecognitionConfigHandler(sourceName);
-        
-        client.setConfigHandler(objRecConfigHandler);
-        client.initiateFullConnection(targetVantiqServer, authToken);
-        
-        exitIfConnectionFails(client);
-        
-            try {
-                stop.get();
-            } catch(InterruptedException | ExecutionException e) {
-                log.error("Exception occurred while waiting on the 'stop' Future", e);
-            }
+        try {
+            stop.get();
+        } catch(InterruptedException | ExecutionException e) {
+            log.error("Exception occurred while waiting on the 'stop' Future", e);
         }
+        
         log.info("Closing...");
         
         for(ObjectRecognitionCore source : sources) {
-            
+            source.close();
         }
     }
     
+    private static void startSources(List<ObjectRecognitionCore> sources) {
+        for (ObjectRecognitionCore source : sources) {
+            source.start();
+        }
+    }
+
     /**
      * Turn the given config file into a {@link Map}. 
      * 
@@ -108,6 +106,7 @@ public class ObjectRecognitionMain {
         }
         
         String[] sourceNames = sourceStr.split(",");
+        sources = new ArrayList<>();
         for (String sourceName : sourceNames) {
             sourceName = sourceName.trim(); // remove any spacing from the file
             
@@ -115,6 +114,8 @@ public class ObjectRecognitionMain {
             source = new ObjectRecognitionCore(sourceName, authToken, targetVantiqServer, modelDirectory);
             sources.add(source);
         }
+        
+        return sources;
     }
     
     public static void exit(int code) {

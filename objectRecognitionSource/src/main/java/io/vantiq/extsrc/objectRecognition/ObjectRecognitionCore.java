@@ -1,9 +1,11 @@
 package io.vantiq.extsrc.objectRecognition;
 
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
 import java.util.List;
 import java.util.Map;
 import java.util.Timer;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
@@ -16,27 +18,28 @@ import io.vantiq.extjsdk.Response;
 
 public class ObjectRecognitionCore {
     // vars for server configuration
-    String sourceName            = "Camera1";
-    String authToken             = "gcy1hHR39ge2PNCZeiUbYKAev-G7u-KyPh2Ns4gI0Y8=";
-    String targetVantiqServer    = "ws://localhost:8080";
-    String modelDirectory        = "models/";
+    String sourceName           = "Camera1";
+    String authToken            = "gcy1hHR39ge2PNCZeiUbYKAev-G7u-KyPh2Ns4gI0Y8=";
+    String targetVantiqServer   = "ws://localhost:8080";
+    String modelDirectory       = "models/";
     
     
     // vars for source configuration
-    boolean      constantPolling = false;
-    int          pollRate        = 0;
-    Timer        pollTimer       = null;
-    String       imageLocation   = null;
-    int          cameraNumber    = 0;
-    FrameCapture frameCapture    = null;
+    boolean      constantPolling    = false;
+    int          pollRate           = 0;
+    Timer        pollTimer          = null;
+    File         imageFile          = null;
+    int          cameraNumber       = 0;
+    FrameCapture frameCapture       = null;
+    
+    boolean stopped = false;
     
     
     ObjectRecognitionConfigHandler objRecConfigHandler;
     
     // vars for internal use
-    public static CompletableFuture<Void>   stop        = new CompletableFuture<>();
-    ExtensionWebSocketClient         client      = null;
-    NeuralNetInterface               neuralNet  = null;
+    ExtensionWebSocketClient    client      = null;
+    NeuralNetInterface          neuralNet   = null;
     
     // final vars
     final Logger log;
@@ -64,6 +67,23 @@ public class ObjectRecognitionCore {
         return sourceName;
     }
     
+    public void start() {
+        client = new ExtensionWebSocketClient(sourceName);
+        objRecConfigHandler = new ObjectRecognitionConfigHandler(this);
+        
+        client.setConfigHandler(objRecConfigHandler);
+        client.initiateFullConnection(targetVantiqServer, authToken);
+        
+        exitIfConnectionFails(client);
+    }
+    
+    public void startContinuousRetrievals() {
+        while (!stopped) {
+            byte[] image = getImage();
+            sendDataFromImage(image);
+        }
+    }
+    
     /**
      * Processes the image then sends the results to the Vantiq source
      * @param image An OpenCV Mat representing the image to be translated
@@ -77,6 +97,7 @@ public class ObjectRecognitionCore {
      * Closes all resources held by this program and then closes the connection. 
      */
     protected void close() {
+        stopped = true;
         if (client != null && client.isOpen()) {
             client.stop();
         }
@@ -89,8 +110,6 @@ public class ObjectRecognitionCore {
         if (neuralNet != null) {
             neuralNet.close();
         }
-        
-        System.exit(0);
     }
 
     /**
@@ -98,7 +117,17 @@ public class ObjectRecognitionCore {
      * @return  An OpenCV Mat containing the image specified.
      */
     public byte[] getImage() {
-        return frameCapture.captureSnapShot();
+        if (frameCapture != null) {
+            return frameCapture.captureSnapShot();
+        } else if (imageFile != null) {
+            try {
+                return Files.readAllBytes(imageFile.toPath());
+            } catch (IOException e) {
+                // TODO Auto-generated catch block
+                e.printStackTrace();
+            }
+        }
+        return null;
     }
 
     /**

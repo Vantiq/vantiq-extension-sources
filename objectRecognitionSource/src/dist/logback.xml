@@ -8,7 +8,7 @@
         </encoder>
     </appender>
 
-    <logger name="io.vantiq.extsrc.udp" level="INFO"/>
+    <logger name="io.vantiq.extsrc.objectRecognition" level="INFO"/>
     <logger name="io.vantiq.extjsdk" level="INFO"/>
 
     <root level="debug">

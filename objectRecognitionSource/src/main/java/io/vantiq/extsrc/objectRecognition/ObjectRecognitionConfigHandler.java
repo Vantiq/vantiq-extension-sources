@@ -1,5 +1,6 @@
 package io.vantiq.extsrc.objectRecognition;
 
+import java.io.File;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.util.Map;
@@ -16,7 +17,7 @@ public class ObjectRecognitionConfigHandler extends Handler<ExtensionServiceMess
     // TODO make ObjectRecognitionCore instanced so each handler can refer to 'core' instead of 'ObjectRecognitionCore'
     
     
-    Logger log = LoggerFactory.getLogger(this.getClass());
+    Logger log;
     String sourceName;
     ObjectRecognitionCore source;
     boolean configComplete = false;
@@ -28,6 +29,7 @@ public class ObjectRecognitionConfigHandler extends Handler<ExtensionServiceMess
     public ObjectRecognitionConfigHandler(ObjectRecognitionCore source) {
         this.source = source;
         this.sourceName = source.getSourceName();
+        log = LoggerFactory.getLogger(this.getClass().getCanonicalName() + "#" + sourceName);
     }
     
     
@@ -79,7 +81,15 @@ public class ObjectRecognitionConfigHandler extends Handler<ExtensionServiceMess
         // Figure out where to receive the data from
         nu.pattern.OpenCV.loadShared();
         if (dataSource.get("fileLocation") instanceof String) {
-            source.imageLocation = (String) dataSource.get("fileLocation");
+            String imageLocation = (String) dataSource.get("fileLocation");
+            File imageFile = new File(imageLocation);
+            if (imageFile.exists() && !imageFile.isDirectory() && imageFile.canRead()) {
+                source.imageFile = imageFile;
+            } else {
+                log.error("Could not read file at '" + imageFile.getAbsolutePath() + "'");
+                log.error("Exiting...");
+                source.close();
+            }
         } else if (dataSource.get("camera") instanceof Integer && (int) dataSource.get("camera") >= 0) {
             int cameraNumber = (int) dataSource.get("camera");
             source.cameraNumber =  cameraNumber;
@@ -111,7 +121,7 @@ public class ObjectRecognitionConfigHandler extends Handler<ExtensionServiceMess
                 source.pollTimer = new Timer("dataCapture");
                 source.pollTimer.scheduleAtFixedRate(task, 0, pollRate);
             } else if (polling == 0) {
-                source.constantPolling = true;
+                new Thread(() -> source.startContinuousRetrievals()).start();
             } else {
                 // TODO snapshot on publish/query choice TBD
             }
