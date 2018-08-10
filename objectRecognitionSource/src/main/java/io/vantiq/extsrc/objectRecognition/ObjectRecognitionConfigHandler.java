@@ -11,6 +11,7 @@ import org.opencv.videoio.VideoCapture;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import edu.ml.tensorflow.FrameCapture;
 import io.vantiq.extjsdk.ExtensionServiceMessage;
 import io.vantiq.extjsdk.Handler;
 
@@ -68,7 +69,12 @@ public class ObjectRecognitionConfigHandler extends Handler<ExtensionServiceMess
 //        NeuralNetInterface tfInterface = getNeuralNet(neuralNetClassName);
         NeuralNetInterface neuralNet = new DarkflowProcessor(); // TODO replace with generic version
         ObjectRecognitionCore.neuralNet = neuralNet;
-        neuralNet.setupImageProcessing(neuralNetConfig, ObjectRecognitionCore.modelDirectory);
+        try {
+            neuralNet.setupImageProcessing(neuralNetConfig, ObjectRecognitionCore.modelDirectory);
+        } catch (Exception e) {
+            log.error("Exception occurred while setting up neural net", e);
+            ObjectRecognitionCore.exit();
+        }
         
         
         // Figure out where to receive the data from
@@ -79,7 +85,7 @@ public class ObjectRecognitionConfigHandler extends Handler<ExtensionServiceMess
             int cameraNumber = (int) dataSource.get("camera");
             ObjectRecognitionCore.cameraNumber =  cameraNumber;
             
-            ObjectRecognitionCore.vidCapture = new VideoCapture(cameraNumber); // Can add API preferences, found in Videoio
+            ObjectRecognitionCore.frameCapture = new FrameCapture(cameraNumber); // Can add API preferences, found in Videoio
         } else {
             log.error("No valid polling target");
             log.error("Exiting...");
@@ -97,7 +103,7 @@ public class ObjectRecognitionConfigHandler extends Handler<ExtensionServiceMess
                     public void run() {
                         if (!isRunning) {
                             isRunning = true;
-                            Mat image = ObjectRecognitionCore.getImage();
+                            byte[] image = ObjectRecognitionCore.getImage();
                             ObjectRecognitionCore.sendDataFromImage(image);
                             isRunning = false;
                         }

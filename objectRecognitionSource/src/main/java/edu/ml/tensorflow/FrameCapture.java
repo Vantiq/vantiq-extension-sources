@@ -7,18 +7,14 @@ import org.opencv.videoio.VideoCapture;
 
 public class FrameCapture {
 	Mat matrix = null;
+	VideoCapture capture;
 	
-	// Create image name
-	public static final String file = 
-			"/Users/namirfawaz/Documents/Everything_Else/tensorflow-example-java/build/resources/main/image/OpenCVImage.jpg";
+	public FrameCapture(int camera) {
+	    nu.pattern.OpenCV.loadShared();
+	    capture = new VideoCapture(camera);
+    }
 	
 	public byte[] capureSnapShot() {
-		// Loading the OpenCV core library
-		nu.pattern.OpenCV.loadShared();
-		
-		// Instantiating the VideoCapture class (Camera 0 == Webcam)
-		VideoCapture capture = new VideoCapture(0);
-	
 		// Reading the next video frame from the camera
 		Mat matrix = new Mat();
 		capture.read(matrix);
@@ -40,6 +36,10 @@ public class FrameCapture {
 	    byte [] imageByte = matOfByte.toArray();
 	    	    
 	    return imageByte;
+	}
+	
+	public void close() {
+	    capture.release();
 	}
 	
 }

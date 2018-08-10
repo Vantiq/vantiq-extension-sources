@@ -101,17 +101,6 @@ public class ObjectDetector {
             }
         }
     }
-
-    /**
-     * Prints out the recognize objects and its confidence
-     * @param recognitions list of recognitions
-     */
-    private void printToConsole(final List<Recognition> recognitions) {
-        for (Recognition recognition : recognitions) {
-            LOGGER.info("Object: {} - confidence: {} - location: {}", 
-            		recognition.getTitle(), recognition.getConfidence(), recognition.getLocation());
-        }
-    }
     
     /**
      * ADDED BY NAMIR - Used to convert recognitions to JSON
@@ -138,5 +127,9 @@ public class ObjectDetector {
         }
         
         return jsonRecognitions;
+    }
+    
+    public void close() {
+        
     }
 }

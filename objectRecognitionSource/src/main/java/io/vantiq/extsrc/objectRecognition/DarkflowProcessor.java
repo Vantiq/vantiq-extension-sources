@@ -5,6 +5,8 @@ import java.util.List;
 import java.util.Map;
 
 import org.opencv.core.Mat;
+import org.opencv.core.MatOfByte;
+import org.opencv.imgcodecs.Imgcodecs;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -21,7 +23,7 @@ public class DarkflowProcessor implements NeuralNetInterface{
     String weightsFile;
     double threshold = 0.5;
     
-    public void setupImageProcessing(Map<String, ?> neuralNet, String modelDirectory) {
+    public void setupImageProcessing(Map<String, ?> neuralNet, String modelDirectory) throws Exception {
         jepThread = new JepThread();
         jepThread.setupImageProcessing(neuralNet, modelDirectory);
         jepThread.start();
@@ -83,7 +85,7 @@ public class DarkflowProcessor implements NeuralNetInterface{
         }
     }
     
-    public List<Map> processImage(Mat image) {
+    public List<Map> processImage(byte[] image) {
         log.info("Trying to process image");
         jepThread.processImage(image);
         synchronized (jepThread) {
@@ -95,22 +97,19 @@ public class DarkflowProcessor implements NeuralNetInterface{
         return jepThread.retrieveProcessedImage();
     }
     
-    public List<Map> doImageProcessing(Mat image) {
-        if (image == null || image.empty()) {
+    public List<Map> doImageProcessing(byte[] image) {
+        if (image == null || image.length == 0) {
             log.warn("Null or empty image sent to be processed. Returning empty ArrayList");
-            return new ArrayList<>();
-        }
-        if (image.channels() != 3) {
-            log.warn("Image has (" + image.channels() + ") channels instead of expected 3. Returning empty ArrayList");
             return new ArrayList<>();
         }
         
         try {
             // Translate the image into a Python accessible array
-            byte[] b = new byte[image.channels()*image.rows()*image.cols()];
-            image.get(0, 0, b);
-            NDArray<byte[]> ndBytes= new NDArray(b, image.rows(),image.cols() , image.channels());
-            image.release();
+            Mat mat = Imgcodecs.imdecode(new MatOfByte(image), Imgcodecs.IMREAD_UNCHANGED);
+            byte[] b = new byte[mat.channels()*mat.rows()*mat.cols()];
+            mat.get(0, 0, b);
+            NDArray<byte[]> ndBytes= new NDArray(b, mat.rows(),mat.cols() , mat.channels());
+            mat.release();
             jep.set("img", ndBytes);
             jep.eval("img = img.astype('uint8')");
             
@@ -148,7 +147,7 @@ public class DarkflowProcessor implements NeuralNetInterface{
         Logger log = LoggerFactory.getLogger(this.getClass());
         
         boolean threadStop = false;
-        Mat image = null;
+        byte[] image = null;
         Map<String, ?> neuralNet = null;
         String modelDirectory = null;
         
@@ -161,7 +160,7 @@ public class DarkflowProcessor implements NeuralNetInterface{
             
         }
         
-        public void processImage(Mat image) {
+        public void processImage(byte[] image) {
             this.image = image;
             log.info("image set");
         }

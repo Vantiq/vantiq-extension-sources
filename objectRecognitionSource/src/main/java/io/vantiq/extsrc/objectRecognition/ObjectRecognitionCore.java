@@ -19,6 +19,7 @@ import org.slf4j.LoggerFactory;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import edu.ml.tensorflow.FrameCapture;
 import io.vantiq.extjsdk.ExtensionWebSocketClient;
 import io.vantiq.extjsdk.Handler;
 import io.vantiq.extjsdk.Response;
@@ -37,7 +38,7 @@ public class ObjectRecognitionCore {
     static Timer        pollTimer       = null;
     static String       imageLocation   = null;
     static int          cameraNumber    = 0;
-    static VideoCapture vidCapture      = null;
+    static FrameCapture frameCapture    = null;
     
     
     static ObjectRecognitionConfigHandler objRecConfigHandler;
@@ -81,7 +82,7 @@ public class ObjectRecognitionCore {
         
         if (constantPolling) {
             while (!stop.isDone()) {
-                Mat image = getImage();
+                byte[] image = getImage();
                 sendDataFromImage(image);
             }
         } else {
@@ -100,7 +101,7 @@ public class ObjectRecognitionCore {
      * Processes the image then sends the results to the Vantiq source
      * @param image An OpenCV Mat representing the image to be translated
      */
-    protected static void sendDataFromImage(Mat image) {
+    protected static void sendDataFromImage(byte[] image) {
         List<Map> imageResults = neuralNet.processImage(image);
         client.sendNotification(imageResults);
     }
@@ -115,8 +116,8 @@ public class ObjectRecognitionCore {
         if (pollTimer != null) {
             pollTimer.cancel();
         }
-        if (vidCapture != null) {
-            vidCapture.release();
+        if (frameCapture != null) {
+            frameCapture.close();
         }
         if (neuralNet != null) {
             neuralNet.close();
@@ -129,15 +130,8 @@ public class ObjectRecognitionCore {
      * Obtains an image from either a camera or file. 
      * @return  An OpenCV Mat containing the image specified.
      */
-    public static Mat getImage() {
-        Mat mat = new Mat();
-        if (vidCapture != null) {
-            // Sets mat to the image
-            vidCapture.read(mat);
-        } else if (imageLocation == null) {
-            mat = Imgcodecs.imread(imageLocation);
-        }
-        return mat;
+    public static byte[] getImage() {
+        return frameCapture.capureSnapShot();
     }
 
     /**
