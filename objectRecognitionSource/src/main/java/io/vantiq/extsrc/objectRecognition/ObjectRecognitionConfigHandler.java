@@ -14,8 +14,6 @@ import io.vantiq.extjsdk.ExtensionServiceMessage;
 import io.vantiq.extjsdk.Handler;
 
 public class ObjectRecognitionConfigHandler extends Handler<ExtensionServiceMessage>{
-    // TODO make ObjectRecognitionCore instanced so each handler can refer to 'core' instead of 'ObjectRecognitionCore'
-    
     
     Logger log;
     String sourceName;
@@ -40,7 +38,7 @@ public class ObjectRecognitionConfigHandler extends Handler<ExtensionServiceMess
     public void handleMessage(ExtensionServiceMessage message) {
         Map<String,Object> config = (Map) message.getObject();
         Map<String,Object> dataSource;
-        Map<String,Object> neuralNetConfig; // TODO rename
+        Map<String,Object> neuralNetConfig;
         
         // Obtain the Maps for each object
         if ( !(config.get("config") instanceof Map && ((Map)config.get("config")).get("extSrcConfig") instanceof Map) ) {
@@ -73,12 +71,13 @@ public class ObjectRecognitionConfigHandler extends Handler<ExtensionServiceMess
         try {
             neuralNet.setupImageProcessing(neuralNetConfig, source.modelDirectory);
         } catch (Exception e) {
-            log.error("Exception occurred while setting up neural net for source '" + sourceName + "'", e);
+            log.error("Exception occurred while setting up neural net.", e);
             source.close();
         }
         
         
         // Figure out where to receive the data from
+        // TODO make generic like NeuralNetInterface
         nu.pattern.OpenCV.loadShared();
         if (dataSource.get("fileLocation") instanceof String) {
             String imageLocation = (String) dataSource.get("fileLocation");
@@ -94,7 +93,14 @@ public class ObjectRecognitionConfigHandler extends Handler<ExtensionServiceMess
             int cameraNumber = (int) dataSource.get("camera");
             source.cameraNumber =  cameraNumber;
             
-            source.frameCapture = new FrameCapture(cameraNumber); // Can add API preferences, found in Videoio
+            FrameCapture fc = new FrameCapture();
+            source.data = new FrameCapture();
+            try {
+                fc.setupDataRetrieval(dataSource, source);
+            } catch (Exception e) {
+                log.error("Exception occurred while setting up data retrieval", e);
+                source.close();
+            }
         } else {
             log.error("No valid polling target");
             log.error("Exiting...");

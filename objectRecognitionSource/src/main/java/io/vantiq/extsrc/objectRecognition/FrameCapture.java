@@ -1,5 +1,7 @@
 package io.vantiq.extsrc.objectRecognition;
 
+import java.util.Map;
+
 import org.opencv.core.Mat;
 import org.opencv.core.MatOfByte;
 import org.opencv.imgcodecs.Imgcodecs;
@@ -9,16 +11,23 @@ import org.opencv.videoio.VideoCapture;
  * Captures images and returns them as jpeg encoded bytes
  * <br>Not part of original code.
  */
-public class FrameCapture {
-	Mat matrix = null;
+public class FrameCapture implements DataRetrieverInterface {
 	VideoCapture capture;
 	
-	public FrameCapture(int camera) {
+	@Override
+    public void setupDataRetrieval(Map<String, ?> dataSourceConfig, ObjectRecognitionCore source) throws Exception {
+	    int camera;
+        if (dataSourceConfig.get("camera") instanceof Integer) {
+            camera = (int) dataSourceConfig.get("camera");
+        } else {
+            throw new IllegalArgumentException("No camera specified in dataSourceConfig");
+        }
 	    nu.pattern.OpenCV.loadShared();
-	    capture = new VideoCapture(camera);
+        capture = new VideoCapture(camera);
     }
 	
-	public byte[] captureSnapShot() {
+	@Override
+	public byte[] getImage() {
 		// Reading the next video frame from the camera
 		Mat matrix = new Mat();
 		capture.read(matrix);
@@ -27,9 +36,7 @@ public class FrameCapture {
 		if(capture.isOpened()) {
 			
 			// If there is next video frame	 
-			if (capture.read(matrix)) {    
-				this.matrix = matrix; 
-			}
+			capture.read(matrix);
 		}
 	  
 	    MatOfByte matOfByte = new MatOfByte();
@@ -40,8 +47,14 @@ public class FrameCapture {
 	    return imageByte;
 	}
 	
+	@Override
+    public byte[] getImage(Map<String, ?> request) {
+        return getImage();
+    }
+	
 	public void close() {
 	    capture.release();
 	}
-	
+
+    
 }

@@ -3,6 +3,8 @@ package io.vantiq.extsrc.objectRecognition;
 import java.util.List;
 import java.util.Map;
 
+import io.vantiq.extsrc.objectRecognition.exception.ImageProcessingException;
+
 /**
  * An interface for the neural net that will process the image and return a List of data representing the objects found.
  */
@@ -25,11 +27,12 @@ public abstract class NeuralNetInterface {
     /**
      * Process the image and return a List of Maps describing the objects identified
      *
-     * @param image The bytes of a jpg file.
-     * @return      A List returning Maps describing the objects identified. The ordering and contents of the Maps is
-     *              implementation dependent.
+     * @param image                     The bytes of a jpg file.
+     * @return                          A List returning Maps describing the objects identified. The ordering and 
+     *                                  contents of the Maps is implementation dependent.
+     * @throws ImageProcessingException Thrown when the image could not be processed for any reason
      */
-    public abstract List<Map> processImage(byte[] image);
+    public abstract List<Map> processImage(byte[] image) throws ImageProcessingException;
     
     /**
      * Safely close any resources obtained by the net

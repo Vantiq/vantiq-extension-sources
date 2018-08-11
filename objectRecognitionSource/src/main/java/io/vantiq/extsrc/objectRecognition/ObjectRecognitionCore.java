@@ -1,8 +1,6 @@
 package io.vantiq.extsrc.objectRecognition;
 
 import java.io.File;
-import java.io.IOException;
-import java.nio.file.Files;
 import java.util.List;
 import java.util.Map;
 import java.util.Timer;
@@ -15,6 +13,9 @@ import org.slf4j.LoggerFactory;
 import io.vantiq.extjsdk.ExtensionWebSocketClient;
 import io.vantiq.extjsdk.Handler;
 import io.vantiq.extjsdk.Response;
+import io.vantiq.extsrc.objectRecognition.exception.FatalImageException;
+import io.vantiq.extsrc.objectRecognition.exception.ImageAcquisitionException;
+import io.vantiq.extsrc.objectRecognition.exception.ImageProcessingException;
 
 public class ObjectRecognitionCore {
     // vars for server configuration
@@ -25,12 +26,12 @@ public class ObjectRecognitionCore {
     
     
     // vars for source configuration
-    boolean      constantPolling    = false;
-    int          pollRate           = 0;
-    Timer        pollTimer          = null;
-    File         imageFile          = null;
-    int          cameraNumber       = 0;
-    FrameCapture frameCapture       = null;
+    boolean                 constantPolling = false;
+    int                     pollRate        = 0;
+    Timer                   pollTimer       = null;
+    File                    imageFile       = null;
+    int                     cameraNumber    = 0;
+    DataRetrieverInterface  data            = null;
     
     boolean stopped = false;
     
@@ -79,18 +80,35 @@ public class ObjectRecognitionCore {
     
     public void startContinuousRetrievals() {
         while (!stopped) {
-            byte[] image = getImage();
-            sendDataFromImage(image);
+            try {
+                byte[] image = data.getImage();
+                sendDataFromImage(image);
+            } catch (ImageAcquisitionException e) {
+                log.error("Could not obtain requested image.", e);
+            } catch (FatalImageException e) {
+                log.error(msg);
+            }
         }
     }
+    
+    
     
     /**
      * Processes the image then sends the results to the Vantiq source
      * @param image An OpenCV Mat representing the image to be translated
      */
     protected void sendDataFromImage(byte[] image) {
-        List<Map> imageResults = neuralNet.processImage(image);
-        client.sendNotification(imageResults);
+        try {
+            List<Map> imageResults = neuralNet.processImage(image);
+            client.sendNotification(imageResults);
+        } catch (ImageProcessingException e) {
+            log.error("Could not process image", e);
+        } catch (FatalImageException e) {
+            log.error("Image processor of type '" + neuralNet.getClass().getCanonicalName() + "' failed unrecoverably"
+                    , e);
+            log.error("Closing");
+            close();
+        }
     }
     
     /**
@@ -104,30 +122,12 @@ public class ObjectRecognitionCore {
         if (pollTimer != null) {
             pollTimer.cancel();
         }
-        if (frameCapture != null) {
-            frameCapture.close();
+        if (data != null) {
+            data.close();
         }
         if (neuralNet != null) {
             neuralNet.close();
         }
-    }
-
-    /**
-     * Obtains an image from either a camera or file. 
-     * @return  An OpenCV Mat containing the image specified.
-     */
-    public byte[] getImage() {
-        if (frameCapture != null) {
-            return frameCapture.captureSnapShot();
-        } else if (imageFile != null) {
-            try {
-                return Files.readAllBytes(imageFile.toPath());
-            } catch (IOException e) {
-                // TODO Auto-generated catch block
-                e.printStackTrace();
-            }
-        }
-        return null;
     }
 
     /**
