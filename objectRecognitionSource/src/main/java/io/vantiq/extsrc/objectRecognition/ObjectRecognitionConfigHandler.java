@@ -12,6 +12,8 @@ import org.slf4j.LoggerFactory;
 
 import io.vantiq.extjsdk.ExtensionServiceMessage;
 import io.vantiq.extjsdk.Handler;
+import io.vantiq.extsrc.objectRecognition.exception.FatalImageException;
+import io.vantiq.extsrc.objectRecognition.exception.ImageAcquisitionException;
 
 public class ObjectRecognitionConfigHandler extends Handler<ExtensionServiceMessage>{
     
@@ -93,8 +95,8 @@ public class ObjectRecognitionConfigHandler extends Handler<ExtensionServiceMess
             int cameraNumber = (int) dataSource.get("camera");
             source.cameraNumber =  cameraNumber;
             
-            FrameCapture fc = new FrameCapture();
-            source.data = new FrameCapture();
+            CameraRetriever fc = new CameraRetriever();
+            source.data = new CameraRetriever();
             try {
                 fc.setupDataRetrieval(dataSource, source);
             } catch (Exception e) {
@@ -118,8 +120,15 @@ public class ObjectRecognitionConfigHandler extends Handler<ExtensionServiceMess
                     public void run() {
                         if (!isRunning) {
                             isRunning = true;
-                            byte[] image = source.getImage();
-                            source.sendDataFromImage(image);
+                            try {
+                                byte[] image = source.data.getImage();
+                                source.sendDataFromImage(image);
+                            } catch (ImageAcquisitionException e) {
+                                log.warn("Could not obtain requested image.", e);
+                            } catch (FatalImageException e) {
+                                log.error("Image acquisition failed unrecoverably", e);
+                                source.close();
+                            }
                             isRunning = false;
                         }
                     }

@@ -27,14 +27,12 @@ public class FileRetriever implements DataRetrieverInterface {
     }
 
     @Override
-    public byte[] getImage() {
+    public byte[] getImage() throws ImageAcquisitionException {
         try {
             return Files.readAllBytes(defaultImageFile.toPath());
         } catch (IOException e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
+            throw new ImageAcquisitionException("Could not read the given file");
         }
-        return null;
     }
 
     @Override
@@ -46,8 +44,11 @@ public class FileRetriever implements DataRetrieverInterface {
             } catch (IOException e) {
                 throw new ImageAcquisitionException("Could not read file '" + imageFile.getAbsolutePath() + "'", e);
             }
+        } else if (defaultImageFile != null) {
+            return getImage();
+        } else {
+            throw new ImageAcquisitionException("No file specified for acquisition");
         }
-        return null;
     }
 
     @Override

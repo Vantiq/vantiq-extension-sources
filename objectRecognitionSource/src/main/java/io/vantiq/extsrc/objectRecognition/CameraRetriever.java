@@ -11,7 +11,7 @@ import org.opencv.videoio.VideoCapture;
  * Captures images and returns them as jpeg encoded bytes
  * <br>Not part of original code.
  */
-public class FrameCapture implements DataRetrieverInterface {
+public class CameraRetriever implements DataRetrieverInterface {
 	VideoCapture capture;
 	
 	@Override

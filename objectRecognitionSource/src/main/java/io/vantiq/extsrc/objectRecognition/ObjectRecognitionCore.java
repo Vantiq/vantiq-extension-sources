@@ -84,9 +84,10 @@ public class ObjectRecognitionCore {
                 byte[] image = data.getImage();
                 sendDataFromImage(image);
             } catch (ImageAcquisitionException e) {
-                log.error("Could not obtain requested image.", e);
+                log.warn("Could not obtain requested image.", e);
             } catch (FatalImageException e) {
-                log.error(msg);
+                log.error("Image acquisition failed unrecoverably", e);
+                close();
             }
         }
     }
@@ -102,7 +103,7 @@ public class ObjectRecognitionCore {
             List<Map> imageResults = neuralNet.processImage(image);
             client.sendNotification(imageResults);
         } catch (ImageProcessingException e) {
-            log.error("Could not process image", e);
+            log.warn("Could not process image", e);
         } catch (FatalImageException e) {
             log.error("Image processor of type '" + neuralNet.getClass().getCanonicalName() + "' failed unrecoverably"
                     , e);
