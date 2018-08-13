@@ -57,6 +57,7 @@ import org.slf4j.LoggerFactory;
  *     
  * <pre>{
  *     extSrcConfig: {
+ *         type: "udp",
  *         general:{
  *             &lt;general options&gt;
  *         },

@@ -29,6 +29,11 @@ public class UDPConfigHandler  extends Handler<ExtensionServiceMessage> {
             return;
         }
         Map config = (Map) srcConfig.get("extSrcConfig");
+        
+        if ( !(config.get("type") instanceof String) || !config.get("type").equals("udp") ) {
+            log.error("Source is not a UDP source.");
+            return;
+        }
         log.trace("Creating handlers for '" + sourceName + "'");
 
         // Acquire the general settings Map and the listening port and address

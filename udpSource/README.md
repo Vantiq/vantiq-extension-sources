@@ -38,12 +38,13 @@ The Configuration document looks as below:
 
 	{
 		extSrcConfig:{
+		   type: "udp",
 			general: {
 				<general options>
-			}
+			},
 			incoming: {
 				<incoming/Notification options>
-			}
+			},
 			outgoing: {
 				<outgoing/Publish options>
 			}
