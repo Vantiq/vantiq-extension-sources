@@ -100,6 +100,13 @@ public class ObjectRecognitionConfigHandler extends Handler<ExtensionServiceMess
             return;
         }
         config = (Map) ((Map) config.get("config")).get("extSrcConfig");
+        
+        if ( !(config.get("type") instanceof String) || !(config.get("type").equals("objectRecognition"))) {
+            log.error("Source is not an object recognition source. Exiting...");
+            failConfig();
+            return;
+        }
+        
         if ( !(config.get("general") instanceof Map)) {
             log.error("No general options specified. Exiting...");
             failConfig();

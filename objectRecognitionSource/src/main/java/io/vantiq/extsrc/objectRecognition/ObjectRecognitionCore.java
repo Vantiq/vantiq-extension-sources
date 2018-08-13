@@ -52,6 +52,7 @@ public class ObjectRecognitionCore {
     public Handler<ExtensionServiceMessage> reconnectHandler = new Handler<ExtensionServiceMessage>() {
         @Override
         public void handleMessage(ExtensionServiceMessage message) {
+            log.info("Reconnect message received. Reinitializing configuration");
             close();
             objRecConfigHandler.configComplete = false;
             
@@ -64,6 +65,7 @@ public class ObjectRecognitionCore {
     public Handler<ExtensionWebSocketClient> closeHandler = new Handler<ExtensionWebSocketClient>() {
         @Override
         public void handleMessage(ExtensionWebSocketClient message) {
+            log.info("Websocket closed unexpectedly. Attempting to reconnect");
             close();
             objRecConfigHandler.configComplete = false;
             
