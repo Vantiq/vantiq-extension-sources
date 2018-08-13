@@ -11,7 +11,7 @@ repositories {
     jcenter()
 }
 
-mainClassName = 'io.vantiq.extsrc.udp.ObjectRecognitionCore'
+mainClassName = 'io.vantiq.extsrc.udp.ObjectRecognitionMain'
 
 
 dependencies {
@@ -20,17 +20,18 @@ dependencies {
     compile "org.slf4j:slf4j-api:1.7.25"
     compile "ch.qos.logback:logback-classic:1.2.3"
     
-    compile "black.ninia:jep:3.8.1"
-    
-    compile "org.tensorflow:tensorflow:1.9.0"
-    
     compile "org.openpnp:opencv:3.2.0-0"
     
     compile "com.fasterxml.jackson.core:jackson-databind:2.9.3"
     
+    compile "org.apache.commons:commons-math3:3.6.1"
 
-    // This dependency is used internally, and not exposed to consumers on their own compile classpath.
-    implementation 'com.google.guava:guava:23.0'
+    // Used by DarkflowProcessor alone. Can be removed if DarkflowProcessor is removed
+    compile "black.ninia:jep:3.8.1"
+
+    // Used by YoloProcessor alone. This dependency and all files in the edu.* package may be removed if YoloProcessor
+    // is removed
+    compile "org.tensorflow:tensorflow:1.9.0"
 
     // Use JUnit test framework
     testCompile 'junit:junit:4.12'
