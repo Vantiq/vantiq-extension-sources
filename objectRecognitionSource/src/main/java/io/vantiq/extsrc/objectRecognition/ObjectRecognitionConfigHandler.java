@@ -69,7 +69,7 @@ public class ObjectRecognitionConfigHandler extends Handler<ExtensionServiceMess
         // Identify and setup the neural net
         String neuralNetType = DEFAULT_NEURAL_NET;
         if (neuralNetConfig.get("type") instanceof String) {
-            neuralNetType = (String) neuralNetConfig.get("className");
+            neuralNetType = (String) neuralNetConfig.get("type");
             if (neuralNetType.equals("yolo")) {
                 neuralNetType = YoloProcessor.class.getCanonicalName();
             } else if (neuralNetType.equals("darkflow")) {
@@ -80,13 +80,11 @@ public class ObjectRecognitionConfigHandler extends Handler<ExtensionServiceMess
         } else {
             log.debug("No neural net type specified. Trying for default of '{}'", DEFAULT_NEURAL_NET);
         }
-        NeuralNetInterface tfInterface = getNeuralNet(neuralNetType);
+        NeuralNetInterface neuralNet = getNeuralNet(neuralNetType);
         
-        
-        NeuralNetInterface neuralNet = new YoloProcessor(); // TODO replace with generic version
-        source.neuralNet = neuralNet;
         try {
             neuralNet.setupImageProcessing(neuralNetConfig, source.modelDirectory);
+            source.neuralNet = neuralNet;
         } catch (Exception e) {
             log.error("Exception occurred while setting up neural net.", e);
             source.close();
@@ -143,7 +141,7 @@ public class ObjectRecognitionConfigHandler extends Handler<ExtensionServiceMess
                     }
                 };
                 source.pollTimer = new Timer("dataCapture");
-                source.pollTimer.scheduleAtFixedRate(task, 0, pollRate);
+                source.pollTimer.schedule(task, 0, pollRate);
             } else if (polling == 0) {
                 new Thread(() -> source.startContinuousRetrievals()).start();
             } else {
