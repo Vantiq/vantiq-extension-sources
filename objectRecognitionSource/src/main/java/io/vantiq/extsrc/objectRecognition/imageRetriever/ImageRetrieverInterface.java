@@ -1,7 +1,8 @@
-package io.vantiq.extsrc.objectRecognition;
+package io.vantiq.extsrc.objectRecognition.imageRetriever;
 
 import java.util.Map;
 
+import io.vantiq.extsrc.objectRecognition.ObjectRecognitionCore;
 import io.vantiq.extsrc.objectRecognition.exception.ImageAcquisitionException;
 
 public interface ImageRetrieverInterface {

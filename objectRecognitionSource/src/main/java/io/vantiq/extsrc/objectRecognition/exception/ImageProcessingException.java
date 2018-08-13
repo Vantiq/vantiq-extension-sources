@@ -1,6 +1,6 @@
 package io.vantiq.extsrc.objectRecognition.exception;
 
-import io.vantiq.extsrc.objectRecognition.NeuralNetInterface;
+import io.vantiq.extsrc.objectRecognition.neuralNet.NeuralNetInterface;
 
 /**
  * An exception that signifies an image could not be processed by a {@link NeuralNetInterface}

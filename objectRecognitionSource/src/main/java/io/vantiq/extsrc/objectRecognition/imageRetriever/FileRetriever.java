@@ -1,10 +1,11 @@
-package io.vantiq.extsrc.objectRecognition;
+package io.vantiq.extsrc.objectRecognition.imageRetriever;
 
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.util.Map;
 
+import io.vantiq.extsrc.objectRecognition.ObjectRecognitionCore;
 import io.vantiq.extsrc.objectRecognition.exception.ImageAcquisitionException;
 
 public class FileRetriever implements ImageRetrieverInterface {
@@ -16,9 +17,7 @@ public class FileRetriever implements ImageRetrieverInterface {
         if (dataSourceConfig.get("fileLocation") instanceof String) {
             String imageLocation = (String) dataSourceConfig.get("fileLocation");
             defaultImageFile = new File(imageLocation);
-            if (defaultImageFile.exists() && !defaultImageFile.isDirectory() && defaultImageFile.canRead()) {
-                source.imageFile = defaultImageFile;
-            } else {
+            if ( !(defaultImageFile.exists() && !defaultImageFile.isDirectory() && defaultImageFile.canRead())) {
                 throw new IllegalArgumentException ("Could not read file at '" + defaultImageFile.getAbsolutePath() + "'");
             }
         } else if (dataSourceConfig.get("pollRate") instanceof Integer && 

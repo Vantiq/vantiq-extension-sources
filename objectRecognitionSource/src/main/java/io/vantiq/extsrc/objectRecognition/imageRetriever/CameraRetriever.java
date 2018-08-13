@@ -1,4 +1,4 @@
-package io.vantiq.extsrc.objectRecognition;
+package io.vantiq.extsrc.objectRecognition.imageRetriever;
 
 import java.util.Map;
 
@@ -6,6 +6,8 @@ import org.opencv.core.Mat;
 import org.opencv.core.MatOfByte;
 import org.opencv.imgcodecs.Imgcodecs;
 import org.opencv.videoio.VideoCapture;
+
+import io.vantiq.extsrc.objectRecognition.ObjectRecognitionCore;
 
 /**
  * Captures images and returns them as jpeg encoded bytes

@@ -13,6 +13,12 @@ import io.vantiq.extjsdk.ExtensionServiceMessage;
 import io.vantiq.extjsdk.Handler;
 import io.vantiq.extsrc.objectRecognition.exception.FatalImageException;
 import io.vantiq.extsrc.objectRecognition.exception.ImageAcquisitionException;
+import io.vantiq.extsrc.objectRecognition.imageRetriever.CameraRetriever;
+import io.vantiq.extsrc.objectRecognition.imageRetriever.FileRetriever;
+import io.vantiq.extsrc.objectRecognition.imageRetriever.ImageRetrieverInterface;
+import io.vantiq.extsrc.objectRecognition.neuralNet.DarkflowProcessor;
+import io.vantiq.extsrc.objectRecognition.neuralNet.NeuralNetInterface;
+import io.vantiq.extsrc.objectRecognition.neuralNet.YoloProcessor;
 
 public class ObjectRecognitionConfigHandler extends Handler<ExtensionServiceMessage>{
     
@@ -32,6 +38,7 @@ public class ObjectRecognitionConfigHandler extends Handler<ExtensionServiceMess
     }
     
     final String DEFAULT_IMAGE_RETRIEVER = "io.vantiq.extsrc.objectRecognition.imageRetriever.DefaultRetriever";
+    final String DEFAULT_NEURAL_NET = "io.vantiq.extsrc.objectRecognition.neuralNet.DefaultProcessor";
     
     /**
      * Interprets the configuration message sent by the Vantiq server and sets up the neural network and data stream.
@@ -60,14 +67,22 @@ public class ObjectRecognitionConfigHandler extends Handler<ExtensionServiceMess
         neuralNetConfig = (Map) config.get("neuralNet");
         
         // Identify and setup the neural net
-//        String neuralNetClassName;
-//        if (neuralNet.get("className") instanceof String) {
-//            neuralNetClassName = (String) neuralNet.get("className");
-//        } else {
-//            log.error("No class specified for the neural net of source ' " + sourceName + "'. Exiting...");
-//            source.close();
-//        }
-//        NeuralNetInterface tfInterface = getNeuralNet(neuralNetClassName);
+        String neuralNetType = DEFAULT_NEURAL_NET;
+        if (neuralNetConfig.get("type") instanceof String) {
+            neuralNetType = (String) neuralNetConfig.get("className");
+            if (neuralNetType.equals("yolo")) {
+                neuralNetType = YoloProcessor.class.getCanonicalName();
+            } else if (neuralNetType.equals("darkflow")) {
+                neuralNetType = DarkflowProcessor.class.getCanonicalName();
+            } else if (neuralNetType.equals("default")) {
+                neuralNetType = DEFAULT_NEURAL_NET;
+            }
+        } else {
+            log.debug("No neural net type specified. Trying for default of '{}'", DEFAULT_NEURAL_NET);
+        }
+        NeuralNetInterface tfInterface = getNeuralNet(neuralNetType);
+        
+        
         NeuralNetInterface neuralNet = new YoloProcessor(); // TODO replace with generic version
         source.neuralNet = neuralNet;
         try {
@@ -79,7 +94,6 @@ public class ObjectRecognitionConfigHandler extends Handler<ExtensionServiceMess
         
         
         // Figure out where to receive the data from
-        // TODO make generic like NeuralNetInterface
         // Initialize to default in case no type was given
         String retrieverType = DEFAULT_IMAGE_RETRIEVER; 
         if (dataSource.get("type") instanceof String) {
@@ -92,6 +106,8 @@ public class ObjectRecognitionConfigHandler extends Handler<ExtensionServiceMess
             } else if (retrieverType.equals("default")) {
                 retrieverType = DEFAULT_IMAGE_RETRIEVER;
             }
+        } else {
+            log.debug("No image retriever type specified. Trying for default of '{}'", DEFAULT_IMAGE_RETRIEVER);
         }
         ImageRetrieverInterface ir = getImageRetriever(retrieverType);
         try {
@@ -101,35 +117,6 @@ public class ObjectRecognitionConfigHandler extends Handler<ExtensionServiceMess
             log.error("Exception occurred while setting up image retriever.", e);
             source.close();
         }
-        
-        /*if (dataSource.get("fileLocation") instanceof String) {
-            String imageLocation = (String) dataSource.get("fileLocation");
-            File imageFile = new File(imageLocation);
-            source.imageRetriever = new FileRetriever();
-            try {
-                source.imageRetriever.setupDataRetrieval(dataSource, source);
-            } catch (Exception e) {
-                log.error("Could not read file at '" + imageFile.getAbsolutePath() + "'");
-                log.error("Exiting...");
-                source.close();
-            }
-        } else if (dataSource.get("camera") instanceof Integer && (int) dataSource.get("camera") >= 0) {
-            int cameraNumber = (int) dataSource.get("camera");
-            source.cameraNumber =  cameraNumber;
-            
-            CameraRetriever fc = new CameraRetriever();
-            source.imageRetriever = fc;
-            try {
-                fc.setupDataRetrieval(dataSource, source);
-            } catch (Exception e) {
-                log.error("Exception occurred while setting up data retrieval", e);
-                source.close();
-            }
-        } else {
-            log.error("No valid polling target");
-            log.error("Exiting...");
-            source.close();
-        }*/
         
         if (dataSource.get("pollRate") instanceof Integer) {
             int polling = (int) dataSource.get("pollRate");

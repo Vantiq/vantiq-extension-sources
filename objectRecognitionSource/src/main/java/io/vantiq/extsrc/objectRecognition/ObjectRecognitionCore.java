@@ -16,6 +16,8 @@ import io.vantiq.extjsdk.Response;
 import io.vantiq.extsrc.objectRecognition.exception.FatalImageException;
 import io.vantiq.extsrc.objectRecognition.exception.ImageAcquisitionException;
 import io.vantiq.extsrc.objectRecognition.exception.ImageProcessingException;
+import io.vantiq.extsrc.objectRecognition.imageRetriever.ImageRetrieverInterface;
+import io.vantiq.extsrc.objectRecognition.neuralNet.NeuralNetInterface;
 
 public class ObjectRecognitionCore {
     // vars for server configuration

@@ -1,4 +1,4 @@
-package io.vantiq.extsrc.objectRecognition;
+package io.vantiq.extsrc.objectRecognition.neuralNet;
 
 import java.util.List;
 import java.util.Map;
