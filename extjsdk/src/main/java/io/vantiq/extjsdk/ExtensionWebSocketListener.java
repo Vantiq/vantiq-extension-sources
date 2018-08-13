@@ -56,7 +56,7 @@ public class ExtensionWebSocketListener implements WebSocketListener{
     /**
      * An Slf4j logger
      */
-    final Logger log = LoggerFactory.getLogger(this.getClass());
+    final Logger log;
 
     /**
      * The {@link ExtensionWebSocketClient} that this listener is used by.
@@ -79,6 +79,7 @@ public class ExtensionWebSocketListener implements WebSocketListener{
      */
     public ExtensionWebSocketListener(ExtensionWebSocketClient client) {
         this.client = client;
+        log = LoggerFactory.getLogger(this.getClass() + "#" + client.getSourceName());
         initializeDefaultHandlers();
     }
 
@@ -292,7 +293,7 @@ public class ExtensionWebSocketListener implements WebSocketListener{
                 // Is an error message before successful connection to the target source
                 // This is most likely a failure related to a source connection request
                 if (!client.isConnected() && (Integer) message.getStatus() >= 300) {
-                    log.warn("Error occurred attempting to connect to source " + client.getSourceName());
+                    log.warn("Error occurred attempting to connect to source.");
                     log.debug("Error message was: "+ message);
                     client.sourceFuture.complete(false);
                 }
@@ -301,8 +302,7 @@ public class ExtensionWebSocketListener implements WebSocketListener{
                         this.httpHandler.handleMessage(message);
                     }
                     catch (Exception e) {
-                        log.error("Error occurred when running the HTTP handler for source '" + 
-                                client.getSourceName() + "'");
+                        log.error("Error occurred when running the HTTP handler.", e);
                     }
                 }
                 else {
@@ -330,8 +330,7 @@ public class ExtensionWebSocketListener implements WebSocketListener{
                             this.authHandler.handleMessage(message);
                         }
                         catch (Exception e) {
-                            log.error("Error occurred when running the authentication handler for source '" + 
-                                    client.getSourceName() + "'");
+                            log.error("Error occurred when running the authentication handler for source.", e);
                         }
                     }
                     // No message is logged for a null handler because the user must explicitly null the handler
@@ -351,8 +350,7 @@ public class ExtensionWebSocketListener implements WebSocketListener{
                             this.publishHandler.handleMessage(message);
                         }
                         catch (Exception e) {
-                            log.error("Error occurred when running the Publish handler for source '" + 
-                                    client.getSourceName() + "'");
+                            log.error("Error occurred when running the Publish handler.", e);
                         }
                     }
                     else {
@@ -365,8 +363,7 @@ public class ExtensionWebSocketListener implements WebSocketListener{
                             this.queryHandler.handleMessage(message);
                         }
                         catch (Exception e) {
-                            log.error("Error occurred when running the Query handler for source '" + 
-                                    client.getSourceName() + "'");
+                            log.error("Error occurred when running the Query handler.", e);
                         }
                     }
                     // No message is logged for a null handler because the user must explicitly null the handler
@@ -383,18 +380,17 @@ public class ExtensionWebSocketListener implements WebSocketListener{
                                 this.reconnectHandler.handleMessage(message);
                             }
                             catch (Exception e) {
-                                log.error("Error occurred when running the Reconnect handler for source '" + 
-                                        client.getSourceName() + "'");
+                                log.error("Error occurred when running the Reconnect handler.", e);
                             }
                         }
                         if (client.autoReconnect) {
-                            log.info("Automatically attempting to reconnect to source '" + client.getSourceName() + "'");
+                            log.info("Automatically attempting to reconnect to source.");
                             client.connectToSource();
                         }
                         // Warn when cannot reconnect or know that the connection has failed 
                         if (!client.autoReconnect && this.reconnectHandler == null) {
                             log.warn("Reconnect received with no handler set and no autoconnect. Can no longer "
-                                    + "communicate with source '" + client.getSourceName() + "'");
+                                    + "communicate with source.");
                         }
                     }
                 }
@@ -418,8 +414,7 @@ public class ExtensionWebSocketListener implements WebSocketListener{
                             this.configHandler.handleMessage(message);
                         }
                         catch (Exception e) {
-                            log.error("Error occurred when running the Configuration handler for source '" + 
-                                    client.getSourceName() + "'");
+                            log.error("Error occurred when running the Configuration handler.", e);
                         }
                     }
                     else {
