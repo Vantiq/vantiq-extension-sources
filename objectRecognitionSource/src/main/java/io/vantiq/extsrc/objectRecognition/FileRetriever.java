@@ -7,7 +7,7 @@ import java.util.Map;
 
 import io.vantiq.extsrc.objectRecognition.exception.ImageAcquisitionException;
 
-public class FileRetriever implements DataRetrieverInterface {
+public class FileRetriever implements ImageRetrieverInterface {
 
     File defaultImageFile;
     
@@ -21,7 +21,8 @@ public class FileRetriever implements DataRetrieverInterface {
             } else {
                 throw new IllegalArgumentException ("Could not read file at '" + defaultImageFile.getAbsolutePath() + "'");
             }
-        } else if ((int) dataSourceConfig.get("pollRate") >= 0) { // Won't be using messages to get the file location
+        } else if (dataSourceConfig.get("pollRate") instanceof Integer && 
+                        (Integer) dataSourceConfig.get("pollRate") >= 0) { // Won't be using messages to get the file location
             throw new IllegalArgumentException ("File required but not given");
         }
     }

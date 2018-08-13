@@ -1,9 +1,9 @@
 package io.vantiq.extsrc.objectRecognition.exception;
 
-import io.vantiq.extsrc.objectRecognition.DataRetrieverInterface;
+import io.vantiq.extsrc.objectRecognition.ImageRetrieverInterface;
 
 /**
- * An exception that signifies an image could not be found for a {@link DataRetrieverInterface}
+ * An exception that signifies an image could not be found for a {@link ImageRetrieverInterface}
  */
 public class ImageAcquisitionException extends Exception {
 

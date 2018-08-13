@@ -4,7 +4,7 @@ import java.util.Map;
 
 import io.vantiq.extsrc.objectRecognition.exception.ImageAcquisitionException;
 
-public interface DataRetrieverInterface {
+public interface ImageRetrieverInterface {
     
     /**
      * Configures the data retriever.

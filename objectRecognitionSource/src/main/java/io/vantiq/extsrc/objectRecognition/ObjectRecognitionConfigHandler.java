@@ -1,6 +1,5 @@
 package io.vantiq.extsrc.objectRecognition;
 
-import java.io.File;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.util.Map;
@@ -32,6 +31,7 @@ public class ObjectRecognitionConfigHandler extends Handler<ExtensionServiceMess
         log = LoggerFactory.getLogger(this.getClass().getCanonicalName() + "#" + sourceName);
     }
     
+    final String DEFAULT_IMAGE_RETRIEVER = "io.vantiq.extsrc.objectRecognition.imageRetriever.DefaultRetriever";
     
     /**
      * Interprets the configuration message sent by the Vantiq server and sets up the neural network and data stream.
@@ -80,13 +80,35 @@ public class ObjectRecognitionConfigHandler extends Handler<ExtensionServiceMess
         
         // Figure out where to receive the data from
         // TODO make generic like NeuralNetInterface
-        nu.pattern.OpenCV.loadShared();
-        if (dataSource.get("fileLocation") instanceof String) {
+        // Initialize to default in case no type was given
+        String retrieverType = DEFAULT_IMAGE_RETRIEVER; 
+        if (dataSource.get("type") instanceof String) {
+            retrieverType = (String) dataSource.get("type");
+            // Translate simple types into FQCN
+            if (retrieverType.equals("file")) {
+                retrieverType = FileRetriever.class.getCanonicalName();
+            } else if (retrieverType.equals("camera")) {
+                retrieverType = CameraRetriever.class.getCanonicalName();
+            } else if (retrieverType.equals("default")) {
+                retrieverType = DEFAULT_IMAGE_RETRIEVER;
+            }
+        }
+        ImageRetrieverInterface ir = getImageRetriever(retrieverType);
+        try {
+            ir.setupDataRetrieval(dataSource, source);
+            source.imageRetriever = ir;
+        } catch (Exception e) {
+            log.error("Exception occurred while setting up image retriever.", e);
+            source.close();
+        }
+        
+        /*if (dataSource.get("fileLocation") instanceof String) {
             String imageLocation = (String) dataSource.get("fileLocation");
             File imageFile = new File(imageLocation);
-            if (imageFile.exists() && !imageFile.isDirectory() && imageFile.canRead()) {
-                source.imageFile = imageFile;
-            } else {
+            source.imageRetriever = new FileRetriever();
+            try {
+                source.imageRetriever.setupDataRetrieval(dataSource, source);
+            } catch (Exception e) {
                 log.error("Could not read file at '" + imageFile.getAbsolutePath() + "'");
                 log.error("Exiting...");
                 source.close();
@@ -96,7 +118,7 @@ public class ObjectRecognitionConfigHandler extends Handler<ExtensionServiceMess
             source.cameraNumber =  cameraNumber;
             
             CameraRetriever fc = new CameraRetriever();
-            source.data = new CameraRetriever();
+            source.imageRetriever = fc;
             try {
                 fc.setupDataRetrieval(dataSource, source);
             } catch (Exception e) {
@@ -107,10 +129,10 @@ public class ObjectRecognitionConfigHandler extends Handler<ExtensionServiceMess
             log.error("No valid polling target");
             log.error("Exiting...");
             source.close();
-        }
+        }*/
         
-        if (dataSource.get("polling") instanceof Integer) {
-            int polling = (int) dataSource.get("polling");
+        if (dataSource.get("pollRate") instanceof Integer) {
+            int polling = (int) dataSource.get("pollRate");
             if (polling > 0) {
                 int pollRate = polling;
                 source.pollRate = pollRate;
@@ -121,7 +143,7 @@ public class ObjectRecognitionConfigHandler extends Handler<ExtensionServiceMess
                         if (!isRunning) {
                             isRunning = true;
                             try {
-                                byte[] image = source.data.getImage();
+                                byte[] image = source.imageRetriever.getImage();
                                 source.sendDataFromImage(image);
                             } catch (ImageAcquisitionException e) {
                                 log.warn("Could not obtain requested image.", e);
@@ -186,5 +208,40 @@ public class ObjectRecognitionConfigHandler extends Handler<ExtensionServiceMess
         }
         
         return (NeuralNetInterface) object;
+    }
+    
+    ImageRetrieverInterface getImageRetriever(String className) {
+        Class<?> clazz = null;
+        Constructor<?> constructor = null;
+        Object object = null;
+        try {
+            clazz = Class.forName(className);
+        } catch (ClassNotFoundException e) {
+            log.error("Could not find requested class '" + className + "'", e);
+            source.close();
+        }
+        
+        try {
+            constructor = clazz.getConstructor();
+        } catch (NoSuchMethodException | SecurityException e) {
+            log.error("Could not find public no argument constructor for '" + className + "'", e);
+            source.close();
+        }
+
+        try {
+            object = constructor.newInstance();
+        } catch (InstantiationException | IllegalAccessException | IllegalArgumentException
+                | InvocationTargetException e) {
+            log.error("Error occurred trying to instantiate class '" + className + "'", e);
+            source.close();
+        }
+        
+        if ( !(object instanceof ImageRetrieverInterface) )
+        {
+            log.error("Class '" + className + "' is not an implementation of ImageRetriever");
+            source.close();
+        }
+        
+        return (ImageRetrieverInterface) object;
     }
 }

@@ -1,10 +1,10 @@
 package io.vantiq.extsrc.objectRecognition.exception;
 
-import io.vantiq.extsrc.objectRecognition.DataRetrieverInterface;
+import io.vantiq.extsrc.objectRecognition.ImageRetrieverInterface;
 import io.vantiq.extsrc.objectRecognition.NeuralNetInterface;
 
 /**
- * Indicates that an error occurred for either a {@link DataRetrieverInterface} or a {@link NeuralNetInterface}
+ * Indicates that an error occurred for either a {@link ImageRetrieverInterface} or a {@link NeuralNetInterface}
  */
 public class FatalImageException extends RuntimeException {
 

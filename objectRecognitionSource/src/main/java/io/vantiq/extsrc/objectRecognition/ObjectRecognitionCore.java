@@ -31,7 +31,7 @@ public class ObjectRecognitionCore {
     Timer                   pollTimer       = null;
     File                    imageFile       = null;
     int                     cameraNumber    = 0;
-    DataRetrieverInterface  data            = null;
+    ImageRetrieverInterface imageRetriever            = null;
     
     boolean stopped = false;
     
@@ -81,7 +81,7 @@ public class ObjectRecognitionCore {
     public void startContinuousRetrievals() {
         while (!stopped) {
             try {
-                byte[] image = data.getImage();
+                byte[] image = imageRetriever.getImage();
                 sendDataFromImage(image);
             } catch (ImageAcquisitionException e) {
                 log.warn("Could not obtain requested image.", e);
@@ -123,8 +123,8 @@ public class ObjectRecognitionCore {
         if (pollTimer != null) {
             pollTimer.cancel();
         }
-        if (data != null) {
-            data.close();
+        if (imageRetriever != null) {
+            imageRetriever.close();
         }
         if (neuralNet != null) {
             neuralNet.close();
