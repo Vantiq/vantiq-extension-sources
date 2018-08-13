@@ -21,6 +21,7 @@ import io.vantiq.extsrc.objectRecognition.neuralNet.YoloProcessor;
  * Sets up the source using the configuration document, which looks as below.
  *<pre> {
  *      extSrcConfig: {
+ *          type: "objectRecognition",
  *          general: {
  *              &lt:general options&lt;
  *          },
