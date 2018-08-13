@@ -172,22 +172,23 @@ public class ObjectDetector {
      * <br>Not part of original code.
      */
     public void close() {
-        if (yoloGraph != null) {
-            yoloGraph.close();
-            yoloGraph = null;
-        }
+        // ORDER MATTERS. The session must close before the graph otherwise it hangs indefinitely
         if (yoloSession != null) {
             yoloSession.close();
             yoloSession = null;
         }
-        
-        if (normalizerGraph != null) {
-            normalizerGraph.close();
-            normalizerGraph = null;
+        if (yoloGraph != null) {
+            yoloGraph.close();
+            yoloGraph = null;
         }
+        
         if (normalizerSession != null) {
             normalizerSession.close();
             normalizerSession = null;
+        }
+        if (normalizerGraph != null) {
+            normalizerGraph.close();
+            normalizerGraph = null;
         }
     }
 
