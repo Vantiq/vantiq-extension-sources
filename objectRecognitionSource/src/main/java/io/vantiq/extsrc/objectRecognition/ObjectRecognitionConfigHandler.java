@@ -37,8 +37,8 @@ public class ObjectRecognitionConfigHandler extends Handler<ExtensionServiceMess
         log = LoggerFactory.getLogger(this.getClass().getCanonicalName() + "#" + sourceName);
     }
     
-    final String DEFAULT_IMAGE_RETRIEVER = "io.vantiq.extsrc.objectRecognition.imageRetriever.DefaultRetriever";
-    final String DEFAULT_NEURAL_NET = "io.vantiq.extsrc.objectRecognition.neuralNet.DefaultProcessor";
+    final String DEFAULT_IMAGE_RETRIEVER    = "io.vantiq.extsrc.objectRecognition.imageRetriever.DefaultRetriever";
+    final String DEFAULT_NEURAL_NET         = "io.vantiq.extsrc.objectRecognition.neuralNet.DefaultProcessor";
     
     /**
      * Interprets the configuration message sent by the Vantiq server and sets up the neural network and data stream.
@@ -145,7 +145,7 @@ public class ObjectRecognitionConfigHandler extends Handler<ExtensionServiceMess
             } else if (polling == 0) {
                 new Thread(() -> source.startContinuousRetrievals()).start();
             } else {
-                // TODO snapshot on publish/query choice TBD
+                source.client.setQueryHandler(new ObjectRecognitionQueryHandler(source, source.client));
             }
         } else {
             log.error("No valid polling rate");
