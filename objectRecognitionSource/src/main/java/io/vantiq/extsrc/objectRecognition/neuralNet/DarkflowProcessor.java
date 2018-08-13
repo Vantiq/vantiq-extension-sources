@@ -11,12 +11,21 @@ import org.opencv.imgcodecs.Imgcodecs;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import io.vantiq.extsrc.objectRecognition.exception.FatalImageException;
 import jep.Jep;
 import jep.NDArray;
 
 /**
  * Slightly faster than YoloProcessor, but cannot have multiple instances and difficult to install the dependencies
- * correctly. 
+ * correctly.
+ * <br>
+ * Unique settings are: 
+ * <ul>
+ *  <li>{@code cfgFile}: Required. The .cfg file for the model.
+ *  <li>{@code weightsFile}: Required. The weights for the model.
+ *  <li>{@code threshold}: Optional. The confidence threshold at which an identification will be considered accurate 
+ *                  enough to include in the output, on a scale of 0-1 (exclusive). Default is 0.5. 
+ * </ul>
  */
 public class DarkflowProcessor extends NeuralNetInterface{
     
@@ -28,6 +37,14 @@ public class DarkflowProcessor extends NeuralNetInterface{
     String weightsFile;
     double threshold = 0.5;
     
+    /**
+     * Sets up Java Embedded Python to run darkflow.
+     * @param neuralNetConfig   A map containing the configuration necessary to setup the neural net. This will be the
+     *                          'neuralNet' object in the source configuration document.
+     * @param modelDirectory    The directory in which it should look for the models
+     * @throws Exception        Thrown when an error occurs during setup.
+     */
+    @Override
     public void setupImageProcessing(Map<String, ?> neuralNet, String modelDirectory) throws Exception {
         jepThread = new JepThread();
         jepThread.setupImageProcessing(neuralNet, modelDirectory);
@@ -44,6 +61,12 @@ public class DarkflowProcessor extends NeuralNetInterface{
         }
     }
     
+    /**
+     * Save the necessary data from the given map.
+     * @param neuralNet         The configuration from 'neuralNet' in the config document
+     * @param modelDirectory    The directory in which the .cfg and weights files are placed
+     * @throws Exception        Thrown when an invalid configuration is requested
+     */
     private void setup(Map<String, ?> neuralNet, String modelDirectory) throws Exception{
         // Obtain the files for the net
        if (neuralNet.get("cfgFile") instanceof String && neuralNet.get("weightsFile") instanceof String) {
@@ -58,9 +81,13 @@ public class DarkflowProcessor extends NeuralNetInterface{
                threshold = thresh;
            }
        }
-   }
+    }
     
-    private void setupJep() throws Exception{
+    /**
+     * Imports everything into JEP so that the first attempt to read the image will go quickly
+     * @throws Exception
+     */
+    private void setupJep() throws Exception {
         try {
             jep = new Jep();
         } catch (Exception e) {
@@ -92,6 +119,9 @@ public class DarkflowProcessor extends NeuralNetInterface{
         }
     }
     
+    /**
+     * Passes the image to JEP and processes it.
+     */
     public List<Map> processImage(byte[] image) {
         jepThread.processImage(image);
         synchronized (jepThread) {
@@ -117,8 +147,6 @@ public class DarkflowProcessor extends NeuralNetInterface{
             NDArray<byte[]> ndBytes= new NDArray(b, true, mat.rows(),mat.cols() , mat.channels());
             mat.release();
             // Perform the TensorFlow ops on the image
-//            jep.eval("result = tfnet.return_predict(img)");
-//            Object bytes = jep.getValue("result"); // gets a List
             Object bytes = jep.invoke("procImage", ndBytes);
             if (bytes instanceof List) {
                 return (List<Map>)bytes;
@@ -128,8 +156,8 @@ public class DarkflowProcessor extends NeuralNetInterface{
             }
         } catch (Exception e) {
             log.error("Could not interpret image.", e);
-            log.error("Returning empty ArayList");
-            return new ArrayList<>();
+            log.error("Returning empty ArrayList");
+            throw new FatalImageException("JEP error on failing message", e);
         }
     }
     

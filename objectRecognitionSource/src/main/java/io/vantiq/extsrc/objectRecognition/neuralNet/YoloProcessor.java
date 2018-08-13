@@ -28,14 +28,18 @@ public class YoloProcessor extends NeuralNetInterface {
         }
     }
     
+    /**
+     * Save the necessary data from the given map.
+     * @param neuralNet         The configuration from 'neuralNet' in the config document
+     * @param modelDirectory    The directory in which the .pb and label files are placed
+     * @throws Exception        Thrown when an invalid configuration is requested
+     */
     private void setup(Map<String, ?> neuralNet, String modelDirectory) throws Exception {
         // Obtain the files for the net
        if (neuralNet.get("pbFile") instanceof String && neuralNet.get("labelFile") instanceof String) {
            pbFile = modelDirectory + (String) neuralNet.get("pbFile");
            labelsFile = modelDirectory + (String) neuralNet.get("labelFile");
        } else {
-           log.error("No valid combination of cfgFile and weightsFile");
-           log.error("Exiting...");
            throw new Exception("Could not find 'pbFile' and/or 'labelFile' in the neuralNet configuration");
        }
        if (neuralNet.get("threshold") instanceof Double || neuralNet.get("threshold") instanceof Float) {
