@@ -8,6 +8,14 @@ import java.util.Map;
 import io.vantiq.extsrc.objectRecognition.ObjectRecognitionCore;
 import io.vantiq.extsrc.objectRecognition.exception.ImageAcquisitionException;
 
+/**
+ * Reads files from the disk.
+ * Unique settings are: 
+ * <ul>
+ *  <li>{@code fileLocation}: Required. The name of the file to be read. If the source is setup to perform messages on
+ *                  Query, then this serves as the default file if no file is specified in the query.
+ * </ul>
+ */
 public class FileRetriever implements ImageRetrieverInterface {
 
     File defaultImageFile;
@@ -17,11 +25,7 @@ public class FileRetriever implements ImageRetrieverInterface {
         if (dataSourceConfig.get("fileLocation") instanceof String) {
             String imageLocation = (String) dataSourceConfig.get("fileLocation");
             defaultImageFile = new File(imageLocation);
-            if ( !(defaultImageFile.exists() && !defaultImageFile.isDirectory() && defaultImageFile.canRead())) {
-                throw new IllegalArgumentException ("Could not read file at '" + defaultImageFile.getAbsolutePath() + "'");
-            }
-        } else if (dataSourceConfig.get("pollRate") instanceof Integer && 
-                        (Integer) dataSourceConfig.get("pollRate") >= 0) { // Won't be using messages to get the file location
+        } else {
             throw new IllegalArgumentException ("File required but not given");
         }
     }
@@ -44,17 +48,13 @@ public class FileRetriever implements ImageRetrieverInterface {
             } catch (IOException e) {
                 throw new ImageAcquisitionException("Could not read file '" + imageFile.getAbsolutePath() + "'", e);
             }
-        } else if (defaultImageFile != null) {
-            return getImage();
         } else {
-            throw new ImageAcquisitionException("No file specified for acquisition");
+            return getImage();
         }
     }
 
     @Override
     public void close() {
-        // TODO Auto-generated method stub
-        
     }
 
 }

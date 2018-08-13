@@ -8,6 +8,13 @@ import org.slf4j.LoggerFactory;
 
 import edu.ml.tensorflow.ObjectDetector;
 
+/**
+ * Unique settings are: 
+ * <ul>
+ *  <li>{@code pbFile}: Required. The .pb file for the model.
+ *  <li>{@code labelFile}: Required. The labels for the model.
+ * </ul> 
+ */
 public class YoloProcessor extends NeuralNetInterface {
     
     Logger log = LoggerFactory.getLogger(this.getClass());
