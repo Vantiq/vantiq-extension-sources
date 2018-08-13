@@ -13,6 +13,18 @@ import java.util.concurrent.ExecutionException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ *  The main of this program. It connects to sources using the specified configuration. Options are :
+ *  <ul>
+ *      <li>{@code authToken}: Required. The authentication token to connect with. These can be obtained from the 
+ *                      namespace admin.
+ *      <li>{@code sources}: Required. A comma separated list of the sources to which you wish to connect. Any 
+ *                      whitespace will be removed when read.
+ *      <li>{@code targetServer}: Optional. The Vantiq server hosting the sources. Defaults to "dev.vantiq.com"
+ *      <li>{@code modelDirectory}: Optional. The directory in which the files for your neural networks will be.
+ *                      Defaults to the working directory. 
+ *  </ul>
+ */
 public class ObjectRecognitionMain {
     static final Logger                         log         = LoggerFactory.getLogger(ObjectRecognitionMain.class);
     static       List<ObjectRecognitionCore>    sources;
