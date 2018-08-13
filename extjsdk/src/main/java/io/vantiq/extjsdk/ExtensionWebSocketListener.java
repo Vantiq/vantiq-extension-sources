@@ -85,7 +85,8 @@ public class ExtensionWebSocketListener implements WebSocketListener{
 
 
     /**
-     * Set the default {@link Handler} for each response type. What each does is specified in its respective setter.
+     * Set the default {@link Handler} for Query and authentication messages. What each does is specified in its
+     * respective setter.
      */
     private void initializeDefaultHandlers() {
 
