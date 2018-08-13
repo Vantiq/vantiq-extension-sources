@@ -49,7 +49,7 @@ public class ObjectRecognitionQueryHandler extends Handler<ExtensionServiceMessa
             log.debug("Request was: " + request);
             client.sendQueryError(replyAddress, FatalImageException.class.getCanonicalName() + ".acquisition", 
                     "Fatally failed to obtain an image with request {0}", new Object[] {request});
-            source.close();
+            source.stop();
             return;
         }
         
@@ -66,7 +66,7 @@ public class ObjectRecognitionQueryHandler extends Handler<ExtensionServiceMessa
             log.debug("Request was: " + request);
             client.sendQueryError(replyAddress, FatalImageException.class.getCanonicalName() + ".processing", 
                     "Fatally failed to process the image obtained with request {0}", new Object[] {request});
-            source.close();
+            source.stop();
             return;
         }
         

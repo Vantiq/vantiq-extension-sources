@@ -1,6 +1,5 @@
 package io.vantiq.extsrc.objectRecognition;
 
-import java.io.File;
 import java.util.List;
 import java.util.Map;
 import java.util.Timer;
@@ -10,6 +9,7 @@ import java.util.concurrent.TimeoutException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import io.vantiq.extjsdk.ExtensionServiceMessage;
 import io.vantiq.extjsdk.ExtensionWebSocketClient;
 import io.vantiq.extjsdk.Handler;
 import io.vantiq.extjsdk.Response;
@@ -29,14 +29,9 @@ public class ObjectRecognitionCore {
     
     // vars for source configuration
     boolean                 constantPolling = false;
-    int                     pollRate        = 0;
+    boolean                 stopPolling     = false;
     Timer                   pollTimer       = null;
-    File                    imageFile       = null;
-    int                     cameraNumber    = 0;
-    ImageRetrieverInterface imageRetriever            = null;
-    
-    boolean stopped = false;
-    
+    ImageRetrieverInterface imageRetriever  = null;
     
     ObjectRecognitionConfigHandler objRecConfigHandler;
     
@@ -52,6 +47,31 @@ public class ObjectRecognitionCore {
         @Override
         public void handleMessage(Response message) {
             System.out.println(message);
+        }
+        
+    };
+    
+    public Handler<ExtensionServiceMessage> reconnectHandler = new Handler<ExtensionServiceMessage>() {
+        @Override
+        public void handleMessage(ExtensionServiceMessage message) {
+            close();
+            
+            client.setQueryHandler(null);
+            
+            client.connectToSource();
+        }
+    };
+    
+    public Handler<ExtensionWebSocketClient> closeHandler = new Handler<ExtensionWebSocketClient>() {
+
+        @Override
+        public void handleMessage(ExtensionWebSocketClient message) {
+            close();
+            
+            client.setQueryHandler(null);
+            
+            client.initiateFullConnection(targetVantiqServer, authToken);
+            exitIfConnectionFails(client);
         }
         
     };
@@ -75,61 +95,107 @@ public class ObjectRecognitionCore {
         objRecConfigHandler = new ObjectRecognitionConfigHandler(this);
         
         client.setConfigHandler(objRecConfigHandler);
+        client.setReconnectHandler(reconnectHandler);
+        client.setCloseHandler(closeHandler);
         client.initiateFullConnection(targetVantiqServer, authToken);
         
         exitIfConnectionFails(client);
     }
     
     public void startContinuousRetrievals() {
-        while (!stopped) {
-            try {
-                byte[] image = imageRetriever.getImage();
-                sendDataFromImage(image);
-            } catch (ImageAcquisitionException e) {
-                log.warn("Could not obtain requested image.", e);
-            } catch (FatalImageException e) {
-                log.error("Image acquisition failed unrecoverably", e);
-                close();
-            }
+        while (!stopPolling) {
+            byte[] image = retrieveImage();
+            sendDataFromImage(image);
         }
+        stopPolling = false;
     }
     
+    public synchronized byte[] retrieveImage() {
+        try {
+            return imageRetriever.getImage();
+        } catch (ImageAcquisitionException e) {
+            log.warn("Could not obtain requested image.", e);
+        } catch (FatalImageException e) {
+            log.error("Image retriever of type '" + imageRetriever.getClass().getCanonicalName() 
+                    + "' failed unrecoverably"
+                    , e);
+            stop();
+        }
+        return null;
+    }
     
+    public synchronized byte[] retrieveImage(Map<String,?> request) {
+        try {
+            return imageRetriever.getImage(request);
+        } catch (ImageAcquisitionException e) {
+            log.warn("Could not obtain requested image.", e);
+        } catch (FatalImageException e) {
+            log.error("Image retriever of type '" + imageRetriever.getClass().getCanonicalName() 
+                    + "' failed unrecoverably"
+                    , e);
+            stop();
+        }
+        return null;
+    }
     
     /**
      * Processes the image then sends the results to the Vantiq source
      * @param image An OpenCV Mat representing the image to be translated
      */
-    protected void sendDataFromImage(byte[] image) {
+    public void sendDataFromImage(byte[] image) {
+        if (image == null || image.length == 0) {
+            return;
+        }
         try {
-            List<Map> imageResults = neuralNet.processImage(image);
-            client.sendNotification(imageResults);
+            synchronized (this) {
+                if (neuralNet == null) { // Should only happen when close() runs just before sendDataFromImage()
+                    return;
+                }
+                List<Map> imageResults = neuralNet.processImage(image);
+                client.sendNotification(imageResults);
+            }
         } catch (ImageProcessingException e) {
             log.warn("Could not process image", e);
         } catch (FatalImageException e) {
             log.error("Image processor of type '" + neuralNet.getClass().getCanonicalName() + "' failed unrecoverably"
                     , e);
-            log.error("Closing");
-            close();
+            log.error("Stopping");
+            stop();
+        }
+    }
+    
+    /**
+     * Closes all resources held by this program except for the client. 
+     */
+    protected void close() {
+        if (constantPolling) {
+            stopPolling = true;
+            constantPolling = false;
+        }
+        if (pollTimer != null) {
+            pollTimer.cancel();
+            pollTimer = null;
+        }
+        synchronized (this) {
+            if (imageRetriever != null) {
+                imageRetriever.close();
+                imageRetriever = null;
+            }
+            if (neuralNet != null) {
+                neuralNet.close();
+                neuralNet = null;
+            }
         }
     }
     
     /**
      * Closes all resources held by this program and then closes the connection. 
      */
-    protected void close() {
-        stopped = true;
+    protected void stop() {
+        close();
         if (client != null && client.isOpen()) {
             client.stop();
-        }
-        if (pollTimer != null) {
-            pollTimer.cancel();
-        }
-        if (imageRetriever != null) {
-            imageRetriever.close();
-        }
-        if (neuralNet != null) {
-            neuralNet.close();
+            client = null;
         }
     }
 
@@ -160,7 +226,7 @@ public class ObjectRecognitionCore {
             else {
                 log.error("Failed to connect to '" + sourceName + "' within 10 seconds");
             }
-            close();
+            stop();
         }
     }
     
@@ -185,7 +251,7 @@ public class ObjectRecognitionCore {
         } else {
             log.error("No valid authentication token in server settings");
             log.error("Exiting...");
-            close();
+            stop();
         }
         
         if (config.get("source") instanceof String) {
@@ -193,7 +259,7 @@ public class ObjectRecognitionCore {
         } else {
             log.error("No valid source in server settings");
             log.error("Exiting...");
-            close();
+            stop();
         }
         
         if (config.get("modelDirectory") instanceof String) {
