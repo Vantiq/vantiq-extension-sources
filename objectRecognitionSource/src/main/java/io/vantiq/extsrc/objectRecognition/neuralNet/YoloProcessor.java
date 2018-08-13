@@ -30,7 +30,7 @@ public class YoloProcessor extends NeuralNetInterface {
     
     private void setup(Map<String, ?> neuralNet, String modelDirectory) throws Exception {
         // Obtain the files for the net
-       if (neuralNet.get("cfgFile") instanceof String && neuralNet.get("weightsFile") instanceof String) {
+       if (neuralNet.get("pbFile") instanceof String && neuralNet.get("labelFile") instanceof String) {
            pbFile = modelDirectory + (String) neuralNet.get("pbFile");
            labelsFile = modelDirectory + (String) neuralNet.get("labelFile");
        } else {
