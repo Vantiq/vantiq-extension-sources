@@ -43,12 +43,10 @@ public class ObjectRecognitionCore {
     final Logger log;
     
     public Handler<Response> httpHandler = new Handler<Response>() {
-
         @Override
         public void handleMessage(Response message) {
             System.out.println(message);
         }
-        
     };
     
     public Handler<ExtensionServiceMessage> reconnectHandler = new Handler<ExtensionServiceMessage>() {
@@ -57,25 +55,37 @@ public class ObjectRecognitionCore {
             close();
             objRecConfigHandler.configComplete = false;
             
-            client.setQueryHandler(null);
+            client.setQueryHandler(defaultQueryHandler);
             
             client.connectToSource();
         }
     };
     
     public Handler<ExtensionWebSocketClient> closeHandler = new Handler<ExtensionWebSocketClient>() {
-
         @Override
         public void handleMessage(ExtensionWebSocketClient message) {
             close();
             objRecConfigHandler.configComplete = false;
             
-            client.setQueryHandler(null);
+            client.setQueryHandler(defaultQueryHandler);
             
             client.initiateFullConnection(targetVantiqServer, authToken);
             exitIfConnectionFails(client);
         }
-        
+    };
+    
+    Handler<ExtensionServiceMessage> defaultQueryHandler = new Handler<ExtensionServiceMessage>() {
+        @Override
+        public void handleMessage(ExtensionServiceMessage msg) {
+            log.warn("Query received with no user-set handler");
+            log.debug("Full message: " + msg);
+            // Prepare a response with an empty body, so that the query doesn't wait for a timeout
+            Object[] body = {msg.getSourceName()};
+            client.sendQueryError(ExtensionServiceMessage.extractReplyAddress(msg),
+                    "io.vantiq.extsrc.objectRecognition.UnexpectedQuery",
+                    "No handler has been set for source {0}",
+                    body);
+        }
     };
     
     
@@ -113,6 +123,7 @@ public class ObjectRecognitionCore {
         client.setConfigHandler(objRecConfigHandler);
         client.setReconnectHandler(reconnectHandler);
         client.setCloseHandler(closeHandler);
+        client.setQueryHandler(defaultQueryHandler);
         client.initiateFullConnection(targetVantiqServer, authToken);
         
         return exitIfConnectionFails(client);

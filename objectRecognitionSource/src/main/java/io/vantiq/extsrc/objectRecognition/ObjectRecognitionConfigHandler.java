@@ -181,7 +181,7 @@ public class ObjectRecognitionConfigHandler extends Handler<ExtensionServiceMess
         }
         
         if (general.get("pollRate") instanceof Integer) {
-            int polling = (int) dataSource.get("pollRate");
+            int polling = (int) general.get("pollRate");
             if (polling > 0) {
                 int pollRate = polling;
                 TimerTask task = new TimerTask() {
