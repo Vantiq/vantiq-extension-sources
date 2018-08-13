@@ -109,7 +109,16 @@ public class OpcUaTestBase {
         KeyPair keyPair;
         X509Certificate certificate = null;
         try {
-            keyPair = SelfSignedCertificateGenerator.generateRsaKeyPair(2048);
+
+            // If we're generating a key we trust, then use RSA keys as that's what our OPC server wants.
+            // Otherwise, we'll use an EC key which it doesn't like.  This will allow us to test that we can
+            // successfully connect with a reasonable key, and that we fail as expected with an unreasonable one.
+
+            if (trustIt) {
+                keyPair = SelfSignedCertificateGenerator.generateRsaKeyPair(2048);
+            } else {
+                keyPair = SelfSignedCertificateGenerator.generateEcKeyPair(256);
+            }
 
             SelfSignedCertificateBuilder builder = new SelfSignedCertificateBuilder(keyPair)
                     .setCommonName(commonName)
@@ -121,6 +130,11 @@ public class OpcUaTestBase {
                     .setApplicationUri(appUri)
                     .addDnsName("localhost")
                     .addIpAddress("127.0.0.1");
+
+            if (!trustIt) {
+                // As outlined above
+                builder.setSignatureAlgorithm("ECDSAwithSHA1");
+            }
 
             // Get as many hostnames and IP addresses as we can listed in the certificate.
             for (String hostname : HostnameUtil.getHostnames("0.0.0.0")) {
@@ -134,10 +148,6 @@ public class OpcUaTestBase {
             certificate = builder.build();
             ksm.addCert(alias, keyPair.getPrivate(), certificate);
 
-//            keyStore.setKeyEntry(CLIENT_ALIAS, keyPair.getPrivate(), providedPassword, new X509Certificate[]{certificate});
-//            keyStore.store(new FileOutputStream(serverKeyStore), providedPassword);
-//
-//
             if (trustIt) {
                 trustCertificateServer(certificate);
             }

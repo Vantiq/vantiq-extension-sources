@@ -369,7 +369,112 @@ public class Connection extends OpcUaTestBase {
     }
 
     @Test
-    public void testConnectionBadIdentity() {
+    public void testConnectionSecureBadCert() {
+        EnumSet<SecurityPolicy> serverSecPols = exampleServer.getServer().getConfig().getSecurityPolicies();
+        // Unfortunately, no good way to find out what security modes there are.  So we'll
+        // traverse the endpoints and act appropriately.
+
+        EndpointDescription[] eps = exampleServer.getServer().getEndpointDescriptions();
+        EnumSet<MessageSecurityMode> serverMsgModes = EnumSet.noneOf(MessageSecurityMode.class);
+
+        for (EndpointDescription ep : eps) {
+            serverMsgModes.add(ep.getSecurityMode());
+        }
+
+        // Below, we'll traverse the valid combinations.  None's must be paired and are tested elsewhere
+        for (SecurityPolicy secPol : serverSecPols) {
+            if (!secPol.equals(SecurityPolicy.None) && !secPol.equals(SecurityPolicy.Aes256_Sha256_RsaPss)) {
+                // TODO: don't know why the Aes256... policy fails, even with BouncyCastle added.
+                for (MessageSecurityMode msgSec : serverMsgModes) {
+                    if (!msgSec.equals(MessageSecurityMode.None)) {
+
+                        // Defaults tested in *Upw test...
+                        for (String certKey : untrustedTestCerts) {
+                            try {
+                                log.info("Attempting sync connection using [{}, {}] using certificate: '{}'", secPol, msgSec, certKey);
+                                makeRawConnection(false,
+                                        secPol.getSecurityPolicyUri(),
+                                        msgSec.toString(),
+                                        OpcUaESClient.CONFIG_IDENTITY_CERTIFICATE,
+                                        certKey);
+                            } catch (ExecutionException e) {
+                                assert e.getMessage().contains("UaException");
+                                assert e.getMessage().contains("status=Bad_");
+                                assert e.getMessage().contains("message=java.security.InvalidKeyException: Not an RSA key: EC");
+                            }
+
+                            try {
+                                log.info("Attempting async connection using [{}, {}] using certificate: '{}'", secPol, msgSec, certKey);
+                                makeRawConnection(true,
+                                        secPol.getSecurityPolicyUri(),
+                                        msgSec.toString(),
+                                        OpcUaESClient.CONFIG_IDENTITY_CERTIFICATE,
+                                        certKey);
+                            }
+                            catch (ExecutionException e) {
+                                Utils.unexpectedException(e);
+                            }
+                            catch (CompletionException e) {
+                                assert e.getMessage().contains("UaException");
+                                assert e.getMessage().contains("status=Bad_");
+                                assert e.getMessage().contains("message=java.security.InvalidKeyException: Not an RSA key: EC");
+                            }
+
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    public void runCertTest(List<String> certList, boolean expectFailure) {
+        EnumSet<SecurityPolicy> serverSecPols = exampleServer.getServer().getConfig().getSecurityPolicies();
+        // Unfortunately, no good way to find out what security modes there are.  So we'll
+        // traverse the endpoints and act appropriately.
+
+        EndpointDescription[] eps = exampleServer.getServer().getEndpointDescriptions();
+        EnumSet<MessageSecurityMode> serverMsgModes = EnumSet.noneOf(MessageSecurityMode.class);
+
+        for (EndpointDescription ep : eps) {
+            serverMsgModes.add(ep.getSecurityMode());
+        }
+
+        boolean runSync = expectFailure;    // If expecting failure, act as if async so we can catch exceptions
+
+        // Below, we'll traverse the valid combinations.  None's must be paired and are tested elsewhere
+        for (SecurityPolicy secPol : serverSecPols) {
+            if (!secPol.equals(SecurityPolicy.None) && !secPol.equals(SecurityPolicy.Aes256_Sha256_RsaPss)) {
+                // TODO: don't know why the Aes256... policy fails, even with BouncyCastle added.
+                for (MessageSecurityMode msgSec : serverMsgModes) {
+                    if (!msgSec.equals(MessageSecurityMode.None)) {
+
+                        // Defaults tested in *Upw test...
+                        for (String certKey : certList) {
+                            log.info("Attempting sync connection using [{}, {}] using certificate: '{}'", secPol, msgSec, certKey);
+                            makeConnection(runSync,
+                                    secPol.getSecurityPolicyUri(),
+                                    msgSec.toString(),
+                                    OpcUaESClient.CONFIG_IDENTITY_CERTIFICATE,
+                                    certKey,
+                                    true);
+
+                            log.info("Attempting async connection using [{}, {}] using certificate: '{}'", secPol, msgSec, certKey);
+                            makeConnection(true,
+                                    secPol.getSecurityPolicyUri(),
+                                    msgSec.toString(),
+                                    OpcUaESClient.CONFIG_IDENTITY_CERTIFICATE,
+                                    certKey,
+                                    true);
+                        }
+                    }
+                }
+            }
+        }
+
+    }
+
+    @Test
+    public void testConnectionSecureBadIdentity() {
         EnumSet<SecurityPolicy> serverSecPols = exampleServer.getServer().getConfig().getSecurityPolicies();
         // Unfortunately, no good way to find out what security modes there are.  So we'll
         // traverse the endpoints and act appropriately.
@@ -397,33 +502,29 @@ public class Connection extends OpcUaTestBase {
                                     OpcUaESClient.CONFIG_IDENTITY_USERNAME_PASSWORD,
                                     invalidCreds);
                             fail("Expected exception for invalid identity token");
-                        }
-                        catch (ExecutionException e) {
+                        } catch (ExecutionException e) {
                             assert e.getMessage().contains("UaServiceFaultException");
                             assert e.getMessage().contains("status=Bad_IdentityTokenInvalid");
                             assert e.getMessage().contains("message=The user identity token is not valid");
-                        }
-                        catch (Exception e) {
+                        } catch (Exception e) {
                             Utils.unexpectedException(e);
                         }
 
                         log.info("Attempting aSync connection using [{}, {}] using username/password: '{}'", secPol, msgSec, invalidCreds);
 
                         try {
-                            OpcUaESClient client= makeRawConnection(true,
+                            OpcUaESClient client = makeRawConnection(true,
                                     secPol.getSecurityPolicyUri(),
                                     msgSec.toString(),
                                     OpcUaESClient.CONFIG_IDENTITY_USERNAME_PASSWORD,
                                     invalidCreds);
                             CompletableFuture<Void> cf = client.getConnectFuture();
                             cf.join();  // Force exception to be thrown now...
-                        }
-                        catch (CompletionException e) {
+                        } catch (CompletionException e) {
                             assert e.getMessage().contains("UaServiceFaultException");
                             assert e.getMessage().contains("status=Bad_IdentityTokenInvalid");
                             assert e.getMessage().contains("message=The user identity token is not valid");
-                        }
-                        catch (Exception e) {
+                        } catch (Exception e) {
                             Utils.unexpectedException(e);
                         }
 

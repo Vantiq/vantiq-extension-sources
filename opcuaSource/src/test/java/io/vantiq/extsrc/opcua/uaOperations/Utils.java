@@ -61,6 +61,11 @@ public class Utils {
     }
 
     static public OpcUaESClient makeConnection(Map config, boolean runAsync, OpcUaTestBase testInstance, boolean startProcessOnly) throws ExecutionException {
+        return makeConnection(config, runAsync, testInstance, startProcessOnly, false);
+    }
+
+
+    static public OpcUaESClient makeConnection(Map config, boolean runAsync, OpcUaTestBase testInstance, boolean startProcessOnly, boolean expectFailure) throws ExecutionException {
         Map<String, String> opcConfig = (Map<String, String>) config.get(OpcUaESClient.CONFIG_OPC_UA_INFORMATION);
         //deleteStorage(opcConfig.get(OpcUaESClient.CONFIG_STORAGE_DIRECTORY));
         String discoveryPoint = opcConfig.get(OpcUaESClient.CONFIG_DISCOVERY_ENDPOINT);
@@ -83,7 +88,7 @@ public class Utils {
                     log.debug("Connection completed within wait time: " + discoveryPoint);
                 }
                 assert cf.isCancelled() == false;
-                if (discoveryPoint == OPC_PUBLIC_SERVER_NO_GOOD) {
+                if (discoveryPoint == OPC_PUBLIC_SERVER_NO_GOOD || expectFailure) {
                     // This one will complete with an unreachable-style error
                     assert cf.isCompletedExceptionally();
                 } else {
@@ -150,6 +155,9 @@ public class Utils {
     }
 
     public static void unexpectedException(Exception e) {
+        if (e.getCause() != null) {
+            e.getCause().printStackTrace();
+        }
         fail("Unexpected Exception: " + errFromExc(e));
     }
 }
