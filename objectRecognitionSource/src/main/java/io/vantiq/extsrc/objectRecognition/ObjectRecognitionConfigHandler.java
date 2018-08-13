@@ -52,17 +52,17 @@ public class ObjectRecognitionConfigHandler extends Handler<ExtensionServiceMess
         // Obtain the Maps for each object
         if ( !(config.get("config") instanceof Map && ((Map)config.get("config")).get("extSrcConfig") instanceof Map) ) {
             log.error("No configuration received for source ' " + sourceName + "'. Exiting...");
-            source.close();
+            source.stop();
         }
         config = (Map) ((Map) config.get("config")).get("extSrcConfig");
         if ( !(config.get("dataSource") instanceof Map)) {
             log.error("No data source specified for source ' " + sourceName + "'. Exiting...");
-            source.close();
+            source.stop();
         }
         dataSource = (Map) config.get("dataSource");
         if ( !(config.get("neuralNet") instanceof Map)) {
             log.error("No neural net specified for source ' " + sourceName + "'. Exiting...");
-            source.close();
+            source.stop();
         }
         neuralNetConfig = (Map) config.get("neuralNet");
         
@@ -87,7 +87,7 @@ public class ObjectRecognitionConfigHandler extends Handler<ExtensionServiceMess
             source.neuralNet = neuralNet;
         } catch (Exception e) {
             log.error("Exception occurred while setting up neural net.", e);
-            source.close();
+            source.stop();
         }
         
         
@@ -113,36 +113,27 @@ public class ObjectRecognitionConfigHandler extends Handler<ExtensionServiceMess
             source.imageRetriever = ir;
         } catch (Exception e) {
             log.error("Exception occurred while setting up image retriever.", e);
-            source.close();
+            source.stop();
         }
         
         if (dataSource.get("pollRate") instanceof Integer) {
             int polling = (int) dataSource.get("pollRate");
             if (polling > 0) {
                 int pollRate = polling;
-                source.pollRate = pollRate;
                 TimerTask task = new TimerTask() {
-                    boolean isRunning = false;
                     @Override
                     public void run() {
-                        if (!isRunning) {
-                            isRunning = true;
-                            try {
-                                byte[] image = source.imageRetriever.getImage();
-                                source.sendDataFromImage(image);
-                            } catch (ImageAcquisitionException e) {
-                                log.warn("Could not obtain requested image.", e);
-                            } catch (FatalImageException e) {
-                                log.error("Image acquisition failed unrecoverably", e);
-                                source.close();
-                            }
-                            isRunning = false;
-                        }
+                        byte[] image = source.retrieveImage();
+                        source.sendDataFromImage(image);
                     }
                 };
                 source.pollTimer = new Timer("dataCapture");
                 source.pollTimer.schedule(task, 0, pollRate);
             } else if (polling == 0) {
+                // Wait for the previous iteration of continuous retrievals to finish, if any
+                while (source.stopPolling) Thread.yield();
+                
+                source.constantPolling = true;
                 new Thread(() -> source.startContinuousRetrievals()).start();
             } else {
                 source.client.setQueryHandler(new ObjectRecognitionQueryHandler(source, source.client));
@@ -150,7 +141,7 @@ public class ObjectRecognitionConfigHandler extends Handler<ExtensionServiceMess
         } else {
             log.error("No valid polling rate");
             log.error("Exiting...");
-            source.close();
+            source.stop();
         }
         
         configComplete = true;
@@ -168,14 +159,14 @@ public class ObjectRecognitionConfigHandler extends Handler<ExtensionServiceMess
             clazz = Class.forName(className);
         } catch (ClassNotFoundException e) {
             log.error("Could not find requested class '" + className + "'", e);
-            source.close();
+            source.stop();
         }
         
         try {
             constructor = clazz.getConstructor();
         } catch (NoSuchMethodException | SecurityException e) {
             log.error("Could not find public no argument constructor for '" + className + "'", e);
-            source.close();
+            source.stop();
         }
 
         try {
@@ -183,13 +174,13 @@ public class ObjectRecognitionConfigHandler extends Handler<ExtensionServiceMess
         } catch (InstantiationException | IllegalAccessException | IllegalArgumentException
                 | InvocationTargetException e) {
             log.error("Error occurred trying to instantiate class '" + className + "'", e);
-            source.close();
+            source.stop();
         }
         
         if ( !(object instanceof NeuralNetInterface) )
         {
             log.error("Class '" + className + "' is not an implementation of NeuralNetInterface");
-            source.close();
+            source.stop();
         }
         
         return (NeuralNetInterface) object;
@@ -203,14 +194,14 @@ public class ObjectRecognitionConfigHandler extends Handler<ExtensionServiceMess
             clazz = Class.forName(className);
         } catch (ClassNotFoundException e) {
             log.error("Could not find requested class '" + className + "'", e);
-            source.close();
+            source.stop();
         }
         
         try {
             constructor = clazz.getConstructor();
         } catch (NoSuchMethodException | SecurityException e) {
             log.error("Could not find public no argument constructor for '" + className + "'", e);
-            source.close();
+            source.stop();
         }
 
         try {
@@ -218,13 +209,13 @@ public class ObjectRecognitionConfigHandler extends Handler<ExtensionServiceMess
         } catch (InstantiationException | IllegalAccessException | IllegalArgumentException
                 | InvocationTargetException e) {
             log.error("Error occurred trying to instantiate class '" + className + "'", e);
-            source.close();
+            source.stop();
         }
         
         if ( !(object instanceof ImageRetrieverInterface) )
         {
             log.error("Class '" + className + "' is not an implementation of ImageRetriever");
-            source.close();
+            source.stop();
         }
         
         return (ImageRetrieverInterface) object;

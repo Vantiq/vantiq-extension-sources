@@ -48,7 +48,7 @@ public class ObjectRecognitionMain {
         log.info("Closing...");
         
         for(ObjectRecognitionCore source : sources) {
-            source.close();
+            source.stop();
         }
     }
     
@@ -121,7 +121,7 @@ public class ObjectRecognitionMain {
     public static void exit(int code) {
         if (sources != null) {
             for (ObjectRecognitionCore source : sources) {
-                source.close();
+                source.stop();
             }
         }
         System.exit(code);
