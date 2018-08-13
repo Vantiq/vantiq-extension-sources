@@ -79,7 +79,13 @@ public class ObjectRecognitionCore {
     };
     
     
-    
+    /**
+     * Creates a new ObjectRecognitionCore with the settings given.
+     * @param sourceName            The name of the source to connect to.
+     * @param authToken             The authentication token to use to connect.
+     * @param targetVantiqServer    The url to connect to.
+     * @param modelDirectory        The directory in which the model files for the neural net will be stored.
+     */
     public ObjectRecognitionCore(String sourceName, String authToken, String targetVantiqServer, String modelDirectory) {
         log = LoggerFactory.getLogger(this.getClass().getCanonicalName() + '#' + sourceName);
         this.sourceName = sourceName;
@@ -88,11 +94,19 @@ public class ObjectRecognitionCore {
         this.modelDirectory = modelDirectory;
     }
     
+    /**
+     * Returns the name of the source that it is connected to.
+     * @return  The name of the source that it is connected to.
+     */
     public String getSourceName() {
         return sourceName;
     }
     
-    public void start() {
+    /**
+     * Tries to connect to a source and waits up to 10 seconds for it to succeed or fail.
+     * @return  true if the source connection succeeds, false if it fails.
+     */
+    public boolean start() {
         client = new ExtensionWebSocketClient(sourceName);
         objRecConfigHandler = new ObjectRecognitionConfigHandler(this);
         
@@ -101,10 +115,13 @@ public class ObjectRecognitionCore {
         client.setCloseHandler(closeHandler);
         client.initiateFullConnection(targetVantiqServer, authToken);
         
-        exitIfConnectionFails(client);
+        return exitIfConnectionFails(client);
     }
     
-    public void startContinuousRetrievals() {
+    /**
+     * Continuously retrieves and image and sends the result until close() or stop() is called.
+     */
+    void startContinuousRetrievals() {
         while (!stopPolling) {
             byte[] image = retrieveImage();
             sendDataFromImage(image);
@@ -112,6 +129,10 @@ public class ObjectRecognitionCore {
         stopPolling = false;
     }
     
+    /**
+     * Retrieves an image using the Core's image retriever. Calls stop() if a FatalImageException was received.
+     * @return  The image retrieved in jpeg format, or null if a problem occurred.
+     */
     public synchronized byte[] retrieveImage() {
         if (imageRetriever == null) { // Should only happen if close() was called immediately before retreiveImage()
             return null;
@@ -129,6 +150,11 @@ public class ObjectRecognitionCore {
         return null;
     }
     
+    /**
+     * Retrieves an image using the Core's image retriever. Calls stop() if a FatalImageException is received.
+     * @param request   The request sent with a Query message.
+     * @return          The image retrieved in jpeg format, or null if a problem occurred.
+     */
     public synchronized byte[] retrieveImage(Map<String,?> request) {
         if (imageRetriever == null) { // Should only happen if close() was called immediately before retreiveImage()
             return null;
@@ -147,7 +173,8 @@ public class ObjectRecognitionCore {
     }
     
     /**
-     * Processes the image then sends the results to the Vantiq source
+     * Processes the image then sends the results to the Vantiq source. Calls stop() if a FatalImageException is
+     * received.
      * @param image An OpenCV Mat representing the image to be translated
      */
     public void sendDataFromImage(byte[] image) {
@@ -211,8 +238,9 @@ public class ObjectRecognitionCore {
      * Waits for the connection to succeed or fail, logs and exits if the connection does not succeed within 10 seconds.
      *
      * @param client    The client to watch for success or failure.
+     * @return          true if the connection succeeded, false if it failed to connect within 10 seconds.
      */
-    public void exitIfConnectionFails(ExtensionWebSocketClient client) {
+    public boolean exitIfConnectionFails(ExtensionWebSocketClient client) {
         boolean sourcesSucceeded = false;
         try {
             sourcesSucceeded = client.getSourceConnectionFuture().get(10, TimeUnit.SECONDS);
@@ -235,12 +263,13 @@ public class ObjectRecognitionCore {
                 log.error("Failed to connect to '" + sourceName + "' within 10 seconds");
             }
             stop();
+            return false;
         }
+        return true;
     }
     
     /**
      * Sets up the defaults for the server based on the configuration file
-     *
      * @param config    The Properties obtained from the config file
      */
     void setup(Map<String,?> config) {
