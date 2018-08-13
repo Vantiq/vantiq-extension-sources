@@ -11,8 +11,6 @@ import org.slf4j.LoggerFactory;
 
 import io.vantiq.extjsdk.ExtensionServiceMessage;
 import io.vantiq.extjsdk.Handler;
-import io.vantiq.extsrc.objectRecognition.exception.FatalImageException;
-import io.vantiq.extsrc.objectRecognition.exception.ImageAcquisitionException;
 import io.vantiq.extsrc.objectRecognition.imageRetriever.CameraRetriever;
 import io.vantiq.extsrc.objectRecognition.imageRetriever.FileRetriever;
 import io.vantiq.extsrc.objectRecognition.imageRetriever.ImageRetrieverInterface;
@@ -22,10 +20,10 @@ import io.vantiq.extsrc.objectRecognition.neuralNet.YoloProcessor;
 
 public class ObjectRecognitionConfigHandler extends Handler<ExtensionServiceMessage>{
     
-    Logger log;
-    String sourceName;
-    ObjectRecognitionCore source;
-    boolean configComplete = false;
+    Logger                  log;
+    String                  sourceName;
+    ObjectRecognitionCore   source;
+    boolean                 configComplete = false;
     
     /**
      * Initializes the Handler for a source 
@@ -52,17 +50,20 @@ public class ObjectRecognitionConfigHandler extends Handler<ExtensionServiceMess
         // Obtain the Maps for each object
         if ( !(config.get("config") instanceof Map && ((Map)config.get("config")).get("extSrcConfig") instanceof Map) ) {
             log.error("No configuration received for source ' " + sourceName + "'. Exiting...");
-            source.stop();
+            failConfig();
+            return;
         }
         config = (Map) ((Map) config.get("config")).get("extSrcConfig");
         if ( !(config.get("dataSource") instanceof Map)) {
             log.error("No data source specified for source ' " + sourceName + "'. Exiting...");
-            source.stop();
+            failConfig();
+            return;
         }
         dataSource = (Map) config.get("dataSource");
         if ( !(config.get("neuralNet") instanceof Map)) {
             log.error("No neural net specified for source ' " + sourceName + "'. Exiting...");
-            source.stop();
+            failConfig();
+            return;
         }
         neuralNetConfig = (Map) config.get("neuralNet");
         
@@ -80,14 +81,19 @@ public class ObjectRecognitionConfigHandler extends Handler<ExtensionServiceMess
         } else {
             log.debug("No neural net type specified. Trying for default of '{}'", DEFAULT_NEURAL_NET);
         }
+        
         NeuralNetInterface neuralNet = getNeuralNet(neuralNetType);
+        if (neuralNet == null) {
+            return; // Error message and exiting taken care of by getNeuralNet()
+        }
         
         try {
             neuralNet.setupImageProcessing(neuralNetConfig, source.modelDirectory);
             source.neuralNet = neuralNet;
         } catch (Exception e) {
             log.error("Exception occurred while setting up neural net.", e);
-            source.stop();
+            failConfig();
+            return;
         }
         
         
@@ -107,13 +113,19 @@ public class ObjectRecognitionConfigHandler extends Handler<ExtensionServiceMess
         } else {
             log.debug("No image retriever type specified. Trying for default of '{}'", DEFAULT_IMAGE_RETRIEVER);
         }
+        
         ImageRetrieverInterface ir = getImageRetriever(retrieverType);
+        if (ir == null) {
+            return; // Error message and exiting taken care of by getImageRetriever()
+        }
+        
         try {
             ir.setupDataRetrieval(dataSource, source);
             source.imageRetriever = ir;
         } catch (Exception e) {
             log.error("Exception occurred while setting up image retriever.", e);
-            source.stop();
+            failConfig();
+            return;
         }
         
         if (dataSource.get("pollRate") instanceof Integer) {
@@ -141,12 +153,26 @@ public class ObjectRecognitionConfigHandler extends Handler<ExtensionServiceMess
         } else {
             log.error("No valid polling rate");
             log.error("Exiting...");
-            source.stop();
+            failConfig();
+            return;
         }
         
         configComplete = true;
     }
     
+    /**
+     * 
+     */
+    private void failConfig() {
+        source.stop();
+        configComplete = true;
+    }
+    
+    /**
+     * Returns whether the configuration handler has completed. Necessary since the sourceConnectionFuture is completed
+     * before the configuration can complete, so a program may need to wait before using configured resources.
+     * @return  true when the configuration has completed (successfully or not), false otherwise
+     */
     public boolean isComplete() {
         return configComplete;
     }
@@ -159,14 +185,16 @@ public class ObjectRecognitionConfigHandler extends Handler<ExtensionServiceMess
             clazz = Class.forName(className);
         } catch (ClassNotFoundException e) {
             log.error("Could not find requested class '" + className + "'", e);
-            source.stop();
+            failConfig();
+            return null;
         }
         
         try {
             constructor = clazz.getConstructor();
         } catch (NoSuchMethodException | SecurityException e) {
             log.error("Could not find public no argument constructor for '" + className + "'", e);
-            source.stop();
+            failConfig();
+            return null;
         }
 
         try {
@@ -174,13 +202,15 @@ public class ObjectRecognitionConfigHandler extends Handler<ExtensionServiceMess
         } catch (InstantiationException | IllegalAccessException | IllegalArgumentException
                 | InvocationTargetException e) {
             log.error("Error occurred trying to instantiate class '" + className + "'", e);
-            source.stop();
+            failConfig();
+            return null;
         }
         
         if ( !(object instanceof NeuralNetInterface) )
         {
             log.error("Class '" + className + "' is not an implementation of NeuralNetInterface");
-            source.stop();
+            failConfig();
+            return null;
         }
         
         return (NeuralNetInterface) object;
@@ -194,14 +224,16 @@ public class ObjectRecognitionConfigHandler extends Handler<ExtensionServiceMess
             clazz = Class.forName(className);
         } catch (ClassNotFoundException e) {
             log.error("Could not find requested class '" + className + "'", e);
-            source.stop();
+            failConfig();
+            return null;
         }
         
         try {
             constructor = clazz.getConstructor();
         } catch (NoSuchMethodException | SecurityException e) {
             log.error("Could not find public no argument constructor for '" + className + "'", e);
-            source.stop();
+            failConfig();
+            return null;
         }
 
         try {
@@ -209,13 +241,15 @@ public class ObjectRecognitionConfigHandler extends Handler<ExtensionServiceMess
         } catch (InstantiationException | IllegalAccessException | IllegalArgumentException
                 | InvocationTargetException e) {
             log.error("Error occurred trying to instantiate class '" + className + "'", e);
-            source.stop();
+            failConfig();
+            return null;
         }
         
         if ( !(object instanceof ImageRetrieverInterface) )
         {
             log.error("Class '" + className + "' is not an implementation of ImageRetriever");
-            source.stop();
+            failConfig();
+            return null;
         }
         
         return (ImageRetrieverInterface) object;

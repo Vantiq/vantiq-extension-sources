@@ -55,6 +55,7 @@ public class ObjectRecognitionCore {
         @Override
         public void handleMessage(ExtensionServiceMessage message) {
             close();
+            objRecConfigHandler.configComplete = false;
             
             client.setQueryHandler(null);
             
@@ -67,6 +68,7 @@ public class ObjectRecognitionCore {
         @Override
         public void handleMessage(ExtensionWebSocketClient message) {
             close();
+            objRecConfigHandler.configComplete = false;
             
             client.setQueryHandler(null);
             
@@ -235,13 +237,6 @@ public class ObjectRecognitionCore {
             stop();
         }
     }
-    
-    
-    
-    
-    
-
-    
     
     /**
      * Sets up the defaults for the server based on the configuration file
