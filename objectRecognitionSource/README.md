@@ -1,8 +1,8 @@
 ## Repository Contents
 
 *   [ObjectRecognitionMain](#objRecMain) -- The main function for the program. Connects to sources as specified in a configuration file.
-*   [ObjectRecognitionCore] -- Controls the connection to a source, the input images, and the output.
-*   [ObjectRecognitionConfigHandler] -- Sets up the neural net and image retriever based on the source's configuration document.
+*   [ObjectRecognitionCore](#core) -- Controls the connection to a source, the input images, and the output.
+*   [ObjectRecognitionConfigHandler](#srcConfig) -- Sets up the neural net and image retriever based on the source's configuration document.
 *   [ObjectRecognitionQueryHandler] -- Sends data back in response to a query, if the source is configured to handle queries.
 *   [NeuralNetInterface] -- An interface that allows other neural nets to be more easily integrated without changes to the rest of the code.
     *   [YoloProcessor] -- An implementation of the [You Only Look Once](https://pjreddie.com/darknet/yolo/) (YOLO) object detection software using Java Tensorflow.
@@ -14,7 +14,7 @@
 ## How to Run the Program<a name="objRecMain" id="objRecMain"></a>
 
 1.  Clone this repository (vantiq-extension-sources) and navigate into `<repo location>/vantiq-extension-sources`.
-2.  Run `./gradlew objectRecognitionSource:assembleble` or `.\gradlew objectRecognitionSource:assembleble` depending on the OS.
+2.  Run `./gradlew objectRecognitionSource:assemble` or `.\gradlew objectRecognitionSource:assemble` depending on the OS.
 3.  Navigate to `<repo location>/vantiq-extension-sources/objectRecognitionSource/build/distributions`. The zip and tar files both contain the same files, so choose whichever you prefer.
 4.  Uncompress the file in the location that you would like to install the program.
 5.  Run either `<install location>/objectRecognitionSource/bin/objectRecognitionSource` with a local server.config file or specifying the [server config file](#serverConfig) as the first argument.
@@ -30,7 +30,25 @@ The server config file is written as `property=value`, with each property on its
 
 ### Local Options*   modelDirectory: Optional. The directory in which the files for your neural networks will be. Defaults to the working directory.
 
-## Source Configuration Document<a name="udpConfig" id="udpConfig"></a>
+## Running Inside Your Own Code<a name="core" id="core"></a>
+
+The ObjectRecognitionCore class handles all the source related functionality. If you wish to run object recognition sources inside your own code, then it is what you will use.
+
+### Adding to your Library
+
+1.  Clone this repository (vantiq-extension-sources) and navigate into `<repo location>/vantiq-extension-sources`.
+    *   If you know that you will not use specific classes in the *.neuralNet or *.imageRetriever packagesyou can remove them now.
+2.  Run `./gradlew objectRecognitionSource:assemble` or `.\gradlew objectRecognitionSource:assemble` depending on the OS.
+3.  Navigate to `<repo location>/vantiq-extension-sources/objectRecognitionSource/build/libs` and copy `objectRecognitionSource.jar` into your project.
+4.  Add the dependencies found in `<repo location>/vantiq-extension-sources/objectRecognitionSource/build.gradle` to your project.
+    *   The gradle build file specifies every dependency that is used only in neural net or image retriever implementations. If you removed any classes in step 1, use the comments to identify which dependencies are no longer needed.
+
+### Using in Your Code
+
+The ObjectRecognitionCore class has four public functions. The constructor takes in the same arguments passed through the [server config file](#serverConfig), the only difference being that only a single source is expected. `start()` sets everything up and tries to connect to the server, returning true if it works and false if it fails. If you want to use the source purely as defined elsewhere in this document, then these are the only two functions you need.
+If you want to obtain images and send them in addition to the data that the source will send normally, the other two functions will be needed. `retrieveImage()` attempts to use the source's image retriever to obtain a jpeg encoded image, returning null if it failed and stopping the Core if it failed unrecoverably. `retrieveImage(Map)` acts identically except that options can be specified depending on the image retriever implementation. `sendDataFromImage(byte[])` takes the image and attempts to process it with the source's neural net then send the results to the source. If the image is null or an error occurs then no data is sent to the source, and if neural net failed unrecoverably then the Core is stopped as well.
+
+## Source Configuration Document<a name="srcConfig" id="srcConfig"></a>
 
 The Configuration document looks as below:
 
