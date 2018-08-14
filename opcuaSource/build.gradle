@@ -44,6 +44,11 @@ test {
     }
 }
 
+task generateJavadoc(type: Javadoc) {
+    source = sourceSets.main.allJava
+    classpath = sourceSets.main.compileClasspath
+}
+
 task runExampleServer(type: JavaExec) {
     main = "io.vantiq.extsrc.opcua.io.vantiq.extsrc.opcua.sampleServer.RunExampleServer"
     classpath = sourceSets.test.runtimeClasspath

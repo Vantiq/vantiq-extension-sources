@@ -144,8 +144,10 @@ public class OpcUaESClient {
      * should be secure as security information will be stored here.
      *
      * @param theConfig The config document to use
+     * @throws OpcExtConfigException when a null configuration is passed in
+     * @throws Exception due to other errors during processing the creation of the client
      */
-    public OpcUaESClient(Map theConfig) throws OpcExtConfigException, Exception   // FIXME
+    public OpcUaESClient(Map theConfig) throws OpcExtConfigException, Exception
     {
         if (theConfig == null) {
             String errMsg = ERROR_PREFIX + ".nullConfig: Configuration was null";
@@ -176,7 +178,7 @@ public class OpcUaESClient {
 
     /**
      * Is client currently connected to an OPC UA Server
-     * @return
+     * @return boolean indicating whether the client is currently connected
      */
     public boolean isConnected() {
         return connected;
@@ -214,7 +216,7 @@ public class OpcUaESClient {
      * is run using the simple CompletableFuture.runAsync() method, so from the default pool.
      *
      * @throws Exception Thrown by underlying connection to server when the connection cannot be made
-     * @return CompletableFuture\<Void\> from which the connection status can be determined.
+     * @return CompletableFuture&lt;Void&gt; from which the connection status can be determined.
      */
     public CompletableFuture<Void> connectAsync() throws Exception {
         connectFuture = CompletableFuture.runAsync(() -> {
@@ -234,7 +236,7 @@ public class OpcUaESClient {
      * Fetch the CompletableFuture used to make the connection, if any.  If a synchronous connection was made,
      * this will return null.
      *
-     * @return CompletableFuture\<Void\> used to make the OPC UA Client connection, if any.  Null if none was created.
+     * @return CompletableFuture&lt;Void&gt; used to make the OPC UA Client connection, if any.  Null if none was created.
      */
     public CompletableFuture<Void> getConnectFuture() {
         return connectFuture;
