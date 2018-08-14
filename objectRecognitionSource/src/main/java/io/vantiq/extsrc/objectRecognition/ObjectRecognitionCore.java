@@ -19,6 +19,9 @@ import io.vantiq.extsrc.objectRecognition.exception.ImageProcessingException;
 import io.vantiq.extsrc.objectRecognition.imageRetriever.ImageRetrieverInterface;
 import io.vantiq.extsrc.objectRecognition.neuralNet.NeuralNetInterface;
 
+/**
+ * Controls the connection and interaction with the Vantiq server. 
+ */
 public class ObjectRecognitionCore {
     // vars for server configuration
     String sourceName           = "Camera1";

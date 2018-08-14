@@ -4,7 +4,6 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.util.Map;
-import java.util.logging.Logger;
 
 import io.vantiq.extsrc.objectRecognition.ObjectRecognitionCore;
 import io.vantiq.extsrc.objectRecognition.exception.ImageAcquisitionException;
@@ -13,6 +12,7 @@ import org.opencv.core.Mat;
 import org.opencv.core.MatOfByte;
 import org.opencv.imgcodecs.Imgcodecs;
 import org.opencv.videoio.VideoCapture;
+
 
 public class FileRetriever implements ImageRetrieverInterface {
 
@@ -38,6 +38,7 @@ public class FileRetriever implements ImageRetrieverInterface {
             }
         } else if (dataSourceConfig.get("pollRate") instanceof Integer && 
                         (Integer) dataSourceConfig.get("pollRate") >= 0) { // Won't be using messages to get the file location
+        } else {
             throw new IllegalArgumentException ("File required but not given");
         }
     }
@@ -75,17 +76,13 @@ public class FileRetriever implements ImageRetrieverInterface {
             } catch (IOException e) {
                 throw new ImageAcquisitionException("Could not read file '" + imageFile.getAbsolutePath() + "'", e);
             }
-        } else if (defaultImageFile != null) {
-            return getImage();
         } else {
-            throw new ImageAcquisitionException("No file specified for acquisition");
+            return getImage();
         }
     }
 
     @Override
     public void close() {
-        // TODO Auto-generated method stub
-        
     }
 
 }

@@ -13,7 +13,6 @@ import io.vantiq.extjsdk.ExtensionServiceMessage;
 import io.vantiq.extjsdk.Handler;
 import io.vantiq.extsrc.objectRecognition.imageRetriever.FileRetriever;
 import io.vantiq.extsrc.objectRecognition.imageRetriever.ImageRetrieverInterface;
-import io.vantiq.extsrc.objectRecognition.neuralNet.DarkflowProcessor;
 import io.vantiq.extsrc.objectRecognition.neuralNet.NeuralNetInterface;
 import io.vantiq.extsrc.objectRecognition.neuralNet.YoloProcessor;
 
@@ -49,7 +48,7 @@ import io.vantiq.extsrc.objectRecognition.neuralNet.YoloProcessor;
  * of the implementation. It can also be unset, in which case it will attempt to find {@code DefaultRetriever} and 
  * {@code DefaultProcessor}, which will be written by you, for your specific needs. {@code type} can also be set to the
  * implementations included in the standard package, {@link FileRetriever file} and {@link CameraRetriever camera} for
- * dataSource and {@link YoloProcessor yolo} and {@link DarkflowProcessor darkflow} for neuralNet.
+ * dataSource and {@link YoloProcessor yolo} for neuralNet.
  */
 public class ObjectRecognitionConfigHandler extends Handler<ExtensionServiceMessage>{
     
@@ -81,7 +80,6 @@ public class ObjectRecognitionConfigHandler extends Handler<ExtensionServiceMess
      * getCanonicalName() so that the classes can be removed without requiring code edits
      */
     final String YOLO_PROCESSOR_FQCN        = "io.vantiq.extsrc.objectRecognition.neuralNet.YoloProcessor";
-    final String DARKFLOW_PROCESSOR_FQCN    = "io.vantiq.extsrc.objectRecognition.neuralNet.DarkflowProcessor";
     final String DEFAULT_NEURAL_NET         = "io.vantiq.extsrc.objectRecognition.neuralNet.DefaultProcessor";
     
     /**
@@ -133,8 +131,6 @@ public class ObjectRecognitionConfigHandler extends Handler<ExtensionServiceMess
             neuralNetType = (String) neuralNetConfig.get("type");
             if (neuralNetType.equals("yolo")) {
                 neuralNetType = YOLO_PROCESSOR_FQCN;
-            } else if (neuralNetType.equals("darkflow")) {
-                neuralNetType = DARKFLOW_PROCESSOR_FQCN;
             } else if (neuralNetType.equals("default")) {
                 neuralNetType = DEFAULT_NEURAL_NET;
             }
