@@ -68,9 +68,12 @@ public class FileRetriever implements ImageRetrieverInterface {
             if (matrix.empty()) { // Exit if nothing could be read
                 throw new FatalImageException("Video could not be read");
             }
-          
+            
+            for (int i = 0; i < 100; i++) {
+                capture.grab();
+            }
+            
             MatOfByte matOfByte = new MatOfByte();
-            Imgcodecs.imencode(".jpg", matrix, matOfByte);
             byte [] imageByte = matOfByte.toArray();
             matOfByte.release();
             matrix.release();
