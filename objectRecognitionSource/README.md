@@ -3,13 +3,12 @@
 *   [ObjectRecognitionMain](#objRecMain) -- The main function for the program. Connects to sources as specified in a configuration file.
 *   [ObjectRecognitionCore](#core) -- Controls the connection to a source, the input images, and the output.
 *   [ObjectRecognitionConfigHandler](#srcConfig) -- Sets up the neural net and image retriever based on the source's configuration document.
-*   [ObjectRecognitionQueryHandler] -- Sends data back in response to a query, if the source is configured to handle queries.
-*   [NeuralNetInterface] -- An interface that allows other neural nets to be more easily integrated without changes to the rest of the code.
-    *   [YoloProcessor] -- An implementation of the [You Only Look Once](https://pjreddie.com/darknet/yolo/) (YOLO) object detection software using Java Tensorflow.
-    *   [DarkflowProcessor] -- An implementation of YOLO using the [Darkflow](https://github.com/thtrieu/darkflow) Python implementation.
+*   ObjectRecognitionQueryHandler -- Sends data back in response to a query, if the source is configured to handle queries.
+*   [NeuralNetInterface](#netInterface) -- An interface that allows other neural nets to be more easily integrated without changes to the rest of the code.
+    *   [YoloProcessor](#yoloNet) -- An implementation of the [You Only Look Once](https://pjreddie.com/darknet/yolo/) (YOLO) object detection software using Java Tensorflow.
 *   [ImageRetrieverInterface](#retrieveInterface) -- An interface that allows different image retrieval mechanisms to be more easily integrated without changes to the rest of the code.
-    *   [CameraRetriever] -- Retrieves images from a directly connected camera using OpenCV.
-    *   [FileRetriever] -- Retrieves images from disk.
+    *   [CameraRetriever](#cameraRet) -- Retrieves images from a directly connected camera using OpenCV.
+    *   [FileRetriever](#fileRet) -- Retrieves images from disk.
 
 ## How to Run the Program<a name="objRecMain" id="objRecMain"></a>
 
@@ -76,22 +75,22 @@ The Configuration document looks as below:
 Most of the options required for dataSource are dependent on the specific implementation of [ImageRetrieverInterface](#retrieveInterface). The ones that are the same across all implementations are:
 *   type: Optional. Can be one of three situations
     1.  The fully qualified class name of an implementation of ImageRetrieverInterface, e.g. "io.vantiq.extsrc.objectRecognition.imageRetriever.CameraRetriever".
-    2.  The short name of one of the standard implementations, i.e. one of "[file](#fileRet)", "[camera](#camRet)", or "[default]".
+    2.  The short name of one of the standard implementations, i.e. one of "[file](#fileRet)", "[camera](#camRet)", or "[default](#defaultRet)".
     3.  Empty, in which case the program will try to find an implementation with the name "DefaultRetriever" in the `io.vantiq.objectRecognition.imageRetriever` package. This implementation is not provided, and must be written by the user.
 
 ### Options Available for Neural Net
 
-Most of the options required for neuralNet are dependent on the specific implementation of [NeuralNetInterface]. The ones that are the same across all implementations are:
+Most of the options required for neuralNet are dependent on the specific implementation of [NeuralNetInterface](#netInterface). The ones that are the same across all implementations are:
 *   type: Optional. Can be one of three situations
     1.  The fully qualified class name of an implementation of NeuralNetInterface, e.g. "io.vantiq.extsrc.objectRecognition.neuralNet.YoloProcessor".
-    2.  The short name of one of the standard implementations, i.e. one of "[yolo]", "[darkflow]", or "[default]".
+    2.  The short name of one of the standard implementations, i.e. one of "[yolo](#yoloNet)" or "[default](#defaultNet)".
     3.  Empty, in which case the program will try to find an implementation with the name "DefaultProcessor" in the `io.vantiq.objectRecognition.neuralNet` package. This implementation is not provided, and must be written by the user.
 
 ## Image Retriever Interface<a name="retrieveInterface" id="retrieveInterface"></a>
 
 This is an interface that returns a jpeg encoded image. Settings may or may not differ for periodic messages versus Query responses. There are two implementations included in the standard package.
 
-### Default Retriever
+### Default Retriever<a name="defaultRet" id="defaultRet"></a>
 
 This is a user written implementation that acts as the default if no image retriever type is specified. If no such implementation is included then type must be specified for the source to function. It must be named "DefaultRetriever" and be placed in the `io.vantiq.extsrc.objectRecognition.imageRetriever` package.
 
@@ -109,10 +108,11 @@ This implementation reads files from the disk. The options for Query messages ar
 
 This is a user written interface that interprets a jpeg encoded image and returns the results in a List of JSON-friendly Maps. Settings are set purely through the configuration document.
 
-### Default Retriever
+### Default Retriever<a name="defaultNet" id="defaultNet"></a>
 
 This is a user written implementation that acts as the default if no neural net type is specified. If no such implementation is included then type must be specified for the source to function. It must be named "DefaultProcessor" and be placed in the `io.vantiq.extsrc.objectRecognition.neuralNet` package.
 
-### Yolo Processor
+### Yolo Processor<a name="yoloNet" id="yoloNet"></a>
 
 This is a TensorFlow implementation of YOLO. It returns a List of Maps, each of which has a `label` stating the type of the object identifiead, a `confidence` specifying on a scale of 0-1 how confident the neural net is that the identification is accurate, and a `location` containing the coordinates for the `top`,`left`, `bottom`, and `right` edges of the bounding box for the object.
+
