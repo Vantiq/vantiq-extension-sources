@@ -82,8 +82,6 @@ public class OpcUaServer {
 
         boolean itWorked = aSource.connectToVantiq(sourceToUse, connectInfo);
 
-        log.info("It worked: {}", itWorked);
-
         if (aSource != null) {
             aSource.close();
         }

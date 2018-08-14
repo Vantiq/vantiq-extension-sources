@@ -23,6 +23,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -95,6 +96,8 @@ public class OpcUaSource {
         localClient.setPublishHandler(publishHandler);
         localClient.setQueryHandler(queryHandler);
         localClient.setConfigHandler(configHandler);
+        localClient.setAutoReconnect(true);
+
 
         CompletableFuture<Boolean> connecter = localClient.initiateWebsocketConnection(url);
         try {
@@ -171,7 +174,8 @@ public class OpcUaSource {
 
         if (sourcesSucceeded && localClient.isOpen()) {
             try {
-                Thread.sleep(10000 * 1000);
+                CountDownLatch latch = new CountDownLatch(1);
+                latch.await();
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
