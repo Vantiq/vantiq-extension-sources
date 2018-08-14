@@ -1,3 +1,11 @@
+/*
+ * Copyright (c) 2018 Vantiq, Inc.
+ *
+ * All rights reserved.
+ *
+ * SPDX: MIT
+ */
+
 package io.vantiq.extsrc.opcua.io.vantiq.extsrc.opcua.sampleServer;
 
 
@@ -9,9 +17,8 @@ import java.util.concurrent.TimeUnit;
 
 
 /**
- * This class is just present as a simple way run the (milo) example server as an external server.
+ * This class is present as a simple way run the (milo) example server as an external server.
  * Simply running this "test" will start the server then then stall for the given amount of time.
- *
  */
 @Slf4j
 public class RunExampleServer {
@@ -21,6 +28,11 @@ public class RunExampleServer {
 
     public static long durationOfRun = DURATION_30_MINUTES;
 
+    /**
+     * Start example server to run for a while.
+     * <p>
+     * Used primarily for demos & manual testing.
+     */
     public void testRunAWhile() {
         try {
             long hours = TimeUnit.MILLISECONDS.toHours(durationOfRun);
@@ -37,12 +49,9 @@ public class RunExampleServer {
             log.info("Running example server for {}", durationString);
 
             Thread.sleep(durationOfRun);
-        }
-        catch (InterruptedException e) {
+        } catch (InterruptedException e) {
             System.out.println("Interrupted...)");
-        }
-        catch (Exception e)
-        {
+        } catch (Exception e) {
             log.error("Trapped exception during ExampleServer startup: " + Utils.errFromExc(e));
         }
     }

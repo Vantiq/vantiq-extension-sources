@@ -1,3 +1,11 @@
+/*
+ * Copyright (c) 2018 Vantiq, Inc.
+ *
+ * All rights reserved.
+ *
+ * SPDX: MIT
+ */
+
 package io.vantiq.extsrc.opcua.uaOperations;
 
 import org.eclipse.milo.examples.server.ExampleNamespace;
@@ -21,6 +29,10 @@ import lombok.extern.slf4j.Slf4j;
 
 
 import static org.junit.Assert.fail;
+
+/**
+ * Handle tests for overall monitoring tasks used in the Vantiq OPC UA Extension Source
+ */
 
 @Slf4j
 public class Monitoring extends OpcUaTestBase {
@@ -59,8 +71,6 @@ public class Monitoring extends OpcUaTestBase {
         // It's also the case that purportedly ns=0 is reserved for OPC, is it should always be valid.
         // Nonetheless, we'll test that it works both ways...
 
-//        timeMap.put(OpcUaESClient.CONFIG_MI_NAMESPACE_INDEX,
-//                Identifiers.Server_ServerStatus_CurrentTime.getNamespaceIndex().toString());
         timeMap.put(OpcUaESClient.CONFIG_MI_NAMESPACE_URN,
                 Namespaces.OPC_UA);
         timeMap.put(OpcUaESClient.CONFIG_MI_IDENTIFIER,

@@ -1,5 +1,4 @@
 /*
- * Copyright (c) 2018 Vantiq, Inc.
  * Copyright (c) 2017 Kevin Herron
  *
  * Copy of HostnameUtils in Milo (server) project.  Copied here to avoid bringing in all of the server jar file (since

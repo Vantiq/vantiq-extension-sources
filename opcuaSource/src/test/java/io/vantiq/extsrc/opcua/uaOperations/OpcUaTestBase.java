@@ -1,3 +1,11 @@
+/*
+ * Copyright (c) 2018 Vantiq, Inc.
+ *
+ * All rights reserved.
+ *
+ * SPDX: MIT
+ */
+
 package io.vantiq.extsrc.opcua.uaOperations;
 
 import lombok.extern.slf4j.Slf4j;
@@ -14,13 +22,14 @@ import java.security.KeyPair;
 import java.security.NoSuchAlgorithmException;
 import java.security.cert.X509Certificate;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.regex.Pattern;
 
 import static org.junit.Assert.fail;
 
+/**
+ * Base class for tests of the OPC UA source
+ */
 @Slf4j
 public class OpcUaTestBase {
     public static final String STANDARD_STORAGE_DIRECTORY = "/tmp/opcua-storage";
@@ -44,6 +53,9 @@ public class OpcUaTestBase {
 //        Security.addProvider(new BouncyCastleProvider());
 //    }
 
+    /**
+     * Clear out any existing storage used in previous tests.
+     */
     @BeforeClass
     public static void clearCruft() {
         Utils.deleteStorage(STANDARD_STORAGE_DIRECTORY);
@@ -51,6 +63,15 @@ public class OpcUaTestBase {
         Utils.deleteStorage(securityTempDir.getPath());
     }
 
+    /**
+     * Perform set up for tests.
+     *
+     * Setup includes the following tasks:
+     *   - create key store for server & client
+     *   - create client certificates
+     *   - create trusted & untrusted/invalid certificates for use in connection testing
+     *   - start ExampleServer -- the OPC UA server against which we test
+     */
     @Before
     public void setup() {
         try {
@@ -73,7 +94,7 @@ public class OpcUaTestBase {
 
             X509Certificate cert = ksm.getClientCertificate();
 
-            trustCertificateServer(cert);
+            trustCertificateOnServer(cert);
 
             // For testing purposes, we're going to some more trusted & untrusted certificate that we'll use to test
             // Cert-based authentication.
@@ -100,11 +121,25 @@ public class OpcUaTestBase {
 
     }
 
-    public void trustCertificateServer(X509Certificate theCert) throws Exception {
+    /**
+     * Arrange for the client's certificate to be trusted by the server
+     * @param theCert certificate to be trusted
+     * @throws Exception
+     */
+    public void trustCertificateOnServer(X509Certificate theCert) throws Exception {
         DirectoryCertificateValidator certificateValidator = new DirectoryCertificateValidator(pkiDir);
         certificateValidator.addTrustedCertificate(theCert);
     }
 
+    /**
+     * Create certificate (self-signed) for use in the tests
+     *
+     * @param alias Alias/key by which the certificate in question can be referenced
+     * @param commonName Name for the entity identified by the certificate
+     * @param appUri URI for the application being used
+     * @param trustIt Whether the certificate should be trusted or untrusted/invalid.  Untrusted used in tests.
+     * @return The certificate created.
+     */
     public X509Certificate createCertificate(String alias, String commonName, String appUri, boolean trustIt) {
         KeyPair keyPair;
         X509Certificate certificate = null;
@@ -149,7 +184,7 @@ public class OpcUaTestBase {
             ksm.addCert(alias, keyPair.getPrivate(), certificate);
 
             if (trustIt) {
-                trustCertificateServer(certificate);
+                trustCertificateOnServer(certificate);
             }
         } catch (NoSuchAlgorithmException e) {
             Utils.unexpectedException(e);
@@ -160,6 +195,12 @@ public class OpcUaTestBase {
         return certificate;
     }
 
+    /**
+     * Cleanup after tests
+     *
+     * Performs cleanup functions.  These include
+     *   - Shutting down the test server
+     */
     @After
     public void cleanup() {
         try {

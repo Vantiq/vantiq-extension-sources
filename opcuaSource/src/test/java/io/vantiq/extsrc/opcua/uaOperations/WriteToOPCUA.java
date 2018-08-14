@@ -1,9 +1,17 @@
+/*
+ * Copyright (c) 2018 Vantiq, Inc.
+ *
+ * All rights reserved.
+ *
+ * SPDX: MIT
+ */
+
 package io.vantiq.extsrc.opcua.uaOperations;
 
 import org.eclipse.milo.examples.server.ExampleNamespace;
 import org.eclipse.milo.opcua.stack.core.security.SecurityPolicy;
-
 import org.eclipse.milo.opcua.stack.core.types.enumerated.MessageSecurityMode;
+
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -13,6 +21,10 @@ import java.util.Map;
 import lombok.extern.slf4j.Slf4j;
 
 import static org.junit.Assert.fail;
+
+/**
+ * Tests concerning writes to OPC UA
+ */
 
 @Slf4j
 public class WriteToOPCUA extends OpcUaTestBase {

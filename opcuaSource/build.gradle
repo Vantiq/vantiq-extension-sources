@@ -1,22 +1,35 @@
 group 'io.vantiq'
 version 'unspecified'
 
-apply plugin: 'groovy'
+buildscript {
+    repositories { jcenter() }
+    dependencies {
+        classpath 'com.github.jengelman.gradle.plugins:shadow:2.0.0'
+    }
+}
+
 apply plugin: 'java'
+apply plugin: 'idea'
+apply plugin: 'eclipse'
 
 sourceCompatibility = 1.8
 
 ext {
     jacksonVersion = '2.9.3'
     eclipseMiloVersion = '0.2.1'
+    lombokVersion = '1.16.18'
 }
 
 repositories {
     mavenCentral()
+    jcenter()
 }
 
 dependencies {
+    // compile files('../extjsdk/build/libs/extjsdk-all.jar')
     compile project(":extjsdk")
+
+    compile "org.projectlombok:lombok:${lombokVersion}"
     compile "com.fasterxml.jackson.core:jackson-databind:${jacksonVersion}"
     compile 'commons-cli:commons-cli:1.4'
     compile 'org.codehaus.groovy:groovy-all:2.3.11'

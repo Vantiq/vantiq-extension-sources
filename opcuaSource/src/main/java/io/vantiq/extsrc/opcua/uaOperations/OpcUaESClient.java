@@ -1,3 +1,11 @@
+/*
+ * Copyright (c) 2018 Vantiq, Inc.
+ *
+ * All rights reserved.
+ *
+ * SPDX: MIT
+ */
+
 package io.vantiq.extsrc.opcua.uaOperations;
 
 import com.google.common.collect.ImmutableList;
@@ -50,6 +58,12 @@ import java.util.function.BiConsumer;
 
 import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.uint;
 
+/**
+ * Client for working with OPCUA Server.
+ *
+ * Performs specific tasks that the Vantiq OPC UA Source needs.
+ */
+
 @Slf4j
 public class OpcUaESClient {
 
@@ -83,19 +97,33 @@ public class OpcUaESClient {
     protected CompletableFuture<Void> connectFuture = null;
     private final AtomicLong clientToMILink = new AtomicLong(1);
     private boolean connected = false;
+    private static String defaultStorageDirectory = null;
+    private String storageDirectory;
+
+
 
     // For testing
 
+    /**
+     * Fetch the configuration object (map).  Used in testing.
+     * @return Map represeting the configuration.
+     */
     public Map<String, Object> getConfig() {
         return config;
     }
 
-    private static String defaultStorageDirectory = null;
-    private String storageDirectory = null;
-
+    /**
+     * Set storage directory used by this source
+     * @param dir directory in question
+     */
     public static void setDefaultStorageDirectory(String dir) {
         defaultStorageDirectory = dir;
     }
+
+    /**
+     * Return storage directory in use
+     * @return Directory in use.
+     */
     public static String getDefaultStorageDirectory() { return defaultStorageDirectory;}
 
 
@@ -146,10 +174,23 @@ public class OpcUaESClient {
         }
     }
 
+    /**
+     * Is client currently connected to an OPC UA Server
+     * @return
+     */
     public boolean isConnected() {
         return connected;
     }
 
+    /**
+     * Connect the client to the OPC UA server
+     *
+     * Performs a synchronous connectino to the server, throwing exceptions when failures occur.
+     *
+     * @throws ExecutionException Thrown by underlying connection to server when the connection cannot be made
+     * @throws OpcExtConfigException Thrown when the server in question is not available
+     * @throws OpcExtRuntimeException Thrown when the server connection call is interrupted
+     */
     public void connect() throws ExecutionException, OpcExtConfigException, OpcExtRuntimeException {
         try {
             client.connect().get();
@@ -166,6 +207,15 @@ public class OpcUaESClient {
         }
     }
 
+    /**
+     * Connect the client to the OPC UA server
+     *
+     * Performs an asynchronous connectino to the server, throwing exceptions when failures occur.  Connection attempt
+     * is run using the simple CompletableFuture.runAsync() method, so from the default pool.
+     *
+     * @throws Exception Thrown by underlying connection to server when the connection cannot be made
+     * @return CompletableFuture\<Void\> from which the connection status can be determined.
+     */
     public CompletableFuture<Void> connectAsync() throws Exception {
         connectFuture = CompletableFuture.runAsync(() -> {
                     try {
@@ -180,10 +230,19 @@ public class OpcUaESClient {
         return connectFuture;
     }
 
+    /**
+     * Fetch the CompletableFuture used to make the connection, if any.  If a synchronous connection was made,
+     * this will return null.
+     *
+     * @return CompletableFuture\<Void\> used to make the OPC UA Client connection, if any.  Null if none was created.
+     */
     public CompletableFuture<Void> getConnectFuture() {
         return connectFuture;
     }
 
+    /**
+     * Disconnection client from OPC UA Server
+     */
     public void disconnect() {
         if (connected) {
             try {
@@ -600,7 +659,7 @@ public class OpcUaESClient {
                                     throw new OpcExtRuntimeException(ERROR_PREFIX + ".badNamespaceURN:  Namespace URN "
                                             + ent.getValue().get(CONFIG_MI_NAMESPACE_URN) + " does not exist in the OPC server.");
                                 }
-                            } else if (ent.getValue().containsKey(CONFIG_MI_NAMESPACE_INDEX)) { // FIXME -- should we disallow this form since it's not stable over reboots?  I think yes, but it is convenient
+                            } else if (ent.getValue().containsKey(CONFIG_MI_NAMESPACE_INDEX)) { // TODO -- should we disallow this form since it's not stable over reboots?  I think yes, but it is convenient
                                 nsIndex = UShort.valueOf(ent.getValue().get(CONFIG_MI_NAMESPACE_INDEX));
                             } else {
                                 String errMsg = MessageFormatter.arrayFormat(ERROR_PREFIX + ".invalidMonitoredItem: Monitored Item {} has no namespace index: {}",
@@ -622,7 +681,7 @@ public class OpcUaESClient {
 
                         MonitoringParameters parms = new MonitoringParameters(
                                 localHandle,
-                                1000.0,     // sampling interval // FIXME -- We should allow this to be adjustable
+                                1000.0,     // sampling interval // TODO -- We should allow this to be adjustable
                                 null,       // filter, null means use default
                                 uint(10),   // queue size
                                 true        // discard oldest
@@ -694,43 +753,4 @@ public class OpcUaESClient {
         }
         return nodeIdentifier;
     }
-
-    /**
-     *
-     * FIXME -- Need to determine if just replicating this is good idea or whether
-     * We should be turning it into a query specified via browse.  That is, we'd return
-     * values instead of this node-browse junk.
-     *
-     * return list of nodes obtained via browse() operations
-     *
-     * @param nodeList List of specifications for nodes. Each can be either a nodeId or a (namespace, identifier) pair.
-     * @param depthLimit How far down the tree to go.  Bounded by overall depth limit setting in configuration.
-     * @param direction Forward or backward (defaults to forward)
-     * @param typeToFollow NodeId for ReferenceType to follow.  Defaults to Reference types.
-     * @param includeSubtypes Boolean for whether to include subtypes of typeToFollow
-     * @param resultTypes list of result types to return.  Defaults to Variable and Object nodes
-     * @param resultFields list of fields to return.  Defaults to all.
-     */
-
-    /**
-     * Return values specified by browsing.
-     *
-     * FIXME -- this has issues that you might get a variety of things back with no way to know what to expect.
-     * FIXME -- to work within a SELECT-style framework, doing the pure browse version then asking for
-     * FIXME -- data about specific nodes is probably preferable.  To some extent, we really need to see
-     * FIXME -- if/how people use this.  Then, we can evaluate ER's to determine the correct path.
-     *
-     * FIXME -- Alternatively, provide the ability to specify in more detail what (single, possibly subtyped)
-     * FIXME -- Variable nodes to return, as these will all have the same type.  This may be possible, but if we
-     * FIXME -- want to enforce it, it may be tricky.  Alternatively, we just ask for a name, look it up.
-     * FIXME -- If it exists, then we use it; otherwise, either throw an error OR return an empty list.
-     *
-     * Returns the value attributes from Variable nodes found by following references via the OPC UA Browse operations.
-     * This method will
-     *
-     * @param nodeList List of specifications for nodes. Each can be either a nodeId or a (namespace, identifier) pair.
-     * @param depthLimit How far down the tree to go.  Bounded by overall depth limit setting in configuration.
-     *
-     */
-
 }

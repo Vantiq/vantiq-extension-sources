@@ -1,3 +1,11 @@
+/*
+ * Copyright (c) 2018 Vantiq, Inc.
+ *
+ * All rights reserved.
+ *
+ * SPDX: MIT
+ */
+
 package io.vantiq.extsrc.opcua.uaOperations;
 
 import static org.junit.Assert.fail;
@@ -8,7 +16,6 @@ import org.eclipse.milo.opcua.stack.core.types.structured.EndpointDescription;
 import org.junit.Assert;
 import org.junit.Test;
 
-import java.security.cert.X509Certificate;
 import java.util.Arrays;
 import java.util.EnumSet;
 import java.util.HashMap;
@@ -19,6 +26,10 @@ import java.util.concurrent.CompletionException;
 import java.util.concurrent.ExecutionException;
 
 import lombok.extern.slf4j.Slf4j;
+
+/**
+ * Run tests testing connection to OPC UA Server
+ */
 
 @Slf4j
 public class Connection extends OpcUaTestBase {

@@ -51,16 +51,39 @@ class KeyStoreManager {
     private KeyStore keyStore;
     private File keyStoreFile;
 
+    /**
+     * Load keystore from file
+     *
+     * @param baseDir Directory in which keystore is located
+     * @param password Password to gain access to keystore
+     * @return KeyStoreManager created by loading the keystore
+     * @throws Exception
+     */
     KeyStoreManager load(File baseDir, String password) throws Exception {
         providedPassword = password.toCharArray();
         return load(baseDir);
     }
 
+    /**
+     * Load keystore from file
+     *
+     * @param baseDir Directory in which keystore is located
+     * @param password Password to gain access to keystore
+     * @return KeyStoreManager created by loading the keystore
+     * @throws Exception
+     */
     KeyStoreManager load(File baseDir, char[] password) throws Exception {
         providedPassword = password;
         return load(baseDir);
     }
 
+    /**
+     * Load keystore from file
+     *
+     * @param baseDir Directory in which keystore is located
+     * @return KeyStoreManager created by loading the keystore
+     * @throws Exception
+     */
     KeyStoreManager load(File baseDir) throws Exception {
         keyStore = KeyStore.getInstance("PKCS12");
 
@@ -110,20 +133,41 @@ class KeyStoreManager {
         return this;
     }
 
+    /**
+     * Add certificate identified by alias to keystore
+     * @param alias Alias for the certificate in question
+     * @param pKey Private key for the certificate
+     * @param cert The certificate to add
+     * @throws Exception Based on problems with the certificate, key, or alias.
+     */
     void addCert(String alias, PrivateKey pKey, X509Certificate cert) throws Exception {
         keyStore.setKeyEntry(alias, pKey, providedPassword, new X509Certificate[]{cert});
         keyStore.store(new FileOutputStream(keyStoreFile), providedPassword);
     }
 
+    /**
+     * Returns the client certificate used in tests
+     * @return
+     */
     X509Certificate getClientCertificate() {
         return clientCertificate;
     }
 
+    /**
+     * Returns the key pair for the client certificate used for tests
+     * @return
+     */
     KeyPair getClientKeyPair() {
         return clientKeyPair;
     }
 
-
+    /**
+     * Find a certificate in the keyStore identified by the provided alias.
+     *
+     * @param alias
+     * @return
+     * @throws OpcExtKeyStoreException
+     */
     X509Certificate fetchCertByAlias(String alias) throws OpcExtKeyStoreException {
         try {
             X509Certificate retVal = (X509Certificate) keyStore.getCertificate(alias);
@@ -147,6 +191,14 @@ class KeyStoreManager {
             throw new OpcExtKeyStoreException(errMsg, e);
         }
     }
+
+    /**
+     * Find the private key for the certificate identified by the provided alias.
+     *
+     * @param alias
+     * @return
+     * @throws OpcExtKeyStoreException
+     */
     PrivateKey fetchPrivateKeyByAlias(String alias) throws OpcExtKeyStoreException {
         try {
             Key certPrivateKey = keyStore.getKey(alias, providedPassword);
@@ -171,5 +223,4 @@ class KeyStoreManager {
             throw new OpcExtKeyStoreException(errMsg, e);
         }
     }
-
 }

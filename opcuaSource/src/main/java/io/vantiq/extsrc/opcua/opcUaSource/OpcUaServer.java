@@ -1,3 +1,11 @@
+/*
+ * Copyright (c) 2018 Vantiq, Inc.
+ *
+ * All rights reserved.
+ *
+ * SPDX: MIT
+ */
+
 package io.vantiq.extsrc.opcua.opcUaSource;
 
 import io.vantiq.extsrc.opcua.uaOperations.OpcUaESClient;
@@ -162,7 +170,7 @@ public class OpcUaServer {
                 configMap.put(OpcUaSource.VANTIQ_SOURCENAME, sourceOpt);
             }
             if (tokenOpt != null) {
-                configMap.put(OpcUaSource.VANTIQ_SOURCENAME, tokenOpt);
+                configMap.put(OpcUaSource.VANTIQ_TOKEN, tokenOpt);
             }
 
         }

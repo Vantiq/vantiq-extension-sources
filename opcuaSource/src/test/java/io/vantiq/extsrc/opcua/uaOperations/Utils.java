@@ -1,10 +1,17 @@
+/*
+ * Copyright (c) 2018 Vantiq, Inc.
+ *
+ * All rights reserved.
+ *
+ * SPDX: MIT
+ */
+
 package io.vantiq.extsrc.opcua.uaOperations;
 
 import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.security.cert.X509Certificate;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
@@ -15,6 +22,9 @@ import org.eclipse.milo.opcua.stack.core.util.Namespaces;
 import static org.junit.Assert.fail;
 import org.junit.Assume;
 
+/**
+ * A collection of Utility methods used by the OPC UA Extension Source unit tests
+ */
 @Slf4j
 public class Utils {
 
@@ -37,6 +47,11 @@ public class Utils {
     public static String OPC_UA_CORE_NAMESPACE = Namespaces.OPC_UA;
 
 
+    /**
+     * Turn an exception into readable text for test diagnostics
+     * @param e The exception in question
+     * @return Reasonable text to describe an exception.
+     */
     public static String errFromExc(Throwable e) {
         return e.getClass().getName() + "::" + e.getMessage();
     }
@@ -51,6 +66,14 @@ public class Utils {
         return makeConnection(config, runAsync, null);
     }
 
+    /**
+     * Perform basic connection to an OPC UA Server
+     * @param config The configuration describing the connection to be made
+     * @param runAsync Whether this should be an async connection or synchronous one
+     * @param testInstance The test instance running.  Used to determine
+     * @return The OpcUaESClient created
+     * @throws ExecutionException Errors returned by underlying connection if connection attempt fails.
+     */
     static public OpcUaESClient makeConnection(Map config, boolean runAsync, OpcUaTestBase testInstance) {
         try {
             return makeConnection(config, runAsync, testInstance, false);
@@ -60,14 +83,31 @@ public class Utils {
         }
     }
 
+    /**
+     * Perform basic connection to an OPC UA Server
+     * @param config The configuration describing the connection to be made
+     * @param runAsync Whether this should be an async connection or synchronous one
+     * @param testInstance The test instance running.  Used to determine
+     * @param startProcessOnly Whether this method should evaluate the success or just kick off the result
+     * @return The OpcUaESClient created
+     * @throws ExecutionException Errors returned by underlying connection if connection attempt fails.
+     */
     static public OpcUaESClient makeConnection(Map config, boolean runAsync, OpcUaTestBase testInstance, boolean startProcessOnly) throws ExecutionException {
         return makeConnection(config, runAsync, testInstance, startProcessOnly, false);
     }
 
-
+    /**
+     * Perform basic connection to an OPC UA Server
+     * @param config The configuration describing the connection to be made
+     * @param runAsync Whether this should be an async connection or synchronous one
+     * @param testInstance The test instance running.  Used to determine
+     * @param startProcessOnly Whether this method should evaluate the success or just kick off the result
+     * @param expectFailure Whether this connection is expected to succeed.
+     * @return The OpcUaESClient created
+     * @throws ExecutionException Errors returned by underlying connection if connection attempt fails.
+     */
     static public OpcUaESClient makeConnection(Map config, boolean runAsync, OpcUaTestBase testInstance, boolean startProcessOnly, boolean expectFailure) throws ExecutionException {
         Map<String, String> opcConfig = (Map<String, String>) config.get(OpcUaESClient.CONFIG_OPC_UA_INFORMATION);
-        //deleteStorage(opcConfig.get(OpcUaESClient.CONFIG_STORAGE_DIRECTORY));
         String discoveryPoint = opcConfig.get(OpcUaESClient.CONFIG_DISCOVERY_ENDPOINT);
 
         OpcUaESClient client = null;
@@ -154,6 +194,10 @@ public class Utils {
         }
     }
 
+    /**
+     * Fail the test after printing information about the exception.
+     * @param e Exception causing the failure.
+     */
     public static void unexpectedException(Exception e) {
         if (e.getCause() != null) {
             e.getCause().printStackTrace();
