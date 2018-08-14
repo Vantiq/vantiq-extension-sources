@@ -15,7 +15,7 @@ import edu.ml.tensorflow.ObjectDetector;
  *  <li>{@code labelFile}: Required. The labels for the model.
  * </ul> 
  */
-public class YoloProcessor extends NeuralNetInterface {
+public class YoloProcessor implements NeuralNetInterface {
     
     Logger log = LoggerFactory.getLogger(this.getClass());
     String pbFile = null;
@@ -29,6 +29,7 @@ public class YoloProcessor extends NeuralNetInterface {
     public void setupImageProcessing(Map<String, ?> neuralNetConfig, String modelDirectory) throws Exception {
         setup(neuralNetConfig, modelDirectory);
         try {
+            // TODO bring back option to save images with/without the annotations
             objectDetector = new ObjectDetector(pbFile, labelsFile);
         } catch (Exception e) {
             throw new Exception("Failed to create new ObjectDetector", e);

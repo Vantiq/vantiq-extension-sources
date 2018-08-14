@@ -26,7 +26,7 @@ import jep.NDArray;
  *                  enough to include in the output, on a scale of 0-1 (exclusive). Default is 0.5. 
  * </ul>
  */
-public class DarkflowProcessor extends NeuralNetInterface{
+public class DarkflowProcessor implements NeuralNetInterface{
     
     Logger log = LoggerFactory.getLogger(this.getClass());
     Jep jep = null;
