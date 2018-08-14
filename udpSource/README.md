@@ -183,4 +183,8 @@ Additionally, if the output map had instead been
 then the resulting map would be exactly the same, as the Map in lvl2 would have been overwritten by the new value.
 
 ## Licensing
-This program uses three licensed libraries: slf4j, okhttp3, and jackson-databind. okhttp3 and jackson-databind are both licensed under [Apache Version 2.0 License](http://www.apache.org/licenses/LICENSE-2.0). slf4j is licensed under [terms](https://www.slf4j.org/license.html) identical to the [MIT License](https://opensource.org/licenses/MIT). This SDK will be licensed under the the Apache Version 2.0 License in order to conform with the used libraries.
+This program uses several licensed libraries. 
+okhttp3 and jackson-databind are both licensed under [Apache Version 2.0 License](http://www.apache.org/licenses/LICENSE-2.0). 
+slf4j is licensed under [terms](https://www.slf4j.org/license.html) identical to the [MIT License](https://opensource.org/licenses/MIT).
+logback is licensed under either the [Eclipse Public License v1.0](http://www.eclipse.org/legal/epl-v10.html) or [Lesser GPL v2.1](www.gnu.org/licenses/old-licenses/lgpl-2.1.html), at the licensee's discretion.
+This library will be licensed under the the Apache Version 2.0 License. HOWEVER, due to the inclusion of logback this library is covered by the licensee's choice of the more restrictive LGPL or EPL licenses. It is this author's (uninformed, unofficial, non-expert) belief that if you replace logback with a less restrictive slf4j implementation then this library will instead be covered by Apache v2.0 and any terms included in the new slf4j implementation. It is advised that you seek professional legal counsel before following the above advice.
