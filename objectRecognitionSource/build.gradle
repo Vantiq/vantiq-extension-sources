@@ -20,8 +20,8 @@ dependencies {
     compile "org.slf4j:slf4j-api:1.7.25"
     compile "ch.qos.logback:logback-classic:1.2.3"
     
-    // Used by CameraRetriever alone. Can be removed if CameraRetriever is removed
-    compile "org.openpnp:opencv:3.2.0-0"
+    // Used by CameraRetriever and FileRetriever. Can be removed if both CameraRetriever and FileRetriever are removed
+    compile "org.openpnp:opencv:3.4.2-0"
     
     compile "com.fasterxml.jackson.core:jackson-databind:2.9.3"
     
