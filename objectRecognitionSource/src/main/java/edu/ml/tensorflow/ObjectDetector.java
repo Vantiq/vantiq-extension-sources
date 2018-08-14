@@ -34,7 +34,7 @@ public class ObjectDetector {
 
     // This will be used to create
     // "year-month-date-hour-minute-seconds"
-    private static SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd-HH:mm:ss");
+    private static SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd--HH-mm-ss");
     
     private ImageUtil imageUtil;
     private int saveRate = 0;
@@ -64,6 +64,7 @@ public class ObjectDetector {
             if (outputDir != null) {
                 imageUtil = new ImageUtil(outputDir);
                 this.saveRate = saveRate;
+                frameCount = saveRate; // Capture the first image
             }
         } catch (ServiceException ex) {
             throw new IllegalArgumentException("Problem reading files for the yolo graph.", ex);
@@ -71,9 +72,11 @@ public class ObjectDetector {
         
         yoloGraph = createYoloGraph();
         yoloSession = new Session(yoloGraph);
+        yoloSession.runner(); // TODO Testing if this will change where the loading occurs
         
         normalizerGraph = createNormalizerGraph();
         normalizerSession = new Session(normalizerGraph);
+        normalizerSession.runner(); // TODO Testing if this will change where the loading occurs
     }
 
     /**

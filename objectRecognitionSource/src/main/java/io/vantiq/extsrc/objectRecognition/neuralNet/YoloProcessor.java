@@ -14,11 +14,11 @@ import edu.ml.tensorflow.ObjectDetector;
  *  <li>{@code pbFile}: Required. The .pb file for the model.
  *  <li>{@code labelFile}: Required. The labels for the model.
  *  <li>{@code outputDir}: Optional. The directory in which the images (object boxes included) will be placed. Images 
- *                  will be saved as "&lt;year&gt;-&lt;month&gt;-&lt;day&gt;-&lt;hour&gt;:&lt;minute&gt;:&lt;second&gt;.jpg"
- *                  where each value will zero-filled if necessary, e.g. "2018-08-14-06:30:22" No images
+ *                  will be saved as "&lt;year&gt;-&lt;month&gt;-&lt;day&gt;--&lt;hour&gt;-&lt;minute&gt;-&lt;second&gt;.jpg"
+ *                  where each value will zero-filled if necessary, e.g. "2018-08-14--06-30-22" No images
  *                  will be saved if not set.
- *  <li>{@code saveRate}: Optional. The rate at which images will be saved, once every n frames captured. Default is 1
- *                  when unset or a non-positive number. Does nothing if outputDir is not set.
+ *  <li>{@code saveRate}: Optional. The rate at which images will be saved, once in every n frames captured starting 
+ *                  with the first. Default is 1 when unset or a non-positive number. Does nothing if outputDir is not set.
  * </ul> 
  */
 public class YoloProcessor implements NeuralNetInterface {
@@ -60,7 +60,7 @@ public class YoloProcessor implements NeuralNetInterface {
        if (neuralNet.get("outputDir") instanceof String) {
            outputDir = (String) neuralNet.get("outputDir");
            if (neuralNet.get("saveRate") instanceof Integer) {
-               saveRate = (int) neuralNet.get("saveRate");
+               saveRate = (Integer) neuralNet.get("saveRate");
            }
        }
    }

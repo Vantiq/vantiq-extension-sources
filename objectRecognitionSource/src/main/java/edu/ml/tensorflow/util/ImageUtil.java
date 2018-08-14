@@ -50,7 +50,7 @@ public class ImageUtil {
         }
 
         graphics.dispose();
-        saveImage(bufferedImage, outputDir + "/" + fileName);
+        saveImage(bufferedImage, "./" + outputDir + "/" + fileName);
     }
 
     public void saveImage(final BufferedImage image, final String target) {
