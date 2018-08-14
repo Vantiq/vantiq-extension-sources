@@ -6,6 +6,7 @@ import java.nio.file.Files;
 import java.util.Map;
 
 import io.vantiq.extsrc.objectRecognition.ObjectRecognitionCore;
+import io.vantiq.extsrc.objectRecognition.exception.FatalImageException;
 import io.vantiq.extsrc.objectRecognition.exception.ImageAcquisitionException;
 
 import org.opencv.core.Mat;
@@ -13,7 +14,19 @@ import org.opencv.core.MatOfByte;
 import org.opencv.imgcodecs.Imgcodecs;
 import org.opencv.videoio.VideoCapture;
 
-
+/**
+ * This reads files from disk. If it is setup for image files then the file need not be there at initialization, and
+ * messages will be sent only if the file is found. For Queries when setup for image files, a new file can be
+ * specified in the message with option fileLocation, otherwise the initial file is used. If it is setup for video
+ * files, then the file must be there at initialization, and any failed attempts to read will result in the source
+ * closing. The options are:
+ * 
+ * <li>{@code fileLocation}: Required. The location of the file to be read. The file does not need to exist, but
+ *              attempts to access a non-existent file will send an empty message in response to Queries and no message
+ *              for periodic requests.
+ * <li>{@code fileExtension}: Optional. The type of file it is, "mov" for video files, "img" for image files. Defaults
+ *              to image files. 
+ */
 public class FileRetriever implements ImageRetrieverInterface {
 
     File defaultImageFile;
@@ -22,22 +35,25 @@ public class FileRetriever implements ImageRetrieverInterface {
     
     @Override
     public void setupDataRetrieval(Map<String, ?> dataSourceConfig, ObjectRecognitionCore source) throws Exception {
+        if (dataSourceConfig.get("fileExtension") instanceof String) {
+            String ext = (String) dataSourceConfig.get("fileExtension");
+            if (ext.equals("mov")) {
+                isMov = true;
+            }
+        }
         if (dataSourceConfig.get("fileLocation") instanceof String) {
             String imageLocation = (String) dataSourceConfig.get("fileLocation");
-            String fileExtension = (String) dataSourceConfig.get("fileExtension");
-            if (fileExtension.equals("mov")) {
-                isMov = true;
+            if (isMov) {
                 nu.pattern.OpenCV.loadShared();
                 capture = new VideoCapture(imageLocation);
+                if (!capture.isOpened()) {
+                    capture.release();
+                    throw new IllegalArgumentException("Intended video could not be opened");
+                }
             }
             else {
                 defaultImageFile = new File(imageLocation);
-                if ( !(defaultImageFile.exists() && !defaultImageFile.isDirectory() && defaultImageFile.canRead())) {
-                    throw new IllegalArgumentException ("Could not read file at '" + defaultImageFile.getAbsolutePath() + "'");
-                }
             }
-        } else if (dataSourceConfig.get("pollRate") instanceof Integer && 
-                        (Integer) dataSourceConfig.get("pollRate") >= 0) { // Won't be using messages to get the file location
         } else {
             throw new IllegalArgumentException ("File required but not given");
         }
@@ -49,11 +65,15 @@ public class FileRetriever implements ImageRetrieverInterface {
             Mat matrix = new Mat();
     
             capture.read(matrix);
+            if (matrix.empty()) { // Exit if nothing could be read
+                throw new FatalImageException("Video could not be read");
+            }
           
             MatOfByte matOfByte = new MatOfByte();
             Imgcodecs.imencode(".jpg", matrix, matOfByte);
             byte [] imageByte = matOfByte.toArray();
             matOfByte.release();
+            matrix.release();
                     
             return imageByte;
         }
@@ -69,7 +89,7 @@ public class FileRetriever implements ImageRetrieverInterface {
 
     @Override
     public byte[] getImage(Map<String, ?> request) throws ImageAcquisitionException {
-        if (request.get("fileLocation") instanceof String) {
+        if (request.get("fileLocation") instanceof String && !isMov) {
             File imageFile = new File((String) request.get("fileLocation"));
             try {
                 return Files.readAllBytes(imageFile.toPath());

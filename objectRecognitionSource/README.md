@@ -101,9 +101,9 @@ This implementation uses OpenCV to capture images from a camera connected direct
 
 ### File Retriever<a name="fileRet" id="fileRet"></a>
 
-This implementation reads files from the disk. The options for Query messages are identical to the options for configuration, except that the configuration file will be used whenever a Query appears with no file specified. The options are:
-*   fileLocation: Optional. The location of the file to be read. The file does not need to exist, but attempts to access a non-existent file will send an empty message in response to Queries and no message for periodic requests.
-*   fileExtension: Optional. The type of file it is, "mov" for video files, "img" for image files.
+This implementation reads files from the disk. If it is setup for image files then the file need not be there at initialization, and messages will be sent only if the file is found. For Queries when setup for image files, a new file can be specified in the message with option fileLocation, otherwise the initial file is used. If it is setup for video files, then the file must be there at initialization, and any failed attempts to read will result in the source closing. The options are:
+*   fileLocation: Required. The location of the file to be read. The file does not need to exist, but attempts to access a non-existent file will send an empty message in response to Queries and no message for periodic requests.
+*   fileExtension: Optional. The type of file it is, "mov" for video files, "img" for image files. Defaults to image files.
 
 ## Neural Net Interface<a name="netInterface" id="netInterface"></a>
 
