@@ -39,7 +39,7 @@ public class ExtensionWebSocketClient {
     /**
      * An Slf4j logger
      */
-    private final Logger log = LoggerFactory.getLogger(this.getClass());
+    private final Logger log;
     /**
      * The listener that receives and interprets responses from the Vantiq deployment for this client's connection.
      */
@@ -98,6 +98,7 @@ public class ExtensionWebSocketClient {
      */
     public ExtensionWebSocketClient (String sourceName) {
         this.sourceName = sourceName;
+        log = LoggerFactory.getLogger(this.getClass() + "#" + sourceName);
         listener = new ExtensionWebSocketListener(this);
     }
 
@@ -401,7 +402,7 @@ public class ExtensionWebSocketClient {
         ExtensionServiceMessage connectMessage = new ExtensionServiceMessage("");
         connectMessage.connectExtension(ExtensionServiceMessage.RESOURCE_NAME_SOURCES, sourceName, null);
         send(connectMessage);
-        log.trace("Connect message sent to " + sourceName);
+        log.trace("Connect message sent.");
     }
 
     /**
@@ -515,7 +516,6 @@ public class ExtensionWebSocketClient {
         listener = new ExtensionWebSocketListener(this);
         listener.useHandlersFromListener(oldListener);
 
-        log.info("Websocket closed for source " + sourceName);
         if (this.closeHandler != null) {
             this.closeHandler.handleMessage(this);
         }
@@ -557,7 +557,7 @@ public class ExtensionWebSocketClient {
             
             listener.close();
         }
-        log.info("Websocket closed for source '" + sourceName + "'");
+        log.info("Websocket closed.");
     }
 
     /**
