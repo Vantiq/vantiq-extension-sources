@@ -25,9 +25,6 @@ dependencies {
     
     compile "com.fasterxml.jackson.core:jackson-databind:2.9.3"
     
-    // Used by DarkflowProcessor alone. Can be removed if DarkflowProcessor is removed
-    compile "black.ninia:jep:3.8.1"
-
     // Used by YoloProcessor alone. These two dependencies and all files in the edu.* package may be removed if YoloProcessor
     // is removed
     compile "org.tensorflow:tensorflow:1.9.0"
