@@ -1,5 +1,6 @@
 package io.vantiq.extsrc.objectRecognition;
 
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Timer;
@@ -162,27 +163,52 @@ public class ObjectRecognitionCore {
                     + "' failed unrecoverably"
                     , e);
             stop();
+        } catch (RuntimeException e) {
+            log.error("Image retriever had an uncaught runtime exception", e);
+            log.error("Please ask the developer of the image retriever to check for the exception. Exiting...");
+            stop();
         }
         return null;
     }
     
     /**
      * Retrieves an image using the Core's image retriever. Calls stop() if a FatalImageException is received.
-     * @param request   The request sent with a Query message.
+     * @param message   The Query message.
      * @return          The image retrieved in jpeg format, or null if a problem occurred.
      */
-    public synchronized byte[] retrieveImage(Map<String,?> request) {
+    public synchronized byte[] retrieveImage(ExtensionServiceMessage message) {
+        Map<String,?> request = (Map<String,?>) message.getObject();
+        String replyAddress = ExtensionServiceMessage.extractReplyAddress(message);
         if (imageRetriever == null) { // Should only happen if close() was called immediately before retreiveImage()
+            if (client != null) {
+                client.sendQueryError(replyAddress, this.getClass().getName() + ".closed",
+                        "The source closed mid message", null);
+            }
             return null;
         }
+        
         try {
             return imageRetriever.getImage(request);
         } catch (ImageAcquisitionException e) {
             log.warn("Could not obtain requested image.", e);
+            log.debug("Request was: " + request);
+            client.sendQueryError(replyAddress, ImageAcquisitionException.class.getCanonicalName(), 
+                    "Failed to obtain an image with request {0}", new Object[] {request});
         } catch (FatalImageException e) {
             log.error("Image retriever of type '" + imageRetriever.getClass().getCanonicalName() 
                     + "' failed unrecoverably"
                     , e);
+            log.debug("Request was: " + request);
+            client.sendQueryError(replyAddress, FatalImageException.class.getCanonicalName() + ".acquisition", 
+                    "Fatally failed to obtain an image with request {0}", new Object[] {request});
+            stop();
+        } catch (RuntimeException e) {
+            log.error("Image retriever had an uncaught runtime exception", e);
+            log.debug("Request was: " + request);
+            log.error("Please ask the developer of the image retriever to check for the exception. Exiting...");
+            client.sendQueryError(replyAddress, FatalImageException.class.getPackage().getName() 
+                    + ".uncaughtAcquisitionException", 
+                    "Unexpected exception when obtaining an image with request {0}", new Object[] {request});
             stop();
         }
         return null;
@@ -212,8 +238,68 @@ public class ObjectRecognitionCore {
                     , e);
             log.error("Stopping");
             stop();
+        } catch (RuntimeException e) {
+            log.error("Neural net had an uncaught runtime exception", e);
+            log.error("Please ask the developer of the neural net to check for the exception. Exiting...");
+            stop();
         }
     }
+    
+   /**
+    * Processes the image then sends the results to the Vantiq source. Calls stop() if a FatalImageException is
+    * received.
+    * @param image      An OpenCV Mat representing the image to be translated
+    * @param message    The Query message
+    */
+   public void sendDataFromImage(byte[] image, ExtensionServiceMessage message) {
+       Map<String,?> request = (Map<String,?>) message.getObject();
+       String replyAddress = ExtensionServiceMessage.extractReplyAddress(message);
+       if (image == null || image.length == 0) {
+           if (client != null) {
+               client.sendQueryError(replyAddress, this.getClass().getName() + ".closed",
+                       "The source closed mid message", null);
+           }
+           return;
+       }
+       try {
+           synchronized (this) {
+               if (neuralNet == null) { // Should only happen when close() runs just before sendDataFromImage()
+                   if (client != null) {
+                       client.sendQueryError(replyAddress, this.getClass().getPackage().getName() + ".closed",
+                               "The source closed mid message", null);
+                   }
+                   return;
+               }
+               List<Map> data = neuralNet.processImage(image);
+               if (data.isEmpty()) {
+                   client.sendQueryResponse(204, replyAddress, new LinkedHashMap<>());
+               } else {
+                   client.sendQueryResponse(200, replyAddress, data.toArray(new Map[0]));
+               }
+           }
+       } catch (ImageProcessingException e) {
+           log.warn("Could not process image", e);
+           log.debug("Request was: " + request);
+           client.sendQueryError(replyAddress, ImageProcessingException.class.getCanonicalName(), 
+                   "Failed to process the image obtained with request {0}", new Object[] {request});
+       } catch (FatalImageException e) {
+           log.error("Image processor of type '" + neuralNet.getClass().getCanonicalName() + "' failed unrecoverably"
+                   , e);
+           log.debug("Request was: " + request);
+           client.sendQueryError(replyAddress, FatalImageException.class.getCanonicalName() + ".processing", 
+                   "Fatally failed to process the image obtained with request {0}", new Object[] {request});
+           log.error("Stopping");
+           stop();
+       } catch (RuntimeException e) {
+           log.error("Neural net had an uncaught runtime exception", e);
+           log.debug("Request was: " + request);
+           log.error("Please ask the developer of the neural net to check for the exception. Exiting...");
+           client.sendQueryError(replyAddress, FatalImageException.class.getPackage().getName() 
+                   + ".uncaughtProcessingException", 
+                   "Fatally failed to process image with request {0}", new Object[] {request});
+           stop();
+       }
+   }
     
     /**
      * Closes all resources held by this program except for the client. 

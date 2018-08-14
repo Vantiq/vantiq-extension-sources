@@ -3,7 +3,6 @@
 *   [ObjectRecognitionMain](#objRecMain) -- The main function for the program. Connects to sources as specified in a configuration file.
 *   [ObjectRecognitionCore](#core) -- Controls the connection to a source, the input images, and the output.
 *   [ObjectRecognitionConfigHandler](#srcConfig) -- Sets up the neural net and image retriever based on the source's configuration document.
-*   ObjectRecognitionQueryHandler -- Sends data back in response to a query, if the source is configured to handle queries.
 *   [NeuralNetInterface](#netInterface) -- An interface that allows other neural nets to be more easily integrated without changes to the rest of the code.
     *   [YoloProcessor](#yoloNet) -- An implementation of the [You Only Look Once](https://pjreddie.com/darknet/yolo/) (YOLO) object detection software using Java Tensorflow.
 *   [ImageRetrieverInterface](#retrieveInterface) -- An interface that allows different image retrieval mechanisms to be more easily integrated without changes to the rest of the code.
@@ -45,7 +44,7 @@ The ObjectRecognitionCore class handles all the source related functionality. If
 ### Using in Your Code
 
 The ObjectRecognitionCore class has four public functions. The constructor takes in the same arguments passed through the [server config file](#serverConfig), the only difference being that only a single source is expected. `start()` sets everything up and tries to connect to the server, returning true if it works and false if it fails. If you want to use the source purely as defined elsewhere in this document, then these are the only two functions you need.
-If you want to obtain images and send them in addition to the data that the source will send normally, the other two functions will be needed. `retrieveImage()` attempts to use the source's image retriever to obtain a jpeg encoded image, returning null if it failed and stopping the Core if it failed unrecoverably. `retrieveImage(Map)` acts identically except that options can be specified depending on the image retriever implementation. `sendDataFromImage(byte[])` takes the image and attempts to process it with the source's neural net then send the results to the source. If the image is null or an error occurs then no data is sent to the source, and if neural net failed unrecoverably then the Core is stopped as well.
+If you want to obtain images and send them in addition to the data that the source will send normally, the other two functions will be needed. `retrieveImage()` attempts to use the source's image retriever to obtain a jpeg encoded image, returning null if it failed and stopping the Core if it failed unrecoverably. `sendDataFromImage(byte[])` takes the image and attempts to process it with the source's neural net then send the results to the source. If the image is null or an error occurs then no data is sent to the source, and if neural net failed unrecoverably then the Core is stopped as well.
 
 ## Source Configuration Document<a name="srcConfig" id="srcConfig"></a>
 

@@ -36,7 +36,6 @@ public class YoloProcessor implements NeuralNetInterface {
     public void setupImageProcessing(Map<String, ?> neuralNetConfig, String modelDirectory) throws Exception {
         setup(neuralNetConfig, modelDirectory);
         try {
-            // TODO bring back option to save images with/without the annotations
             objectDetector = new ObjectDetector(pbFile, labelsFile, outputDir, saveRate);
         } catch (Exception e) {
             throw new Exception("Failed to create new ObjectDetector", e);

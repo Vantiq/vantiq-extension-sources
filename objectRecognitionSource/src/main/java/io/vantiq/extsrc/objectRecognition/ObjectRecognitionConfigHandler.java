@@ -2,6 +2,7 @@ package io.vantiq.extsrc.objectRecognition;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
+import java.util.List;
 import java.util.Map;
 import java.util.Timer;
 import java.util.TimerTask;
@@ -10,6 +11,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import io.vantiq.extjsdk.ExtensionServiceMessage;
+import io.vantiq.extjsdk.ExtensionWebSocketClient;
 import io.vantiq.extjsdk.Handler;
 import io.vantiq.extsrc.objectRecognition.imageRetriever.FileRetriever;
 import io.vantiq.extsrc.objectRecognition.imageRetriever.ImageRetrieverInterface;
@@ -56,6 +58,25 @@ public class ObjectRecognitionConfigHandler extends Handler<ExtensionServiceMess
     String                  sourceName;
     ObjectRecognitionCore   source;
     boolean                 configComplete = false;
+    
+    Handler<ExtensionServiceMessage> queryHandler = new Handler<ExtensionServiceMessage>() {
+        ExtensionWebSocketClient client = source.client;
+        
+        @Override
+        public void handleMessage(ExtensionServiceMessage message) {
+            if ( !(message.getObject() instanceof Map) ) {
+                String replyAddress = ExtensionServiceMessage.extractReplyAddress(message);
+                client.sendQueryError(replyAddress, "io.vantiq.extsrc.objectRecognition.InvalidImageRequest", 
+                        "Request must be a map", null);
+            }
+            byte[] data = source.retrieveImage(message);
+            
+            if (data != null) {
+                source.sendDataFromImage(data, message);
+            }
+            
+        }
+    };
     
     /**
      * Initializes the Handler for a source 
@@ -204,7 +225,7 @@ public class ObjectRecognitionConfigHandler extends Handler<ExtensionServiceMess
                 source.constantPolling = true;
                 new Thread(() -> source.startContinuousRetrievals()).start();
             } else {
-                source.client.setQueryHandler(new ObjectRecognitionQueryHandler(source, source.client));
+                source.client.setQueryHandler(queryHandler);
             }
         } else {
             log.error("No valid polling rate");

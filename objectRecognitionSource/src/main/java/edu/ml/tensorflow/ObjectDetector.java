@@ -72,11 +72,9 @@ public class ObjectDetector {
         
         yoloGraph = createYoloGraph();
         yoloSession = new Session(yoloGraph);
-        yoloSession.runner(); // TODO Testing if this will change where the loading occurs
         
         normalizerGraph = createNormalizerGraph();
         normalizerSession = new Session(normalizerGraph);
-        normalizerSession.runner(); // TODO Testing if this will change where the loading occurs
     }
 
     /**
