@@ -13,6 +13,12 @@ import edu.ml.tensorflow.ObjectDetector;
  * <ul>
  *  <li>{@code pbFile}: Required. The .pb file for the model.
  *  <li>{@code labelFile}: Required. The labels for the model.
+ *  <li>{@code outputDir}: Optional. The directory in which the images (object boxes included) will be placed. Images 
+ *                  will be saved as "&lt;year&gt;-&lt;month&gt;-&lt;day&gt;-&lt;hour&gt;:&lt;minute&gt;:&lt;second&gt;.jpg"
+ *                  where each value will zero-filled if necessary, e.g. "2018-08-14-06:30:22" No images
+ *                  will be saved if not set.
+ *  <li>{@code saveRate}: Optional. The rate at which images will be saved, once every n frames captured. Default is 1
+ *                  when unset or a non-positive number. Does nothing if outputDir is not set.
  * </ul> 
  */
 public class YoloProcessor implements NeuralNetInterface {
@@ -20,7 +26,8 @@ public class YoloProcessor implements NeuralNetInterface {
     Logger log = LoggerFactory.getLogger(this.getClass());
     String pbFile = null;
     String labelsFile = null;
-    double threshold = 0.5;
+    String outputDir = null;
+    int saveRate = 1;
     
     ObjectDetector objectDetector = null;
     
@@ -30,7 +37,7 @@ public class YoloProcessor implements NeuralNetInterface {
         setup(neuralNetConfig, modelDirectory);
         try {
             // TODO bring back option to save images with/without the annotations
-            objectDetector = new ObjectDetector(pbFile, labelsFile);
+            objectDetector = new ObjectDetector(pbFile, labelsFile, outputDir, saveRate);
         } catch (Exception e) {
             throw new Exception("Failed to create new ObjectDetector", e);
         }
@@ -50,10 +57,10 @@ public class YoloProcessor implements NeuralNetInterface {
        } else {
            throw new Exception("Could not find 'pbFile' and/or 'labelFile' in the neuralNet configuration");
        }
-       if (neuralNet.get("threshold") instanceof Double || neuralNet.get("threshold") instanceof Float) {
-           double thresh = (Double) neuralNet.get("threshold");
-           if (thresh >= 0 && thresh <= 1) {
-               threshold = thresh;
+       if (neuralNet.get("outputDir") instanceof String) {
+           outputDir = (String) neuralNet.get("outputDir");
+           if (neuralNet.get("saveRate") instanceof Integer) {
+               saveRate = (int) neuralNet.get("saveRate");
            }
        }
    }
@@ -73,5 +80,4 @@ public class YoloProcessor implements NeuralNetInterface {
     public void close() {
         objectDetector.close();
     }
-
 }

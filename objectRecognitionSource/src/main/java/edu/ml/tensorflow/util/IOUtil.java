@@ -47,4 +47,10 @@ public final class IOUtil {
             throw new ServiceException("Failed to read [" + filename + "]!", ex);
         }
     }
+    
+    public static void createDirIfNotExists(final File directory) {
+        if (!directory.exists()) {
+            directory.mkdir();
+        }
+}
 }
