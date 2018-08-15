@@ -1,9 +1,21 @@
+/*
+ * Copyright (c) 2018 Vantiq, Inc.
+ *
+ * All rights reserved.
+ *
+ * SPDX: MIT
+ */
+
 package io.vantiq.extsrc.opcua.uaOperations;
 
 import com.google.common.collect.ImmutableList;
+import lombok.extern.slf4j.Slf4j;
 import org.eclipse.milo.opcua.sdk.client.OpcUaClient;
 import org.eclipse.milo.opcua.sdk.client.api.config.OpcUaClientConfig;
 import org.eclipse.milo.opcua.sdk.client.api.identity.AnonymousProvider;
+import org.eclipse.milo.opcua.sdk.client.api.identity.IdentityProvider;
+import org.eclipse.milo.opcua.sdk.client.api.identity.UsernameProvider;
+import org.eclipse.milo.opcua.sdk.client.api.identity.X509IdentityProvider;
 import org.eclipse.milo.opcua.sdk.client.api.nodes.VariableNode;
 import org.eclipse.milo.opcua.sdk.client.api.subscriptions.UaMonitoredItem;
 import org.eclipse.milo.opcua.sdk.client.api.subscriptions.UaSubscription;
@@ -20,22 +32,24 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode;
 import org.eclipse.milo.opcua.stack.core.types.builtin.Variant;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UShort;
+import org.eclipse.milo.opcua.stack.core.types.enumerated.MessageSecurityMode;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.MonitoringMode;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.TimestampsToReturn;
 import org.eclipse.milo.opcua.stack.core.types.structured.EndpointDescription;
 import org.eclipse.milo.opcua.stack.core.types.structured.MonitoredItemCreateRequest;
 import org.eclipse.milo.opcua.stack.core.types.structured.MonitoringParameters;
 import org.eclipse.milo.opcua.stack.core.types.structured.ReadValueId;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.slf4j.helpers.MessageFormatter;
 
 import java.io.File;
 import java.net.URI;
+import java.security.PrivateKey;
+import java.security.cert.X509Certificate;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
@@ -44,40 +58,56 @@ import java.util.function.BiConsumer;
 
 import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.uint;
 
+/**
+ * Client for working with OPCUA Server.
+ *
+ * Performs specific tasks that the Vantiq OPC UA Source needs.
+ */
 
+@Slf4j
 public class OpcUaESClient {
 
-    // Constants for use in perusing the configuration Map.
-
-    public static final String CONFIG_OPC_UA_INFORMATION = "opcUAInformation";
-    public static final String CONFIG_OPC_MONITORED_ITEMS = "monitoredItems";
-    public static final String CONFIG_MI_NODEID = "nodeId";
-    public static final String CONFIG_MI_IDENTIFIER = "nodeIdentifier";
-    public static final String CONFIG_MI_IDENTIFIER_TYPE = "nodeIdentifierType"; // One of OPC UA types: {i, s, g, b}
-    // If not present, the assumption is that it's a string
-    public static final String CONFIG_MI_NAMESPACE_INDEX = "ns";        // Short, but the OPCUA Conventiion
-    public static final String CONFIG_MI_NAMESPACE_URN = "nsu";
-    public static final String CONFIG_SECURITY_POLICY = "securityPolicy";
-    public static final String CONFIG_DISCOVERY_ENDPOINT = "discoveryEndpoing";
-    public static final String CONFIG_STORAGE_DIRECTORY = "storageDirectory";
-
-
-    public static final String ERROR_PREFIX = "io.vantiq.extsrc.opcua.uaOperations" + "OpcuaClient";
+    public static final String ERROR_PREFIX = "io.vantiq.extsrc.opcua.uaOperations" + "OpcuaESClient";
     private static final String SECURITY_DIRECTORY = "security";
     protected Map<String, Object> config;
-    protected Logger logger;
     protected OpcUaClient client;
     protected UaSubscription subscription = null;
+    protected String discoveryEndpoint = null;
     protected BiConsumer<String, Object> subscriptionHandler;
     protected List<UInteger> currentMonitoredItemList = null;
+    protected KeyStoreManager keyStoreManager = null;
+    protected CompletableFuture<Void> connectFuture = null;
     private final AtomicLong clientToMILink = new AtomicLong(1);
     private boolean connected = false;
+    private static String defaultStorageDirectory = null;
+    private String storageDirectory;
+
+
 
     // For testing
 
+    /**
+     * Fetch the configuration object (map).  Used in testing.
+     * @return Map represeting the configuration.
+     */
     public Map<String, Object> getConfig() {
         return config;
     }
+
+    /**
+     * Set storage directory used by this source
+     * @param dir directory in question
+     */
+    public static void setDefaultStorageDirectory(String dir) {
+        defaultStorageDirectory = dir;
+    }
+
+    /**
+     * Return storage directory in use
+     * @return Directory in use.
+     */
+    public static String getDefaultStorageDirectory() { return defaultStorageDirectory;}
+
 
     /**
      * Create a client from information in the config document.  This config document is expected
@@ -96,16 +126,14 @@ public class OpcUaESClient {
      * should be secure as security information will be stored here.
      *
      * @param theConfig The config document to use
+     * @throws OpcExtConfigException when a null configuration is passed in
+     * @throws Exception due to other errors during processing the creation of the client
      */
-    OpcUaESClient(Map theConfig) throws OpcExtConfigException, Exception   // FIXME
+    public OpcUaESClient(Map theConfig) throws OpcExtConfigException, Exception
     {
-        // FIXME -- Hook up SLF4J to log4J via config, etc.
-        // Want to put logs into ${theConfig.opcUAInformation.storageDirectory}
-        logger = LoggerFactory.getLogger(getClass());
-
         if (theConfig == null) {
             String errMsg = ERROR_PREFIX + ".nullConfig: Configuration was null";
-            logger.error(errMsg);
+            log.error(errMsg);
             throw new OpcExtConfigException(errMsg);
         }
 
@@ -113,12 +141,41 @@ public class OpcUaESClient {
         config = theConfig; // Store for later use
 
         // Extract OPC information and create the client.
-        Map<String, Object> opcConfig = (Map<String, Object>) theConfig.get(CONFIG_OPC_UA_INFORMATION);
+        Map<String, Object> opcConfig = (Map<String, Object>) theConfig.get(OpcConstants.CONFIG_OPC_UA_INFORMATION);
+        storageDirectory = opcConfig.get(OpcConstants.CONFIG_STORAGE_DIRECTORY) != null
+                ? (String) opcConfig.get(OpcConstants.CONFIG_STORAGE_DIRECTORY) : defaultStorageDirectory;
+
 
         client = createClient(opcConfig);
     }
 
-    public void connect() throws Exception {
+    public X509Certificate getCertificate() {
+        Optional<X509Certificate> maybeCert = client.getConfig().getCertificate();
+        if (maybeCert.isPresent()) {
+            return maybeCert.get();
+        } else {
+            return null;
+        }
+    }
+
+    /**
+     * Is client currently connected to an OPC UA Server
+     * @return boolean indicating whether the client is currently connected
+     */
+    public boolean isConnected() {
+        return connected;
+    }
+
+    /**
+     * Connect the client to the OPC UA server
+     *
+     * Performs a synchronous connectino to the server, throwing exceptions when failures occur.
+     *
+     * @throws ExecutionException Thrown by underlying connection to server when the connection cannot be made
+     * @throws OpcExtConfigException Thrown when the server in question is not available
+     * @throws OpcExtRuntimeException Thrown when the server connection call is interrupted
+     */
+    public void connect() throws ExecutionException, OpcExtConfigException, OpcExtRuntimeException {
         try {
             client.connect().get();
         } catch (ExecutionException e) {
@@ -129,22 +186,53 @@ public class OpcUaESClient {
                 throw e;
             }
         }
+        catch (InterruptedException e) {
+            throw new OpcExtRuntimeException("Connect call as interrupted", e);
+        }
     }
 
+    /**
+     * Connect the client to the OPC UA server
+     *
+     * Performs an asynchronous connectino to the server, throwing exceptions when failures occur.  Connection attempt
+     * is run using the simple CompletableFuture.runAsync() method, so from the default pool.
+     *
+     * @throws Exception Thrown by underlying connection to server when the connection cannot be made
+     * @return CompletableFuture&lt;Void&gt; from which the connection status can be determined.
+     */
     public CompletableFuture<Void> connectAsync() throws Exception {
-        return CompletableFuture.runAsync(() -> {
-                    client.connect().join();
-                    connected = true;
+        connectFuture = CompletableFuture.runAsync(() -> {
+                    try {
+                        client.connect().join();
+                        connected = true;
+                    } catch (Throwable t) {
+                        log.error("Failed to connect to OPC: ", t);
+                        throw t;    // We'll rethrow this so that the future will complete (exceptionally)
+                    }
                 }
         );
+        return connectFuture;
     }
 
+    /**
+     * Fetch the CompletableFuture used to make the connection, if any.  If a synchronous connection was made,
+     * this will return null.
+     *
+     * @return CompletableFuture&lt;Void&gt; used to make the OPC UA Client connection, if any.  Null if none was created.
+     */
+    public CompletableFuture<Void> getConnectFuture() {
+        return connectFuture;
+    }
+
+    /**
+     * Disconnection client from OPC UA Server
+     */
     public void disconnect() {
         if (connected) {
             try {
                 client.disconnect().get();  // Disconnect client & await completion thereof
             } catch (Throwable e) {
-                logger.error(ERROR_PREFIX + ".disconnectFailure: " + e.getMessage());
+                log.error(ERROR_PREFIX + ".disconnectFailure: " + e.getMessage());
             }
         }
         connected = false;
@@ -153,21 +241,25 @@ public class OpcUaESClient {
     private void validateConfiguration(Map config) throws OpcExtConfigException {
         if (config == null) {
             String errMsg = ERROR_PREFIX + ".nullConfig: No configuration was provided.";
-            logger.error(errMsg);
+            log.error(errMsg);
             throw new OpcExtConfigException(errMsg);
-        } else if (config.get(CONFIG_OPC_UA_INFORMATION) == null) {
+        } else if (config.get(OpcConstants.CONFIG_OPC_UA_INFORMATION) == null) {
             String errMsg = ERROR_PREFIX + ".noOPCInformation: Configuration contained no OPC Information.";
             throwError(errMsg);
         }
-        Map<String, String> opcConfig = (Map<String, String>) config.get(CONFIG_OPC_UA_INFORMATION);
+        Map<String, String> opcConfig = (Map<String, String>) config.get(OpcConstants.CONFIG_OPC_UA_INFORMATION);
 
         String errMsg = null;
-        if (!opcConfig.containsKey(CONFIG_STORAGE_DIRECTORY)) {
-            errMsg = ERROR_PREFIX + ".noStorageSpecified: No storageDirectory provided in configuration.";
-        } else if (!opcConfig.containsKey(CONFIG_DISCOVERY_ENDPOINT)) {
-            errMsg = ".noDiscoveryEndpoint: No discovery endpoint was provided in the configuration.";
-        } else if (!opcConfig.containsKey(CONFIG_SECURITY_POLICY)) {
-            errMsg = ".noSecurityPolicy: No OPC UA Security policy was specified in the configuration.";
+        if (!opcConfig.containsKey(OpcConstants.CONFIG_STORAGE_DIRECTORY) && defaultStorageDirectory == null) {
+            errMsg = ERROR_PREFIX + ".noStorageSpecified: No storageDirectory provided in configuration. " +
+                    "The configuration should contain a property: " + OpcConstants.CONFIG_STORAGE_DIRECTORY;
+        } else if (!opcConfig.containsKey(OpcConstants.CONFIG_DISCOVERY_ENDPOINT)) {
+            errMsg = ".noDiscoveryEndpoint: No discovery endpoint was provided in the configuration. " +
+                    "The configuration should contain a property: " +
+                    OpcConstants.CONFIG_DISCOVERY_ENDPOINT;
+        } else if (!opcConfig.containsKey(OpcConstants.CONFIG_SECURITY_POLICY)) {
+            errMsg = ".noSecurityPolicy: No OPC UA Security policy was specified in the configuration. "
+                    + "The configuration should contain a property: " + OpcConstants.CONFIG_SECURITY_POLICY;
         }
 
         if (errMsg != null) {
@@ -177,17 +269,17 @@ public class OpcUaESClient {
     }
 
     private void throwError(String msg) throws OpcExtConfigException {
-        logger.error(msg);
+        log.error(msg);
         throw new OpcExtConfigException(msg);
     }
 
-    private SecurityPolicy getSecurityPolicy(Map<String, Object> config) throws OpcExtConfigException {
+    private SecurityPolicy determineSecurityPolicy(Map<String, Object> config) throws OpcExtConfigException {
         // config.securityPolicy should be the URI for the appropriate security policy.
 
-        String secPolURI = (String) config.get(CONFIG_SECURITY_POLICY);
-        if (secPolURI == null) {
+        String secPolURI = (String) config.get(OpcConstants.CONFIG_SECURITY_POLICY);
+        if (secPolURI == null || secPolURI.isEmpty()) {
             // No security policy will default to #NONE.  We will, however, log a warning
-            logger.warn(ERROR_PREFIX + ".defaultingSecurityPolicy: No OPC UA Security policy was specified in the configuration.  Defaulting to #NONE");
+            log.warn(ERROR_PREFIX + ".defaultingSecurityPolicy: No OPC UA Security policy was specified in the configuration.  Defaulting to #NONE");
             secPolURI = SecurityPolicy.None.getSecurityPolicyUri();
         }
         try {
@@ -195,33 +287,116 @@ public class OpcUaESClient {
             return SecurityPolicy.fromUri(secPolURI);
         } catch (IllegalArgumentException e) {
             String errMsg = ERROR_PREFIX + ".invalidSecurityPolicySyntax: " + secPolURI + " is not a syntactically correct URI";
-            logger.error(errMsg);
+            log.error(errMsg);
             throw new OpcExtConfigException(errMsg, e);
         } catch (UaException e) {
             String errMsg = ERROR_PREFIX + ".invalidSecurityPolicy: " + secPolURI + " is not a valid security URI";
-            logger.error(errMsg);
+            log.error(errMsg);
             throw new OpcExtConfigException(errMsg, e);
         }
     }
 
-    private OpcUaClient createClient(Map<String, Object> config) throws OpcExtConfigException, Exception {
+    private MessageSecurityMode determineMessageSecurityMode(Map<String, Object> config) throws OpcExtConfigException {
+        // config.messageSecurityMode should be the URI for the appropriate security policy.
 
-        SecurityPolicy securityPolicy = getSecurityPolicy(config);
+        String msgSecModeSpec = (String) config.get(OpcConstants.CONFIG_MESSAGE_SECURITY_MODE);
+        MessageSecurityMode msgSecMode;
+        if (msgSecModeSpec == null || msgSecModeSpec.isEmpty()) {
+            // No message security mode will default to either #NONE or #SignAndEncrypt, depending on the security policy.  We will, however, log a warning\
+            SecurityPolicy secPol = determineSecurityPolicy(config);
+            if (secPol.equals(SecurityPolicy.None)) {
+                msgSecModeSpec = MessageSecurityMode.None.toString();
+            } else {
+                msgSecModeSpec = MessageSecurityMode.SignAndEncrypt.toString();
+            }
+            log.warn(ERROR_PREFIX + ".defaultMessageSecurityMode: No OPC UA message security mode was specified in the configuration. " +
+                    "Using default value of '{}' based on the securityPolicy value of '{}'",
+                    msgSecModeSpec,
+                    secPol.getSecurityPolicyUri());
+        }
+        try {
+            msgSecMode = MessageSecurityMode.valueOf(msgSecModeSpec);
+            return msgSecMode;
+        } catch (IllegalArgumentException e) {
+            String errMsg = ERROR_PREFIX + ".invalidMessageSecurityMode: " + msgSecModeSpec + " is not a valid message security mode.";
+            log.error(errMsg);
+            throw new OpcExtConfigException(errMsg, e);
+        }
+    }
 
-        File securityDir = new File((String) config.get(CONFIG_STORAGE_DIRECTORY), SECURITY_DIRECTORY);
+    private static Boolean foundValue(String val) {
+        return val != null && !val.isEmpty();
+    }
+
+    private IdentityProvider constructIdentityProvider(Map<String, Object> config) throws OpcExtConfigException, OpcExtKeyStoreException {
+        IdentityProvider retVal = null;
+
+        String anonymous = (String) config.get(OpcConstants.CONFIG_IDENTITY_ANONYMOUS);
+        boolean anonIsPresent = anonymous != null; // This can be empty -- presence is sufficient
+        String certAlias = (String) config.get(OpcConstants.CONFIG_IDENTITY_CERTIFICATE);
+        boolean certIsPresent = foundValue(certAlias);
+        String userPass = (String) config.get(OpcConstants.CONFIG_IDENTITY_USERNAME_PASSWORD);
+        boolean upwIsPresent = foundValue(userPass);
+        boolean exactlyOnePresent = (anonIsPresent ^ certIsPresent ^ upwIsPresent) ^ (anonIsPresent && certIsPresent && upwIsPresent);
+        // (^ is Java XOR -- I didn't remember it!)
+
+        if (!anonIsPresent && !certIsPresent && !upwIsPresent) {
+            log.warn(ERROR_PREFIX + ".noIdentitySpecification: No identity specification was provided.  Using Anonymous as default.");
+            retVal = new AnonymousProvider();
+        } else if (exactlyOnePresent) {
+            // Now we know there is exactly one of them set.
+            if (anonIsPresent) {
+                retVal = new AnonymousProvider();
+            } else if (certIsPresent) {
+                X509Certificate namedCert = keyStoreManager.fetchCertByAlias(certAlias);
+                PrivateKey pKey = keyStoreManager.fetchPrivateKeyByAlias(certAlias);
+                retVal = new X509IdentityProvider(namedCert, pKey);
+            } else if (upwIsPresent) {
+                String[] upw = userPass.split(",[ ]*");
+                if (upw.length != 2) {
+                    String errMsg = MessageFormatter.arrayFormat(ERROR_PREFIX + ".invalidUserPasswordSpecification: the {} ({}) must contain only a username AND password separated by a comma.",
+                            new Object[]{OpcConstants.CONFIG_IDENTITY_USERNAME_PASSWORD, userPass}).getMessage();
+                    log.error(errMsg);
+                    throw new OpcExtConfigException(errMsg);
+                } else {
+                    retVal = new UsernameProvider(upw[0], upw[1]);
+                }
+            }
+
+        } else {
+                String errMsg = MessageFormatter.arrayFormat(ERROR_PREFIX + ".invalidIdentitySpecification: exactly one identity specification ({}, {}, {}) is required.",
+                        new Object[]{OpcConstants.CONFIG_IDENTITY_ANONYMOUS, OpcConstants.CONFIG_IDENTITY_CERTIFICATE, OpcConstants.CONFIG_IDENTITY_USERNAME_PASSWORD}).getMessage();
+                log.error(errMsg);
+                throw new OpcExtConfigException(errMsg);
+        }
+
+        return retVal;
+    }
+
+    private OpcUaClient createClient(Map<String, Object> config) throws Exception {
+
+        if (storageDirectory == null) {
+            throw new OpcExtConfigException(ERROR_PREFIX + ".missingStorageDirectory: No storage directory specified.");
+        }
+        SecurityPolicy securityPolicy = determineSecurityPolicy(config);
+        MessageSecurityMode msgSecMode = determineMessageSecurityMode(config);
+
+        File securityDir = new File(storageDirectory, SECURITY_DIRECTORY);
         if (!securityDir.exists() && !securityDir.mkdirs()) {
             throw new OpcExtConfigException(ERROR_PREFIX + ".invalidStorageDirectory: unable to create security dir: " + securityDir);
         }
-        logger.info("security temp dir: {}", securityDir.getAbsolutePath());
+        log.info("security temp dir: {}", securityDir.getAbsolutePath());
 
-        KeyStoreManager loader = new KeyStoreManager().load(securityDir);
+        keyStoreManager = new KeyStoreManager().load(securityDir);
+
+        IdentityProvider idProvider = constructIdentityProvider(config);
 
         EndpointDescription[] endpoints;
 
-        String discoveryEndpoint = (String) config.get(CONFIG_DISCOVERY_ENDPOINT);
+        discoveryEndpoint = (String) config.get(OpcConstants.CONFIG_DISCOVERY_ENDPOINT);
         if (discoveryEndpoint == null) {
             String errorMsg = ERROR_PREFIX + ".noDiscoveryEndpoint: No discovery endpoint was provided in the configuration.";
-            logger.error(errorMsg);
+            log.error(errorMsg);
             throw new OpcExtConfigException(errorMsg);
         }
         try {
@@ -232,30 +407,31 @@ public class OpcUaESClient {
             try {
                 // try the explicit discovery endpoint as well
                 String discoveryUrl = discoveryEndpoint + "/discovery";
-                logger.info("Trying explicit discovery URL: {}", discoveryUrl);
+                log.info("Trying explicit discovery URL: {}", discoveryUrl);
                 endpoints = UaTcpStackClient
                         .getEndpoints(discoveryUrl)
                         .get();
             } catch (ExecutionException e) {
-                String errMsg = ERROR_PREFIX + ".discoveryError: Could not discovery OPC Endpoints.";
-                logger.error(ERROR_PREFIX + ".discoveryError: Could not discover OPC Endpoints: {}", e.getClass().getName() + "::" + e.getMessage());
+                String errMsg = ERROR_PREFIX + ".discoveryError: Could not discover OPC Endpoints:"
+                        + e.getClass().getName() + "::" + e.getMessage();
+                log.error(ERROR_PREFIX + ".discoveryError: Could not discover OPC Endpoints: {} :: {}", e.getClass().getName(), e.getMessage());
                 throw new OpcExtConfigException(errMsg, e);
             }
         }
 
         EndpointDescription endpoint = Arrays.stream(endpoints)
-                .filter(e -> e.getSecurityPolicyUri().equals(securityPolicy.getSecurityPolicyUri()))
-                .findFirst().orElseThrow(() -> new Exception("no desired endpoints returned"));
+                .filter(e -> e.getSecurityPolicyUri().equals(securityPolicy.getSecurityPolicyUri()) && e.getSecurityMode().equals(msgSecMode))
+                .findFirst().orElseThrow(() -> new Exception("no acceptable endpoints returned"));
 
-        logger.info("Using endpoint: {} [{}]", endpoint.getEndpointUrl(), securityPolicy);
+        log.info("Using endpoint: {} [{}, {}]", endpoint.getEndpointUrl(), securityPolicy, msgSecMode.toString());
 
         OpcUaClientConfig opcConfig = OpcUaClientConfig.builder()
-                .setApplicationName(LocalizedText.english("eclipse milo opc-ua client"))
-                .setApplicationUri("urn:eclipse:milo:examples:client")
-                .setCertificate(loader.getClientCertificate())
-                .setKeyPair(loader.getClientKeyPair())
+                .setApplicationName(LocalizedText.english("VANTIQ OPC-UA Source"))
+                .setApplicationUri("urn:io:vantiq:extsrc:opcua:client")
+                .setCertificate(keyStoreManager.getClientCertificate())
+                .setKeyPair(keyStoreManager.getClientKeyPair())
                 .setEndpoint(endpoint)
-                .setIdentityProvider(new AnonymousProvider())   // FIXME
+                .setIdentityProvider(idProvider)
                 .setRequestTimeout(uint(5000))
                 .build();
 
@@ -271,9 +447,9 @@ public class OpcUaESClient {
      * Errors result in OpcExtRuntimeExceptions.
      *
      * @param namespaceURN The identity of the OPC UA namespace into which the write is to occur
-     * @param identifier   The node to be written
-     * @param datatype     The datatype of the entity in question.
-     * @param value        The value to be written.
+     * @param identifier The node to be written
+     * @param datatype The datatype of the entity in question.
+     * @param value The value to be written.
      * @throws OpcExtRuntimeException wraps any errors returned by the server.  May also be thrown if the namespace is not found.
      */
     public void writeValue(String namespaceURN, String identifier, String datatype, Object value) throws OpcExtRuntimeException {
@@ -295,10 +471,10 @@ public class OpcUaESClient {
      * The information necessary to write this value is specified by the parameters listed below.
      * Errors result in OpcExtRuntimeExceptions.
      *
-     * @param nsIndex    The namespace index of the OPC UA namespace into which the write is to occur
+     * @param nsIndex The namespace index of the OPC UA namespace into which the write is to occur
      * @param identifier The node to be written
-     * @param datatype   The datatype of the entity in question.
-     * @param value      The value to be written.
+     * @param datatype The datatype of the entity in question.
+     * @param value The value to be written.
      * @throws OpcExtRuntimeException wraps any errors returned by the server.
      */
     public void writeValue(UShort nsIndex, String identifier, String datatype, Object value) throws OpcExtRuntimeException {
@@ -322,11 +498,11 @@ public class OpcUaESClient {
             throw new OpcExtRuntimeException(ERROR_PREFIX + ".unexpectedException: OPC UA Error", e);
         }
         if (status != null && status.isGood()) {
-            logger.debug("Wrote value '{}' to nodeId={}", v, nodesToWrite.get(0));
+            log.debug("Wrote value '{}' to nodeId={}", v, nodesToWrite.get(0));
         } else {
             String errMsg = MessageFormatter.arrayFormat(ERROR_PREFIX + ".writeError: OPC UA Error '{}' performing writeValues() for nodeId={}, value={}",
                     new Object[]{status, nodesToWrite.get(0), value}).getMessage();
-            logger.error(errMsg);
+            log.error(errMsg);
             throw new OpcExtRuntimeException(errMsg);
         }
     }
@@ -340,17 +516,35 @@ public class OpcUaESClient {
      * Errors result in OpcExtRuntimeExceptions.
      *
      * @param namespaceURN The identity of the OPC UA namespace from which the read is to occur
-     * @param identifier   The node to be read
+     * @param identifier The node to be read.  The identifier is assumed to be of type 's' (String).
      * @return the read value (as a Java Object).
      * @throws OpcExtRuntimeException wraps any errors returned by the server.  May also be thrown if the namespace is not found.
      */
 
     public Object readValue(String namespaceURN, String identifier) throws OpcExtRuntimeException {
+        return readValue(namespaceURN, identifier, "s");
+    }
+
+    /**
+     * Read a value from an OPC UA server.
+     * <p>
+     * This method reads the value attribute of a node via the connected OPC US server. Only reads of non-indexed data
+     * are supported (i.e.) one cannot read  some particular index in an array).
+     * The information necessary to read this value is specified by the parameters listed below.
+     * Errors result in OpcExtRuntimeExceptions.
+     *
+     * @param namespaceURN The identity of the OPC UA namespace from which the read is to occur
+     * @param identifier The node to be read
+     * @param identifierType The (OPC) type of the identifier (i, s, g, b) (s/String is the default)
+     * @return the read value (as a Java Object).
+     * @throws OpcExtRuntimeException wraps any errors returned by the server.  May also be thrown if the namespace is not found.
+     */
+    public Object readValue(String namespaceURN, String identifier, String identifierType) throws OpcExtRuntimeException {
         UShort nsIndex = client.getNamespaceTable().getIndex(namespaceURN);
         if (nsIndex == null) {
             throw new OpcExtRuntimeException(ERROR_PREFIX + ".badNamespaceURN:  Namespace URN " + namespaceURN + " does not exist in the OPC server.");
         } else {
-            return readValue(nsIndex, identifier);
+            return readValue(nsIndex, identifier, identifierType);
         }
     }
 
@@ -362,14 +556,18 @@ public class OpcUaESClient {
      * The information necessary to read this value is specified by the parameters listed below.
      * Errors result in OpcExtRuntimeExceptions.
      *
-     * @param nsIndex    The namespace index of the OPC UA namespace from which the read is to occur
+     * @param nsIndex The namespace index of the OPC UA namespace from which the read is to occur
      * @param identifier The node to be read
      * @return the read value (as a Java Object).
      * @throws OpcExtRuntimeException wraps any errors returned by the server.
      */
     public Object readValue(UShort nsIndex, String identifier) throws OpcExtRuntimeException {
+        return readValue(nsIndex, identifier, "s");
+    }
+
+    public Object readValue(UShort nsIndex, String identifier, String identifierType) throws OpcExtRuntimeException {
         try {
-            VariableNode theNode = client.getAddressSpace().getVariableNode(new NodeId(nsIndex, identifier)).get();
+            VariableNode theNode = client.getAddressSpace().getVariableNode(constructNodeId(nsIndex, identifier, identifierType)).get();
             return theNode.readValue().get().getValue().getValue();
         } catch (Exception e) {
             throw new OpcExtRuntimeException(ERROR_PREFIX + ".unexpectedException: OPC UA Error", e);
@@ -387,7 +585,7 @@ public class OpcUaESClient {
      * actual monitored items.  The result is that data value changes to those monitored items will
      * cause the calling of the provided handler.
      *
-     * @param config  The configuration specifying the items to monitor.
+     * @param config The configuration specifying the items to monitor.
      * @param handler The handler to call with data change updates
      * @throws OpcExtRuntimeException In case of errors, etc.
      */
@@ -401,115 +599,109 @@ public class OpcUaESClient {
                 isNewSubscription = true;
             }
 
-            Map<String, Map<String, String>> newMonitoredItems =
-                    (Map<String, Map<String, String>>) ((Map<String, Object>)
-                            config.get(CONFIG_OPC_UA_INFORMATION)).get(CONFIG_OPC_MONITORED_ITEMS);
-            logger.debug("Config requesting {} monitored items", newMonitoredItems.size());
+            Map<String, Object> opcConf = (Map<String, Object>) config.get(OpcConstants.CONFIG_OPC_UA_INFORMATION);
+            Object mis = opcConf.get(OpcConstants.CONFIG_OPC_MONITORED_ITEMS);
 
-            if (currentMonitoredItemList != null && !currentMonitoredItemList.isEmpty()) {
-                // First, if we're currently monitoring anything, remove them.
-                // This can be improved to compare new vs old, but this overkill version is sufficient for now.
-                client.deleteMonitoredItems(subscription.getSubscriptionId(), currentMonitoredItemList).get();
-            }
-            currentMonitoredItemList = new ArrayList<>();
+            if (mis instanceof Map) {
+                Map<String, Map<String, String>> newMonitoredItems = (Map<String, Map<String, String>>) mis;
 
-            // First, create a list of MI requests from our config file.
-            ArrayList<MonitoredItemCreateRequest> reqList = new ArrayList<MonitoredItemCreateRequest>();
-            for (Map.Entry<String, Map<String, String>> ent : newMonitoredItems.entrySet()) {
-                UShort nsIndex;
-                NodeId nodeIdentifier = null;
-
-                // Determine node we wish to monitor...
-
-                // Nodes can be defined in a couple of major ways.  The first includes a nodeId field, which
-                // combines (standard nomenclature in OPC UA) the namespace index & identifer: "ns=3;s=someNode/identifier";
-                // If this nodeId field is present, we ignore other fields as it is a complete specification.
-                // Otherwise, we'll look for the namespace specification (either ns for a numeric namespace index or
-                // nsu for the namespace URN) and a node identifier.  The node identifier can be augmented with a type
-                // (s, i, g, or b for String, Numeric (integer), GUID, or ByteString, respectively) to describe how
-                // the identifier is encoded.  If this is missing, it is assumed to be a string.
-
-                if (ent.getValue().containsKey(CONFIG_MI_NODEID)) {
-                    String nodeIdSpec = ent.getValue().get(CONFIG_MI_NODEID);
-                    nodeIdentifier = NodeId.parse(nodeIdSpec);
+                if (newMonitoredItems == null || newMonitoredItems.isEmpty()) {
+                    log.info("No monitoring requested for OPC UA server with discovery endpoint: {}", discoveryEndpoint);
                 } else {
-                    if (ent.getValue().containsKey(CONFIG_MI_NAMESPACE_URN)) {
-                        nsIndex = client.getNamespaceTable().getIndex(ent.getValue().get(CONFIG_MI_NAMESPACE_URN));
-                        if (nsIndex == null) {
-                            throw new OpcExtRuntimeException(ERROR_PREFIX + ".badNamespaceURN:  Namespace URN "
-                                    + ent.getValue().get(CONFIG_MI_NAMESPACE_URN) + " does not exist in the OPC server.");
+                    log.debug("Config requesting {} monitored items", newMonitoredItems.size());
+
+                    if (currentMonitoredItemList != null && !currentMonitoredItemList.isEmpty()) {
+                        // First, if we're currently monitoring anything, remove them.
+                        // This can be improved to compare new vs old, but this overkill version is sufficient for now.
+                        client.deleteMonitoredItems(subscription.getSubscriptionId(), currentMonitoredItemList).get();
+                    }
+                    currentMonitoredItemList = new ArrayList<>();
+
+                    // First, create a list of MI requests from our config file.
+                    ArrayList<MonitoredItemCreateRequest> reqList = new ArrayList<MonitoredItemCreateRequest>();
+                    for (Map.Entry<String, Map<String, String>> ent : newMonitoredItems.entrySet()) {
+                        UShort nsIndex;
+                        NodeId nodeIdentifier = null;
+
+                        // Determine node we wish to monitor...
+
+                        // Nodes can be defined in a couple of major ways.  The first includes a nodeId field, which
+                        // combines (standard nomenclature in OPC UA) the namespace index & identifer: "ns=3;s=someNode/identifier";
+                        // If this nodeId field is present, we ignore other fields as it is a complete specification.
+                        // Otherwise, we'll look for the namespace specification (either ns for a numeric namespace index or
+                        // nsu for the namespace URN) and a node identifier.  The node identifier can be augmented with a type
+                        // (s, i, g, or b for String, Numeric (integer), GUID, or ByteString, respectively) to describe how
+                        // the identifier is encoded.  If this is missing, it is assumed to be a string.
+
+                        if (ent.getValue().containsKey(OpcConstants.CONFIG_MI_NODEID)) {
+                            String nodeIdSpec = ent.getValue().get(OpcConstants.CONFIG_MI_NODEID);
+                            nodeIdentifier = NodeId.parse(nodeIdSpec);
+                        } else {
+                            if (ent.getValue().containsKey(OpcConstants.CONFIG_MI_NAMESPACE_URN)) {
+                                nsIndex = client.getNamespaceTable().getIndex(ent.getValue().get(OpcConstants.CONFIG_MI_NAMESPACE_URN));
+                                if (nsIndex == null) {
+                                    throw new OpcExtRuntimeException(ERROR_PREFIX + ".badNamespaceURN:  Namespace URN "
+                                            + ent.getValue().get(OpcConstants.CONFIG_MI_NAMESPACE_URN) + " does not exist in the OPC server.");
+                                }
+                            } else if (ent.getValue().containsKey(OpcConstants.CONFIG_MI_NAMESPACE_INDEX)) { // TODO -- should we disallow this form since it's not stable over reboots?  I think yes, but it is convenient
+                                nsIndex = UShort.valueOf(ent.getValue().get(OpcConstants.CONFIG_MI_NAMESPACE_INDEX));
+                            } else {
+                                String errMsg = MessageFormatter.arrayFormat(ERROR_PREFIX + ".invalidMonitoredItem: Monitored Item {} has no namespace index: {}",
+                                        new Object[]{ent.getKey(), ent.getValue()}).getMessage();
+                                throw new OpcExtRuntimeException(errMsg);
+                            }
+                            String nodeIdType = "s";
+                            if (ent.getValue().containsKey(OpcConstants.CONFIG_MI_IDENTIFIER_TYPE)) {
+                                nodeIdType = ent.getValue().get(OpcConstants.CONFIG_MI_IDENTIFIER_TYPE);
+                            }
+                            nodeIdentifier = constructNodeId(nsIndex, ent.getValue().get(OpcConstants.CONFIG_MI_IDENTIFIER), nodeIdType);
                         }
-                    } else if (ent.getValue().containsKey(CONFIG_MI_NAMESPACE_INDEX)) { // FIXME -- should we disallow this form since it's not stable over reboots?  I think yes, but it is convenient
-                        nsIndex = UShort.valueOf(ent.getValue().get(CONFIG_MI_NAMESPACE_INDEX));
-                    } else {
-                        String errMsg = MessageFormatter.arrayFormat(ERROR_PREFIX + ".invalidMonitoredItem: Monitored Item {} has no namespace index: {}",
-                                new Object[]{ent.getKey(), ent.getValue()}).getMessage();
-                        throw new OpcExtRuntimeException(errMsg);
+                        ReadValueId readValueId = new ReadValueId(
+                                nodeIdentifier,
+                                AttributeId.Value.uid(), null, QualifiedName.NULL_VALUE);
+
+                        // important: client handle must be unique per item
+                        UInteger localHandle = uint(clientToMILink.getAndIncrement());
+
+                        MonitoringParameters parms = new MonitoringParameters(
+                                localHandle,
+                                1000.0,     // sampling interval // TODO -- We should allow this to be adjustable
+                                null,       // filter, null means use default
+                                uint(10),   // queue size
+                                true        // discard oldest
+                        );
+
+                        MonitoredItemCreateRequest request = new MonitoredItemCreateRequest(
+                                readValueId, MonitoringMode.Reporting, parms);
+                        log.debug("MonitoredItemCreateRequest for {} added to list", readValueId.toString());
+                        reqList.add(request);
                     }
-                    String nodeIdType = "s";
-                    if (ent.getValue().containsKey(CONFIG_MI_IDENTIFIER_TYPE)) {
-                        nodeIdType = ent.getValue().get(CONFIG_MI_IDENTIFIER_TYPE);
-                    }
-                    switch (nodeIdType) {
-                        case "s":
-                            nodeIdentifier = new NodeId(nsIndex, ent.getValue().get(CONFIG_MI_IDENTIFIER));
-                            break;
-                        case "i":
-                            nodeIdentifier = new NodeId(nsIndex, Integer.valueOf(ent.getValue().get(CONFIG_MI_IDENTIFIER)));
-                            break;
-                        case "g":
-                            nodeIdentifier = new NodeId(nsIndex, UUID.fromString(ent.getValue().get(CONFIG_MI_IDENTIFIER)));
-                            break;
-                        case "b":
-                            nodeIdentifier = new NodeId(nsIndex, new ByteString(ent.getValue().get(CONFIG_MI_IDENTIFIER).getBytes()));
-                            break;
-                        default:
-                            String errMsg = MessageFormatter.arrayFormat(ERROR_PREFIX + ".invalidMonitoredItemIdType: Monitored Item {} has provided an invalid {} property: {}.  It must be either s, i, g, or b",
-                                    new Object[]{ent.getKey(), CONFIG_MI_IDENTIFIER_TYPE, ent.getValue().get(CONFIG_MI_IDENTIFIER_TYPE)}).getMessage();
-                            throw new OpcExtRuntimeException(errMsg);
+
+                    BiConsumer<UaMonitoredItem, Integer> monitoringCreated =
+                            (item, id) -> item.setValueConsumer(this::onDataChange);
+
+                    this.subscriptionHandler = handler;
+                    // Having created the list, add it to the subscription
+                    List<UaMonitoredItem> items = subscription.createMonitoredItems(
+                            TimestampsToReturn.Both,
+                            reqList,
+                            monitoringCreated
+                    ).get();
+
+                    for (UaMonitoredItem item : items) {
+                        if (item.getStatusCode().isGood()) {
+                            log.debug("item created for nodeId={}", item.getReadValueId().getNodeId());
+                            currentMonitoredItemList.add(item.getMonitoredItemId());
+                        } else {
+                            log.warn(
+                                    "failed to create item for nodeId={} (status={})",
+                                    item.getReadValueId().getNodeId(), item.getStatusCode());
+                        }
                     }
                 }
-                ReadValueId readValueId = new ReadValueId(
-                        nodeIdentifier,
-                        AttributeId.Value.uid(), null, QualifiedName.NULL_VALUE);
-
-                // important: client handle must be unique per item
-                UInteger localHandle = uint(clientToMILink.getAndIncrement());
-
-                MonitoringParameters parms = new MonitoringParameters(
-                        localHandle,
-                        1000.0,     // sampling interval // FIXME -- We should allow this to be adjustable
-                        null,       // filter, null means use default
-                        uint(10),   // queue size
-                        true        // discard oldest
-                );
-
-                MonitoredItemCreateRequest request = new MonitoredItemCreateRequest(
-                        readValueId, MonitoringMode.Reporting, parms);
-                logger.debug("MonitoredItemCreateRequest for {} added to list", readValueId.toString());
-                reqList.add(request);
-            }
-
-            BiConsumer<UaMonitoredItem, Integer> monitoringCreated =
-                    (item, id) -> item.setValueConsumer(this::onDataChange);
-
-            this.subscriptionHandler = handler;
-            // Having created the list, add it to the subscription
-            List<UaMonitoredItem> items = subscription.createMonitoredItems(
-                    TimestampsToReturn.Both,
-                    reqList,
-                    monitoringCreated
-            ).get();
-
-            for (UaMonitoredItem item : items) {
-                if (item.getStatusCode().isGood()) {
-                    logger.debug("item created for nodeId={}", item.getReadValueId().getNodeId());
-                    currentMonitoredItemList.add(item.getMonitoredItemId());
-                } else {
-                    logger.warn(
-                            "failed to create item for nodeId={} (status={})",
-                            item.getReadValueId().getNodeId(), item.getStatusCode());
-                }
+            } else {
+                log.error("Illegal format for {}.{} in configuration document.  Expecting a Map of Maps of Strings.",
+                        OpcConstants.CONFIG_OPC_UA_INFORMATION, OpcConstants.CONFIG_OPC_MONITORED_ITEMS);
             }
         } catch (Exception e) {
             throw new OpcExtRuntimeException(ERROR_PREFIX + ".unexpectedException", e);
@@ -517,48 +709,32 @@ public class OpcUaESClient {
     }
 
     private void onDataChange(UaMonitoredItem item, DataValue value) {
-        logger.debug(
+        log.debug(
                 "Update event on subscription {} value received: item={}, value={}",
                 subscription.getSubscriptionId(), item.getReadValueId().getNodeId().toParseableString(), value.getValue());
         subscriptionHandler.accept(item.getReadValueId().getNodeId().toParseableString(), value.getValue().getValue());
     }
 
-    /**
-     *
-     * FIXME -- Need to determine if just replicating this is good idea or whether
-     * We should be turning it into a query specified via browse.  That is, we'd return
-     * values instead of this node-browse junk.
-     *
-     * return list of nodes obtained via browse() operations
-     *
-     * @param nodeList List of specifications for nodes. Each can be either a nodeId or a (namespace, identifier) pair.
-     * @param depthLimit How far down the tree to go.  Bounded by overall depth limit setting in configuration.
-     * @param direction Forward or backward (defaults to forward)
-     * @param typeToFollow NodeId for ReferenceType to follow.  Defaults to Reference types.
-     * @param includeSubtypes Boolean for whether to include subtypes of typeToFollow
-     * @param resultTypes list of result types to return.  Defaults to Variable and Object nodes
-     * @param resultFields list of fields to return.  Defaults to all.
-     */
-
-    /**
-     * Return values specified by browsing.
-     *
-     * FIXME -- this has issues that you might get a variety of things back with no way to know what to expect.
-     * FIXME -- to work within a SELECT-style framework, doing the pure browse version then asking for
-     * FIXME -- data about specific nodes is probably preferable.  To some extent, we really need to see
-     * FIXME -- if/how people use this.  Then, we can evaluate ER's to determine the correct path.
-     *
-     * FIXME -- Alternatively, provide the ability to specify in more detail what (single, possibly subtyped)
-     * FIXME -- Variable nodes to return, as these will all have the same type.  This may be possible, but if we
-     * FIXME -- want to enforce it, it may be tricky.  Alternatively, we just ask for a name, look it up.
-     * FIXME -- If it exists, then we use it; otherwise, either throw an error OR return an empty list.
-     *
-     * Returns the value attributes from Variable nodes found by following references via the OPC UA Browse operations.
-     * This method will
-     *
-     * @param nodeList List of specifications for nodes. Each can be either a nodeId or a (namespace, identifier) pair.
-     * @param depthLimit How far down the tree to go.  Bounded by overall depth limit setting in configuration.
-     *
-     */
-
+    private NodeId constructNodeId(UShort nsIndex, String identifier, String identifierType) throws OpcExtRuntimeException {
+        NodeId nodeIdentifier;
+        switch (identifierType) {
+            case "s":
+                nodeIdentifier = new NodeId(nsIndex, identifier);
+                break;
+            case "i":
+                nodeIdentifier = new NodeId(nsIndex, UInteger.valueOf(identifier));
+                break;
+            case "g":
+                nodeIdentifier = new NodeId(nsIndex, UUID.fromString(identifier));
+                break;
+            case "b":
+                nodeIdentifier = new NodeId(nsIndex, new ByteString(identifier.getBytes()));
+                break;
+            default:
+                String errMsg = MessageFormatter.arrayFormat(ERROR_PREFIX + ".invalidNodeIdType: {}.  It must be either s, i, g, or b",
+                        new Object[]{identifier}).getMessage();
+                throw new OpcExtRuntimeException(errMsg);
+        }
+        return nodeIdentifier;
+    }
 }
