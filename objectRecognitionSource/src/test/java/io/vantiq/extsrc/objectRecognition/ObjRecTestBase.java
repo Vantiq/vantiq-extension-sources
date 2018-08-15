@@ -6,12 +6,12 @@ import java.nio.file.Files;
 import io.vantiq.extjsdk.ExtjsdkTestBase;
 
 public class ObjRecTestBase extends ExtjsdkTestBase{
-    public final String UNUSED = "unused";
+    public static final String UNUSED = "unused";
     
-    public final String IMAGE_LOCATION = "src/test/resources/sampleImage.jpg";
-    public final String VIDEO_LOCATION = "src/test/resources/sampleVideo.mov";
+    public static final String IMAGE_LOCATION = "src/test/resources/sampleImage.jpg";
+    public static final String VIDEO_LOCATION = "src/test/resources/sampleVideo.mov";
     
-    public void deleteFile(String fileName) {
+    public static void deleteFile(String fileName) {
         File f = new File(fileName);
         
         try {
@@ -21,7 +21,7 @@ public class ObjRecTestBase extends ExtjsdkTestBase{
         }
     }
     
-    public void deleteFolder(String directoryName) {
+    public static void deleteDirectory(String directoryName) {
         File d = new File(directoryName);
         
         try {

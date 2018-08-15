@@ -51,6 +51,9 @@ public class YoloProcessor implements NeuralNetInterface {
     private void setup(Map<String, ?> neuralNet, String modelDirectory) throws Exception {
         // Obtain the files for the net
        if (neuralNet.get("pbFile") instanceof String && neuralNet.get("labelFile") instanceof String) {
+           if (!modelDirectory.equals("") && !modelDirectory.endsWith("/") && !modelDirectory.endsWith("\\")) {
+               modelDirectory += "/";
+           }
            pbFile = modelDirectory + (String) neuralNet.get("pbFile");
            labelsFile = modelDirectory + (String) neuralNet.get("labelFile");
        } else {
