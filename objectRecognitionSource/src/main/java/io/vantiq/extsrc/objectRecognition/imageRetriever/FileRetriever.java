@@ -54,7 +54,12 @@ public class FileRetriever implements ImageRetrieverInterface {
                     throw new IllegalArgumentException("Intended video could not be opened");
                 }
                 double fps = capture.get(Videoio.CAP_PROP_FPS);
-                time_interval = (int) (3 * Math.round(fps));
+                if (fps == 0) {
+                    time_interval = 75;
+                }
+                else {
+                    time_interval = (int) (3 * Math.round(fps));
+                }
             }
             else {
                 defaultImageFile = new File(imageLocation);
