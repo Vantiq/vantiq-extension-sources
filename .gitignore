@@ -38,3 +38,5 @@ servers/standalone/webroot
 trace.db/
 *.orig
 *.swp
+*config.json
+*.log

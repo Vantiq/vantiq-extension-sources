@@ -8,6 +8,8 @@ The [OPC Foundation](https://opcfoundation.org) is responsible for the developme
 The OPC UA Extension Source is an Extension Source for interoperability between OPC UA Servers and the [VANTIQ](https://vantiq.com) system.
 This document describes the operation of the source itself as well as how to make use of it within a VANTIQ system.
 
+> Note: VANTIQ Extension Sources are first supported in VANTIQ version 1.23.
+
 ## Extension Sources
 
 VANTIQ Extension Sources support the creation of a VANTIQ source.

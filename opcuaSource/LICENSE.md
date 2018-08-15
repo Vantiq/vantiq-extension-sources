@@ -11,5 +11,3 @@ This project uses components that are licensed as follows:
   * Jackson -- [ASL 2.0](https://www.apache.org/licenses/LICENSE-2.0)
   * Google Common -- [ASL 2.0](https://www.apache.org/licenses/LICENSE-2.0)
   * QOS logging -- [Eclipse License v1.0](https://www.eclipse.org/legal/epl-v10.html)
-
- 
