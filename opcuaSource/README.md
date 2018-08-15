@@ -65,10 +65,10 @@ The configuration of a VANTIQ extension source is a JSON document.
 For OPC UA sources, the document contains the following properties
 
  - `discoveryEndpoint` -- This is the URL for the OPC UA server's discovery endpoint. This is the URL that the source will use to connect to the OPC UA server.
- - `securityPolicy` -- This the specification (URI) of the security policy to be used to communicate with the OPC UA server. The security policy includes information about how (and whether) signing and encryption is done. The list of security policy URI's can be found in the OPC UA documentation.
+ - `securityPolicy` -- This is the specification (URI) of the security policy to be used to communicate with the OPC UA server. The security policy includes information about how (and whether) signing and encryption is done. The list of security policy URI's can be found in the OPC UA documentation.
  - `monitoredItems` -- This is the list of items to be monitored by the OPC UA source.  More detail can be found below.
 
-#####<a id="monitored_items"></a>Monitored Items
+##### <a id="monitored_items"></a> Monitored Items
 
 The OPC UA source can be configured to monitor items (nodes) within the OPC UA server.  Specifically, the source will watch for data value changes for the nodes listed, reporting changes back to the VANTIQ system in the form of a message from the source.
 
@@ -78,7 +78,7 @@ A node specification contains the following properties.
 
  - `ns` or `nsu` -- These specify the namespace of the node in question. `nsu` specifies the namespace URI.  Alternatively, `ns` can be used specifying the namespace index. The latter is not recommended since namespace indicies are not required to be stable over OPC UA server restarts.
  - `nodeIdentifier` -- this is the identifier for the node within the namespace.
- - `nodeIdentifyerType` -- this specifies how the `nodeIdentifier` is to be interpreted. Node Indentifiers, in OPC UA, can be a String, Numeric (Integer), GUID, or byte string.  These are specified by a `nodeIdentifier` value of `s`, `i`, `g`, or `b`, respectively. If `nodeIdentifierType` is not specified, the default value of `s` is used. That is, the default `nodeIdentifierType` is String.
+ - `nodeIdentifierType` -- this specifies how the `nodeIdentifier` is to be interpreted. Node Indentifiers, in OPC UA, can be a String, Numeric (Integer), GUID, or byte string.  These are specified by a `nodeIdentifier` value of `s`, `i`, `g`, or `b`, respectively. If `nodeIdentifierType` is not specified, the default value of `s` is used. That is, the default `nodeIdentifierType` is String.
 
 In the example given, we are monitoring the system time, identified using a numeric identifier of 2258.
 
