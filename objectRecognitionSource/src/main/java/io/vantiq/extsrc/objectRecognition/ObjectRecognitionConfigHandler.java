@@ -59,24 +59,7 @@ public class ObjectRecognitionConfigHandler extends Handler<ExtensionServiceMess
     ObjectRecognitionCore   source;
     boolean                 configComplete = false;
     
-    Handler<ExtensionServiceMessage> queryHandler = new Handler<ExtensionServiceMessage>() {
-        ExtensionWebSocketClient client = source.client;
-        
-        @Override
-        public void handleMessage(ExtensionServiceMessage message) {
-            if ( !(message.getObject() instanceof Map) ) {
-                String replyAddress = ExtensionServiceMessage.extractReplyAddress(message);
-                client.sendQueryError(replyAddress, "io.vantiq.extsrc.objectRecognition.InvalidImageRequest", 
-                        "Request must be a map", null);
-            }
-            byte[] data = source.retrieveImage(message);
-            
-            if (data != null) {
-                source.sendDataFromImage(data, message);
-            }
-            
-        }
-    };
+    Handler<ExtensionServiceMessage> queryHandler;
     
     /**
      * Initializes the Handler for a source 
@@ -86,6 +69,24 @@ public class ObjectRecognitionConfigHandler extends Handler<ExtensionServiceMess
         this.source = source;
         this.sourceName = source.getSourceName();
         log = LoggerFactory.getLogger(this.getClass().getCanonicalName() + "#" + sourceName);
+        queryHandler = new Handler<ExtensionServiceMessage>() {
+            ExtensionWebSocketClient client = source.client;
+            
+            @Override
+            public void handleMessage(ExtensionServiceMessage message) {
+                if ( !(message.getObject() instanceof Map) ) {
+                    String replyAddress = ExtensionServiceMessage.extractReplyAddress(message);
+                    client.sendQueryError(replyAddress, "io.vantiq.extsrc.objectRecognition.InvalidImageRequest", 
+                            "Request must be a map", null);
+                }
+                byte[] data = source.retrieveImage(message);
+                
+                if (data != null) {
+                    source.sendDataFromImage(data, message);
+                }
+                
+            }
+        };
     }
     
     /*
