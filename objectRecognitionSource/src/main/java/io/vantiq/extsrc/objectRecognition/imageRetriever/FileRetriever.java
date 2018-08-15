@@ -3,6 +3,7 @@ package io.vantiq.extsrc.objectRecognition.imageRetriever;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
+import java.text.SimpleDateFormat;
 import java.util.Map;
 
 import io.vantiq.extsrc.objectRecognition.ObjectRecognitionCore;
@@ -13,6 +14,7 @@ import org.opencv.core.Mat;
 import org.opencv.core.MatOfByte;
 import org.opencv.imgcodecs.Imgcodecs;
 import org.opencv.videoio.VideoCapture;
+import org.opencv.videoio.Videoio;
 
 /**
  * This reads files from disk. If it is setup for image files then the file need not be there at initialization, and
@@ -32,6 +34,7 @@ public class FileRetriever implements ImageRetrieverInterface {
     File defaultImageFile;
     VideoCapture capture;
     Boolean isMov = false;
+    int time_interval;
     
     @Override
     public void setupDataRetrieval(Map<String, ?> dataSourceConfig, ObjectRecognitionCore source) throws Exception {
@@ -50,6 +53,8 @@ public class FileRetriever implements ImageRetrieverInterface {
                     capture.release();
                     throw new IllegalArgumentException("Intended video could not be opened");
                 }
+                double fps = capture.get(Videoio.CAP_PROP_FPS);
+                time_interval = (int) (3 * Math.round(fps));
             }
             else {
                 defaultImageFile = new File(imageLocation);
@@ -62,18 +67,20 @@ public class FileRetriever implements ImageRetrieverInterface {
     @Override
     public byte[] getImage() throws ImageAcquisitionException {
         if (isMov) {
+            
             Mat matrix = new Mat();
     
             capture.read(matrix);
             if (matrix.empty()) { // Exit if nothing could be read
-                throw new FatalImageException("Video could not be read");
+                throw new FatalImageException("Video could not be read or video file has finished");
             }
             
-            for (int i = 0; i < 100; i++) {
+            for (int i = 0; i < time_interval; i++) {
                 capture.grab();
             }
             
             MatOfByte matOfByte = new MatOfByte();
+            Imgcodecs.imencode(".jpg", matrix, matOfByte);
             byte [] imageByte = matOfByte.toArray();
             matOfByte.release();
             matrix.release();
