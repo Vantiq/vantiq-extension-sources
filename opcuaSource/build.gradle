@@ -19,6 +19,9 @@ ext {
     jacksonVersion = '2.9.3'
     eclipseMiloVersion = '0.2.1'
     lombokVersion = '1.16.18'
+    logbackVersion = '1.2.3'
+    junitVersion = '4.12'
+    commonsCliVersion = '1.4'
 }
 
 repositories {
@@ -31,12 +34,12 @@ dependencies {
     compile project(":extjsdk")
 
     compile "org.projectlombok:lombok:${lombokVersion}"
-    compile 'ch.qos.logback:logback-classic:1.2.3'
+    compile "ch.qos.logback:logback-classic:${logbackVersion}"
     compile "com.fasterxml.jackson.core:jackson-databind:${jacksonVersion}"
-    compile 'commons-cli:commons-cli:1.4'
-    compile 'org.codehaus.groovy:groovy-all:2.3.11'
+    compile "commons-cli:commons-cli:${commonsCliVersion}"
     compile "org.eclipse.milo:sdk-client:${eclipseMiloVersion}"
-    testCompile group: 'junit', name: 'junit', version: '4.12'
+
+    testCompile group: 'junit', name: 'junit', version: "${junitVersion}"
     testCompile "org.eclipse.milo:client-examples:${eclipseMiloVersion}"
 }
 
