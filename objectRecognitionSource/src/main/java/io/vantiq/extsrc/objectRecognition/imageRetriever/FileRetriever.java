@@ -69,15 +69,15 @@ public class FileRetriever implements ImageRetrieverInterface {
         if (isMov) {
             
             Mat matrix = new Mat();
-    
+            double val = capture.get(Videoio.CAP_PROP_POS_FRAMES);
+            
             capture.read(matrix);
             if (matrix.empty()) { // Exit if nothing could be read
                 throw new FatalImageException("Video could not be read or video file has finished");
             }
             
-            for (int i = 0; i < time_interval; i++) {
-                capture.grab();
-            }
+            val += time_interval;
+            capture.set(Videoio.CAP_PROP_POS_FRAMES, val);
             
             MatOfByte matOfByte = new MatOfByte();
             Imgcodecs.imencode(".jpg", matrix, matOfByte);
