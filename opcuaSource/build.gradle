@@ -9,6 +9,7 @@ buildscript {
 }
 
 apply plugin: 'java'
+apply plugin: 'application'
 apply plugin: 'idea'
 apply plugin: 'eclipse'
 
@@ -30,6 +31,7 @@ dependencies {
     compile project(":extjsdk")
 
     compile "org.projectlombok:lombok:${lombokVersion}"
+    compile 'ch.qos.logback:logback-classic:1.2.3'
     compile "com.fasterxml.jackson.core:jackson-databind:${jacksonVersion}"
     compile 'commons-cli:commons-cli:1.4'
     compile 'org.codehaus.groovy:groovy-all:2.3.11'
@@ -37,6 +39,8 @@ dependencies {
     testCompile group: 'junit', name: 'junit', version: '4.12'
     testCompile "org.eclipse.milo:client-examples:${eclipseMiloVersion}"
 }
+
+mainClassName = 'io.vantiq.extsrc.opcua.opcUaSource.OpcUaServer'
 
 test {
     useJUnit {
