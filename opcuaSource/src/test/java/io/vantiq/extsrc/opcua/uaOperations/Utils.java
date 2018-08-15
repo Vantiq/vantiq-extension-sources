@@ -107,8 +107,8 @@ public class Utils {
      * @throws ExecutionException Errors returned by underlying connection if connection attempt fails.
      */
     static public OpcUaESClient makeConnection(Map config, boolean runAsync, OpcUaTestBase testInstance, boolean startProcessOnly, boolean expectFailure) throws ExecutionException {
-        Map<String, String> opcConfig = (Map<String, String>) config.get(OpcUaESClient.CONFIG_OPC_UA_INFORMATION);
-        String discoveryPoint = opcConfig.get(OpcUaESClient.CONFIG_DISCOVERY_ENDPOINT);
+        Map<String, String> opcConfig = (Map<String, String>) config.get(OpcConstants.CONFIG_OPC_UA_INFORMATION);
+        String discoveryPoint = opcConfig.get(OpcConstants.CONFIG_DISCOVERY_ENDPOINT);
 
         OpcUaESClient client = null;
         try {
@@ -144,7 +144,7 @@ public class Utils {
             if (e.getMessage().contains(".serverUnavailable")) {
                 if (discoveryPoint != OPC_PUBLIC_SERVER_NO_GOOD) {
                     // Then this endpoint is no good.  We'll fail, but with a more useful error
-                    fail("Server (" + opcConfig.get(OpcUaESClient.CONFIG_DISCOVERY_ENDPOINT) + ") is not available.  If this continues, please update the test. Error: "
+                    fail("Server (" + opcConfig.get(OpcConstants.CONFIG_DISCOVERY_ENDPOINT) + ") is not available.  If this continues, please update the test. Error: "
                             + Utils.errFromExc(e)
                             + (e.getCause() != null ? "\n    Caused by: " + Utils.errFromExc(e.getCause()) : ""));
                 }

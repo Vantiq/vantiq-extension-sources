@@ -15,7 +15,6 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.DateTime;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.MessageSecurityMode;
 import org.eclipse.milo.opcua.stack.core.util.Namespaces;
 import org.junit.Assert;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import java.util.Arrays;
@@ -54,13 +53,13 @@ public class Monitoring extends OpcUaTestBase {
         Map<String, Object> opcConfig = new HashMap<>();
         Map<String, Map<String, String>> misMap = new HashMap<>();
 
-        config.put(OpcUaESClient.CONFIG_OPC_UA_INFORMATION, opcConfig);
-        opcConfig.put(OpcUaESClient.CONFIG_STORAGE_DIRECTORY, STANDARD_STORAGE_DIRECTORY);
-        opcConfig.put(OpcUaESClient.CONFIG_SECURITY_POLICY, SecurityPolicy.None.getSecurityPolicyUri());
-        opcConfig.put(OpcUaESClient.CONFIG_DISCOVERY_ENDPOINT, Utils.OPC_INPROCESS_SERVER);
+        config.put(OpcConstants.CONFIG_OPC_UA_INFORMATION, opcConfig);
+        opcConfig.put(OpcConstants.CONFIG_STORAGE_DIRECTORY, STANDARD_STORAGE_DIRECTORY);
+        opcConfig.put(OpcConstants.CONFIG_SECURITY_POLICY, SecurityPolicy.None.getSecurityPolicyUri());
+        opcConfig.put(OpcConstants.CONFIG_DISCOVERY_ENDPOINT, Utils.OPC_INPROCESS_SERVER);
 
         // Here, we'll create a simple map set that creates a monitored
-        opcConfig.put(OpcUaESClient.CONFIG_OPC_MONITORED_ITEMS, misMap);
+        opcConfig.put(OpcConstants.CONFIG_OPC_MONITORED_ITEMS, misMap);
         Map timeMap = new HashMap<>();
 
         // Leaving since we use it elsewhere.
@@ -71,11 +70,11 @@ public class Monitoring extends OpcUaTestBase {
         // It's also the case that purportedly ns=0 is reserved for OPC, is it should always be valid.
         // Nonetheless, we'll test that it works both ways...
 
-        timeMap.put(OpcUaESClient.CONFIG_MI_NAMESPACE_URN,
+        timeMap.put(OpcConstants.CONFIG_MI_NAMESPACE_URN,
                 Namespaces.OPC_UA);
-        timeMap.put(OpcUaESClient.CONFIG_MI_IDENTIFIER,
+        timeMap.put(OpcConstants.CONFIG_MI_IDENTIFIER,
                 Identifiers.Server_ServerStatus_CurrentTime.getIdentifier().toString());
-        timeMap.put(OpcUaESClient.CONFIG_MI_IDENTIFIER_TYPE, "i");  // This ident is a number...
+        timeMap.put(OpcConstants.CONFIG_MI_IDENTIFIER_TYPE, "i");  // This ident is a number...
         misMap.put("Server Time", timeMap);
 
         OpcUaESClient client = Utils.makeConnection(config, false);
@@ -150,20 +149,20 @@ public class Monitoring extends OpcUaTestBase {
         Map<String, Object> opcConfig = new HashMap<>();
         Map<String, Map<String, String>> misMap = new HashMap<>();
 
-        config.put(OpcUaESClient.CONFIG_OPC_UA_INFORMATION, opcConfig);
-        opcConfig.put(OpcUaESClient.CONFIG_STORAGE_DIRECTORY, STANDARD_STORAGE_DIRECTORY);
-        opcConfig.put(OpcUaESClient.CONFIG_SECURITY_POLICY, SecurityPolicy.None.getSecurityPolicyUri());
-        opcConfig.put(OpcUaESClient.CONFIG_DISCOVERY_ENDPOINT, Utils.OPC_INPROCESS_SERVER);
+        config.put(OpcConstants.CONFIG_OPC_UA_INFORMATION, opcConfig);
+        opcConfig.put(OpcConstants.CONFIG_STORAGE_DIRECTORY, STANDARD_STORAGE_DIRECTORY);
+        opcConfig.put(OpcConstants.CONFIG_SECURITY_POLICY, SecurityPolicy.None.getSecurityPolicyUri());
+        opcConfig.put(OpcConstants.CONFIG_DISCOVERY_ENDPOINT, Utils.OPC_INPROCESS_SERVER);
 
         // Here, we'll create a simple map set that creates a monitored
-        opcConfig.put(OpcUaESClient.CONFIG_OPC_MONITORED_ITEMS, misMap);
+        opcConfig.put(OpcConstants.CONFIG_OPC_MONITORED_ITEMS, misMap);
         Map miMap = new HashMap<>();
-        miMap.put(OpcUaESClient.CONFIG_MI_NAMESPACE_URN,
+        miMap.put(OpcConstants.CONFIG_MI_NAMESPACE_URN,
                 ExampleNamespace.NAMESPACE_URI);
-        miMap.put(OpcUaESClient.CONFIG_MI_IDENTIFIER,
+        miMap.put(OpcConstants.CONFIG_MI_IDENTIFIER,
                 Utils.EXAMPLE_NS_SCALAR_INT32_IDENTIFIER);
 
-        miMap.put(OpcUaESClient.CONFIG_MI_IDENTIFIER_TYPE, "s");  // This ident is a string
+        miMap.put(OpcConstants.CONFIG_MI_IDENTIFIER_TYPE, "s");  // This ident is a string
 
         misMap.put("Hello World Int 32", miMap);
 
@@ -219,19 +218,19 @@ public class Monitoring extends OpcUaTestBase {
         Map<String, Object> opcConfig = new HashMap<>();
         Map<String, Map<String, String>> misMap = new HashMap<>();
 
-        config.put(OpcUaESClient.CONFIG_OPC_UA_INFORMATION, opcConfig);
-        opcConfig.put(OpcUaESClient.CONFIG_STORAGE_DIRECTORY, STANDARD_STORAGE_DIRECTORY);
-        opcConfig.put(OpcUaESClient.CONFIG_SECURITY_POLICY, SecurityPolicy.Basic128Rsa15.getSecurityPolicyUri());
-        opcConfig.put(OpcUaESClient.CONFIG_MESSAGE_SECURITY_MODE, MessageSecurityMode.SignAndEncrypt.toString());
-        opcConfig.put(OpcUaESClient.CONFIG_DISCOVERY_ENDPOINT, Utils.OPC_INPROCESS_SERVER);
+        config.put(OpcConstants.CONFIG_OPC_UA_INFORMATION, opcConfig);
+        opcConfig.put(OpcConstants.CONFIG_STORAGE_DIRECTORY, STANDARD_STORAGE_DIRECTORY);
+        opcConfig.put(OpcConstants.CONFIG_SECURITY_POLICY, SecurityPolicy.Basic128Rsa15.getSecurityPolicyUri());
+        opcConfig.put(OpcConstants.CONFIG_MESSAGE_SECURITY_MODE, MessageSecurityMode.SignAndEncrypt.toString());
+        opcConfig.put(OpcConstants.CONFIG_DISCOVERY_ENDPOINT, Utils.OPC_INPROCESS_SERVER);
 
         // Here, we'll create a simple map set that creates a monitored item list
-        opcConfig.put(OpcUaESClient.CONFIG_OPC_MONITORED_ITEMS, misMap);
+        opcConfig.put(OpcConstants.CONFIG_OPC_MONITORED_ITEMS, misMap);
 
         Map miMap = new HashMap<>();
-        miMap.put(OpcUaESClient.CONFIG_MI_NAMESPACE_URN,
+        miMap.put(OpcConstants.CONFIG_MI_NAMESPACE_URN,
                 ExampleNamespace.NAMESPACE_URI);
-        miMap.put(OpcUaESClient.CONFIG_MI_IDENTIFIER,
+        miMap.put(OpcConstants.CONFIG_MI_IDENTIFIER,
                 Utils.EXAMPLE_NS_SCALAR_INT32_IDENTIFIER);
 
         // This time, we'll leave the string designation out since it's the default...
@@ -239,9 +238,9 @@ public class Monitoring extends OpcUaTestBase {
         misMap.put("Hello World Int 32", miMap);
 
         miMap = new HashMap<>();
-        miMap.put(OpcUaESClient.CONFIG_MI_NAMESPACE_URN,
+        miMap.put(OpcConstants.CONFIG_MI_NAMESPACE_URN,
                 ExampleNamespace.NAMESPACE_URI);
-        miMap.put(OpcUaESClient.CONFIG_MI_IDENTIFIER,
+        miMap.put(OpcConstants.CONFIG_MI_IDENTIFIER,
                 Utils.EXAMPLE_NS_SCALAR_STRING_IDENTIFIER);
 
         // This time, we'll leave the string designation out since it's the default...
@@ -254,7 +253,7 @@ public class Monitoring extends OpcUaTestBase {
         // Thus, we'll use the more accepted version here for passing into the OPC system.
 
         miMap = new HashMap<>();
-        miMap.put(OpcUaESClient.CONFIG_MI_NODEID,
+        miMap.put(OpcConstants.CONFIG_MI_NODEID,
                 Identifiers.Server_ServerStatus_CurrentTime.toParseableString());
         misMap.put("Server Time", miMap);
 

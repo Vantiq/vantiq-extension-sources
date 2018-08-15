@@ -66,7 +66,7 @@ public class Connection extends OpcUaTestBase {
         OpcUaESClient client = null;
         Map<String, String> opcConfig = new HashMap<>();
 
-        config.put(OpcUaESClient.CONFIG_OPC_UA_INFORMATION, opcConfig);
+        config.put(OpcConstants.CONFIG_OPC_UA_INFORMATION, opcConfig);
 
         try {
             client = new OpcUaESClient(config);
@@ -78,7 +78,7 @@ public class Connection extends OpcUaTestBase {
 
         assert client == null;
 
-        opcConfig.put(OpcUaESClient.CONFIG_STORAGE_DIRECTORY, "/this/directory/should/never/really/and/truly/exist");
+        opcConfig.put(OpcConstants.CONFIG_STORAGE_DIRECTORY, "/this/directory/should/never/really/and/truly/exist");
 
         try {
             client = new OpcUaESClient(config);
@@ -90,7 +90,7 @@ public class Connection extends OpcUaTestBase {
 
         assert client == null;
 
-        opcConfig.put(OpcUaESClient.CONFIG_DISCOVERY_ENDPOINT, "/tmp/opcua-storage");
+        opcConfig.put(OpcConstants.CONFIG_DISCOVERY_ENDPOINT, "/tmp/opcua-storage");
 
         try {
             client = new OpcUaESClient(config);
@@ -102,7 +102,7 @@ public class Connection extends OpcUaTestBase {
 
         assert client == null;
 
-        opcConfig.put(OpcUaESClient.CONFIG_SECURITY_POLICY, "foo bar");
+        opcConfig.put(OpcConstants.CONFIG_SECURITY_POLICY, "foo bar");
 
         try {
             client = new OpcUaESClient(config);
@@ -114,7 +114,7 @@ public class Connection extends OpcUaTestBase {
 
         assert client == null;
 
-        opcConfig.put(OpcUaESClient.CONFIG_SECURITY_POLICY, SecurityPolicy.Aes128_Sha256_RsaOaep + "I_WILL_MAKE_THINGS_BOGUS");
+        opcConfig.put(OpcConstants.CONFIG_SECURITY_POLICY, SecurityPolicy.Aes128_Sha256_RsaOaep + "I_WILL_MAKE_THINGS_BOGUS");
 
         try {
             client = new OpcUaESClient(config);
@@ -126,7 +126,7 @@ public class Connection extends OpcUaTestBase {
 
         assert client == null;
 
-        opcConfig.put(OpcUaESClient.CONFIG_SECURITY_POLICY, SecurityPolicy.None.getSecurityPolicyUri());
+        opcConfig.put(OpcConstants.CONFIG_SECURITY_POLICY, SecurityPolicy.None.getSecurityPolicyUri());
 
         try {
             client = new OpcUaESClient(config);
@@ -138,7 +138,7 @@ public class Connection extends OpcUaTestBase {
 
         assert client == null;
 
-        opcConfig.put(OpcUaESClient.CONFIG_STORAGE_DIRECTORY, STANDARD_STORAGE_DIRECTORY);
+        opcConfig.put(OpcConstants.CONFIG_STORAGE_DIRECTORY, STANDARD_STORAGE_DIRECTORY);
 
         try {
             client = new OpcUaESClient(config);
@@ -156,7 +156,7 @@ public class Connection extends OpcUaTestBase {
         }
 
         String invalidUPw = "Wynken, Blynken, and Nod";
-        opcConfig.put(OpcUaESClient.CONFIG_IDENTITY_USERNAME_PASSWORD, invalidUPw);
+        opcConfig.put(OpcConstants.CONFIG_IDENTITY_USERNAME_PASSWORD, invalidUPw);
         try {
             client = new OpcUaESClient(config);
         } catch (OpcExtConfigException o) {
@@ -169,32 +169,32 @@ public class Connection extends OpcUaTestBase {
 
         assert client == null;
 
-        opcConfig.put(OpcUaESClient.CONFIG_IDENTITY_ANONYMOUS, "anonymous");
+        opcConfig.put(OpcConstants.CONFIG_IDENTITY_ANONYMOUS, "anonymous");
         try {
             client = new OpcUaESClient(config);
         } catch (OpcExtConfigException o) {
             checkException(o, ".invalidIdentitySpecification");
             Assert.assertTrue("Wrong Message", o.getMessage().contains("exactly one identity specification"));
             Assert.assertTrue("Wrong Message(2)", o.getMessage().contains("is required."));
-            Assert.assertTrue("Missing Info -- Anon", o.getMessage().contains(OpcUaESClient.CONFIG_IDENTITY_ANONYMOUS));
-            Assert.assertTrue("Missing Info -- Cert", o.getMessage().contains(OpcUaESClient.CONFIG_IDENTITY_CERTIFICATE));
-            Assert.assertTrue("Missing Info -- UPW", o.getMessage().contains(OpcUaESClient.CONFIG_IDENTITY_USERNAME_PASSWORD));
+            Assert.assertTrue("Missing Info -- Anon", o.getMessage().contains(OpcConstants.CONFIG_IDENTITY_ANONYMOUS));
+            Assert.assertTrue("Missing Info -- Cert", o.getMessage().contains(OpcConstants.CONFIG_IDENTITY_CERTIFICATE));
+            Assert.assertTrue("Missing Info -- UPW", o.getMessage().contains(OpcConstants.CONFIG_IDENTITY_USERNAME_PASSWORD));
         } catch (Throwable e) {
             fail("Unexpected exception thrown: " + Utils.errFromExc(e));
         }
 
         assert client == null;
 
-        opcConfig.put(OpcUaESClient.CONFIG_IDENTITY_ANONYMOUS, ""); // Presence is sufficient.  Verify
+        opcConfig.put(OpcConstants.CONFIG_IDENTITY_ANONYMOUS, ""); // Presence is sufficient.  Verify
         try {
             client = new OpcUaESClient(config);
         } catch (OpcExtConfigException o) {
             checkException(o, ".invalidIdentitySpecification");
             Assert.assertTrue("Wrong Message", o.getMessage().contains("exactly one identity specification"));
             Assert.assertTrue("Wrong Message(2)", o.getMessage().contains("is required."));
-            Assert.assertTrue("Missing Info -- Anon", o.getMessage().contains(OpcUaESClient.CONFIG_IDENTITY_ANONYMOUS));
-            Assert.assertTrue("Missing Info -- Cert", o.getMessage().contains(OpcUaESClient.CONFIG_IDENTITY_CERTIFICATE));
-            Assert.assertTrue("Missing Info -- UPW", o.getMessage().contains(OpcUaESClient.CONFIG_IDENTITY_USERNAME_PASSWORD));
+            Assert.assertTrue("Missing Info -- Anon", o.getMessage().contains(OpcConstants.CONFIG_IDENTITY_ANONYMOUS));
+            Assert.assertTrue("Missing Info -- Cert", o.getMessage().contains(OpcConstants.CONFIG_IDENTITY_CERTIFICATE));
+            Assert.assertTrue("Missing Info -- UPW", o.getMessage().contains(OpcConstants.CONFIG_IDENTITY_USERNAME_PASSWORD));
         } catch (Throwable e) {
             fail("Unexpected exception thrown: " + Utils.errFromExc(e));
         }
@@ -202,39 +202,39 @@ public class Connection extends OpcUaTestBase {
         assert client == null;
 
         String bogusCertAlias = "someCertificate alias that is not there";
-        opcConfig.put(OpcUaESClient.CONFIG_IDENTITY_CERTIFICATE, bogusCertAlias);
+        opcConfig.put(OpcConstants.CONFIG_IDENTITY_CERTIFICATE, bogusCertAlias);
         try {
             client = new OpcUaESClient(config);
         } catch (OpcExtConfigException o) {
             checkException(o, ".invalidIdentitySpecification");
             Assert.assertTrue("Wrong Message", o.getMessage().contains("exactly one identity specification"));
             Assert.assertTrue("Wrong Message(2)", o.getMessage().contains("is required."));
-            Assert.assertTrue("Missing Info -- Anon", o.getMessage().contains(OpcUaESClient.CONFIG_IDENTITY_ANONYMOUS));
-            Assert.assertTrue("Missing Info -- Cert", o.getMessage().contains(OpcUaESClient.CONFIG_IDENTITY_CERTIFICATE));
-            Assert.assertTrue("Missing Info -- UPW", o.getMessage().contains(OpcUaESClient.CONFIG_IDENTITY_USERNAME_PASSWORD));
+            Assert.assertTrue("Missing Info -- Anon", o.getMessage().contains(OpcConstants.CONFIG_IDENTITY_ANONYMOUS));
+            Assert.assertTrue("Missing Info -- Cert", o.getMessage().contains(OpcConstants.CONFIG_IDENTITY_CERTIFICATE));
+            Assert.assertTrue("Missing Info -- UPW", o.getMessage().contains(OpcConstants.CONFIG_IDENTITY_USERNAME_PASSWORD));
         } catch (Throwable e) {
             fail("Unexpected exception thrown: " + Utils.errFromExc(e));
         }
 
         assert client == null;
 
-        opcConfig.remove(OpcUaESClient.CONFIG_IDENTITY_ANONYMOUS);
+        opcConfig.remove(OpcConstants.CONFIG_IDENTITY_ANONYMOUS);
         try {
             client = new OpcUaESClient(config);
         } catch (OpcExtConfigException o) {
             checkException(o, ".invalidIdentitySpecification");
             Assert.assertTrue("Wrong Message", o.getMessage().contains("exactly one identity specification"));
             Assert.assertTrue("Wrong Message(2)", o.getMessage().contains("is required."));
-            Assert.assertTrue("Missing Info -- Anon", o.getMessage().contains(OpcUaESClient.CONFIG_IDENTITY_ANONYMOUS));
-            Assert.assertTrue("Missing Info -- Cert", o.getMessage().contains(OpcUaESClient.CONFIG_IDENTITY_CERTIFICATE));
-            Assert.assertTrue("Missing Info -- UPW", o.getMessage().contains(OpcUaESClient.CONFIG_IDENTITY_USERNAME_PASSWORD));
+            Assert.assertTrue("Missing Info -- Anon", o.getMessage().contains(OpcConstants.CONFIG_IDENTITY_ANONYMOUS));
+            Assert.assertTrue("Missing Info -- Cert", o.getMessage().contains(OpcConstants.CONFIG_IDENTITY_CERTIFICATE));
+            Assert.assertTrue("Missing Info -- UPW", o.getMessage().contains(OpcConstants.CONFIG_IDENTITY_USERNAME_PASSWORD));
         } catch (Throwable e) {
             fail("Unexpected exception thrown: " + Utils.errFromExc(e));
         }
 
         assert client == null;
 
-        opcConfig.remove(OpcUaESClient.CONFIG_IDENTITY_USERNAME_PASSWORD);
+        opcConfig.remove(OpcConstants.CONFIG_IDENTITY_USERNAME_PASSWORD);
         try {
             client = new OpcUaESClient(config);
         } catch (OpcExtKeyStoreException o) {
@@ -302,7 +302,7 @@ public class Connection extends OpcUaTestBase {
                         makeConnection(true,
                                 secPol.getSecurityPolicyUri(),
                                 msgSec.toString(),
-                                OpcUaESClient.CONFIG_IDENTITY_ANONYMOUS,
+                                OpcConstants.CONFIG_IDENTITY_ANONYMOUS,
                                 null,
                                 true);
 
@@ -315,7 +315,7 @@ public class Connection extends OpcUaTestBase {
                             makeConnection(false,
                                     secPol.getSecurityPolicyUri(),
                                     msgSec.toString(),
-                                    OpcUaESClient.CONFIG_IDENTITY_USERNAME_PASSWORD,
+                                    OpcConstants.CONFIG_IDENTITY_USERNAME_PASSWORD,
                                     uPw,
                                     true);
                         }
@@ -325,7 +325,7 @@ public class Connection extends OpcUaTestBase {
                             makeConnection(true,
                                     secPol.getSecurityPolicyUri(),
                                     msgSec.toString(),
-                                    OpcUaESClient.CONFIG_IDENTITY_USERNAME_PASSWORD,
+                                    OpcConstants.CONFIG_IDENTITY_USERNAME_PASSWORD,
                                     uPw,
                                     true);
                         }
@@ -361,7 +361,7 @@ public class Connection extends OpcUaTestBase {
                             makeConnection(false,
                                     secPol.getSecurityPolicyUri(),
                                     msgSec.toString(),
-                                    OpcUaESClient.CONFIG_IDENTITY_CERTIFICATE,
+                                    OpcConstants.CONFIG_IDENTITY_CERTIFICATE,
                                     certKey,
                                     true);
 
@@ -369,7 +369,7 @@ public class Connection extends OpcUaTestBase {
                             makeConnection(true,
                                     secPol.getSecurityPolicyUri(),
                                     msgSec.toString(),
-                                    OpcUaESClient.CONFIG_IDENTITY_CERTIFICATE,
+                                    OpcConstants.CONFIG_IDENTITY_CERTIFICATE,
                                     certKey,
                                     true);
                         }
@@ -406,7 +406,7 @@ public class Connection extends OpcUaTestBase {
                                 makeRawConnection(false,
                                         secPol.getSecurityPolicyUri(),
                                         msgSec.toString(),
-                                        OpcUaESClient.CONFIG_IDENTITY_CERTIFICATE,
+                                        OpcConstants.CONFIG_IDENTITY_CERTIFICATE,
                                         certKey);
                             } catch (ExecutionException e) {
                                 assert e.getMessage().contains("UaException");
@@ -419,7 +419,7 @@ public class Connection extends OpcUaTestBase {
                                 makeRawConnection(true,
                                         secPol.getSecurityPolicyUri(),
                                         msgSec.toString(),
-                                        OpcUaESClient.CONFIG_IDENTITY_CERTIFICATE,
+                                        OpcConstants.CONFIG_IDENTITY_CERTIFICATE,
                                         certKey);
                             }
                             catch (ExecutionException e) {
@@ -465,7 +465,7 @@ public class Connection extends OpcUaTestBase {
                             makeConnection(runSync,
                                     secPol.getSecurityPolicyUri(),
                                     msgSec.toString(),
-                                    OpcUaESClient.CONFIG_IDENTITY_CERTIFICATE,
+                                    OpcConstants.CONFIG_IDENTITY_CERTIFICATE,
                                     certKey,
                                     true);
 
@@ -473,7 +473,7 @@ public class Connection extends OpcUaTestBase {
                             makeConnection(true,
                                     secPol.getSecurityPolicyUri(),
                                     msgSec.toString(),
-                                    OpcUaESClient.CONFIG_IDENTITY_CERTIFICATE,
+                                    OpcConstants.CONFIG_IDENTITY_CERTIFICATE,
                                     certKey,
                                     true);
                         }
@@ -510,7 +510,7 @@ public class Connection extends OpcUaTestBase {
                             OpcUaESClient client = makeRawConnection(false,
                                     secPol.getSecurityPolicyUri(),
                                     msgSec.toString(),
-                                    OpcUaESClient.CONFIG_IDENTITY_USERNAME_PASSWORD,
+                                    OpcConstants.CONFIG_IDENTITY_USERNAME_PASSWORD,
                                     invalidCreds);
                             fail("Expected exception for invalid identity token");
                         } catch (ExecutionException e) {
@@ -527,7 +527,7 @@ public class Connection extends OpcUaTestBase {
                             OpcUaESClient client = makeRawConnection(true,
                                     secPol.getSecurityPolicyUri(),
                                     msgSec.toString(),
-                                    OpcUaESClient.CONFIG_IDENTITY_USERNAME_PASSWORD,
+                                    OpcConstants.CONFIG_IDENTITY_USERNAME_PASSWORD,
                                     invalidCreds);
                             CompletableFuture<Void> cf = client.getConnectFuture();
                             cf.join();  // Force exception to be thrown now...
@@ -557,13 +557,13 @@ public class Connection extends OpcUaTestBase {
         HashMap config = new HashMap();
         Map<String, String> opcConfig = new HashMap<>();
 
-        config.put(OpcUaESClient.CONFIG_OPC_UA_INFORMATION, opcConfig);
-        opcConfig.put(OpcUaESClient.CONFIG_STORAGE_DIRECTORY, STANDARD_STORAGE_DIRECTORY);
-        opcConfig.put(OpcUaESClient.CONFIG_SECURITY_POLICY, secPolicy);
-        opcConfig.put(OpcUaESClient.CONFIG_DISCOVERY_ENDPOINT, Utils.OPC_INPROCESS_SERVER);
+        config.put(OpcConstants.CONFIG_OPC_UA_INFORMATION, opcConfig);
+        opcConfig.put(OpcConstants.CONFIG_STORAGE_DIRECTORY, STANDARD_STORAGE_DIRECTORY);
+        opcConfig.put(OpcConstants.CONFIG_SECURITY_POLICY, secPolicy);
+        opcConfig.put(OpcConstants.CONFIG_DISCOVERY_ENDPOINT, Utils.OPC_INPROCESS_SERVER);
 
         if (msgSecMode != null && !msgSecMode.isEmpty()) {
-            opcConfig.put(OpcUaESClient.CONFIG_MESSAGE_SECURITY_MODE, msgSecMode);
+            opcConfig.put(OpcConstants.CONFIG_MESSAGE_SECURITY_MODE, msgSecMode);
         }
 
         if (identityType != null) {
@@ -591,11 +591,11 @@ public class Connection extends OpcUaTestBase {
         HashMap config = new HashMap();
         Map<String, String> opcConfig = new HashMap<>();
 
-        config.put(OpcUaESClient.CONFIG_OPC_UA_INFORMATION, opcConfig);
-        opcConfig.put(OpcUaESClient.CONFIG_STORAGE_DIRECTORY, STANDARD_STORAGE_DIRECTORY);
-        opcConfig.put(OpcUaESClient.CONFIG_SECURITY_POLICY, secPolicy);
+        config.put(OpcConstants.CONFIG_OPC_UA_INFORMATION, opcConfig);
+        opcConfig.put(OpcConstants.CONFIG_STORAGE_DIRECTORY, STANDARD_STORAGE_DIRECTORY);
+        opcConfig.put(OpcConstants.CONFIG_SECURITY_POLICY, secPolicy);
         if (msgSecMode != null && !msgSecMode.isEmpty()) {
-            opcConfig.put(OpcUaESClient.CONFIG_MESSAGE_SECURITY_MODE, msgSecMode);
+            opcConfig.put(OpcConstants.CONFIG_MESSAGE_SECURITY_MODE, msgSecMode);
         }
 
         if (identityType != null) {
@@ -618,7 +618,7 @@ public class Connection extends OpcUaTestBase {
 
         for (String discEP : pubServers) {
             log.info("Attempting connection to public server: " + discEP);
-            opcConfig.put(OpcUaESClient.CONFIG_DISCOVERY_ENDPOINT, discEP);
+            opcConfig.put(OpcConstants.CONFIG_DISCOVERY_ENDPOINT, discEP);
             try {
                 performConnection(config, runAsync, startProcessOnly);
             } catch (ExecutionException e) {

@@ -8,6 +8,7 @@
 
 package io.vantiq.extsrc.opcua.opcUaSource;
 
+import io.vantiq.extsrc.opcua.uaOperations.OpcConstants;
 import io.vantiq.extsrc.opcua.uaOperations.OpcUaESClient;
 import org.apache.commons.cli.*;
 import lombok.extern.slf4j.Slf4j;
@@ -78,7 +79,7 @@ public class OpcUaServer {
 
         OpcUaSource aSource = new OpcUaSource();
 
-        String sourceToUse = connectInfo.get(OpcUaSource.VANTIQ_SOURCENAME);
+        String sourceToUse = connectInfo.get(OpcConstants.VANTIQ_SOURCENAME);
 
         boolean itWorked = aSource.connectToVantiq(sourceToUse, connectInfo);
 
@@ -112,26 +113,26 @@ public class OpcUaServer {
             props = new Properties();
             props.load(cfr);
 
-            String url = props.getProperty(OpcUaSource.VANTIQ_URL);
-            String username = props.getProperty(OpcUaSource.VANTIQ_USERNAME);
-            String password = props.getProperty(OpcUaSource.VANTIQ_PASSWORD);
-            String token = props.getProperty(OpcUaSource.VANTIQ_TOKEN);
-            String sourceName = props.getProperty(OpcUaSource.VANTIQ_SOURCENAME);
+            String url = props.getProperty(OpcConstants.VANTIQ_URL);
+            String username = props.getProperty(OpcConstants.VANTIQ_USERNAME);
+            String password = props.getProperty(OpcConstants.VANTIQ_PASSWORD);
+            String token = props.getProperty(OpcConstants.VANTIQ_TOKEN);
+            String sourceName = props.getProperty(OpcConstants.VANTIQ_SOURCENAME);
 
             if (url != null) {
-                configMap.put(OpcUaSource.VANTIQ_URL, url);
+                configMap.put(OpcConstants.VANTIQ_URL, url);
             }
             if (username != null) {
-                configMap.put(OpcUaSource.VANTIQ_USERNAME, username);
+                configMap.put(OpcConstants.VANTIQ_USERNAME, username);
             }
             if (password != null) {
-                configMap.put(OpcUaSource.VANTIQ_PASSWORD, password);
+                configMap.put(OpcConstants.VANTIQ_PASSWORD, password);
             }
             if (token != null) {
-                configMap.put(OpcUaSource.VANTIQ_TOKEN, token);
+                configMap.put(OpcConstants.VANTIQ_TOKEN, token);
             }
             if (sourceName != null) {
-                configMap.put(OpcUaSource.VANTIQ_SOURCENAME, sourceName);
+                configMap.put(OpcConstants.VANTIQ_SOURCENAME, sourceName);
             }
         } catch (FileNotFoundException e) {
             // This is OK as we allow command line options
@@ -156,19 +157,19 @@ public class OpcUaServer {
             // Do these last as command line arguments override the properties file
 
             if (vantiqUrlOpt != null) {
-                configMap.put(OpcUaSource.VANTIQ_URL, vantiqUrlOpt);
+                configMap.put(OpcConstants.VANTIQ_URL, vantiqUrlOpt);
             }
             if (userOpt != null) {
-                configMap.put(OpcUaSource.VANTIQ_USERNAME, userOpt);
+                configMap.put(OpcConstants.VANTIQ_USERNAME, userOpt);
             }
             if (pwOpt != null) {
-                configMap.put(OpcUaSource.VANTIQ_PASSWORD, pwOpt);
+                configMap.put(OpcConstants.VANTIQ_PASSWORD, pwOpt);
             }
             if (sourceOpt != null) {
-                configMap.put(OpcUaSource.VANTIQ_SOURCENAME, sourceOpt);
+                configMap.put(OpcConstants.VANTIQ_SOURCENAME, sourceOpt);
             }
             if (tokenOpt != null) {
-                configMap.put(OpcUaSource.VANTIQ_TOKEN, tokenOpt);
+                configMap.put(OpcConstants.VANTIQ_TOKEN, tokenOpt);
             }
 
         }

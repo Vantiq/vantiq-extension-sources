@@ -12,6 +12,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.vantiq.extjsdk.ExtensionServiceMessage;
 import io.vantiq.extjsdk.ExtensionWebSocketClient;
 import io.vantiq.extjsdk.Handler;
+import io.vantiq.extsrc.opcua.uaOperations.OpcConstants;
 import io.vantiq.extsrc.opcua.uaOperations.OpcExtConfigException;
 import io.vantiq.extsrc.opcua.uaOperations.OpcExtRuntimeException;
 import io.vantiq.extsrc.opcua.uaOperations.OpcUaESClient;
@@ -30,13 +31,6 @@ import java.util.concurrent.TimeoutException;
 
 @Slf4j
 public class OpcUaSource {
-
-    public static final String VANTIQ_URL = "vantiqUrl";
-    public static final String VANTIQ_USERNAME = "username";
-    public static final String VANTIQ_PASSWORD = "password";
-    public static final String VANTIQ_TOKEN = "token";
-    public static final String VANTIQ_SOURCENAME = "sourceName";
-    public static final String OPC_VALUE_IN_VANTIQ = "dataValue";
 
     private static Map<String, Map> configurations = new ConcurrentHashMap<String, Map>();
 
@@ -72,10 +66,10 @@ public class OpcUaSource {
             return false;
         }
 
-        String url = connectionInfo.get(VANTIQ_URL);
-        String username = connectionInfo.get(VANTIQ_USERNAME);
-        String password = connectionInfo.get(VANTIQ_PASSWORD);
-        String token = connectionInfo.get(VANTIQ_TOKEN);
+        String url = connectionInfo.get(OpcConstants.VANTIQ_URL);
+        String username = connectionInfo.get(OpcConstants.VANTIQ_USERNAME);
+        String password = connectionInfo.get(OpcConstants.VANTIQ_PASSWORD);
+        String token = connectionInfo.get(OpcConstants.VANTIQ_TOKEN);
         boolean useToken = false;
 
         if (url == null) {
@@ -311,8 +305,8 @@ public class OpcUaSource {
             log.debug(">>>> Update: Node: {}, newValue: {} ", nodeInfo, newValue.toString());
             Map<String, Object> updateMsg = new HashMap<>();
 
-            updateMsg.put("nodeIdentification", nodeInfo);
-            updateMsg.put("entity", newValue);
+            updateMsg.put(OpcConstants.NODE_IDENTIFICATION, nodeInfo);
+            updateMsg.put(OpcConstants.ENTITY, newValue);
             vantiqClient.sendNotification(updateMsg);
         }
         catch (Throwable e) {
@@ -338,14 +332,14 @@ public class OpcUaSource {
             } else {
                 pubMsg = (Map) msg.getObject();
                 log.debug("Published msg[object] == {}", pubMsg);
-                String intent = (String) pubMsg.get("intent");
-                if ("subscribe".equalsIgnoreCase(intent) || "unsubscribe".equalsIgnoreCase(intent)) {
+                String intent = (String) pubMsg.get(OpcConstants.PUBLISH_INTENT);
+                if (OpcConstants.PUBLISH_INTENT_SUBSCRIBE.equalsIgnoreCase(intent) || OpcConstants.PUBLISH_INTENT_UNSUBSCRIBE.equalsIgnoreCase(intent)) {
                     log.error("Publish.intent == {} is not yet implemented.", intent);
-                } else if ("upsert".equalsIgnoreCase(intent)) {
-                    String nsu = (String) pubMsg.get("nsu");
-                    String nsIndex = (String) pubMsg.get("nsIndex");
-                    String identifier = (String) pubMsg.get("identifier");
-                    Object entity = pubMsg.get(OPC_VALUE_IN_VANTIQ);
+                } else if (OpcConstants.PUBLISH_INTENT_UPSERT.equalsIgnoreCase(intent)) {
+                    String nsu = (String) pubMsg.get(OpcConstants.CONFIG_MI_NAMESPACE_URN);
+                    String nsIndex = (String) pubMsg.get(OpcConstants.CONFIG_MI_NAMESPACE_INDEX);
+                    String identifier = (String) pubMsg.get(OpcConstants.CONFIG_MI_IDENTIFIER);
+                    Object entity = pubMsg.get(OpcConstants.OPC_VALUE_IN_VANTIQ);
 
                     checkNodeId(ExtensionServiceMessage.OP_PUBLISH, nsu, nsIndex, identifier);
 
@@ -386,21 +380,21 @@ public class OpcUaSource {
                         maybeMap.getClass().getName(), msg);
             } else {
                 qryMsg = (Map) maybeMap;
-                String style = (String) qryMsg.get("queryStyle");
-                if ("browse".equalsIgnoreCase(style) || "query".equalsIgnoreCase(style)) {
+                String style = (String) qryMsg.get(OpcConstants.QUERY_STYLE);
+                if (OpcConstants.QUERY_STYLE_BROWSE.equalsIgnoreCase(style) || OpcConstants.QUERY_STYLE_QUERY.equalsIgnoreCase(style)) {
                     log.error("Query.style == {} is not yet implemented.", style);
                 }
-                else if ("NodeId".equalsIgnoreCase(style)) {
+                else if (OpcConstants.QUERY_STYLE_NODEID.equalsIgnoreCase(style)) {
                     try {
                         // For a NodeId query, we simply extract the node id & call the appropriate
                         // opcClient.readValue() method.  Then, create the response message and return
                         // it to the server.  Since readValue() will return a single node (by definition),
                         // we don't have to worry about chunking issues here.
 
-                        String nsu = (String) qryMsg.get("nsu");
-                        String nsIndex = (String) qryMsg.get("nsIndex");
-                        String identifier = (String) qryMsg.get("identifier");
-                        String identifierType = (String) qryMsg.get("identifierType");
+                        String nsu = (String) qryMsg.get(OpcConstants.CONFIG_MI_NAMESPACE_URN);
+                        String nsIndex = (String) qryMsg.get(OpcConstants.CONFIG_MI_NAMESPACE_INDEX);
+                        String identifier = (String) qryMsg.get(OpcConstants.CONFIG_MI_IDENTIFIER);
+                        String identifierType = (String) qryMsg.get(OpcConstants.CONFIG_MI_IDENTIFIER_TYPE);
 
                         if (identifierType == null) {
                             identifierType = "s";   // String is our default
@@ -428,9 +422,9 @@ public class OpcUaSource {
                             }
                             Map<String, Object> mapToSend = new HashMap<>();
                             if (objectMap == null) {
-                                mapToSend.put(OPC_VALUE_IN_VANTIQ, result);
+                                mapToSend.put(OpcConstants.OPC_VALUE_IN_VANTIQ, result);
                             } else {
-                                mapToSend.put(OPC_VALUE_IN_VANTIQ, objectMap);
+                                mapToSend.put(OpcConstants.OPC_VALUE_IN_VANTIQ, objectMap);
                             }
                             log.debug("Sending result object: " + mapToSend);
                             vantiqClient.sendQueryResponse(HttpURLConnection.HTTP_OK, replyAddress, mapToSend);

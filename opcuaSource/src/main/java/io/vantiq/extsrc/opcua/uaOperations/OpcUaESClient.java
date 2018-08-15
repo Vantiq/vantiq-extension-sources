@@ -67,24 +67,6 @@ import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.
 @Slf4j
 public class OpcUaESClient {
 
-    // Constants for use in perusing the configuration Map.
-
-    public static final String CONFIG_OPC_UA_INFORMATION = "opcUAInformation";
-    public static final String CONFIG_OPC_MONITORED_ITEMS = "monitoredItems";
-    public static final String CONFIG_MI_NODEID = "nodeId";
-    public static final String CONFIG_MI_IDENTIFIER = "nodeIdentifier";
-    public static final String CONFIG_MI_IDENTIFIER_TYPE = "nodeIdentifierType"; // One of OPC UA types: {i, s, g, b}
-    // If not present, the assumption is that it's a string
-    public static final String CONFIG_MI_NAMESPACE_INDEX = "ns";        // Short, but the OPCUA Conventiion
-    public static final String CONFIG_MI_NAMESPACE_URN = "nsu";
-    public static final String CONFIG_SECURITY_POLICY = "securityPolicy";
-    public static final String CONFIG_MESSAGE_SECURITY_MODE = "messageSecurityMode";
-    public static final String CONFIG_DISCOVERY_ENDPOINT = "discoveryEndpoint";
-    public static final String CONFIG_STORAGE_DIRECTORY = "storageDirectory";
-    public static final String CONFIG_IDENTITY_ANONYMOUS = "identityAnonymous";
-    public static final String CONFIG_IDENTITY_CERTIFICATE = "identityCertificate";
-    public static final String CONFIG_IDENTITY_USERNAME_PASSWORD = "identityUsernamePassword";
-    
     public static final String ERROR_PREFIX = "io.vantiq.extsrc.opcua.uaOperations" + "OpcuaESClient";
     private static final String SECURITY_DIRECTORY = "security";
     protected Map<String, Object> config;
@@ -159,9 +141,9 @@ public class OpcUaESClient {
         config = theConfig; // Store for later use
 
         // Extract OPC information and create the client.
-        Map<String, Object> opcConfig = (Map<String, Object>) theConfig.get(CONFIG_OPC_UA_INFORMATION);
-        storageDirectory = opcConfig.get(CONFIG_STORAGE_DIRECTORY) != null
-                ? (String) opcConfig.get(CONFIG_STORAGE_DIRECTORY) : defaultStorageDirectory;
+        Map<String, Object> opcConfig = (Map<String, Object>) theConfig.get(OpcConstants.CONFIG_OPC_UA_INFORMATION);
+        storageDirectory = opcConfig.get(OpcConstants.CONFIG_STORAGE_DIRECTORY) != null
+                ? (String) opcConfig.get(OpcConstants.CONFIG_STORAGE_DIRECTORY) : defaultStorageDirectory;
 
 
         client = createClient(opcConfig);
@@ -261,23 +243,23 @@ public class OpcUaESClient {
             String errMsg = ERROR_PREFIX + ".nullConfig: No configuration was provided.";
             log.error(errMsg);
             throw new OpcExtConfigException(errMsg);
-        } else if (config.get(CONFIG_OPC_UA_INFORMATION) == null) {
+        } else if (config.get(OpcConstants.CONFIG_OPC_UA_INFORMATION) == null) {
             String errMsg = ERROR_PREFIX + ".noOPCInformation: Configuration contained no OPC Information.";
             throwError(errMsg);
         }
-        Map<String, String> opcConfig = (Map<String, String>) config.get(CONFIG_OPC_UA_INFORMATION);
+        Map<String, String> opcConfig = (Map<String, String>) config.get(OpcConstants.CONFIG_OPC_UA_INFORMATION);
 
         String errMsg = null;
-        if (!opcConfig.containsKey(CONFIG_STORAGE_DIRECTORY) && defaultStorageDirectory == null) {
+        if (!opcConfig.containsKey(OpcConstants.CONFIG_STORAGE_DIRECTORY) && defaultStorageDirectory == null) {
             errMsg = ERROR_PREFIX + ".noStorageSpecified: No storageDirectory provided in configuration. " +
-                    "The configuration should contain a property: " + CONFIG_STORAGE_DIRECTORY;
-        } else if (!opcConfig.containsKey(CONFIG_DISCOVERY_ENDPOINT)) {
+                    "The configuration should contain a property: " + OpcConstants.CONFIG_STORAGE_DIRECTORY;
+        } else if (!opcConfig.containsKey(OpcConstants.CONFIG_DISCOVERY_ENDPOINT)) {
             errMsg = ".noDiscoveryEndpoint: No discovery endpoint was provided in the configuration. " +
                     "The configuration should contain a property: " +
-                    CONFIG_DISCOVERY_ENDPOINT;
-        } else if (!opcConfig.containsKey(CONFIG_SECURITY_POLICY)) {
+                    OpcConstants.CONFIG_DISCOVERY_ENDPOINT;
+        } else if (!opcConfig.containsKey(OpcConstants.CONFIG_SECURITY_POLICY)) {
             errMsg = ".noSecurityPolicy: No OPC UA Security policy was specified in the configuration. "
-                    + "The configuration should contain a property: " + CONFIG_SECURITY_POLICY;
+                    + "The configuration should contain a property: " + OpcConstants.CONFIG_SECURITY_POLICY;
         }
 
         if (errMsg != null) {
@@ -294,7 +276,7 @@ public class OpcUaESClient {
     private SecurityPolicy determineSecurityPolicy(Map<String, Object> config) throws OpcExtConfigException {
         // config.securityPolicy should be the URI for the appropriate security policy.
 
-        String secPolURI = (String) config.get(CONFIG_SECURITY_POLICY);
+        String secPolURI = (String) config.get(OpcConstants.CONFIG_SECURITY_POLICY);
         if (secPolURI == null || secPolURI.isEmpty()) {
             // No security policy will default to #NONE.  We will, however, log a warning
             log.warn(ERROR_PREFIX + ".defaultingSecurityPolicy: No OPC UA Security policy was specified in the configuration.  Defaulting to #NONE");
@@ -317,7 +299,7 @@ public class OpcUaESClient {
     private MessageSecurityMode determineMessageSecurityMode(Map<String, Object> config) throws OpcExtConfigException {
         // config.messageSecurityMode should be the URI for the appropriate security policy.
 
-        String msgSecModeSpec = (String) config.get(CONFIG_MESSAGE_SECURITY_MODE);
+        String msgSecModeSpec = (String) config.get(OpcConstants.CONFIG_MESSAGE_SECURITY_MODE);
         MessageSecurityMode msgSecMode;
         if (msgSecModeSpec == null || msgSecModeSpec.isEmpty()) {
             // No message security mode will default to either #NONE or #SignAndEncrypt, depending on the security policy.  We will, however, log a warning\
@@ -349,11 +331,11 @@ public class OpcUaESClient {
     private IdentityProvider constructIdentityProvider(Map<String, Object> config) throws OpcExtConfigException, OpcExtKeyStoreException {
         IdentityProvider retVal = null;
 
-        String anonymous = (String) config.get(CONFIG_IDENTITY_ANONYMOUS);
+        String anonymous = (String) config.get(OpcConstants.CONFIG_IDENTITY_ANONYMOUS);
         boolean anonIsPresent = anonymous != null; // This can be empty -- presence is sufficient
-        String certAlias = (String) config.get(CONFIG_IDENTITY_CERTIFICATE);
+        String certAlias = (String) config.get(OpcConstants.CONFIG_IDENTITY_CERTIFICATE);
         boolean certIsPresent = foundValue(certAlias);
-        String userPass = (String) config.get(CONFIG_IDENTITY_USERNAME_PASSWORD);
+        String userPass = (String) config.get(OpcConstants.CONFIG_IDENTITY_USERNAME_PASSWORD);
         boolean upwIsPresent = foundValue(userPass);
         boolean exactlyOnePresent = (anonIsPresent ^ certIsPresent ^ upwIsPresent) ^ (anonIsPresent && certIsPresent && upwIsPresent);
         // (^ is Java XOR -- I didn't remember it!)
@@ -373,7 +355,7 @@ public class OpcUaESClient {
                 String[] upw = userPass.split(",[ ]*");
                 if (upw.length != 2) {
                     String errMsg = MessageFormatter.arrayFormat(ERROR_PREFIX + ".invalidUserPasswordSpecification: the {} ({}) must contain only a username AND password separated by a comma.",
-                            new Object[]{CONFIG_IDENTITY_USERNAME_PASSWORD, userPass}).getMessage();
+                            new Object[]{OpcConstants.CONFIG_IDENTITY_USERNAME_PASSWORD, userPass}).getMessage();
                     log.error(errMsg);
                     throw new OpcExtConfigException(errMsg);
                 } else {
@@ -383,7 +365,7 @@ public class OpcUaESClient {
 
         } else {
                 String errMsg = MessageFormatter.arrayFormat(ERROR_PREFIX + ".invalidIdentitySpecification: exactly one identity specification ({}, {}, {}) is required.",
-                        new Object[]{CONFIG_IDENTITY_ANONYMOUS, CONFIG_IDENTITY_CERTIFICATE, CONFIG_IDENTITY_USERNAME_PASSWORD}).getMessage();
+                        new Object[]{OpcConstants.CONFIG_IDENTITY_ANONYMOUS, OpcConstants.CONFIG_IDENTITY_CERTIFICATE, OpcConstants.CONFIG_IDENTITY_USERNAME_PASSWORD}).getMessage();
                 log.error(errMsg);
                 throw new OpcExtConfigException(errMsg);
         }
@@ -411,7 +393,7 @@ public class OpcUaESClient {
 
         EndpointDescription[] endpoints;
 
-        discoveryEndpoint = (String) config.get(CONFIG_DISCOVERY_ENDPOINT);
+        discoveryEndpoint = (String) config.get(OpcConstants.CONFIG_DISCOVERY_ENDPOINT);
         if (discoveryEndpoint == null) {
             String errorMsg = ERROR_PREFIX + ".noDiscoveryEndpoint: No discovery endpoint was provided in the configuration.";
             log.error(errorMsg);
@@ -617,8 +599,8 @@ public class OpcUaESClient {
                 isNewSubscription = true;
             }
 
-            Map<String, Object> opcConf = (Map<String, Object>) config.get(CONFIG_OPC_UA_INFORMATION);
-            Object mis = opcConf.get(CONFIG_OPC_MONITORED_ITEMS);
+            Map<String, Object> opcConf = (Map<String, Object>) config.get(OpcConstants.CONFIG_OPC_UA_INFORMATION);
+            Object mis = opcConf.get(OpcConstants.CONFIG_OPC_MONITORED_ITEMS);
 
             if (mis instanceof Map) {
                 Map<String, Map<String, String>> newMonitoredItems = (Map<String, Map<String, String>>) mis;
@@ -651,28 +633,28 @@ public class OpcUaESClient {
                         // (s, i, g, or b for String, Numeric (integer), GUID, or ByteString, respectively) to describe how
                         // the identifier is encoded.  If this is missing, it is assumed to be a string.
 
-                        if (ent.getValue().containsKey(CONFIG_MI_NODEID)) {
-                            String nodeIdSpec = ent.getValue().get(CONFIG_MI_NODEID);
+                        if (ent.getValue().containsKey(OpcConstants.CONFIG_MI_NODEID)) {
+                            String nodeIdSpec = ent.getValue().get(OpcConstants.CONFIG_MI_NODEID);
                             nodeIdentifier = NodeId.parse(nodeIdSpec);
                         } else {
-                            if (ent.getValue().containsKey(CONFIG_MI_NAMESPACE_URN)) {
-                                nsIndex = client.getNamespaceTable().getIndex(ent.getValue().get(CONFIG_MI_NAMESPACE_URN));
+                            if (ent.getValue().containsKey(OpcConstants.CONFIG_MI_NAMESPACE_URN)) {
+                                nsIndex = client.getNamespaceTable().getIndex(ent.getValue().get(OpcConstants.CONFIG_MI_NAMESPACE_URN));
                                 if (nsIndex == null) {
                                     throw new OpcExtRuntimeException(ERROR_PREFIX + ".badNamespaceURN:  Namespace URN "
-                                            + ent.getValue().get(CONFIG_MI_NAMESPACE_URN) + " does not exist in the OPC server.");
+                                            + ent.getValue().get(OpcConstants.CONFIG_MI_NAMESPACE_URN) + " does not exist in the OPC server.");
                                 }
-                            } else if (ent.getValue().containsKey(CONFIG_MI_NAMESPACE_INDEX)) { // TODO -- should we disallow this form since it's not stable over reboots?  I think yes, but it is convenient
-                                nsIndex = UShort.valueOf(ent.getValue().get(CONFIG_MI_NAMESPACE_INDEX));
+                            } else if (ent.getValue().containsKey(OpcConstants.CONFIG_MI_NAMESPACE_INDEX)) { // TODO -- should we disallow this form since it's not stable over reboots?  I think yes, but it is convenient
+                                nsIndex = UShort.valueOf(ent.getValue().get(OpcConstants.CONFIG_MI_NAMESPACE_INDEX));
                             } else {
                                 String errMsg = MessageFormatter.arrayFormat(ERROR_PREFIX + ".invalidMonitoredItem: Monitored Item {} has no namespace index: {}",
                                         new Object[]{ent.getKey(), ent.getValue()}).getMessage();
                                 throw new OpcExtRuntimeException(errMsg);
                             }
                             String nodeIdType = "s";
-                            if (ent.getValue().containsKey(CONFIG_MI_IDENTIFIER_TYPE)) {
-                                nodeIdType = ent.getValue().get(CONFIG_MI_IDENTIFIER_TYPE);
+                            if (ent.getValue().containsKey(OpcConstants.CONFIG_MI_IDENTIFIER_TYPE)) {
+                                nodeIdType = ent.getValue().get(OpcConstants.CONFIG_MI_IDENTIFIER_TYPE);
                             }
-                            nodeIdentifier = constructNodeId(nsIndex, ent.getValue().get(CONFIG_MI_IDENTIFIER), nodeIdType);
+                            nodeIdentifier = constructNodeId(nsIndex, ent.getValue().get(OpcConstants.CONFIG_MI_IDENTIFIER), nodeIdType);
                         }
                         ReadValueId readValueId = new ReadValueId(
                                 nodeIdentifier,
@@ -719,7 +701,7 @@ public class OpcUaESClient {
                 }
             } else {
                 log.error("Illegal format for {}.{} in configuration document.  Expecting a Map of Maps of Strings.",
-                        CONFIG_OPC_UA_INFORMATION, CONFIG_OPC_MONITORED_ITEMS);
+                        OpcConstants.CONFIG_OPC_UA_INFORMATION, OpcConstants.CONFIG_OPC_MONITORED_ITEMS);
             }
         } catch (Exception e) {
             throw new OpcExtRuntimeException(ERROR_PREFIX + ".unexpectedException", e);
