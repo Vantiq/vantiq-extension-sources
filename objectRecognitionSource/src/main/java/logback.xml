@@ -9,9 +9,9 @@
     </appender>
 
     <logger name="io.vantiq.extsrc.objectRecognition" level="debug"/>
-    <logger name="io.vantiq.extjsdk" level="INFO"/>
+    <logger name="io.vantiq.extjsdk" level="info"/>
 
-    <root level="debug">
+    <root level="info">
         <appender-ref ref="STDOUT" />
     </root>
 </configuration>

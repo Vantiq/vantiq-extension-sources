@@ -23,11 +23,12 @@ public class ImageUtil {
 
     /**
      * Edited so that it can be instanced with its own output directory.
+     * <br>Edited so that outDir will be recreated if deleted while running, vs making sure it exists initially
+     * and erroring out if it disappears in the interim 
      * @param outDir    The directory to which images will be saved
      */
     public ImageUtil(String outDir) {
         outputDir = outDir;
-        IOUtil.createDirIfNotExists(new File(outputDir));
     }
 
     /**
@@ -53,8 +54,18 @@ public class ImageUtil {
         saveImage(bufferedImage, "./" + outputDir + "/" + fileName);
     }
 
+    /**
+     * Saves an image to a location, expected to be in the directory specified in the constructor.
+     * <br>Edited so that outDir will be recreated if deleted while running, vs making sure it exists initially
+     * and erroring out if it disappears in the interim 
+     * @param image
+     * @param target
+     */
     public void saveImage(final BufferedImage image, final String target) {
         try {
+            IOUtil.createDirIfNotExists(new File(outputDir));
+            File f = new File(target);
+            System.out.println(f.getAbsolutePath());
             ImageIO.write(image,"jpg", new File(target));
         } catch (IOException e) {
             LOGGER.error("Unagle to save image {}!", target);

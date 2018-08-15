@@ -304,7 +304,7 @@ public class ObjectRecognitionCore {
     /**
      * Closes all resources held by this program except for the client. 
      */
-    protected void close() {
+    public void close() {
         if (constantPolling) {
             stopPolling = true;
             constantPolling = false;

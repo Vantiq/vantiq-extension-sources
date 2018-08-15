@@ -11,7 +11,7 @@ repositories {
     jcenter()
 }
 
-mainClassName = 'io.vantiq.extsrc.udp.ObjectRecognitionMain'
+mainClassName = 'io.vantiq.extsrc.objectRecognition.ObjectRecognitionMain'
 
 
 dependencies {

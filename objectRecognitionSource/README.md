@@ -17,7 +17,7 @@
 4.  Uncompress the file in the location that you would like to install the program.
 5.  Run either `<install location>/objectRecognitionSource/bin/objectRecognitionSource` with a local server.config file or specifying the [server config file](#serverConfig) as the first argument.
 
-To change the logging settings, edit `<install location>/udpSource/logback.xml`. Here is its [documentation](https://logback.qos.ch/manual/configuration.html). The logger names for each class is the class's fully qualified class name, e.g. "io.vantiq.extjsdk.ExtensionWebSocketClient".
+To change the logging settings, edit `<install location>/objectRecognitionSource/logback.xml`. Here is its [documentation](https://logback.qos.ch/manual/configuration.html). The logger names for each class is the class's fully qualified class name, e.g. "io.vantiq.extjsdk.ExtensionWebSocketClient".
 
 ## Server Config File<a name="serverConfig" id="serverConfig"></a>
 
@@ -116,6 +116,12 @@ This is a user written implementation that acts as the default if no neural net 
 
 This is a TensorFlow implementation of YOLO. It returns a List of Maps, each of which has a `label` stating the type of the object identifiead, a `confidence` specifying on a scale of 0-1 how confident the neural net is that the identification is accurate, and a `location` containing the coordinates for the `top`,`left`, `bottom`, and `right` edges of the bounding box for the object. Its options are:
 *   pbFile: Required. The .pb file for the model.*   labelFile: Required. The labels for the model.*   outputDir: Optional. The directory in which the images (object boxes included) will be placed. Images will be saved as "&lt;year&gt;-&lt;month&gt;-&lt;day&gt;--&lt;hour&gt;-&lt;minute&gt;-&lt;second&gt;.jpg" where each value will zero-filled if necessary, e.g. "2018-08-14--06-30-22.jpg" No images will be saved if not set.*   saveRate: Optional. The rate at which images will be saved, once every n frames captured. Default is 1 when unset or a non-positive number. Does nothing if outputDir is not set..
+
+## Testing
+
+In order for the tests to run correctly a few files ned to be added. The ywere not included in the repository as they were each over 100 MB in size.
+The file `<repo location>/vantiq-extension-sources/objectRecognitionSource/src/test/resources/sampleVideo.mov` must exist, or else testVideoBasicRead will fail.
+The file `<repo location>/vantiq-extension-sources/objectRecognitionSource/src/test/resources/models/yolo.pb` must be a valid yolo protobuffer file, or else all TestYoloProcessor will not run. You may also need to replace `<repo location>/vantiq-extension-sources/objectRecognitionSource/src/test/resources/models/coco.names` with the label file used with your `yolo.pb` file.
 
 ## Licensing
 This program uses several licensed libraries.
