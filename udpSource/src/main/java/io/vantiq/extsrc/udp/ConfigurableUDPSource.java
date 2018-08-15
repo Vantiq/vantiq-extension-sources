@@ -10,7 +10,6 @@
 package io.vantiq.extsrc.udp;
 
 // Author: Alex Blumer
-// Email: alex.j.blumer@gmail.com
 
 import io.vantiq.extjsdk.Handler;
 import io.vantiq.extjsdk.ExtensionServiceMessage;
@@ -65,8 +64,7 @@ import org.slf4j.LoggerFactory;
  * The source Configuration document looks as below:<br>
  *     
  * <pre>{
- *     extSrcConfig: {
- *         type: "udp",
+ *     udpSourceConfig: {
  *         general:{
  *             &lt;general options&gt;
  *         },

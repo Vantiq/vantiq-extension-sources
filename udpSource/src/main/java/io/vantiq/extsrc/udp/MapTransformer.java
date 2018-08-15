@@ -10,7 +10,6 @@
 package io.vantiq.extsrc.udp;
 
 // Author: Alex Blumer
-// Email: alex.j.blumer@gmail.com
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;

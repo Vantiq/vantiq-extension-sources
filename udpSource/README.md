@@ -37,8 +37,7 @@ The server config file must be in JSON format. ConfigurableUDPSource runs using 
 The Configuration document looks as below:
 
 	{
-		extSrcConfig:{
-		   type: "udp",
+		udpSourceConfig:{
 			general: {
 				<general options>
 			},
@@ -183,9 +182,9 @@ Additionally, if the output map had instead been
 then the resulting map would be exactly the same, as the Map in lvl2 would have been overwritten by the new value.
 
 ## Licensing
-This library will be licensed under the the [MIT License](https://opensource.org/licenses/MIT).
+The source code in this library is licensed under the the [MIT License](https://opensource.org/licenses/MIT).
 
-This program uses several licensed libraries. 
+This library uses several licensed libraries, some of which are more restrictive than the MIT license. 
 okhttp3 and jackson-databind are both licensed under [Apache Version 2.0 License](http://www.apache.org/licenses/LICENSE-2.0). 
 slf4j is licensed under [terms](https://www.slf4j.org/license.html) identical to the [MIT License](https://opensource.org/licenses/MIT).
 logback is licensed under either the [Eclipse Public License v1.0](http://www.eclipse.org/legal/epl-v10.html) or [Lesser GPL v2.1](www.gnu.org/licenses/old-licenses/lgpl-2.1.html), at the licensee's discretion. This library is optional, and can be replaced with another slf4j implementation if you wish to reduce the license restrictions. To do so, replace the line `compile "ch.qos.logback:logback-classic:1.2.3"` with your own import, or remove that line for no logging.

@@ -109,7 +109,6 @@ public class TestConfigurableUDPSource extends ExtjsdkTestBase{
         DatagramSocket socket = ConfigurableUDPSource.createUDPSocket(port, address, firstSource);
         ConfigurableUDPSource.listenOnUDPSocket(port, address, secondSource);
         
-        Map m = ConfigurableUDPSource.udpSocketToSources;
         assert ConfigurableUDPSource.udpSocketToSources.get(socket) instanceof List;
         List<String> l = (List) ConfigurableUDPSource.udpSocketToSources.get(socket);
         assert l.contains(firstSource);

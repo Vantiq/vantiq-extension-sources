@@ -33,16 +33,11 @@ public class UDPConfigHandler  extends Handler<ExtensionServiceMessage> {
     public void handleMessage(ExtensionServiceMessage message) {
         String sourceName = message.getSourceName();
         Map srcConfig = (Map) ((Map)message.getObject()).get("config");
-        if (!(srcConfig.get("extSrcConfig") instanceof Map)) {
+        if (!(srcConfig.get("udpSourceConfig") instanceof Map)) {
             log.error("Unable to obtain source configuration for '" + sourceName + "'.");
             return;
         }
-        Map config = (Map) srcConfig.get("extSrcConfig");
-        
-        if ( !(config.get("type") instanceof String) || !config.get("type").equals("udp") ) {
-            log.error("Source is not a UDP source.");
-            return;
-        }
+        Map config = (Map) srcConfig.get("udpSourceConfig");
         log.trace("Creating handlers for '" + sourceName + "'");
 
         // Acquire the general settings Map and the listening port and address
