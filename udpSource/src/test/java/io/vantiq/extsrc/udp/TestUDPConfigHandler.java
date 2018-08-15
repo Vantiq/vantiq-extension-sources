@@ -133,6 +133,7 @@ public class TestUDPConfigHandler extends ExtjsdkTestBase{
         Map<String,Object> general = new LinkedHashMap<>();
         Map<String,Object> incoming = new LinkedHashMap<>();
         Map<String,Object> outgoing = new LinkedHashMap<>();
+        extSrcConfig.put("type", "udp");
         extSrcConfig.put("general", general);
         extSrcConfig.put("incoming", incoming);
         extSrcConfig.put("outgoing", outgoing);
