@@ -17,8 +17,6 @@ import io.vantiq.extsrc.objectRecognition.exception.FatalImageException;
 import io.vantiq.extsrc.objectRecognition.exception.ImageAcquisitionException;
 
 public class TestFileRetriever extends ObjRecTestBase {
-    final String imageLocation = "src/test/resources/sampleImage.jpg";
-    final String videoLocation = "src/test/resources/sampleVideo.mov";
     FileRetriever fr;
     ObjectRecognitionCore source;
     
@@ -39,7 +37,7 @@ public class TestFileRetriever extends ObjRecTestBase {
     public void testImageReadBasic() {
         try {
             Map<String,String> config = new LinkedHashMap<>();
-            config.put("fileLocation", imageLocation);
+            config.put("fileLocation", IMAGE_LOCATION);
             fr.setupDataRetrieval(config, source);
         } catch (Exception e) {
             fail("Exception occurred when setting up: " + e.toString());
@@ -89,7 +87,7 @@ public class TestFileRetriever extends ObjRecTestBase {
                 // Should create exception
             }
             
-            copyFile(imageLocation, location2);
+            copyFile(IMAGE_LOCATION, location2);
             
             try {
                 byte[] data = fr.getImage();
@@ -114,7 +112,7 @@ public class TestFileRetriever extends ObjRecTestBase {
         }
         try {
             Map<String,String> message = new LinkedHashMap<>();
-            message.put("fileLocation", imageLocation);
+            message.put("fileLocation", IMAGE_LOCATION);
             byte[] data = fr.getImage(message);
             assert data != null;
             assert data.length > 0;
@@ -127,7 +125,7 @@ public class TestFileRetriever extends ObjRecTestBase {
     public void testImageReadQueryWithInvalidLocation() {
         try {
             Map<String,String> config = new LinkedHashMap<>();
-            config.put("fileLocation", imageLocation);
+            config.put("fileLocation", IMAGE_LOCATION);
             fr.setupDataRetrieval(config, source);
         } catch (Exception e) {
             fail("Exception occurred when setting up: " + e.toString());
@@ -146,7 +144,7 @@ public class TestFileRetriever extends ObjRecTestBase {
     public void testImageReadEmptyQuery() {
         try {
             Map<String,String> config = new LinkedHashMap<>();
-            config.put("fileLocation", imageLocation);
+            config.put("fileLocation", IMAGE_LOCATION);
             fr.setupDataRetrieval(config, source);
         } catch (Exception e) {
             fail("Exception occurred when setting up: " + e.toString());
@@ -165,7 +163,7 @@ public class TestFileRetriever extends ObjRecTestBase {
     public void testVideoBasicRead() {
         try {
             Map<String,String> config = new LinkedHashMap<>();
-            config.put("fileLocation", videoLocation);
+            config.put("fileLocation", VIDEO_LOCATION);
             config.put("fileExtension", "mov");
             fr.setupDataRetrieval(config, source);
         } catch (Exception e) {
@@ -197,7 +195,7 @@ public class TestFileRetriever extends ObjRecTestBase {
     public void testVideoWithImage() {
         try {
             Map<String,String> config = new LinkedHashMap<>();
-            config.put("fileLocation", imageLocation);
+            config.put("fileLocation", IMAGE_LOCATION);
             config.put("fileExtension", "mov");
             fr.setupDataRetrieval(config, source);
         } catch (Exception e) {
@@ -229,16 +227,6 @@ public class TestFileRetriever extends ObjRecTestBase {
         try {
             byte[] fileData = Files.readAllBytes(f1.toPath());
             Files.write(f2.toPath(), fileData);
-        } catch (Exception e) {
-            throw new RuntimeException("Error copying data", e);
-        }
-    }
-    
-    public void deleteFile(String fileName) {
-        File f = new File(fileName);
-        
-        try {
-            Files.deleteIfExists(f.toPath());
         } catch (Exception e) {
             throw new RuntimeException("Error copying data", e);
         }
