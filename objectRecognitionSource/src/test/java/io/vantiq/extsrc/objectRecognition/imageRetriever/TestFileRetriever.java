@@ -1,0 +1,246 @@
+package io.vantiq.extsrc.objectRecognition.imageRetriever;
+
+import static org.junit.Assert.fail;
+
+import java.io.File;
+import java.nio.file.Files;
+import java.util.LinkedHashMap;
+import java.util.Map;
+
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
+
+import io.vantiq.extsrc.objectRecognition.ObjRecTestBase;
+import io.vantiq.extsrc.objectRecognition.ObjectRecognitionCore;
+import io.vantiq.extsrc.objectRecognition.exception.FatalImageException;
+import io.vantiq.extsrc.objectRecognition.exception.ImageAcquisitionException;
+
+public class TestFileRetriever extends ObjRecTestBase {
+    final String imageLocation = "src/test/resources/sampleImage.jpg";
+    final String videoLocation = "src/test/resources/sampleVideo.mov";
+    FileRetriever fr;
+    ObjectRecognitionCore source;
+    
+    @Before
+    public void setup() {
+        fr = new FileRetriever();
+        source = new ObjectRecognitionCore("src", UNUSED, UNUSED, UNUSED);
+    }
+    
+    @After
+    public void tearDown() {
+        source.close();
+        fr = null;
+        source = null;
+    }
+    
+    @Test
+    public void testImageReadBasic() {
+        try {
+            Map<String,String> config = new LinkedHashMap<>();
+            config.put("fileLocation", imageLocation);
+            fr.setupDataRetrieval(config, source);
+        } catch (Exception e) {
+            fail("Exception occurred when setting up: " + e.toString());
+        }
+        try {
+            byte[] data = fr.getImage();
+            assert data != null;
+            assert data.length > 0;
+        } catch (ImageAcquisitionException e) {
+            fail("Exception occurred when obtaining image " + e.toString());
+        }
+    }
+    
+    @Test
+    public void testImageReadBasicInvalidLocation() {
+        try {
+            Map<String,String> config = new LinkedHashMap<>();
+            config.put("fileLocation", "invalidLocation");
+            fr.setupDataRetrieval(config, source);
+        } catch (Exception e) {
+            fail("Exception occurred when setting up: " + e.toString());
+        }
+        try {
+            fr.getImage();
+            fail("Expected exception when calling with invalid default");
+        } catch (ImageAcquisitionException e) {
+            // Should create exception
+        }
+    }
+    
+    @Test
+    public void testImageReadBasicInitiallyInvalidLocation() {
+        final String location2 = "src/test/resources/image2";
+        try {
+            
+            try {
+                Map<String,String> config = new LinkedHashMap<>();
+                config.put("fileLocation", location2);
+                fr.setupDataRetrieval(config, source);
+            } catch (Exception e) {
+                fail("Exception occurred when setting up: " + e.toString());
+            }
+            try {
+                fr.getImage();
+                fail("Expected exception when calling with invalid default");
+            } catch (ImageAcquisitionException e) {
+                // Should create exception
+            }
+            
+            copyFile(imageLocation, location2);
+            
+            try {
+                byte[] data = fr.getImage();
+                assert data != null;
+                assert data.length > 0;
+            } catch (ImageAcquisitionException e) {
+                fail("Exception occurred when obtaining image after creating it " + e.toString());
+            }
+        } finally {
+            deleteFile(location2);
+        }
+    }
+    
+    @Test
+    public void testImageReadQuery() {
+        try {
+            Map<String,String> config = new LinkedHashMap<>();
+            config.put("fileLocation", "invalidLocation");
+            fr.setupDataRetrieval(config, source);
+        } catch (Exception e) {
+            fail("Exception occurred when setting up: " + e.toString());
+        }
+        try {
+            Map<String,String> message = new LinkedHashMap<>();
+            message.put("fileLocation", imageLocation);
+            byte[] data = fr.getImage(message);
+            assert data != null;
+            assert data.length > 0;
+        } catch (ImageAcquisitionException e) {
+            fail("Exception occurred when obtaining image " + e.toString());
+        }
+    }
+    
+    @Test
+    public void testImageReadQueryWithInvalidLocation() {
+        try {
+            Map<String,String> config = new LinkedHashMap<>();
+            config.put("fileLocation", imageLocation);
+            fr.setupDataRetrieval(config, source);
+        } catch (Exception e) {
+            fail("Exception occurred when setting up: " + e.toString());
+        }
+        try {
+            Map<String,String> message = new LinkedHashMap<>();
+            message.put("fileLocation", "invalidLocation");
+            fr.getImage(message);
+            fail("Expected exception when calling with invalid default");
+        } catch (ImageAcquisitionException e) {
+            // Should create exception
+        }
+    }
+    
+    @Test
+    public void testImageReadEmptyQuery() {
+        try {
+            Map<String,String> config = new LinkedHashMap<>();
+            config.put("fileLocation", imageLocation);
+            fr.setupDataRetrieval(config, source);
+        } catch (Exception e) {
+            fail("Exception occurred when setting up: " + e.toString());
+        }
+        try {
+            Map<String,String> message = new LinkedHashMap<>();
+            byte[] data = fr.getImage(message);
+            assert data != null;
+            assert data.length > 0;
+        } catch (ImageAcquisitionException e) {
+            fail("Exception occurred when obtaining image: " + e.toString());
+        }
+    }
+    
+    @Test
+    public void testVideoBasicRead() {
+        try {
+            Map<String,String> config = new LinkedHashMap<>();
+            config.put("fileLocation", videoLocation);
+            config.put("fileExtension", "mov");
+            fr.setupDataRetrieval(config, source);
+        } catch (Exception e) {
+            fail("Exception occurred when setting up " + e.toString());
+        }
+        try {
+            byte[] data = fr.getImage();
+            assert data != null;
+            assert data.length > 0;
+        } catch (ImageAcquisitionException e) {
+            fail("Exception occurred when obtaining image: " + e.toString());
+        }
+    }
+    
+    @Test
+    public void testVideoInvalidLocation() {
+        try {
+            Map<String,String> config = new LinkedHashMap<>();
+            config.put("fileLocation", "invalidLocation");
+            config.put("fileExtension", "mov");
+            fr.setupDataRetrieval(config, source);
+            fail("Expected setup exception on invalid video");
+        } catch (Exception e) {
+            // Should create exception
+        }
+    }
+    
+    @Test
+    public void testVideoWithImage() {
+        try {
+            Map<String,String> config = new LinkedHashMap<>();
+            config.put("fileLocation", imageLocation);
+            config.put("fileExtension", "mov");
+            fr.setupDataRetrieval(config, source);
+        } catch (Exception e) {
+            fail("Exception occurred when obtaining image: " + e.toString());
+        }
+        try {
+            byte[] data = fr.getImage();
+            assert data != null;
+            assert data.length > 0;
+        } catch (ImageAcquisitionException e) {
+            fail("Exception occurred when obtaining first image: " + e.toString());
+        }
+        try {
+            fr.getImage();
+            fail("Expected exception when images run out");
+        } catch (ImageAcquisitionException e) {
+            fail("Exception should be fatal");
+        } catch (FatalImageException e) {
+            // Should create fatal exception, since no more can be read
+        }
+    }
+    
+// ================================================= Helper functions =================================================
+    
+    public void copyFile(String initialLocation, String copyLocation) {
+        File f1 = new File(initialLocation);
+        File f2 = new File(copyLocation);
+        
+        try {
+            byte[] fileData = Files.readAllBytes(f1.toPath());
+            Files.write(f2.toPath(), fileData);
+        } catch (Exception e) {
+            throw new RuntimeException("Error copying data", e);
+        }
+    }
+    
+    public void deleteFile(String fileName) {
+        File f = new File(fileName);
+        
+        try {
+            Files.deleteIfExists(f.toPath());
+        } catch (Exception e) {
+            throw new RuntimeException("Error copying data", e);
+        }
+    }
+}
