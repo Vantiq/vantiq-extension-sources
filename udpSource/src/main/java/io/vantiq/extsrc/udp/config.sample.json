@@ -1,0 +1,12 @@
+{
+  "targetServer" : "ws://localhost:8080/api/v1/wsock/websocket",
+  "defaultBindPort" : 3141,
+  "defaultBindAddress" : "localhost",
+  "maxPacketSize" : 4096,
+  "authToken" : "1234567890abcz=",
+  "logTarget" : "udpSource.log",
+  "logLevel" : "debug",
+  "sources" : [
+    "sampleUDP"
+  ]
+}

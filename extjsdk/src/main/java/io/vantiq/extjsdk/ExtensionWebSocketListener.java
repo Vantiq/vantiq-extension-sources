@@ -1,3 +1,12 @@
+
+/*
+ * Copyright (c) 2018 Vantiq, Inc.
+ *
+ * All rights reserved.
+ * 
+ * SPDX: MIT
+ */
+
 package io.vantiq.extjsdk;
 
 // Author: Alex Blumer
@@ -79,7 +88,7 @@ public class ExtensionWebSocketListener implements WebSocketListener{
      */
     public ExtensionWebSocketListener(ExtensionWebSocketClient client) {
         this.client = client;
-        log = LoggerFactory.getLogger(this.getClass() + "#" + client.getSourceName());
+        log = LoggerFactory.getLogger(this.getClass().getCanonicalName() + "#" + client.getSourceName());
         initializeDefaultHandlers();
     }
 

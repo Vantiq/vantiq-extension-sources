@@ -1,3 +1,12 @@
+
+/*
+ * Copyright (c) 2018 Vantiq, Inc.
+ *
+ * All rights reserved.
+ * 
+ * SPDX: MIT
+ */
+
 package io.vantiq.extjsdk;
 
 // Author: Alex Blumer
@@ -98,7 +107,7 @@ public class ExtensionWebSocketClient {
      */
     public ExtensionWebSocketClient (String sourceName) {
         this.sourceName = sourceName;
-        log = LoggerFactory.getLogger(this.getClass() + "#" + sourceName);
+        log = LoggerFactory.getLogger(this.getClass().getCanonicalName() + "#" + sourceName);
         listener = new ExtensionWebSocketListener(this);
     }
 

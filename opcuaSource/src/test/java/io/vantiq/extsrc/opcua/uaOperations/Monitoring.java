@@ -1,12 +1,21 @@
+/*
+ * Copyright (c) 2018 Vantiq, Inc.
+ *
+ * All rights reserved.
+ *
+ * SPDX: MIT
+ */
+
 package io.vantiq.extsrc.opcua.uaOperations;
 
 import org.eclipse.milo.examples.server.ExampleNamespace;
 import org.eclipse.milo.opcua.stack.core.Identifiers;
 import org.eclipse.milo.opcua.stack.core.security.SecurityPolicy;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DateTime;
+import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
+import org.eclipse.milo.opcua.stack.core.types.enumerated.MessageSecurityMode;
 import org.eclipse.milo.opcua.stack.core.util.Namespaces;
 import org.junit.Assert;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import java.util.Arrays;
@@ -20,6 +29,10 @@ import lombok.extern.slf4j.Slf4j;
 
 
 import static org.junit.Assert.fail;
+
+/**
+ * Handle tests for overall monitoring tasks used in the Vantiq OPC UA Extension Source
+ */
 
 @Slf4j
 public class Monitoring extends OpcUaTestBase {
@@ -41,13 +54,13 @@ public class Monitoring extends OpcUaTestBase {
         Map<String, Object> opcConfig = new HashMap<>();
         Map<String, Map<String, String>> misMap = new HashMap<>();
 
-        config.put(OpcUaESClient.CONFIG_OPC_UA_INFORMATION, opcConfig);
-        opcConfig.put(OpcUaESClient.CONFIG_STORAGE_DIRECTORY, "/tmp/opcua-storage");
-        opcConfig.put(OpcUaESClient.CONFIG_SECURITY_POLICY, SecurityPolicy.None.getSecurityPolicyUri());
-        opcConfig.put(OpcUaESClient.CONFIG_DISCOVERY_ENDPOINT, Utils.OPC_INPROCESS_SERVER);
+        config.put(OpcConstants.CONFIG_OPC_UA_INFORMATION, opcConfig);
+        opcConfig.put(OpcConstants.CONFIG_STORAGE_DIRECTORY, STANDARD_STORAGE_DIRECTORY);
+        opcConfig.put(OpcConstants.CONFIG_SECURITY_POLICY, SecurityPolicy.None.getSecurityPolicyUri());
+        opcConfig.put(OpcConstants.CONFIG_DISCOVERY_ENDPOINT, Utils.OPC_INPROCESS_SERVER);
 
         // Here, we'll create a simple map set that creates a monitored
-        opcConfig.put(OpcUaESClient.CONFIG_OPC_MONITORED_ITEMS, misMap);
+        opcConfig.put(OpcConstants.CONFIG_OPC_MONITORED_ITEMS, misMap);
         Map timeMap = new HashMap<>();
 
         // Leaving since we use it elsewhere.
@@ -58,13 +71,11 @@ public class Monitoring extends OpcUaTestBase {
         // It's also the case that purportedly ns=0 is reserved for OPC, is it should always be valid.
         // Nonetheless, we'll test that it works both ways...
 
-//        timeMap.put(OpcUaESClient.CONFIG_MI_NAMESPACE_INDEX,
-//                Identifiers.Server_ServerStatus_CurrentTime.getNamespaceIndex().toString());
-        timeMap.put(OpcUaESClient.CONFIG_MI_NAMESPACE_URN,
+        timeMap.put(OpcConstants.CONFIG_MI_NAMESPACE_URN,
                 Namespaces.OPC_UA);
-        timeMap.put(OpcUaESClient.CONFIG_MI_IDENTIFIER,
+        timeMap.put(OpcConstants.CONFIG_MI_IDENTIFIER,
                 Identifiers.Server_ServerStatus_CurrentTime.getIdentifier().toString());
-        timeMap.put(OpcUaESClient.CONFIG_MI_IDENTIFIER_TYPE, "i");  // This ident is a number...
+        timeMap.put(OpcConstants.CONFIG_MI_IDENTIFIER_TYPE, "i");  // This ident is a number...
         misMap.put("Server Time", timeMap);
 
         OpcUaESClient client = Utils.makeConnection(config, false);
@@ -93,24 +104,27 @@ public class Monitoring extends OpcUaTestBase {
         }
     }
 
-    private void checkSimpleUpdate(String nodeInfo, Object newValue) {
+    private void checkSimpleUpdate(NodeId nodeInfo, Object newValue) {
         try {
             updateCount.incrementAndGet();
+            String current = nodeInfo.getIdentifier().toString();
+
             log.debug(">>>> Update number {}: Node: {}, newValue: {} ", updateCount.get(), nodeInfo, newValue.toString());
-            if (!updateByNode.containsKey(nodeInfo)) {
-                updateByNode.put(nodeInfo, 0);
+            if (!updateByNode.containsKey(current)) {
+                updateByNode.put(current, 0);
             }
-            updateByNode.put(nodeInfo, updateByNode.get(nodeInfo) + 1);
+            updateByNode.put(current, updateByNode.get(current) + 1);
 
             boolean found = false;
 
+
             for (String expected: expectedNodeIdentifier) {
-                if (nodeInfo.contains(expected)) {
+                if (current.contains(expected)) {
                     found = true;
                     break;
                 }
             }
-            Assert.assertTrue("Incorrect node information: " + nodeInfo + " should contain items from: " + expectedNodeIdentifier,
+            Assert.assertTrue("Incorrect node information: " + current + " should contain items from: " + expectedNodeIdentifier,
                     found);
             Assert.assertTrue("Wrong class for updated object: " + newValue.getClass().getName() +
                     ", should be: " + expectedClass.getClass().getName(), expectedClass.contains(newValue.getClass()));
@@ -139,20 +153,20 @@ public class Monitoring extends OpcUaTestBase {
         Map<String, Object> opcConfig = new HashMap<>();
         Map<String, Map<String, String>> misMap = new HashMap<>();
 
-        config.put(OpcUaESClient.CONFIG_OPC_UA_INFORMATION, opcConfig);
-        opcConfig.put(OpcUaESClient.CONFIG_STORAGE_DIRECTORY, "/tmp/opcua-storage");
-        opcConfig.put(OpcUaESClient.CONFIG_SECURITY_POLICY, SecurityPolicy.None.getSecurityPolicyUri());
-        opcConfig.put(OpcUaESClient.CONFIG_DISCOVERY_ENDPOINT, Utils.OPC_INPROCESS_SERVER);
+        config.put(OpcConstants.CONFIG_OPC_UA_INFORMATION, opcConfig);
+        opcConfig.put(OpcConstants.CONFIG_STORAGE_DIRECTORY, STANDARD_STORAGE_DIRECTORY);
+        opcConfig.put(OpcConstants.CONFIG_SECURITY_POLICY, SecurityPolicy.None.getSecurityPolicyUri());
+        opcConfig.put(OpcConstants.CONFIG_DISCOVERY_ENDPOINT, Utils.OPC_INPROCESS_SERVER);
 
         // Here, we'll create a simple map set that creates a monitored
-        opcConfig.put(OpcUaESClient.CONFIG_OPC_MONITORED_ITEMS, misMap);
+        opcConfig.put(OpcConstants.CONFIG_OPC_MONITORED_ITEMS, misMap);
         Map miMap = new HashMap<>();
-        miMap.put(OpcUaESClient.CONFIG_MI_NAMESPACE_URN,
+        miMap.put(OpcConstants.CONFIG_MI_NAMESPACE_URN,
                 ExampleNamespace.NAMESPACE_URI);
-        miMap.put(OpcUaESClient.CONFIG_MI_IDENTIFIER,
+        miMap.put(OpcConstants.CONFIG_MI_IDENTIFIER,
                 Utils.EXAMPLE_NS_SCALAR_INT32_IDENTIFIER);
 
-        miMap.put(OpcUaESClient.CONFIG_MI_IDENTIFIER_TYPE, "s");  // This ident is a string
+        miMap.put(OpcConstants.CONFIG_MI_IDENTIFIER_TYPE, "s");  // This ident is a string
 
         misMap.put("Hello World Int 32", miMap);
 
@@ -200,69 +214,6 @@ public class Monitoring extends OpcUaTestBase {
         }
     }
 
-    @Ignore     // this is a simpler version of testUpdateMonitor.  That test is sufficient at present.
-    @Test
-    public void testMultiMonitor() {
-        resetUpdateCounters();
-
-        HashMap config = new HashMap();
-        Map<String, Object> opcConfig = new HashMap<>();
-        Map<String, Map<String, String>> misMap = new HashMap<>();
-
-        config.put(OpcUaESClient.CONFIG_OPC_UA_INFORMATION, opcConfig);
-        opcConfig.put(OpcUaESClient.CONFIG_STORAGE_DIRECTORY, "/tmp/opcua-storage");
-        opcConfig.put(OpcUaESClient.CONFIG_SECURITY_POLICY, SecurityPolicy.None.getSecurityPolicyUri());
-        opcConfig.put(OpcUaESClient.CONFIG_DISCOVERY_ENDPOINT, Utils.OPC_INPROCESS_SERVER);
-
-        // Here, we'll create a simple map set that creates a monitored
-        opcConfig.put(OpcUaESClient.CONFIG_OPC_MONITORED_ITEMS, misMap);
-
-        Map miMap = new HashMap<>();
-        miMap.put(OpcUaESClient.CONFIG_MI_NAMESPACE_URN,
-                ExampleNamespace.NAMESPACE_URI);
-        miMap.put(OpcUaESClient.CONFIG_MI_IDENTIFIER,
-                Utils.EXAMPLE_NS_SCALAR_INT32_IDENTIFIER);
-        miMap.put(OpcUaESClient.CONFIG_MI_IDENTIFIER_TYPE, "s");
-
-        misMap.put("Hello World Int 32", miMap);
-
-        miMap = new HashMap<>();
-        miMap.put(OpcUaESClient.CONFIG_MI_NAMESPACE_URN,
-                ExampleNamespace.NAMESPACE_URI);
-        miMap.put(OpcUaESClient.CONFIG_MI_IDENTIFIER,
-                Utils.EXAMPLE_NS_SCALAR_STRING_IDENTIFIER);
-
-        // This time, we'll leave the string designation out since it's the default...
-
-        misMap.put("Hello World String", miMap);
-
-        // Here, we'll test that the nodeId form of the node specification works as expected
-        // Note: NodeId.toParseableString() returns the "ns=0;i=2258" form of the node id.
-        //       NodeId.toString() returns the "NodeId{ns=0, id=2258}" form which isn't accepted as input to OPC UA.
-        // Thus, we'll use the more accepted version here for passing into the OPC system.
-
-        miMap = new HashMap<>();
-        miMap.put(OpcUaESClient.CONFIG_MI_NODEID,
-                Identifiers.Server_ServerStatus_CurrentTime.toParseableString());
-        misMap.put("Server Time", miMap);
-
-        Assert.assertEquals("Test is requesting wrong number of items(expecting 3): " + misMap.size(), 3, misMap.size());
-
-
-
-        OpcUaESClient client = Utils.makeConnection(config, false);
-
-        // Now, we'll update our monitored items list & see if we get any actual values...
-
-        int expectedRepetitionCount = ((2 * repetitionCount) // "manual" changes above
-                + 2)                  // Plus startup states sometimes
-                + (repetitionCount * 2 * msDelayBetweenUpdates) / 1000;
-        // twice manual changes * delay in seconds
-
-        performUpdates(client, config, expectedRepetitionCount);
-
-    }
-
     @Test
     public void testUpdateMonitor() {
         resetUpdateCounters();
@@ -271,18 +222,19 @@ public class Monitoring extends OpcUaTestBase {
         Map<String, Object> opcConfig = new HashMap<>();
         Map<String, Map<String, String>> misMap = new HashMap<>();
 
-        config.put(OpcUaESClient.CONFIG_OPC_UA_INFORMATION, opcConfig);
-        opcConfig.put(OpcUaESClient.CONFIG_STORAGE_DIRECTORY, "/tmp/opcua-storage");
-        opcConfig.put(OpcUaESClient.CONFIG_SECURITY_POLICY, SecurityPolicy.None.getSecurityPolicyUri());
-        opcConfig.put(OpcUaESClient.CONFIG_DISCOVERY_ENDPOINT, Utils.OPC_INPROCESS_SERVER);
+        config.put(OpcConstants.CONFIG_OPC_UA_INFORMATION, opcConfig);
+        opcConfig.put(OpcConstants.CONFIG_STORAGE_DIRECTORY, STANDARD_STORAGE_DIRECTORY);
+        opcConfig.put(OpcConstants.CONFIG_SECURITY_POLICY, SecurityPolicy.Basic128Rsa15.getSecurityPolicyUri());
+        opcConfig.put(OpcConstants.CONFIG_MESSAGE_SECURITY_MODE, MessageSecurityMode.SignAndEncrypt.toString());
+        opcConfig.put(OpcConstants.CONFIG_DISCOVERY_ENDPOINT, Utils.OPC_INPROCESS_SERVER);
 
         // Here, we'll create a simple map set that creates a monitored item list
-        opcConfig.put(OpcUaESClient.CONFIG_OPC_MONITORED_ITEMS, misMap);
+        opcConfig.put(OpcConstants.CONFIG_OPC_MONITORED_ITEMS, misMap);
 
         Map miMap = new HashMap<>();
-        miMap.put(OpcUaESClient.CONFIG_MI_NAMESPACE_URN,
+        miMap.put(OpcConstants.CONFIG_MI_NAMESPACE_URN,
                 ExampleNamespace.NAMESPACE_URI);
-        miMap.put(OpcUaESClient.CONFIG_MI_IDENTIFIER,
+        miMap.put(OpcConstants.CONFIG_MI_IDENTIFIER,
                 Utils.EXAMPLE_NS_SCALAR_INT32_IDENTIFIER);
 
         // This time, we'll leave the string designation out since it's the default...
@@ -290,9 +242,9 @@ public class Monitoring extends OpcUaTestBase {
         misMap.put("Hello World Int 32", miMap);
 
         miMap = new HashMap<>();
-        miMap.put(OpcUaESClient.CONFIG_MI_NAMESPACE_URN,
+        miMap.put(OpcConstants.CONFIG_MI_NAMESPACE_URN,
                 ExampleNamespace.NAMESPACE_URI);
-        miMap.put(OpcUaESClient.CONFIG_MI_IDENTIFIER,
+        miMap.put(OpcConstants.CONFIG_MI_IDENTIFIER,
                 Utils.EXAMPLE_NS_SCALAR_STRING_IDENTIFIER);
 
         // This time, we'll leave the string designation out since it's the default...
@@ -305,7 +257,7 @@ public class Monitoring extends OpcUaTestBase {
         // Thus, we'll use the more accepted version here for passing into the OPC system.
 
         miMap = new HashMap<>();
-        miMap.put(OpcUaESClient.CONFIG_MI_NODEID,
+        miMap.put(OpcConstants.CONFIG_MI_NODEID,
                 Identifiers.Server_ServerStatus_CurrentTime.toParseableString());
         misMap.put("Server Time", miMap);
 

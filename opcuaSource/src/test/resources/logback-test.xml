@@ -8,10 +8,14 @@
         </encoder>
     </appender>
 
-    <logger name="org.eclipse.milo" level="INFO"/>
-    <logger name="io.netty" level="INFO"/>
-
     <root level="debug">
         <appender-ref ref="STDOUT" />
     </root>
+
+    <logger name="root" level="DEBUG"/>
+    <logger name="org.eclipse.milo" level="INFO"/>
+    <logger name="io.netty" level="INFO"/>
+    <logger name="io.vantiq.extsrc.opcua.uaOperations.OpcUaESClient" level="DEBUG"/>
+
+
 </configuration>
