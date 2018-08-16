@@ -31,6 +31,17 @@ repositories {
     mavenCentral()
 }
 
+configurations {
+    testArtifacts
+}
+  task testJar (type: Jar) {
+    baseName = "${project.name}-test"
+    from sourceSets.test.output
+}
+  artifacts {
+    testArtifacts testJar
+}
+
 dependencies {
     compile "org.slf4j:slf4j-api:1.7.25"
     
