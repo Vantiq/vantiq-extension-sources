@@ -17,7 +17,9 @@ import io.vantiq.extsrc.opcua.uaOperations.OpcExtConfigException;
 import io.vantiq.extsrc.opcua.uaOperations.OpcExtRuntimeException;
 import io.vantiq.extsrc.opcua.uaOperations.OpcUaESClient;
 import lombok.extern.slf4j.Slf4j;
+import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UShort;
+import org.eclipse.milo.opcua.stack.core.types.enumerated.IdType;
 
 import java.net.HttpURLConnection;
 import java.util.HashMap;
@@ -300,18 +302,44 @@ public class OpcUaSource {
         }
     }
 
-    private void handleMonitorUpdates(String nodeInfo, Object newValue) {
+    private void handleMonitorUpdates(NodeId nodeInfo, Object newValue) {
         try {
             log.debug(">>>> Update: Node: {}, newValue: {} ", nodeInfo, newValue.toString());
             Map<String, Object> updateMsg = new HashMap<>();
 
-            updateMsg.put(OpcConstants.NODE_IDENTIFICATION, nodeInfo);
-            updateMsg.put(OpcConstants.ENTITY, newValue);
+            updateMsg.put(OpcConstants.CONFIG_MI_NAMESPACE_INDEX, nodeInfo.getNamespaceIndex());
+            updateMsg.put(OpcConstants.CONFIG_MI_NAMESPACE_URN, opcClient.getNamespaceURN(nodeInfo.getNamespaceIndex()));
+            updateMsg.put(OpcConstants.CONFIG_MI_IDENTIFIER, nodeInfo.getIdentifier());
+            updateMsg.put(OpcConstants.CONFIG_MI_IDENTIFIER_TYPE, stringifyNodeIdType(nodeInfo.getType()));
+            updateMsg.put(OpcConstants.OPC_VALUE_IN_VANTIQ, newValue);
+            updateMsg.put(OpcConstants.NODE_ID, nodeInfo.toParseableString());
             vantiqClient.sendNotification(updateMsg);
         }
         catch (Throwable e) {
             log.error("Trapped unexpected error during event processing: ", e);
         }
+    }
+
+    private static String stringifyNodeIdType(IdType idType) {
+        String retVal = "";
+        switch (idType) {
+            case Numeric:
+                retVal = "i";
+                break;
+            case String:
+                retVal = "s";
+                break;
+            case Guid:
+                retVal = "g";
+                break;
+            case Opaque:
+                retVal = "b";
+                break;
+            default:
+                retVal = "s";
+                break;
+        }
+        return retVal;
     }
 
     /**

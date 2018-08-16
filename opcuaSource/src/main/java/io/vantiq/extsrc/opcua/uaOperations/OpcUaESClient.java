@@ -73,7 +73,7 @@ public class OpcUaESClient {
     protected OpcUaClient client;
     protected UaSubscription subscription = null;
     protected String discoveryEndpoint = null;
-    protected BiConsumer<String, Object> subscriptionHandler;
+    protected BiConsumer<NodeId, Object> subscriptionHandler;
     protected List<UInteger> currentMonitoredItemList = null;
     protected KeyStoreManager keyStoreManager = null;
     protected CompletableFuture<Void> connectFuture = null;
@@ -574,6 +574,10 @@ public class OpcUaESClient {
         }
     }
 
+    public String getNamespaceURN(UShort index) {
+        return client.getNamespaceTable().getUri(index);
+    }
+
     /**
      * Subscribe (if necessary) and monitor items specified in config.
      * <p>
@@ -590,7 +594,7 @@ public class OpcUaESClient {
      * @throws OpcExtRuntimeException In case of errors, etc.
      */
 
-    public void updateMonitoredItems(Map<String, Object> config, BiConsumer<String, Object> handler) throws OpcExtRuntimeException {
+    public void updateMonitoredItems(Map<String, Object> config, BiConsumer<NodeId, Object> handler) throws OpcExtRuntimeException {
         try {
             boolean isNewSubscription = false;
             if (subscription == null) {
@@ -712,7 +716,7 @@ public class OpcUaESClient {
         log.debug(
                 "Update event on subscription {} value received: item={}, value={}",
                 subscription.getSubscriptionId(), item.getReadValueId().getNodeId().toParseableString(), value.getValue());
-        subscriptionHandler.accept(item.getReadValueId().getNodeId().toParseableString(), value.getValue().getValue());
+        subscriptionHandler.accept(item.getReadValueId().getNodeId(), value.getValue().getValue());
     }
 
     private NodeId constructNodeId(UShort nsIndex, String identifier, String identifierType) throws OpcExtRuntimeException {

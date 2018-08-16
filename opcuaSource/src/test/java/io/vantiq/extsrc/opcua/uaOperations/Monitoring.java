@@ -12,6 +12,7 @@ import org.eclipse.milo.examples.server.ExampleNamespace;
 import org.eclipse.milo.opcua.stack.core.Identifiers;
 import org.eclipse.milo.opcua.stack.core.security.SecurityPolicy;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DateTime;
+import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.MessageSecurityMode;
 import org.eclipse.milo.opcua.stack.core.util.Namespaces;
 import org.junit.Assert;
@@ -103,24 +104,27 @@ public class Monitoring extends OpcUaTestBase {
         }
     }
 
-    private void checkSimpleUpdate(String nodeInfo, Object newValue) {
+    private void checkSimpleUpdate(NodeId nodeInfo, Object newValue) {
         try {
             updateCount.incrementAndGet();
+            String current = nodeInfo.getIdentifier().toString();
+
             log.debug(">>>> Update number {}: Node: {}, newValue: {} ", updateCount.get(), nodeInfo, newValue.toString());
-            if (!updateByNode.containsKey(nodeInfo)) {
-                updateByNode.put(nodeInfo, 0);
+            if (!updateByNode.containsKey(current)) {
+                updateByNode.put(current, 0);
             }
-            updateByNode.put(nodeInfo, updateByNode.get(nodeInfo) + 1);
+            updateByNode.put(current, updateByNode.get(current) + 1);
 
             boolean found = false;
 
+
             for (String expected: expectedNodeIdentifier) {
-                if (nodeInfo.contains(expected)) {
+                if (current.contains(expected)) {
                     found = true;
                     break;
                 }
             }
-            Assert.assertTrue("Incorrect node information: " + nodeInfo + " should contain items from: " + expectedNodeIdentifier,
+            Assert.assertTrue("Incorrect node information: " + current + " should contain items from: " + expectedNodeIdentifier,
                     found);
             Assert.assertTrue("Wrong class for updated object: " + newValue.getClass().getName() +
                     ", should be: " + expectedClass.getClass().getName(), expectedClass.contains(newValue.getClass()));
