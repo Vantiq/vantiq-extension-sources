@@ -24,6 +24,8 @@
 	*	[com.squareup.okhttp3:okhttp-ws Version 3.4.1](https://mvnrepository.com/artifact/com.squareup.okhttp3/okhttp-ws/3.4.1)
 	*	[com.fasterxml.jackson.core:jackson-databind Version 2.9.3](https://mvnrepository.com/artifact/com.fasterxml.jackson.core/jackson-databind/2.9.3)
 
+## Logging
+The SDK uses the Slf4j logging interface with no implementation. The name of the loggers are the fully qualified class name, appended by a '#' and the name of the source they are associated with.
 
 ## Program Flow
 1.	A new ExtensionWebSocketClient is created.
@@ -110,4 +112,7 @@ The Response class is a helper that defines what can be in a WebSocket message t
 *	`getContentType()` returns the MIME type of the message body. Currently, only JSON is possible for sent or received messages.
 
 ## Licenses
-This library uses three licensed libraries: slf4j, okhttp3, and jackson-databind. okhttp3 and jackson-databind are both licensed under [Apache Version 2.0 License](http://www.apache.org/licenses/LICENSE-2.0). slf4j is licensed under [terms](https://www.slf4j.org/license.html) identical to the [MIT License](https://opensource.org/licenses/MIT). This SDK will be licensed under the the Apache Version 2.0 License in order to conform with the used libraries.
+The source code in this project is licensed under the [MIT License](https://opensource.org/licenses/MIT).
+This library uses several licensed libraries, some of which have stricter licenses than this library. 
+okhttp3 and jackson-databind are both licensed under [Apache Version 2.0 License](http://www.apache.org/licenses/LICENSE-2.0). 
+slf4j is licensed under [terms](https://www.slf4j.org/license.html) identical to the [MIT License](https://opensource.org/licenses/MIT).
