@@ -52,12 +52,6 @@ task copyDocumentationFiles(type: Copy, dependsOn:copyLogFiles) {
 distZip.dependsOn copyDocumentationFiles
 distTar.dependsOn copyDocumentationFiles
 
-repositories {
-   flatDir {
-       dirs 'lib'
-   }
-}
-
 dependencies {
    // compile 'extjsdk' // extjsdk.jar must be in
     compile project(":extjsdk")
