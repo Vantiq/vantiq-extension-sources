@@ -46,9 +46,5 @@ public class OpcConstants {
     public static final String QUERY_STYLE_QUERY = "query";
     public static final String QUERY_STYLE_NODEID = "nodeId";
 
-    public static final String NODE_IDENTIFICATION = "nodeIdentification";
-    public static final String ENTITY = "entity";
-
-
-
+    public static final String NODE_ID = "nodeId";
 }

@@ -156,18 +156,26 @@ The following example will make note of the message in VANTIQ log.
 
 ```
 RULE opcChangeNotification
-when MESSAGE ARRIVES FROM opcExample as message
+when MESSAGE ARRIVES FROM opctest as message
 
-log.info("OpcExample: Node {} has new value {}", [message.nodeIdentification, message.entity])
+log.info("Got a message: {}", [message])
 
 INSERT INTO opcUpdateOccurence (
 	timestamp = now(),
-	nodeId = message.nodeIdentification,
-	value = message.entity
+	nodeId = message.nodeIdentifier,
+	value = message.dataValue
 )
 ```
 
-The `nodeIdentification` property contains the Node Id, and the `entity` property contains the new value of the node.
+The `nodeIdentifier` property contains the Node Id, and the `dataValue` property contains the new value of the node.
+More generally, updates will report the following properties:
+
+ - `nsu` -- the namespace URN for the updated node
+ - `ns` -- the namespace index for the updated node
+ - `nodeIdentifier` -- the identifier for the updated node
+ - `nodeIdentifierType` -- the identifier type (*s, i, g, b*) for the updated node identified by the `nodeIdentifier` property in the namespace identified by the `nsu` and/or `ns` properties
+ - `nodeId` -- the short-form NodeId (*e.g.* `ns=0;i=2258`)
+ - `dataValue` -- the value of the updated node
 
 ### Deploying OPC UA Source
 
