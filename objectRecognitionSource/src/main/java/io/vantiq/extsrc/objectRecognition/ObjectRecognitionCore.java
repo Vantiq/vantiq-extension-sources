@@ -225,14 +225,14 @@ public class ObjectRecognitionCore {
             log.warn("Could not obtain requested image.", e);
             log.debug("Request was: " + request);
             client.sendQueryError(replyAddress, ImageAcquisitionException.class.getCanonicalName(), 
-                    "Failed to obtain an image with request {0}", new Object[] {request});
+                    "Failed to obtain an image with request {0}. Exception was {1}", new Object[] {request, e});
         } catch (FatalImageException e) {
             log.error("Image retriever of type '" + imageRetriever.getClass().getCanonicalName() 
                     + "' failed unrecoverably"
                     , e);
             log.debug("Request was: " + request);
             client.sendQueryError(replyAddress, FatalImageException.class.getCanonicalName() + ".acquisition", 
-                    "Fatally failed to obtain an image with request {0}", new Object[] {request});
+                    "Fatally failed to obtain an image with request {0}. Exception was {1}", new Object[] {request, e});
             stop();
         } catch (RuntimeException e) {
             log.error("Image retriever had an uncaught runtime exception", e);
@@ -240,7 +240,8 @@ public class ObjectRecognitionCore {
             log.error("Please ask the developer of the image retriever to check for the exception. Exiting...");
             client.sendQueryError(replyAddress, FatalImageException.class.getPackage().getName() 
                     + ".uncaughtAcquisitionException", 
-                    "Unexpected exception when obtaining an image with request {0}", new Object[] {request});
+                    "Unexpected exception when obtaining an image with request {0}Exception was {1}"
+                    , new Object[] {request, e});
             stop();
         }
         return null;
@@ -313,13 +314,15 @@ public class ObjectRecognitionCore {
            log.warn("Could not process image", e);
            log.debug("Request was: " + request);
            client.sendQueryError(replyAddress, ImageProcessingException.class.getCanonicalName(), 
-                   "Failed to process the image obtained with request {0}", new Object[] {request});
+                   "Failed to process the image obtained with request {0}. Exception was {1}"
+                   , new Object[] {request, e});;
        } catch (FatalImageException e) {
            log.error("Image processor of type '" + neuralNet.getClass().getCanonicalName() + "' failed unrecoverably"
                    , e);
            log.debug("Request was: " + request);
            client.sendQueryError(replyAddress, FatalImageException.class.getCanonicalName() + ".processing", 
-                   "Fatally failed to process the image obtained with request {0}", new Object[] {request});
+                   "Fatally failed to process the image obtained with request {0}. Exception was {1}"
+                   , new Object[] {request, e});
            log.error("Stopping");
            stop();
        } catch (RuntimeException e) {
@@ -328,7 +331,7 @@ public class ObjectRecognitionCore {
            log.error("Please ask the developer of the neural net to check for the exception. Exiting...");
            client.sendQueryError(replyAddress, FatalImageException.class.getPackage().getName() 
                    + ".uncaughtProcessingException", 
-                   "Fatally failed to process image with request {0}", new Object[] {request});
+                   "Fatally failed to process image with request {0}. Exception was {1}", new Object[] {request, e});
            stop();
        }
    }
