@@ -32,7 +32,8 @@ repositories {
 }
 
 dependencies {
-    compile 'extjsdk' // extjsdk.jar must be in 
+   // compile 'extjsdk' // extjsdk.jar must be in
+    compile project(":extjsdk")
     
     compile 'com.squareup.okhttp3:okhttp:3.4.1'
     compile 'com.squareup.okhttp3:okhttp-ws:3.4.1'
