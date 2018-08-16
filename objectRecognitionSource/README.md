@@ -18,7 +18,7 @@
 5.  Run either `<install location>/objectRecognitionSource/bin/objectRecognitionSource` with a local server.config file or specifying the [server config file](#serverConfig) as the first argument.
 
 ## Logging
-To change the logging settings, edit `<install location>/objectRecognitionSource/logConfig/log4j2.xml`. Here is its [documentation](https://logging.apache.org/log4j/2.x/manual/configuration.html). The logger names for each class is the class's fully qualified class name, e.g. "io.vantiq.extjsdk.ExtensionWebSocketClient".
+To change the logging settings, edit `<install location>/objectRecognitionSource/logConfig/log4j2.xml`. Here is its [documentation](https://logging.apache.org/log4j/2.x/manual/configuration.html). The logger names for each class is the class's fully qualified class name, e.g. "io.vantiq.extjsdk.ExtensionWebSocketClient".  
 To edit the logging for an IDE, change `<repo location>/src/main/dist/log4j2.xml`. Changes to this will be included in future distributions produced through gradle.
 
 ## Server Config File<a name="serverConfig" id="serverConfig"></a>
@@ -26,9 +26,12 @@ To edit the logging for an IDE, change `<repo location>/src/main/dist/log4j2.xml
 The server config file is written as `property=value`, with each property on its own line.
 
 ### Vantiq Options
-*   authToken: Required. The authentication token to connect with. These can be obtained from the namespace admin.*   sources: Required. A comma separated list of the sources to which you wish to connect. Any whitespace will be removed when read.*   targetServer: Optional. The Vantiq server hosting the sources. Defaults to "dev.vantiq.com"
+*   authToken: Required. The authentication token to connect with. These can be obtained from the namespace admin.
+*   sources: Required. A comma separated list of the sources to which you wish to connect. Any whitespace will be removed when read.
+*   targetServer: Optional. The Vantiq server hosting the sources. Defaults to "dev.vantiq.com"
 
-### Local Options*   modelDirectory: Optional. The directory in which the files for your neural networks will be. Defaults to the working directory.
+### Local Options
+*   modelDirectory: Optional. The directory in which the files for your neural networks will be. Defaults to the working directory.
 
 ## Running Inside Your Own Code<a name="core" id="core"></a>
 
@@ -45,7 +48,7 @@ The ObjectRecognitionCore class handles all the source related functionality. If
 
 ### Using in Your Code
 
-The ObjectRecognitionCore class has four public functions. The constructor takes in the same arguments passed through the [server config file](#serverConfig), the only difference being that only a single source is expected. `start()` sets everything up and tries to connect to the server, returning true if it works and false if it fails. If you want to use the source purely as defined elsewhere in this document, then these are the only two functions you need.
+The ObjectRecognitionCore class has four public functions. The constructor takes in the same arguments passed through the [server config file](#serverConfig), the only difference being that only a single source is expected. `start()` sets everything up and tries to connect to the server, returning true if it works and false if it fails. If you want to use the source purely as defined elsewhere in this document, then these are the only two functions you need.  
 If you want to obtain images and send them in addition to the data that the source will send normally, the other two functions will be needed. `retrieveImage()` attempts to use the source's image retriever to obtain a jpeg encoded image, returning null if it failed and stopping the Core if it failed unrecoverably. `sendDataFromImage(byte[])` takes the image and attempts to process it with the source's neural net then send the results to the source. If the image is null or an error occurs then no data is sent to the source, and if neural net failed unrecoverably then the Core is stopped as well.
 
 ## Source Configuration Document<a name="srcConfig" id="srcConfig"></a>
@@ -117,18 +120,21 @@ This is a user written implementation that acts as the default if no neural net 
 ### Yolo Processor<a name="yoloNet" id="yoloNet"></a>
 
 This is a TensorFlow implementation of YOLO. It returns a List of Maps, each of which has a `label` stating the type of the object identifiead, a `confidence` specifying on a scale of 0-1 how confident the neural net is that the identification is accurate, and a `location` containing the coordinates for the `top`,`left`, `bottom`, and `right` edges of the bounding box for the object. Its options are:
-*   pbFile: Required. The .pb file for the model.*   labelFile: Required. The labels for the model.*   outputDir: Optional. The directory in which the images (object boxes included) will be placed. Images will be saved as "&lt;year&gt;-&lt;month&gt;-&lt;day&gt;--&lt;hour&gt;-&lt;minute&gt;-&lt;second&gt;.jpg" where each value will zero-filled if necessary, e.g. "2018-08-14--06-30-22.jpg" No images will be saved if not set.*   saveRate: Optional. The rate at which images will be saved, once every n frames captured. Default is 1 when unset or a non-positive number. Does nothing if outputDir is not set..
+*   pbFile: Required. The .pb file for the model.
+*   labelFile: Required. The labels for the model.
+*   outputDir: Optional. The directory in which the images (object boxes included) will be placed. Images will be saved as "&lt;year&gt;-&lt;month&gt;-&lt;day&gt;--&lt;hour&gt;-&lt;minute&gt;-&lt;second&gt;.jpg" where each value will zero-filled if necessary, e.g. "2018-08-14--06-30-22.jpg" No images will be saved if not set.
+*   saveRate: Optional. The rate at which images will be saved, once every n frames captured. Default is 1 when unset or a non-positive number. Does nothing if outputDir is not set..
 
 ## Testing
 
-In order for the tests to run correctly a few files need to be added. They were not included in the repository as they were each over 100 MB in size.
-The file `<repo location>/vantiq-extension-sources/objectRecognitionSource/src/test/resources/sampleVideo.mov` must exist, or else testVideoBasicRead will fail.
+In order for the tests to run correctly a few files need to be added. They were not included in the repository as they were each over 100 MB in size.  
+The file `<repo location>/vantiq-extension-sources/objectRecognitionSource/src/test/resources/sampleVideo.mov` must exist, or else testVideoBasicRead will fail.  
 The file `<repo location>/vantiq-extension-sources/objectRecognitionSource/src/test/resources/models/yolo.pb` must be a valid yolo protobuffer file, or else all TestYoloProcessor will not run. You may also need to replace `<repo location>/vantiq-extension-sources/objectRecognitionSource/src/test/resources/models/coco.names` with the label file used with your `yolo.pb` file.
 
 ## Licensing
 The source code uses the [MIT License](https://opensource.org/licenses/MIT).
-This program uses several licensed libraries.
-TensorFlow, okhttp3, Apache commons, log4j, and jackson-databind are licensed under [Apache Version 2.0 License](http://www.apache.org/licenses/LICENSE-2.0). 
-slf4j is licensed under [terms](https://www.slf4j.org/license.html) identical to the [MIT License](https://opensource.org/licenses/MIT).
-OpenCV and the [openpnp](https://github.com/openpnp/opencv) distribution of OpenCV used by this library is licensed under the [BSD 3-clause license](https://opencv.org/license.html).
+This program uses several licensed libraries.  
+TensorFlow, okhttp3, Apache commons, log4j, and jackson-databind are licensed under [Apache Version 2.0 License](http://www.apache.org/licenses/LICENSE-2.0).  
+slf4j and the [openpnp](https://github.com/openpnp/opencv) distribution of OpenCV used by this library are licensed under the [MIT License](https://opensource.org/licenses/MIT).  
+OpenCV is licensed under the [BSD 3-clause license](https://opencv.org/license.html).  
 The TensorFlow implementation of YOLO found in the edu.ml.* packages uses the [WTFPL](https://github.com/szaza/tensorflow-example-java/blob/master/LICENSE) public license. A few changes were made to [the original library](https://github.com/szaza/tensorflow-example-java), mostly removing unneeded files and functions, and changing the program to perform better when sending images consecutively. All changes are documented, and most if not all are in ObjectDetector and IOUtil.
