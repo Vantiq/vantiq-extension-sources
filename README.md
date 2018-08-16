@@ -40,7 +40,7 @@ others are contributed by other parties.
 In general,
 branches other than `master` are considered development or experimental branches.
 Modulo any warnings or caveats in the README,
-things in the master branch should be considered usable.
+things in the `master` branch should be considered usable.
 
 The repository is set up to require reviews of pull requests (PRs) going into master.
 The primary purpose here is to maintain some level of consistency.
@@ -159,9 +159,10 @@ Properties provided in this operation are as follows.
  - `resourceId` -- the name of the source being configured
  - `object` -- a JSON object.  The configuration document provided in the VANTIQ source definition will be in a property named `config`.
 
-> Note:  At this time, the only data we believe we require for extension sources is the
+> Note:  At this time, the only data required for extension sources is the
 > configuration document.
 > At some point in the future, one or more additional properties may be required.
+> See note in [Defining a Type/Implementation](#defining_a_type) regarding property naming.
 
 ### publish Operation
 
@@ -300,7 +301,8 @@ Then, we would us the VANTIQ CLI to load that source implementation.
 ```
 vantiq -s <profileName> load sourceimpls exampleImpl.json
 ```
-where <profileName> is replaced by the VANTIQ profile name, and <fileName> is the file to be loaded.
+
+where `<profileName>` is replaced by the VANTIQ profile name, and <fileName> is the file to be loaded.
 
 Once that type is loaded, you can create a source of that type. This is done by first selecting the EXAMPLE type for the source,
 
