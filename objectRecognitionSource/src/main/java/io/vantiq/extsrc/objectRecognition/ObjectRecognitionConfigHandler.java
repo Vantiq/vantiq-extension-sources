@@ -58,6 +58,9 @@ public class ObjectRecognitionConfigHandler extends Handler<ExtensionServiceMess
     ObjectRecognitionCore   source;
     boolean                 configComplete = false;
     
+    Map<String,?> lastDataSource = null;
+    Map<String,?> lastNeuralNet = null;
+    
     Handler<ExtensionServiceMessage> queryHandler;
     
     /**
@@ -146,6 +149,35 @@ public class ObjectRecognitionConfigHandler extends Handler<ExtensionServiceMess
         }
         neuralNetConfig = (Map) config.get("neuralNet");
         
+        if (lastDataSource != null && dataSource.equals(lastDataSource)) {
+            log.info("dataSource unchanged, keeping previous");
+        } else {
+            boolean success = createImageRetriever(dataSource);
+            if (!success) {
+                return; // Exit if the image retriever could not be created. Closing taken care of by createImageRetriever()
+            }
+        }
+        
+        if (lastNeuralNet != null && neuralNetConfig.equals(lastNeuralNet)) {
+            log.info("neuralNet unchanged, keeping previous");
+        } else {
+            boolean success = createNeuralNet(neuralNetConfig);
+            if (!success) {
+                return; // Exit if the neural net could not be created. Closing taken care of by createNeuralNet()
+            }
+        }
+        
+        boolean success = prepareCommunication(general);
+        if (!success) {
+            return; // Exit if the settings were invalid. Closing taken care of by prepareCommunication()
+        }
+        
+        configComplete = true;
+    }
+    
+    private boolean createNeuralNet(Map<String,?> neuralNetConfig ) {
+        lastNeuralNet = neuralNetConfig;
+        
         // Identify and setup the neural net
         String neuralNetType = DEFAULT_NEURAL_NET;
         if (neuralNetConfig.get("type") instanceof String) {
@@ -161,7 +193,7 @@ public class ObjectRecognitionConfigHandler extends Handler<ExtensionServiceMess
         
         NeuralNetInterface neuralNet = getNeuralNet(neuralNetType);
         if (neuralNet == null) {
-            return; // Error message and exiting taken care of by getNeuralNet()
+            return false; // Error message and exiting taken care of by getNeuralNet()
         }
         
         try {
@@ -170,17 +202,22 @@ public class ObjectRecognitionConfigHandler extends Handler<ExtensionServiceMess
         } catch (Exception e) {
             log.error("Exception occurred while setting up neural net.", e);
             failConfig();
-            return;
+            return false;
         }
+        
         log.info("Neural net created");
         log.debug("Neural net class is {}",neuralNet);
-        
+        return true;
+    }
+    
+    private boolean createImageRetriever(Map<String,?> dataSourceConfig) {
+        lastDataSource = dataSourceConfig;
         
         // Figure out where to receive the data from
         // Initialize to default in case no type was given
         String retrieverType = DEFAULT_IMAGE_RETRIEVER; 
-        if (dataSource.get("type") instanceof String) {
-            retrieverType = (String) dataSource.get("type");
+        if (dataSourceConfig.get("type") instanceof String) {
+            retrieverType = (String) dataSourceConfig.get("type");
             // Translate simple types into FQCN
             if (retrieverType.equals("file")) {
                 retrieverType = FILE_RETRIEVER_FQCN;
@@ -195,20 +232,24 @@ public class ObjectRecognitionConfigHandler extends Handler<ExtensionServiceMess
         
         ImageRetrieverInterface ir = getImageRetriever(retrieverType);
         if (ir == null) {
-            return; // Error message and exiting taken care of by getImageRetriever()
+            return false; // Error message and exiting taken care of by getImageRetriever()
         }
         
         try {
-            ir.setupDataRetrieval(dataSource, source);
+            ir.setupDataRetrieval(dataSourceConfig, source);
             source.imageRetriever = ir;
         } catch (Exception e) {
             log.error("Exception occurred while setting up image retriever.", e);
             failConfig();
-            return;
+            return false;
         }
+        
         log.info("Image retreiver created");
         log.debug("Image retriever class is {}",retrieverType);
-        
+        return true;
+    }
+    
+    private boolean prepareCommunication(Map<String, ?> general) {
         if (general.get("pollRate") instanceof Integer) {
             int polling = (int) general.get("pollRate");
             if (polling > 0) {
@@ -235,10 +276,10 @@ public class ObjectRecognitionConfigHandler extends Handler<ExtensionServiceMess
             log.error("No valid polling rate");
             log.error("Exiting...");
             failConfig();
-            return;
+            return false;
         }
         
-        configComplete = true;
+        return true;
     }
     
     /**

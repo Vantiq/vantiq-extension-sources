@@ -4,6 +4,8 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Timer;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
@@ -57,12 +59,32 @@ public class ObjectRecognitionCore {
         @Override
         public void handleMessage(ExtensionServiceMessage message) {
             log.info("Reconnect message received. Reinitializing configuration");
-            close();
+            
+            // Do partial close to preserve states of imageRetriever and neuralNet
+            if (constantPolling) {
+                stopPolling = true;
+                constantPolling = false;
+            }
+            if (pollTimer != null) {
+                pollTimer.cancel();
+                pollTimer = null;
+            }
+            
             objRecConfigHandler.configComplete = false;
             
             client.setQueryHandler(defaultQueryHandler);
             
-            client.connectToSource();
+            CompletableFuture<Boolean> success = client.connectToSource();
+            
+            try {
+                if ( !success.get(10, TimeUnit.SECONDS) ) {
+                    log.error("Source reconnection failed");
+                    close();
+                }
+            } catch (InterruptedException | ExecutionException | TimeoutException e) {
+                log.error("Could not reconnect to source within 10 seconds");
+                close();
+            }
         }
     };
     
@@ -70,7 +92,17 @@ public class ObjectRecognitionCore {
         @Override
         public void handleMessage(ExtensionWebSocketClient message) {
             log.info("Websocket closed unexpectedly. Attempting to reconnect");
-            close();
+
+            // Do partial close to preserve states of imageRetriever and neuralNet
+            if (constantPolling) {
+                stopPolling = true;
+                constantPolling = false;
+            }
+            if (pollTimer != null) {
+                pollTimer.cancel();
+                pollTimer = null;
+            }
+            
             objRecConfigHandler.configComplete = false;
             
             client.setQueryHandler(defaultQueryHandler);
