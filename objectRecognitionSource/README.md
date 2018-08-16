@@ -17,7 +17,9 @@
 4.  Uncompress the file in the location that you would like to install the program.
 5.  Run either `<install location>/objectRecognitionSource/bin/objectRecognitionSource` with a local server.config file or specifying the [server config file](#serverConfig) as the first argument.
 
+## Logging
 To change the logging settings, edit `<install location>/objectRecognitionSource/lib/logConfig/log4j2.xml`. Here is its [documentation](https://logging.apache.org/log4j/2.x/manual/configuration.html). The logger names for each class is the class's fully qualified class name, e.g. "io.vantiq.extjsdk.ExtensionWebSocketClient".
+In order for the logging to work in Eclipse (other IDEs will likely require similar steps), you need to add `<install location>/objectRecognitionSource/lib/logConfig/logConfig` to the build path, and edit the `log4j2.xml` file there if you wish. The `logConfig/logConfig` is intentional, and part of a workaround for a gradle issue.
 
 ## Server Config File<a name="serverConfig" id="serverConfig"></a>
 

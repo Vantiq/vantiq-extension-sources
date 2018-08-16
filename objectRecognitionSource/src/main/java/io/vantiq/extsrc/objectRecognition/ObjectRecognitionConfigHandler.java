@@ -2,7 +2,6 @@ package io.vantiq.extsrc.objectRecognition;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
-import java.util.List;
 import java.util.Map;
 import java.util.Timer;
 import java.util.TimerTask;
@@ -173,6 +172,8 @@ public class ObjectRecognitionConfigHandler extends Handler<ExtensionServiceMess
             failConfig();
             return;
         }
+        log.info("Neural net created");
+        log.debug("Neural net class is {}",neuralNet);
         
         
         // Figure out where to receive the data from
@@ -205,6 +206,8 @@ public class ObjectRecognitionConfigHandler extends Handler<ExtensionServiceMess
             failConfig();
             return;
         }
+        log.info("Image retreiver created");
+        log.debug("Image retriever class is {}",retrieverType);
         
         if (general.get("pollRate") instanceof Integer) {
             int polling = (int) general.get("pollRate");
