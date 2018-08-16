@@ -17,8 +17,10 @@ mainClassName = 'io.vantiq.extsrc.objectRecognition.ObjectRecognitionMain'
 dependencies {
     compile project(':extjsdk')
     
+    runtime files('logConfig')
+    
     compile "org.slf4j:slf4j-api:1.7.25"
-    compile "ch.qos.logback:logback-classic:1.2.3"
+    compile "org.apache.logging.log4j:log4j-slf4j-impl:2.11.0"
     
     // Used by CameraRetriever and FileRetriever. Can be removed if both CameraRetriever and FileRetriever are removed
     compile "org.openpnp:opencv:3.4.2-0"

@@ -83,11 +83,11 @@ public class ObjectDetector {
      */
     public List<Map> detect(final byte[] image) {
         try (Tensor<Float> normalizedImage = normalizeImage(image)) {
+            Date now = new Date(); // Saves the time before
             List<Recognition> recognitions = YOLOClassifier.getInstance().classifyImage(executeYOLOGraph(normalizedImage), LABELS);
             
             // Saves an image every saveRate frames
             if (imageUtil != null && ++frameCount >= saveRate) {
-                Date now = new Date();
                 String fileName = format.format(now) + ".jpg";
                 imageUtil.labelImage(image, recognitions, fileName);
                 frameCount = 0;

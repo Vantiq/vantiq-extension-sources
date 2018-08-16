@@ -3,9 +3,7 @@ package io.vantiq.extsrc.objectRecognition;
 import java.io.File;
 import java.nio.file.Files;
 
-import io.vantiq.extjsdk.ExtjsdkTestBase;
-
-public class ObjRecTestBase extends ExtjsdkTestBase{
+public class ObjRecTestBase {
     public static final String UNUSED = "unused";
     
     public static final String IMAGE_LOCATION = "src/test/resources/sampleImage.jpg";

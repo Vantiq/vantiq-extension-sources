@@ -17,7 +17,7 @@
 4.  Uncompress the file in the location that you would like to install the program.
 5.  Run either `<install location>/objectRecognitionSource/bin/objectRecognitionSource` with a local server.config file or specifying the [server config file](#serverConfig) as the first argument.
 
-To change the logging settings, edit `<install location>/objectRecognitionSource/logback.xml`. Here is its [documentation](https://logback.qos.ch/manual/configuration.html). The logger names for each class is the class's fully qualified class name, e.g. "io.vantiq.extjsdk.ExtensionWebSocketClient".
+To change the logging settings, edit `<install location>/objectRecognitionSource/lib/logConfig/log4j2.xml`. Here is its [documentation](https://logging.apache.org/log4j/2.x/manual/configuration.html). The logger names for each class is the class's fully qualified class name, e.g. "io.vantiq.extjsdk.ExtensionWebSocketClient".
 
 ## Server Config File<a name="serverConfig" id="serverConfig"></a>
 
@@ -119,15 +119,14 @@ This is a TensorFlow implementation of YOLO. It returns a List of Maps, each of 
 
 ## Testing
 
-In order for the tests to run correctly a few files ned to be added. The ywere not included in the repository as they were each over 100 MB in size.
+In order for the tests to run correctly a few files need to be added. They were not included in the repository as they were each over 100 MB in size.
 The file `<repo location>/vantiq-extension-sources/objectRecognitionSource/src/test/resources/sampleVideo.mov` must exist, or else testVideoBasicRead will fail.
 The file `<repo location>/vantiq-extension-sources/objectRecognitionSource/src/test/resources/models/yolo.pb` must be a valid yolo protobuffer file, or else all TestYoloProcessor will not run. You may also need to replace `<repo location>/vantiq-extension-sources/objectRecognitionSource/src/test/resources/models/coco.names` with the label file used with your `yolo.pb` file.
 
 ## Licensing
+The source code uses the [MIT License](https://opensource.org/licenses/MIT).
 This program uses several licensed libraries.
-TensorFlow, okhttp3, Apache commons, and jackson-databind are licensed under [Apache Version 2.0 License](http://www.apache.org/licenses/LICENSE-2.0). 
+TensorFlow, okhttp3, Apache commons, log4j, and jackson-databind are licensed under [Apache Version 2.0 License](http://www.apache.org/licenses/LICENSE-2.0). 
 slf4j is licensed under [terms](https://www.slf4j.org/license.html) identical to the [MIT License](https://opensource.org/licenses/MIT).
 OpenCV and the [openpnp](https://github.com/openpnp/opencv) distribution of OpenCV used by this library is licensed under the [BSD 3-clause license](https://opencv.org/license.html).
 The TensorFlow implementation of YOLO found in the edu.ml.* packages uses the [WTFPL](https://github.com/szaza/tensorflow-example-java/blob/master/LICENSE) public license. A few changes were made to [the original library](https://github.com/szaza/tensorflow-example-java), mostly removing unneeded files and functions, and changing the program to perform better when sending images consecutively. All changes are documented, and most if not all are in ObjectDetector and IOUtil.
-logback is licensed under either the [Eclipse Public License v1.0](http://www.eclipse.org/legal/epl-v10.html) or [Lesser GPL v2.1](www.gnu.org/licenses/old-licenses/lgpl-2.1.html), at the licensee's discretion.
-This library will be licensed under the the Apache Version 2.0 License. HOWEVER, due to the inclusion of logback this library is covered by the licensee's choice of the more restrictive LGPL or EPL licenses. It is this author's (uninformed, unofficial, non-expert) belief that if you replace logback with a less restrictive slf4j implementation then this library will instead be covered by Apache v2.0 and any terms included in the new slf4j implementation. It is advised that you seek professional legal counsel before following the above advice.

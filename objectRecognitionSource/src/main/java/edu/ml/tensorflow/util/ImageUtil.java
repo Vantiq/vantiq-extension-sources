@@ -65,7 +65,6 @@ public class ImageUtil {
         try {
             IOUtil.createDirIfNotExists(new File(outputDir));
             File f = new File(target);
-            System.out.println(f.getAbsolutePath());
             ImageIO.write(image,"jpg", new File(target));
         } catch (IOException e) {
             LOGGER.error("Unagle to save image {}!", target);
