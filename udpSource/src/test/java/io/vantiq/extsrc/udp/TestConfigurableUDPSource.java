@@ -55,7 +55,7 @@ public class TestConfigurableUDPSource extends ExtjsdkTestBase{
     @Test
     public void testCreateSocket() throws UnknownHostException {
         InetAddress address = InetAddress.getByName("localhost");
-        int port = 3141;
+        int port = 10213;
 
         // should only be created once per port/address pair
         DatagramSocket socket = ConfigurableUDPSource.createUDPSocket(port, address, sourceName);
@@ -73,7 +73,7 @@ public class TestConfigurableUDPSource extends ExtjsdkTestBase{
     @Test
     public void testListenSocket() throws UnknownHostException {
         InetAddress address = InetAddress.getByName("localhost");
-        int port = 15;
+        int port = 10213;
         String firstSource = "first";
         String secondSource = "second";
         
@@ -94,7 +94,7 @@ public class TestConfigurableUDPSource extends ExtjsdkTestBase{
     @Test
     public void testClearSourceHandlers() throws UnknownHostException {
         InetAddress address = InetAddress.getByName("localhost");
-        int port = 15;
+        int port = 10213;
         String firstSource = "first";
         client = new FalseClient(firstSource);
         ConfigurableUDPSource.notificationHandlers.put(firstSource,
@@ -132,7 +132,7 @@ public class TestConfigurableUDPSource extends ExtjsdkTestBase{
     @Test
     public void testSetNotificationHandler() throws UnknownHostException {
         InetAddress address = InetAddress.getByName("localhost");
-        int port = 100;
+        int port = 10213;
         
         // ============== Use a map where all each has one valid entry ===============
         Map<String,Object> incoming = new LinkedHashMap<>();
@@ -200,7 +200,7 @@ public class TestConfigurableUDPSource extends ExtjsdkTestBase{
     @Test
     public void testReceivingFromServer() throws UnknownHostException {
         InetAddress address = InetAddress.getByName("localhost");
-        int port = 100;
+        int port = 10213;
         
         ConfigurableUDPSource.sourceAddresses.put(sourceName, ConfigurableUDPSource.ALL_ADDR);
         ConfigurableUDPSource.sourcePorts.put(sourceName, ConfigurableUDPSource.ALL_PORTS);
@@ -240,7 +240,7 @@ public class TestConfigurableUDPSource extends ExtjsdkTestBase{
     @Test
     public void testSendFromDatagram() throws UnknownHostException {
         InetAddress address = InetAddress.getByName("localhost");
-        int port = 15;
+        int port = 10213;
         
         // Handler that only records the data given
         UDPNotificationHandler firstHandler = new UDPNotificationHandler(new LinkedHashMap<>(), client) {
@@ -315,7 +315,7 @@ public class TestConfigurableUDPSource extends ExtjsdkTestBase{
         
         config.put("targetServer", "ws://localhost:8080");
         config.put("maxPacketSize", 2048);
-        config.put("defaultBindPort", 123);
+        config.put("defaultBindPort", 10213);
         config.put("defaultBindAddress", "localhost");
         config.put("authToken", "new token");
         
@@ -323,7 +323,7 @@ public class TestConfigurableUDPSource extends ExtjsdkTestBase{
         
         assert ConfigurableUDPSource.targetVantiqServer.equals("ws://localhost:8080");
         assert ConfigurableUDPSource.MAX_UDP_DATA == 2048;
-        assert ConfigurableUDPSource.LISTENING_PORT == 123;
+        assert ConfigurableUDPSource.LISTENING_PORT == 10213;
         assert ConfigurableUDPSource.LISTENING_ADDRESS.equals(InetAddress.getByName("localhost"));
         assert ConfigurableUDPSource.authToken.equals("new token");
         

@@ -152,8 +152,9 @@ public class TestUDPConfigHandler extends ExtjsdkTestBase{
         assert !ConfigurableUDPSource.notificationHandlers.containsKey(sourceName);
         assert ConfigurableUDPSource.udpSocketToSources.isEmpty();
         
+        int port = 10213;
         incoming.put("passPureMapIn", true);
-        outgoing.put("targetPort", 123);
+        outgoing.put("targetPort", port);
         outgoing.put("targetAddress", "localAddress");
         
         // initialize default address
@@ -164,10 +165,9 @@ public class TestUDPConfigHandler extends ExtjsdkTestBase{
         assert ConfigurableUDPSource.notificationHandlers.containsKey(sourceName);
         DatagramSocket socket = (DatagramSocket) ConfigurableUDPSource.udpSocketToSources.keySet().toArray()[0];
         assert socket.getLocalPort() == 3141;
-        print(socket.getLocalAddress().toString());
         assert socket.getLocalAddress().equals(InetAddress.getLocalHost());
         
-        int port = 123;
+        
         general.put("listenPort", port);
         general.put("listenAddress", "localhost");
         
