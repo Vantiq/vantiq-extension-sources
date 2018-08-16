@@ -34,8 +34,6 @@ repositories {
 dependencies {
     compile "org.slf4j:slf4j-api:1.7.25"
     
-    compile "ch.qos.logback:logback-classic:1.2.3"
-    
     compile 'com.squareup.okhttp3:okhttp:3.4.1'
     compile 'com.squareup.okhttp3:okhttp-ws:3.4.1'
     
