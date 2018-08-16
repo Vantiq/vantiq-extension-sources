@@ -10,7 +10,7 @@
 
     <logger name="org.eclipse.milo" level="WARN"/>
     <logger name="io.netty" level="INFO"/>
-    <logger name="io.vantiq.extsrc.opcua.uaOperations.OpcUaESClient" level="WARN"/>
+    <logger name="io.vantiq.extsrc.opcua" level="DEBUG"/>
 
     <root level="debug">
         <appender-ref ref="STDOUT" />

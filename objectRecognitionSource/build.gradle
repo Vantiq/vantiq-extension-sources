@@ -11,27 +11,50 @@ repositories {
     jcenter()
 }
 
-mainClassName = 'io.vantiq.extsrc.udp.ObjectRecognitionMain'
+mainClassName = 'io.vantiq.extsrc.objectRecognition.ObjectRecognitionMain'
 
+
+startScripts{
+    doLast{
+        def windowsScriptFile = file getWindowsScript()
+        def unixScriptFile = file getUnixScript()
+        // Add the log Config to the top of the classpath
+        windowsScriptFile.text = windowsScriptFile.text.replace("CLASSPATH=", "CLASSPATH=%APP_HOME%\\logConfig;")
+        unixScriptFile.text = unixScriptFile.text.replace('CLASSPATH=', 'CLASSPATH=$APP_HOME/logConfig:')
+    }
+}
+
+task copyLogFiles(type: Copy) {
+    from("src/main/resources") 
+    include "log4j2.xml"
+    into "src/dist/logConfig"
+}
+
+task copyDocumentationFiles(type: Copy, dependsOn:copyLogFiles) {
+    from "."
+    include "README.md"
+    include "LICENSE/*"
+    into "src/dist"
+}
+
+distZip.dependsOn copyDocumentationFiles
+distTar.dependsOn copyDocumentationFiles
 
 dependencies {
     compile project(':extjsdk')
     
     compile "org.slf4j:slf4j-api:1.7.25"
-    compile "ch.qos.logback:logback-classic:1.2.3"
+    compile "org.apache.logging.log4j:log4j-slf4j-impl:2.11.0"
     
-    compile "org.openpnp:opencv:3.2.0-0"
+    // Used by CameraRetriever and FileRetriever. Can be removed if both CameraRetriever and FileRetriever are removed
+    compile "org.openpnp:opencv:3.4.2-0"
     
     compile "com.fasterxml.jackson.core:jackson-databind:2.9.3"
     
-    compile "org.apache.commons:commons-math3:3.6.1"
-
-    // Used by DarkflowProcessor alone. Can be removed if DarkflowProcessor is removed
-    compile "black.ninia:jep:3.8.1"
-
-    // Used by YoloProcessor alone. This dependency and all files in the edu.* package may be removed if YoloProcessor
+    // Used by YoloProcessor alone. These two dependencies and all files in the edu.* package may be removed if YoloProcessor
     // is removed
     compile "org.tensorflow:tensorflow:1.9.0"
+    compile "org.apache.commons:commons-math3:3.6.1"
 
     // Use JUnit test framework
     testCompile 'junit:junit:4.12'

@@ -4,6 +4,7 @@ import edu.ml.tensorflow.classifier.YOLOClassifier;
 import edu.ml.tensorflow.model.Recognition;
 import edu.ml.tensorflow.util.GraphBuilder;
 import edu.ml.tensorflow.util.IOUtil;
+import edu.ml.tensorflow.util.ImageUtil;
 import edu.ml.tensorflow.util.ServiceException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -13,7 +14,9 @@ import org.tensorflow.Session;
 import org.tensorflow.Tensor;
 
 import java.nio.FloatBuffer;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -29,6 +32,14 @@ public class ObjectDetector {
     private byte[] GRAPH_DEF;
     private List<String> LABELS;
 
+    // This will be used to create
+    // "year-month-date-hour-minute-seconds"
+    private static SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd--HH-mm-ss");
+    
+    private ImageUtil imageUtil;
+    private int saveRate = 0;
+    private int frameCount = 0;
+    
     private Graph yoloGraph;
     private Session yoloSession;
     
@@ -42,11 +53,19 @@ public class ObjectDetector {
      * <br>Edited to initialize and save the graph for reuse, and allow the files to be specified dynamically.
      * @param graphFile The location of a proto buffer file describing the YOLO net 
      * @param labelFile The location of the labels for the given net.
+     * @param outputDir The directory to which images will be saved. If null no images are saved.
+     * @param saveRate  The rate at which images will be saved, once per every saveRate frames. Non-positive values are
+     *                  functionally equivalent to 1. If outputDir is null does nothing.
      */
-    public ObjectDetector(String graphFile, String labelFile) {
+    public ObjectDetector(String graphFile, String labelFile, String outputDir, int saveRate) {
         try {
             GRAPH_DEF = IOUtil.readAllBytesOrExit(graphFile);
             LABELS = IOUtil.readAllLinesOrExit(labelFile);
+            if (outputDir != null) {
+                imageUtil = new ImageUtil(outputDir);
+                this.saveRate = saveRate;
+                frameCount = saveRate; // Capture the first image
+            }
         } catch (ServiceException ex) {
             throw new IllegalArgumentException("Problem reading files for the yolo graph.", ex);
         }
@@ -64,8 +83,15 @@ public class ObjectDetector {
      */
     public List<Map> detect(final byte[] image) {
         try (Tensor<Float> normalizedImage = normalizeImage(image)) {
+            Date now = new Date(); // Saves the time before
             List<Recognition> recognitions = YOLOClassifier.getInstance().classifyImage(executeYOLOGraph(normalizedImage), LABELS);
             
+            // Saves an image every saveRate frames
+            if (imageUtil != null && ++frameCount >= saveRate) {
+                String fileName = format.format(now) + ".jpg";
+                imageUtil.labelImage(image, recognitions, fileName);
+                frameCount = 0;
+            }
             //Namir's Method
             return returnJSON(recognitions);
         }

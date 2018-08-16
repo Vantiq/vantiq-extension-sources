@@ -8,12 +8,7 @@ import io.vantiq.extsrc.objectRecognition.exception.ImageProcessingException;
 /**
  * An interface for the neural net that will process the image and return a List of data representing the objects found.
  */
-public abstract class NeuralNetInterface {
-    
-    protected boolean threadSafe = true;
-    public boolean isThreadSafe() {
-        return threadSafe;
-    }
+public interface NeuralNetInterface {
     
     /**
      * Setup the neural net for image processing.

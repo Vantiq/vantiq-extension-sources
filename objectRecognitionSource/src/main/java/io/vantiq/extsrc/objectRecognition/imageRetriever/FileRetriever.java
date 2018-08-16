@@ -3,58 +3,158 @@ package io.vantiq.extsrc.objectRecognition.imageRetriever;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
+import java.text.SimpleDateFormat;
 import java.util.Map;
 
 import io.vantiq.extsrc.objectRecognition.ObjectRecognitionCore;
+import io.vantiq.extsrc.objectRecognition.exception.FatalImageException;
 import io.vantiq.extsrc.objectRecognition.exception.ImageAcquisitionException;
 
+import org.opencv.core.Mat;
+import org.opencv.core.MatOfByte;
+import org.opencv.imgcodecs.Imgcodecs;
+import org.opencv.videoio.VideoCapture;
+import org.opencv.videoio.Videoio;
+
+/**
+ * This reads files from disk. If it is setup for image files then the file need not be there at initialization, and
+ * messages will be sent only if the file is found. For Queries when setup for image files, a new file can be
+ * specified in the message with option fileLocation, otherwise the initial file is used. If it is setup for video
+ * files, then the file must be there at initialization, and any failed attempts to read will result in the source
+ * closing. The options are:
+ * 
+ * <li>{@code fileLocation}: Required. The location of the file to be read. The file does not need to exist, but
+ *              attempts to access a non-existent file will send an empty message in response to Queries and no message
+ *              for periodic requests.
+ * <li>{@code fileExtension}: Optional. The type of file it is, "mov" for video files, "img" for image files. Defaults
+ *              to image files. 
+ */
 public class FileRetriever implements ImageRetrieverInterface {
 
     File defaultImageFile;
+    VideoCapture capture;
+    Boolean isMov = false;
+    int time_interval;
     
     @Override
     public void setupDataRetrieval(Map<String, ?> dataSourceConfig, ObjectRecognitionCore source) throws Exception {
+        if (dataSourceConfig.get("fileExtension") instanceof String) {
+            String ext = (String) dataSourceConfig.get("fileExtension");
+            if (ext.equals("mov") || ext.equals("mp4")) {
+                isMov = true;
+            }
+        }
         if (dataSourceConfig.get("fileLocation") instanceof String) {
             String imageLocation = (String) dataSourceConfig.get("fileLocation");
-            defaultImageFile = new File(imageLocation);
-            if ( !(defaultImageFile.exists() && !defaultImageFile.isDirectory() && defaultImageFile.canRead())) {
-                throw new IllegalArgumentException ("Could not read file at '" + defaultImageFile.getAbsolutePath() + "'");
+            if (isMov) {
+                nu.pattern.OpenCV.loadShared();
+                capture = new VideoCapture(imageLocation);
+                if (!capture.isOpened()) {
+                    capture.release();
+                    throw new IllegalArgumentException("Intended video could not be opened");
+                }
+                double fps = capture.get(Videoio.CAP_PROP_FPS);
+                if (fps == 0) {
+                    time_interval = 75;
+                }
+                else {
+                    time_interval = (int) (3 * Math.round(fps));
+                }
             }
-        } else if (dataSourceConfig.get("pollRate") instanceof Integer && 
-                        (Integer) dataSourceConfig.get("pollRate") >= 0) { // Won't be using messages to get the file location
+            else {
+                defaultImageFile = new File(imageLocation);
+            }
+        } else {
             throw new IllegalArgumentException ("File required but not given");
         }
     }
 
     @Override
     public byte[] getImage() throws ImageAcquisitionException {
-        try {
-            return Files.readAllBytes(defaultImageFile.toPath());
-        } catch (IOException e) {
-            throw new ImageAcquisitionException("Could not read the given file");
+        if (isMov) {
+            
+            Mat matrix = new Mat();
+            double val = capture.get(Videoio.CAP_PROP_POS_FRAMES);
+            
+            capture.read(matrix);
+            if (matrix.empty()) { // Exit if nothing could be read
+                throw new FatalImageException("Video could not be read or video file has finished");
+            }
+            
+            val += time_interval;
+            capture.set(Videoio.CAP_PROP_POS_FRAMES, val);
+            
+            MatOfByte matOfByte = new MatOfByte();
+            Imgcodecs.imencode(".jpg", matrix, matOfByte);
+            byte [] imageByte = matOfByte.toArray();
+            matOfByte.release();
+            matrix.release();
+                    
+            return imageByte;
+        }
+        else {
+            try {
+                return Files.readAllBytes(defaultImageFile.toPath());
+            } catch (IOException e) {
+                throw new ImageAcquisitionException("Could not read the given file");
+            }
         }
     }
 
     @Override
     public byte[] getImage(Map<String, ?> request) throws ImageAcquisitionException {
-        if (request.get("fileLocation") instanceof String) {
-            File imageFile = new File((String) request.get("fileLocation"));
-            try {
-                return Files.readAllBytes(imageFile.toPath());
-            } catch (IOException e) {
-                throw new ImageAcquisitionException("Could not read file '" + imageFile.getAbsolutePath() + "'", e);
+        if (request.get("fileExtension") instanceof String) {
+            String ext = (String) request.get("fileExtension");
+            if (ext.equals("mov") || ext.equals("mp4")) {
+                isMov = true;
             }
-        } else if (defaultImageFile != null) {
-            return getImage();
+        }
+        if (request.get("fileLocation") instanceof String) {
+            if (isMov) {
+                String imageFile = (String) request.get("fileLocation");
+                nu.pattern.OpenCV.loadShared();
+                capture = new VideoCapture(imageFile);
+                if (!capture.isOpened()) {
+                    capture.release();
+                    throw new ImageAcquisitionException("Intended video could not be opened");
+                }
+                Mat matrix = new Mat();
+                
+                capture.read(matrix);
+                if (matrix.empty()) { // Exit if nothing could be read
+                    throw new ImageAcquisitionException("Video could not be read or video file has finished");
+                }
+                
+                if (request.get("fps") instanceof Double) {
+                    double val = (Double) request.get("fps");
+                    capture.set(Videoio.CAP_PROP_POS_FRAMES, val);
+                    MatOfByte matOfByte = new MatOfByte();
+                    Imgcodecs.imencode(".jpg", matrix, matOfByte);
+                    byte [] imageByte = matOfByte.toArray();
+                    matOfByte.release();
+                    matrix.release();
+                            
+                    return imageByte;
+                }
+                else {
+                    throw new ImageAcquisitionException("The frame rate of the video was not specificied");
+                }     
+            }
+            else {
+                File imageFile = new File((String) request.get("fileLocation"));
+                try {
+                    return Files.readAllBytes(imageFile.toPath());
+                } catch (IOException e) {
+                    throw new ImageAcquisitionException("Could not read file '" + imageFile.getAbsolutePath() + "'", e);
+                }
+            }
         } else {
-            throw new ImageAcquisitionException("No file specified for acquisition");
+            return getImage();
         }
     }
 
     @Override
     public void close() {
-        // TODO Auto-generated method stub
-        
     }
 
 }

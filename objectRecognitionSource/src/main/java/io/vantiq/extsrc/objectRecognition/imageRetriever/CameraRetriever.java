@@ -10,8 +10,11 @@ import org.opencv.videoio.VideoCapture;
 import io.vantiq.extsrc.objectRecognition.ObjectRecognitionCore;
 
 /**
- * Captures images and returns them as jpeg encoded bytes
- * <br>Not part of original code.
+ * Captures images and returns them as jpeg encoded bytes.
+ * Unique settings are: 
+ * <ul>
+ *  <li>{@code camera}: Required. The index of the camera to read images from.
+ * </ul>
  */
 public class CameraRetriever implements ImageRetrieverInterface {
 	VideoCapture capture;
