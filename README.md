@@ -11,7 +11,7 @@ The source type determines defines the type(s) of system(s) with which the sourc
 The VANTIQ system has a variety of source types included,
 but individual enterprises' situations will require connectivity to other systems.
 These other systems may be other commercial or standard systems,
-or they may be a *home-grown* requirement.
+or they may be a *home-grown* system.
 In any case,
 the set of source types needs to be extensible.
 
@@ -64,7 +64,7 @@ action that is appropriate for the data system that source represents.
 
 ## Overall Architecture
 
-The VANTIQ system maintains a set of managers for each source type.
+The VANTIQ system maintains managers for each source type.
 All extension sources are defined with a base type of EXTENSION (see [Defining a Type/Implementation](#defining_a_type)).
 The extension source manager is responsible for the interaction between the extension sources and the remainder of the VANTIQ system.
 
@@ -162,7 +162,8 @@ Properties provided in this operation are as follows.
 > Note:  At this time, the only data required for extension sources is the
 > configuration document.
 > At some point in the future, one or more additional properties may be required.
-> See note in [Defining a Type/Implementation](#defining_a_type) regarding property naming.
+> See [note](#creating_config_doc) in [Defining a Type/Implementation](#defining_a_type)
+> regarding configuration document structure.
 
 ### publish Operation
 
@@ -302,7 +303,7 @@ Then, we would us the VANTIQ CLI to load that source implementation.
 vantiq -s <profileName> load sourceimpls exampleImpl.json
 ```
 
-where `<profileName>` is replaced by the VANTIQ profile name, and <fileName> is the file to be loaded.
+where `<profileName>` is replaced by the VANTIQ profile name, and `<fileName>` identifies the file containing the definition to be loaded.
 
 Once that type is loaded, you can create a source of that type. This is done by first selecting the EXAMPLE type for the source,
 
@@ -312,7 +313,7 @@ and then providing the configuration.
 
 ![Creating a source, step 2](docs/images/createSource2.png)
 
-### Creating the configuration document
+### <a id="creating_config_doc"></a>Creating the configuration document
 
 You are _**strongly encouraged**_ to put the type-specific part of your configuration
 in a separate property within the configuration, preferably named to match your
@@ -323,6 +324,7 @@ so keeping things separated now will help in future proofing.
 
 In our example above, for our EXAMPLE extension source type,
 we have put the relevant configuration in the `exampleConfig` property within the configuration document.
+
 
 Note that the format and contents of this document (at least the type-specific part) are to be understood by the extension source implementation.
 Specifically, this JSON document is the configuration document delivered as part of the [`configureExtension`](#configureExtension_operation) operation.
