@@ -303,7 +303,7 @@ Then, we would us the VANTIQ CLI to load that source implementation.
 vantiq -s <profileName> load sourceimpls exampleImpl.json
 ```
 
-where `<profileName>` is replaced by the VANTIQ profile name, and `<fileName>` identifies the file containing the definition to be loaded.
+where `<profileName>` is replaced by the VANTIQ profile name, and `exampleImpl.json` identifies the file containing the definition to be loaded.
 
 Once that type is loaded, you can create a source of that type. This is done by first selecting the EXAMPLE type for the source,
 
