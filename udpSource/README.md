@@ -15,7 +15,9 @@
 4. Uncompress the file in the location that you would like to install the program.
 5. Run either `<install location>/udpSource/bin/udpSource` with a local config.json file or specifying the server config file as the first argument.
 
-To change the logging settings, edit `<install location>/udpSource/logback.xml`. Here is its [documentation](https://logback.qos.ch/manual/configuration.html). The logger names for each class is the class's fully qualified class name, e.g. "io.vantiq.extjsdk.ExtensionWebSocketClient".
+## Logging
+To change the logging settings, edit `<install location>/udpSource/logConfig/log4j2.xml`. Here is its [documentation](https://logging.apache.org/log4j/2.x/manual/configuration.html). The logger names for each class is the class's fully qualified class name, e.g. "io.vantiq.extjsdk.ExtensionWebSocketClient".
+To edit the logging for an IDE, change `<repo location>/udpSource/src/main/dist/log4j2.xml`. Changes to this will be included in future distributions produced through gradle.
 
 ## Server Config File<a name="serverConfig" id="serverConfig"></a>
 
@@ -185,7 +187,5 @@ then the resulting map would be exactly the same, as the Map in lvl2 would have 
 The source code in this library is licensed under the the [MIT License](https://opensource.org/licenses/MIT).
 
 This library uses several licensed libraries, some of which are more restrictive than the MIT license. 
-okhttp3 and jackson-databind are both licensed under [Apache Version 2.0 License](http://www.apache.org/licenses/LICENSE-2.0). 
+okhttp3, log4j, and jackson-databind are both licensed under [Apache Version 2.0 License](http://www.apache.org/licenses/LICENSE-2.0). 
 slf4j is licensed under [terms](https://www.slf4j.org/license.html) identical to the [MIT License](https://opensource.org/licenses/MIT).
-logback is licensed under either the [Eclipse Public License v1.0](http://www.eclipse.org/legal/epl-v10.html) or [Lesser GPL v2.1](www.gnu.org/licenses/old-licenses/lgpl-2.1.html), at the licensee's discretion. This library is optional, and can be replaced with another slf4j implementation if you wish to reduce the license restrictions. To do so, replace the line `compile "ch.qos.logback:logback-classic:1.2.3"` in the build.gradle file with your own import, or remove that line for no logging.
-
