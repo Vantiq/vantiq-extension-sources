@@ -107,7 +107,7 @@ public class ExtensionWebSocketClient {
      */
     public ExtensionWebSocketClient (String sourceName) {
         this.sourceName = sourceName;
-        log = LoggerFactory.getLogger(this.getClass() + "#" + sourceName);
+        log = LoggerFactory.getLogger(this.getClass().getCanonicalName() + "#" + sourceName);
         listener = new ExtensionWebSocketListener(this);
     }
 

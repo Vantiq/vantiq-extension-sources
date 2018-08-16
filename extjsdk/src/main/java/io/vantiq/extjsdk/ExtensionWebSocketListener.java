@@ -88,7 +88,7 @@ public class ExtensionWebSocketListener implements WebSocketListener{
      */
     public ExtensionWebSocketListener(ExtensionWebSocketClient client) {
         this.client = client;
-        log = LoggerFactory.getLogger(this.getClass() + "#" + client.getSourceName());
+        log = LoggerFactory.getLogger(this.getClass().getCanonicalName() + "#" + client.getSourceName());
         initializeDefaultHandlers();
     }
 
