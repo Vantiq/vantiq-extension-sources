@@ -55,9 +55,9 @@ public final class IOUtil {
      * @param directory
      */
     public static void createDirIfNotExists(final File directory) {
-        if (!directory.exists()) {
+        if (directory != null && !directory.exists()) {
             createDirIfNotExists(directory.getParentFile()); // Recursively create parents
             directory.mkdir();
         }
-}
+    }
 }
