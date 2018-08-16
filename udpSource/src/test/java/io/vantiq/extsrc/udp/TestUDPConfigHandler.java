@@ -9,6 +9,8 @@
 
 package io.vantiq.extsrc.udp;
 
+import static org.junit.Assume.assumeTrue;
+
 import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
@@ -25,7 +27,7 @@ import io.vantiq.extjsdk.ExtensionServiceMessage;
 import io.vantiq.extjsdk.ExtjsdkTestBase;
 import io.vantiq.extjsdk.FalseClient;
 
-public class TestUDPConfigHandler extends ExtjsdkTestBase{
+public class TestUDPConfigHandler extends UDPTestBase {
     UDPConfigHandler udpConfig;
     String sourceName;
     FalseClient client;
@@ -153,24 +155,31 @@ public class TestUDPConfigHandler extends ExtjsdkTestBase{
         assert ConfigurableUDPSource.udpSocketToSources.isEmpty();
         
         int port = 10213;
+        String addressName = "invalidAddress";
         incoming.put("passPureMapIn", true);
         outgoing.put("targetPort", port);
-        outgoing.put("targetAddress", "localAddress");
+        outgoing.put("targetAddress", addressName);
         
         // initialize default address
-        ConfigurableUDPSource.LISTENING_ADDRESS = InetAddress.getLocalHost();
+        InetAddress address = InetAddress.getLocalHost();
+        ConfigurableUDPSource.LISTENING_ADDRESS = address;
         
+        assumeTrue("Cannot perform test. Address at port:" + port + " and IP:" + address + "already bound"
+                , socketCanBind(port, address));
         udpConfig.handleMessage(msg);
         
         assert ConfigurableUDPSource.notificationHandlers.containsKey(sourceName);
         DatagramSocket socket = (DatagramSocket) ConfigurableUDPSource.udpSocketToSources.keySet().toArray()[0];
         assert socket.getLocalPort() == 3141;
-        assert socket.getLocalAddress().equals(InetAddress.getLocalHost());
+        assert socket.getLocalAddress().equals(ConfigurableUDPSource.LISTENING_ADDRESS);
         
-        
+        addressName = "localhost";
+        address = InetAddress.getByName(addressName);
         general.put("listenPort", port);
-        general.put("listenAddress", "localhost");
+        general.put("listenAddress", addressName);
         
+        assumeTrue("Cannot perform test. Address at port:" + port + " and IP:" + address + "already bound"
+                , socketCanBind(port, address));
         udpConfig.handleMessage(msg);
         
         assert ConfigurableUDPSource.udpSocketToSources.keySet().size() == 2;

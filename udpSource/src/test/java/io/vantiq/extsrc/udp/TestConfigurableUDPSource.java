@@ -9,6 +9,8 @@
 
 package io.vantiq.extsrc.udp;
 
+import static org.junit.Assume.assumeTrue;
+
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
@@ -22,10 +24,9 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-import io.vantiq.extjsdk.ExtjsdkTestBase;
 import io.vantiq.extjsdk.FalseClient;
 
-public class TestConfigurableUDPSource extends ExtjsdkTestBase{
+public class TestConfigurableUDPSource extends UDPTestBase {
     FalseClient client;
     String sourceName;
     
@@ -57,6 +58,8 @@ public class TestConfigurableUDPSource extends ExtjsdkTestBase{
         InetAddress address = InetAddress.getByName("localhost");
         int port = 10213;
 
+        assumeTrue("Cannot perform test. Address at port:" + port + " and IP:" + address + "already bound"
+                , socketCanBind(port, address));
         // should only be created once per port/address pair
         DatagramSocket socket = ConfigurableUDPSource.createUDPSocket(port, address, sourceName);
         assert socket != null;
@@ -65,7 +68,9 @@ public class TestConfigurableUDPSource extends ExtjsdkTestBase{
         socket = ConfigurableUDPSource.createUDPSocket(port, address, "other source");
         assert socket == null;
         
-        port = 2000;
+        port = 2005;
+        assumeTrue("Cannot perform test. Address at port:" + port + " and IP:" + address + "already bound"
+                , socketCanBind(port, address));     
         socket = ConfigurableUDPSource.createUDPSocket(port, address, sourceName);
         assert socket != null;
     }
@@ -79,6 +84,9 @@ public class TestConfigurableUDPSource extends ExtjsdkTestBase{
         
         DatagramSocket socket = ConfigurableUDPSource.listenOnUDPSocket(port, address, firstSource);
         assert socket == null; // shouldn't be able to find one that already exists, since it doesn't
+        
+        assumeTrue("Cannot perform test. Address at port:" + port + " and IP:" + address + "already bound"
+                , socketCanBind(port, address));
         socket = ConfigurableUDPSource.createUDPSocket(port, address, firstSource);
         
         DatagramSocket socket2 = ConfigurableUDPSource.listenOnUDPSocket(port, address, secondSource);
@@ -106,6 +114,8 @@ public class TestConfigurableUDPSource extends ExtjsdkTestBase{
                 new UDPNotificationHandler(new LinkedHashMap<>(), client));
         ConfigurableUDPSource.clients.put(secondSource, client);
         
+        assumeTrue("Cannot perform test. Address at port:" + port + " and IP:" + address + "already bound"
+                , socketCanBind(port, address));             
         DatagramSocket socket = ConfigurableUDPSource.createUDPSocket(port, address, firstSource);
         ConfigurableUDPSource.listenOnUDPSocket(port, address, secondSource);
         
@@ -128,7 +138,7 @@ public class TestConfigurableUDPSource extends ExtjsdkTestBase{
         assert !ConfigurableUDPSource.notificationHandlers.containsKey(secondSource);
         assert socket.isClosed();
     }
-    
+
     @Test
     public void testSetNotificationHandler() throws UnknownHostException {
         InetAddress address = InetAddress.getByName("localhost");
@@ -336,5 +346,4 @@ public class TestConfigurableUDPSource extends ExtjsdkTestBase{
     
 // ====================================================================================================================
 // --------------------------------------------------- Test Helpers ---------------------------------------------------
-    
 }
