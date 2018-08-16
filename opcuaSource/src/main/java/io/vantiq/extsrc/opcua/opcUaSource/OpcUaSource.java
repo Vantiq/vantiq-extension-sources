@@ -304,7 +304,7 @@ public class OpcUaSource {
 
     private void handleMonitorUpdates(NodeId nodeInfo, Object newValue) {
         try {
-            log.debug(">>>> Update: Node: {}, newValue: {} ", nodeInfo, newValue.toString());
+            log.debug(">>>> Update: Node: {}, newValue: {} ", nodeInfo.toParseableString(), newValue.toString());
             Map<String, Object> updateMsg = new HashMap<>();
 
             updateMsg.put(OpcConstants.CONFIG_MI_NAMESPACE_INDEX, nodeInfo.getNamespaceIndex());
