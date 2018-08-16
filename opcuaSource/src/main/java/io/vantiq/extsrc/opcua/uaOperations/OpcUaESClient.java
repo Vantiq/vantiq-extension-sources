@@ -598,7 +598,7 @@ public class OpcUaESClient {
         try {
             boolean isNewSubscription = false;
             if (subscription == null) {
-                // FIXME -- update interval should be gleaned from the config file
+                // TODO -- update interval should be gleaned from the config file
                 subscription = client.getSubscriptionManager().createSubscription(1000.0).get();
                 isNewSubscription = true;
             }

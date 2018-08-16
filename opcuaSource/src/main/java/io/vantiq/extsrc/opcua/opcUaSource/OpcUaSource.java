@@ -202,7 +202,6 @@ public class OpcUaSource {
                 performPublish(message);
             } else {
                 log.warn("OPC client not yet connected.  Publish dropped.");
-                // FIXME
             }
 
         }
@@ -239,7 +238,7 @@ public class OpcUaSource {
             String sourceName = message.getSourceName();
             configurationDoc = (Map) ((Map) message.getObject()).get("config");
 
-            // FIXME -- Need to qualify source name (i.e. resourceId) with namespace name.
+            // TODO -- Need to qualify source name (i.e. resourceId) with namespace name.
             // Save the config away so that we can refer to it in the future...
             configurations.put(sourceName, configurationDoc);
             log.info("Received configuration document for source {}: {}", sourceName, message.getObject());
