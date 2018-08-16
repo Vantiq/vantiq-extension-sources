@@ -14,10 +14,34 @@ repositories {
 mainClassName = 'io.vantiq.extsrc.objectRecognition.ObjectRecognitionMain'
 
 
+startScripts{
+    doLast{
+        def windowsScriptFile = file getWindowsScript()
+        def unixScriptFile = file getUnixScript()
+        // Add the log Config to the top of the classpath
+        windowsScriptFile.text = windowsScriptFile.text.replace("CLASSPATH=", "CLASSPATH=%APP_HOME%\\logConfig;")
+        unixScriptFile.text = unixScriptFile.text.replace('CLASSPATH=', 'CLASSPATH=$APP_HOME/logConfig:')
+    }
+}
+
+task copyLogFiles(type: Copy) {
+    from("src/main/resources") 
+    include "log4j2.xml"
+    into "src/dist/logConfig"
+}
+
+task copyDocumentationFiles(type: Copy, dependsOn:copyLogFiles) {
+    from "."
+    include "README.md"
+    include "LICENSE/*"
+    into "src/dist"
+}
+
+distZip.dependsOn copyDocumentationFiles
+distTar.dependsOn copyDocumentationFiles
+
 dependencies {
     compile project(':extjsdk')
-    
-    runtime files('logConfig')
     
     compile "org.slf4j:slf4j-api:1.7.25"
     compile "org.apache.logging.log4j:log4j-slf4j-impl:2.11.0"
