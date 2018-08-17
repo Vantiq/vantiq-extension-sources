@@ -125,12 +125,13 @@ public class FileRetriever implements ImageRetrieverInterface {
                     if (frameCount == 0) {
                         newcapture.release();
                         matrix.release();
-                        throw new ImageAcquisitionException("Requested frame is negative");
+                        throw new ImageAcquisitionException("Video registers as 0 frames");
                     }
                     if (val >= frameCount || val < 0) {
                         newcapture.release();
                         matrix.release();
-                        throw new ImageAcquisitionException("Requested frame past end of video");
+                        throw new ImageAcquisitionException("Requested frame " + val + " outside valid bounds (0-" 
+                                    + (long)(frameCount - 1) + ")");
                     }
                     newcapture.set(Videoio.CAP_PROP_POS_FRAMES, val);
                     
