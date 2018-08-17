@@ -251,7 +251,7 @@ public class ObjectRecognitionConfigHandler extends Handler<ExtensionServiceMess
     
     private boolean prepareCommunication(Map<String, ?> general) {
         if (general.get("pollRate") instanceof Integer) {
-            int polling = (int) general.get("pollRate");
+            int polling = (Integer) general.get("pollRate");
             if (polling > 0) {
                 int pollRate = polling;
                 TimerTask task = new TimerTask() {
