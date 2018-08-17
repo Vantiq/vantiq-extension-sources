@@ -250,15 +250,30 @@ public class TestFileRetriever extends ObjRecTestBase {
         try {
             request.put("fps", (double) 1000000000000000.0);
             fr.getImage(request);
-            fail("Did not reject illegal value");
+            fail("Did not reject frame past end of video");
         } catch (ImageAcquisitionException e) {
             // Expected
         }
-        
         try {
             request.put("fps", (double) -1);
             fr.getImage(request);
-            fail("Did not reject excessive value");
+            fail("Did not reject negative frame");
+        } catch (ImageAcquisitionException e) {
+            // Expected
+        }
+        try {
+            request.put("fileLocation", IMAGE_LOCATION);
+            request.put("fps", (double) 0);
+            byte[] data = fr.getImage(request);
+            assert data != null;
+            assert data.length > 0;
+        } catch (ImageAcquisitionException e) {
+            fail("Exception occurred when requesting image: " + e.toString());
+        }
+        try {
+            request.put("fps", (double) 1);
+            fr.getImage(request);
+            fail("Did not reject non-zero frame for single image");
         } catch (ImageAcquisitionException e) {
             // Expected
         }

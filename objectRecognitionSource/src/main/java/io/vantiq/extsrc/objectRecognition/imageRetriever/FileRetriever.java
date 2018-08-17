@@ -119,13 +119,6 @@ public class FileRetriever implements ImageRetrieverInterface {
                 }
                 Mat matrix = new Mat();
                 
-                newcapture.read(matrix);
-                if (matrix.empty()) { // Exit if nothing could be read
-                    newcapture.release();
-                    matrix.release();
-                    throw new ImageAcquisitionException("Video could not be read or video file has finished");
-                }
-                
                 if (request.get("fps") instanceof Double) {
                     double val = (Double) request.get("fps");
                     double frameCount = newcapture.get(Videoio.CAP_PROP_FRAME_COUNT);
@@ -134,12 +127,19 @@ public class FileRetriever implements ImageRetrieverInterface {
                         matrix.release();
                         throw new ImageAcquisitionException("Requested frame is negative");
                     }
-                    if (val > frameCount || val < 0) {
+                    if (val >= frameCount || val < 0) {
                         newcapture.release();
                         matrix.release();
                         throw new ImageAcquisitionException("Requested frame past end of video");
                     }
                     newcapture.set(Videoio.CAP_PROP_POS_FRAMES, val);
+                    
+                    newcapture.read(matrix);
+                    if (matrix.empty()) { // Exit if nothing could be read
+                        newcapture.release();
+                        matrix.release();
+                        throw new ImageAcquisitionException("Video could not be read or video file has finished");
+                    }
                     MatOfByte matOfByte = new MatOfByte();
                     Imgcodecs.imencode(".jpg", matrix, matOfByte);
                     byte [] imageByte = matOfByte.toArray();
