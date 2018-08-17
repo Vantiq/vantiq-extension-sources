@@ -1,6 +1,7 @@
 package io.vantiq.extsrc.objectRecognition.neuralNet;
 
 import static org.junit.Assert.fail;
+import static org.junit.Assume.assumeTrue;
 
 import java.io.File;
 import java.util.LinkedHashMap;
@@ -24,6 +25,9 @@ public class TestYoloProcessor extends NeuralNetTestBase {
     // A single processor is used for the entire class because it is very expensive to do initial setup
     @BeforeClass
     public static void classSetup() {
+        assumeTrue("No model file for test. Should be at " + new File(MODEL_DIRECTORY + "/" + PB_FILE).getAbsolutePath() + ""
+                , new File(MODEL_DIRECTORY + "/" + PB_FILE).exists());
+        
         ypImageSaver = new YoloProcessor();
         ypJson = new YoloProcessor();
         

@@ -1,6 +1,7 @@
 package io.vantiq.extsrc.objectRecognition.imageRetriever;
 
 import static org.junit.Assert.fail;
+import static org.junit.Assume.assumeTrue;
 
 import java.io.File;
 import java.nio.file.Files;
@@ -9,6 +10,7 @@ import java.util.Map;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
 import io.vantiq.extsrc.objectRecognition.ObjRecTestBase;
@@ -19,6 +21,12 @@ import io.vantiq.extsrc.objectRecognition.exception.ImageAcquisitionException;
 public class TestFileRetriever extends ObjRecTestBase {
     FileRetriever fr;
     ObjectRecognitionCore source;
+    
+    @BeforeClass
+    public static void checkFilesExist() {
+        assumeTrue("No video file for test. Should be at " +  new File(VIDEO_LOCATION).getAbsolutePath() + "."
+                , new File(VIDEO_LOCATION).exists());
+    }
     
     @Before
     public void setup() {
@@ -216,6 +224,45 @@ public class TestFileRetriever extends ObjRecTestBase {
         } catch (FatalImageException e) {
             // Should create fatal exception, since no more can be read
         }
+    }
+    
+    @Test
+    public void testVideoQuery() {
+        Map<String,Object> request = new LinkedHashMap<>();
+        try {
+            Map<String,String> config = new LinkedHashMap<>();
+            config.put("fileLocation", IMAGE_LOCATION);
+            config.put("fileExtension", "mov");
+            fr.setupDataRetrieval(config, source);
+        } catch (Exception e) {
+            fail("Exception occurred when obtaining image: " + e.toString());
+        }
+        try {
+            request.put("fileExtension", "mov");
+            request.put("fileLocation", VIDEO_LOCATION);
+            request.put("fps", (double) 3);
+            byte[] data = fr.getImage(request);
+            assert data != null;
+            assert data.length > 0;
+        } catch (ImageAcquisitionException e) {
+            fail("Exception occurred when requesting frame 4 of video: " + e.toString());
+        }
+        try {
+            request.put("fps", (double) 1000000000000000.0);
+            fr.getImage(request);
+            fail("Did not reject illegal value");
+        } catch (ImageAcquisitionException e) {
+            // Expected
+        }
+        
+        try {
+            request.put("fps", (double) -1);
+            fr.getImage(request);
+            fail("Did not reject excessive value");
+        } catch (ImageAcquisitionException e) {
+            // Expected
+        }
+        
     }
     
 // ================================================= Helper functions =================================================
