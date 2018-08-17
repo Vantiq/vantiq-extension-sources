@@ -30,7 +30,7 @@ public class ObjectRecognitionCore {
     String sourceName           = "Camera1";
     String authToken            = "gcy1hHR39ge2PNCZeiUbYKAev-G7u-KyPh2Ns4gI0Y8=";
     String targetVantiqServer   = "ws://localhost:8080";
-    String modelDirectory       = "models/";
+    String modelDirectory       = "";
     
     
     // vars for source configuration
@@ -405,34 +405,5 @@ public class ObjectRecognitionCore {
             return false;
         }
         return true;
-    }
-    
-    /**
-     * Sets up the defaults for the server based on the configuration file
-     * @param config    The Properties obtained from the config file
-     */
-    void setup(Map<String,?> config) {
-        targetVantiqServer = config.get("targetServer") instanceof String ? (String) config.get("targetServer")
-                : "wss://dev.vantiq.com/api/v1/wsock/websocket";
-        
-        if (config.get("authToken") instanceof String) {
-            authToken = (String) config.get("authToken");
-        } else {
-            log.error("No valid authentication token in server settings");
-            log.error("Exiting...");
-            stop();
-        }
-        
-        if (config.get("source") instanceof String) {
-            sourceName = (String) config.get("source");
-        } else {
-            log.error("No valid source in server settings");
-            log.error("Exiting...");
-            stop();
-        }
-        
-        if (config.get("modelDirectory") instanceof String) {
-            modelDirectory = (String) config.get("modelDirectory");
-        }
     }
 }

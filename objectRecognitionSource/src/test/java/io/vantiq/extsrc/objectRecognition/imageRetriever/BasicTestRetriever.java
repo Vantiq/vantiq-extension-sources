@@ -14,9 +14,11 @@ public class BasicTestRetriever implements ImageRetrieverInterface {
 
     public Map<String,?>            config;
     public ObjectRecognitionCore    source;
-    public final String             THROW_EXCEPTION         = "throwException";
-    public final String             THROW_EXCEPTION_ON_REQ  = "throwReqException";
-    public final String             RETURN_NULL             = "retNull";
+    public static final String      THROW_EXCEPTION         = "throwException";
+    public static final String      THROW_EXCEPTION_ON_REQ  = "throwReqException";
+    public static final String      THROW_FATAL_ON_REQ      = "throwReqFatal";
+    public final static String      THROW_RUNTIME_ON_REQ    = "throwRuntimeException";
+    public static final String      RETURN_NULL             = "retNull";
     
     @Override
     public void setupDataRetrieval(Map<String, ?> dataSourceConfig, ObjectRecognitionCore source) throws Exception {
@@ -33,6 +35,10 @@ public class BasicTestRetriever implements ImageRetrieverInterface {
             throw new ImageAcquisitionException("Exception on request");
         } else if (config.containsKey(RETURN_NULL)) {
             return null;
+        } else if (config.containsKey(THROW_FATAL_ON_REQ)) {
+            throw new FatalImageException("Exception on request");
+        } else if (config.containsKey(THROW_RUNTIME_ON_REQ)) {
+            throw new RuntimeException("Exception on request");
         } else {
             try {
                 return Files.readAllBytes(new File(ObjRecTestBase.IMAGE_LOCATION).toPath());
@@ -48,6 +54,8 @@ public class BasicTestRetriever implements ImageRetrieverInterface {
             throw new ImageAcquisitionException("Exception on request");
         } else if (request.containsKey(RETURN_NULL)) {
             return null;
+        } else if (request.containsKey(THROW_FATAL_ON_REQ)) {
+            throw new FatalImageException("Exception on request");
         } else {
             try {
                 return Files.readAllBytes(new File(ObjRecTestBase.IMAGE_LOCATION).toPath());

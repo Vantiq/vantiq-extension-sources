@@ -12,10 +12,11 @@ public class BasicTestNeuralNet implements NeuralNetInterface {
     
     public Map<String,?>            config;
     public String                   modelDirectory;
-    public final String             THROW_EXCEPTION         = "throwException";
-    public final String             THROW_EXCEPTION_ON_REQ  = "throwReqException";
-    public final String             THROW_FATAL_ON_REQ      = "throwFatalException";
-    public final String             RETURN_NULL             = "retNull";
+    public final static String      THROW_EXCEPTION         = "throwException";
+    public final static String      THROW_EXCEPTION_ON_REQ  = "throwReqException";
+    public final static String      THROW_FATAL_ON_REQ      = "throwFatalException";
+    public final static String      THROW_RUNTIME_ON_REQ    = "throwRuntimeException";
+    public final static String      RETURN_NULL             = "retNull";
 
     @Override
     public void setupImageProcessing(Map<String, ?> neuralNetConfig, String modelDirectory) throws Exception {
@@ -32,6 +33,8 @@ public class BasicTestNeuralNet implements NeuralNetInterface {
             throw new ImageProcessingException("Exception on request");
         } else if (config.containsKey(THROW_FATAL_ON_REQ)) {
             throw new FatalImageException("Fatal exception requested");
+        } else if (config.containsKey(THROW_RUNTIME_ON_REQ)) {
+            throw new RuntimeException("Exception on request");
         } else if (config.containsKey(RETURN_NULL)) {
             return null;
         } else {
