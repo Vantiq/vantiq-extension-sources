@@ -34,7 +34,9 @@ dependencies {
     compile project(":extjsdk")
 
     compile "org.projectlombok:lombok:${lombokVersion}"
-    compile "ch.qos.logback:logback-classic:${logbackVersion}"
+    compile "org.slf4j:slf4j-api:1.7.25"
+    compile "org.apache.logging.log4j:log4j-slf4j-impl:2.11.0"
+
     compile "com.fasterxml.jackson.core:jackson-databind:${jacksonVersion}"
     compile "commons-cli:commons-cli:${commonsCliVersion}"
     compile "org.eclipse.milo:sdk-client:${eclipseMiloVersion}"
@@ -44,6 +46,24 @@ dependencies {
 }
 
 mainClassName = 'io.vantiq.extsrc.opcua.opcUaSource.OpcUaServer'
+
+startScripts{
+    doLast{
+        def windowsScriptFile = file getWindowsScript()
+        def unixScriptFile = file getUnixScript()
+        // Add the log Config to the top of the classpath
+        windowsScriptFile.text = windowsScriptFile.text.replace("CLASSPATH=", "CLASSPATH=%APP_HOME%\\logConfig;")
+        unixScriptFile.text = unixScriptFile.text.replace('CLASSPATH=', 'CLASSPATH=$APP_HOME/logConfig:')
+    }
+}
+
+applicationDistribution.from("src/main/resources/LICENSES") {
+    into "LICENSES"
+}
+
+applicationDistribution.from("src/main/resources/log4j2.xml") {
+    into "logConfig"
+}
 
 test {
     useJUnit {

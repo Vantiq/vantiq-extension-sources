@@ -10,4 +10,4 @@ This project uses components that are licensed as follows:
   * SLF4J -- [MIT license](https://opensource.org/licenses/MIT)
   * Jackson -- [ASL 2.0](https://www.apache.org/licenses/LICENSE-2.0)
   * Google Common -- [ASL 2.0](https://www.apache.org/licenses/LICENSE-2.0)
-  * QOS logging -- [Eclipse License v1.0](https://www.eclipse.org/legal/epl-v10.html)
+  * Log4J 2 -- [ASL 2.0](https://www.apache.org/licenses/LICENSE-2.0)
