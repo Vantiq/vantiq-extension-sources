@@ -143,6 +143,24 @@ public class TestObjRecConfig {
         assertTrue("Should fail when missing 'neuralNet' config", configIsFailed());
     }
     
+    @Test
+    public void testMinimalConfig() {
+        nCore.start(); // Need a client to avoid NPEs on sends
+        
+        Map conf = minimalConfig();
+        sendConfig(conf);
+        assertFalse("Should not fail with minimal config", configIsFailed());
+        
+        general.put("pollRate", 300000);
+        sendConfig(conf);
+        assertFalse("Should not fail with minimal config", configIsFailed());
+        assertTrue("Timer should exist after pollRate set to positive number", nCore.pollTimer != null); 
+        
+        general.put("pollRate", -100);
+        sendConfig(conf);
+        assertFalse("Should not fail with minimal config", configIsFailed());
+    }
+    
 // ================================================= Helper functions =================================================
     
     public void sendConfig(Map<String,?> ORConfig) {

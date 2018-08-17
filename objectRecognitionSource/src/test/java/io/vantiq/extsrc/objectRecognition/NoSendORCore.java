@@ -28,6 +28,10 @@ public class NoSendORCore extends ObjectRecognitionCore{
         client.setQueryHandler(defaultQueryHandler);
         client.initiateFullConnection(targetVantiqServer, authToken);
         
+        fClient.completeAuthentication(true);
+        fClient.completeWebSocketConnection(true);
+        fClient.completeSourceConnection(true);
+        
         return exitIfConnectionFails(client);
     }
     
