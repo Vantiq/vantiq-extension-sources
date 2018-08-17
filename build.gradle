@@ -1,0 +1,236 @@
+buildscript {
+    repositories { jcenter() }
+    dependencies {
+        classpath 'com.github.jengelman.gradle.plugins:shadow:1.2.4'
+        classpath 'com.netflix.nebula:gradle-ospackage-plugin:4.4.0'
+        classpath "org.jfrog.buildinfo:build-info-extractor-gradle:4.4.15"
+        classpath "gradle.plugin.com.github.lkishalmi.gradle:gradle-gatling-plugin:0.4.1"
+    }
+}
+
+plugins {
+    id 'pl.allegro.tech.build.axion-release' version '1.6.0'
+    id 'jacoco'
+}
+
+task wrapper(type: Wrapper) {
+    gradleVersion = '3.5'
+    distributionUrl = "https://services.gradle.org/distributions/gradle-$gradleVersion-all.zip"
+}
+
+private Map getHostInfo() {
+    def info = [:]
+    try {
+        info.name = InetAddress.localHost.hostName
+        info.ip = InetAddress.localHost.hostAddress
+    } catch (Exception e) {
+        info.name = 'localhost'
+        info.ip = '127.0.0.1'
+    }
+    return info
+}
+
+group 'io.vantiq'
+// version scmVersion.version
+
+// scmVersion {
+//    versionIncrementer 'incrementMinor'
+// }
+
+ext {
+    slf4jApiVersion = '1.7.25'
+    eclipseMiloVersion = '0.2.1'
+}
+
+\
+// Add idea support in root project to get around bug in Scala plugin
+apply plugin: 'idea'
+
+allprojects {
+    group 'io.vantiq'
+    //version scmVersion.version
+
+    // apply from: project(':').file('gradle/publish.gradle')
+
+    configurations.all {
+        resolutionStrategy {
+            // cache dynamic versions for 10 minutes
+            cacheDynamicVersionsFor 10 * 60, 'seconds'
+            // don't cache changing modules at all
+            cacheChangingModulesFor 0, 'seconds'
+        }
+    }
+
+
+
+}
+
+subprojects {
+    apply plugin: 'groovy'
+    apply plugin: 'idea'
+    apply plugin: 'eclipse'
+    apply plugin: 'java'
+
+    // only run with code-coverage metrics if property is explicitly specified
+    if (rootProject.hasProperty('jacocoReport')) {
+        apply plugin: "jacoco"
+    }
+
+    sourceCompatibility = 1.8
+
+    // Simulate provided dependencies
+    configurations {
+        provided
+    }
+
+    //Include provided for compilation
+    sourceSets.main.compileClasspath += configurations.provided
+    sourceSets.test.compileClasspath += configurations.provided
+    sourceSets.test.runtimeClasspath += configurations.provided
+
+    idea {
+        module {
+            scopes.PROVIDED.plus += [configurations.provided]
+        }
+    }
+
+    eclipse {
+        classpath {
+            plusConfigurations += [configurations.provided]
+        }
+    }
+
+    repositories {
+        mavenCentral()
+        jcenter()
+        maven { url 'https://jitpack.io' }
+    }
+
+    dependencies {
+        provided 'org.projectlombok:lombok:1.16.18'
+
+        compile 'org.codehaus.groovy:groovy-all:2.4.11'
+        compile "org.slf4j:slf4j-api:${slf4jApiVersion}"
+    }
+
+    compileGroovy {
+        groovyOptions.javaAnnotationProcessing = true
+    }
+
+    task allDeps(type: DependencyReportTask) {}
+
+    test {
+        useJUnit {
+        }
+
+        // We are a UTF-8 system
+        jvmArgs '-Dfile.encoding=UTF-8'
+
+        // Print out test names as they run
+        if (rootProject.hasProperty('showTests')) {
+            beforeTest { descriptor ->
+                logger.lifecycle("$descriptor")
+            }
+        }
+
+        // show standard out and standard error of the test JVM(s) on the console
+        if (rootProject.hasProperty('showTestOutput')) {
+            testLogging.showStandardStreams = true
+        }
+
+        testLogging {
+            // have info about failures output to console...
+            exceptionFormat = 'full'
+
+            // print test totals to console at end of tests
+            afterSuite { desc, result ->
+                if (!desc.parent) { // will match the outermost suite
+                    println "Results: ${result.resultType} (${result.testCount} tests, ${result.successfulTestCount} successes, ${result.failedTestCount} failures, ${result.skippedTestCount} skipped)"
+                }
+            }
+        }
+    }
+
+}
+apply plugin: 'java'
+//dependencies {
+//    compile 'org.codehaus.groovy:groovy-all:2.4.11'
+//    compile "org.slf4j:slf4j-api:1.7.5"
+//}
+repositories {
+    mavenCentral()
+    jcenter()
+    maven { url 'https://jitpack.io' }
+}
+
+
+// include base plugin so 'clean' will delete the top-level build directory,
+// and thus clean old jacoco and testReport results
+apply plugin: 'base'
+
+// This task will create an aggregate report on test results for all subprojects...
+//     ./gradlew testReport --continue
+// BUT this only seems to work during a test run if there were 0 failures!
+// If there are failures, can generate the combined report without running tests again
+// by using -xtest:
+//     ./gradlew testReport -xtest
+// Otherwise, this task will RUN ALL the tests, rather than just collecting the existing reports...
+//     
+task testReport(type: TestReport) {
+    destinationDir = file("$buildDir/reports/allTests")
+    // Include the results from the `test` task in all subprojects
+    reportOn subprojects*.test
+}
+
+def publishedProjects = subprojects.findAll()
+
+// This task will create a combined code-coverage report for the unit tests.
+// To generate the data for this report, need to run tests with the jacocoReport flag:
+//     ./gradlew -PjacocoReport=true jacocoRootReport --continue
+// The combined report goes into:
+//     build/reports/jacoco/jacocoRootReport/html/index.html
+//     
+// If you forgot the --continue flag and have failures during tests, you can generate
+// the combined jacoco report without re-running tests, by doing
+//     ./gradlew jacocoRootReport -PjacocoReport=true -xtest
+// (without the -xtest, it will re-run all the tests...)
+//
+// Note: To generate a report for JUST ONE SUBPROJECT, you can run 'jacocoTestReport' in
+// that one subproject, e.g.
+//     cd analytics
+//     ../gradlew -PjacocoReport=true test jacocoTestReport  --continue
+//         -or-
+//     ./gradlew  -PjacocoReport=true :analytics:test :analytics:jacocoTestReport
+// The single report goes into each subproject, e.g.:
+//     analytics/build/reports/jacoco/test/html/index.html
+// 
+task jacocoRootReport(type: JacocoReport, group: 'Coverage reports') {
+    description = 'Generates an aggregate report from all subprojects'
+
+    dependsOn(publishedProjects.test)
+
+    additionalSourceDirs = files(publishedProjects.sourceSets.main.allSource.srcDirs)
+    sourceDirectories = files(publishedProjects.sourceSets.main.allSource.srcDirs)
+    classDirectories = files(publishedProjects.sourceSets.main.output)
+    // disable this report unless jacocoReport is specified
+    if (rootProject.hasProperty('jacocoReport')) {
+        executionData = files(publishedProjects.jacocoTestReport.executionData)
+    } else {
+        executionData = files('dummy')  // just create empty list if property not specified
+    }
+
+    doFirst {
+        executionData = files(executionData.findAll { it.exists() })
+        classDirectories = files(classDirectories.findAll {
+            // exclude the sqlsvc directory/module, because it contains a duplicate class;
+            // i.e.    io/vantiq/service/storage/DatabaseServiceModule.class
+            // is in both dbservice/mongodbsvc & dbservice/sqlsvc
+            it.exists() && !(it.absolutePath.contains('sqlsvc'))
+        })
+    }
+
+    reports {
+        html.enabled = true // human readable
+        xml.enabled = true // required by coveralls
+    }
+}

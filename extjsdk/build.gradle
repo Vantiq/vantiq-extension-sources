@@ -1,0 +1,54 @@
+group 'io.vantiq'
+version 'unspecified'
+
+buildscript {
+    repositories {jcenter() }
+    dependencies {
+        classpath 'com.github.jengelman.gradle.plugins:shadow:2.0.0'
+    }
+}
+
+apply plugin: 'java'
+apply plugin: 'com.github.johnrengelman.shadow'
+
+sourceCompatibility = 1.8
+
+ext {
+    // Open the Git repository in the current directory and get commit id of HEAD.
+//    git = org.ajoberstar.grgit.Grgit.open(file('.'))
+//    revision = git.head().id
+
+    vertxVersion = '3.5.1'
+    jacksonVersion = '2.9.3'
+    hazelcastVersion = '3.8.2'
+    metricsVersion = '4.0.2'
+    rxjavaVersion = '2.1.11'
+    slf4jApiVersion = '1.7.25'
+}
+
+
+repositories {
+    mavenCentral()
+}
+
+configurations {
+    testArtifacts
+}
+  task testJar (type: Jar) {
+    baseName = "${project.name}-test"
+    from sourceSets.test.output
+}
+  artifacts {
+    testArtifacts testJar
+}
+
+dependencies {
+    compile "org.slf4j:slf4j-api:1.7.25"
+    
+    compile 'com.squareup.okhttp3:okhttp:3.4.1'
+    compile 'com.squareup.okhttp3:okhttp-ws:3.4.1'
+    
+    compile "com.fasterxml.jackson.core:jackson-databind:${jacksonVersion}"
+
+    testCompile group: 'junit', name: 'junit', version: '4.12'
+}

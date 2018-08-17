@@ -1,0 +1,82 @@
+group 'io.vantiq'
+version 'unspecified'
+
+buildscript {
+    repositories { jcenter() }
+    dependencies {
+        classpath 'com.github.jengelman.gradle.plugins:shadow:2.0.0'
+    }
+}
+
+apply plugin: 'java'
+apply plugin: 'application'
+apply plugin: 'idea'
+apply plugin: 'eclipse'
+
+sourceCompatibility = 1.8
+
+ext {
+    jacksonVersion = '2.9.3'
+    eclipseMiloVersion = '0.2.1'
+    lombokVersion = '1.16.18'
+    logbackVersion = '1.2.3'
+    junitVersion = '4.12'
+    commonsCliVersion = '1.4'
+}
+
+repositories {
+    mavenCentral()
+    jcenter()
+}
+
+dependencies {
+    // compile files('../extjsdk/build/libs/extjsdk-all.jar')
+    compile project(":extjsdk")
+
+    compile "org.projectlombok:lombok:${lombokVersion}"
+    compile "org.slf4j:slf4j-api:1.7.25"
+    compile "org.apache.logging.log4j:log4j-slf4j-impl:2.11.0"
+
+    compile "com.fasterxml.jackson.core:jackson-databind:${jacksonVersion}"
+    compile "commons-cli:commons-cli:${commonsCliVersion}"
+    compile "org.eclipse.milo:sdk-client:${eclipseMiloVersion}"
+
+    testCompile group: 'junit', name: 'junit', version: "${junitVersion}"
+    testCompile "org.eclipse.milo:client-examples:${eclipseMiloVersion}"
+}
+
+mainClassName = 'io.vantiq.extsrc.opcua.opcUaSource.OpcUaServer'
+
+startScripts{
+    doLast{
+        def windowsScriptFile = file getWindowsScript()
+        def unixScriptFile = file getUnixScript()
+        // Add the log Config to the top of the classpath
+        windowsScriptFile.text = windowsScriptFile.text.replace("CLASSPATH=", "CLASSPATH=%APP_HOME%\\logConfig;")
+        unixScriptFile.text = unixScriptFile.text.replace('CLASSPATH=', 'CLASSPATH=$APP_HOME/logConfig:')
+    }
+}
+
+applicationDistribution.from("src/main/resources/LICENSES") {
+    into "LICENSES"
+}
+
+applicationDistribution.from("src/main/resources/log4j2.xml") {
+    into "logConfig"
+}
+
+test {
+    useJUnit {
+        excludeCategories 'io.vantiq.extsrc.opcua.categories.OnlyHandTests'
+    }
+}
+
+task generateJavadoc(type: Javadoc) {
+    source = sourceSets.main.allJava
+    classpath = sourceSets.main.compileClasspath
+}
+
+task runExampleServer(type: JavaExec) {
+    main = "io.vantiq.extsrc.opcua.io.vantiq.extsrc.opcua.sampleServer.RunExampleServer"
+    classpath = sourceSets.test.runtimeClasspath
+}
