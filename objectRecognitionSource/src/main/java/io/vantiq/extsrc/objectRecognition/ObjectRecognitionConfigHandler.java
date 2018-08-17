@@ -72,7 +72,7 @@ public class ObjectRecognitionConfigHandler extends Handler<ExtensionServiceMess
         this.sourceName = source.getSourceName();
         log = LoggerFactory.getLogger(this.getClass().getCanonicalName() + "#" + sourceName);
         queryHandler = new Handler<ExtensionServiceMessage>() {
-            ExtensionWebSocketClient client = source.client;
+        ExtensionWebSocketClient client = source.client;
             
             @Override
             public void handleMessage(ExtensionServiceMessage message) {

@@ -1,0 +1,47 @@
+package io.vantiq.extsrc.objectRecognition.neuralNet;
+
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+
+import io.vantiq.extsrc.objectRecognition.exception.FatalImageException;
+import io.vantiq.extsrc.objectRecognition.exception.ImageProcessingException;
+
+public class BasicTestNeuralNet implements NeuralNetInterface {
+    
+    public Map<String,?>            config;
+    public String                   modelDirectory;
+    public final String             THROW_EXCEPTION         = "throwException";
+    public final String             THROW_EXCEPTION_ON_REQ  = "throwReqException";
+    public final String             THROW_FATAL_ON_REQ      = "throwFatalException";
+    public final String             RETURN_NULL             = "retNull";
+
+    @Override
+    public void setupImageProcessing(Map<String, ?> neuralNetConfig, String modelDirectory) throws Exception {
+        config = neuralNetConfig;
+        this.modelDirectory = modelDirectory;
+        if (config.containsKey(THROW_EXCEPTION)) {
+            throw new Exception("Exception requested");
+        }
+    }
+
+    @Override
+    public List<Map> processImage(byte[] image) throws ImageProcessingException {
+        if (config.containsKey(THROW_EXCEPTION_ON_REQ)) {
+            throw new ImageProcessingException("Exception on request");
+        } else if (config.containsKey(THROW_FATAL_ON_REQ)) {
+            throw new FatalImageException("Fatal exception requested");
+        } else if (config.containsKey(RETURN_NULL)) {
+            return null;
+        } else {
+            Map<String,String> m = new LinkedHashMap<>();
+            List<Map> l = new ArrayList<>(); l.add(m);
+            return l;
+        }
+    }
+
+    @Override
+    public void close() {}
+
+}
