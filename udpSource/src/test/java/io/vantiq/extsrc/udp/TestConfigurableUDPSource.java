@@ -9,6 +9,8 @@
 
 package io.vantiq.extsrc.udp;
 
+import static org.junit.Assume.assumeTrue;
+
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
@@ -22,10 +24,9 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-import io.vantiq.extjsdk.ExtjsdkTestBase;
 import io.vantiq.extjsdk.FalseClient;
 
-public class TestConfigurableUDPSource extends ExtjsdkTestBase{
+public class TestConfigurableUDPSource extends UDPTestBase {
     FalseClient client;
     String sourceName;
     
@@ -55,8 +56,10 @@ public class TestConfigurableUDPSource extends ExtjsdkTestBase{
     @Test
     public void testCreateSocket() throws UnknownHostException {
         InetAddress address = InetAddress.getByName("localhost");
-        int port = 3141;
+        int port = 10213;
 
+        assumeTrue("Cannot perform test. Address at port:" + port + " and IP:" + address + "already bound"
+                , socketCanBind(port, address));
         // should only be created once per port/address pair
         DatagramSocket socket = ConfigurableUDPSource.createUDPSocket(port, address, sourceName);
         assert socket != null;
@@ -65,7 +68,9 @@ public class TestConfigurableUDPSource extends ExtjsdkTestBase{
         socket = ConfigurableUDPSource.createUDPSocket(port, address, "other source");
         assert socket == null;
         
-        port = 2000;
+        port = 2005;
+        assumeTrue("Cannot perform test. Address at port:" + port + " and IP:" + address + "already bound"
+                , socketCanBind(port, address));     
         socket = ConfigurableUDPSource.createUDPSocket(port, address, sourceName);
         assert socket != null;
     }
@@ -73,12 +78,15 @@ public class TestConfigurableUDPSource extends ExtjsdkTestBase{
     @Test
     public void testListenSocket() throws UnknownHostException {
         InetAddress address = InetAddress.getByName("localhost");
-        int port = 15;
+        int port = 10213;
         String firstSource = "first";
         String secondSource = "second";
         
         DatagramSocket socket = ConfigurableUDPSource.listenOnUDPSocket(port, address, firstSource);
         assert socket == null; // shouldn't be able to find one that already exists, since it doesn't
+        
+        assumeTrue("Cannot perform test. Address at port:" + port + " and IP:" + address + "already bound"
+                , socketCanBind(port, address));
         socket = ConfigurableUDPSource.createUDPSocket(port, address, firstSource);
         
         DatagramSocket socket2 = ConfigurableUDPSource.listenOnUDPSocket(port, address, secondSource);
@@ -94,7 +102,7 @@ public class TestConfigurableUDPSource extends ExtjsdkTestBase{
     @Test
     public void testClearSourceHandlers() throws UnknownHostException {
         InetAddress address = InetAddress.getByName("localhost");
-        int port = 15;
+        int port = 10213;
         String firstSource = "first";
         client = new FalseClient(firstSource);
         ConfigurableUDPSource.notificationHandlers.put(firstSource,
@@ -106,6 +114,8 @@ public class TestConfigurableUDPSource extends ExtjsdkTestBase{
                 new UDPNotificationHandler(new LinkedHashMap<>(), client));
         ConfigurableUDPSource.clients.put(secondSource, client);
         
+        assumeTrue("Cannot perform test. Address at port:" + port + " and IP:" + address + "already bound"
+                , socketCanBind(port, address));             
         DatagramSocket socket = ConfigurableUDPSource.createUDPSocket(port, address, firstSource);
         ConfigurableUDPSource.listenOnUDPSocket(port, address, secondSource);
         
@@ -128,11 +138,11 @@ public class TestConfigurableUDPSource extends ExtjsdkTestBase{
         assert !ConfigurableUDPSource.notificationHandlers.containsKey(secondSource);
         assert socket.isClosed();
     }
-    
+
     @Test
     public void testSetNotificationHandler() throws UnknownHostException {
         InetAddress address = InetAddress.getByName("localhost");
-        int port = 100;
+        int port = 10213;
         
         // ============== Use a map where all each has one valid entry ===============
         Map<String,Object> incoming = new LinkedHashMap<>();
@@ -200,7 +210,7 @@ public class TestConfigurableUDPSource extends ExtjsdkTestBase{
     @Test
     public void testReceivingFromServer() throws UnknownHostException {
         InetAddress address = InetAddress.getByName("localhost");
-        int port = 100;
+        int port = 10213;
         
         ConfigurableUDPSource.sourceAddresses.put(sourceName, ConfigurableUDPSource.ALL_ADDR);
         ConfigurableUDPSource.sourcePorts.put(sourceName, ConfigurableUDPSource.ALL_PORTS);
@@ -240,7 +250,7 @@ public class TestConfigurableUDPSource extends ExtjsdkTestBase{
     @Test
     public void testSendFromDatagram() throws UnknownHostException {
         InetAddress address = InetAddress.getByName("localhost");
-        int port = 15;
+        int port = 10213;
         
         // Handler that only records the data given
         UDPNotificationHandler firstHandler = new UDPNotificationHandler(new LinkedHashMap<>(), client) {
@@ -315,7 +325,7 @@ public class TestConfigurableUDPSource extends ExtjsdkTestBase{
         
         config.put("targetServer", "ws://localhost:8080");
         config.put("maxPacketSize", 2048);
-        config.put("defaultBindPort", 123);
+        config.put("defaultBindPort", 10213);
         config.put("defaultBindAddress", "localhost");
         config.put("authToken", "new token");
         
@@ -323,7 +333,7 @@ public class TestConfigurableUDPSource extends ExtjsdkTestBase{
         
         assert ConfigurableUDPSource.targetVantiqServer.equals("ws://localhost:8080");
         assert ConfigurableUDPSource.MAX_UDP_DATA == 2048;
-        assert ConfigurableUDPSource.LISTENING_PORT == 123;
+        assert ConfigurableUDPSource.LISTENING_PORT == 10213;
         assert ConfigurableUDPSource.LISTENING_ADDRESS.equals(InetAddress.getByName("localhost"));
         assert ConfigurableUDPSource.authToken.equals("new token");
         
@@ -336,5 +346,4 @@ public class TestConfigurableUDPSource extends ExtjsdkTestBase{
     
 // ====================================================================================================================
 // --------------------------------------------------- Test Helpers ---------------------------------------------------
-    
 }
