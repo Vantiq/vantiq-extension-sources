@@ -101,13 +101,51 @@ This is a user written implementation that acts as the default if no image retri
 ### Camera Retriever<a name="camRet" id="camRet"></a>
 
 This implementation uses OpenCV to capture images from a camera connected directly to a computer. There are no options for Query messages, it is completely setup upon configuration. It has the following options:
-*   camera: The index of the camera that will capture images, starting at 0.
+*   camera: Required. Config only. The index of the camera that will capture images, starting at 0.
 
 ### File Retriever<a name="fileRet" id="fileRet"></a>
 
-This implementation reads files from the disk. If it is setup for image files then the file need not be there at initialization, and messages will be sent only if the file is found. For Queries when setup for image files, a new file can be specified in the message with option fileLocation, otherwise the initial file is used. If it is setup for video files, then the file must be there at initialization, and any failed attempts to read will result in the source closing. The options are:
-*   fileLocation: Required. The location of the file to be read. The file does not need to exist, but attempts to access a non-existent file will send an empty message in response to Queries and no message for periodic requests.
-*   fileExtension: Optional. The type of file it is, "mov" for video files, "img" for image files. Defaults to image files.
+This implementation reads files from the disk using OpenCV for the videos. `fileLocation` must be a valid file at initialization. The initial image file can be replaced while the source is running, but the video cannot. For Queries, new files can be specified using the `fileLocation` and `fileExtension` options, and defaults to the initial file if `fileLocation` is not set. Queried videos can specify which frame of the video to access using the `targetFrame` option.  
+Errors are thrown whenever an image or video frame cannot be read. Fatal errors are thrown only when a video finishes being read when the source is not setup for to receive Queries.
+The options are:
+*   fileLocation: Required for Config, Optional for Query. The location of the file to be read. The file does not need to exist, but attempts to access a non-existent file will send an empty message in response to Queries and no message for periodic requests. Defaults to the configured file for Queries.
+*   fileExtension: Optional. Config and Query. The type of file it is, "mov" for video files, "img" for image files. Defaults to image files.
+*   fps: Optional. Config only. Requires `fileExtension` be "mov". How many frames to retrieve for every second in the video. Rounds up the result when calculating the number of frames to move each capture. Non-positive numbers revert to default. Default is every frame.
+*   targetFrame: Optional. Query only. Requires `fileExtension` be "mov". The frame in the video that you would like to access, with the first being 0. Exceptions will be thrown if this targets an invalid frame, i.e. negative or beyond the video's frame count. Defaults to 0.
+
+#### Example: Reading an Entire Video Through Queries
+If you want to read a video file from a source using Queries, this method will work.
+```
+var frameResults = []
+try {
+    // We expect the error received when the bounds are overrun to stop the loop,
+    // so we needn't worry about the while condition
+    var frame = 0
+    while (true) {
+        SELECT * FROM VideoSource AS results WITH 
+                        fileLocation:myVideoLocation,
+                        fileExtension:"mov",
+                        targetFrame:frame
+        frameResults.push(results)
+        frame += frameSkip
+    }
+} catch (error) {
+    // This indicates to us that the video is done receiving
+    if (frameResults.length == 0) {
+        // This means nothing was received, indicating that the error was a serious problem
+        // and not just the video's end
+        // We'll throw the exception again, so that it is received correctly
+        exception(error.code, error.message)
+    } else if ( !(error.params[0].equals("Requested frame outside valid bounds")) ) {
+        // AS OF WRITING (8/17/18), the parameter 0 of the query error is ALWAYS the message
+        // from the originating exception, and FileRetriever throws an exception with the message
+        // "Requested frame outside valid bounds" when an invalid frame is requested
+        // If this changes or becomes unpredictable, use an else instead with a debug() statement
+        exception(error.code, error.message)
+    }
+}
+// At this point, frameResults[f] will contain the objects identified in frame f * frameSkip
+```
 
 ## Neural Net Interface<a name="netInterface" id="netInterface"></a>
 

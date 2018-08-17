@@ -33,7 +33,7 @@ public class FileRetriever implements ImageRetrieverInterface {
     File defaultImageFile;
     VideoCapture capture;
     Boolean isMov = false;
-    int time_interval;
+    int frameInterval;
     
     @Override
     public void setupDataRetrieval(Map<String, ?> dataSourceConfig, ObjectRecognitionCore source) throws Exception {
@@ -43,22 +43,34 @@ public class FileRetriever implements ImageRetrieverInterface {
                 isMov = true;
             }
         }
+        nu.pattern.OpenCV.loadShared();
         if (dataSourceConfig.get("fileLocation") instanceof String) {
             String imageLocation = (String) dataSourceConfig.get("fileLocation");
             if (isMov) {
-                nu.pattern.OpenCV.loadShared();
                 capture = new VideoCapture(imageLocation);
                 if (!capture.isOpened()) {
                     capture.release();
                     throw new IllegalArgumentException("Intended video could not be opened");
                 }
-                double fps = capture.get(Videoio.CAP_PROP_FPS);
-                if (fps == 0) {
-                    time_interval = 75;
+                
+                // Obtain the frame rate of the video, defaulting to 24
+                double videoFps = capture.get(Videoio.CAP_PROP_FPS);
+                if (videoFps == 0) {
+                    videoFps = 24;
+                }
+                
+                // Calculate the number of frames to move each capture
+                double fps = 0;
+                if (dataSourceConfig.get("fps") instanceof Number) {
+                    fps = ((Number) dataSourceConfig.get("fps")).doubleValue();
+                }
+                if (fps <= 0) {
+                    frameInterval = 1;
                 }
                 else {
-                    time_interval = (int) (3 * Math.round(fps));
+                    frameInterval = (int) Math.ceil(videoFps / fps);
                 }
+                
             }
             else {
                 defaultImageFile = new File(imageLocation);
@@ -71,16 +83,17 @@ public class FileRetriever implements ImageRetrieverInterface {
     @Override
     public byte[] getImage() throws ImageAcquisitionException {
         if (isMov) {
-            
             Mat matrix = new Mat();
             double val = capture.get(Videoio.CAP_PROP_POS_FRAMES);
             
             capture.read(matrix);
             if (matrix.empty()) { // Exit if nothing could be read
+                capture.release();
+                matrix.release();
                 throw new FatalImageException("Video could not be read or video file has finished");
             }
             
-            val += time_interval;
+            val += frameInterval;
             capture.set(Videoio.CAP_PROP_POS_FRAMES, val);
             
             MatOfByte matOfByte = new MatOfByte();
@@ -102,6 +115,7 @@ public class FileRetriever implements ImageRetrieverInterface {
 
     @Override
     public byte[] getImage(Map<String, ?> request) throws ImageAcquisitionException {
+        boolean isMov = false; // Make it local so we don't overwrite the class variable
         if (request.get("fileExtension") instanceof String) {
             String ext = (String) request.get("fileExtension");
             if (ext.equals("mov") || ext.equals("mp4")) {
@@ -111,48 +125,50 @@ public class FileRetriever implements ImageRetrieverInterface {
         if (request.get("fileLocation") instanceof String) {
             if (isMov) {
                 String imageFile = (String) request.get("fileLocation");
-                nu.pattern.OpenCV.loadShared();
                 VideoCapture newcapture = new VideoCapture(imageFile);
-                if (!newcapture.isOpened()) {
-                    newcapture.release();
-                    throw new ImageAcquisitionException("Intended video could not be opened");
-                }
                 Mat matrix = new Mat();
                 
-                if (request.get("fps") instanceof Double) {
-                    double val = (Double) request.get("fps");
-                    double frameCount = newcapture.get(Videoio.CAP_PROP_FRAME_COUNT);
-                    if (frameCount == 0) {
-                        newcapture.release();
-                        matrix.release();
-                        throw new ImageAcquisitionException("Video registers as 0 frames");
-                    }
-                    if (val >= frameCount || val < 0) {
-                        newcapture.release();
-                        matrix.release();
-                        throw new ImageAcquisitionException("Requested frame " + val + " outside valid bounds (0-" 
-                                    + (long)(frameCount - 1) + ")");
-                    }
-                    newcapture.set(Videoio.CAP_PROP_POS_FRAMES, val);
-                    
-                    newcapture.read(matrix);
-                    if (matrix.empty()) { // Exit if nothing could be read
-                        newcapture.release();
-                        matrix.release();
-                        throw new ImageAcquisitionException("Video could not be read or video file has finished");
-                    }
-                    MatOfByte matOfByte = new MatOfByte();
-                    Imgcodecs.imencode(".jpg", matrix, matOfByte);
-                    byte [] imageByte = matOfByte.toArray();
-                    matOfByte.release();
-                    matrix.release();
+                if (!newcapture.isOpened()) {
                     newcapture.release();
-                            
-                    return imageByte;
+                    matrix.release();
+                    throw new ImageAcquisitionException("Intended video could not be opened");
                 }
-                else {
-                    throw new ImageAcquisitionException("The frame rate of the video was not specificied");
-                }     
+                
+                int targetFrame = 0;
+                if (request.get("targetFrame") instanceof Number) {
+                    targetFrame = ((Number) request.get("targetFrame")).intValue();
+                }
+                
+                // Ensure that targetFrame is inside the bounds of the video
+                double frameCount = newcapture.get(Videoio.CAP_PROP_FRAME_COUNT);
+                if (frameCount == 0) {
+                    newcapture.release();
+                    matrix.release();
+                    throw new ImageAcquisitionException("Video registers as 0 frames");
+                }
+                if (targetFrame >= frameCount || targetFrame < 0) {
+                    newcapture.release();
+                    matrix.release();
+                    throw new ImageAcquisitionException("Requested frame outside valid bounds");
+                }
+                newcapture.set(Videoio.CAP_PROP_POS_FRAMES, targetFrame);
+                
+                newcapture.read(matrix);
+                if (matrix.empty()) { // Exit if nothing could be read
+                    newcapture.release();
+                    matrix.release();
+                    throw new ImageAcquisitionException("Video could not be read");
+                }
+                
+                // Translate the image to jpeg
+                MatOfByte matOfByte = new MatOfByte();
+                Imgcodecs.imencode(".jpg", matrix, matOfByte);
+                byte [] imageByte = matOfByte.toArray();
+                matOfByte.release();
+                matrix.release();
+                newcapture.release();
+                        
+                return imageByte;
             }
             else {
                 File imageFile = new File((String) request.get("fileLocation"));
@@ -163,7 +179,18 @@ public class FileRetriever implements ImageRetrieverInterface {
                 }
             }
         } else {
-            return getImage();
+            // Only try use default image if it is an image or a still-open video
+            if (capture == null || !capture.isOpened()) {
+                try {
+                    return getImage();
+                } catch (FatalImageException e) {
+                    // Fatal Image only thrown when a video is complete
+                    // Since the source can read other videos as well, we don't want to fatally end
+                    throw new ImageAcquisitionException("Default video no longer readable", e);
+                }
+            } else {
+                throw new ImageAcquisitionException("Default video no longer readable");
+            }
         }
     }
 
