@@ -29,9 +29,12 @@ public class ObjectRecognitionMain {
     static final Logger                         log         = LoggerFactory.getLogger(ObjectRecognitionMain.class);
     static       List<ObjectRecognitionCore>    sources;
     
+    public static final String DEFAULT_MODEL_DIRECTORY = "";
+    public static final String DEFAULT_VANTIQ_SERVER = "wss://dev.vantiq.com/api/v1/wsock/websocket";
+    
     static String authToken             = "gcy1hHR39ge2PNCZeiUbYKAev-G7u-KyPh2Ns4gI0Y8=";
-    static String targetVantiqServer    = "ws://localhost:8080";
-    static String modelDirectory        = "models/";
+    static String targetVantiqServer    = DEFAULT_VANTIQ_SERVER;
+    static String modelDirectory        = DEFAULT_MODEL_DIRECTORY;
     
     public static CompletableFuture<Void> stop = new CompletableFuture<>();
     
@@ -99,8 +102,6 @@ public class ObjectRecognitionMain {
      * @param config    The Properties obtained from the config file
      */
     static List<ObjectRecognitionCore> createSources(Properties config) {
-        targetVantiqServer = config.getProperty("targetServer", "wss://dev.vantiq.com/api/v1/wsock/websocket");
-        
         authToken = config.getProperty("authToken");
         if (authToken == null) {
             log.error("No valid authentication token in server settings");
@@ -108,14 +109,15 @@ public class ObjectRecognitionMain {
             exit(0);
         }
         
-        modelDirectory = config.getProperty("modelDirectory", "");
-        
         String sourceStr = config.getProperty("sources");
         if (sourceStr == null || sourceStr.equals("")) {
             log.error("No sources in server settings");
             log.error("Exiting...");
             exit(0);
         }
+        
+        targetVantiqServer = config.getProperty("targetServer", DEFAULT_VANTIQ_SERVER);
+        modelDirectory = config.getProperty("modelDirectory", DEFAULT_MODEL_DIRECTORY);
         
         String[] sourceNames = sourceStr.split(",");
         sources = new ArrayList<>();
