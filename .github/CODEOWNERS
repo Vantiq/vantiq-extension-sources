@@ -3,3 +3,5 @@
 /opcuaSource @fhcarter
 /udpSource @fhcarter @AlexBlumer
 /extjsdk @fhcarter @AlexBlumer
+# Leaving @fhCarter off until the object recognition source is more finalized, to avoid unnecessary review requests
+/objectRecognitionSource @AlexBlumer @namirfa
