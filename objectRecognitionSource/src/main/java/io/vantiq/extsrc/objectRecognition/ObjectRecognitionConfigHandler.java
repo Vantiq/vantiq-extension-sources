@@ -175,7 +175,7 @@ public class ObjectRecognitionConfigHandler extends Handler<ExtensionServiceMess
         configComplete = true;
     }
     
-    private boolean createNeuralNet(Map<String,?> neuralNetConfig ) {
+    boolean createNeuralNet(Map<String,?> neuralNetConfig ) {
         lastNeuralNet = neuralNetConfig;
         
         // Identify and setup the neural net
@@ -210,7 +210,7 @@ public class ObjectRecognitionConfigHandler extends Handler<ExtensionServiceMess
         return true;
     }
     
-    private boolean createImageRetriever(Map<String,?> dataSourceConfig) {
+    boolean createImageRetriever(Map<String,?> dataSourceConfig) {
         lastDataSource = dataSourceConfig;
         
         // Figure out where to receive the data from

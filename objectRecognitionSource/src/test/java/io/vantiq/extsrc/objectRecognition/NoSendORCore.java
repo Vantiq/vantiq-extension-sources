@@ -43,7 +43,7 @@ public class NoSendORCore extends ObjectRecognitionCore{
         closed = true;
     }
     
-    public boolean isClose() {
+    public boolean isClosed() {
         return closed;
     }
 }

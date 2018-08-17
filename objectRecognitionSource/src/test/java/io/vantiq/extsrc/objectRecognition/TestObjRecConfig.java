@@ -1,5 +1,8 @@
 package io.vantiq.extsrc.objectRecognition;
 
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+
 import java.util.LinkedHashMap;
 import java.util.Map;
 
@@ -9,7 +12,9 @@ import org.junit.Test;
 
 import io.vantiq.extjsdk.ExtensionServiceMessage;
 import io.vantiq.extsrc.objectRecognition.imageRetriever.BasicTestRetriever;
+import io.vantiq.extsrc.objectRecognition.imageRetriever.ImageRetrieverInterface;
 import io.vantiq.extsrc.objectRecognition.neuralNet.BasicTestNeuralNet;
+import io.vantiq.extsrc.objectRecognition.neuralNet.NeuralNetInterface;
 
 public class TestObjRecConfig {
 
@@ -24,9 +29,9 @@ public class TestObjRecConfig {
     
     final String TYPE = "objectRecognition";
     
-    Map<String,Object> minimalGeneral;
-    Map<String,Object> minimalDataSource;
-    Map<String,Object> minimalNeuralNet;
+    Map<String,Object> general;
+    Map<String,Object> dataSource;
+    Map<String,Object> neuralNet;
     
     @Before
     public void setup() {
@@ -36,7 +41,6 @@ public class TestObjRecConfig {
         modelDirectory = "models";
         nCore = new NoSendORCore(sourceName, authToken, targetVantiqServer, modelDirectory);
         handler = new ObjectRecognitionConfigHandler(nCore);
-        createminimalSubConfigs();
     }
     
     @After
@@ -44,7 +48,100 @@ public class TestObjRecConfig {
         nCore.stop();
     }
     
+    @Test
+    public void testGetImageRetrieverNotAClass() {
+        ImageRetrieverInterface ir;
+        String className;
+        // Should return null when not a valid class
+        className = "Not a class";
+        ir = handler.getImageRetriever(className);
+        assertTrue(ir == null);
+        assertTrue("Should fail when not given a valid classname", configIsFailed());
+    }
+    @Test
+    public void testGetImageRetrieverWrongImplementation() {
+        ImageRetrieverInterface ir;
+        String className;
+        // Should return null when not an ImageRetrieverInterface
+        className = this.getClass().getCanonicalName();
+        ir = handler.getImageRetriever(className);
+        assertTrue(ir == null);
+        assertTrue("Should fail when not given a class that's not an image retriever", configIsFailed());
+    }
+    @Test
+    public void testGetImageRetrieverValidClass() {
+        ImageRetrieverInterface ir;
+        String className;
+        // Should return an instance of the class when an ImageRetrieverInterface implementation
+        className = BasicTestRetriever.class.getCanonicalName();
+        ir = handler.getImageRetriever(className);
+        assertFalse("Should succeed when given an image retriever", configIsFailed());
+        assertTrue(ir instanceof ImageRetrieverInterface);
+        assertTrue(ir instanceof BasicTestRetriever);
+    }
     
+    @Test
+    public void testGetNeuralNetNotAClass() {
+        NeuralNetInterface nn;
+        String className;
+        // Should return null when not a valid class
+        className = "Not a class";
+        nn = handler.getNeuralNet(className);
+        assertTrue(nn == null);
+        assertTrue("Should fail when not given a valid classname", configIsFailed());
+    }
+    @Test
+    public void testGetNeuralNetWrongImplementation() {
+        NeuralNetInterface nn;
+        String className;
+        // Should return null when not a NeuralNetInterface
+        className = this.getClass().getCanonicalName();
+        nn = handler.getNeuralNet(className);
+        assertTrue(nn == null);
+        assertTrue("Should fail when not given a class that's not an image retriever", configIsFailed());
+    }
+    @Test
+    public void testGetNeuralNetValidClass() {
+        NeuralNetInterface nn;
+        String className;
+        // Should return an instance of the class when a NeuralNetInterface implementation
+        className = BasicTestNeuralNet.class.getCanonicalName();
+        nn = handler.getNeuralNet(className);
+        assertFalse("Should succeed when given an image retriever", configIsFailed());
+        assertTrue(nn instanceof NeuralNetInterface);
+        assertTrue(nn instanceof BasicTestNeuralNet);
+    }
+    
+    @Test
+    public void testEmptyConfig() {
+        Map conf = new LinkedHashMap<>();
+        sendConfig(conf);
+        assertTrue("Should fail on empty config", configIsFailed());
+    }
+    
+    @Test
+    public void testMissingGeneral() {
+        Map conf = minimalConfig();
+        conf.remove("general");
+        sendConfig(conf);
+        assertTrue("Should fail when missing 'general' config", configIsFailed());
+    }
+    
+    @Test
+    public void testMissingDataSource() {
+        Map conf = minimalConfig();
+        conf.remove("dataSource");
+        sendConfig(conf);
+        assertTrue("Should fail when missing 'dataSource' config", configIsFailed());
+    }
+    
+    @Test
+    public void testMissingNeuralNet() {
+        Map conf = minimalConfig();
+        conf.remove("neuralNet");
+        sendConfig(conf);
+        assertTrue("Should fail when missing 'neuralNet' config", configIsFailed());
+    }
     
 // ================================================= Helper functions =================================================
     
@@ -60,24 +157,39 @@ public class TestObjRecConfig {
         handler.handleMessage(m);
     }
     
-    public void createminimalSubConfigs() {
-        createminimalGeneral();
-        createminimalDataSource();
-        createminimalNeuralNet();
+    public Map<String,Object> minimalConfig() {
+        createMinimalSubConfigs();
+        Map<String,Object> ret = new LinkedHashMap<>();
+        ret.put("dataSource", dataSource);
+        ret.put("general", general);
+        ret.put("neuralNet", neuralNet);
+        ret.put("type", TYPE);
+        
+        return ret;
     }
     
-    public void createminimalGeneral() {
-        minimalGeneral = new LinkedHashMap<>();
-        minimalGeneral.put("pollRate", 0);
+    public void createMinimalSubConfigs() {
+        createMinimalGeneral();
+        createMinimalDataSource();
+        createMinimalNeuralNet();
     }
     
-    public void createminimalDataSource() {
-        minimalDataSource = new LinkedHashMap<>();
-        minimalDataSource.put("type", BasicTestRetriever.class.getCanonicalName());
+    public void createMinimalGeneral() {
+        general = new LinkedHashMap<>();
+        general.put("pollRate", 0);
     }
     
-    public void createminimalNeuralNet() {
-        minimalNeuralNet = new LinkedHashMap<>();
-        minimalNeuralNet.put("type", BasicTestNeuralNet.class.getCanonicalName());
+    public void createMinimalDataSource() {
+        dataSource = new LinkedHashMap<>();
+        dataSource.put("type", BasicTestRetriever.class.getCanonicalName());
+    }
+    
+    public void createMinimalNeuralNet() {
+        neuralNet = new LinkedHashMap<>();
+        neuralNet.put("type", BasicTestNeuralNet.class.getCanonicalName());
+    }
+    
+    public boolean configIsFailed() {
+        return handler.isComplete() && nCore.isClosed();
     }
 }
