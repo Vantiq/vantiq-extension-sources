@@ -54,6 +54,14 @@ public class ObjectRecognitionMain {
         
         startSources(sources);
         
+        // Can leave now because the threads created by the sources' WebSocket connections will keep the JVM alive
+        
+        
+        /*
+        // All sources use a separate thread for the websocket
+        // Setting this means that when all connections close (i.e. this is the last thread), then the JVM will exit
+        Thread.currentThread().setDaemon(true);
+        
         try {
             stop.get();
         } catch(InterruptedException | ExecutionException e) {
@@ -64,7 +72,7 @@ public class ObjectRecognitionMain {
         
         for(ObjectRecognitionCore source : sources) {
             source.stop();
-        }
+        }*/
     }
     
     private static void startSources(List<ObjectRecognitionCore> sources) {
