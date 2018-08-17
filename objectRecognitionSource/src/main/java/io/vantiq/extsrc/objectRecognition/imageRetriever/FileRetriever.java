@@ -3,7 +3,6 @@ package io.vantiq.extsrc.objectRecognition.imageRetriever;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
-import java.text.SimpleDateFormat;
 import java.util.Map;
 
 import io.vantiq.extsrc.objectRecognition.ObjectRecognitionCore;
@@ -113,26 +112,40 @@ public class FileRetriever implements ImageRetrieverInterface {
             if (isMov) {
                 String imageFile = (String) request.get("fileLocation");
                 nu.pattern.OpenCV.loadShared();
-                capture = new VideoCapture(imageFile);
-                if (!capture.isOpened()) {
-                    capture.release();
+                VideoCapture newcapture = new VideoCapture(imageFile);
+                if (!newcapture.isOpened()) {
+                    newcapture.release();
                     throw new ImageAcquisitionException("Intended video could not be opened");
                 }
                 Mat matrix = new Mat();
                 
-                capture.read(matrix);
+                newcapture.read(matrix);
                 if (matrix.empty()) { // Exit if nothing could be read
+                    newcapture.release();
+                    matrix.release();
                     throw new ImageAcquisitionException("Video could not be read or video file has finished");
                 }
                 
                 if (request.get("fps") instanceof Double) {
                     double val = (Double) request.get("fps");
-                    capture.set(Videoio.CAP_PROP_POS_FRAMES, val);
+                    double frameCount = newcapture.get(Videoio.CAP_PROP_FRAME_COUNT);
+                    if (frameCount == 0) {
+                        newcapture.release();
+                        matrix.release();
+                        throw new ImageAcquisitionException("Requested frame is negative");
+                    }
+                    if (val > frameCount || val < 0) {
+                        newcapture.release();
+                        matrix.release();
+                        throw new ImageAcquisitionException("Requested frame past end of video");
+                    }
+                    newcapture.set(Videoio.CAP_PROP_POS_FRAMES, val);
                     MatOfByte matOfByte = new MatOfByte();
                     Imgcodecs.imencode(".jpg", matrix, matOfByte);
                     byte [] imageByte = matOfByte.toArray();
                     matOfByte.release();
                     matrix.release();
+                    newcapture.release();
                             
                     return imageByte;
                 }
