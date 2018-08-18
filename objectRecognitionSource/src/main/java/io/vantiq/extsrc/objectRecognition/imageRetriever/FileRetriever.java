@@ -28,7 +28,10 @@ import org.opencv.videoio.Videoio;
  * The options are:
  * <ul>
  *     <li>{@code fileLocation}: Required for Config, Optional for Query. The location of the file to be read.
- *                      The file must exist at intialization. Defaults to the configured file for Queries.
+ *                      For Config where {@code fileExtension} is "mov", the file must exist at initialization. If this
+ *                      is not set at Config and the source is not configured for Queries, then the source will open but
+ *                      the first attempt to retrieve will kill the source. For Queries, defaults to the configured file
+ *                      or returns an error if there was none.
  *     <li>{@code fileExtension}: Optional. Config and Query. The type of file it is, "mov" for video files, "img" for
  *                      image files. Defaults to image files.
  *     <li>{@code fps}: Optional. Config only. Requires {@code fileExtension} be "mov". How many frames to retrieve for
@@ -86,8 +89,6 @@ public class FileRetriever implements ImageRetrieverInterface {
             else {
                 defaultImageFile = new File(imageLocation);
             }
-        } else {
-            throw new IllegalArgumentException ("File required but not given");
         }
     }
 
@@ -115,12 +116,14 @@ public class FileRetriever implements ImageRetrieverInterface {
                     
             return imageByte;
         }
-        else {
+        else if (defaultImageFile != null){
             try {
                 return Files.readAllBytes(defaultImageFile.toPath());
             } catch (IOException e) {
                 throw new ImageAcquisitionException("Could not read the given file");
             }
+        } else {
+            throw new FatalImageException("No file found");
         }
     }
 
@@ -190,8 +193,8 @@ public class FileRetriever implements ImageRetrieverInterface {
                 }
             }
         } else {
-            // Only try use default image if it is an image or a still-open video
-            if (capture == null || !capture.isOpened()) {
+            // Only try to use default if it is set
+            if ((isMov && capture.isOpened()) || defaultImageFile != null) {
                 try {
                     return getImage();
                 } catch (FatalImageException e) {
@@ -200,7 +203,7 @@ public class FileRetriever implements ImageRetrieverInterface {
                     throw new ImageAcquisitionException("Default video no longer readable", e);
                 }
             } else {
-                throw new ImageAcquisitionException("Default video no longer readable");
+                throw new ImageAcquisitionException("No default available");
             }
         }
     }
