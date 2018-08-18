@@ -16,17 +16,28 @@ import org.opencv.videoio.VideoCapture;
 import org.opencv.videoio.Videoio;
 
 /**
- * This reads files from disk. If it is setup for image files then the file need not be there at initialization, and
- * messages will be sent only if the file is found. For Queries when setup for image files, a new file can be
- * specified in the message with option fileLocation, otherwise the initial file is used. If it is setup for video
- * files, then the file must be there at initialization, and any failed attempts to read will result in the source
- * closing. The options are:
- * 
- * <li>{@code fileLocation}: Required. The location of the file to be read. The file does not need to exist, but
- *              attempts to access a non-existent file will send an empty message in response to Queries and no message
- *              for periodic requests.
- * <li>{@code fileExtension}: Optional. The type of file it is, "mov" for video files, "img" for image files. Defaults
- *              to image files. 
+ * This implementation reads files from the disk using OpenCV for the videos. {@code fileLocation} must be a valid file
+ * at initialization. The initial image file can be replaced while the source is running, but the video cannot. For
+ * Queries, new files can be specified using the {@code fileLocation} and {@code fileExtension} options, and defaults
+ * to the initial file if {@code fileLocation} is not set. Queried videos can specify which frame of the video to access
+ * using the {@code targetFrame} option.
+ * <br>
+ * Errors are thrown whenever an image or video frame cannot be read. Fatal errors are thrown only when a video finishes
+ * being read when the source is not setup for to receive Queries.
+ * <br>
+ * The options are:
+ * <ul>
+ *     <li>{@code fileLocation}: Required for Config, Optional for Query. The location of the file to be read.
+ *                      The file must exist at intialization. Defaults to the configured file for Queries.
+ *     <li>{@code fileExtension}: Optional. Config and Query. The type of file it is, "mov" for video files, "img" for
+ *                      image files. Defaults to image files.
+ *     <li>{@code fps}: Optional. Config only. Requires {@code fileExtension} be "mov". How many frames to retrieve for
+ *                      every second in the video. Rounds up the result when calculating the number of frames to move
+ *                      each capture. Non-positive numbers revert to default. Default is every frame.
+ *     <li>{@code targetFrame}: Optional. Query only. Requires {@code fileExtension} be "mov". The frame in the video
+ *                      that you would like to access, with the first being 0. Exceptions will be thrown if this targets
+ *                      an invalid frame, i.e. negative or beyond the video's frame count. Defaults to 0.
+ * </ul>
  */
 public class FileRetriever implements ImageRetrieverInterface {
 
