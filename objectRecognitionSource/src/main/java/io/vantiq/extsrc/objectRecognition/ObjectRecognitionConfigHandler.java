@@ -20,7 +20,7 @@ import io.vantiq.extsrc.objectRecognition.neuralNet.YoloProcessor;
 /**
  * Sets up the source using the configuration document, which looks as below.
  *<pre> {
- *      extSrcConfig: {
+ *      objRecConfig: {
  *          type: "objectRecognition",
  *          general: {
  *              &lt:general options&lt;
@@ -117,18 +117,12 @@ public class ObjectRecognitionConfigHandler extends Handler<ExtensionServiceMess
         Map<String,Object> neuralNetConfig;
         
         // Obtain the Maps for each object
-        if ( !(config.get("config") instanceof Map && ((Map)config.get("config")).get("extSrcConfig") instanceof Map) ) {
+        if ( !(config.get("config") instanceof Map && ((Map)config.get("config")).get("objRecConfig") instanceof Map) ) {
             log.error("No configuration received for source ' " + sourceName + "'. Exiting...");
             failConfig();
             return;
         }
-        config = (Map) ((Map) config.get("config")).get("extSrcConfig");
-        
-        if ( !(config.get("type") instanceof String) || !(config.get("type").equals("objectRecognition"))) {
-            log.error("Source is not an object recognition source. Exiting...");
-            failConfig();
-            return;
-        }
+        config = (Map) ((Map) config.get("config")).get("objRecConfig");
         
         if ( !(config.get("general") instanceof Map)) {
             log.error("No general options specified. Exiting...");

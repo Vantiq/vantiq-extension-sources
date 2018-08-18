@@ -27,8 +27,6 @@ public class TestObjRecConfig {
     String targetVantiqServer;
     String modelDirectory;
     
-    final String TYPE = "objectRecognition";
-    
     Map<String,Object> general;
     Map<String,Object> dataSource;
     Map<String,Object> neuralNet;
@@ -168,7 +166,7 @@ public class TestObjRecConfig {
         
         Map<String,Object> obj = new LinkedHashMap<>();
         Map<String,Object> config = new LinkedHashMap<>();
-        config.put("extSrcConfig", ORConfig);
+        config.put("objRecConfig", ORConfig);
         obj.put("config", config);
         m.object = obj;
         
@@ -181,7 +179,6 @@ public class TestObjRecConfig {
         ret.put("dataSource", dataSource);
         ret.put("general", general);
         ret.put("neuralNet", neuralNet);
-        ret.put("type", TYPE);
         
         return ret;
     }

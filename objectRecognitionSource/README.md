@@ -56,8 +56,7 @@ If you want to obtain images and send them in addition to the data that the sour
 The Configuration document looks as below:
 
     {
-        extSrcConfig:{
-           type: "objectRecognition",
+        objRecConfig:{,
             general: {
                 <general options>
             },
