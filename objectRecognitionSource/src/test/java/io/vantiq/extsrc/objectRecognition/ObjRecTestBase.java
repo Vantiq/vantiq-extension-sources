@@ -24,8 +24,10 @@ public class ObjRecTestBase {
         
         try {
             File[] subFiles = d.listFiles();
-            for (File f : subFiles) {
-                Files.delete(f.toPath());
+            if (subFiles != null) {
+                for (File f : subFiles) {
+                    Files.delete(f.toPath());
+                }
             }
             Files.deleteIfExists(d.toPath());
         } catch (Exception e) {

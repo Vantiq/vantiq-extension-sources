@@ -22,6 +22,8 @@ public class TestYoloProcessor extends NeuralNetTestBase {
     static YoloProcessor ypImageSaver;
     static YoloProcessor ypJson;
     
+    static final String timestampPattern   = "\\d{4}-\\d{2}-\\d{2}--\\d{2}-\\d{2}-\\d{2}\\.jpg";
+    
     // A single processor is used for the entire class because it is very expensive to do initial setup
     @BeforeClass
     public static void classSetup() {
@@ -81,10 +83,11 @@ public class TestYoloProcessor extends NeuralNetTestBase {
             List<Map> results = ypImageSaver.processImage(getTestImage());
             assert results != null;
             
-            // Should save first image
+            // Should save first image with timestamp
             assert d.exists();
             assert d.isDirectory();
             assert d.listFiles().length == 1;
+            assert d.listFiles()[0].getName().matches(timestampPattern);
             
             results = ypImageSaver.processImage(getTestImage());
             assert results != null;
@@ -101,11 +104,79 @@ public class TestYoloProcessor extends NeuralNetTestBase {
             assert d.exists();
             assert d.isDirectory();
             assert d.listFiles().length == 2;
+            assert d.listFiles()[0].getName().matches(timestampPattern);
+            assert d.listFiles()[1].getName().matches(timestampPattern);
             
         } finally {
             // delete the directory even if the test fails
             if (d.exists()) {
                 deleteDirectory(OUTPUT_DIR);
+            }
+        }
+    }
+    
+    @Test
+    public void testQuery() {
+        String queryOutputDir = OUTPUT_DIR + "query";
+        String queryOutputFile = "file";
+        File d = new File(OUTPUT_DIR);
+        File dNew = new File(queryOutputDir);
+        try {
+            // Ensure no results from previous tests
+            if (d.exists()) {
+                deleteDirectory(OUTPUT_DIR);
+            }
+            if (dNew.exists()) {
+                deleteDirectory(queryOutputDir);
+            }
+            
+            Map request = new LinkedHashMap<>();
+            List<Map> results = ypImageSaver.processImage(getTestImage(), request);
+            assert results != null;
+            
+            // Should not have saved image
+            assert !d.exists();
+            
+            request.put("NNfileName", queryOutputFile);
+            results = ypImageSaver.processImage(getTestImage(), request);
+            assert results != null;
+            
+            // Should have saved the image at queryOutputFile + ".jpg"
+            assert d.exists();
+            assert d.isDirectory();
+            assert d.listFiles().length == 1;
+            assert d.listFiles()[0].getName().equals(queryOutputFile + ".jpg");
+            
+            request.put("NNoutputDir", queryOutputDir);
+            request.remove("NNfileName");
+            assert !dNew.exists();
+            results = ypImageSaver.processImage(getTestImage(), request);
+            assert results != null;
+            
+            // Should be saved with a timestamp
+            assert dNew.exists();
+            assert dNew.isDirectory();
+            assert dNew.listFiles().length == 1;
+            assert dNew.listFiles()[0].getName().matches(timestampPattern);
+            
+            queryOutputFile += ".jpeg";
+            request.put("NNfileName", queryOutputFile);
+            results = ypImageSaver.processImage(getTestImage(), request);
+            assert results != null;
+            
+            assert dNew.listFiles().length == 2;
+            for (File f : dNew.listFiles()) {
+                String name = f.getName();
+                assert name.matches(timestampPattern) || name.equals(queryOutputFile);
+            }
+            
+        } finally {
+            // delete the directory even if the test fails
+            if (d.exists()) {
+                deleteDirectory(OUTPUT_DIR);
+            }
+            if (dNew.exists()) {
+                deleteDirectory(queryOutputDir);
             }
         }
     }
