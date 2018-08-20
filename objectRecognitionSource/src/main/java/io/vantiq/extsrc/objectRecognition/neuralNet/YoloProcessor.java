@@ -7,6 +7,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import edu.ml.tensorflow.ObjectDetector;
+import io.vantiq.extsrc.objectRecognition.exception.ImageProcessingException;
 
 /**
  * Unique settings are: 
@@ -75,18 +76,22 @@ public class YoloProcessor implements NeuralNetInterface {
    }
 
     @Override
-    public List<Map> processImage(byte[] image) {
+    public List<Map> processImage(byte[] image) throws ImageProcessingException{
         List<Map> results;
         long after;
         long before = System.currentTimeMillis();
-        results = objectDetector.detect(image);
+        try {
+            results = objectDetector.detect(image);
+        } catch (IllegalArgumentException e) {
+            throw new ImageProcessingException("Illegal argument when processing jpeg", e);
+        }
         after = System.currentTimeMillis();
         log.debug("Image processing time: " + (after - before) / 1000 + "." + (after - before) % 1000 + " seconds");
         return results;
     }
     
     @Override
-    public List<Map> processImage(byte[] image, Map<String,?> request) {
+    public List<Map> processImage(byte[] image, Map<String,?> request) throws ImageProcessingException{
         List<Map> results;
         String outputDir = null;
         String fileName = null;
@@ -100,7 +105,11 @@ public class YoloProcessor implements NeuralNetInterface {
         
         long after;
         long before = System.currentTimeMillis();
-        results = objectDetector.detect(image, outputDir, fileName);
+        try {
+            results = objectDetector.detect(image, outputDir, fileName);
+        } catch (IllegalArgumentException e) {
+            throw new ImageProcessingException("Illegal argument when processing jpeg", e);
+        }
         after = System.currentTimeMillis();
         log.debug("Image processing time: " + (after - before) / 1000 + "." + (after - before) % 1000 + " seconds");
         return results;

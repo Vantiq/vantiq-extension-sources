@@ -12,6 +12,8 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+import io.vantiq.extsrc.objectRecognition.exception.ImageProcessingException;
+
 public class TestYoloProcessor extends NeuralNetTestBase {
     
     static final String LABEL_FILE         = "coco.names";
@@ -66,13 +68,30 @@ public class TestYoloProcessor extends NeuralNetTestBase {
     }
     
     @Test
-    public void testPureJson() {
+    public void testPureJson() throws ImageProcessingException {
         List<Map> results = ypJson.processImage(getTestImage());
         assert results != null;
     }
     
     @Test
-    public void testImageSaving() {
+    public void testInvalidData() {
+        byte[] invalidImage = {123,012,45,-3,-102};
+        try {
+            ypJson.processImage(invalidImage);
+            fail("Should throw Exception when not a jpeg");
+        } catch (ImageProcessingException e) {
+            // Expected exception
+        }
+        try {
+            ypJson.processImage(invalidImage);
+            fail("Should throw Exception when not a jpeg");
+        } catch (ImageProcessingException e) {
+            // Expected results
+        }
+    }
+    
+    @Test
+    public void testImageSaving() throws ImageProcessingException {
         File d = new File(OUTPUT_DIR);
         try {
             // Ensure no results from previous tests
@@ -116,7 +135,7 @@ public class TestYoloProcessor extends NeuralNetTestBase {
     }
     
     @Test
-    public void testQuery() {
+    public void testQuery() throws ImageProcessingException {
         String queryOutputDir = OUTPUT_DIR + "query";
         String queryOutputFile = "file";
         File d = new File(OUTPUT_DIR);
