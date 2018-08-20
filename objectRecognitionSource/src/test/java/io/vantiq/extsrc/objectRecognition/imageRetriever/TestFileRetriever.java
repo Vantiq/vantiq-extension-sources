@@ -120,7 +120,7 @@ public class TestFileRetriever extends ObjRecTestBase {
         }
         try {
             Map<String,String> message = new LinkedHashMap<>();
-            message.put("fileLocation", IMAGE_LOCATION);
+            message.put("DSfileLocation", IMAGE_LOCATION);
             byte[] data = fr.getImage(message);
             assert data != null;
             assert data.length > 0;
@@ -140,7 +140,7 @@ public class TestFileRetriever extends ObjRecTestBase {
         }
         try {
             Map<String,String> message = new LinkedHashMap<>();
-            message.put("fileLocation", "invalidLocation");
+            message.put("DSfileLocation", "invalidLocation");
             fr.getImage(message);
             fail("Expected exception when calling with invalid default");
         } catch (ImageAcquisitionException e) {
@@ -238,9 +238,9 @@ public class TestFileRetriever extends ObjRecTestBase {
             fail("Exception occurred when obtaining image: " + e.toString());
         }
         try {
-            request.put("fileExtension", "mov");
-            request.put("fileLocation", VIDEO_LOCATION);
-            request.put("targetFrame", (double) 3);
+            request.put("DSfileExtension", "mov");
+            request.put("DSfileLocation", VIDEO_LOCATION);
+            request.put("DStargetFrame", (double) 3);
             byte[] data = fr.getImage(request);
             assert data != null;
             assert data.length > 0;
@@ -248,22 +248,22 @@ public class TestFileRetriever extends ObjRecTestBase {
             fail("Exception occurred when requesting frame 4 of video: " + e.toString());
         }
         try {
-            request.put("targetFrame", (double) 1000000000000000.0);
+            request.put("DStargetFrame", (double) 1000000000000000.0);
             fr.getImage(request);
             fail("Did not reject frame past end of video");
         } catch (ImageAcquisitionException e) {
             // Expected
         }
         try {
-            request.put("targetFrame", (double) -1);
+            request.put("DStargetFrame", (double) -1);
             fr.getImage(request);
             fail("Did not reject negative frame");
         } catch (ImageAcquisitionException e) {
             // Expected
         }
         try {
-            request.put("fileLocation", IMAGE_LOCATION);
-            request.put("targetFrame", (double) 0);
+            request.put("DSfileLocation", IMAGE_LOCATION);
+            request.put("DStargetFrame", (double) 0);
             byte[] data = fr.getImage(request);
             assert data != null;
             assert data.length > 0;
@@ -271,7 +271,7 @@ public class TestFileRetriever extends ObjRecTestBase {
             fail("Exception occurred when requesting image: " + e.toString());
         }
         try {
-            request.put("targetFrame", (double) 1);
+            request.put("DStargetFrame", (double) 1);
             fr.getImage(request);
             fail("Did not reject non-zero frame for single image");
         } catch (ImageAcquisitionException e) {
