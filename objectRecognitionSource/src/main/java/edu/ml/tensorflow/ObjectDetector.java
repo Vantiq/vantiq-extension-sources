@@ -117,6 +117,8 @@ public class ObjectDetector {
                 }
                 if (fileName == null) {
                     fileName = format.format(now) + ".jpg";
+                } else if (!fileName.endsWith(".jpg") && !fileName.endsWith(".jpeg")) {
+                    fileName += ".jpg";
                 }
                 
                 imageUtil.labelImage(image, recognitions, fileName);

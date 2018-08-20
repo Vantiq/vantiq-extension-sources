@@ -89,6 +89,10 @@ Most of the options required for neuralNet are dependent on the specific impleme
     2.  The short name of one of the standard implementations, i.e. one of "[yolo](#yoloNet)" or "[default](#defaultNet)".
     3.  Empty, in which case the program will try to find an implementation with the name "DefaultProcessor" in the `io.vantiq.objectRecognition.neuralNet` package. This implementation is not provided, and must be written by the user.
 
+## Queries
+
+Options can be specified through the WITH clause for both the neuralNet and dataSource. The options for are implementation dependent, and the available options for the standard implementations can be found in their respective sections. Since it is possible for both the data source and the neural net to use options with the same name, the standard implementations prepend the options with DS and NN for all queries, i.e. if you want to Query using the `fileLocation` option for a data source you would set the `DSfileLocation` property in the WITH clause. This may or may not apply for non-standard implementations, though developers are advised to follow this rule for consistency's sake.
+
 ## Image Retriever Interface<a name="retrieveInterface" id="retrieveInterface"></a>
 
 This is an interface that returns a jpeg encoded image. Settings may or may not differ for periodic messages versus Query responses. There are two implementations included in the standard package.
@@ -106,11 +110,12 @@ This implementation uses OpenCV to capture images from a camera connected direct
 
 This implementation reads files from the disk using OpenCV for the videos. `fileLocation` must be a valid file at initialization. The initial image file can be replaced while the source is running, but the video cannot. For Queries, new files can be specified using the `fileLocation` and `fileExtension` options, and defaults to the initial file if `fileLocation` is not set. Queried videos can specify which frame of the video to access using the `targetFrame` option.  
 Errors are thrown whenever an image or video frame cannot be read. Fatal errors are thrown only when a video finishes being read when the source is not setup for to receive Queries.
-The options are:
+The options are as follows. Remember to prepend "DS" when using an option in a Query.
 *   fileLocation: Required for Config, Optional for Query. The location of the file to be read. For Config where `fileExtension` is "mov", the file must exist at initialization. If this is not set at Config and the source is not configured for Queries, then the source will open but the first attempt to retrieve will kill the source. For Queries, defaults to the configured file or returns an error if there was none.
 *   fileExtension: Optional. Config and Query. The type of file it is, "mov" for video files, "img" for image files. Defaults to image files.
 *   fps: Optional. Config only. Requires `fileExtension` be "mov". How many frames to retrieve for every second in the video. Rounds up the result when calculating the number of frames to move each capture. Non-positive numbers revert to default. Default is every frame.
-*   targetFrame: Optional. Query only. Requires `fileExtension` be "mov". The frame in the video that you would like to access, with the first being 0. Exceptions will be thrown if this targets an invalid frame, i.e. negative or beyond the video's frame count. Defaults to 0.
+*   targetFrame: Optional. Query only. Requires fileExtension be "mov". The frame in the video that you would like to access, with the first being 0. Exceptions will be thrown if this targets an invalid frame, i.e. negative or beyond the video's frame count. Mutually exclusive with targetTime. Defaults to 0.
+*   targetTime: Optional. Query only. Requires fileExtension be "mov". The second in the video that you would like to access, with the first frame being 0. Exceptions will be thrown if this targets an invalid frame, i.e. negative or beyond the video's frame count. Non-integer values are allowed. Mutually exclusive with targetFrame. Defaults to 0.
 
 #### Example: Reading an Entire Video Through Queries
 If you want to read a video file from a source using Queries, this method will work.
@@ -118,15 +123,16 @@ If you want to read a video file from a source using Queries, this method will w
 var frameResults = []
 var frameSkip = 72
 var maxCaptures = 100
+var myVideoLocation = "movie.mov"
 try {
     // We expect the error received when the bounds are overrun to stop the loop,
     // so maxCaptures can be higher than the expected number of captures
     var frame = 0
-    FOR (frame in range(0, frameSkip * maxCaptures, frameSkip)) {
+    FOR (frame in range(0, maxCaptures - 1)) {
         SELECT * FROM VideoSource AS results WITH 
-                        fileLocation:myVideoLocation,
-                        fileExtension:"mov",
-                        targetFrame:frame
+                        DSfileLocation:myVideoLocation,
+                        DSfileExtension:"mov",
+                        DStargetFrame:frame*frameSkip
         frameResults.push(results)
         frame += frameSkip
     }
@@ -158,7 +164,7 @@ This is a user written implementation that acts as the default if no neural net 
 
 ### Yolo Processor<a name="yoloNet" id="yoloNet"></a>
 
-This is a TensorFlow implementation of YOLO. It returns a List of Maps, each of which has a `label` stating the type of the object identifiead, a `confidence` specifying on a scale of 0-1 how confident the neural net is that the identification is accurate, and a `location` containing the coordinates for the `top`,`left`, `bottom`, and `right` edges of the bounding box for the object. It can also save images with the bounding boxes drawn. Its options are:
+This is a TensorFlow implementation of YOLO. It returns a List of Maps, each of which has a `label` stating the type of the object identifiead, a `confidence` specifying on a scale of 0-1 how confident the neural net is that the identification is accurate, and a `location` containing the coordinates for the `top`,`left`, `bottom`, and `right` edges of the bounding box for the object. It can also save images with the bounding boxes drawn. The options are as follows. Remember to prepend "NN" when using an option in a Query.
 *   pbFile: Required. Config only. The .pb file for the model.
 *   labelFile: Required. Config only. The labels for the model.
 *   outputDir: Optional. Config and Query. The directory in which the images (object boxes included) will be placed. Images will be saved as "&lt;year&gt;-&lt;month&gt;-&lt;day&gt;--&lt;hour&gt;-&lt;minute&gt;-&lt;second&gt;.jpg" where each value will zero-filled if necessary, e.g. "2018-08-14--06-30-22.jpg". For non-Queries, no images will be saved if not set. For Queries, either this must be set in the Query, or this must be set in the config and fileName must be set in the Query for images to be saved.

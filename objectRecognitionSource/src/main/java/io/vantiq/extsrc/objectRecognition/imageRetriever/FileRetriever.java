@@ -39,7 +39,12 @@ import org.opencv.videoio.Videoio;
  *                      each capture. Non-positive numbers revert to default. Default is every frame.
  *     <li>{@code targetFrame}: Optional. Query only. Requires {@code fileExtension} be "mov". The frame in the video
  *                      that you would like to access, with the first being 0. Exceptions will be thrown if this targets
- *                      an invalid frame, i.e. negative or beyond the video's frame count. Defaults to 0.
+ *                      an invalid frame, i.e. negative or beyond the video's frame count. Mutually exclusive with
+ *                      {@code targetTime}. Defaults to 0.
+ *     <li>{@code targetTime}: Optional. Query only. Requires {@code fileExtension} be "mov". The second in the video
+ *                      that you would like to access, with the first frame being 0. Exceptions will be thrown if this
+ *                      targets an invalid frame, i.e. negative or beyond the video's frame count. Non-integer values 
+ *                      are allowed. Mutually exclusive with {@code targetFrame}. Defaults to 0.
  * </ul>
  */
 public class FileRetriever implements ImageRetrieverInterface {
@@ -130,15 +135,15 @@ public class FileRetriever implements ImageRetrieverInterface {
     @Override
     public byte[] getImage(Map<String, ?> request) throws ImageAcquisitionException {
         boolean isMov = false; // Make it local so we don't overwrite the class variable
-        if (request.get("fileExtension") instanceof String) {
-            String ext = (String) request.get("fileExtension");
+        if (request.get("DSfileExtension") instanceof String) {
+            String ext = (String) request.get("DSfileExtension");
             if (ext.equals("mov") || ext.equals("mp4")) {
                 isMov = true;
             }
         }
-        if (request.get("fileLocation") instanceof String) {
+        if (request.get("DSfileLocation") instanceof String) {
             if (isMov) {
-                String imageFile = (String) request.get("fileLocation");
+                String imageFile = (String) request.get("DSfileLocation");
                 VideoCapture newcapture = new VideoCapture(imageFile);
                 Mat matrix = new Mat();
                 
@@ -149,8 +154,13 @@ public class FileRetriever implements ImageRetrieverInterface {
                 }
                 
                 int targetFrame = 0;
-                if (request.get("targetFrame") instanceof Number) {
-                    targetFrame = ((Number) request.get("targetFrame")).intValue();
+                if (request.get("DStargetFrame") instanceof Number) {
+                    targetFrame = ((Number) request.get("DStargetFrame")).intValue();
+                } else if (request.get("DStargetTime") instanceof Number) {
+                    double fps = newcapture.get(Videoio.CAP_PROP_FPS);
+                    if (fps != 0) {
+                        targetFrame = (int) (fps * ((Number)request.get("DStargetTime")).doubleValue());
+                    }
                 }
                 
                 // Ensure that targetFrame is inside the bounds of the video
@@ -185,7 +195,7 @@ public class FileRetriever implements ImageRetrieverInterface {
                 return imageByte;
             }
             else {
-                File imageFile = new File((String) request.get("fileLocation"));
+                File imageFile = new File((String) request.get("DSfileLocation"));
                 try {
                     return Files.readAllBytes(imageFile.toPath());
                 } catch (IOException e) {

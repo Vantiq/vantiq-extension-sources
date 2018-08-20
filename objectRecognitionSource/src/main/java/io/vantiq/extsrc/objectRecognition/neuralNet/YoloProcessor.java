@@ -91,11 +91,11 @@ public class YoloProcessor implements NeuralNetInterface {
         String outputDir = null;
         String fileName = null;
         
-        if (request.get("outputDir") instanceof String) {
-            outputDir = (String) request.get("outputDir");
+        if (request.get("NNoutputDir") instanceof String) {
+            outputDir = (String) request.get("NNoutputDir");
         }
-        if (request.get("fileName") instanceof String) {
-            fileName = (String) request.get("fileName");
+        if (request.get("NNfileName") instanceof String) {
+            fileName = (String) request.get("NNfileName");
         }
         
         long after;
