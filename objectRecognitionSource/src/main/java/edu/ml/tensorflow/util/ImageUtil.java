@@ -64,7 +64,6 @@ public class ImageUtil {
     public void saveImage(final BufferedImage image, final String target) {
         try {
             IOUtil.createDirIfNotExists(new File(outputDir));
-            File f = new File(target);
             ImageIO.write(image,"jpg", new File(target));
         } catch (IOException e) {
             LOGGER.error("Unagle to save image {}!", target);

@@ -8,7 +8,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -55,24 +54,6 @@ public class ObjectRecognitionMain {
         startSources(sources);
         
         // Can leave now because the threads created by the sources' WebSocket connections will keep the JVM alive
-        
-        
-        /*
-        // All sources use a separate thread for the websocket
-        // Setting this means that when all connections close (i.e. this is the last thread), then the JVM will exit
-        Thread.currentThread().setDaemon(true);
-        
-        try {
-            stop.get();
-        } catch(InterruptedException | ExecutionException e) {
-            log.error("Exception occurred while waiting on the 'stop' Future", e);
-        }
-        
-        log.info("Closing...");
-        
-        for(ObjectRecognitionCore source : sources) {
-            source.stop();
-        }*/
     }
     
     private static void startSources(List<ObjectRecognitionCore> sources) {
