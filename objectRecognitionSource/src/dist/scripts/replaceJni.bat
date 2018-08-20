@@ -1,13 +1,13 @@
 @echo off
 ::Save relevant file locations
 SETLOCAL
-SET targetFile=%~dpn1
-for %%X in (%~dp0..\lib\libtensorflow_jni*) do (SET jarFile=%%~fX)
+SET targetFile=%~f1
+for %%X in (%~dp0..\lib\libtensorflow_jni*.jar) do (SET jarFile=%%~fX)
 
 ::echo %jarFile%
 
 ::Create an move to a temporary directory
-mkdir tmp
+mkdir tmp || (echo "please remove the 'tmp' directory or call from a different location" & goto :eof)
 pushd tmp
 
 ::Extract the jar to the current location (the new 'temp' dir)

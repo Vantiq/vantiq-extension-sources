@@ -1,9 +1,9 @@
 #Save relevant file locations
 TARGETFILE="$(readlink -f $1)"
-JARFILE="$(readlink -f ../lib/tensorflow_jni*.jar)"
+JARFILE="$(readlink -f ../lib/libtensorflow_jni*.jar)"
 
 #Create and move to a temporary directory
-mkdir temp
+mkdir temp || { echo Please remove the \'temp\' directory or call from a different location ; exit 1 ;}
 pushd temp
 
 #Extract the jar to the current location (the new 'temp' dir)
