@@ -79,7 +79,8 @@ public class ObjectDetector {
 
     /**
      * Detect objects on the given image
-     * @param imageLocation the location of the image
+     * <br>Edited to return the results as a map and conditionally save the image
+     * @param image The image in jpeg format
      */
     public List<Map> detect(final byte[] image) {
         try (Tensor<Float> normalizedImage = normalizeImage(image)) {
@@ -91,6 +92,34 @@ public class ObjectDetector {
                 String fileName = format.format(now) + ".jpg";
                 imageUtil.labelImage(image, recognitions, fileName);
                 frameCount = 0;
+            }
+            //Namir's Method
+            return returnJSON(recognitions);
+        }
+    }
+    
+    /**
+     * Detect objects on the given image
+     * <br>Edited to return the results as a map and conditionally save the image
+     * @param image The image in jpeg format
+     */
+    public List<Map> detect(final byte[] image, String outputDir, String fileName) {
+        try (Tensor<Float> normalizedImage = normalizeImage(image)) {
+            Date now = new Date(); // Saves the time before
+            List<Recognition> recognitions = YOLOClassifier.getInstance().classifyImage(executeYOLOGraph(normalizedImage), LABELS);
+            
+            // Saves an image if requested
+            if (outputDir != null || (fileName != null && this.imageUtil != null)) {
+                ImageUtil imageUtil = this.imageUtil;
+                
+                if (outputDir != null) {
+                    imageUtil = new ImageUtil(outputDir);
+                }
+                if (fileName == null) {
+                    fileName = format.format(now) + ".jpg";
+                }
+                
+                imageUtil.labelImage(image, recognitions, fileName);
             }
             //Namir's Method
             return returnJSON(recognitions);

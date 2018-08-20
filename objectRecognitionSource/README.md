@@ -116,11 +116,13 @@ The options are:
 If you want to read a video file from a source using Queries, this method will work.
 ```
 var frameResults = []
+var frameSkip = 72
+var maxCaptures = 100
 try {
     // We expect the error received when the bounds are overrun to stop the loop,
-    // so we needn't worry about the while condition
+    // so maxCaptures can be higher than the expected number of captures
     var frame = 0
-    while (true) {
+    FOR (frame in range(0, frameSkip * maxCaptures, frameSkip)) {
         SELECT * FROM VideoSource AS results WITH 
                         fileLocation:myVideoLocation,
                         fileExtension:"mov",
@@ -148,7 +150,7 @@ try {
 
 ## Neural Net Interface<a name="netInterface" id="netInterface"></a>
 
-This is a user written interface that interprets a jpeg encoded image and returns the results in a List of JSON-friendly Maps. Settings are set purely through the configuration document.
+This is a user written interface that interprets a jpeg encoded image and returns the results in a List of JSON-friendly Maps. Settings can be set through configuration or Queriy messages, and settings may differ between the two.
 
 ### Default Retriever<a name="defaultNet" id="defaultNet"></a>
 
@@ -156,11 +158,12 @@ This is a user written implementation that acts as the default if no neural net 
 
 ### Yolo Processor<a name="yoloNet" id="yoloNet"></a>
 
-This is a TensorFlow implementation of YOLO. It returns a List of Maps, each of which has a `label` stating the type of the object identifiead, a `confidence` specifying on a scale of 0-1 how confident the neural net is that the identification is accurate, and a `location` containing the coordinates for the `top`,`left`, `bottom`, and `right` edges of the bounding box for the object. Its options are:
-*   pbFile: Required. The .pb file for the model.
-*   labelFile: Required. The labels for the model.
-*   outputDir: Optional. The directory in which the images (object boxes included) will be placed. Images will be saved as "&lt;year&gt;-&lt;month&gt;-&lt;day&gt;--&lt;hour&gt;-&lt;minute&gt;-&lt;second&gt;.jpg" where each value will zero-filled if necessary, e.g. "2018-08-14--06-30-22.jpg" No images will be saved if not set.
-*   saveRate: Optional. The rate at which images will be saved, once every n frames captured. Default is 1 when unset or a non-positive number. Does nothing if outputDir is not set..
+This is a TensorFlow implementation of YOLO. It returns a List of Maps, each of which has a `label` stating the type of the object identifiead, a `confidence` specifying on a scale of 0-1 how confident the neural net is that the identification is accurate, and a `location` containing the coordinates for the `top`,`left`, `bottom`, and `right` edges of the bounding box for the object. It can also save images with the bounding boxes drawn. Its options are:
+*   pbFile: Required. Config only. The .pb file for the model.
+*   labelFile: Required. Config only. The labels for the model.
+*   outputDir: Optional. Config and Query. The directory in which the images (object boxes included) will be placed. Images will be saved as "&lt;year&gt;-&lt;month&gt;-&lt;day&gt;--&lt;hour&gt;-&lt;minute&gt;-&lt;second&gt;.jpg" where each value will zero-filled if necessary, e.g. "2018-08-14--06-30-22.jpg". For non-Queries, no images will be saved if not set. For Queries, either this must be set in the Query, or this must be set in the config and fileName must be set in the Query for images to be saved.
+*   fileName: Optional. Query only. The name of the file that will be saved. Defaults to "&lt;year&gt;-&lt;month&gt;-&lt;day&gt;--&lt;hour&gt;-&lt;minute&gt;-&lt;second&gt;.jpg" if not set.
+*   saveRate: Optional. Config only. The rate at which images will be saved, once every n frames captured. Default is every frame captured when unset or a non-positive number. Does nothing if outputDir is not set at config.
 
 ## Testing
 

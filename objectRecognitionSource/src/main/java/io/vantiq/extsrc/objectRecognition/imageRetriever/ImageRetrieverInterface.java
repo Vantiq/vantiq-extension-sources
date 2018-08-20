@@ -3,6 +3,7 @@ package io.vantiq.extsrc.objectRecognition.imageRetriever;
 import java.util.Map;
 
 import io.vantiq.extsrc.objectRecognition.ObjectRecognitionCore;
+import io.vantiq.extsrc.objectRecognition.exception.FatalImageException;
 import io.vantiq.extsrc.objectRecognition.exception.ImageAcquisitionException;
 
 public interface ImageRetrieverInterface {
@@ -22,6 +23,8 @@ public interface ImageRetrieverInterface {
      * {{@link #getImage(Map)} will be called depending on whether 'polling' was non-negative.
      * @return  An image in jpeg format
      * @throws ImageAcquisitionException    Thrown when an image could not be acquired
+     * @throws FatalImageException          Thrown when the image retrieval fails in such a way that the retriever
+     *                                      cannot recover
      */
     public byte[] getImage() throws ImageAcquisitionException;
     
@@ -31,6 +34,8 @@ public interface ImageRetrieverInterface {
      * @param request                       The data sent in the Query request.
      * @return                              An image in jpeg format
      * @throws ImageAcquisitionException    Thrown when an image could not be acquired
+     * @throws FatalImageException          Thrown when the image retrieval fails in such a way that the retriever
+     *                                      cannot recover
      */
     public byte[] getImage(Map<String,?> request) throws ImageAcquisitionException;
     

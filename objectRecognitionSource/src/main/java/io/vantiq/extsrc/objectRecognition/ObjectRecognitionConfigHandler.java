@@ -166,6 +166,8 @@ public class ObjectRecognitionConfigHandler extends Handler<ExtensionServiceMess
             return; // Exit if the settings were invalid. Closing taken care of by prepareCommunication()
         }
         
+        log.info("Setup complete");
+        
         configComplete = true;
     }
     

@@ -43,8 +43,24 @@ public class BasicTestNeuralNet implements NeuralNetInterface {
             return l;
         }
     }
+    
+    @Override
+    public List<Map> processImage(byte[] image, Map<String, ?> request) throws ImageProcessingException {
+        if (config.containsKey(THROW_EXCEPTION_ON_REQ)) {
+            throw new ImageProcessingException("Exception on request");
+        } else if (config.containsKey(THROW_FATAL_ON_REQ)) {
+            throw new FatalImageException("Fatal exception requested");
+        } else if (config.containsKey(THROW_RUNTIME_ON_REQ)) {
+            throw new RuntimeException("Exception on request");
+        } else if (config.containsKey(RETURN_NULL)) {
+            return null;
+        } else {
+            Map<String,String> m = new LinkedHashMap<>();
+            List<Map> l = new ArrayList<>(); l.add(m);
+            return l;
+        }
+    }
 
     @Override
     public void close() {}
-
 }

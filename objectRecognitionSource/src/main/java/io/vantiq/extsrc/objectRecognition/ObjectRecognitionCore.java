@@ -305,7 +305,7 @@ public class ObjectRecognitionCore {
                    }
                    return;
                }
-               List<Map> data = neuralNet.processImage(image);
+               List<Map> data = neuralNet.processImage(image, request);
                if (data.isEmpty()) {
                    client.sendQueryResponse(204, replyAddress, new LinkedHashMap<>());
                } else {

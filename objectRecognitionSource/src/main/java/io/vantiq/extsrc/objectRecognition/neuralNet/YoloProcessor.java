@@ -11,15 +11,22 @@ import edu.ml.tensorflow.ObjectDetector;
 /**
  * Unique settings are: 
  * <ul>
- *  <li>{@code pbFile}: Required. The .pb file for the model.
- *  <li>{@code labelFile}: Required. The labels for the model.
- *  <li>{@code outputDir}: Optional. The directory in which the images (object boxes included) will be placed. Images 
- *                  will be saved as "&lt;year&gt;-&lt;month&gt;-&lt;day&gt;--&lt;hour&gt;-&lt;minute&gt;-&lt;second&gt;.jpg"
- *                  where each value will zero-filled if necessary, e.g. "2018-08-14--06-30-22" No images
- *                  will be saved if not set.
- *  <li>{@code saveRate}: Optional. The rate at which images will be saved, once in every n frames captured starting 
- *                  with the first. Default is 1 when unset or a non-positive number. Does nothing if outputDir is not set.
- * </ul> 
+ *      <li>{@code pbFile}: Required. Config only. The .pb file for the model.
+ *      <li>{@code labelFile}: Required. Config only. The labels for the model.
+ *      <li>{@code outputDir}: Optional. Config and Query. The directory in which the images (object boxes included)
+ *                      will be placed. Images will be saved as
+ *                      "&lt;year&gt;-&lt;month&gt;-&lt;day&gt;--&lt;hour&gt;-&lt;minute&gt;-&lt;second&gt;.jpg"
+ *                      where each value will zero-filled if necessary, e.g. "2018-08-14--06-30-22.jpg". For
+ *                      non-Queries, no images will be saved if not set. For Queries, either this must be set in the
+ *                      Query, or this must be set in the config and fileName must be set in the Query for images to be
+ *                      saved.
+ *      <li>{@code fileName}: Optional. Query only. The name of the file that will be saved. Defaults to
+ *                      "&lt;year&gt;-&lt;month&gt;-&lt;day&gt;--&lt;hour&gt;-&lt;minute&gt;-&lt;second&gt;.jpg"
+ *                      if not set.
+ *      <li>{@code saveRate}: Optional. Config only. The rate at which images will be saved, once every n frames
+ *                      captured. Default is every frame captured when unset or a non-positive number. Does nothing if
+ *                      outputDir is not set at config.
+ * </ul>
  */
 public class YoloProcessor implements NeuralNetInterface {
     
@@ -73,6 +80,27 @@ public class YoloProcessor implements NeuralNetInterface {
         long after;
         long before = System.currentTimeMillis();
         results = objectDetector.detect(image);
+        after = System.currentTimeMillis();
+        log.debug("Image processing time: " + (after - before) / 1000 + "." + (after - before) % 1000 + " seconds");
+        return results;
+    }
+    
+    @Override
+    public List<Map> processImage(byte[] image, Map<String,?> request) {
+        List<Map> results;
+        String outputDir = null;
+        String fileName = null;
+        
+        if (request.get("outputDir") instanceof String) {
+            outputDir = (String) request.get("outputDir");
+        }
+        if (request.get("fileName") instanceof String) {
+            fileName = (String) request.get("fileName");
+        }
+        
+        long after;
+        long before = System.currentTimeMillis();
+        results = objectDetector.detect(image, outputDir, fileName);
         after = System.currentTimeMillis();
         log.debug("Image processing time: " + (after - before) / 1000 + "." + (after - before) % 1000 + " seconds");
         return results;

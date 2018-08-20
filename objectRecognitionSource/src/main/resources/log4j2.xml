@@ -6,8 +6,8 @@
     </Console>
   </Appenders>
   <Loggers>
-    <Logger name="io.vantiq.extsrc.objectRecognition" level="info"/>
-    <Logger name="io.vantiq.extjsdk" level="info"/>
+    <Logger name="io.vantiq.extsrc.objectRecognition" level="debug"/>
+    <Logger name="io.vantiq.extjsdk" level="debug"/>
     <Root level="error">
       <AppenderRef ref="Console"/>
     </Root>
