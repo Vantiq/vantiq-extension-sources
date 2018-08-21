@@ -143,7 +143,7 @@ public class TestObjRecConfig {
     
     @Test
     public void testMinimalConfig() {
-        nCore.start(); // Need a client to avoid NPEs on sends
+        nCore.start(5); // Need a client to avoid NPEs on sends
         
         Map conf = minimalConfig();
         sendConfig(conf);

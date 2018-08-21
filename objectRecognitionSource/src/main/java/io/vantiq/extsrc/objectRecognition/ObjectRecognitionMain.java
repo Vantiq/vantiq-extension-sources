@@ -58,7 +58,7 @@ public class ObjectRecognitionMain {
     
     private static void startSources(List<ObjectRecognitionCore> sources) {
         for (ObjectRecognitionCore source : sources) {
-            source.start();
+            source.start(10);
         }
     }
 

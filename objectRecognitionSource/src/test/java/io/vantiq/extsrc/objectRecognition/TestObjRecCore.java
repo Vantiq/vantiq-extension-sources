@@ -50,7 +50,7 @@ public class TestObjRecCore extends ObjRecTestBase {
         core.imageRetriever = retriever;
         core.neuralNet = neuralNet;
         
-        core.start();
+        core.start(10);
     }
     
     @After
@@ -89,7 +89,7 @@ public class TestObjRecCore extends ObjRecTestBase {
         
         core.closed = false;
         core.imageRetriever = retriever;
-        core.start();
+        core.start(5);
         assertFalse("Resetting closed status failed", core.isClosed());
         
         assertTrue("Test helper setupRetriever failed unexpectedly"
@@ -141,7 +141,7 @@ public class TestObjRecCore extends ObjRecTestBase {
         
         core.closed = false;
         core.imageRetriever = retriever;
-        core.start();
+        core.start(5);
         assertFalse("Resetting closed status failed", core.isClosed());
         
         msg.object = null;
@@ -184,7 +184,7 @@ public class TestObjRecCore extends ObjRecTestBase {
         
         core.closed = false;
         core.neuralNet = neuralNet;
-        core.start();
+        core.start(5);
         assertFalse("Resetting closed status failed", core.isClosed());
         
         assertTrue("Test helper setupNeuralNet failed unexpectedly"
@@ -230,7 +230,7 @@ public class TestObjRecCore extends ObjRecTestBase {
         
         core.closed = false;
         core.neuralNet = neuralNet;
-        core.start();
+        core.start(5);
         assertFalse("Resetting closed status failed", core.isClosed());
         
         assertTrue("Test helper setupNeuralNet failed unexpectedly"
@@ -241,8 +241,8 @@ public class TestObjRecCore extends ObjRecTestBase {
     
     @Test
     public void testExitIfConnectionFails() {
-        core.start();
-        assertTrue("Should have succeeded", core.exitIfConnectionFails(core.client));
+        core.start(3);
+        assertTrue("Should have succeeded", core.exitIfConnectionFails(core.client, 3));
         assertFalse("Success means it shouldn't be closed", core.isClosed());
         
         
@@ -253,7 +253,7 @@ public class TestObjRecCore extends ObjRecTestBase {
         fc.initiateFullConnection(targetVantiqServer, authToken);
         fc.completeWebSocketConnection(true);
         fc.completeAuthentication(false);
-        assertFalse("Should fail due to auth failing", core.exitIfConnectionFails(core.client));
+        assertFalse("Should fail due to auth failing", core.exitIfConnectionFails(core.client, 3));
         assertTrue("Failure means it should be closed", core.isClosed());
         
         core.close();
@@ -262,7 +262,7 @@ public class TestObjRecCore extends ObjRecTestBase {
         core.client = core.fClient = fc;
         fc.initiateFullConnection(targetVantiqServer, authToken);
         fc.completeWebSocketConnection(false);
-        assertFalse("Should fail due to websocket failing", core.exitIfConnectionFails(core.client));
+        assertFalse("Should fail due to websocket failing", core.exitIfConnectionFails(core.client, 3));
         assertTrue("Failure means it should be closed", core.isClosed());
         
         core.close();
@@ -272,7 +272,7 @@ public class TestObjRecCore extends ObjRecTestBase {
         fc.initiateFullConnection(targetVantiqServer, authToken);
         fc.completeWebSocketConnection(true);
         fc.completeAuthentication(true);
-        assertFalse("Should fail due to timeout on source connection", core.exitIfConnectionFails(core.client));
+        assertFalse("Should fail due to timeout on source connection", core.exitIfConnectionFails(core.client, 3));
         assertTrue("Failure means it should be closed", core.isClosed());
     }
 // ================================================= Helper functions =================================================

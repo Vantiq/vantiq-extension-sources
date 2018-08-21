@@ -99,7 +99,8 @@ This is an interface that returns a jpeg encoded image. Settings may or may not 
 
 ### Default Retriever<a name="defaultRet" id="defaultRet"></a>
 
-This is a user written implementation that acts as the default if no image retriever type is specified. If no such implementation is included then type must be specified for the source to function. It must be named "DefaultRetriever" and be placed in the `io.vantiq.extsrc.objectRecognition.imageRetriever` package.
+This is a user written implementation that acts as the default if no image retriever type is specified. If no such implementation is included then type must be specified for the source to function. It must be named "DefaultRetriever" and be placed in the `io.vantiq.extsrc.objectRecognition.imageRetriever` package. It can be added either by adding the implementation to `<repo location>/objectRecognitionSource/src/main/io/vantiq/extsrc/objectRecognition/imageRetriever` before running `./gradlew assemble` or by inserting the class as a jar into `<install location>/objectRecognitionSource/lib` and adding it to the `CLASSPATH` in `<install location>/objectRecognitionSource/bin/objectRecognitionSource` and `<install location>/objectRecognitionSource/bin/objectRecognitionSource.bat`.
+
 
 ### Camera Retriever<a name="camRet" id="camRet"></a>
 
@@ -158,9 +159,9 @@ try {
 
 This is a user written interface that interprets a jpeg encoded image and returns the results in a List of JSON-friendly Maps. Settings can be set through configuration or Queriy messages, and settings may differ between the two.
 
-### Default Retriever<a name="defaultNet" id="defaultNet"></a>
+### Default Processor<a name="defaultNet" id="defaultNet"></a>
 
-This is a user written implementation that acts as the default if no neural net type is specified. If no such implementation is included then type must be specified for the source to function. It must be named "DefaultProcessor" and be placed in the `io.vantiq.extsrc.objectRecognition.neuralNet` package.
+This is a user written implementation that acts as the default if no neural net type is specified. If no such implementation is included then type must be specified for the source to function. It must be named "DefaultProcessor" and be placed in the `io.vantiq.extsrc.objectRecognition.neuralNet` package. It can be added either by adding the implementation to `<repo location>/objectRecognitionSource/src/main/io/vantiq/extsrc/objectRecognition/neuralNet` before running `./gradlew assemble` or by inserting the class as a jar into `<install location>/objectRecognitionSource/lib` and adding it to the `CLASSPATH` in `<install location>/objectRecognitionSource/bin/objectRecognitionSource` and `<install location>/objectRecognitionSource/bin/objectRecognitionSource.bat`.
 
 ### Yolo Processor<a name="yoloNet" id="yoloNet"></a>
 

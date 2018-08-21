@@ -16,7 +16,7 @@ public class NoSendORCore extends ObjectRecognitionCore{
      * @return  true if the source connection succeeds, false if it fails.
      */
     @Override
-    public boolean start() {
+    public boolean start(int timeout) {
         closed = false;
         fClient = new FalseClient(sourceName);
         client = fClient;
@@ -32,7 +32,7 @@ public class NoSendORCore extends ObjectRecognitionCore{
         fClient.completeWebSocketConnection(true);
         fClient.completeSourceConnection(true);
         
-        return exitIfConnectionFails(client);
+        return exitIfConnectionFails(client, timeout);
     }
     
     @Override

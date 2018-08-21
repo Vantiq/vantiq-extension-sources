@@ -23,7 +23,9 @@ import io.vantiq.extsrc.objectRecognition.imageRetriever.ImageRetrieverInterface
 import io.vantiq.extsrc.objectRecognition.neuralNet.NeuralNetInterface;
 
 /**
- * Controls the connection and interaction with the Vantiq server. 
+ * Controls the connection and interaction with the Vantiq server. Initialize it and call start() and it will run 
+ * itself. start() will return a boolean describing whether or not it succeeded, and will wait up to 10 seconds if
+ * necessary.
  */
 public class ObjectRecognitionCore {
     // vars for server configuration
@@ -108,7 +110,7 @@ public class ObjectRecognitionCore {
             client.setQueryHandler(defaultQueryHandler);
             
             client.initiateFullConnection(targetVantiqServer, authToken);
-            exitIfConnectionFails(client);
+            exitIfConnectionFails(client, 10);
         }
     };
     
@@ -151,10 +153,11 @@ public class ObjectRecognitionCore {
     }
     
     /**
-     * Tries to connect to a source and waits up to 10 seconds for it to succeed or fail.
-     * @return  true if the source connection succeeds, false if it fails.
+     * Tries to connect to a source and waits up to timeout seconds for it to succeed or fail.
+     * @param timeout   The maximum number of seconds to wait before assuming failure and stopping.
+     * @return          true if the source connection succeeds, false if it fails.
      */
-    public boolean start() {
+    public boolean start(int timeout) {
         client = new ExtensionWebSocketClient(sourceName);
         objRecConfigHandler = new ObjectRecognitionConfigHandler(this);
         
@@ -164,7 +167,7 @@ public class ObjectRecognitionCore {
         client.setQueryHandler(defaultQueryHandler);
         client.initiateFullConnection(targetVantiqServer, authToken);
         
-        return exitIfConnectionFails(client);
+        return exitIfConnectionFails(client, timeout);
     }
     
     /**
@@ -378,12 +381,13 @@ public class ObjectRecognitionCore {
      * Waits for the connection to succeed or fail, logs and exits if the connection does not succeed within 10 seconds.
      *
      * @param client    The client to watch for success or failure.
+     * @param timeout   The maximum number of seconds to wait before assuming failure and stopping
      * @return          true if the connection succeeded, false if it failed to connect within 10 seconds.
      */
-    public boolean exitIfConnectionFails(ExtensionWebSocketClient client) {
+    public boolean exitIfConnectionFails(ExtensionWebSocketClient client, int timeout) {
         boolean sourcesSucceeded = false;
         try {
-            sourcesSucceeded = client.getSourceConnectionFuture().get(10, TimeUnit.SECONDS);
+            sourcesSucceeded = client.getSourceConnectionFuture().get(timeout, TimeUnit.SECONDS);
         }
         catch (TimeoutException e) {
             log.error("Timeout: not all WebSocket connections succeeded within 10 seconds.");
@@ -397,7 +401,8 @@ public class ObjectRecognitionCore {
                 log.error("Failed to connect to '" + targetVantiqServer + "' for source '" + sourceName + "'");
             }
             else if (!client.isAuthed()) {
-                log.error("Failed to auth within 10 seconds using the given auth data for source '" + sourceName + "'");
+                log.error("Failed to auth within " + timeout + " seconds using the given auth data for source '"
+                            + sourceName + "'");
             }
             else {
                 log.error("Failed to connect to '" + sourceName + "' within 10 seconds");
