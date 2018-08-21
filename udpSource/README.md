@@ -16,7 +16,7 @@
 5. Run `<install location>/udpSource/bin/udpSource` with a local config.json file or specifying the server config file as the first argument.
 
 ## Logging
-To change the logging settings, edit `<install location>/udpSource/logConfig/log4j2.xml`. Here is its [documentation](https://logging.apache.org/log4j/2.x/manual/configuration.html). The logger names for each class is the class's fully qualified class name, e.g. "io.vantiq.extjsdk.ExtensionWebSocketClient".
+To change the logging settings, edit `<install location>/udpSource/logConfig/log4j2.xml`. Here is its [documentation](https://logging.apache.org/log4j/2.x/manual/configuration.html). The logger names for each class is the class's fully qualified class name, e.g. "io.vantiq.extsrc.udp.ConfigurableUDPSource". The Handlers and SDK classes also have "#" and the source's name appended to the logger name (this does not change logging inheritance).
 To edit the logging for an IDE, change `<repo location>/udpSource/src/main/resources/log4j2.xml`. Changes to this will be included in future distributions produced through gradle.
 
 ## Server Config File<a name="serverConfig" id="serverConfig"></a>
