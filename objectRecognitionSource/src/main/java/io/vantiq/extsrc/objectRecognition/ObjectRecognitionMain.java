@@ -56,9 +56,13 @@ public class ObjectRecognitionMain {
         // Can leave now because the threads created by the sources' WebSocket connections will keep the JVM alive
     }
     
+    /**
+     * Starts every source, giving each up to 10 seconds to connect. Starts them in new threads so they don't block.
+     * @param sources   The list of sources which should be started.
+     */
     private static void startSources(List<ObjectRecognitionCore> sources) {
         for (ObjectRecognitionCore source : sources) {
-            source.start(10);
+            new Thread( () -> {source.start(10);} ).start();;
         }
     }
 
@@ -111,7 +115,7 @@ public class ObjectRecognitionMain {
         String[] sourceNames = sourceStr.split(",");
         sources = new ArrayList<>();
         for (String sourceName : sourceNames) {
-            sourceName = sourceName.trim(); // remove any spacing from the file
+            sourceName = sourceName.trim(); // remove any spacing from the name
             
             ObjectRecognitionCore source;
             source = new ObjectRecognitionCore(sourceName, authToken, targetVantiqServer, modelDirectory);
@@ -121,6 +125,10 @@ public class ObjectRecognitionMain {
         return sources;
     }
     
+    /**
+     * Closes all sources then orders the JVM to exit
+     * @param code  The exit code
+     */
     public static void exit(int code) {
         if (sources != null) {
             for (ObjectRecognitionCore source : sources) {

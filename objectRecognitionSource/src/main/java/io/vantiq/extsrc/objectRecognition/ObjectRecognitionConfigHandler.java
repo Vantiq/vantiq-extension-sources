@@ -170,6 +170,11 @@ public class ObjectRecognitionConfigHandler extends Handler<ExtensionServiceMess
         configComplete = true;
     }
     
+    /**
+     * Attempts to create the neural net specified by the configuration document.
+     * @param neuralNetConfig   The configuration for the neural net
+     * @return                  true if the neural net could be created, false otherwise
+     */
     boolean createNeuralNet(Map<String,?> neuralNetConfig ) {
         lastNeuralNet = neuralNetConfig;
         
@@ -205,6 +210,11 @@ public class ObjectRecognitionConfigHandler extends Handler<ExtensionServiceMess
         return true;
     }
     
+    /**
+     * Attempts to create an image retriever based on the configuration document.
+     * @param dataSourceConfig  The configuration for the image retriever
+     * @return                  true if the requested image retriever could be created, false otherwise
+     */
     boolean createImageRetriever(Map<String,?> dataSourceConfig) {
         lastDataSource = dataSourceConfig;
         
@@ -244,6 +254,11 @@ public class ObjectRecognitionConfigHandler extends Handler<ExtensionServiceMess
         return true;
     }
     
+    /**
+     * Sets up the the communication method, one of timed notifications, continuous notifications, or Query responses
+     * @param general   The general portion of the configuration document
+     * @return          true if the communication method could be setup, false otherwise
+     */
     private boolean prepareCommunication(Map<String, ?> general) {
         if (general.get("pollRate") instanceof Integer) {
             int polling = (Integer) general.get("pollRate");

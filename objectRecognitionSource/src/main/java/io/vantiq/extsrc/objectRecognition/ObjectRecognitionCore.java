@@ -53,10 +53,13 @@ public class ObjectRecognitionCore {
     public Handler<Response> httpHandler = new Handler<Response>() {
         @Override
         public void handleMessage(Response message) {
-            System.out.println(message);
+            log.debug(message.toString());
         }
     };
     
+    /**
+     * Cancels the previous communication method and tries to reconnect to the source, closing on a failure
+     */
     public Handler<ExtensionServiceMessage> reconnectHandler = new Handler<ExtensionServiceMessage>() {
         @Override
         public void handleMessage(ExtensionServiceMessage message) {
@@ -90,6 +93,9 @@ public class ObjectRecognitionCore {
         }
     };
     
+    /**
+     * Cancels the previous communication method and tries to reconnect, closing on a failure
+     */
     public Handler<ExtensionWebSocketClient> closeHandler = new Handler<ExtensionWebSocketClient>() {
         @Override
         public void handleMessage(ExtensionWebSocketClient message) {
@@ -114,6 +120,9 @@ public class ObjectRecognitionCore {
         }
     };
     
+    /**
+     * Sends back an error when no query handler has been set by the config
+     */
     Handler<ExtensionServiceMessage> defaultQueryHandler = new Handler<ExtensionServiceMessage>() {
         @Override
         public void handleMessage(ExtensionServiceMessage msg) {

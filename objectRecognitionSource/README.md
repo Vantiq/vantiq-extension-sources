@@ -104,8 +104,9 @@ This is a user written implementation that acts as the default if no image retri
 
 ### Camera Retriever<a name="camRet" id="camRet"></a>
 
-This implementation uses OpenCV to capture images from a camera connected directly to a computer. There are no options for Query messages, it is completely setup upon configuration. It has the following options:
-*   camera: Required. Config only. The index of the camera that will capture images, starting at 0.
+This implementation uses OpenCV to capture images from a camera connected directly to a computer. An error is thrown whenever an image cannot be read successfully. Fatal errors are thrown only when the camera is inaccessible in non-Query mode.  
+The options are as follows. Remember to prepend "DS" when using an option in a Query.
+*   camera: Required for Config, optional for Query. The index of the camera to read images from. For queries, defaults to the camera specified in the Config.
 
 ### File Retriever<a name="fileRet" id="fileRet"></a>
 

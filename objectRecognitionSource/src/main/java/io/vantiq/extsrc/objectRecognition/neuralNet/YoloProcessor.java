@@ -75,6 +75,9 @@ public class YoloProcessor implements NeuralNetInterface {
        }
    }
 
+    /**
+     * Run the image through a YOLO net. May save the resulting image depending on the settings.
+     */
     @Override
     public List<Map> processImage(byte[] image) throws ImageProcessingException{
         List<Map> results;
@@ -90,6 +93,9 @@ public class YoloProcessor implements NeuralNetInterface {
         return results;
     }
     
+    /**
+     * Run the image through a YOLO net. May save the resulting image depending on the request.
+     */
     @Override
     public List<Map> processImage(byte[] image, Map<String,?> request) throws ImageProcessingException{
         List<Map> results;
