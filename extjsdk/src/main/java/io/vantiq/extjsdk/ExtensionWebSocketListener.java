@@ -328,24 +328,22 @@ public class ExtensionWebSocketListener implements WebSocketListener{
                     }
 
                     if ((int) message.getStatus() == 200 && !client.isAuthed()) {
-                        // Forcibly setting in case an error occurred before succeeding
-                        client.authFuture.obtrudeValue(true);
+                        client.authFuture.complete(true);
                     }
                     else {
                         client.authFuture.complete(false);
                         log.warn("Error occurred attempting to authenticate");
                     }
-                    if (authHandler != null) {
-                        try {
-                            this.authHandler.handleMessage(message);
-                        }
-                        catch (Exception e) {
-                            log.error("Error occurred when running the authentication handler for source.", e);
-                        }
-                    }
-                    // No message is logged for a null handler because the user must explicitly null the handler
                 }
-
+                if (authHandler != null) {
+                    try {
+                        this.authHandler.handleMessage(message);
+                    }
+                    catch (Exception e) {
+                        log.error("Error occurred when running the authentication handler for source.", e);
+                    }
+                }
+                // No message is logged for a null handler because the user must explicitly null the handler
             }
         }
         else {
@@ -385,23 +383,23 @@ public class ExtensionWebSocketListener implements WebSocketListener{
                             return; 
                         }
                         client.sourceHasDisconnected(); // Resets to pre source connection state
-                        if (this.reconnectHandler != null) {
-                            try {
-                                this.reconnectHandler.handleMessage(message);
-                            }
-                            catch (Exception e) {
-                                log.error("Error occurred when running the Reconnect handler.", e);
-                            }
+                    }
+                    if (this.reconnectHandler != null) {
+                        try {
+                            this.reconnectHandler.handleMessage(message);
                         }
-                        if (client.autoReconnect) {
-                            log.info("Automatically attempting to reconnect to source.");
-                            client.connectToSource();
+                        catch (Exception e) {
+                            log.error("Error occurred when running the Reconnect handler.", e);
                         }
-                        // Warn when cannot reconnect or know that the connection has failed 
-                        if (!client.autoReconnect && this.reconnectHandler == null) {
-                            log.warn("Reconnect received with no handler set and no autoconnect. Can no longer "
-                                    + "communicate with source.");
-                        }
+                    }
+                    if (client.autoReconnect) {
+                        log.info("Automatically attempting to reconnect to source.");
+                        client.connectToSource();
+                    }
+                    // Warn when cannot reconnect or know that the connection has failed 
+                    if (!client.autoReconnect && this.reconnectHandler == null) {
+                        log.warn("Reconnect received with no handler set and no autoconnect. Can no longer "
+                                + "communicate with source.");
                     }
                 }
                 else {
@@ -416,20 +414,19 @@ public class ExtensionWebSocketListener implements WebSocketListener{
                         return;
                     }
 
-                    // Forcibly setting in case an error occurred before succeeding
-                    client.sourceFuture.obtrudeValue(true);
+                    client.sourceFuture.complete(true);
                     log.info("Successful connection to " + msg.get("resourceId").toString());
-                    if (this.configHandler != null) {
-                        try {
-                            this.configHandler.handleMessage(message);
-                        }
-                        catch (Exception e) {
-                            log.error("Error occurred when running the Configuration handler.", e);
-                        }
+                }
+                if (this.configHandler != null) {
+                    try {
+                        this.configHandler.handleMessage(message);
                     }
-                    else {
-                        log.warn("Configuration received with no handler set");
+                    catch (Exception e) {
+                        log.error("Error occurred when running the Configuration handler.", e);
                     }
+                }
+                else {
+                    log.warn("Configuration received with no handler set");
                 }
             }
             else {
