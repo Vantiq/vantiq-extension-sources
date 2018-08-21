@@ -40,7 +40,7 @@ The ObjectRecognitionCore class handles all the source related functionality. If
 ### Adding to your Library
 
 1.  Clone this repository (vantiq-extension-sources) and navigate into `<repo location>/vantiq-extension-sources`.
-    *   If you know that you will not use specific classes in the *.neuralNet or *.imageRetriever packagesyou can remove them now.
+    *   If you know that you will not use specific classes in the *.neuralNet or *.imageRetriever packages you can remove them now.
 2.  Run `./gradlew objectRecognitionSource:assemble` or `.\gradlew objectRecognitionSource:assemble` depending on the OS.
 3.  Navigate to `<repo location>/vantiq-extension-sources/objectRecognitionSource/build/libs` and copy `objectRecognitionSource.jar` into your project.
 4.  Add the dependencies found in `<repo location>/vantiq-extension-sources/objectRecognitionSource/build.gradle` to your project.
@@ -158,7 +158,7 @@ try {
 
 ## Neural Net Interface<a name="netInterface" id="netInterface"></a>
 
-This is a user written interface that interprets a jpeg encoded image and returns the results in a List of JSON-friendly Maps. Settings can be set through configuration or Queriy messages, and settings may differ between the two.
+This is a user written interface that interprets a jpeg encoded image and returns the results in a List of JSON-friendly Maps. Settings can be set through configuration or Query messages, and settings may differ between the two.
 
 ### Default Processor<a name="defaultNet" id="defaultNet"></a>
 
