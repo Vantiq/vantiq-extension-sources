@@ -10,28 +10,28 @@
 ## How to Run ConfigurableUDPSource<a name="udpSource" id="udpSource"></a>
 
 1.	Clone this repository (vantiq-extension-sources) and navigate into `<repo location>/vantiq-extension-sources`
-2.	Run `./gradlew udpSource:assemble` or `gradlew udpSource:assemble` depending on your OS.
+2.	Run `./gradlew udpSource:assemble`.
 3.	Then navigate to `<repo location>/vantiq-extension-sources/udpSource/build/distributions`. The zip and tar files both contain the same files, so choose whichever you prefer.
-4. Uncompress the file in the location that you would like to install the program.
-5. Run either `<install location>/udpSource/bin/udpSource` with a local config.json file or specifying the server config file as the first argument.
+4. Uncompress the zip or tar in the location that you would like to install the program.
+5. Run `<install location>/udpSource/bin/udpSource` with a local config.json file or specifying the server config file as the first argument.
 
 ## Logging
-To change the logging settings, edit `<install location>/udpSource/logConfig/log4j2.xml`. Here is its [documentation](https://logging.apache.org/log4j/2.x/manual/configuration.html). The logger names for each class is the class's fully qualified class name, e.g. "io.vantiq.extjsdk.ExtensionWebSocketClient".
-To edit the logging for an IDE, change `<repo location>/udpSource/src/main/dist/log4j2.xml`. Changes to this will be included in future distributions produced through gradle.
+To change the logging settings, edit `<install location>/udpSource/logConfig/log4j2.xml`. Here is its [documentation](https://logging.apache.org/log4j/2.x/manual/configuration.html). The logger names for each class is the class's fully qualified class name, e.g. "io.vantiq.extsrc.udp.ConfigurableUDPSource". The Handlers and SDK classes also have "#" and the source's name appended to the logger name (this does not change logging inheritance).
+To edit the logging for an IDE, change `<repo location>/udpSource/src/main/resources/log4j2.xml`. Changes to this will be included in future distributions produced through gradle.
 
 ## Server Config File<a name="serverConfig" id="serverConfig"></a>
 
 The server config file must be in JSON format. ConfigurableUDPSource runs using either the config file specified as the first argument or the file 'config.json' in the working directory.
 
 ### Vantiq Options
-*	targetServer -- The Vantiq site that hosts the projects to which the sources will connect. Defaults to "dev.vantiq.com" when not set.
-*	authToken -- The authentication token that will allow this server to connect to Vantiq. Be aware that this is namespace specific, so if you intend to connect to sources across several namespaces then multiple config files will be required, each with its own instance of ConfigurableUDPSource. Throws a RuntimeException when not set.
-*	sources -- An array containing the names of the sources that will be connected to. Throws a RuntimeException when not set.
+*	targetServer -- Optional. The Vantiq site that hosts the projects to which the sources will connect. Defaults to "dev.vantiq.com" when not set.
+*	authToken -- Required. The authentication token that will allow this server to connect to Vantiq. Be aware that this is namespace specific, so if you intend to connect to sources across several namespaces then multiple config files will be required, each with its own instance of ConfigurableUDPSource. Throws a RuntimeException when not set.
+*	sources -- Required. An array containing the names of the sources that will be connected to. Throws a RuntimeException when not set.
 
 ### UDP Options
-*	defaultBindPort -- Sets the default port to which sources will bind if no other port is specified. Defaults to 3141 when not set
-*	defaultBindAddress -- Sets the default address to which the sources will bind if no other address is specified. Attempts to find a valid local address if it cannot find the given address. Typically only localhost and the computer's IP address will work.
-*	maxPacketSize -- Sets the maximum number of data bytes that the UDP socket can receive in a single message. Defaults to 1024 when not set.
+*	defaultBindPort -- Optional. Sets the default port to which sources will bind if no other port is specified. Defaults to 3141 when not set
+*	defaultBindAddress -- Optional. Sets the default address to which the sources will bind if no other address is specified. Attempts to find a valid local address if it cannot find the given address. Typically only localhost and the computer's IP address will work.
+*	maxPacketSize -- Optional. Sets the maximum number of data bytes that the UDP socket can receive in a single message. Defaults to 1024 when not set.
 
 
 ## Source Configuration Document<a name="udpConfig" id="udpConfig"></a>
@@ -66,7 +66,7 @@ These options specify where to send messages to. These are the only options that
 
 #### General Object Options
 These options affect data to be sent in JSON(default) or XML. If none of these are set then the resulting object will be empty of data.
-* 	passPureMapOut: Optional. A boolean specifying that the Json object in Publish messages should be passed through without changes. Default is false.
+* 	passPureMapOut: Optional. A boolean specifying that the JSON object in Publish messages should be passed through without changes. Default is false.
 * 	passUnspecifiedOut: Optional. A boolean specifying that any values not transformed through the specified transformations should be sent as part of the outgoing message. If no transformations are specified then this is functionally identical to passPureMapOut. Default is false
 * 	transformations: Optional. An array of transformations (see [MapTransformer](#mapTransformer)) to perform on the message to be sent. Any values not transformed will not be passed unless passUnspecifiedOut is set to true, and any values that are transformed will not appear in the final message regardless of settings. Default is null
 
@@ -101,7 +101,7 @@ These select which ports and addresses to accept data from. If none of these are
 
 #### General Object Options
 These options affect data received in JSON(default) or XML. If none of these are set then the resulting object will be empty of data. Note that passRecAddress and passRecPort occur for every datatype except CSV, and will overwrite any data already in those locations.
-* passPureMapIn: Optional. A boolean specifying that the Json object in Publish messages should be passed through without changes. Default is false.
+* passPureMapIn: Optional. A boolean specifying that the JSON object in Publish messages should be passed through without changes. Default is false.
 * passUnspecifiedIn: Optional. A boolean specifying that any values not transformed through the transformations specified in transformations should be sent as part of the outgoing message. If no transformations are specified in transformations then this is identical to passPureMapOut. Default is false
 * passRecAddress: Optional. A string representation of the location in which you want the IP address from which the UDP message originated. Default is null, where the address will not be recorded
 * passRecPort: Optional. A string representation of the location in which you want the port from which the UDP message originated. Default is null, where the port will not be recorded.
@@ -114,7 +114,7 @@ These options specify how XML is translated.
 
 #### CSV Options
 This option specifies how CSV is translated.
-* expectCsvIn: Optional. Specifies that the expected UDP data will be in CSV format. Expects that the data will use a header specifying the name of each object. Data will be received as an array of JSON Objects. Default is false.
+* expectCsvIn: Optional. Specifies that the expected UDP data will be in CSV format. Expects that the data will use a header specifying the name of each parameter. Notifications will be received as an array of JSON Objects. Default is false.
 
 #### Byte/String Options
 These options interpret data as pure bytes or a string in byte form. These two options are mutually exclusive.
@@ -129,7 +129,7 @@ These options interpret data as pure bytes or a string in byte form. These two o
 MapTransformer is designed to deal with getting and putting for nested Maps. 
 
 ### Locations
-A location is written as period separated key names starting from the inital map, e.g. "level1.level2.level3" would be the location of "Hello World" in the Map represented by the following JSON object.
+A location is written as period separated key names starting from the initial map, e.g. "level1.level2.level3" would be the location of "Hello World" in the Map represented by the following JSON object.
 ```
 {
     level1: {
@@ -144,7 +144,7 @@ A location is written as period separated key names starting from the inital map
 
 ### Transformations
 A transformation copies an object from a location in the input Map to a location in the output Map, overwriting anything in the path for the output map. If the input location is invalid or null, nothing is written in the output Map. A transformation is written as an array with the location in the input as the first element and the desired location in the output as the second element.
-Example: Using the transformation ["level1.level2", "lvl1.lvl2"] on the input map
+Example: Using the transformation ["level1.level2", "lvl1.lvl2"] on the following input map
 ```
 {
 	level1: {
@@ -152,7 +152,7 @@ Example: Using the transformation ["level1.level2", "lvl1.lvl2"] on the input ma
 	}
 }
 ```
-and the output map
+and the following output map
 ```
 {
 	lvl1: "Sir Not-Appearing-In-This-Result",

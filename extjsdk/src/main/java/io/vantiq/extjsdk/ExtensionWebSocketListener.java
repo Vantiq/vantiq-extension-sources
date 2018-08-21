@@ -104,7 +104,7 @@ public class ExtensionWebSocketListener implements WebSocketListener{
             @Override
             public void handleMessage(ExtensionServiceMessage msg) {
                 log.warn("Query received with no user-set handler");
-                log.debug("Full message: " + msg);
+                log.debug("Full message: {}", msg);
                 // Prepare a response with an empty body, so that the query doesn't wait for a timeout
                 Object[] body = {msg.getSourceName()};
                 client.sendQueryError(ExtensionServiceMessage.extractReplyAddress(msg),
@@ -123,10 +123,10 @@ public class ExtensionWebSocketListener implements WebSocketListener{
                     // Status code 200 signals the authentication was a success
                     if ((int) msg.getStatus() == 200) {
                         log.info("Auth Successful");
-                        log.debug("Response: " + msg);
+                        log.debug("Response: {}", msg);
                     }
                     else {
-                        log.warn("Auth Failed. Response: " + msg);
+                        log.warn("Auth Failed. Response: {}", msg);
                     }
                 }
             }
@@ -289,7 +289,7 @@ public class ExtensionWebSocketListener implements WebSocketListener{
             log.warn("Failed to interpret WebSocket message as Map.", e);
             return;
         }
-        log.debug("Map of the received message: " + msg);
+        log.debug("Map of the received message: {}", msg);
         
         
         // Now we figure out which handler should receive the message
@@ -304,7 +304,7 @@ public class ExtensionWebSocketListener implements WebSocketListener{
                 // This is most likely a failure related to a source connection request
                 if (!client.isConnected() && (Integer) message.getStatus() >= 300) {
                     log.warn("Error occurred attempting to connect to source.");
-                    log.debug("Error message was: "+ message);
+                    log.debug("Error message was: {}", message);
                     client.sourceFuture.complete(false);
                 }
                 if (this.httpHandler != null) {
@@ -328,31 +328,29 @@ public class ExtensionWebSocketListener implements WebSocketListener{
                     }
 
                     if ((int) message.getStatus() == 200 && !client.isAuthed()) {
-                        // Forcibly setting in case an error occurred before succeeding
-                        client.authFuture.obtrudeValue(true);
+                        client.authFuture.complete(true);
                     }
                     else {
                         client.authFuture.complete(false);
                         log.warn("Error occurred attempting to authenticate");
                     }
-                    if (authHandler != null) {
-                        try {
-                            this.authHandler.handleMessage(message);
-                        }
-                        catch (Exception e) {
-                            log.error("Error occurred when running the authentication handler for source.", e);
-                        }
-                    }
-                    // No message is logged for a null handler because the user must explicitly null the handler
                 }
-
+                if (authHandler != null) {
+                    try {
+                        this.authHandler.handleMessage(message);
+                    }
+                    catch (Exception e) {
+                        log.error("Error occurred when running the authentication handler for source.", e);
+                    }
+                }
+                // No message is logged for a null handler because the user must explicitly null the handler
             }
         }
         else {
             ExtensionServiceMessage message = new ExtensionServiceMessage("").fromMap(msg);
             if (client.isConnected()) {
-                log.debug("Message with op '" + message.getOp() + "' received");
-                log.debug("Map of ExtensionServiceMessage: " + message);
+                log.debug("Message with op '{}' received", message.getOp());
+                log.debug("Map of ExtensionServiceMessage: {}", message);
                 if (message.getOp().equals(ExtensionServiceMessage.OP_PUBLISH))
                 {
                     if (this.publishHandler != null) {
@@ -385,27 +383,27 @@ public class ExtensionWebSocketListener implements WebSocketListener{
                             return; 
                         }
                         client.sourceHasDisconnected(); // Resets to pre source connection state
-                        if (this.reconnectHandler != null) {
-                            try {
-                                this.reconnectHandler.handleMessage(message);
-                            }
-                            catch (Exception e) {
-                                log.error("Error occurred when running the Reconnect handler.", e);
-                            }
+                    }
+                    if (this.reconnectHandler != null) {
+                        try {
+                            this.reconnectHandler.handleMessage(message);
                         }
-                        if (client.autoReconnect) {
-                            log.info("Automatically attempting to reconnect to source.");
-                            client.connectToSource();
+                        catch (Exception e) {
+                            log.error("Error occurred when running the Reconnect handler.", e);
                         }
-                        // Warn when cannot reconnect or know that the connection has failed 
-                        if (!client.autoReconnect && this.reconnectHandler == null) {
-                            log.warn("Reconnect received with no handler set and no autoconnect. Can no longer "
-                                    + "communicate with source.");
-                        }
+                    }
+                    if (client.autoReconnect) {
+                        log.info("Automatically attempting to reconnect to source.");
+                        client.connectToSource();
+                    }
+                    // Warn when cannot reconnect or know that the connection has failed 
+                    if (!client.autoReconnect && this.reconnectHandler == null) {
+                        log.warn("Reconnect received with no handler set and no autoconnect. Can no longer "
+                                + "communicate with source.");
                     }
                 }
                 else {
-                    log.warn("ExtensionServiceMessage with unknown/unexpected op '" + msg.get("op") + "'");
+                    log.warn("ExtensionServiceMessage with unknown/unexpected op '{}'", msg.get("op"));
                 }
             }
             else if (msg.get("op").equals(ExtensionServiceMessage.OP_CONFIGURE_EXTENSION) && client.isAuthed()) {
@@ -416,20 +414,19 @@ public class ExtensionWebSocketListener implements WebSocketListener{
                         return;
                     }
 
-                    // Forcibly setting in case an error occurred before succeeding
-                    client.sourceFuture.obtrudeValue(true);
-                    log.info("Successful connection to " + msg.get("resourceId").toString());
-                    if (this.configHandler != null) {
-                        try {
-                            this.configHandler.handleMessage(message);
-                        }
-                        catch (Exception e) {
-                            log.error("Error occurred when running the Configuration handler.", e);
-                        }
+                    client.sourceFuture.complete(true);
+                    log.info("Successful connection to {}", msg.get("resourceId").toString());
+                }
+                if (this.configHandler != null) {
+                    try {
+                        this.configHandler.handleMessage(message);
                     }
-                    else {
-                        log.warn("Configuration received with no handler set");
+                    catch (Exception e) {
+                        log.error("Error occurred when running the Configuration handler.", e);
                     }
+                }
+                else {
+                    log.warn("Configuration received with no handler set");
                 }
             }
             else {
@@ -472,7 +469,7 @@ public class ExtensionWebSocketListener implements WebSocketListener{
      */
     @Override
     public void onClose(int code, String reason) {
-        log.info("Closing websocket code: " + code);
+        log.info("Closing websocket code: {}", code);
         log.debug(reason);
         if (client.isOpen() && client.webSocket != null) {
             client.close();
@@ -486,7 +483,7 @@ public class ExtensionWebSocketListener implements WebSocketListener{
     @Override
     public void onPong(Buffer payload) {
         log.debug("Pong received");
-        log.debug("Pong payload: " + payload.toString());
+        log.debug("Pong payload: {}", payload.toString());
     }
 
     /**
@@ -499,11 +496,11 @@ public class ExtensionWebSocketListener implements WebSocketListener{
     public void onFailure(IOException e, okhttp3.Response response) {
         if (e instanceof EOFException) { // An EOF exception appears on closing the websocket connection
             if (e.getMessage() != null) {
-                log.error("EOFException: " + e.getMessage());
+                log.error("EOFException: {}", e.getMessage());
             }
         }
         else if (e instanceof ConnectException) {
-            log.error(e.getClass().toString() + ": " + e.getMessage());
+            log.error("{}: {}", e.getClass().toString(), e.getMessage());
         }
         else {
             log.error("Failure occurred in listener", e);

@@ -305,7 +305,7 @@ public class TestExtensionWebSocketListener extends ExtjsdkTestBase{
         listener.setQueryHandler(qHandler);
         listener.setReconnectHandler(rHandler);
         
-        authenticate(false);
+        open();
 
         // Every message should not error out due to EWSL catching and logging the error
         // Every message should be saved before the error occurs.
