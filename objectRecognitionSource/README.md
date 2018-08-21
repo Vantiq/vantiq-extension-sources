@@ -12,14 +12,14 @@
 ## How to Run the Program<a name="objRecMain" id="objRecMain"></a>
 
 1.  Clone this repository (vantiq-extension-sources) and navigate into `<repo location>/vantiq-extension-sources`.
-2.  Run `./gradlew objectRecognitionSource:assemble` or `.\gradlew objectRecognitionSource:assemble` depending on the OS.
+2.  Run `./gradlew objectRecognitionSource:assemble`.
 3.  Navigate to `<repo location>/vantiq-extension-sources/objectRecognitionSource/build/distributions`. The zip and tar files both contain the same files, so choose whichever you prefer.
 4.  Uncompress the file in the location that you would like to install the program.
-5.  Run either `<install location>/objectRecognitionSource/bin/objectRecognitionSource` with a local server.config file or specifying the [server config file](#serverConfig) as the first argument.
+5.  Run `<install location>/objectRecognitionSource/bin/objectRecognitionSource` with a local server.config file or specifying the [server config file](#serverConfig) as the first argument.
 
 ## Logging
 To change the logging settings, edit `<install location>/objectRecognitionSource/logConfig/log4j2.xml`. Here is its [documentation](https://logging.apache.org/log4j/2.x/manual/configuration.html). The logger names for each class is the class's fully qualified class name, e.g. "io.vantiq.extjsdk.ExtensionWebSocketClient".  
-To edit the logging for an IDE, change `<repo location>/src/main/dist/log4j2.xml`. Changes to this will be included in future distributions produced through gradle.
+To edit the logging for an IDE, change `<repo location>/objectRecognitionSource/src/main/resources/log4j2.xml`. Changes to this will be included in future distributions produced through gradle.
 
 ## Server Config File<a name="serverConfig" id="serverConfig"></a>
 
@@ -31,7 +31,7 @@ The server config file is written as `property=value`, with each property on its
 *   targetServer: Optional. The Vantiq server hosting the sources. Defaults to "dev.vantiq.com"
 
 ### Local Options
-*   modelDirectory: Optional. The directory in which the files for your neural networks will be. Defaults to the working directory.
+*   modelDirectory: Optional. The directory in which the files for your neural networks will be. Defaults to the current working directory.
 
 ## Running Inside Your Own Code<a name="core" id="core"></a>
 
@@ -49,7 +49,7 @@ The ObjectRecognitionCore class handles all the source related functionality. If
 ### Using in Your Code
 
 The ObjectRecognitionCore class has four public functions. The constructor takes in the same arguments passed through the [server config file](#serverConfig), the only difference being that only a single source is expected. `start()` sets everything up and tries to connect to the server, returning true if it works and false if it fails. If you want to use the source purely as defined elsewhere in this document, then these are the only two functions you need.  
-If you want to obtain images and send them in addition to the data that the source will send normally, the other two functions will be needed. `retrieveImage()` attempts to use the source's image retriever to obtain a jpeg encoded image, returning null if it failed and stopping the Core if it failed unrecoverably. `sendDataFromImage(byte[])` takes the image and attempts to process it with the source's neural net then send the results to the source. If the image is null or an error occurs then no data is sent to the source, and if neural net failed unrecoverably then the Core is stopped as well.
+If you want to obtain images and send them in addition to the data that the source will send normally, the other two functions will be needed. `retrieveImage()` attempts to use the source's image retriever to obtain a jpeg encoded image, returning null if it failed and stopping the Core if it failed unrecoverably. `sendDataFromImage(byte[])` takes the image and attempts to process it with the source's neural net then send the results to the source. If the image is null or an error occurs then no data is sent to the source, and if the neural net failed unrecoverably then the Core is stopped as well.
 
 ## Source Configuration Document<a name="srcConfig" id="srcConfig"></a>
 
@@ -91,7 +91,7 @@ Most of the options required for neuralNet are dependent on the specific impleme
 
 ## Queries
 
-Options can be specified through the WITH clause for both the neuralNet and dataSource. The options for are implementation dependent, and the available options for the standard implementations can be found in their respective sections. Since it is possible for both the data source and the neural net to use options with the same name, the standard implementations prepend the options with DS and NN for all queries, i.e. if you want to Query using the `fileLocation` option for a data source you would set the `DSfileLocation` property in the WITH clause. This may or may not apply for non-standard implementations, though developers are advised to follow this rule for consistency's sake.
+Options can be specified through the WITH clause for both the neuralNet and dataSource. The options for Queries are implementation dependent, and the available options for the standard implementations can be found in their respective sections. Since it is possible for both the data source and the neural net to use options with the same name, the standard implementations prepend the options with DS and NN for all queries, i.e. if you want to Query using the `fileLocation` option for a data source you would set the `DSfileLocation` property in the WITH clause. This may or may not apply for non-standard implementations, though developers are advised to follow this rule for consistency's sake.
 
 ## Image Retriever Interface<a name="retrieveInterface" id="retrieveInterface"></a>
 
@@ -99,7 +99,7 @@ This is an interface that returns a jpeg encoded image. Settings may or may not 
 
 ### Default Retriever<a name="defaultRet" id="defaultRet"></a>
 
-This is a user written implementation that acts as the default if no image retriever type is specified. If no such implementation is included then type must be specified for the source to function. It must be named "DefaultRetriever" and be placed in the `io.vantiq.extsrc.objectRecognition.imageRetriever` package. It can be added either by adding the implementation to `<repo location>/objectRecognitionSource/src/main/io/vantiq/extsrc/objectRecognition/imageRetriever` before running `./gradlew assemble` or by inserting the class as a jar into `<install location>/objectRecognitionSource/lib` and adding it to the `CLASSPATH` in `<install location>/objectRecognitionSource/bin/objectRecognitionSource` and `<install location>/objectRecognitionSource/bin/objectRecognitionSource.bat`.
+This is a user written implementation that acts as the default if no image retriever type is specified. If no such implementation is included then `type` must be specified for the source to function. It must be named "DefaultRetriever" and be placed in the `io.vantiq.extsrc.objectRecognition.imageRetriever` package. It can be added either by adding the implementation to `<repo location>/objectRecognitionSource/src/main/io/vantiq/extsrc/objectRecognition/imageRetriever` before running `./gradlew assemble` or by inserting the class as a jar into `<install location>/objectRecognitionSource/lib` and adding it to the `CLASSPATH` in `<install location>/objectRecognitionSource/bin/objectRecognitionSource` and `<install location>/objectRecognitionSource/bin/objectRecognitionSource.bat`.
 
 
 ### Camera Retriever<a name="camRet" id="camRet"></a>
@@ -116,8 +116,8 @@ The options are as follows. Remember to prepend "DS" when using an option in a Q
 *   fileLocation: Required for Config, Optional for Query. The location of the file to be read. For Config where `fileExtension` is "mov", the file must exist at initialization. If this is not set at Config and the source is not configured for Queries, then the source will open but the first attempt to retrieve will kill the source. For Queries, defaults to the configured file or returns an error if there was none.
 *   fileExtension: Optional. Config and Query. The type of file it is, "mov" for video files, "img" for image files. Defaults to image files.
 *   fps: Optional. Config only. Requires `fileExtension` be "mov". How many frames to retrieve for every second in the video. Rounds up the result when calculating the number of frames to move each capture. Non-positive numbers revert to default. Default is every frame.
-*   targetFrame: Optional. Query only. Requires fileExtension be "mov". The frame in the video that you would like to access, with the first being 0. Exceptions will be thrown if this targets an invalid frame, i.e. negative or beyond the video's frame count. Mutually exclusive with targetTime. Defaults to 0.
-*   targetTime: Optional. Query only. Requires fileExtension be "mov". The second in the video that you would like to access, with the first frame being 0. Exceptions will be thrown if this targets an invalid frame, i.e. negative or beyond the video's frame count. Non-integer values are allowed. Mutually exclusive with targetFrame. Defaults to 0.
+*   targetFrame: Optional. Query only. Requires `fileExtension` be "mov". The frame in the video that you would like to access, with the first being 0. Exceptions will be thrown if this targets an invalid frame, i.e. negative or beyond the video's frame count. Mutually exclusive with targetTime. Defaults to 0.
+*   targetTime: Optional. Query only. Requires `fileExtension` be "mov". The second in the video that you would like to access, with the first frame being at second 0. Exceptions will be thrown if this targets an invalid frame, i.e. negative or beyond the video's frame count. Non-integer values are allowed. Mutually exclusive with targetFrame. Defaults to 0.
 
 #### Example: Reading an Entire Video Through Queries
 If you want to read a video file from a source using Queries, this method will work.
@@ -129,7 +129,6 @@ var myVideoLocation = "movie.mov"
 try {
     // We expect the error received when the bounds are overrun to stop the loop,
     // so maxCaptures can be higher than the expected number of captures
-    var frame = 0
     FOR (frame in range(0, maxCaptures - 1)) {
         SELECT * FROM VideoSource AS results WITH 
                         DSfileLocation:myVideoLocation,
@@ -162,7 +161,7 @@ This is a user written interface that interprets a jpeg encoded image and return
 
 ### Default Processor<a name="defaultNet" id="defaultNet"></a>
 
-This is a user written implementation that acts as the default if no neural net type is specified. If no such implementation is included then type must be specified for the source to function. It must be named "DefaultProcessor" and be placed in the `io.vantiq.extsrc.objectRecognition.neuralNet` package. It can be added either by adding the implementation to `<repo location>/objectRecognitionSource/src/main/io/vantiq/extsrc/objectRecognition/neuralNet` before running `./gradlew assemble` or by inserting the class as a jar into `<install location>/objectRecognitionSource/lib` and adding it to the `CLASSPATH` in `<install location>/objectRecognitionSource/bin/objectRecognitionSource` and `<install location>/objectRecognitionSource/bin/objectRecognitionSource.bat`.
+This is a user written implementation that acts as the default if no neural net type is specified. If no such implementation is included then `type` must be specified for the source to function. It must be named "DefaultProcessor" and be placed in the `io.vantiq.extsrc.objectRecognition.neuralNet` package. It can be added either by adding the implementation to `<repo location>/objectRecognitionSource/src/main/io/vantiq/extsrc/objectRecognition/neuralNet` before running `./gradlew assemble` or by inserting the class as a jar into `<install location>/objectRecognitionSource/lib` and adding it to the `CLASSPATH` in `<install location>/objectRecognitionSource/bin/objectRecognitionSource` and `<install location>/objectRecognitionSource/bin/objectRecognitionSource.bat`.
 
 ### Yolo Processor<a name="yoloNet" id="yoloNet"></a>
 
@@ -182,7 +181,7 @@ Additionally, there are some jni errors that will appear during testing that do 
 OpenCV will also display errors that look like `warning: Error opening file (/build/opencv/modules/videoio/src/cap_ffmpeg_impl.hpp:856)` and `warning: invalidLocation (/build/opencv/modules/videoio/src/cap_ffmpeg_impl.hpp:857)`. These are expected, as the tests need to ensure correct behavior when the file cannot be found.
 
 ## Licensing
-The source code uses the [MIT License](https://opensource.org/licenses/MIT).
+The source code uses the [MIT License](https://opensource.org/licenses/MIT).  
 This program uses several licensed libraries.  
 TensorFlow, okhttp3, Apache commons, log4j, and jackson-databind are licensed under [Apache Version 2.0 License](http://www.apache.org/licenses/LICENSE-2.0).  
 slf4j and the [openpnp](https://github.com/openpnp/opencv) distribution of OpenCV used by this library are licensed under the [MIT License](https://opensource.org/licenses/MIT).  
