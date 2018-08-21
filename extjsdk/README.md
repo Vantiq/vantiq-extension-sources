@@ -8,13 +8,7 @@
 
 ## How to Include In Your Own Project
 
-### Method 1 - .jar with dependencies included
-1.	Clone this repository and navigate to <repo location>/vantiq-extension-sources.
-2.	Call `./gradlew extjsdk:shadowJar` or `gradlew extjsdk:shadowJar` depending on your OS.
-3.	Navigate to <repo location>/vantiq-extension-sources/extjsdk/build/libs
-4.	Copy and connect extjsdk-all.jar to your project.
-
-### Method 2 - .jar with no dependencies included
+### Method 1 - .jar with no dependencies included
 1.	Clone this repository and navigate to <repo location>/vantiq-extension-sources
 2.	Call `./gradlew extjsdk:jar` or `gradlew extjsdk:jar` depending on your OS
 3.	Navigate to <repo location>/vantiq-extension-sources/extjsdk/build/libs
@@ -25,12 +19,19 @@
 	*	[com.fasterxml.jackson.core:jackson-databind Version 2.9.3](https://mvnrepository.com/artifact/com.fasterxml.jackson.core/jackson-databind/2.9.3)
     *   [org.slf4j:slf4j-api Bersion 1.7.25](https://mvnrepository.com/artifact/org.slf4j/slf4j-api/1.7.25)
 
+### Method 2 - .jar with dependencies included
+1.	Clone this repository and navigate to <repo location>/vantiq-extension-sources.
+2.	Call `./gradlew extjsdk:shadowJar` or `gradlew extjsdk:shadowJar` depending on your OS.
+3.	Navigate to <repo location>/vantiq-extension-sources/extjsdk/build/libs
+4.	Copy and connect extjsdk-all.jar to your project.
+
+
 ## Logging
-The SDK uses the Slf4j logging interface with no implementation. The name of the loggers are the fully qualified class name, appended by a '#' and the name of the source they are associated with.
+The SDK uses the Slf4j logging interface with no implementation provided. The names of the loggers are the fully qualified class name, appended by a '#' and the name of the source they are associated with.
 
 ## Program Flow
 1.	A new ExtensionWebSocketClient is created.
-2.	Setup and add any handlers through `client.set<type>Handler()`. See the [Receiving Messages](#handler) section for more information on what they do. The handlers can be set and reset at any point in time, but you should do so here, or in step 6 through the configuration handler if its setup depends on the contents configuration document.
+2.	Setup and add any handlers through `client.set<type>Handler()`. See the [Receiving Messages](#handler) section for more information on what they do. The handlers can be set and reset at any point in time, but you should do so here, or in step 6 through the configuration handler if its setup depends on the contents of the configuration document.
 3.	Call `client.initiateFullConnection()`. Note that all the following steps happen asynchronously relative to the caller, but in the order specified relative to each other.
 4.	The WebSocket connection either succeeds or fails. If it succeeds, the Future returned by `client.getWebSocketFuture()` completes as true and the program continues. If it fails, the CompletableFuture returned from the call in step 3 will complete as false and you should exit or restart at step 3.
 5.	The authentication either succeeds or fails. If it succeeds, the Future returned by `client.getAuthenticationFuture()` completes as true. If it fails, the Future from step 3 completes as false and you should exit or call `client.authenticate(); client.connectToSource()` or `client.initiateFullConnection()` to retry step 5. Regardless of success or failure, authHandler is then called. If the authentication succeeded, the program continues.
@@ -55,7 +56,7 @@ Connection is as simple as creating a client with `new ExtensionWebSocketClient(
 There are three types of messages that can be sent to a source: Notifications, Query responses, and Query errors. 
 
 #### Notifications
-Notifications are messages, typically Maps, that the source will pass on to any Vantiq rules saying `WHEN MESSAGE ARRIVES FROM SOURCE <source name>`. To send one, simply call `client.sendNotification(<object to be sent>)`, which will translate the message into JSON and add everything Vantiq needs to recognize the message. 
+Notifications are JSON messages that the source will pass on to any Vantiq rules saying `WHEN MESSAGE ARRIVES FROM SOURCE <source name>`. To send one, simply call `client.sendNotification(<object to be sent>)`, which will translate the message into JSON and add everything Vantiq needs to recognize the message. 
 
 #### <a name="queryResponse" id="queryResponse"></a>Query Responses
 Query responses are responses to a `SELECT` request from Vantiq that targets a source, and can either be a Map or an array of Maps. They only mean anything in relation to an initial Query message received from Vantiq, and thus should only be sent as part of a [Query handler](#queryHandler). To send a Query response, call `client.sendQueryResponse(<HTTP status code>, <Query address>, <Map>/<Map array>)`. The Query address can be obtained using `ExtensionServiceMessage.extractReplyAddress(<Query message>)`. The HTTP status code can be one of 
@@ -72,13 +73,13 @@ Query errors are sent when a Query cannot be completed successfully. To send a Q
 
 
 ### <a name="handler" id="handler"></a>Receiving Messages
-All messages received from the Vantiq server are dealt with using handlers attached to the ExtensionWebSocketListener, typically through setters in Client. There are seven different handlers, three for the WebSocket connection, two for the source connection, and two for the source messages. The three WebSocket handlers are authentication, HTTP, closure. The source connection handlers are configuration and reconnection. The source message handlers are Publish and Query. It is strongly advised that any handlers you wish to use are set before attempting to connect to the source.
+All messages received from the Vantiq server are dealt with using handlers attached to the ExtensionWebSocketListener, typically through setters in Client. There are seven different handlers, three for the WebSocket connection, two for the source connection, and two for the source messages. The three WebSocket handlers are authentication, HTTP, and closure. The source connection handlers are configuration and reconnection. The source message handlers are Publish and Query. It is strongly advised that any handlers you wish to use are set before attempting to connect to the source.
 
 #### Authentication
 The authentication handler receives all messages until and including the message that marks the authentication as successful. A response to a successful authentication has a status code of 200 and includes a mass of information about the connection and its privileges inside the message body, none of which is necessary to know for the purposes of connecting to the source. A response to a failed authentication will have a status code of 300+, typically 400, and the body may contain a message specifying why the authentication failed. Every Client has a default authentication handler that logs whether the authentication succeeded or failed. The authentication handler receives Response objects.
 
 #### HTTP
-The HTTP handler receives all non source-related messages after authentication has succeeded. The majority of these messages will be confirmations of receipt for a message sent to the Vantiq server, and consist of a status of 200 and little else. Any other messages are likely to be an error of some sort, with status code 300+ and a body containing a message describing the error. The HTTP handler receives Response objects.
+The HTTP handler receives all non source-related messages after authentication has succeeded. The majority of these messages will be confirmations of receipt for a message sent to the Vantiq server, and consist of a status of 200 and no body. Any other messages are likely to be an error of some sort, with status code 300+ and a body containing a message describing the error. The HTTP handler receives Response objects.
 
 #### <a name="closeHandler" id="closeHandler"></a>Closure
 The closure handler does not deal with a specific message or type of message, but instead is called when either your code calls `client.close()` or the WebSocket connection is forced to close, most likely due to a problem with the connection. This handler is called after everything but the handlers are reset, essentially creating a new Client targeting the same source. If you have saved a reference to the Client's Listener, be aware that the Listener is stopped and replaced with a functionally identical Listener just before this handler is called. The closure handler receives the Client whose connection closed.
@@ -93,7 +94,7 @@ Under certain circumstances, typically a change to the source's configuration do
 The Publish handler is called when a message is received that was generated by Vantiq with `PUBLISH <object> TO SOURCE <source name>`. The published object can be retrieved through `<message>.getObject()`. Note that anything declared with the `USING` keyword will also be placed into the same location, e.g. `PUBLISH {"hello":"world"} TO SOURCE <sourceName> USING {"option":"one"}` will generate an object that looks like `{"hello":"world","option":"one"}`. The Publish handler receives an ExtensionServiceMessage.
 
 #### <a name="queryHandler" id="queryHandler"></a>Query
-The Query handler is called when a message is received that was generated by Vantiq with `SELECT <keys> FROM SOURCE <source name>`. Query messages expect a response, either [data](#queryResponse) or an [error](#queryError), so every Client has a default handler is created that sends back an error stating that no Query handler was set. If your source doesn't use queries, you should leave the default handler, so the Vantiq server isn't stuck waiting for a response. Options specified using the `WITH` keyword are received as a Map obtained with `<message>.getObject()`.
+The Query handler is called when a message is received that was generated by Vantiq with `SELECT <keys> FROM SOURCE <source name>`. Query messages expect a response, either [data](#queryResponse) or an [error](#queryError), so every Client is created with a default handler that sends back an error stating that no Query handler was set. If your source doesn't use queries, you should leave the default handler, so the Vantiq server isn't stuck waiting for a response in case of a mistaken Query. Options specified using the `WITH` keyword are received as a Map obtained with `<message>.getObject()`. The Query handler receives an ExtensionServiceMessage.
 
 ### <a name="listener" id="listener"></a>ExtensionWebSocketListener
 The ExtensionWebSocketListener class should only be accessed and used indirectly through handlers. If you do find a reason to access it directly, you can use `ExtensionWebSocketClient.getListener()`, but all functionality interactions with a Listener should be performed through an ExtensionWebSocketClient. If you do need to save a reference to a listener, be aware that a Client's Listener is stopped and replaced with a functionally identical Listener just before the [close handler](#closeHandler) is called. Call `listener.isClosed()` to check if this has occurred.
@@ -106,14 +107,14 @@ The ExtensionServiceMessage class is the message sent to or from a source, and h
 *	`ExtensionServiceMessage.extractReplyAddress(<message>)` returns the reply address for operations that require a reply. Currently this is only relevant for Query messages.
 
 ### <a name="httpResponse" id="httpResponse"></a>Response
-The Response class is a helper that defines what can be in a WebSocket message to or from the Vantiq server, and has getters for each of its properties.
+The Response class defines what can be in a WebSocket message to or from the Vantiq server, and has getters for each of its properties.
 *	`getStatus()` returns the HTTP code number for the message.
 *	`getBody()` the object contained in the body of the message.
 *	`getHeader(<header name>)` returns the String value of the requested header.
 *	`getContentType()` returns the MIME type of the message body. Currently, only JSON is possible for sent or received messages.
 
 ## Licenses
-The source code in this project is licensed under the [MIT License](https://opensource.org/licenses/MIT).
-This library uses several licensed libraries, some of which have stricter licenses than this library. 
-okhttp3 and jackson-databind are both licensed under [Apache Version 2.0 License](http://www.apache.org/licenses/LICENSE-2.0). 
+The source code in this project is licensed under the [MIT License](https://opensource.org/licenses/MIT).  
+This library uses several licensed libraries, some of which have stricter licenses than this library.  
+okhttp3 and jackson-databind are both licensed under [Apache Version 2.0 License](http://www.apache.org/licenses/LICENSE-2.0).  
 slf4j is licensed under [terms](https://www.slf4j.org/license.html) identical to the [MIT License](https://opensource.org/licenses/MIT).
