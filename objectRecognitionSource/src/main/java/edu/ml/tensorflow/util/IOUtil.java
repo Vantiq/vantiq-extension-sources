@@ -52,7 +52,7 @@ public final class IOUtil {
      * Attempts to create the specified directory if it doesn't exist
      * <br>Edited so that it will recursively create parent directories if necessary, instead of assuming the parent
      * exists
-     * @param directory
+     * @param directory The name of the directory to create.
      */
     public static void createDirIfNotExists(final File directory) {
         if (directory != null && !directory.exists()) {

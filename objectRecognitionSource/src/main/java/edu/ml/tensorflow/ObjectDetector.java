@@ -81,6 +81,10 @@ public class ObjectDetector {
      * Detect objects on the given image
      * <br>Edited to return the results as a map and conditionally save the image
      * @param image The image in jpeg format
+     * @return      A List of Maps, each of which has a {@code label} stating the type of the object identified,
+     *              a {@code confidence} specifying on a scale of 0-1 how confident the neural net is that the
+     *              identification is accurate, and a {@code location} containing the coordinates for the
+     *              {@code top},{@code left}, {@code bottom}, and {@code right} edges of the bounding box for the object.
      */
     public List<Map> detect(final byte[] image) {
         try (Tensor<Float> normalizedImage = normalizeImage(image)) {
@@ -101,7 +105,19 @@ public class ObjectDetector {
     /**
      * Detect objects on the given image
      * <br>Edited to return the results as a map and conditionally save the image
-     * @param image The image in jpeg format
+     * @param image     The image in jpeg format
+     * @param outputDir The directory to which the image should be written. If null and fileName is null, no image is 
+     *                  saved. If null and fileName is non-null, it uses the default directory if it exists or doesn't 
+     *                  save an image if the default directory doesn't exist.
+     * @param fileName  The name of the file to which the image is saved, with ".jpg" appended if necessary. If
+     *                  {@code outputDir} is null and no default exists, no image is saved. If {@code fileName} is null
+     *                  and {@code outputDir} is non-null, then the file is saved as
+     *                  "&lt;year&gt;-&lt;month&gt;-&lt;day&gt;--&lt;hour&gt;-&lt;minute&gt;-&lt;second&gt;.jpg"
+     * @return          A List of Maps, each of which has a {@code label} stating the type of the object identified, a
+     *                  {@code confidence} specifying on a scale of 0-1 how confident the neural net is that the
+     *                  identification is accurate, and a {@code location} containing the coordinates for the
+     *                  {@code top},{@code left}, {@code bottom}, and {@code right} edges of the bounding box for
+     *                  the object.
      */
     public List<Map> detect(final byte[] image, String outputDir, String fileName) {
         try (Tensor<Float> normalizedImage = normalizeImage(image)) {

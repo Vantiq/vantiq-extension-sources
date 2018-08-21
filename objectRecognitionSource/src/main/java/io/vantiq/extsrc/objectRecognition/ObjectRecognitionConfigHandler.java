@@ -12,23 +12,21 @@ import org.slf4j.LoggerFactory;
 import io.vantiq.extjsdk.ExtensionServiceMessage;
 import io.vantiq.extjsdk.ExtensionWebSocketClient;
 import io.vantiq.extjsdk.Handler;
-import io.vantiq.extsrc.objectRecognition.imageRetriever.FileRetriever;
 import io.vantiq.extsrc.objectRecognition.imageRetriever.ImageRetrieverInterface;
 import io.vantiq.extsrc.objectRecognition.neuralNet.NeuralNetInterface;
-import io.vantiq.extsrc.objectRecognition.neuralNet.YoloProcessor;
 
 /**
  * Sets up the source using the configuration document, which looks as below.
  *<pre> {
  *      objRecConfig: {
  *          general: {
- *              &lt:general options&lt;
+ *              &lt;general options&lt;
  *          },
  *          dataSource: {
- *              &lt:image retriever options&lt;
+ *              &lt;image retriever options&lt;
  *          },
  *          neuralNet: {
- *              &lt:neural net options&lt;
+ *              &lt;neural net options&lt;
  *          }
  *      }
  * }</pre>
@@ -47,8 +45,8 @@ import io.vantiq.extsrc.objectRecognition.neuralNet.YoloProcessor;
  * {@link NeuralNetInterface} specified through the {@code type} option. {@code type} is the fully qualified class name
  * of the implementation. It can also be unset, in which case it will attempt to find {@code DefaultRetriever} and 
  * {@code DefaultProcessor}, which will be written by you, for your specific needs. {@code type} can also be set to the
- * implementations included in the standard package, {@link FileRetriever file} and {@link CameraRetriever camera} for
- * dataSource and {@link YoloProcessor yolo} for neuralNet.
+ * implementations included in the standard package, {@code file} for FileRetriever and {@code camera} for 
+ * CameraRetriever for the dataSource config, and {@code yolo} for the YoloProcessor for the neuralNet config.
  */
 public class ObjectRecognitionConfigHandler extends Handler<ExtensionServiceMessage>{
     
@@ -64,7 +62,7 @@ public class ObjectRecognitionConfigHandler extends Handler<ExtensionServiceMess
     
     /**
      * Initializes the Handler for a source 
-     * @param sourceName    The source that this handler is attached to
+     * @param source    The source that this handler is attached to
      */
     public ObjectRecognitionConfigHandler(ObjectRecognitionCore source) {
         this.source = source;

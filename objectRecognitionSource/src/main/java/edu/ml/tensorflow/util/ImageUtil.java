@@ -33,8 +33,9 @@ public class ImageUtil {
 
     /**
      * Label image with classes and predictions given by the ThensorFLow
-     * @param image buffered image to label
-     * @param recognitions list of recognized objects
+     * @param image         buffered image to label
+     * @param recognitions  list of recognized objects
+     * @param fileName      The name of the file to be written
      */
     public void labelImage(final byte[] image, final List<Recognition> recognitions, final String fileName) {
         BufferedImage bufferedImage = createImageFromBytes(image);
@@ -58,8 +59,8 @@ public class ImageUtil {
      * Saves an image to a location, expected to be in the directory specified in the constructor.
      * <br>Edited so that outDir will be recreated if deleted while running, vs making sure it exists initially
      * and erroring out if it disappears in the interim 
-     * @param image
-     * @param target
+     * @param image     The image to save
+     * @param target    The name of the file to be written
      */
     public void saveImage(final BufferedImage image, final String target) {
         try {
