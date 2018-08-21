@@ -17,7 +17,7 @@
 	*	[com.squareup.okhttp3:okhttp Version 3.4.1](https://mvnrepository.com/artifact/com.squareup.okhttp3/okhttp/3.4.1)
 	*	[com.squareup.okhttp3:okhttp-ws Version 3.4.1](https://mvnrepository.com/artifact/com.squareup.okhttp3/okhttp-ws/3.4.1)
 	*	[com.fasterxml.jackson.core:jackson-databind Version 2.9.3](https://mvnrepository.com/artifact/com.fasterxml.jackson.core/jackson-databind/2.9.3)
-    *   [org.slf4j:slf4j-api Bersion 1.7.25](https://mvnrepository.com/artifact/org.slf4j/slf4j-api/1.7.25)
+    *   [org.slf4j:slf4j-api Version 1.7.25](https://mvnrepository.com/artifact/org.slf4j/slf4j-api/1.7.25)
 
 ### Method 2 - .jar with dependencies included
 1.	Clone this repository and navigate to <repo location>/vantiq-extension-sources.
