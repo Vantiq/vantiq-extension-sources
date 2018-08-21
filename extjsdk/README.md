@@ -23,6 +23,7 @@
 	*	[com.squareup.okhttp3:okhttp Version 3.4.1](https://mvnrepository.com/artifact/com.squareup.okhttp3/okhttp/3.4.1)
 	*	[com.squareup.okhttp3:okhttp-ws Version 3.4.1](https://mvnrepository.com/artifact/com.squareup.okhttp3/okhttp-ws/3.4.1)
 	*	[com.fasterxml.jackson.core:jackson-databind Version 2.9.3](https://mvnrepository.com/artifact/com.fasterxml.jackson.core/jackson-databind/2.9.3)
+    *   [org.slf4j:slf4j-api Bersion 1.7.25](https://mvnrepository.com/artifact/org.slf4j/slf4j-api/1.7.25)
 
 ## Logging
 The SDK uses the Slf4j logging interface with no implementation. The name of the loggers are the fully qualified class name, appended by a '#' and the name of the source they are associated with.

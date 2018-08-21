@@ -66,7 +66,7 @@ These options specify where to send messages to. These are the only options that
 
 #### General Object Options
 These options affect data to be sent in JSON(default) or XML. If none of these are set then the resulting object will be empty of data.
-* 	passPureMapOut: Optional. A boolean specifying that the Json object in Publish messages should be passed through without changes. Default is false.
+* 	passPureMapOut: Optional. A boolean specifying that the JSON object in Publish messages should be passed through without changes. Default is false.
 * 	passUnspecifiedOut: Optional. A boolean specifying that any values not transformed through the specified transformations should be sent as part of the outgoing message. If no transformations are specified then this is functionally identical to passPureMapOut. Default is false
 * 	transformations: Optional. An array of transformations (see [MapTransformer](#mapTransformer)) to perform on the message to be sent. Any values not transformed will not be passed unless passUnspecifiedOut is set to true, and any values that are transformed will not appear in the final message regardless of settings. Default is null
 
@@ -101,7 +101,7 @@ These select which ports and addresses to accept data from. If none of these are
 
 #### General Object Options
 These options affect data received in JSON(default) or XML. If none of these are set then the resulting object will be empty of data. Note that passRecAddress and passRecPort occur for every datatype except CSV, and will overwrite any data already in those locations.
-* passPureMapIn: Optional. A boolean specifying that the Json object in Publish messages should be passed through without changes. Default is false.
+* passPureMapIn: Optional. A boolean specifying that the JSON object in Publish messages should be passed through without changes. Default is false.
 * passUnspecifiedIn: Optional. A boolean specifying that any values not transformed through the transformations specified in transformations should be sent as part of the outgoing message. If no transformations are specified in transformations then this is identical to passPureMapOut. Default is false
 * passRecAddress: Optional. A string representation of the location in which you want the IP address from which the UDP message originated. Default is null, where the address will not be recorded
 * passRecPort: Optional. A string representation of the location in which you want the port from which the UDP message originated. Default is null, where the port will not be recorded.
@@ -129,7 +129,7 @@ These options interpret data as pure bytes or a string in byte form. These two o
 MapTransformer is designed to deal with getting and putting for nested Maps. 
 
 ### Locations
-A location is written as period separated key names starting from the inital map, e.g. "level1.level2.level3" would be the location of "Hello World" in the Map represented by the following JSON object.
+A location is written as period separated key names starting from the initial map, e.g. "level1.level2.level3" would be the location of "Hello World" in the Map represented by the following JSON object.
 ```
 {
     level1: {
