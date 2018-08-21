@@ -27,18 +27,18 @@ import io.vantiq.extjsdk.Handler;
  * document
  */
 public class UDPConfigHandler  extends Handler<ExtensionServiceMessage> {
-    private final Logger log = LoggerFactory.getLogger(ConfigurableUDPSource.class);
     
     @Override
     public void handleMessage(ExtensionServiceMessage message) {
         String sourceName = message.getSourceName();
+        Logger log = LoggerFactory.getLogger(this.getClass().getCanonicalName() + "#" + sourceName);
         Map srcConfig = (Map) ((Map)message.getObject()).get("config");
         if (!(srcConfig.get("udpSourceConfig") instanceof Map)) {
-            log.error("Unable to obtain source configuration for '" + sourceName + "'.");
+            log.error("Unable to obtain source configuration.");
             return;
         }
         Map config = (Map) srcConfig.get("udpSourceConfig");
-        log.trace("Creating handlers for '" + sourceName + "'");
+        log.trace("Creating handlers");
 
         // Acquire the general settings Map and the listening port and address
         Map general = null;
@@ -58,7 +58,7 @@ public class UDPConfigHandler  extends Handler<ExtensionServiceMessage> {
         }
         
         if (!isConfiguredToSend(outgoing) && !isConfiguredToReceive(incoming)) {
-            log.error("Source '" + sourceName + "' is not configured to send or receive.");
+            log.error("Source is not configured to send or receive.");
             return;
         }
 
@@ -73,29 +73,29 @@ public class UDPConfigHandler  extends Handler<ExtensionServiceMessage> {
                 socket = ConfigurableUDPSource.listenOnUDPSocket(port, address, sourceName);
             }
             if (socket == null) {
-                log.error("Failed to obtain UDP socket at address '" + address + "' and port '" + port +
-                        "' for source '" + sourceName + "'");
+                log.error("Failed to obtain UDP socket at address '{}' and port '{}'", address, port);
                 return;
             }
         }
 
         // Setup Publish handler as the configuration document requests
         if (isConfiguredToSend(outgoing)) {
-            UDPPublishHandler handler = new UDPPublishHandler(outgoing, socket);
+            UDPPublishHandler handler = new UDPPublishHandler(outgoing, socket, sourceName);
             ConfigurableUDPSource.clients.get(sourceName).setPublishHandler(handler);
-            log.debug("Publish handler created for source '" + sourceName + "'");
+            log.debug("Publish handler created");
         }
 
         // Setup Notification handler as the configuration document requests
         if (isConfiguredToReceive(incoming)) {
             UDPNotificationHandler handler = new UDPNotificationHandler(incoming, ConfigurableUDPSource.clients.get(sourceName));
             ConfigurableUDPSource.setNotificationHandler(handler, sourceName, incoming);
-            log.debug("Notification handler created for source '" + sourceName + "'");
+            log.debug("Notification handler created");
         }
-        log.info("Source '" + sourceName + "' setup and ready to go.");
+        log.info("Source setup and ready to go.");
     }
 
     int getListeningPort(Map general,String sourceName) {
+        Logger log = LoggerFactory.getLogger(this.getClass().getCanonicalName() + "#" + sourceName);
         Object port = null;
         if (general != null) {
             port = general.get("listenPort");
@@ -104,13 +104,14 @@ public class UDPConfigHandler  extends Handler<ExtensionServiceMessage> {
             return (int) port;
         }
         else {
-            log.debug("No valid listening port specified for source '" + sourceName + "'. Using default port '"
-                    + ConfigurableUDPSource.LISTENING_PORT + "'.");
+            log.debug("No valid listening port specified. Using default port '{}'."
+                    , ConfigurableUDPSource.LISTENING_PORT);
             return ConfigurableUDPSource.LISTENING_PORT;
         }
     }
 
     InetAddress getListeningAddress(Map general, String sourceName) {
+        Logger log = LoggerFactory.getLogger(this.getClass().getCanonicalName() + "#" + sourceName);
         Object address = null;
         if (general != null) {
             address = general.get("listenAddress");
@@ -121,14 +122,14 @@ public class UDPConfigHandler  extends Handler<ExtensionServiceMessage> {
                 return InetAddress.getByName((String) address);
             }
             catch (UnknownHostException e) {
-                log.warn("Requested listening address '" + address + "' specified for source '" + sourceName + "'" +
-                        "could not be found. Using default address '" + ConfigurableUDPSource.LISTENING_ADDRESS + "'.");
+                log.warn("Requested listening address '{}' specified could not be found. Using default address '{}'"
+                        , ConfigurableUDPSource.LISTENING_ADDRESS);
                 return ConfigurableUDPSource.LISTENING_ADDRESS;
             }
         }
         else {
-            log.debug("No listening address specified for source '" + sourceName + "'. Using default address '" +
-                    ConfigurableUDPSource.LISTENING_ADDRESS + "'.");
+            log.debug("No listening address specified. Using default address '{}'"
+                    , ConfigurableUDPSource.LISTENING_ADDRESS);
             return ConfigurableUDPSource.LISTENING_ADDRESS;
         }
     }

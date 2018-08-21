@@ -35,7 +35,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.MissingFormatArgumentException;
 
-// TODO change to match README
 /**
  * This class is a customizable handler that will convert Publish messages from a Vantiq deployment to a UDP message.
  * The target server and transformations are defined by a configuration document passed into the constructor
@@ -141,7 +140,7 @@ public class UDPPublishHandler extends Handler<ExtensionServiceMessage>{
     /**
      * An Slf4j logger.
      */
-    final private Logger log = LoggerFactory.getLogger(this.getClass());
+    final private Logger log;
     /**
      * Whether to pass the outgoing data unchanged, except for becoming a a different data-format if requested
      */
@@ -194,10 +193,12 @@ public class UDPPublishHandler extends Handler<ExtensionServiceMessage>{
     /**
      * Sets up the handler based on the configuration document passed
      *
-     * @param outgoing  The {@code outgoing} portion of the configuration document obtained from a Configuration message
-     * @param socket    The {@link DatagramSocket} through which data will be sent
+     * @param outgoing      The {@code outgoing} portion of the configuration document obtained from a Configuration message
+     * @param socket        The {@link DatagramSocket} through which data will be sent
+     * @param sourceName    The name of the source the handler will be used for
      */
-    public UDPPublishHandler(Map outgoing, DatagramSocket socket) {
+    public UDPPublishHandler(Map outgoing, DatagramSocket socket, String sourceName) {
+        log = LoggerFactory.getLogger(this.getClass().getCanonicalName() + "#" + sourceName);
         this.socket = socket;
         try {
             this.address = InetAddress.getByName((String) outgoing.get("targetAddress"));
@@ -320,13 +321,13 @@ public class UDPPublishHandler extends Handler<ExtensionServiceMessage>{
         // Turn the message into bytes for a UDP message then send it
         try {
             if (sendBytes == null) {
-                log.debug("Sending message to address " + address.getHostAddress() + " and port " + port
-                        + " with contents: " + sendMsg);
+                log.debug("Sending message to address {} and port {} with contents: {}"
+                        , address.getHostAddress(), port, sendMsg);
                 sendBytes = writer.writeValueAsBytes(sendMsg);
             }
             else {
-                log.debug("Sending message to address " + address.getHostAddress() + " and port " + port
-                        + " with contents: " + new String(sendBytes));
+                log.debug("Sending message to address {} and port {} with contents: {}"
+                        , address.getHostAddress(), port, new String(sendBytes));
             }
             DatagramPacket packet = new DatagramPacket(sendBytes, sendBytes.length, address, port);
             socket.send(packet);
@@ -402,10 +403,10 @@ public class UDPPublishHandler extends Handler<ExtensionServiceMessage>{
                 formatter.format(pattern, args.toArray());
             }
             catch (MissingFormatArgumentException e) {
-                log.error("Insufficient arguments for pattern '" + formatPattern + "'");
+                log.error("Insufficient arguments for pattern '{}'", formatPattern);
             }
             resultBytes = formattedString.toString().getBytes();
-            log.debug("Formatted result is " + formattedString.toString());
+            log.debug("Formatted result is {}", formattedString.toString());
             formattedString.setLength(0);;
         }
         
