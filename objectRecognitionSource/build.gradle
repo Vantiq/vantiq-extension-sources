@@ -24,6 +24,8 @@ startScripts{
     }
 }
 
+javadoc.exclude("edu/*")
+
 task copyLogFiles(type: Copy) {
     from("src/main/resources") 
     include "log4j2.xml"
