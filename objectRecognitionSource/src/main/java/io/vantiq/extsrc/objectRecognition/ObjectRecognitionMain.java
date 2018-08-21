@@ -13,15 +13,16 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- *  The main of this program. It connects to sources using the specified configuration. Options are :
+ *  The main of this program. It connects to sources using the specified configuration. Options are in a file where each
+ *  option has its own line, and is in the form {@code property=value} with no quotes required for Strings. Options are:
  *  <ul>
  *      <li>{@code authToken}: Required. The authentication token to connect with. These can be obtained from the 
  *                      namespace admin.
- *      <li>{@code sources}: Required. A comma separated list of the sources to which you wish to connect. Any 
- *                      whitespace will be removed when read.
+ *      <li>{@code sources}: Required. A comma separated list of the sources to which you wish to connect. Whitespace 
+ *                      around each name will be removed when read.
  *      <li>{@code targetServer}: Optional. The Vantiq server hosting the sources. Defaults to "dev.vantiq.com"
  *      <li>{@code modelDirectory}: Optional. The directory in which the files for your neural networks will be.
- *                      Defaults to the working directory. 
+ *                      Defaults to the working directory.
  *  </ul>
  */
 public class ObjectRecognitionMain {
@@ -38,7 +39,7 @@ public class ObjectRecognitionMain {
     public static CompletableFuture<Void> stop = new CompletableFuture<>();
     
     /**
-     * Connects to the Vantiq source and starts polling for data. Exits if 
+     * Connects to the Vantiq source and starts polling for data. Exits when all sources are done running.
      * @param args  Should be either null or the first argument as a config file
      */
     public static void main(String[] args) {

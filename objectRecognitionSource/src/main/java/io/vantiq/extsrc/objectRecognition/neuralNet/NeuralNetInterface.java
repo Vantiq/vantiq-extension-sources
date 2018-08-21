@@ -21,7 +21,9 @@ public interface NeuralNetInterface {
     public abstract void setupImageProcessing(Map<String,?> neuralNetConfig, String modelDirectory) throws Exception;
     
     /**
-     * Process the image and return a List of Maps describing the objects identified
+     * Process the image and return a List of Maps describing the objects identified. For each instance of the
+     * retriever, only one of {@link #processImage(byte[])} and {@link #processImage(byte[],Map)} will be called
+     * depending on whether the source is setup for Queries.
      *
      * @param image                     The bytes of a jpg file.
      * @return                          A List returning Maps describing the objects identified. The ordering and 
@@ -33,7 +35,9 @@ public interface NeuralNetInterface {
     public abstract List<Map> processImage(byte[] image) throws ImageProcessingException;
     
     /**
-     * Process the image and return a List of Maps describing the objects identified
+     * Process the image using the options in {@code request} and return a List of Maps describing the objects
+     * identified. For each instance of the retriever, only one of {@link #processImage(byte[])} and
+     * {@link #processImage(byte[],Map)} will be called depending on whether the source is setup for Queries.
      *
      * @param image                     The bytes of a jpg file.
      * @param request                   The options accompanying a Query message.

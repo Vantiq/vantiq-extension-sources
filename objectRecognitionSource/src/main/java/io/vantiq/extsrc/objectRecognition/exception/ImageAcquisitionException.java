@@ -3,7 +3,7 @@ package io.vantiq.extsrc.objectRecognition.exception;
 import io.vantiq.extsrc.objectRecognition.imageRetriever.ImageRetrieverInterface;
 
 /**
- * An exception that signifies an image could not be found for a {@link ImageRetrieverInterface}
+ * An exception that signifies an image could not be found for an {@link ImageRetrieverInterface}
  */
 public class ImageAcquisitionException extends Exception {
 
@@ -15,8 +15,6 @@ public class ImageAcquisitionException extends Exception {
         super(message, cause);
     }
 
-    /**
-     * 
-     */
-    private static final long serialVersionUID = -1191996065278592294L;
+   
+    private static final long serialVersionUID = 1L;
 }

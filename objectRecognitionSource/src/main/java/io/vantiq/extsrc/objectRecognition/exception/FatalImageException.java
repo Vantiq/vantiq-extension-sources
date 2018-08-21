@@ -4,7 +4,8 @@ import io.vantiq.extsrc.objectRecognition.imageRetriever.ImageRetrieverInterface
 import io.vantiq.extsrc.objectRecognition.neuralNet.NeuralNetInterface;
 
 /**
- * Indicates that an error occurred for either a {@link ImageRetrieverInterface} or a {@link NeuralNetInterface}
+ * Indicates that an unrecoverable error occurred for either a {@link ImageRetrieverInterface} or a
+ * {@link NeuralNetInterface}
  */
 public class FatalImageException extends RuntimeException {
 

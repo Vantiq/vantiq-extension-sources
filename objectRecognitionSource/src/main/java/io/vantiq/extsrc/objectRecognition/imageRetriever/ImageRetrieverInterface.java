@@ -20,7 +20,7 @@ public interface ImageRetrieverInterface {
     
     /**
      * Obtain an image's bytes in jpeg format. For each instance of the retriever, only one of {@link #getImage()} and
-     * {{@link #getImage(Map)} will be called depending on whether 'polling' was non-negative.
+     * {@link #getImage(Map)} will be called depending on whether the source is setup for Queries.
      * @return  An image in jpeg format
      * @throws ImageAcquisitionException    Thrown when an image could not be acquired
      * @throws FatalImageException          Thrown when the image retrieval fails in such a way that the retriever
@@ -29,8 +29,9 @@ public interface ImageRetrieverInterface {
     public byte[] getImage() throws ImageAcquisitionException;
     
     /**
-     * Obtain an image's bytes in jpeg format. For each instance of the retriever, only one of {@link #getImage()} and
-     * {{@link #getImage(Map)} will be called depending on whether 'polling' was non-negative.
+     * Obtain an image's bytes in jpeg format using the options specified in {@code request}. For each instance of the
+     * retriever, only one of {@link #getImage()} and {@link #getImage(Map)} will be called depending on whether
+     * the source is setup for Queries.
      * @param request                       The data sent in the Query request.
      * @return                              An image in jpeg format
      * @throws ImageAcquisitionException    Thrown when an image could not be acquired

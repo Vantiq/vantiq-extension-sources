@@ -15,9 +15,6 @@ public class ImageProcessingException extends Exception {
         super(message, cause);
     }
 
-    /**
-     * 
-     */
-    private static final long serialVersionUID = -8171851765382657864L;
+    private static final long serialVersionUID = 1L;
 
 }

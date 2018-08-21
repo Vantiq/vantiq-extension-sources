@@ -46,7 +46,7 @@ import io.vantiq.extsrc.objectRecognition.neuralNet.NeuralNetInterface;
  * of the implementation. It can also be unset, in which case it will attempt to find {@code DefaultRetriever} and 
  * {@code DefaultProcessor}, which will be written by you, for your specific needs. {@code type} can also be set to the
  * implementations included in the standard package, {@code file} for FileRetriever and {@code camera} for 
- * CameraRetriever for the dataSource config, and {@code yolo} for the YoloProcessor for the neuralNet config.
+ * CameraRetriever for the dataSource config, and {@code yolo} for YoloProcessor for the neuralNet config.
  */
 public class ObjectRecognitionConfigHandler extends Handler<ExtensionServiceMessage>{
     
@@ -104,7 +104,7 @@ public class ObjectRecognitionConfigHandler extends Handler<ExtensionServiceMess
     final String DEFAULT_NEURAL_NET         = "io.vantiq.extsrc.objectRecognition.neuralNet.DefaultProcessor";
     
     /**
-     * Interprets the configuration message sent by the Vantiq server and sets up the neural network and data stream.
+     * Interprets the configuration message sent by the Vantiq server and sets up the neural network and data retriever.
      */
     @Override
     public void handleMessage(ExtensionServiceMessage message) {

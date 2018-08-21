@@ -162,7 +162,7 @@ public class ObjectRecognitionCore {
     }
     
     /**
-     * Tries to connect to a source and waits up to timeout seconds for it to succeed or fail.
+     * Tries to connect to a source and waits up to {@code timeout} seconds for it to succeed or fail.
      * @param timeout   The maximum number of seconds to wait before assuming failure and stopping.
      * @return          true if the source connection succeeds, false if it fails.
      */
@@ -191,7 +191,7 @@ public class ObjectRecognitionCore {
     }
     
     /**
-     * Retrieves an image using the Core's image retriever. Calls stop() if a FatalImageException was received.
+     * Retrieves an image using the Core's image retriever. Calls {@code stop()} if a FatalImageException was received.
      * @return  The image retrieved in jpeg format, or null if a problem occurred.
      */
     public synchronized byte[] retrieveImage() {
@@ -216,7 +216,8 @@ public class ObjectRecognitionCore {
     }
     
     /**
-     * Retrieves an image using the Core's image retriever. Calls stop() if a FatalImageException is received.
+     * Retrieves an image using the Core's image retriever using the options specified in the object of {@code message}.
+     * Calls  {@code stop()} if a FatalImageException is received.
      * @param message   The Query message.
      * @return          The image retrieved in jpeg format, or null if a problem occurred.
      */
@@ -262,7 +263,7 @@ public class ObjectRecognitionCore {
     }
     
     /**
-     * Processes the image then sends the results to the Vantiq source. Calls stop() if a FatalImageException is
+     * Processes the image then sends the results to the Vantiq source. Calls {@code stop()} if a FatalImageException is
      * received.
      * @param image An OpenCV Mat representing the image to be translated
      */
@@ -293,8 +294,8 @@ public class ObjectRecognitionCore {
     }
     
    /**
-    * Processes the image then sends the results to the Vantiq source. Calls stop() if a FatalImageException is
-    * received.
+    * Processes the image then sends the results to the Vantiq source using the options specified in {@code message}.
+    * Calls {@code stop()} if a FatalImageException is received.
     * @param image      An OpenCV Mat representing the image to be translated
     * @param message    The Query message
     */
@@ -352,7 +353,7 @@ public class ObjectRecognitionCore {
    }
     
     /**
-     * Closes all resources held by this program except for the client. 
+     * Closes all resources held by this program except for the {@link ExtenstionWebSocketClient}. 
      */
     public void close() {
         if (constantPolling) {
@@ -378,7 +379,7 @@ public class ObjectRecognitionCore {
     /**
      * Closes all resources held by this program and then closes the connection. 
      */
-    protected void stop() {
+    public void stop() {
         close();
         if (client != null && client.isOpen()) {
             client.stop();
@@ -387,11 +388,12 @@ public class ObjectRecognitionCore {
     }
 
     /**
-     * Waits for the connection to succeed or fail, logs and exits if the connection does not succeed within 10 seconds.
+     * Waits for the connection to succeed or fail, logs and exits if the connection does not succeed within
+     * {@code timeout} seconds.
      *
      * @param client    The client to watch for success or failure.
      * @param timeout   The maximum number of seconds to wait before assuming failure and stopping
-     * @return          true if the connection succeeded, false if it failed to connect within 10 seconds.
+     * @return          true if the connection succeeded, false if it failed to connect within {@code timeout} seconds.
      */
     public boolean exitIfConnectionFails(ExtensionWebSocketClient client, int timeout) {
         boolean sourcesSucceeded = false;
