@@ -226,7 +226,7 @@ public class ObjectRecognitionCore {
             return imageRetriever.getImage(request);
         } catch (ImageAcquisitionException e) {
             log.warn("Could not obtain requested image.", e);
-            log.debug("Request was: " + request);
+            log.debug("Request was: {}", request);
             client.sendQueryError(replyAddress, ImageAcquisitionException.class.getCanonicalName(), 
                     "Failed to obtain an image for reason '{0}'. Exception was {1}. Request was {2}"
                     , new Object[] {e.getMessage(), e, request});
@@ -234,14 +234,14 @@ public class ObjectRecognitionCore {
             log.error("Image retriever of type '" + imageRetriever.getClass().getCanonicalName() 
                     + "' failed unrecoverably"
                     , e);
-            log.debug("Request was: " + request);
+            log.debug("Request was: {}", request);
             client.sendQueryError(replyAddress, FatalImageException.class.getCanonicalName() + ".acquisition", 
                     "Fatally failed to obtain an image for reason '{0}'. Exception was {1}. Request was {2}"
                     , new Object[] {e.getMessage(), e, request});
             stop();
         } catch (RuntimeException e) {
             log.error("Image retriever had an uncaught runtime exception", e);
-            log.debug("Request was: " + request);
+            log.debug("Request was: {}", request);
             log.error("Please ask the developer of the image retriever to check for the exception. Exiting...");
             client.sendQueryError(replyAddress, FatalImageException.class.getPackage().getName() 
                     + ".uncaughtAcquisitionException", 
