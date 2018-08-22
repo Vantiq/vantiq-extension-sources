@@ -200,33 +200,6 @@ public class TestFileRetriever extends ObjRecTestBase {
     }
     
     @Test
-    public void testVideoWithImage() {
-        try {
-            Map<String,String> config = new LinkedHashMap<>();
-            config.put("fileLocation", IMAGE_LOCATION);
-            config.put("fileExtension", "mov");
-            fr.setupDataRetrieval(config, source);
-        } catch (Exception e) {
-            fail("Exception occurred when obtaining image: " + e.toString());
-        }
-        try {
-            byte[] data = fr.getImage();
-            assert data != null;
-            assert data.length > 0;
-        } catch (ImageAcquisitionException e) {
-            fail("Exception occurred when obtaining first image: " + e.toString());
-        }
-        try {
-            fr.getImage();
-            fail("Expected exception when images run out");
-        } catch (ImageAcquisitionException e) {
-            fail("Exception should be fatal");
-        } catch (FatalImageException e) {
-            // Should create fatal exception, since no more can be read
-        }
-    }
-    
-    @Test
     public void testVideoQuery() {
         Map<String,Object> request = new LinkedHashMap<>();
         try {
@@ -261,23 +234,6 @@ public class TestFileRetriever extends ObjRecTestBase {
         } catch (ImageAcquisitionException e) {
             // Expected
         }
-        try {
-            request.put("DSfileLocation", IMAGE_LOCATION);
-            request.put("DStargetFrame", (double) 0);
-            byte[] data = fr.getImage(request);
-            assert data != null;
-            assert data.length > 0;
-        } catch (ImageAcquisitionException e) {
-            fail("Exception occurred when requesting image: " + e.toString());
-        }
-        try {
-            request.put("DStargetFrame", (double) 1);
-            fr.getImage(request);
-            fail("Did not reject non-zero frame for single image");
-        } catch (ImageAcquisitionException e) {
-            // Expected
-        }
-        
     }
     
 // ================================================= Helper functions =================================================
