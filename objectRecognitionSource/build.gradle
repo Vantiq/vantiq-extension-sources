@@ -45,18 +45,14 @@ distTar.dependsOn copyDocumentationFiles
 
 task addTestFiles {
     // sampleVideo.mov
-    def sampleVideoUrl = new URL("https://ucaf800e2a9aa322374455c1f5fb.dl.dropboxusercontent.com/cd/0/get/AOiEXn07p" + 
-            "FdnP1wXYMmgrkRDzNO9y_QS85L6WIZsEP-8VJSM07TJwtClBTglYKq_8e4oc9jcd8wiJADk2GiJ1j_32Qp4oBWNfAD6zNvRym7Grg2" + 
-            "oA3nLgn9T1lsBm5lNOvvvl9XjCSl88i8z1P33BKnneRvskuJVlZwvx14aEgdP_hmoRDSrEszxEP_ir6cvMjQ/file?dl=1")
+    def sampleVideoUrl = new URL("https://www.dropbox.com/s/h5yd00qr8sfgdlt/sampleVideo.mov?dl=1")
     def sampleVideoFile = file('src/test/resources/sampleVideo.mov')
     if (!sampleVideoFile.exists()) {
         sampleVideoUrl.withInputStream{ i -> sampleVideoFile.withOutputStream{ it << i }}
     }
             
     // yolo.pb
-    def yoloGraphUrl = new URL("https://ucfb5440ce4e1c38c30745c3ff51.dl.dropboxusercontent.com/cd/0/get/AOi66O6jII1" + 
-            "ZXNNalhr_TIds_ZEXxUuL-8O95DTzBq16pQH-4wNBr8eSgSDEr9G-cbBqxaVfHbi066zLoQzCHjSZKx6rYzf-mUOVlZbjGxT73Kq4p" + 
-            "bfErbj-QGt9Ey5kWwbP-hp5LzSVF4wIAFIv9bKnZqOJLGfqZu3LNkphfWwAA585b7EJliKQLebD9aaD5Cg/file?dl=1")
+    def yoloGraphUrl = new URL("https://www.dropbox.com/s/lhnygcd6o6275jb/yolo.pb?dl=1")
     def yoloGraphFile = file('src/test/resources/models/yolo.pb')
     if (!yoloGraphFile.exists()) {
         yoloGraphUrl.withInputStream{ i -> yoloGraphFile.withOutputStream{ it << i }}
