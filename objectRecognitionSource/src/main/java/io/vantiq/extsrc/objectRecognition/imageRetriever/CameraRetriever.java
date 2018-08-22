@@ -23,16 +23,24 @@ public class CameraRetriever implements ImageRetrieverInterface {
 	
 	@Override
     public void setupDataRetrieval(Map<String, ?> dataSourceConfig, ObjectRecognitionCore source) throws Exception {
-	    int camera;
         if (dataSourceConfig.get("camera") instanceof Integer) {
-            camera = (Integer) dataSourceConfig.get("camera");
-        } else {
+            int camera = (Integer) dataSourceConfig.get("camera");
+            nu.pattern.OpenCV.loadShared();
+            capture = new VideoCapture(camera);
+            if (!capture.isOpened()) {
+                throw new Exception("Could not open requested camera");
+            }
+        } 
+        else if (dataSourceConfig.get("camera") instanceof String){
+            String camera = (String) dataSourceConfig.get("camera");
+            nu.pattern.OpenCV.loadShared();
+            capture = new VideoCapture(camera);
+            if (!capture.isOpened()) {
+                throw new Exception("Could not open requested camera");
+            }
+        } 
+        else {
             throw new IllegalArgumentException("No camera specified in dataSourceConfig");
-        }
-	    nu.pattern.OpenCV.loadShared();
-        capture = new VideoCapture(camera);
-        if (!capture.isOpened()) {
-            throw new Exception("Could not open requested camera");
         }
     }
 	
