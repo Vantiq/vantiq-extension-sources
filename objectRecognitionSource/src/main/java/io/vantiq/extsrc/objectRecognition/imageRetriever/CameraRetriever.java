@@ -31,27 +31,38 @@ import io.vantiq.extsrc.objectRecognition.exception.ImageAcquisitionException;
 public class CameraRetriever implements ImageRetrieverInterface {
 	VideoCapture capture;
 	
+	static {
+	    
+	}
+	
 	@Override
     public void setupDataRetrieval(Map<String, ?> dataSourceConfig, ObjectRecognitionCore source) throws Exception {
+	    try {
+            System.loadLibrary(Core.NATIVE_LIBRARY_NAME);
+        } catch (Throwable t) {
+            throw new Exception(this.getClass().getCanonicalName() + ".opencvDependency" 
+                    + ": Could not load OpenCv for CameraRetriever."
+                    + "This is most likely due to a missing .dll/.so", t);
+        }
         if (dataSourceConfig.get("camera") instanceof Integer) {
             int camera = (Integer) dataSourceConfig.get("camera");
-            System.loadLibrary(Core.NATIVE_LIBRARY_NAME);
-            // nu.pattern.OpenCV.loadShared();
+
             capture = new VideoCapture(camera);
             if (!capture.isOpened()) {
-                throw new Exception("Could not open requested camera");
+                throw new Exception("Could not open requested camera #");
             }
         } else if (dataSourceConfig.get("camera") instanceof String){
             String camera = (String) dataSourceConfig.get("camera");
-			System.loadLibrary(Core.NATIVE_LIBRARY_NAME);
-
-//			nu.pattern.OpenCV.loadShared();
             capture = new VideoCapture(camera);
             if (!capture.isOpened()) {
                 throw new Exception("Could not open requested camera");
             }
         } else {
-            throw new IllegalArgumentException("No camera specified in dataSourceConfig");
+            throw new IllegalArgumentException(this.getClass().getCanonicalName() + ".opencvDependency"  + 
+                    "No camera specified in dataSourceConfig");
+        }
+        if (!capture.isOpened()) {
+            throw new Exception("Could not open requested camera");
         }
     }
 	

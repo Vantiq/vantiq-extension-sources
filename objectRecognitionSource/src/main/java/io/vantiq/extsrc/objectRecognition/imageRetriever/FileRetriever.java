@@ -72,15 +72,22 @@ public class FileRetriever implements ImageRetrieverInterface {
                 isMov = true;
             }
         }
-        System.loadLibrary(Core.NATIVE_LIBRARY_NAME);
-//        nu.pattern.OpenCV.loadShared();
+
+        try {
+            System.loadLibrary(Core.NATIVE_LIBRARY_NAME);
+        } catch (Throwable t) {
+            throw new Exception(this.getClass().getCanonicalName() + ".opencvDependency" 
+                    + ": Could not load OpenCv for FileRetriever."
+                    + "This is most likely due to a missing .dll/.so", t);
+        }
         if (dataSourceConfig.get("fileLocation") instanceof String) {
             String imageLocation = (String) dataSourceConfig.get("fileLocation");
             if (isMov) {
                 capture = new VideoCapture(imageLocation);
                 if (!capture.isOpened()) {
                     capture.release();
-                    throw new IllegalArgumentException("Intended video could not be opened");
+                    throw new IllegalArgumentException(this.getClass().getCanonicalName() + ".invalidDefaultVideo: " 
+                            + "Intended video '" + imageLocation + "' could not be opened");
                 }
                 
                 // Obtain the frame rate of the video, defaulting to 24
@@ -116,7 +123,8 @@ public class FileRetriever implements ImageRetrieverInterface {
             if (matrix.empty()) { // Exit if nothing could be read
                 capture.release();
                 matrix.release();
-                throw new FatalImageException("Video could not be read or video file has finished");
+                throw new FatalImageException(this.getClass().getCanonicalName() + ".defaultVideoReadError: " 
+                         + "Default video could not be read. Most likely the video completed reading.");
             }
             
             val += frameInterval;
@@ -133,10 +141,12 @@ public class FileRetriever implements ImageRetrieverInterface {
             try {
                 return Files.readAllBytes(defaultImageFile.toPath());
             } catch (IOException e) {
-                throw new ImageAcquisitionException("Could not read the given file");
+                throw new ImageAcquisitionException(this.getClass().getCanonicalName() + ".defaultImageReadError: " 
+                        + "Could not read '" + defaultImageFile.toPath() + "'");
             }
         } else {
-            throw new FatalImageException("No file found");
+            throw new FatalImageException(this.getClass().getCanonicalName() + ".noDefaultFile: " 
+                    + "No file found");
         }
     }
 
@@ -158,7 +168,8 @@ public class FileRetriever implements ImageRetrieverInterface {
                 if (!newcapture.isOpened()) {
                     newcapture.release();
                     matrix.release();
-                    throw new ImageAcquisitionException("Intended video could not be opened");
+                    throw new ImageAcquisitionException(this.getClass().getCanonicalName() + ".invalidVideoQueried: " 
+                            + "Intended video '" + imageFile + "' could not be opened");
                 }
                 
                 int targetFrame = 0;
@@ -176,12 +187,15 @@ public class FileRetriever implements ImageRetrieverInterface {
                 if (frameCount == 0) {
                     newcapture.release();
                     matrix.release();
-                    throw new ImageAcquisitionException("Video registers as 0 frames");
+                    throw new ImageAcquisitionException(this.getClass().getCanonicalName() + ".videoPropertyError: " 
+                            + "Video '" + imageFile + "' registers as 0 frames");
                 }
                 if (targetFrame >= frameCount || targetFrame < 0) {
                     newcapture.release();
                     matrix.release();
-                    throw new ImageAcquisitionException("Requested frame outside valid bounds");
+                    throw new ImageAcquisitionException(this.getClass().getCanonicalName() + ".invalidTargetFrame: " 
+                            + "Requested frame " + targetFrame + " outside valid bounds (0," + frameCount + ") for "
+                            + "video '"+ imageFile + "'");
                 }
                 newcapture.set(Videoio.CAP_PROP_POS_FRAMES, targetFrame);
                 
@@ -189,7 +203,8 @@ public class FileRetriever implements ImageRetrieverInterface {
                 if (matrix.empty()) { // Exit if nothing could be read
                     newcapture.release();
                     matrix.release();
-                    throw new ImageAcquisitionException("Video could not be read");
+                    throw new ImageAcquisitionException(this.getClass().getCanonicalName() + ".videoUnreadable: " 
+                            + "Video '" + imageFile + "' could not be read");
                 }
                 
                 // Translate the image to jpeg
@@ -206,7 +221,9 @@ public class FileRetriever implements ImageRetrieverInterface {
                 try {
                     return Files.readAllBytes(imageFile.toPath());
                 } catch (IOException e) {
-                    throw new ImageAcquisitionException("Could not read file '" + imageFile.getAbsolutePath() + "'", e);
+                    throw new ImageAcquisitionException(this.getClass().getCanonicalName() + ".imageUnreadable: " 
+                            + "Could not read file '" + imageFile.getAbsolutePath() + "'. "
+                            + "Most likely the image did not exist", e);
                 }
             }
         } else {
@@ -217,10 +234,11 @@ public class FileRetriever implements ImageRetrieverInterface {
                 } catch (FatalImageException e) {
                     // Fatal Image only thrown when a video is complete
                     // Since the source can read other videos as well, we don't want to fatally end
-                    throw new ImageAcquisitionException("Default video no longer readable", e);
+                    throw new ImageAcquisitionException(e.getMessage(), e);
                 }
             } else {
-                throw new ImageAcquisitionException("No default available");
+                throw new ImageAcquisitionException(this.getClass().getCanonicalName() + ".noDefaultFile: " 
+                        + "No default file available. Most likely the default video has been completed");
             }
         }
     }

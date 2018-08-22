@@ -212,7 +212,7 @@ public class TestFileRetriever extends ObjRecTestBase {
         Map<String,Object> request = new LinkedHashMap<>();
         try {
             Map<String,String> config = new LinkedHashMap<>();
-            config.put("fileLocation", IMAGE_LOCATION);
+            config.put("fileLocation", VIDEO_LOCATION);
             config.put("fileExtension", "mov");
             fr.setupDataRetrieval(config, source);
         } catch (Exception e) {
