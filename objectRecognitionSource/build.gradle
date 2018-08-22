@@ -26,21 +26,16 @@ startScripts{
 
 javadoc.exclude("edu/*")
 
-task copyLogFiles(type: Copy) {
-    from("src/main/resources") 
-    include "log4j2.xml"
-    into "src/dist/logConfig"
-}
-
-task copyDocumentationFiles(type: Copy, dependsOn:copyLogFiles) {
-    from "."
+applicationDistribution.from(".") {
     include "README.md"
     include "LICENSE/*"
-    into "src/dist"
+    into ""
 }
 
-distZip.dependsOn copyDocumentationFiles
-distTar.dependsOn copyDocumentationFiles
+applicationDistribution.from("src/main/resources") {
+    include "log4j2.xml"
+    into "logConfig"
+}
 
 
 task addTestFiles {
