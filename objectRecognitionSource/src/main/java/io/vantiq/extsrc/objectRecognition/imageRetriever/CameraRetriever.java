@@ -11,6 +11,7 @@ package io.vantiq.extsrc.objectRecognition.imageRetriever;
 
 import java.util.Map;
 
+import org.opencv.core.Core;
 import org.opencv.core.Mat;
 import org.opencv.core.MatOfByte;
 import org.opencv.imgcodecs.Imgcodecs;
@@ -34,14 +35,17 @@ public class CameraRetriever implements ImageRetrieverInterface {
     public void setupDataRetrieval(Map<String, ?> dataSourceConfig, ObjectRecognitionCore source) throws Exception {
         if (dataSourceConfig.get("camera") instanceof Integer) {
             int camera = (Integer) dataSourceConfig.get("camera");
-            nu.pattern.OpenCV.loadShared();
+            System.loadLibrary(Core.NATIVE_LIBRARY_NAME);
+            // nu.pattern.OpenCV.loadShared();
             capture = new VideoCapture(camera);
             if (!capture.isOpened()) {
                 throw new Exception("Could not open requested camera");
             }
         } else if (dataSourceConfig.get("camera") instanceof String){
             String camera = (String) dataSourceConfig.get("camera");
-            nu.pattern.OpenCV.loadShared();
+			System.loadLibrary(Core.NATIVE_LIBRARY_NAME);
+
+//			nu.pattern.OpenCV.loadShared();
             capture = new VideoCapture(camera);
             if (!capture.isOpened()) {
                 throw new Exception("Could not open requested camera");
