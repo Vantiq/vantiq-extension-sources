@@ -1,3 +1,12 @@
+
+/*
+ * Copyright (c) 2018 Vantiq, Inc.
+ *
+ * All rights reserved.
+ * 
+ * SPDX: MIT
+ */
+
 package io.vantiq.extsrc.objectRecognition.imageRetriever;
 
 import static org.junit.Assert.fail;
@@ -15,7 +24,6 @@ import org.junit.Test;
 
 import io.vantiq.extsrc.objectRecognition.ObjRecTestBase;
 import io.vantiq.extsrc.objectRecognition.ObjectRecognitionCore;
-import io.vantiq.extsrc.objectRecognition.exception.FatalImageException;
 import io.vantiq.extsrc.objectRecognition.exception.ImageAcquisitionException;
 
 public class TestFileRetriever extends ObjRecTestBase {

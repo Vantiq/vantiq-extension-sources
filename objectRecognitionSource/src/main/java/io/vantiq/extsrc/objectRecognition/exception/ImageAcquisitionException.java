@@ -1,3 +1,12 @@
+
+/*
+ * Copyright (c) 2018 Vantiq, Inc.
+ *
+ * All rights reserved.
+ * 
+ * SPDX: MIT
+ */
+
 package io.vantiq.extsrc.objectRecognition.exception;
 
 import io.vantiq.extsrc.objectRecognition.imageRetriever.ImageRetrieverInterface;
