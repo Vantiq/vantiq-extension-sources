@@ -30,16 +30,14 @@ public class CameraRetriever implements ImageRetrieverInterface {
             if (!capture.isOpened()) {
                 throw new Exception("Could not open requested camera");
             }
-        } 
-        else if (dataSourceConfig.get("camera") instanceof String){
+        } else if (dataSourceConfig.get("camera") instanceof String){
             String camera = (String) dataSourceConfig.get("camera");
             nu.pattern.OpenCV.loadShared();
             capture = new VideoCapture(camera);
             if (!capture.isOpened()) {
                 throw new Exception("Could not open requested camera");
             }
-        } 
-        else {
+        } else {
             throw new IllegalArgumentException("No camera specified in dataSourceConfig");
         }
     }
@@ -58,8 +56,7 @@ public class CameraRetriever implements ImageRetrieverInterface {
 		    matrix.release();
 		    if (!capture.isOpened() ) {
 		        throw new FatalImageException("Camera has closed");
-		    }
-		    else {
+		    } else {
 		        throw new ImageAcquisitionException("Could not obtain frame from camera");
 		    }
 		}
@@ -113,6 +110,4 @@ public class CameraRetriever implements ImageRetrieverInterface {
 	public void close() {
 	    capture.release();
 	}
-
-    
 }
