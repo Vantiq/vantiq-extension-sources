@@ -57,15 +57,15 @@ import io.vantiq.extsrc.objectRecognition.neuralNet.NeuralNetInterface;
  * implementations included in the standard package, {@code file} for FileRetriever and {@code camera} for 
  * CameraRetriever for the dataSource config, and {@code yolo} for YoloProcessor for the neuralNet config.
  */
-public class ObjectRecognitionConfigHandler extends Handler<ExtensionServiceMessage>{
+public class ObjectRecognitionConfigHandler extends Handler<ExtensionServiceMessage> {
     
     Logger                  log;
     String                  sourceName;
     ObjectRecognitionCore   source;
     boolean                 configComplete = false;
     
-    Map<String,?> lastDataSource = null;
-    Map<String,?> lastNeuralNet = null;
+    Map<String, ?> lastDataSource = null;
+    Map<String, ?> lastNeuralNet = null;
     
     Handler<ExtensionServiceMessage> queryHandler;
     
@@ -117,10 +117,10 @@ public class ObjectRecognitionConfigHandler extends Handler<ExtensionServiceMess
      */
     @Override
     public void handleMessage(ExtensionServiceMessage message) {
-        Map<String,Object> config = (Map) message.getObject();
-        Map<String,Object> general;
-        Map<String,Object> dataSource;
-        Map<String,Object> neuralNetConfig;
+        Map<String, Object> config = (Map) message.getObject();
+        Map<String, Object> general;
+        Map<String, Object> dataSource;
+        Map<String, Object> neuralNetConfig;
         
         // Obtain the Maps for each object
         if ( !(config.get("config") instanceof Map && ((Map)config.get("config")).get("objRecConfig") instanceof Map) ) {
@@ -182,7 +182,7 @@ public class ObjectRecognitionConfigHandler extends Handler<ExtensionServiceMess
      * @param neuralNetConfig   The configuration for the neural net
      * @return                  true if the neural net could be created, false otherwise
      */
-    boolean createNeuralNet(Map<String,?> neuralNetConfig ) {
+    boolean createNeuralNet(Map<String, ?> neuralNetConfig ) {
         lastNeuralNet = neuralNetConfig;
         
         // Identify and setup the neural net
@@ -222,7 +222,7 @@ public class ObjectRecognitionConfigHandler extends Handler<ExtensionServiceMess
      * @param dataSourceConfig  The configuration for the image retriever
      * @return                  true if the requested image retriever could be created, false otherwise
      */
-    boolean createImageRetriever(Map<String,?> dataSourceConfig) {
+    boolean createImageRetriever(Map<String, ?> dataSourceConfig) {
         lastDataSource = dataSourceConfig;
         
         // Figure out where to receive the data from

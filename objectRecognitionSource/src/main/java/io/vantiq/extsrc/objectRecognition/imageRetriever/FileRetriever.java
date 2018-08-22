@@ -94,13 +94,11 @@ public class FileRetriever implements ImageRetrieverInterface {
                 }
                 if (fps <= 0) {
                     frameInterval = 1;
-                }
-                else {
+                } else {
                     frameInterval = (int) Math.ceil(videoFps / fps);
                 }
                 
-            }
-            else {
+            } else {
                 defaultImageFile = new File(imageLocation);
             }
         }
@@ -129,8 +127,7 @@ public class FileRetriever implements ImageRetrieverInterface {
             matrix.release();
                     
             return imageByte;
-        }
-        else if (defaultImageFile != null){
+        } else if (defaultImageFile != null){
             try {
                 return Files.readAllBytes(defaultImageFile.toPath());
             } catch (IOException e) {
@@ -202,8 +199,7 @@ public class FileRetriever implements ImageRetrieverInterface {
                 newcapture.release();
                         
                 return imageByte;
-            }
-            else {
+            } else {
                 File imageFile = new File((String) request.get("DSfileLocation"));
                 try {
                     return Files.readAllBytes(imageFile.toPath());

@@ -55,7 +55,7 @@ public class CameraRetriever implements ImageRetrieverInterface {
 	 * Obtain the most recent image from the camera
 	 */
 	@Override
-	public byte[] getImage() throws ImageAcquisitionException{
+	public byte[] getImage() throws ImageAcquisitionException {
 		// Reading the next video frame from the camera
 		Mat matrix = new Mat();
 
@@ -83,7 +83,7 @@ public class CameraRetriever implements ImageRetrieverInterface {
 	 * Obtain the most recent image from the specified camera, or the configured camera if no camera is specified
 	 */
 	@Override
-    public byte[] getImage(Map<String, ?> request) throws ImageAcquisitionException{
+    public byte[] getImage(Map<String, ?> request) throws ImageAcquisitionException {
 	    if (request.get("DScamera") instanceof Integer) {
 	        int cam = (Integer) request.get("DScamera");
 	        VideoCapture cap = new VideoCapture(cam);
