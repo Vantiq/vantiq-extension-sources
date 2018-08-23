@@ -77,9 +77,9 @@ public class ObjectRecognitionMain {
     }
 
     /**
-     * Turn the given config file into a {@link Map}. 
+     * Turn the given configuration file into a {@link Map}. 
      * 
-     * @param fileName  The name of the config file holding the server configuration.
+     * @param fileName  The name of the configuration file holding the server configuration.
      * @return          The properties specified in the file.
      */
     static Properties obtainServerConfig(String fileName) {
@@ -89,10 +89,10 @@ public class ObjectRecognitionMain {
         try {
             properties.load(new FileReader(fileName));
         } catch (IOException e) {
-            throw new RuntimeException("Could not find valid server config file. Expected location: '" 
+            throw new RuntimeException("Could not find valid server configuration file. Expected location: '" 
                     + configFile.getAbsolutePath() + "'", e);
         } catch (Exception e) {
-            throw new RuntimeException("Error occurred when trying to read the server config file. "
+            throw new RuntimeException("Error occurred when trying to read the server configuration file. "
                     + "Please ensure it is formatted properly.", e);
         }
 
@@ -102,7 +102,7 @@ public class ObjectRecognitionMain {
     /**
      * Sets up the defaults for the server based on the configuration file
      *
-     * @param config    The Properties obtained from the config file
+     * @param config    The Properties obtained from the configuration file
      */
     static List<ObjectRecognitionCore> createSources(Properties config) {
         authToken = config.getProperty("authToken");

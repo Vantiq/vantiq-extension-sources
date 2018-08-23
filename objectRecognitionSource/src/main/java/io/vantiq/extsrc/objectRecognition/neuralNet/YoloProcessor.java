@@ -95,7 +95,12 @@ public class YoloProcessor implements NeuralNetInterface {
         long after;
         long before = System.currentTimeMillis();
 
-        results = objectDetector.detect(image);
+        try {
+            results = objectDetector.detect(image);
+        } catch (IllegalArgumentException e) {
+            throw new ImageProcessingException(this.getClass().getCanonicalName() + ".invalidImage: " 
+                    + "Data to be processed was invalid. Most likely it was not correctly encoded as a jpg.", e);
+        }
 
         after = System.currentTimeMillis();
         log.debug("Image processing time: " + (after - before) / 1000 + "." + (after - before) % 1000 + " seconds");
@@ -120,8 +125,13 @@ public class YoloProcessor implements NeuralNetInterface {
         
         long after;
         long before = System.currentTimeMillis();
-
-        results = objectDetector.detect(image, outputDir, fileName);
+        try {
+            results = objectDetector.detect(image, outputDir, fileName);
+        } catch (IllegalArgumentException e) {
+            throw new ImageProcessingException(this.getClass().getCanonicalName() + ".queryInvalidImage: " 
+                    + "Data to be processed was invalid. Most likely it was not correctly encoded as a jpg.", e);
+        }
+        
 
         after = System.currentTimeMillis();
         log.debug("Image processing time: " + (after - before) / 1000 + "." + (after - before) % 1000 + " seconds");

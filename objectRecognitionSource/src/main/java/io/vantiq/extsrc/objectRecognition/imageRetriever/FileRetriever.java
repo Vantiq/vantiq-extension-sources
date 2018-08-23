@@ -24,8 +24,6 @@ import org.opencv.core.MatOfByte;
 import org.opencv.imgcodecs.Imgcodecs;
 import org.opencv.videoio.VideoCapture;
 import org.opencv.videoio.Videoio;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * This implementation reads files from the disk using OpenCV for the videos. {@code fileLocation} must be a valid file
@@ -80,7 +78,9 @@ public class FileRetriever implements ImageRetrieverInterface {
         } catch (Throwable t) {
             throw new Exception(this.getClass().getCanonicalName() + ".opencvDependency" 
                     + ": Could not load OpenCv for FileRetriever."
-                    + "This is most likely due to a missing .dll/.so", t);
+                    + "This is most likely due to a missing .dll/.so/.dylib. Please ensure that the environment "
+                    + "variable 'OPENCV_LOC' is set to the directory containing 'opencv_java342' and any other library"
+                    + "requested by the attached error", t);
         }
         if (dataSourceConfig.get("fileLocation") instanceof String) {
             String imageLocation = (String) dataSourceConfig.get("fileLocation");
@@ -88,7 +88,7 @@ public class FileRetriever implements ImageRetrieverInterface {
                 capture = new VideoCapture(imageLocation);
                 if (!capture.isOpened()) {
                     capture.release();
-                    throw new IllegalArgumentException(this.getClass().getCanonicalName() + ".invalidDefaultVideo: " 
+                    throw new IllegalArgumentException(this.getClass().getCanonicalName() + ".invalidMainVideo: " 
                             + "Intended video '" + imageLocation + "' could not be opened");
                 }
                 
@@ -148,7 +148,7 @@ public class FileRetriever implements ImageRetrieverInterface {
             }
         } else {
             throw new FatalImageException(this.getClass().getCanonicalName() + ".noDefaultFile: " 
-                    + "No file found");
+                    + "No default file found. Most likely none was specified in the configuration.");
         }
     }
 
@@ -161,6 +161,7 @@ public class FileRetriever implements ImageRetrieverInterface {
                 isMov = true;
             }
         }
+        
         if (request.get("DSfileLocation") instanceof String) {
             if (isMov) {
                 String imageFile = (String) request.get("DSfileLocation");
@@ -171,7 +172,7 @@ public class FileRetriever implements ImageRetrieverInterface {
                     newcapture.release();
                     matrix.release();
                     throw new ImageAcquisitionException(this.getClass().getCanonicalName() + ".invalidVideoQueried: " 
-                            + "Intended video '" + imageFile + "' could not be opened");
+                            + "Requested video '" + imageFile + "' could not be opened");
                 }
                 
                 int targetFrame = 0;
@@ -224,7 +225,7 @@ public class FileRetriever implements ImageRetrieverInterface {
                     return Files.readAllBytes(imageFile.toPath());
                 } catch (IOException e) {
                     throw new ImageAcquisitionException(this.getClass().getCanonicalName() + ".imageUnreadable: " 
-                            + "Could not read file '" + imageFile.getAbsolutePath() + "'. "
+                            + "Could not read requested file '" + imageFile.getAbsolutePath() + "'. "
                             + "Most likely the image did not exist", e);
                 }
             }

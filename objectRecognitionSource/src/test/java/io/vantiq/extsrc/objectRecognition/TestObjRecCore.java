@@ -262,7 +262,7 @@ public class TestObjRecCore extends ObjRecTestBase {
         fc.initiateFullConnection(targetVantiqServer, authToken);
         fc.completeWebSocketConnection(true);
         fc.completeAuthentication(false);
-        assertFalse("Should fail due to auth failing", core.exitIfConnectionFails(core.client, 3));
+        assertFalse("Should fail due to authentication failing", core.exitIfConnectionFails(core.client, 3));
         assertTrue("Failure means it should be closed", core.isClosed());
         
         core.close();
@@ -271,7 +271,7 @@ public class TestObjRecCore extends ObjRecTestBase {
         core.client = core.fClient = fc;
         fc.initiateFullConnection(targetVantiqServer, authToken);
         fc.completeWebSocketConnection(false);
-        assertFalse("Should fail due to websocket failing", core.exitIfConnectionFails(core.client, 3));
+        assertFalse("Should fail due to WebSocket failing", core.exitIfConnectionFails(core.client, 3));
         assertTrue("Failure means it should be closed", core.isClosed());
         
         core.close();

@@ -108,7 +108,7 @@ public class ObjectRecognitionCore {
     public Handler<ExtensionWebSocketClient> closeHandler = new Handler<ExtensionWebSocketClient>() {
         @Override
         public void handleMessage(ExtensionWebSocketClient message) {
-            log.info("Websocket closed unexpectedly. Attempting to reconnect");
+            log.info("WebSocket closed unexpectedly. Attempting to reconnect");
 
             // Do partial close to preserve states of imageRetriever and neuralNet
             if (constantPolling) {
@@ -421,7 +421,7 @@ public class ObjectRecognitionCore {
             if (!client.isOpen()) {
                 log.error("Failed to connect to server url '" + targetVantiqServer + "'.");
             } else if (!client.isAuthed()) {
-                log.error("Failed to auth within " + timeout + " seconds using the given auth data.");
+                log.error("Failed to authenticate within " + timeout + " seconds using the given authentication data.");
             } else {
                 log.error("Failed to connect within 10 seconds");
             }

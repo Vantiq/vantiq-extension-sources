@@ -84,7 +84,7 @@ public class ObjectRecognitionConfigHandler extends Handler<ExtensionServiceMess
             public void handleMessage(ExtensionServiceMessage message) {
                 if ( !(message.getObject() instanceof Map) ) {
                     String replyAddress = ExtensionServiceMessage.extractReplyAddress(message);
-                    client.sendQueryError(replyAddress, "io.vantiq.extsrc.objectRecognition.InvalidImageRequest", 
+                    client.sendQueryError(replyAddress, "io.vantiq.extsrc.objectRecognition.invalidImageRequest", 
                             "Request must be a map", null);
                 }
                 byte[] data = source.retrieveImage(message);
@@ -256,7 +256,7 @@ public class ObjectRecognitionConfigHandler extends Handler<ExtensionServiceMess
             return false;
         }
         
-        log.info("Image retreiver created");
+        log.info("Image retriever created");
         log.debug("Image retriever class is {}",retrieverType);
         return true;
     }

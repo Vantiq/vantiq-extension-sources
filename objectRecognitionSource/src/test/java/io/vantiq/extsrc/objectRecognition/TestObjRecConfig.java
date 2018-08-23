@@ -63,7 +63,7 @@ public class TestObjRecConfig {
         className = "Not a class";
         ir = handler.getImageRetriever(className);
         assertTrue(ir == null);
-        assertTrue("Should fail when not given a valid classname", configIsFailed());
+        assertTrue("Should fail when not given a valid class name", configIsFailed());
     }
     @Test
     public void testGetImageRetrieverWrongImplementation() {
@@ -95,7 +95,7 @@ public class TestObjRecConfig {
         className = "Not a class";
         nn = handler.getNeuralNet(className);
         assertTrue(nn == null);
-        assertTrue("Should fail when not given a valid classname", configIsFailed());
+        assertTrue("Should fail when not given a valid class name", configIsFailed());
     }
     @Test
     public void testGetNeuralNetWrongImplementation() {
@@ -123,7 +123,7 @@ public class TestObjRecConfig {
     public void testEmptyConfig() {
         Map conf = new LinkedHashMap<>();
         sendConfig(conf);
-        assertTrue("Should fail on empty config", configIsFailed());
+        assertTrue("Should fail on empty configuration", configIsFailed());
     }
     
     @Test
@@ -131,7 +131,7 @@ public class TestObjRecConfig {
         Map conf = minimalConfig();
         conf.remove("general");
         sendConfig(conf);
-        assertTrue("Should fail when missing 'general' config", configIsFailed());
+        assertTrue("Should fail when missing 'general' configuration", configIsFailed());
     }
     
     @Test
@@ -139,7 +139,7 @@ public class TestObjRecConfig {
         Map conf = minimalConfig();
         conf.remove("dataSource");
         sendConfig(conf);
-        assertTrue("Should fail when missing 'dataSource' config", configIsFailed());
+        assertTrue("Should fail when missing 'dataSource' configuration", configIsFailed());
     }
     
     @Test
@@ -147,7 +147,7 @@ public class TestObjRecConfig {
         Map conf = minimalConfig();
         conf.remove("neuralNet");
         sendConfig(conf);
-        assertTrue("Should fail when missing 'neuralNet' config", configIsFailed());
+        assertTrue("Should fail when missing 'neuralNet' configuration", configIsFailed());
     }
     
     @Test
@@ -156,16 +156,16 @@ public class TestObjRecConfig {
         
         Map conf = minimalConfig();
         sendConfig(conf);
-        assertFalse("Should not fail with minimal config", configIsFailed());
+        assertFalse("Should not fail with minimal configuration", configIsFailed());
         
         general.put("pollRate", 300000);
         sendConfig(conf);
-        assertFalse("Should not fail with minimal config", configIsFailed());
+        assertFalse("Should not fail with minimal configuration", configIsFailed());
         assertTrue("Timer should exist after pollRate set to positive number", nCore.pollTimer != null); 
         
         general.put("pollRate", -100);
         sendConfig(conf);
-        assertFalse("Should not fail with minimal config", configIsFailed());
+        assertFalse("Should not fail with minimal configuration", configIsFailed());
     }
     
 // ================================================= Helper functions =================================================

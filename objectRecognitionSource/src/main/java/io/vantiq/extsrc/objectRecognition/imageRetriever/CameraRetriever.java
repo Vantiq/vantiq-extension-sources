@@ -44,7 +44,9 @@ public class CameraRetriever implements ImageRetrieverInterface {
         } catch (Throwable t) {
             throw new Exception(this.getClass().getCanonicalName() + ".opencvDependency" 
                     + ": Could not load OpenCv for CameraRetriever."
-                    + "This is most likely due to a missing .dll/.so", t);
+                    + "This is most likely due to a missing .dll/.so/.dylib. Please ensure that the environment "
+                    + "variable 'OPENCV_LOC' is set to the directory containing 'opencv_java342' and any other library"
+                    + "requested by the attached error", t);
         }
         if (dataSourceConfig.get("camera") instanceof Integer) {
             int camera = (Integer) dataSourceConfig.get("camera");
@@ -131,14 +133,22 @@ public class CameraRetriever implements ImageRetrieverInterface {
 	        String cam = (String) request.get("DScamera");
 	        camId = cam;
             cap = new VideoCapture(cam);
-	    } else {
+	    } else if (capture == null) {
+	        throw new ImageAcquisitionException(this.getClass().getCanonicalName() + ".noMainCamera: " 
+                    + "No camera was requested and no main camera was specified at initialization.");
+        } else if (capture.isOpened()){
             try {
                 return getImage();
             } catch (FatalImageException e) {
-                throw new ImageAcquisitionException(this.getClass().getCanonicalName() + ".defaultCameraReadError: " 
-                        + "Default camera failed fatally. Non-defaults still available.");
+                throw new ImageAcquisitionException(this.getClass().getCanonicalName() + ".mainCameraFatalError: " 
+                        + "Main camera failed fatally. Other cameras are still Queryable.");
             }
+        } else {
+            throw new ImageAcquisitionException(this.getClass().getCanonicalName() + ".mainCameraClosed: " 
+                    + "No camera was requested and the main camera is no longer open. Most likely this is due to a "
+                    + "previous fatal error for the main camera.");
         }
+	    
         if (!cap.isOpened()) {
             cap.release();
             throw new ImageAcquisitionException(this.getClass().getCanonicalName() + ".queryCameraUnreadable: " 

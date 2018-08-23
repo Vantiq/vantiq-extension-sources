@@ -21,7 +21,7 @@ import io.vantiq.extsrc.objectRecognition.exception.ImageAcquisitionException;
 
 public class BasicTestRetriever implements ImageRetrieverInterface {
 
-    public Map<String,?>            config;
+    public Map<String, ?>            config;
     public ObjectRecognitionCore    source;
     public static final String      THROW_EXCEPTION         = "throwException";
     public static final String      THROW_EXCEPTION_ON_REQ  = "throwReqException";
