@@ -21,6 +21,10 @@ startScripts{
         // Add the log Config to the top of the classpath
         windowsScriptFile.text = windowsScriptFile.text.replace("CLASSPATH=", "CLASSPATH=%APP_HOME%\\logConfig;")
         unixScriptFile.text = unixScriptFile.text.replace('CLASSPATH=', 'CLASSPATH=$APP_HOME/logConfig:')
+        
+        // Add the native libraries to
+        windowsScriptFile.text = windowsScriptFile.text.replace("DEFAULT_JVM_OPTS=", 'DEFAULT_JVM_OPTS=-Djava.library.path=%OPENCV_LOC%\')
+        unixScriptFile.text = unixScriptFile.text.replace('DEFAULT_JVM_OPTS=', 'DEFAULT_JVM_OPTS=-Djava.library.path=$OPENCV_LOC')
     }
 }
 
@@ -55,9 +59,9 @@ task addTestFiles {
     
 }
 
-/*tasks.withType(Test) {
+tasks.withType(Test) {
     systemProperty "java.library.path", "${System.env.OPENCV_LOC}"
-}*/
+}
 
 processTestResources.dependsOn addTestFiles
 
@@ -71,6 +75,7 @@ dependencies {
     // Expects that the environment variable OPENCV_LOC is set to the location containing the opencv jar,
     // and either the same locations contains the required .dll/.so or the .dll/.so is already on the 
     compile files("${System.env.OPENCV_LOC}/opencv-342.jar")
+    //runtime files("${System.env.OPENCV_LOC}/opencv_java342.dll")
 
     compile "com.fasterxml.jackson.core:jackson-databind:2.9.3"
     
