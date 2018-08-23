@@ -93,9 +93,6 @@ public class CameraRetriever implements ImageRetrieverInterface {
 
 		capture.read(matrix);
 		
-//		String fileName = "/Users/namirfawaz/Desktop/" + new SimpleDateFormat("yyyy.MM.dd.HH.mm.ss").format(new java.util.Date()) + ".jpg";
-//		Imgcodecs.imwrite(fileName, matrix);
-		
 		if (matrix.empty()) {
 		    matrix.release();
 		    if (!capture.isOpened() ) {
