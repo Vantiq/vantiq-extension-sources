@@ -54,7 +54,7 @@ public class TestObjRecMain {
         }
         
         try {
-            // Fail when only auth is set
+            // Fail when only authToken is set
             props.setProperty("authToken", "a token");
             ObjectRecognitionMain.createSources(props);
             fail("Didn't exit when missing sources");
@@ -62,7 +62,7 @@ public class TestObjRecMain {
             // Expected this Exception
         }
         
-        // Succeed when auth and sources are set
+        // Succeed when authToken and sources are set
         props.setProperty("sources", "s");
         ObjectRecognitionMain.createSources(props);
         assert ObjectRecognitionMain.modelDirectory.equals(ObjectRecognitionMain.DEFAULT_MODEL_DIRECTORY);
