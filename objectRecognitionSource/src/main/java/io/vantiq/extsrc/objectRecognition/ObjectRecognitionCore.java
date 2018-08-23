@@ -38,10 +38,10 @@ import io.vantiq.extsrc.objectRecognition.neuralNet.NeuralNetInterface;
  */
 public class ObjectRecognitionCore {
     // vars for server configuration
-    String sourceName           = "Camera1";
-    String authToken            = "gcy1hHR39ge2PNCZeiUbYKAev-G7u-KyPh2Ns4gI0Y8=";
-    String targetVantiqServer   = "ws://localhost:8080";
-    String modelDirectory       = "";
+    String sourceName;
+    String authToken;
+    String targetVantiqServer;
+    String modelDirectory;
     
     
     // vars for source configuration
@@ -419,14 +419,13 @@ public class ObjectRecognitionCore {
         if (!sourcesSucceeded) {
             log.error("Failed to connect to all sources. Exiting...");
             if (!client.isOpen()) {
-                log.error("Failed to connect to '" + targetVantiqServer + "' for source '" + sourceName + "'");
+                log.error("Failed to connect to server url '" + targetVantiqServer + "'.");
             }
             else if (!client.isAuthed()) {
-                log.error("Failed to auth within " + timeout + " seconds using the given auth data for source '"
-                            + sourceName + "'");
+                log.error("Failed to auth within " + timeout + " seconds using the given auth data.");
             }
             else {
-                log.error("Failed to connect to '" + sourceName + "' within 10 seconds");
+                log.error("Failed to connect within 10 seconds");
             }
             stop();
             return false;

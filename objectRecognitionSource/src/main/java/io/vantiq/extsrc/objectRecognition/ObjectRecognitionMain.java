@@ -41,9 +41,9 @@ public class ObjectRecognitionMain {
     public static final String DEFAULT_MODEL_DIRECTORY = "";
     public static final String DEFAULT_VANTIQ_SERVER = "wss://dev.vantiq.com/api/v1/wsock/websocket";
     
-    static String authToken             = "gcy1hHR39ge2PNCZeiUbYKAev-G7u-KyPh2Ns4gI0Y8=";
-    static String targetVantiqServer    = DEFAULT_VANTIQ_SERVER;
-    static String modelDirectory        = DEFAULT_MODEL_DIRECTORY;
+    static String authToken;
+    static String targetVantiqServer;
+    static String modelDirectory;
     
     public static CompletableFuture<Void> stop = new CompletableFuture<>();
     
@@ -119,7 +119,11 @@ public class ObjectRecognitionMain {
             exit(0);
         }
         
-        targetVantiqServer = config.getProperty("targetServer", DEFAULT_VANTIQ_SERVER);
+        targetVantiqServer = config.getProperty("targetServer");
+        if (targetVantiqServer == null || targetVantiqServer.equals("")) {
+            log.error("No server URL specified in server settings");
+        }
+        
         modelDirectory = config.getProperty("modelDirectory", DEFAULT_MODEL_DIRECTORY);
         
         String[] sourceNames = sourceStr.split(",");
