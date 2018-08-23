@@ -264,7 +264,8 @@ public class ObjectRecognitionCore {
             log.error("Please ask the developer of the image retriever to check for the exception. Exiting...");
             client.sendQueryError(replyAddress, FatalImageException.class.getPackage().getName() 
                     + ".uncaughtAcquisitionException", 
-                    "Unexpected exception when obtaining an image for reason {0}. Exception was {1}. Request was {2}"
+                    "Unexpected runtime exception when obtaining an image for reason {0}. Exception was {1}. "
+                    + "Request was {2}"
                     , new Object[] {e.getMessage(), e, request});
             stop();
         }
@@ -355,7 +356,7 @@ public class ObjectRecognitionCore {
            log.error("Please ask the developer of the neural net to check for the exception. Exiting...");
            client.sendQueryError(replyAddress, FatalImageException.class.getPackage().getName() 
                    + ".uncaughtProcessingException", 
-                   "Uncaught exception when processing image for reason {0}. Exception was {1}. Request was {2}"
+                   "Uncaught runtime exception when processing image for reason {0}. Exception was {1}. Request was {2}"
                    , new Object[] {e.getMessage(), e, request});
            stop();
        }

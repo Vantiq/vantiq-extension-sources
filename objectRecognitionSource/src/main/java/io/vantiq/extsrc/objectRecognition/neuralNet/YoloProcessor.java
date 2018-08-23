@@ -55,7 +55,8 @@ public class YoloProcessor implements NeuralNetInterface {
         try {
             objectDetector = new ObjectDetector(pbFile, labelsFile, outputDir, saveRate);
         } catch (Exception e) {
-            throw new Exception("Failed to create new ObjectDetector", e);
+            throw new Exception(this.getClass().getCanonicalName() + ".yoloBackendSetupError: " 
+                    + "Failed to create new ObjectDetector", e);
         }
     }
     
@@ -74,7 +75,8 @@ public class YoloProcessor implements NeuralNetInterface {
            pbFile = modelDirectory + (String) neuralNet.get("pbFile");
            labelsFile = modelDirectory + (String) neuralNet.get("labelFile");
        } else {
-           throw new Exception("Could not find 'pbFile' and/or 'labelFile' in the neuralNet configuration");
+           throw new Exception(this.getClass().getCanonicalName() + ".missingConfig: " 
+                   + "Could not find 'pbFile' and/or 'labelFile' in the neuralNet configuration");
        }
        if (neuralNet.get("outputDir") instanceof String) {
            outputDir = (String) neuralNet.get("outputDir");
@@ -88,15 +90,13 @@ public class YoloProcessor implements NeuralNetInterface {
      * Run the image through a YOLO net. May save the resulting image depending on the settings.
      */
     @Override
-    public List<Map> processImage(byte[] image) throws ImageProcessingException{
+    public List<Map> processImage(byte[] image) throws ImageProcessingException {
         List<Map> results;
         long after;
         long before = System.currentTimeMillis();
-        try {
-            results = objectDetector.detect(image);
-        } catch (IllegalArgumentException e) {
-            throw new ImageProcessingException("Illegal argument when processing jpeg", e);
-        }
+
+        results = objectDetector.detect(image);
+
         after = System.currentTimeMillis();
         log.debug("Image processing time: " + (after - before) / 1000 + "." + (after - before) % 1000 + " seconds");
         return results;
@@ -120,11 +120,9 @@ public class YoloProcessor implements NeuralNetInterface {
         
         long after;
         long before = System.currentTimeMillis();
-        try {
-            results = objectDetector.detect(image, outputDir, fileName);
-        } catch (IllegalArgumentException e) {
-            throw new ImageProcessingException("Illegal argument when processing jpeg", e);
-        }
+
+        results = objectDetector.detect(image, outputDir, fileName);
+
         after = System.currentTimeMillis();
         log.debug("Image processing time: " + (after - before) / 1000 + "." + (after - before) % 1000 + " seconds");
         return results;
