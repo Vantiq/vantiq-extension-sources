@@ -27,7 +27,7 @@ public interface NeuralNetInterface {
      * @param modelDirectory    The directory in which it should look for the models
      * @throws Exception        Thrown when an error occurs during setup.
      */
-    public abstract void setupImageProcessing(Map<String,?> neuralNetConfig, String modelDirectory) throws Exception;
+    void setupImageProcessing(Map<String,?> neuralNetConfig, String modelDirectory) throws Exception;
     
     /**
      * Process the image and return a List of Maps describing the objects identified. For each instance of the
@@ -41,7 +41,7 @@ public interface NeuralNetInterface {
      * @throws FatalImageException      Thrown when the image processing fails in such a way that the processor cannot
      *                                  recover
      */
-    public abstract List<Map> processImage(byte[] image) throws ImageProcessingException;
+    List<Map> processImage(byte[] image) throws ImageProcessingException;
     
     /**
      * Process the image using the options in {@code request} and return a List of Maps describing the objects
@@ -56,10 +56,10 @@ public interface NeuralNetInterface {
      * @throws FatalImageException      Thrown when the image processing fails in such a way that the processor cannot
      *                                  recover
      */
-    public abstract List<Map> processImage(byte[] image, Map<String,?> request) throws ImageProcessingException;
+    List<Map> processImage(byte[] image, Map<String,?> request) throws ImageProcessingException;
     
     /**
      * Safely close any resources obtained by the net
      */
-    public abstract void close();
+    void close();
 }
