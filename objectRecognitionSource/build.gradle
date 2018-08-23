@@ -55,9 +55,9 @@ task addTestFiles {
     
 }
 
-tasks.withType(Test) {
+/*tasks.withType(Test) {
     systemProperty "java.library.path", "${System.env.OPENCV_LOC}"
-}
+}*/
 
 processTestResources.dependsOn addTestFiles
 
@@ -68,8 +68,8 @@ dependencies {
     compile "org.apache.logging.log4j:log4j-slf4j-impl:2.11.0"
     
     // Used by CameraRetriever and FileRetriever. Can be removed if both CameraRetriever and FileRetriever are removed
-    // compile "org.openpnp:opencv:3.4.2-0"
-
+    // Expects that the environment variable OPENCV_LOC is set to the location containing the opencv jar,
+    // and either the same locations contains the required .dll/.so or the .dll/.so is already on the 
     compile files("${System.env.OPENCV_LOC}/opencv-342.jar")
 
     compile "com.fasterxml.jackson.core:jackson-databind:2.9.3"

@@ -16,6 +16,8 @@ import org.opencv.core.Mat;
 import org.opencv.core.MatOfByte;
 import org.opencv.imgcodecs.Imgcodecs;
 import org.opencv.videoio.VideoCapture;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import io.vantiq.extsrc.objectRecognition.ObjectRecognitionCore;
 import io.vantiq.extsrc.objectRecognition.exception.FatalImageException;
@@ -32,8 +34,17 @@ public class CameraRetriever implements ImageRetrieverInterface {
 	VideoCapture capture;
 	
 	static {
-	    
-	}
+        String libPath = System.getProperty("LD_LIBRARY_PATH", "");
+        String opencvLoc = System.getenv("OPENCV_LOC");
+        if (opencvLoc == null) {
+            Logger log = LoggerFactory.getLogger(CameraRetriever.class);
+            log.error("Could not find environment variable 'OPENCV_LOC'. Unless the location of opencv_java342.dll/.so "
+                    + "is already added to java.library.path, CameraRetriever will be unable to work.");
+            log.debug("java.library.path is currently '{}'", libPath);
+            opencvLoc = "";
+        }
+        System.setProperty("LD_LIBRARY_PATH", libPath + opencvLoc);
+    }
 	
 	@Override
     public void setupDataRetrieval(Map<String, ?> dataSourceConfig, ObjectRecognitionCore source) throws Exception {
