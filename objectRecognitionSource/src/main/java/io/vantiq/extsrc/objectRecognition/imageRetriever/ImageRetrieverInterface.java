@@ -25,7 +25,7 @@ public interface ImageRetrieverInterface {
      *                          expected that this will be used
      * @throws Exception        Thrown if the retriever cannot be setup 
      */
-    void setupDataRetrieval(Map<String,?> dataSourceConfig, ObjectRecognitionCore source) throws Exception;
+    void setupDataRetrieval(Map<String, ?> dataSourceConfig, ObjectRecognitionCore source) throws Exception;
     
     /**
      * Obtain an image's bytes in jpeg format. For each instance of the retriever, only one of {@link #getImage()} and
@@ -47,7 +47,7 @@ public interface ImageRetrieverInterface {
      * @throws FatalImageException          Thrown when the image retrieval fails in such a way that the retriever
      *                                      cannot recover
      */
-    byte[] getImage(Map<String,?> request) throws ImageAcquisitionException;
+    byte[] getImage(Map<String, ?> request) throws ImageAcquisitionException;
     
     /**
      * Safely close any resources obtained by the retriever.

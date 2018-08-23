@@ -44,7 +44,7 @@ public class TestYoloProcessor extends NeuralNetTestBase {
         ypImageSaver = new YoloProcessor();
         ypJson = new YoloProcessor();
         
-        Map<String,Object> config = new LinkedHashMap<>();
+        Map<String, Object> config = new LinkedHashMap<>();
         config.put("pbFile", PB_FILE);
         config.put("labelFile", LABEL_FILE);
         try {
@@ -84,7 +84,7 @@ public class TestYoloProcessor extends NeuralNetTestBase {
     
     @Test
     public void testInvalidData() {
-        byte[] invalidImage = {123,012,45,-3,-102};
+        byte[] invalidImage = {123, 012, 45, -3, -102};
         try {
             ypJson.processImage(invalidImage);
             fail("Should throw Exception when not a jpeg");

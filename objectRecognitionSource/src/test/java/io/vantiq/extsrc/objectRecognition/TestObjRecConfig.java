@@ -36,9 +36,9 @@ public class TestObjRecConfig {
     String targetVantiqServer;
     String modelDirectory;
     
-    Map<String,Object> general;
-    Map<String,Object> dataSource;
-    Map<String,Object> neuralNet;
+    Map<String, Object> general;
+    Map<String, Object> dataSource;
+    Map<String, Object> neuralNet;
     
     @Before
     public void setup() {
@@ -170,11 +170,11 @@ public class TestObjRecConfig {
     
 // ================================================= Helper functions =================================================
     
-    public void sendConfig(Map<String,?> ORConfig) {
+    public void sendConfig(Map<String, ?> ORConfig) {
         ExtensionServiceMessage m = new ExtensionServiceMessage("");
         
-        Map<String,Object> obj = new LinkedHashMap<>();
-        Map<String,Object> config = new LinkedHashMap<>();
+        Map<String, Object> obj = new LinkedHashMap<>();
+        Map<String, Object> config = new LinkedHashMap<>();
         config.put("objRecConfig", ORConfig);
         obj.put("config", config);
         m.object = obj;
@@ -182,9 +182,9 @@ public class TestObjRecConfig {
         handler.handleMessage(m);
     }
     
-    public Map<String,Object> minimalConfig() {
+    public Map<String, Object> minimalConfig() {
         createMinimalSubConfigs();
-        Map<String,Object> ret = new LinkedHashMap<>();
+        Map<String, Object> ret = new LinkedHashMap<>();
         ret.put("dataSource", dataSource);
         ret.put("general", general);
         ret.put("neuralNet", neuralNet);

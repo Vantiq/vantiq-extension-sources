@@ -112,9 +112,9 @@ public class TestObjRecCore extends ObjRecTestBase {
     public void testRetrieveImageQuery() {
         assumeTrue("Can't test retrieveImage without file to retrieve", new File(IMAGE_LOCATION).exists());
         
-        Map<String,Object> request;
+        Map<String, Object> request;
         ExtensionServiceMessage msg = new ExtensionServiceMessage("");
-        Map<String,String> header = new LinkedHashMap<>();
+        Map<String, String> header = new LinkedHashMap<>();
         header.put(ExtensionServiceMessage.ORIGIN_ADDRESS_HEADER, "queryAddress");
         msg.messageHeaders = header;
         byte[] data;
@@ -214,7 +214,7 @@ public class TestObjRecCore extends ObjRecTestBase {
         }
         
         ExtensionServiceMessage msg = new ExtensionServiceMessage("");
-        Map<String,String> header = new LinkedHashMap<>();
+        Map<String, String> header = new LinkedHashMap<>();
         header.put(ExtensionServiceMessage.ORIGIN_ADDRESS_HEADER, "queryAddress");
         msg.messageHeaders = header;
         
@@ -287,7 +287,7 @@ public class TestObjRecCore extends ObjRecTestBase {
 // ================================================= Helper functions =================================================
     
     public boolean setupRetriever(String config) {
-        Map<String,Object> conf = new LinkedHashMap<>();
+        Map<String, Object> conf = new LinkedHashMap<>();
         if (config != null) {
             conf.put(config, null);
         }
@@ -301,7 +301,7 @@ public class TestObjRecCore extends ObjRecTestBase {
     }
     
     public boolean setupNeuralNet(String config) {
-        Map<String,Object> conf = new LinkedHashMap<>();
+        Map<String, Object> conf = new LinkedHashMap<>();
         if (config != null) {
             conf.put(config, null);
         }

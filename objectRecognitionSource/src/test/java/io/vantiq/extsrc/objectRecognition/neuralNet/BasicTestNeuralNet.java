@@ -19,7 +19,7 @@ import io.vantiq.extsrc.objectRecognition.exception.ImageProcessingException;
 
 public class BasicTestNeuralNet implements NeuralNetInterface {
     
-    public Map<String,?>            config;
+    public Map<String, ?>            config;
     public String                   modelDirectory;
     public final static String      THROW_EXCEPTION         = "throwException";
     public final static String      THROW_EXCEPTION_ON_REQ  = "throwReqException";
@@ -47,7 +47,7 @@ public class BasicTestNeuralNet implements NeuralNetInterface {
         } else if (config.containsKey(RETURN_NULL)) {
             return null;
         } else {
-            Map<String,String> m = new LinkedHashMap<>();
+            Map<String, String> m = new LinkedHashMap<>();
             List<Map> l = new ArrayList<>(); l.add(m);
             return l;
         }
@@ -64,7 +64,7 @@ public class BasicTestNeuralNet implements NeuralNetInterface {
         } else if (config.containsKey(RETURN_NULL)) {
             return null;
         } else {
-            Map<String,String> m = new LinkedHashMap<>();
+            Map<String, String> m = new LinkedHashMap<>();
             List<Map> l = new ArrayList<>(); l.add(m);
             return l;
         }

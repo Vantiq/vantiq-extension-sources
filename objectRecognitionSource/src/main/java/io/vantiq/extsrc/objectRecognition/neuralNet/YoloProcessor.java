@@ -111,7 +111,7 @@ public class YoloProcessor implements NeuralNetInterface {
      * Run the image through a YOLO net. May save the resulting image depending on the request.
      */
     @Override
-    public List<Map> processImage(byte[] image, Map<String,?> request) throws ImageProcessingException {
+    public List<Map> processImage(byte[] image, Map<String, ?> request) throws ImageProcessingException {
         List<Map> results;
         String outputDir = null;
         String fileName = null;

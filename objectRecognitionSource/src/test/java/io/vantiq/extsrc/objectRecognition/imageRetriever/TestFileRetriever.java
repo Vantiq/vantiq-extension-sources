@@ -52,7 +52,7 @@ public class TestFileRetriever extends ObjRecTestBase {
     @Test
     public void testImageReadBasic() {
         try {
-            Map<String,String> config = new LinkedHashMap<>();
+            Map<String, String> config = new LinkedHashMap<>();
             config.put("fileLocation", IMAGE_LOCATION);
             fr.setupDataRetrieval(config, source);
         } catch (Exception e) {
@@ -70,7 +70,7 @@ public class TestFileRetriever extends ObjRecTestBase {
     @Test
     public void testImageReadBasicInvalidLocation() {
         try {
-            Map<String,String> config = new LinkedHashMap<>();
+            Map<String, String> config = new LinkedHashMap<>();
             config.put("fileLocation", "invalidLocation");
             fr.setupDataRetrieval(config, source);
         } catch (Exception e) {
@@ -90,7 +90,7 @@ public class TestFileRetriever extends ObjRecTestBase {
         try {
             
             try {
-                Map<String,String> config = new LinkedHashMap<>();
+                Map<String, String> config = new LinkedHashMap<>();
                 config.put("fileLocation", location2);
                 fr.setupDataRetrieval(config, source);
             } catch (Exception e) {
@@ -120,14 +120,14 @@ public class TestFileRetriever extends ObjRecTestBase {
     @Test
     public void testImageReadQuery() {
         try {
-            Map<String,String> config = new LinkedHashMap<>();
+            Map<String, String> config = new LinkedHashMap<>();
             config.put("fileLocation", "invalidLocation");
             fr.setupDataRetrieval(config, source);
         } catch (Exception e) {
             fail("Exception occurred when setting up: " + e.toString());
         }
         try {
-            Map<String,String> message = new LinkedHashMap<>();
+            Map<String, String> message = new LinkedHashMap<>();
             message.put("DSfileLocation", IMAGE_LOCATION);
             byte[] data = fr.getImage(message);
             assert data != null;
@@ -140,14 +140,14 @@ public class TestFileRetriever extends ObjRecTestBase {
     @Test
     public void testImageReadQueryWithInvalidLocation() {
         try {
-            Map<String,String> config = new LinkedHashMap<>();
+            Map<String, String> config = new LinkedHashMap<>();
             config.put("fileLocation", IMAGE_LOCATION);
             fr.setupDataRetrieval(config, source);
         } catch (Exception e) {
             fail("Exception occurred when setting up: " + e.toString());
         }
         try {
-            Map<String,String> message = new LinkedHashMap<>();
+            Map<String, String> message = new LinkedHashMap<>();
             message.put("DSfileLocation", "invalidLocation");
             fr.getImage(message);
             fail("Expected exception when calling with invalid default");
@@ -159,14 +159,14 @@ public class TestFileRetriever extends ObjRecTestBase {
     @Test
     public void testImageReadEmptyQuery() {
         try {
-            Map<String,String> config = new LinkedHashMap<>();
+            Map<String, String> config = new LinkedHashMap<>();
             config.put("fileLocation", IMAGE_LOCATION);
             fr.setupDataRetrieval(config, source);
         } catch (Exception e) {
             fail("Exception occurred when setting up: " + e.toString());
         }
         try {
-            Map<String,String> message = new LinkedHashMap<>();
+            Map<String, String> message = new LinkedHashMap<>();
             byte[] data = fr.getImage(message);
             assert data != null;
             assert data.length > 0;
@@ -178,7 +178,7 @@ public class TestFileRetriever extends ObjRecTestBase {
     @Test
     public void testVideoBasicRead() {
         try {
-            Map<String,String> config = new LinkedHashMap<>();
+            Map<String, String> config = new LinkedHashMap<>();
             config.put("fileLocation", VIDEO_LOCATION);
             config.put("fileExtension", "mov");
             fr.setupDataRetrieval(config, source);
@@ -197,7 +197,7 @@ public class TestFileRetriever extends ObjRecTestBase {
     @Test
     public void testVideoInvalidLocation() {
         try {
-            Map<String,String> config = new LinkedHashMap<>();
+            Map<String, String> config = new LinkedHashMap<>();
             config.put("fileLocation", "invalidLocation");
             config.put("fileExtension", "mov");
             fr.setupDataRetrieval(config, source);
@@ -209,9 +209,9 @@ public class TestFileRetriever extends ObjRecTestBase {
     
     @Test
     public void testVideoQuery() {
-        Map<String,Object> request = new LinkedHashMap<>();
+        Map<String, Object> request = new LinkedHashMap<>();
         try {
-            Map<String,String> config = new LinkedHashMap<>();
+            Map<String, String> config = new LinkedHashMap<>();
             config.put("fileLocation", VIDEO_LOCATION);
             config.put("fileExtension", "mov");
             fr.setupDataRetrieval(config, source);

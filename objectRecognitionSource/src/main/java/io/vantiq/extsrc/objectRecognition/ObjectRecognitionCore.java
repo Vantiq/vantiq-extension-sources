@@ -231,7 +231,7 @@ public class ObjectRecognitionCore {
      * @return          The image retrieved in jpeg format, or null if a problem occurred.
      */
     public synchronized byte[] retrieveImage(ExtensionServiceMessage message) {
-        Map<String,?> request = (Map<String,?>) message.getObject();
+        Map<String, ?> request = (Map<String, ?>) message.getObject();
         String replyAddress = ExtensionServiceMessage.extractReplyAddress(message);
         if (imageRetriever == null) { // Should only happen if close() was called immediately before retreiveImage()
             if (client != null) {
@@ -310,7 +310,7 @@ public class ObjectRecognitionCore {
     * @param message    The Query message
     */
    public void sendDataFromImage(byte[] image, ExtensionServiceMessage message) {
-       Map<String,?> request = (Map<String,?>) message.getObject();
+       Map<String, ?> request = (Map<String, ?>) message.getObject();
        String replyAddress = ExtensionServiceMessage.extractReplyAddress(message);
        if (image == null || image.length == 0) {
            if (client != null) {

@@ -213,7 +213,7 @@ public class ObjectRecognitionConfigHandler extends Handler<ExtensionServiceMess
         }
         
         log.info("Neural net created");
-        log.debug("Neural net class is {}",neuralNet);
+        log.debug("Neural net class is {}", neuralNet);
         return true;
     }
     
@@ -257,7 +257,7 @@ public class ObjectRecognitionConfigHandler extends Handler<ExtensionServiceMess
         }
         
         log.info("Image retriever created");
-        log.debug("Image retriever class is {}",retrieverType);
+        log.debug("Image retriever class is {}", retrieverType);
         return true;
     }
     
