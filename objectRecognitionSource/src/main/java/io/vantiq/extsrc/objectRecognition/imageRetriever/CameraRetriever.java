@@ -9,6 +9,10 @@
 
 package io.vantiq.extsrc.objectRecognition.imageRetriever;
 
+import java.io.InputStream;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.text.SimpleDateFormat;
 import java.util.Map;
 
 import org.opencv.core.Core;
@@ -16,8 +20,6 @@ import org.opencv.core.Mat;
 import org.opencv.core.MatOfByte;
 import org.opencv.imgcodecs.Imgcodecs;
 import org.opencv.videoio.VideoCapture;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import io.vantiq.extsrc.objectRecognition.ObjectRecognitionCore;
 import io.vantiq.extsrc.objectRecognition.exception.FatalImageException;
@@ -33,6 +35,7 @@ import io.vantiq.extsrc.objectRecognition.exception.ImageAcquisitionException;
 public class CameraRetriever implements ImageRetrieverInterface {
 	VideoCapture   capture;
 	Object         cameraId;
+	boolean        isURL = false;
 	
 	@Override
     public void setupDataRetrieval(Map<String, ?> dataSourceConfig, ObjectRecognitionCore source) throws Exception {
@@ -49,6 +52,7 @@ public class CameraRetriever implements ImageRetrieverInterface {
 
             capture = new VideoCapture(camera);
         } else if (dataSourceConfig.get("camera") instanceof String){
+            isURL = true;
             String camera = (String) dataSourceConfig.get("camera");
             cameraId = camera;
             
@@ -58,8 +62,23 @@ public class CameraRetriever implements ImageRetrieverInterface {
                     "No camera specified in dataSourceConfig");
         }
         if (!capture.isOpened()) {
-            throw new Exception(this.getClass().getCanonicalName() + ".cameraUnreadable: " 
-                    + "Could not open requested camera '" + cameraId + "'");
+            if (isURL) {
+                try {
+                    URL urlProtocolTest = new URL((String) cameraId);
+                    InputStream urlReadTest = urlProtocolTest.openStream();
+                } catch (MalformedURLException e) {
+                    throw new IllegalArgumentException(this.getClass().getCanonicalName() + 
+                            " URL specifies unknown protocol");
+                } catch (java.io.IOException e) {
+                    throw new ImageAcquisitionException(this.getClass().getCanonicalName() +
+                            " Bad URL read");
+                }
+                throw new IllegalArgumentException(this.getClass().getCanonicalName() + 
+                        " URL does not represent a video stream");
+            } else {
+                throw new Exception(this.getClass().getCanonicalName() + ".cameraUnreadable: " 
+                        + "Could not open requested camera '" + cameraId + "'");
+            }
         }
     }
 	
@@ -72,6 +91,9 @@ public class CameraRetriever implements ImageRetrieverInterface {
 		Mat matrix = new Mat();
 
 		capture.read(matrix);
+		
+//		String fileName = "/Users/namirfawaz/Desktop/" + new SimpleDateFormat("yyyy.MM.dd.HH.mm.ss").format(new java.util.Date()) + ".jpg";
+//		Imgcodecs.imwrite(fileName, matrix);
 		
 		if (matrix.empty()) {
 		    matrix.release();
