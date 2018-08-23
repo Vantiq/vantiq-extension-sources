@@ -122,6 +122,8 @@ public class ObjectRecognitionMain {
         targetVantiqServer = config.getProperty("targetServer");
         if (targetVantiqServer == null || targetVantiqServer.equals("")) {
             log.error("No server URL specified in server settings");
+            log.error("Exiting...");
+            exit(0);
         }
         
         modelDirectory = config.getProperty("modelDirectory", DEFAULT_MODEL_DIRECTORY);

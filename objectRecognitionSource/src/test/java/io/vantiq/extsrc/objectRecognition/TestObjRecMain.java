@@ -62,11 +62,12 @@ public class TestObjRecMain {
             // Expected this Exception
         }
         
-        // Succeed when authToken and sources are set
+        // Succeed when authToken, targetVantiqServer, and sources are set
         props.setProperty("sources", "s");
+        props.setProperty("targetServer", "url");
         ObjectRecognitionMain.createSources(props);
         assert ObjectRecognitionMain.modelDirectory.equals(ObjectRecognitionMain.DEFAULT_MODEL_DIRECTORY);
-        assert ObjectRecognitionMain.targetVantiqServer.equals(ObjectRecognitionMain.DEFAULT_VANTIQ_SERVER);
+        assert ObjectRecognitionMain.targetVantiqServer.equals("url");
         ObjectRecognitionCore s = ObjectRecognitionMain.sources.get(0);
         assert s.getSourceName().equals("s");
         s.stop();
