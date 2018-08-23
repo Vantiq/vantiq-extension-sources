@@ -23,7 +23,7 @@ startScripts{
         unixScriptFile.text = unixScriptFile.text.replace('CLASSPATH=', 'CLASSPATH=$APP_HOME/logConfig:')
         
         // Add the native libraries to
-        windowsScriptFile.text = windowsScriptFile.text.replace("DEFAULT_JVM_OPTS=", 'DEFAULT_JVM_OPTS=-Djava.library.path=%OPENCV_LOC%\')
+        windowsScriptFile.text = windowsScriptFile.text.replace('DEFAULT_JVM_OPTS=', 'DEFAULT_JVM_OPTS=-Djava.library.path=%OPENCV_LOC%')
         unixScriptFile.text = unixScriptFile.text.replace('DEFAULT_JVM_OPTS=', 'DEFAULT_JVM_OPTS=-Djava.library.path=$OPENCV_LOC')
     }
 }
