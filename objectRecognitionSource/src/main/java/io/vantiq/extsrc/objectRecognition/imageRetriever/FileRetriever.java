@@ -65,19 +65,6 @@ public class FileRetriever implements ImageRetrieverInterface {
     VideoCapture capture;
     Boolean isMov = false;
     int frameInterval;
-    
-    static {
-        String libPath = System.getProperty("LD_LIBRARY_PATH", "");
-        String opencvLoc = System.getenv("OPENCV_LOC");
-        if (opencvLoc == null) {
-            Logger log = LoggerFactory.getLogger(FileRetriever.class);
-            log.error("Could not find environment variable 'OPENCV_LOC'. Unless the location of opencv_java342.dll/.so "
-                    + "is already added to java.library.path, FileRetriever will be unable to work.");
-            log.debug("java.library.path is currently '{}'", libPath);
-            opencvLoc = "";
-        }
-        System.setProperty("LD_LIBRARY_PATH", libPath + opencvLoc);
-    }
 
     @Override
     public void setupDataRetrieval(Map<String, ?> dataSourceConfig, ObjectRecognitionCore source) throws Exception {
