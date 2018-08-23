@@ -31,7 +31,8 @@ import io.vantiq.extsrc.objectRecognition.exception.ImageAcquisitionException;
  * </ul>
  */
 public class CameraRetriever implements ImageRetrieverInterface {
-	VideoCapture capture;
+	VideoCapture   capture;
+	Object         cameraId;
 	
 	static {
         String libPath = System.getProperty("LD_LIBRARY_PATH", "");
@@ -57,23 +58,21 @@ public class CameraRetriever implements ImageRetrieverInterface {
         }
         if (dataSourceConfig.get("camera") instanceof Integer) {
             int camera = (Integer) dataSourceConfig.get("camera");
+            cameraId = camera;
 
             capture = new VideoCapture(camera);
-            if (!capture.isOpened()) {
-                throw new Exception("Could not open requested camera #");
-            }
         } else if (dataSourceConfig.get("camera") instanceof String){
             String camera = (String) dataSourceConfig.get("camera");
+            cameraId = camera;
+            
             capture = new VideoCapture(camera);
-            if (!capture.isOpened()) {
-                throw new Exception("Could not open requested camera");
-            }
         } else {
-            throw new IllegalArgumentException(this.getClass().getCanonicalName() + ".opencvDependency"  + 
+            throw new IllegalArgumentException(this.getClass().getCanonicalName() + ".configMissingOptions: "  + 
                     "No camera specified in dataSourceConfig");
         }
         if (!capture.isOpened()) {
-            throw new Exception("Could not open requested camera");
+            throw new Exception(this.getClass().getCanonicalName() + ".cameraUnreadable: " 
+                    + "Could not open requested camera '" + cameraId + "'");
         }
     }
 	
@@ -90,9 +89,12 @@ public class CameraRetriever implements ImageRetrieverInterface {
 		if (matrix.empty()) {
 		    matrix.release();
 		    if (!capture.isOpened() ) {
-		        throw new FatalImageException("Camera has closed");
+		        capture.release();
+		        throw new FatalImageException(this.getClass().getCanonicalName() + ".mainCameraClosed: " 
+	                    + "Camera '" + cameraId + "' has closed");
 		    } else {
-		        throw new ImageAcquisitionException("Could not obtain frame from camera");
+		        throw new ImageAcquisitionException(this.getClass().getCanonicalName() + ".mainCameraReadError: " 
+	                    + "Could not obtain frame from camera + '" + cameraId + "'");
 		    }
 		}
 	  
@@ -110,36 +112,47 @@ public class CameraRetriever implements ImageRetrieverInterface {
 	 */
 	@Override
     public byte[] getImage(Map<String, ?> request) throws ImageAcquisitionException {
+	    VideoCapture cap;
+	    Object camId;
 	    if (request.get("DScamera") instanceof Integer) {
 	        int cam = (Integer) request.get("DScamera");
-	        VideoCapture cap = new VideoCapture(cam);
-	        if (!cap.isOpened()) {
-	            cap.release();
-	            throw new ImageAcquisitionException("Could not open requested camera");
-	        }
-	        Mat mat = new Mat();
-	        
-	        cap.read(mat);
-	        if (mat.empty()) {
-	            cap.release();
-	            mat.release();
-	            throw new ImageAcquisitionException("Could not obtain frame from camera");
-	        }
-	        MatOfByte matOfByte = new MatOfByte();
-	        Imgcodecs.imencode(".jpg", mat, matOfByte);
-	        byte [] imageByte = matOfByte.toArray();
-	        matOfByte.release();
-	        mat.release();
-	        cap.release();
-	                
-	        return imageByte;
+	        camId = cam;
+	        cap = new VideoCapture(cam);
+	    } else if (request.get("DScamera") instanceof Integer) {
+	        String cam = (String) request.get("DScamera");
+	        camId = cam;
+            cap = new VideoCapture(cam);
 	    } else {
-	        try {
-	            return getImage();
-	        } catch (FatalImageException e) {
-	            throw new ImageAcquisitionException("Default camera failed fatally. Non-defaults still available.");
-	        }
-	    }
+            try {
+                return getImage();
+            } catch (FatalImageException e) {
+                throw new ImageAcquisitionException(this.getClass().getCanonicalName() + ".defaultCameraReadError: " 
+                        + "Default camera failed fatally. Non-defaults still available.");
+            }
+        }
+        if (!cap.isOpened()) {
+            cap.release();
+            throw new ImageAcquisitionException(this.getClass().getCanonicalName() + ".queryCameraUnreadable: " 
+                    + "Could not open camera '" + camId + "'");
+        }
+        Mat mat = new Mat();
+        
+        cap.read(mat);
+        if (mat.empty()) {
+            cap.release();
+            mat.release();
+            throw new ImageAcquisitionException(this.getClass().getCanonicalName() + ".queryCameraReadError: " 
+                    + "Could not obtain frame from camera '" + camId + "'");
+        }
+        MatOfByte matOfByte = new MatOfByte();
+        Imgcodecs.imencode(".jpg", mat, matOfByte);
+        byte [] imageByte = matOfByte.toArray();
+        matOfByte.release();
+        mat.release();
+        cap.release();
+                
+        return imageByte;
+	     
     }
 	
 	public void close() {
