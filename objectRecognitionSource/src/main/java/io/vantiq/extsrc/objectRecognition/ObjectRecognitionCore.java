@@ -140,8 +140,8 @@ public class ObjectRecognitionCore {
             // Prepare a response with an empty body, so that the query doesn't wait for a timeout
             Object[] body = {msg.getSourceName()};
             client.sendQueryError(ExtensionServiceMessage.extractReplyAddress(msg),
-                    "io.vantiq.extsrc.objectRecognition.UnexpectedQuery",
-                    "No handler has been set for source {0}",
+                    "io.vantiq.extsrc.objectRecognition.noQueryConfigured",
+                    "Source '{0}' is not configured for Queries. Queries require objRecConfig.general.pollRate < 0",
                     body);
         }
     };
@@ -420,11 +420,9 @@ public class ObjectRecognitionCore {
             log.error("Failed to connect to all sources. Exiting...");
             if (!client.isOpen()) {
                 log.error("Failed to connect to server url '" + targetVantiqServer + "'.");
-            }
-            else if (!client.isAuthed()) {
+            } else if (!client.isAuthed()) {
                 log.error("Failed to auth within " + timeout + " seconds using the given auth data.");
-            }
-            else {
+            } else {
                 log.error("Failed to connect within 10 seconds");
             }
             stop();
