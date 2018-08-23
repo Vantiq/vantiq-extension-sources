@@ -69,14 +69,14 @@ public class CameraRetriever implements ImageRetrieverInterface {
                     URL urlProtocolTest = new URL((String) cameraId);
                     InputStream urlReadTest = urlProtocolTest.openStream();
                 } catch (MalformedURLException e) {
-                    throw new IllegalArgumentException(this.getClass().getCanonicalName() + 
-                            " URL specifies unknown protocol");
+                    throw new IllegalArgumentException(this.getClass().getCanonicalName() + ".unknownProtocol: "
+                            + "URL specifies unknown protocol");
                 } catch (java.io.IOException e) {
-                    throw new ImageAcquisitionException(this.getClass().getCanonicalName() +
-                            " Bad URL read");
+                    throw new ImageAcquisitionException(this.getClass().getCanonicalName() + ".badRead: "
+                            + "URL was unable to be read");
                 }
-                throw new IllegalArgumentException(this.getClass().getCanonicalName() + 
-                        " URL does not represent a video stream");
+                throw new IllegalArgumentException(this.getClass().getCanonicalName() + ".notVideoStream: " 
+                        + "URL does not represent a video stream");
             } else {
                 throw new Exception(this.getClass().getCanonicalName() + ".cameraUnreadable: " 
                         + "Could not open requested camera '" + cameraId + "'");
