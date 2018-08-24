@@ -163,7 +163,8 @@ public class TestObjRecConfig {
         assertFalse("Should not fail with minimal configuration", configIsFailed());
         assertTrue("Timer should exist after pollRate set to positive number", nCore.pollTimer != null); 
         
-        general.put("pollRate", -100);
+        general.remove("pollRate");
+        general.put("allowQueries", true);
         sendConfig(conf);
         assertFalse("Should not fail with minimal configuration", configIsFailed());
     }
