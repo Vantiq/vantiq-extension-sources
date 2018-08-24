@@ -150,6 +150,14 @@ public class ConfigurableUDPSource {
             
             ExtensionWebSocketClient client = clients.get(message.getSourceName());
             client.connectToSource();
+            try {
+                if (client.getSourceConnectionFuture().get(10, TimeUnit.SECONDS) == false) {
+                    client.stop();
+                }
+            } catch (InterruptedException | ExecutionException | TimeoutException e) {
+                client.stop();
+                e.printStackTrace();
+            }
         }
         
     };
@@ -161,10 +169,10 @@ public class ConfigurableUDPSource {
             
             client.initiateFullConnection(targetVantiqServer, authToken);
             try {
-                if (client.getSourceConnectionFuture().get() == false) {
+                if (client.getSourceConnectionFuture().get(10, TimeUnit.SECONDS) == false) {
                     client.stop();
                 }
-            } catch (InterruptedException | ExecutionException e) {
+            } catch (InterruptedException | ExecutionException | TimeoutException e) {
                 client.stop();
                 e.printStackTrace();
             }
