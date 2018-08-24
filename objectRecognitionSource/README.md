@@ -20,7 +20,8 @@
 Java. The [official site](https://docs.opencv.org/3.4.2/d9/d52/tutorial_java_dev_intro.html) and[this more
 in-depth tutorial](https://opencv-java-tutorials.readthedocs.io/en/latest/01-installing-opencv-for-java.html)
 describe how to install it. Once it's installed, copy the jar and (lib)opencv_java342.dll/.so/.dylib to a single
-folder, then set the environment variable OPENCV_LOC to that folder.
+folder, then set the environment variable OPENCV_LOC to that folder. Some features may depend on additional
+.dll/.so/.dylib files, such as FFmpeg for IP cameras.
     *   The implementations dependent on OpenCV are FileRetriever and CameraRetriever.
 2.  Clone this repository (vantiq-extension-sources) and navigate into `<repo location>/vantiq-extension-sources`.
 3.  Run `./gradlew objectRecognitionSource:assemble`.
@@ -71,7 +72,7 @@ sources inside your own code, then it is what you will use.
         but this can be safely ignored since you will be setting the path yourself. Instructions for installing
         OpenCV can be found at the [official site](https://docs.opencv.org/3.4.2/d9/d52/tutorial_java_dev_intro.html)
         or [this more in-depth tutorial]
-        (https://opencv-java-tutorials.readthedocs.io/en/latest/01-installing-opencv-for-java.html)
+        (https://opencv-java-tutorials.readthedocs.io/en/latest/01-installing-opencv-for-java.html).
 2.  Run `./gradlew objectRecognitionSource:assemble` or `.\gradlew objectRecognitionSource:assemble` depending on the
     OS.
 3.  Navigate to `<repo location>/vantiq-extension-sources/objectRecognitionSource/build/libs` and copy
@@ -139,7 +140,8 @@ are:
 
 ### Options Available for Neural Net
 
-Most of the options required for neuralNet are dependent on the specific implementation of [NeuralNetInterface](#netInterface). The ones that are the same across all implementations are:
+Most of the options required for neuralNet are dependent on the specific implementation of
+[NeuralNetInterface](#netInterface). The ones that are the same across all implementations are:
 *   type: Optional. Can be one of three situations
     1.  The fully qualified class name of an implementation of NeuralNetInterface, e.g.
         "io.vantiq.extsrc.objectRecognition.neuralNet.YoloProcessor".
@@ -156,7 +158,8 @@ implementation dependent, and the available options for the standard implementat
 sections. Since it is possible for both the data source and the neural net to use options with the same name, the
 standard implementations prepend the options with DS and NN for all queries, i.e. if you want to Query using the
 `fileLocation` option for a data source you would set the `DSfileLocation` property in the WITH clause. This may or may
-not apply for non-standard implementations, though developers are advised to follow this rule for consistency's sake.
+not apply for non-standard implementations, though developers are advised to follow this rule for consistency's sake.  
+The SELECT statement that created the Query will receive results in the same format that a source normally receives.
 
 ## Image Retriever Interface<a name="retrieveInterface" id="retrieveInterface"></a>
 
