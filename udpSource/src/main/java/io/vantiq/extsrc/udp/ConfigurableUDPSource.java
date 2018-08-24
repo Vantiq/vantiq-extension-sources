@@ -107,24 +107,6 @@ public class ConfigurableUDPSource {
     };
 
     /**
-     *  Shuts down the server when a query is received. This is largely a debug decision, as a) queries are not expected
-     *  for UDP sources, and b) problems occur when the WebSocket connection is violently shut down
-     */
-    static Handler<ExtensionServiceMessage> UDPDefaultQuery = new Handler<ExtensionServiceMessage>() {
-        @Override
-        public void handleMessage(ExtensionServiceMessage msg) {
-            String srcName = msg.getSourceName();
-            // Prepare a response with an empty body, so that the query doesn't wait for a timeout
-            clients.get(srcName).sendQueryResponse(204,
-                    ExtensionServiceMessage.extractReplyAddress(msg),
-                    new LinkedHashMap<>());
-
-            // Allow the system to stop
-            stopLatch.countDown();
-        }
-    };
-
-    /**
      * Creates publish and notification handlers for any messages relating to a source based on the configuration
      * document
      */
@@ -405,11 +387,6 @@ public class ConfigurableUDPSource {
     }
 
     /**
-     * A {@link CountDownLatch} used to keep the program from ending until we want it to. Currently, allows the program
-     * to gracefully end when a query is received on any connected source.
-     */
-    static CountDownLatch stopLatch = new CountDownLatch(1);
-    /**
      * A set of {@link UDPNotificationHandler} keyed to the name of the source it is connected to
      */
     static Map<String, UDPNotificationHandler> notificationHandlers = new ConcurrentHashMap<>();
@@ -591,7 +568,6 @@ public class ConfigurableUDPSource {
 
             // Set the handlers for the client
             client.setPublishHandler(UDPDefaultPublish);
-            client.setQueryHandler(UDPDefaultQuery);
             client.setConfigHandler(UDPConfig);
             client.setReconnectHandler(UDPReconnectHandler);
             client.setCloseHandler(UDPCloseHandler);
@@ -635,34 +611,8 @@ public class ConfigurableUDPSource {
             return;
         }
 
-        /*
-         * 4) Stall until told to shutdown
-         *
-         * Waits until {@link #stopLatch} counts down, which occurs when a query is sent to any source controlled by the program.
-         * See {@link UDPDefaultQuery} for the code that orders the latch released
-         */
-        try {
-            stopLatch.await();
-        }
-        catch (InterruptedException e) {
-            log.error("Stop latch interrupted while waiting for exit signal ", e);
-        }
-
-        /*
-         * 5) Exits upon receiving a signal
-         *
-         * The signal is received from a publish message using {@link ConfigurableUDPSource#UDPDefaultPublish} {@link Handler}. Once it exits,
-         * it simply closes the {@link DatagramSocket} and {@link ExtensionWebSocketClient}
-         */
-        for (String sourceName : sources) {
-            if (clients.get(sourceName).isOpen()) {
-                clients.get(sourceName).stop();
-            }
-        }
-        for (Map.Entry<DatagramSocket,List<String>> entry : udpSocketToSources.entrySet()) {
-            entry.getKey().close();
-        }
-        log.info("WebSocket closed");
+        // The ExtensionWebSocketClients have separate threads, thanks to the WebSocket being its own thread
+        // Because of this, exiting main means that the program will only end once all Clients close connections
     }
 
     /**
