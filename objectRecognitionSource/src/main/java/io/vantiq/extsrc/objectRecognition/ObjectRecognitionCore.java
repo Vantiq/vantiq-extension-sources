@@ -204,8 +204,8 @@ public class ObjectRecognitionCore {
     }
     
     /**
-     * Retrieves an image using the Core's image retriever using the options specified in the object of {@code message}.
-     * Calls  {@code stop()} if a FatalImageException is received.
+     * Retrieves an image using the Core's image retriever using the options specified in the object of the Query
+     * message. Calls {@code stop()} if a FatalImageException is received.
      * @param message   The Query message.
      * @return          The image retrieved in jpeg format, or null if a problem occurred.
      */
@@ -283,8 +283,8 @@ public class ObjectRecognitionCore {
     }
     
    /**
-    * Processes the image then sends the results to the Vantiq source using the options specified in {@code message}.
-    * Calls {@code stop()} if a FatalImageException is received.
+    * Processes the image using the options specified in the Query message then sends a Query response containing the
+    * results. Calls {@code stop()} if a FatalImageException is received.
     * @param image      An OpenCV Mat representing the image to be translated
     * @param message    The Query message
     */
