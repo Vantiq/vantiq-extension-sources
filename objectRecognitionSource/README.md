@@ -318,10 +318,12 @@ TensorFlow, okhttp3, Apache commons, log4j, and jackson-databind are licensed un
 slf4j and the [openpnp](https://github.com/openpnp/opencv) distribution of OpenCV used by this library are licensed
 under the [MIT License](https://opensource.org/licenses/MIT).  
 
-OpenCV is licensed under the [BSD 3-clause license](https://opencv.org/license.html).  
-
 The TensorFlow implementation of YOLO found in the edu.ml.* packages uses the
 [WTFPL](https://github.com/szaza/tensorflow-example-java/blob/master/LICENSE) public license. A few changes were made
 to [the original library](https://github.com/szaza/tensorflow-example-java), mostly removing unneeded files and
-functions, and changing the program to perform better when sending images consecutively. All changes are documented,
-and most if not all are in ObjectDetector and IOUtil.
+functions, and changing the program to perform better when sending images consecutively. Changed and added functions
+are documented, and most if not all are in ObjectDetector and IOUtil.  
+
+OpenCV is licensed under the [BSD 3-clause license](https://opencv.org/license.html). OpenCV typically uses third party
+components that may have stricter licenses than BSD3 and other licenses in this project. It is the responsibility of the
+user of this library to ensure that they meet all licensing requirements of components in or used by their OpenCV build.
