@@ -267,8 +267,10 @@ public class ObjectRecognitionConfigHandler extends Handler<ExtensionServiceMess
      * @return          true if the communication method could be setup, false otherwise
      */
     private boolean prepareCommunication(Map<String, ?> general) {
+        int polling = -1; // initializing to an invalid input
+        boolean queryable = false;
         if (general.get("pollRate") instanceof Integer) {
-            int polling = (Integer) general.get("pollRate");
+            polling = (Integer) general.get("pollRate");
             if (polling > 0) {
                 int pollRate = polling;
                 TimerTask task = new TimerTask() {
@@ -286,11 +288,15 @@ public class ObjectRecognitionConfigHandler extends Handler<ExtensionServiceMess
                 
                 source.constantPolling = true;
                 new Thread(() -> source.startContinuousRetrievals()).start();
-            } else {
-                source.client.setQueryHandler(queryHandler);
             }
-        } else {
-            log.error("No valid polling rate");
+        } 
+        if (general.get("queryable") instanceof Boolean && (Boolean) general.get("queryable")) {
+            queryable = true;
+            source.client.setQueryHandler(queryHandler);
+        }
+        
+        if (polling < 0 && !queryable) {
+            log.error("Not configured for data to be sent");
             log.error("Exiting...");
             failConfig();
             return false;
