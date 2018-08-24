@@ -632,7 +632,7 @@ public class ExtensionWebSocketClient {
     /**
      * Set the {@link Handler} for any queries that are received.
      * <br>
-     * Upon initialization a default Handler is created that will send back an error message saying
+     * If no Handler is set then Vantiq will receive an errore for any Queries, which will say
      * "Unset Handler: No handler has been set for source &lt;sourceName&gt;".
      * <br>
      * The handler will receive an {@link Map} that represents the Query message. The most
