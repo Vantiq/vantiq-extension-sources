@@ -503,7 +503,7 @@ public class ConfigurableUDPSource {
         if (config.get("targetServer") instanceof String) {
             targetVantiqServer = (String) config.get("targetServer") ;
         } else {
-            throw new RuntimeException("Missing authentication token in config file. Please place in 'authToken'.");
+            throw new RuntimeException("Missing VANTIQ server in config file. Please place in 'targetServer'.");
         }
         
         if (config.get("authToken") instanceof String) {
