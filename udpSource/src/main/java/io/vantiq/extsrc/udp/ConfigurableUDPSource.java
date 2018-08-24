@@ -40,7 +40,6 @@ import org.slf4j.LoggerFactory;
  * <dt><span class="strong">Vantiq Options</span></dt>
  * <dd><ul>
  * <li>{@code targetServer} -- The Vantiq site that hosts the projects to which the sources will connect. 
- *              Defaults to "dev.vantiq.com" when not set.
  * <li>{@code authToken} -- The authentication token that will allow this server to connect to Vantiq. Be aware that 
  *              this is namespace specific, so if you intend to connect to sources across several namespaces then 
  *              multiple config files will be required, each with its own instance of ConfigurableUDPSource. 
@@ -497,11 +496,16 @@ public class ConfigurableUDPSource {
      * @param config    The {@link Map} obtained from the config file
      */
     static void setupServer(Map config) {
-        targetVantiqServer = config.get("targetServer") instanceof String ? (String) config.get("targetServer") :
-                "wss://dev.vantiq.com/api/v1/wsock/websocket";
         MAX_UDP_DATA = config.get("maxPacketSize") instanceof Integer ? (int) config.get("maxPacketSize") : 1024;
         LISTENING_PORT = config.get("defaultBindPort") instanceof Integer ? (int) config.get("defaultBindPort") :
                 3141;
+        
+        if (config.get("targetServer") instanceof String) {
+            targetVantiqServer = (String) config.get("targetServer") ;
+        } else {
+            throw new RuntimeException("Missing VANTIQ server in config file. Please place in 'targetServer'.");
+        }
+        
         if (config.get("authToken") instanceof String) {
             authToken = (String) config.get("authToken") ;
         } else {
@@ -513,7 +517,7 @@ public class ConfigurableUDPSource {
                 String address = (String) config.get("defaultBindAddress");
                 LISTENING_ADDRESS = InetAddress.getByName(address);
             } catch (UnknownHostException e) {
-                log.error("Given default bind address could not be found. Using 'localhost' instead");
+                log.error("Given default bind address could not be found. Trying to find local address");
             }
         }
         // There was no valid defaultBindAddress use the default of localhost
