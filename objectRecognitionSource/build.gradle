@@ -63,6 +63,50 @@ tasks.withType(Test) {
     systemProperty "java.library.path", "${System.env.OPENCV_LOC}"
 }
 
+def opencvDependentSourceFiles = new ArrayList<String>(
+    [
+        "**/CameraRetriever.java",
+        "**/FileRetriever.java"
+    ]
+)
+def opencvDependentTestFiles = new ArrayList<String>(
+    [
+        "**/TestCameraRetriever.java",
+        "**/TestFileRetriever.java"
+    ]
+)
+
+assemble.doLast {
+    def os = org.gradle.internal.os.OperatingSystem.current()
+    
+    def opencvDependentFiles = sourceSets.main.java.matching(
+            { delegate.setIncludes(opencvDependentSourceFiles) }
+    )
+
+    // Only need to warn if there are files dependent on 
+    if (!opencvDependentFiles.getFiles().isEmpty()) {
+        if (os.isWindows()) {
+            if (!file("${System.env.OPENCV_LOC}\\opencv_java342.dll").exists()) {
+                logger.warn("Cannot find '${System.env.OPENCV_LOC}\\opencv_java342.dll' This must exist for FileReader " 
+                 + "and CameraReader to function correctly")
+            }
+        } else if (os.isLinux()) {
+            if (!file("${System.env.OPENCV_LOC}/libopencv_java342.so").exists()) {
+                logger.warn("Cannot find '${System.env.OPENCV_LOC}/libopencv_java342.so' This must exist for FileReader " 
+                    + "and CameraReader to function correctly")
+            }
+        } else if (os.isMacOsX()) {
+            if (!file("${System.env.OPENCV_LOC}/libopencv_java342.dylib").exists()) {
+                logger.warn("Cannot find '${System.env.OPENCV_LOC}/libopencv_java342.dylib'. This must exist for FileReader " 
+                    + "and CameraReader to function correctly")
+            }
+        } else {
+            logger.warn("Compiling unknown file system. Please ensure that the compiled OpenCV C++ library is inside " 
+                + "'${System.env.OPENCV_LOC}' so that ")
+        }
+    }
+}
+
 processTestResources.dependsOn addTestFiles
 
 dependencies {
@@ -71,11 +115,6 @@ dependencies {
     compile "org.slf4j:slf4j-api:1.7.25"
     compile "org.apache.logging.log4j:log4j-slf4j-impl:2.11.0"
     
-    // Used by CameraRetriever and FileRetriever. Can be removed if both CameraRetriever and FileRetriever are removed
-    // Expects that the environment variable OPENCV_LOC is set to the location containing the opencv jar,
-    // and either the same locations contains the required .dll/.so or the .dll/.so is already on the 
-    compile files("${System.env.OPENCV_LOC}/opencv-342.jar")
-    //runtime files("${System.env.OPENCV_LOC}/opencv_java342.dll")
 
     compile "com.fasterxml.jackson.core:jackson-databind:2.9.3"
     
@@ -83,6 +122,21 @@ dependencies {
     // is removed
     compile "org.tensorflow:tensorflow:1.9.0"
     compile "org.apache.commons:commons-math3:3.6.1"
+    
+    def opencvDependentFiles = sourceSets.main.java.matching(
+            { delegate.setIncludes(opencvDependentSourceFiles) }
+    )
+    if (!opencvDependentFiles.getFiles().isEmpty()) {
+        if (System.env.OPENCV_LOC == null) {
+            def depFileNames = ""
+            opencvDependentFiles.getFiles().forEach {file -> depFileNames += file.getName() + ", "}
+            throw new Exception("Environment variable 'OPENCV_LOC' is not set. Either set it to a location containing " + 
+            "opencv-342.jar and the compiled OpenCV library, or remove ${depFileNames}")
+        }
+        compile files("${System.env.OPENCV_LOC}/opencv-342.jar")
+    } else { // Make sure tests aren't compiled for files that are dependent on OpenCV if it's not being included
+        sourceSets.test.java.filter.setExcludes(opencvDependentTestFiles)
+    }
 
     // Use JUnit test framework
     testCompile 'junit:junit:4.12'
