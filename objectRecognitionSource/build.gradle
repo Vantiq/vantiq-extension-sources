@@ -22,9 +22,11 @@ startScripts{
         windowsScriptFile.text = windowsScriptFile.text.replace("CLASSPATH=", "CLASSPATH=%APP_HOME%\\logConfig;")
         unixScriptFile.text = unixScriptFile.text.replace('CLASSPATH=', 'CLASSPATH=$APP_HOME/logConfig:')
         
-        // Add the native libraries to
-        windowsScriptFile.text = windowsScriptFile.text.replace('DEFAULT_JVM_OPTS=', 'DEFAULT_JVM_OPTS=-Djava.library.path=%OPENCV_LOC%')
-        unixScriptFile.text = unixScriptFile.text.replace('DEFAULT_JVM_OPTS=', 'DEFAULT_JVM_OPTS=-Djava.library.path=$OPENCV_LOC')
+        if (!opencvDependentFiles.getFiles().isEmpty()) { // Only set java.library.path for OpenCV if we need it
+            // Set the path to the location of the native libraries
+            windowsScriptFile.text = windowsScriptFile.text.replace('DEFAULT_JVM_OPTS=', 'DEFAULT_JVM_OPTS=-Djava.library.path=%OPENCV_LOC%')
+            unixScriptFile.text = unixScriptFile.text.replace('DEFAULT_JVM_OPTS=', 'DEFAULT_JVM_OPTS=-Djava.library.path=$OPENCV_LOC')
+        }
     }
 }
 
@@ -43,14 +45,14 @@ applicationDistribution.from("src/main/resources") {
 
 
 task addTestFiles {
-    // sampleVideo.mov
+    // Download 'sampleVideo.mov' if it doesn't already exist
     def sampleVideoUrl = new URL("https://www.dropbox.com/s/h5yd00qr8sfgdlt/sampleVideo.mov?dl=1")
     def sampleVideoFile = file('src/test/resources/sampleVideo.mov')
     if (!sampleVideoFile.exists()) {
         sampleVideoUrl.withInputStream{ i -> sampleVideoFile.withOutputStream{ it << i }}
     }
             
-    // yolo.pb
+    // Download 'yolo.pb' if it doesn't already exist
     def yoloGraphUrl = new URL("https://www.dropbox.com/s/lhnygcd6o6275jb/yolo.pb?dl=1")
     def yoloGraphFile = file('src/test/resources/models/yolo.pb')
     if (!yoloGraphFile.exists()) {
@@ -63,27 +65,19 @@ tasks.withType(Test) {
     systemProperty "java.library.path", "${System.env.OPENCV_LOC}"
 }
 
-def opencvDependentSourceFiles = new ArrayList<String>(
+def opencvDependentSourceFilePatterns = new ArrayList<String>(
     [
         "**/CameraRetriever.java",
         "**/FileRetriever.java"
     ]
 )
-def opencvDependentTestFiles = new ArrayList<String>(
-    [
-        "**/TestCameraRetriever.java",
-        "**/TestFileRetriever.java"
-    ]
+def opencvDependentFiles = sourceSets.main.java.matching(
+        { delegate.setIncludes(opencvDependentSourceFilePatterns) }
 )
 
 assemble.doLast {
     def os = org.gradle.internal.os.OperatingSystem.current()
-    
-    def opencvDependentFiles = sourceSets.main.java.matching(
-            { delegate.setIncludes(opencvDependentSourceFiles) }
-    )
-
-    // Only need to warn if there are files dependent on 
+    // Only need to warn about missing libraries if there are files dependent on OpenCV
     if (!opencvDependentFiles.getFiles().isEmpty()) {
         if (os.isWindows()) {
             if (!file("${System.env.OPENCV_LOC}\\opencv_java342.dll").exists()) {
@@ -102,9 +96,42 @@ assemble.doLast {
             }
         } else {
             logger.warn("Compiling unknown file system. Please ensure that the compiled OpenCV C++ library is inside " 
-                + "'${System.env.OPENCV_LOC}' so that ")
+                + "'${System.env.OPENCV_LOC}' so that the program can function correctly")
         }
     }
+}
+
+compileJava.doFirst {
+    removeUnnecessaryTests()
+}
+
+def standardImplementationTestPatterns = new ArrayList<String>(
+    [
+        "**/TestCameraRetriever.java",
+        "**/TestFileRetriever.java",
+        "**/TestYoloProcessor.java"
+    ]
+)
+
+// Make 'removeUnnecessaryTests' a callable function
+// It makes the build skip tests for any of the standard image retriever or neural net implementations that
+// have been deleted 
+ext.removeUnnecessaryTests = {
+
+    standardImplementationTestPatterns.removeIf {
+        testPattern -> 
+            def testedFile = testPattern.substring(7) // Remove '**/Test' from the Pattern, leaving the tested file
+            def testedFilePattern = '**/' + testedFile // Add '**/' to the tested file so it can be found in the source sets
+            
+            def standardFile = sourceSets.main.java.matching(
+                    { delegate.include(testedFilePattern) }
+            )
+            return !standardFile.getFiles().isEmpty() // Return true (and remove) if the file it tests still exists
+    }
+    // Now standardImplementationTestPatterns only contains tests for files that don't exist
+    
+    // Remove all tests for files that don't exist
+    sourceSets.test.java.filter.exclude(standardImplementationTestPatterns)
 }
 
 processTestResources.dependsOn addTestFiles
@@ -123,19 +150,15 @@ dependencies {
     compile "org.tensorflow:tensorflow:1.9.0"
     compile "org.apache.commons:commons-math3:3.6.1"
     
-    def opencvDependentFiles = sourceSets.main.java.matching(
-            { delegate.setIncludes(opencvDependentSourceFiles) }
-    )
-    if (!opencvDependentFiles.getFiles().isEmpty()) {
-        if (System.env.OPENCV_LOC == null) {
+    if (!opencvDependentFiles.getFiles().isEmpty()) { // Only look for OpenCV if we need it
+        if (System.env.OPENCV_LOC == null) { // Fail out if openCV is not available 
             def depFileNames = ""
             opencvDependentFiles.getFiles().forEach {file -> depFileNames += file.getName() + ", "}
             throw new Exception("Environment variable 'OPENCV_LOC' is not set. Either set it to a location containing " + 
             "opencv-342.jar and the compiled OpenCV library, or remove ${depFileNames}")
+        } else {
+            compile files("${System.env.OPENCV_LOC}/opencv-342.jar")
         }
-        compile files("${System.env.OPENCV_LOC}/opencv-342.jar")
-    } else { // Make sure tests aren't compiled for files that are dependent on OpenCV if it's not being included
-        sourceSets.test.java.filter.setExcludes(opencvDependentTestFiles)
     }
 
     // Use JUnit test framework
