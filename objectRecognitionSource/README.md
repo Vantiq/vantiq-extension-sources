@@ -16,12 +16,18 @@
 
 ## How to Run the Program<a name="objRecMain" id="objRecMain"></a>
 
-1.  Clone this repository (vantiq-extension-sources) and navigate into `<repo location>/vantiq-extension-sources`.
-2.  Run `./gradlew objectRecognitionSource:assemble`.
-3.  Navigate to `<repo location>/vantiq-extension-sources/objectRecognitionSource/build/distributions`. The zip and tar
+1.  If you intend to use any of the implementations that require OpenCV, you must install OpenCV version 3.4.2 for
+Java. The [official site](https://docs.opencv.org/3.4.2/d9/d52/tutorial_java_dev_intro.html) and[this more
+in-depth tutorial](https://opencv-java-tutorials.readthedocs.io/en/latest/01-installing-opencv-for-java.html)
+describe how to install it. Once it's installed, copy the jar and (lib)opencv_java342.dll/.so/.dylib to a single
+folder, then set the environment variable OPENCV_LOC to that folder.
+    *   The implementations dependent on OpenCV are FileRetriever and CameraRetriever.
+2.  Clone this repository (vantiq-extension-sources) and navigate into `<repo location>/vantiq-extension-sources`.
+3.  Run `./gradlew objectRecognitionSource:assemble`.
+4.  Navigate to `<repo location>/vantiq-extension-sources/objectRecognitionSource/build/distributions`. The zip and tar
     files both contain the same files, so choose whichever you prefer.
-4.  Uncompress the file in the location that you would like to install the program.
-5.  Run `<install location>/objectRecognitionSource/bin/objectRecognitionSource` with a local server.config file or
+5.  Uncompress the file in the location that you would like to install the program.
+6.  Run `<install location>/objectRecognitionSource/bin/objectRecognitionSource` with a local server.config file or
     specifying the [server config file](#serverConfig) as the first argument.
 
 ## Logging
@@ -57,6 +63,15 @@ sources inside your own code, then it is what you will use.
 1.  Clone this repository (vantiq-extension-sources) and navigate into `<repo location>/vantiq-extension-sources`.
     *   If you know that you will not use specific classes in the *.neuralNet or *.imageRetriever packages you can
         remove them now.
+    *   FileRetriever and CameraRetriever both use OpenCV, which is not in the gradle dependencies. If they are not
+        removed you must install OpenCV version 3.4.2, set the environment variable OPENCV_LOC to the folder 
+        containing the jar, and ensure that when running your code the jar is in the classpath and 
+        (lib)opencv_java342.dll/.so/.dylib is in a folder in `java.library.path`. You may see a warning about not 
+        having (lib)opencv_java342.dll/.so/.dylib in the correct directory when compiling the objectRecognition jar,
+        but this can be safely ignored since you will be setting the path yourself. Instructions for installing
+        OpenCV can be found at the [official site](https://docs.opencv.org/3.4.2/d9/d52/tutorial_java_dev_intro.html)
+        or [this more in-depth tutorial]
+        (https://opencv-java-tutorials.readthedocs.io/en/latest/01-installing-opencv-for-java.html)
 2.  Run `./gradlew objectRecognitionSource:assemble` or `.\gradlew objectRecognitionSource:assemble` depending on the
     OS.
 3.  Navigate to `<repo location>/vantiq-extension-sources/objectRecognitionSource/build/libs` and copy
@@ -65,9 +80,9 @@ sources inside your own code, then it is what you will use.
     your project.
     *   The gradle build file specifies every dependency that is used only in neural net or image retriever
         implementations. If you removed any classes in step 1, use the comments to identify which dependencies are
-        no longer needed.
+        no longer needed. OpenCV is automatically ignored if all its dependents are removed, so it can be ignored.
 
-### Using in Your Code
+### Using in Your Own Code
 
 The ObjectRecognitionCore class has four public functions. The constructor takes in the same arguments passed through
 the [server config file](#serverConfig), the only difference being that only a single source is expected. `start()` sets
