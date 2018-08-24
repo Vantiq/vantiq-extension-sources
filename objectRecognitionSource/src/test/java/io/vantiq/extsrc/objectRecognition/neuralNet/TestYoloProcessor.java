@@ -9,10 +9,12 @@
 
 package io.vantiq.extsrc.objectRecognition.neuralNet;
 
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeTrue;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -20,6 +22,10 @@ import java.util.Map;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
+
+import com.fasterxml.jackson.core.JsonParseException;
+import com.fasterxml.jackson.databind.JsonMappingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 import io.vantiq.extsrc.objectRecognition.exception.ImageProcessingException;
 
@@ -77,9 +83,15 @@ public class TestYoloProcessor extends NeuralNetTestBase {
     }
     
     @Test
-    public void testPureJson() throws ImageProcessingException {
+    public void testResults() throws ImageProcessingException {
         List<Map> results = ypJson.processImage(getTestImage());
         assert results != null;
+        try {
+            resultsEquals(results, getExpectedResults()); // Will throw assert error with a message when not equivalent
+        }
+        catch (IOException e) {
+            fail("Could not interpret json string" + e.getMessage());
+        }
     }
     
     @Test
@@ -207,5 +219,43 @@ public class TestYoloProcessor extends NeuralNetTestBase {
                 deleteDirectory(queryOutputDir);
             }
         }
+    }
+    
+// ================================================= Helper functions =================================================
+    String imageResultsAsString = "[{\"confidence\":0.8445639, \"location\":{\"top\":254.66667, \"left\":82.87007, \"bottom\":441.9221, "
+            + "\"right\":309.81705}, \"label\":\"keyboard\"}, {\"confidence\":0.7516027, \"location\":{\"top\":88.22579, \"left\":52.281204, "
+            + "\"bottom\":330.7827, \"right\":429.71838}, \"label\":\"tvmonitor\"}]";
+    
+    List<Map> getExpectedResults() throws JsonParseException, JsonMappingException, IOException {
+        ObjectMapper m = new ObjectMapper();
+        return m.readValue(imageResultsAsString, List.class);
+    }
+    
+    void resultsEquals(List<Map> actualRes, List<Map> expectedRes) {
+        assert actualRes.size() == expectedRes.size();
+        for (int i = 0; i < actualRes.size(); i ++) {
+            mapEquals(actualRes.get(i), expectedRes.get(i));
+        }
+    }
+    
+    void mapEquals(Map<String, ?> actualMap, Map<String, ?> expectedMap) {
+        for (Map.Entry<String, ?> entry : actualMap.entrySet()) {
+            Object expected = expectedMap.get(entry.getKey());
+            Object actual = entry.getValue();
+            assertTrue("Result did not match. Expected " + expected + " in " + entry.getKey() 
+                    + " but received " + actual, valEquals(actual, expected));
+        }
+    }
+    
+    boolean valEquals(Object actual, Object expected) {
+        if (actual instanceof Map && expected instanceof Map) {
+            mapEquals((Map) actual, (Map) expected);
+            return true; // mapEquals will throw assertionError if they don't match
+        } else if (actual instanceof Number && expected instanceof Number) {
+            double diff = ((Number) actual).doubleValue() - ((Number) expected).doubleValue();
+            return Math.abs(diff) < .0001;
+        }
+        
+        return actual.equals(expected);
     }
 }

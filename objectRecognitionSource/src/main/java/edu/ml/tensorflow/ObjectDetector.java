@@ -223,7 +223,7 @@ public class ObjectDetector {
             //recognition.getTitle(), recognition.getConfidence(), recognition.getLocation());
         	HashMap map = new HashMap();
         	map.put("label", recognition.getTitle());
-        	map.put("confidence", recognition.getConfidence().toString());
+        	map.put("confidence", recognition.getConfidence());
         	
         	HashMap location = new HashMap();
         	location.put("left", recognition.getLocation().getLeft());
