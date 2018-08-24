@@ -45,8 +45,6 @@ public class ObjectRecognitionCore {
     
     
     // vars for source configuration
-    boolean                 constantPolling = false;
-    boolean                 stopPolling     = false;
     Timer                   pollTimer       = null;
     ImageRetrieverInterface imageRetriever  = null;
     
@@ -75,10 +73,6 @@ public class ObjectRecognitionCore {
             log.info("Reconnect message received. Reinitializing configuration");
             
             // Do partial close to preserve states of imageRetriever and neuralNet
-            if (constantPolling) {
-                stopPolling = true;
-                constantPolling = false;
-            }
             if (pollTimer != null) {
                 pollTimer.cancel();
                 pollTimer = null;
@@ -111,10 +105,6 @@ public class ObjectRecognitionCore {
             log.info("WebSocket closed unexpectedly. Attempting to reconnect");
 
             // Do partial close to preserve states of imageRetriever and neuralNet
-            if (constantPolling) {
-                stopPolling = true;
-                constantPolling = false;
-            }
             if (pollTimer != null) {
                 pollTimer.cancel();
                 pollTimer = null;
@@ -186,17 +176,6 @@ public class ObjectRecognitionCore {
         client.initiateFullConnection(targetVantiqServer, authToken);
         
         return exitIfConnectionFails(client, timeout);
-    }
-    
-    /**
-     * Continuously retrieves and image and sends the result until close() or stop() is called.
-     */
-    void startContinuousRetrievals() {
-        while (!stopPolling) {
-            byte[] image = retrieveImage();
-            sendDataFromImage(image);
-        }
-        stopPolling = false;
     }
     
     /**
@@ -366,10 +345,6 @@ public class ObjectRecognitionCore {
      * Closes all resources held by this program except for the {@link ExtenstionWebSocketClient}. 
      */
     public void close() {
-        if (constantPolling) {
-            stopPolling = true;
-            constantPolling = false;
-        }
         if (pollTimer != null) {
             pollTimer.cancel();
             pollTimer = null;

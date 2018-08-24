@@ -40,14 +40,15 @@ import io.vantiq.extsrc.objectRecognition.neuralNet.NeuralNetInterface;
  *      }
  * }</pre>
  * 
- * The options for general are as follows:
+ * The options for general are as follows. At least one must be valid for the source to function:
  * <ul>
- *      <li>{@code pollRate}: Required. This indicates how often an image should be captured. A positive number
+ *      <li>{@code pollRate}: This indicates how often an image should be captured. A positive number
  *                      represents the number of milliseconds between captures. If the specified time is less than
  *                      the amount of time it takes to process the image then images will be taken as soon as the
  *                      previous finishes. If this is set to 0, the next image will be captured as soon as the previous
- *                      is sent. If this is set to a negative number, then images will be captured and processed only
- *                      when a Query message is received.
+ *                      is sent.
+ *      <li>{@code allowQueries}: This option allows Queries to be received when set to {@code true}
+ *                      
  * </ul>
  * 
  * Most options for dataSource and neuralNet are dependent on the implementation of {@link ImageRetrieverInterface} and
@@ -283,14 +284,20 @@ public class ObjectRecognitionConfigHandler extends Handler<ExtensionServiceMess
                 source.pollTimer = new Timer("dataCapture");
                 source.pollTimer.schedule(task, 0, pollRate);
             } else if (polling == 0) {
-                // Wait for the previous iteration of continuous retrievals to finish, if any
-                while (source.stopPolling) Thread.yield();
-                
-                source.constantPolling = true;
-                new Thread(() -> source.startContinuousRetrievals()).start();
+                TimerTask task = new TimerTask() {
+                    @Override
+                    public void run() {
+                        byte[] image = source.retrieveImage();
+                        source.sendDataFromImage(image);
+                    }
+                };
+                source.pollTimer = new Timer("dataCapture");
+                source.pollTimer.scheduleAtFixedRate(task, 0, 1);
+                // 1 ms will be fast enough unless image gathering, image processing, and data sending combined are
+                // sub millisecond
             }
         } 
-        if (general.get("queryable") instanceof Boolean && (Boolean) general.get("queryable")) {
+        if (general.get("allowQueries") instanceof Boolean && (Boolean) general.get("allowQueries")) {
             queryable = true;
             source.client.setQueryHandler(queryHandler);
         }
