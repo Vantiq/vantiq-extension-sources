@@ -104,6 +104,7 @@ public class ObjectRecognitionConfigHandler extends Handler<ExtensionServiceMess
      */
     final String FILE_RETRIEVER_FQCN        = "io.vantiq.extsrc.objectRecognition.imageRetriever.FileRetriever";
     final String CAMERA_RETRIEVER_FQCN      = "io.vantiq.extsrc.objectRecognition.imageRetriever.CameraRetriever";
+    final String NETWORK_RETRIEVER_FQCN     = "io.vantiq.extsrc.objectRecognition.imageRetriever.NetworkRetriever";
     final String DEFAULT_IMAGE_RETRIEVER    = "io.vantiq.extsrc.objectRecognition.imageRetriever.DefaultRetriever";
     
     /*
@@ -236,6 +237,8 @@ public class ObjectRecognitionConfigHandler extends Handler<ExtensionServiceMess
                 retrieverType = FILE_RETRIEVER_FQCN;
             } else if (retrieverType.equals("camera")) {
                 retrieverType = CAMERA_RETRIEVER_FQCN;
+            } else if (retrieverType.equals("network")) {
+                retrieverType = NETWORK_RETRIEVER_FQCN;
             } else if (retrieverType.equals("default")) {
                 retrieverType = DEFAULT_IMAGE_RETRIEVER;
             }
