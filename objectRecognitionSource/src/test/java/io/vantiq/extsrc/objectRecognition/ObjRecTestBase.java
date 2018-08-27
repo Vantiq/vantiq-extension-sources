@@ -10,6 +10,9 @@
 package io.vantiq.extsrc.objectRecognition;
 
 import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.net.URL;
 import java.nio.file.Files;
 
 public class ObjRecTestBase {
@@ -42,5 +45,16 @@ public class ObjRecTestBase {
         } catch (Exception e) {
             throw new RuntimeException("Error deleting directory " + d.getAbsolutePath(), e);
         }
+    }
+    
+    public static boolean checkUrl(String url) {
+        try {
+            URL urlProtocolTest = new URL((String) url);
+            InputStream urlReadTest = urlProtocolTest.openStream();
+            urlReadTest.close();
+        } catch (IOException e) {
+            return false;
+        }
+        return true;
     }
 }
