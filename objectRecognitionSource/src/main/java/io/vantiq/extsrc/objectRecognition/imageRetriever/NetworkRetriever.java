@@ -31,13 +31,13 @@ import io.vantiq.extsrc.objectRecognition.exception.ImageAcquisitionException;
  *  <li>{@code camera}: Required for Config, optional for Query. The index of the camera to read images from. For queries, defaults to the camera specified in the Config.
  * </ul>
  */
-public class CameraRetriever implements ImageRetrieverInterface {
-	VideoCapture   capture;
-	int         camera;
-	
-	@Override
+public class NetworkRetriever implements ImageRetrieverInterface {
+    VideoCapture   capture;
+    String         camera;
+    
+    @Override
     public void setupDataRetrieval(Map<String, ?> dataSourceConfig, ObjectRecognitionCore source) throws Exception {
-	    try {
+        try {
             System.loadLibrary(Core.NATIVE_LIBRARY_NAME);
         } catch (Throwable t) {
             throw new Exception(this.getClass().getCanonicalName() + ".opencvDependency" 
@@ -46,64 +46,74 @@ public class CameraRetriever implements ImageRetrieverInterface {
                     + "variable 'OPENCV_LOC' is set to the directory containing 'opencv_java342' and any other library"
                     + "requested by the attached error", t);
         }
-        if (dataSourceConfig.get("camera") instanceof Integer) {
-            camera = (Integer) dataSourceConfig.get("camera");
-
+        if (dataSourceConfig.get("camera") instanceof String){
+            camera = (String) dataSourceConfig.get("camera");
+            
             capture = new VideoCapture(camera);
         } else {
             throw new IllegalArgumentException(this.getClass().getCanonicalName() + ".configMissingOptions: "  + 
                     "No camera specified in dataSourceConfig");
         }
         if (!capture.isOpened()) {
-            throw new Exception(this.getClass().getCanonicalName() + ".cameraUnreadable: " 
-                    + "Could not open requested camera '" + camera + "'");
+            try {
+                URL urlProtocolTest = new URL((String) camera);
+                InputStream urlReadTest = urlProtocolTest.openStream();
+            } catch (MalformedURLException e) {
+                throw new IllegalArgumentException(this.getClass().getCanonicalName() + ".unknownProtocol: "
+                        + "URL specifies unknown protocol");
+            } catch (java.io.IOException e) {
+                throw new ImageAcquisitionException(this.getClass().getCanonicalName() + ".badRead: "
+                        + "URL was unable to be read");
+            }
+            throw new IllegalArgumentException(this.getClass().getCanonicalName() + ".notVideoStream: " 
+                    + "URL does not represent a video stream");
         }
     }
-	
-	/**
-	 * Obtain the most recent image from the camera
-	 */
-	@Override
-	public byte[] getImage() throws ImageAcquisitionException {
-		// Reading the next video frame from the camera
-		Mat matrix = new Mat();
+    
+    /**
+     * Obtain the most recent image from the camera
+     */
+    @Override
+    public byte[] getImage() throws ImageAcquisitionException {
+        // Reading the next video frame from the camera
+        Mat matrix = new Mat();
 
-		capture.read(matrix);
-		
-		if (matrix.empty()) {
-		    matrix.release();
-		    if (!capture.isOpened() ) {
-		        capture.release();
-		        throw new FatalImageException(this.getClass().getCanonicalName() + ".mainCameraClosed: " 
-	                    + "Camera '" + camera + "' has closed");
-		    } else {
-		        throw new ImageAcquisitionException(this.getClass().getCanonicalName() + ".mainCameraReadError: " 
-	                    + "Could not obtain frame from camera + '" + camera + "'");
-		    }
-		}
-	  
-	    MatOfByte matOfByte = new MatOfByte();
-	    Imgcodecs.imencode(".jpg", matrix, matOfByte);
-	    byte [] imageByte = matOfByte.toArray();
-	    matOfByte.release();
-	    matrix.release();
-	    	    
-	    return imageByte;
-	}
-	
-	/**
-	 * Obtain the most recent image from the specified camera, or the configured camera if no camera is specified
-	 */
-	@Override
+        capture.read(matrix);
+        
+        if (matrix.empty()) {
+            matrix.release();
+            if (!capture.isOpened() ) {
+                capture.release();
+                throw new FatalImageException(this.getClass().getCanonicalName() + ".mainCameraClosed: " 
+                        + "Camera '" + camera + "' has closed");
+            } else {
+                throw new ImageAcquisitionException(this.getClass().getCanonicalName() + ".mainCameraReadError: " 
+                        + "Could not obtain frame from camera + '" + camera + "'");
+            }
+        }
+      
+        MatOfByte matOfByte = new MatOfByte();
+        Imgcodecs.imencode(".jpg", matrix, matOfByte);
+        byte [] imageByte = matOfByte.toArray();
+        matOfByte.release();
+        matrix.release();
+                
+        return imageByte;
+    }
+    
+    /**
+     * Obtain the most recent image from the specified camera, or the configured camera if no camera is specified
+     */
+    @Override
     public byte[] getImage(Map<String, ?> request) throws ImageAcquisitionException {
-	    VideoCapture cap;
-	    Object camId;
-	    if (request.get("DScamera") instanceof Integer) {
-	        int cam = (Integer) request.get("DScamera");
-	        camId = cam;
-	        cap = new VideoCapture(cam);
-	    } else if (capture == null) {
-	        throw new ImageAcquisitionException(this.getClass().getCanonicalName() + ".noMainCamera: " 
+        VideoCapture cap;
+        Object camId;
+        if (request.get("DScamera") instanceof String) {
+            String cam = (String) request.get("DScamera");
+            camId = cam;
+            cap = new VideoCapture(cam);
+        } else if (capture == null) {
+            throw new ImageAcquisitionException(this.getClass().getCanonicalName() + ".noMainCamera: " 
                     + "No camera was requested and no main camera was specified at initialization.");
         } else if (capture.isOpened()){
             try {
@@ -117,7 +127,7 @@ public class CameraRetriever implements ImageRetrieverInterface {
                     + "No camera was requested and the main camera is no longer open. Most likely this is due to a "
                     + "previous fatal error for the main camera.");
         }
-	    
+        
         if (!cap.isOpened()) {
             cap.release();
             throw new ImageAcquisitionException(this.getClass().getCanonicalName() + ".queryCameraUnreadable: " 
@@ -140,10 +150,10 @@ public class CameraRetriever implements ImageRetrieverInterface {
         cap.release();
                 
         return imageByte;
-	     
+         
     }
-	
-	public void close() {
-	    capture.release();
-	}
+    
+    public void close() {
+        capture.release();
+    }
 }
