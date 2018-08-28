@@ -269,9 +269,11 @@ public class FtpRetriever implements ImageRetrieverInterface {
         } else {
             client = new FTPClient();
         }
-        // client.enterLocalPassiveMode();
+        
         
         client.connect(server);
+        
+        client.enterLocalPassiveMode();
         
         int reply = client.getReplyCode();
         if (!FTPReply.isPositiveCompletion(reply)) {
@@ -326,6 +328,7 @@ public class FtpRetriever implements ImageRetrieverInterface {
                         + "Reply was : " + client.getReplyString());
             }
         } catch(IOException e) {
+            e.printStackTrace();
             throw new ImageAcquisitionException(this.getClass().getCanonicalName() + ".fileConnectionError: "
                     + "Could not read file '" + fileName + "' from server '" 
                     + client.getRemoteAddress().getCanonicalHostName()

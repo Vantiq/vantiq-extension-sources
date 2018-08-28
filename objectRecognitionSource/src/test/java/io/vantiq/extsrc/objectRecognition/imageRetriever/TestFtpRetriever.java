@@ -109,8 +109,36 @@ public class TestFtpRetriever extends ObjRecTestBase {
     }
     
     @Test
-    public void testFtpsDownload() {
-        Map<String, Object> config = workingFtpsConfig();
+    public void testExplicitFtpsDownload() {
+        Map<String, Object> config = workingExplicitFtpsConfig();
+        try {
+            retriever.setupDataRetrieval(config, source);
+        } catch (Exception e) {
+            fail("Should not fail with full config. exception message was : " + e.getMessage());
+        }
+        
+        Map<String, String> request = new LinkedHashMap<>();
+        request.put("DSfile", "pub/example/readme.txt");
+        try {
+            byte[] results = retriever.getImage(request);
+            assert results != null;
+            assert results.length > 0;
+        } catch (ImageAcquisitionException e) {
+            fail("Should not throw exception trying for the sample file. Message: " + e.getMessage());
+        }
+        
+        request.put("DSfile", "notAFile");
+        try {
+            retriever.getImage(request);
+            fail("Should throw exception trying for invalid sample file");
+        } catch (ImageAcquisitionException e) {
+            // Expected
+        }
+    }
+    
+    @Test
+    public void testImplicitFtpsDownload() {
+        Map<String, Object> config = workingImplicitFtpsConfig();
         try {
             retriever.setupDataRetrieval(config, source);
         } catch (Exception e) {
@@ -174,7 +202,17 @@ public class TestFtpRetriever extends ObjRecTestBase {
         
         return config;
     }
-    public Map<String, Object> workingFtpsConfig() {
+    public Map<String, Object> workingExplicitFtpsConfig() {
+        Map<String, Object> config = new LinkedHashMap<>();
+        config.put("server", ftpsUrl);
+        config.put("username", "demo");
+        config.put("password", "password");
+        config.put("conType", "ftps");
+        config.put("implicit", false);
+        
+        return config;
+    }
+    public Map<String, Object> workingImplicitFtpsConfig() {
         Map<String, Object> config = new LinkedHashMap<>();
         config.put("server", ftpsUrl);
         config.put("username", "demo");
