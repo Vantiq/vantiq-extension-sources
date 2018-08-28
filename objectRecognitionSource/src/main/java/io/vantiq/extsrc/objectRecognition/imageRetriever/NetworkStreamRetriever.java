@@ -28,10 +28,10 @@ import io.vantiq.extsrc.objectRecognition.exception.ImageAcquisitionException;
  * Captures images and returns them as jpeg encoded bytes.
  * Unique settings are: 
  * <ul>
- *  <li>{@code camera}: Required for Config, optional for Query. The index of the camera to read images from. For queries, defaults to the camera specified in the Config.
+ *  <li>{@code camera}: Required for Config, optional for Query. The URL of the video stream to read images from. For queries, defaults to the camera specified in the Config.
  * </ul>
  */
-public class NetworkRetriever implements ImageRetrieverInterface {
+public class NetworkStreamRetriever implements ImageRetrieverInterface {
     VideoCapture   capture;
     String         camera;
     
