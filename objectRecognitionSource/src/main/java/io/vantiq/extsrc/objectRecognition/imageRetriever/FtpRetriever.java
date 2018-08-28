@@ -40,6 +40,8 @@ public class FtpRetriever implements ImageRetrieverInterface {
     FTPClient ftpClient;
     Session   session;
     
+    // TODO more options for FTPS secure protocols, 
+    
     @Override
     public void setupDataRetrieval(Map<String, ?> dataSourceConfig, ObjectRecognitionCore source) throws Exception {
         log = LoggerFactory.getLogger(this.getClass().getCanonicalName() + "#" + source.getSourceName());
@@ -257,7 +259,9 @@ public class FtpRetriever implements ImageRetrieverInterface {
      * @param username      The username to connect with
      * @param password      The password to connect with
      * @param conType       The type of connection to use, one of {@link #FTP}, {@link #FTPS}
-     * @return              The server 
+     * @param protocol      The security protocol to use, typically "SSL" or "TLS". FTPS only.
+     * @param isImplicit    Whether the target server uses implicit security. FTPS only.
+     * @return              A client connected to {@code server}
      * @throws IOException  When an attempt to connect with FTPClient throws an IOException
      */
     public FTPClient connectToFtpServer(String server, String username,
@@ -273,8 +277,6 @@ public class FtpRetriever implements ImageRetrieverInterface {
         
         client.connect(server);
         
-        client.enterLocalPassiveMode();
-        
         int reply = client.getReplyCode();
         if (!FTPReply.isPositiveCompletion(reply)) {
             client.disconnect();
@@ -282,6 +284,24 @@ public class FtpRetriever implements ImageRetrieverInterface {
                     + "Could not connect to server '" + server + "'");
         }
         
+        client.enterLocalPassiveMode(); // So it can get around firewalls
+        
+        // Only needs to be done for FTPS implicit. Unclear why only implicit requires it
+        if (conType == FTPS && isImplicit) {
+            // Necessary, not entirely clear on why it is necessary only for implicit
+            // PBSZ sets the size of the "protection buffer" and PROT sets the security level
+            ((FTPSClient) client).execPBSZ(0); 
+            ((FTPSClient) client).execPROT("P"); 
+            
+            reply = client.getReplyCode();
+            if (!FTPReply.isPositiveCompletion(reply)) {
+                client.disconnect();
+                throw new IOException(this.getClass().getCanonicalName() + ".failedSecurityNegotiation: "
+                        + "Could not setup proper security for server '" + server + "'");
+            }
+        }
+        
+        // Login to the server
         boolean success = client.login(username, password);
         if (!success) {
             client.logout();
@@ -293,6 +313,16 @@ public class FtpRetriever implements ImageRetrieverInterface {
         return client;
     }
     
+    /**
+     * Creates a JSch Session connected to the target server using the given credentials. Currently does not check
+     * the host's credentials
+     * @param server        The domain name of the server to connect to, e.g. "site.name.com" but not
+     *                      "sftp://site.name.com" or "site.name.com/location"
+     * @param username      The username to connect with
+     * @param password      The password to connect with
+     * @return              A Session connected to the target server
+     * @throws Exception    Thrown when the server cannot be connected to for any reason
+     */
     public Session connectToSftpServer(String server, String username, String password) throws Exception {
         JSch jsch = new JSch();
         Session sess;
@@ -303,7 +333,7 @@ public class FtpRetriever implements ImageRetrieverInterface {
                     + "Could not create session at host '" + server + "' with given username");
         }
         
-        sess.setConfig("StrictHostKeyChecking", "no");
+        sess.setConfig("StrictHostKeyChecking", "no"); // Accept any connection made
         sess.setPassword(password);
         
         try {
@@ -316,27 +346,41 @@ public class FtpRetriever implements ImageRetrieverInterface {
         return sess;
     }
     
-    public byte[] readFromFtpServer(FTPClient client, String fileName) throws ImageAcquisitionException {
+    /**
+     * Read the specified file from {@code client}
+     * @param client                        The client to use for reading.
+     * @param filePath                      The path to the file to read.
+     * @return                              The bytes of the file.
+     * @throws ImageAcquisitionException    Thrown when the image cannot be retrieved for any reason
+     */
+    public byte[] readFromFtpServer(FTPClient client, String filePath) throws ImageAcquisitionException {
         ByteArrayOutputStream image = new ByteArrayOutputStream(64 * 1024); // Start at 64 kB
         try {
             
-            boolean success = client.retrieveFile(fileName, image);
+            boolean success = client.retrieveFile(filePath, image);
             
             if (!success) {
                 throw new ImageAcquisitionException(this.getClass().getCanonicalName() + ".fileRetrievalError: "
-                        + "File could not be retreived. Most likely the file could not be found. "
+                        + "File could not be retreived. "
                         + "Reply was : " + client.getReplyString());
             }
         } catch(IOException e) {
             e.printStackTrace();
             throw new ImageAcquisitionException(this.getClass().getCanonicalName() + ".fileConnectionError: "
-                    + "Could not read file '" + fileName + "' from server '" 
+                    + "Could not read file '" + filePath + "' from server '" 
                     + client.getRemoteAddress().getCanonicalHostName()
                     + "' with given username and password. Error message was: " + e.getMessage(), e); 
         }
         return image.toByteArray();
     }
     
+    /**
+     * Read the specified file from {@code session}
+     * @param session                       The session to use for reading.
+     * @param filePath                      The path to the file to read.
+     * @return                              The bytes of the file.
+     * @throws ImageAcquisitionException    Thrown when the image cannot be retrieved for any reason
+     */
     public byte[] readFromSftpServer(Session session, String fileName) throws ImageAcquisitionException {
         
         ChannelSftp sftpChannel;

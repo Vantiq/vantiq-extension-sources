@@ -94,7 +94,7 @@ public class TestFtpRetriever extends ObjRecTestBase {
         try {
             byte[] results = retriever.getImage(request);
             assert results != null;
-            //assert results.length == 407;
+            assert results.length == 403;
         } catch (ImageAcquisitionException e) {
             fail("Should not throw exception trying for the sample file");
         }
@@ -122,7 +122,7 @@ public class TestFtpRetriever extends ObjRecTestBase {
         try {
             byte[] results = retriever.getImage(request);
             assert results != null;
-            assert results.length > 0;
+            assert results.length == 407;
         } catch (ImageAcquisitionException e) {
             fail("Should not throw exception trying for the sample file. Message: " + e.getMessage());
         }
@@ -150,7 +150,7 @@ public class TestFtpRetriever extends ObjRecTestBase {
         try {
             byte[] results = retriever.getImage(request);
             assert results != null;
-            assert results.length > 0;
+            assert results.length == 407;
         } catch (ImageAcquisitionException e) {
             fail("Should not throw exception trying for the sample file. Message: " + e.getMessage());
         }
@@ -178,7 +178,7 @@ public class TestFtpRetriever extends ObjRecTestBase {
         try {
             byte[] results = retriever.getImage(request);
             assert results != null;
-            assert results.length > 0;
+            assert results.length == 403;
         } catch (ImageAcquisitionException e) {
             fail("Should not throw exception trying for the sample file. Message: " + e.getMessage());
         }
