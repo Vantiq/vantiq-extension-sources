@@ -28,17 +28,21 @@ public class FtpRetriever implements ImageRetrieverInterface {
     final static String SFTP = "sftp";
     final static String FTP  = "ftp";
     
+    final static String DEFAULT_PROTOCOL = "TLS";
+    
     Logger log;
+
+    boolean noDefault = false;
     
     String  conType     = FTP;
     String  password    = null;
     String  username    = null;
     String  server      = null;
-    String  protocol    = "SSL";
+    String  protocol    = DEFAULT_PROTOCOL;
     boolean isImplicit  = false;
     
-    FTPClient ftpClient;
-    Session   session;
+    FTPClient ftpClient = null;
+    Session   session = null;
     
     // TODO more options for FTPS secure protocols, 
     
@@ -46,8 +50,13 @@ public class FtpRetriever implements ImageRetrieverInterface {
     public void setupDataRetrieval(Map<String, ?> dataSourceConfig, ObjectRecognitionCore source) throws Exception {
         log = LoggerFactory.getLogger(this.getClass().getCanonicalName() + "#" + source.getSourceName());
         
+        if (dataSourceConfig.get("noDefault") instanceof Boolean && (Boolean) dataSourceConfig.get("noDefault")) {
+            noDefault = true;
+            return;
+        }
+        
         if (dataSourceConfig.get("server") instanceof String) {
-            server = (String) dataSourceConfig.get("server");
+            server = stripDomainName((String) dataSourceConfig.get("server"));
         } else {
             throw new Exception(this.getClass().getCanonicalName() + ".noServerSpecified: "
                     + "No server was specified in the configuration setup." );
@@ -123,12 +132,15 @@ public class FtpRetriever implements ImageRetrieverInterface {
         }
         
         if (request.get("DSserver") instanceof String) {
-            server = (String) request.get("DSserver");
+            server = stripDomainName((String) request.get("DSserver"));
             if (!server.equals(this.server)) {
                 newServer = true;
             }
-        } else {
+        } else if (!noDefault) {
             server = this.server;
+        } else {
+            throw new ImageAcquisitionException(this.getClass().getCanonicalName() + ".queryNoDefaultServer: "
+                    + "Server option required when configured with no defaults");
         }
         
         if (request.get("DSconType") instanceof String) {
@@ -148,8 +160,10 @@ public class FtpRetriever implements ImageRetrieverInterface {
                     if (!protocol.equals(this.protocol)) {
                         newServer = true;
                     }
-                } else {
+                } else if (!noDefault) {
                     protocol = this.protocol;
+                } else {
+                    protocol = DEFAULT_PROTOCOL;
                 }
             } else if (type.equalsIgnoreCase("sftp")) {
                 conType = SFTP;
@@ -162,8 +176,11 @@ public class FtpRetriever implements ImageRetrieverInterface {
             if (!conType.equals(this.conType)) {
                 newServer = true;
             }
-        } else {
+        } else if (!noDefault) {
             conType = this.conType;
+        } else {
+            throw new ImageAcquisitionException(this.getClass().getCanonicalName() + ".queryNoDefaultConnectionType: "
+                    + "Connection type option required when configured with no defaults");
         }
         
         if (request.get("DSusername") instanceof String) {
@@ -171,16 +188,22 @@ public class FtpRetriever implements ImageRetrieverInterface {
             if (!username.equals(this.username)) {
                 newServer = true;
             }
-        } else {
+        } else if (!noDefault) {
             username = this.username;
+        } else {
+            throw new ImageAcquisitionException(this.getClass().getCanonicalName() + ".queryNoDefaultUsername: "
+                    + "Username option required when configured with no defaults");
         }
         if (request.get("DSpassword") instanceof String) {
             password = (String) request.get("DSpassword");
             if (!password.equals(this.password)) {
                 newServer = true;
             }
-        } else {
+        } else if (!noDefault) {
             password = this.password;
+        } else {
+            throw new ImageAcquisitionException(this.getClass().getCanonicalName() + ".queryNoDefaultPassword: "
+                    + "Password option required when configured with no defaults");
         }
         
         ftpClient = this.ftpClient;
@@ -411,5 +434,19 @@ public class FtpRetriever implements ImageRetrieverInterface {
         }
         
         return image.toByteArray();
+    }
+    
+    public String stripDomainName(String url) {
+        String domain = url;
+        // Remove any prefixes, such as "ftp://"
+        if (domain.matches(".+://")) {
+            domain = domain.replaceFirst(".+://", "");
+        }
+        
+        if (domain.indexOf('/') != -1) {
+            domain = domain.substring(0, domain.indexOf('/'));
+        }
+        
+        return domain;
     }
 }

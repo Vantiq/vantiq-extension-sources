@@ -12,7 +12,8 @@
 *   [ImageRetrieverInterface](#retrieveInterface) -- An interface that allows different image retrieval mechanisms to be
         more easily integrated without changes to the rest of the code.
     *   [CameraRetriever](#cameraRet) -- Retrieves images from a directly connected camera using OpenCV.
-    *   [FileRetriever](#fileRet) -- Retrieves images from disk.
+    *   [FileRetriever](#fileRet) -- Retrieves images and videos from disk.
+    *   [FtpRetriever](#ftpRet) -- Retrieves images through FTP, FTPS, and SFTP.
 
 ## How to Run the Program<a name="objRecMain" id="objRecMain"></a>
 
@@ -200,9 +201,9 @@ Errors are thrown whenever an image or video frame cannot be read. Fatal errors 
 being read when the source is not setup for to receive Queries.
 The options are as follows. Remember to prepend "DS" when using an option in a Query.
 *   fileLocation: Required for Config, Optional for Query. The location of the file to be read. For Config
-where `fileExtension` is "mov", the file must exist at initialization. If this is not set at Config and the source is
-not configured for Queries, then the source will open but the first attempt to retrieve will kill the source. For
-Queries, defaults to the configured file or returns an error if there was none.
+    where `fileExtension` is "mov", the file must exist at initialization. If this is not set at Config and the source
+    is not configured for Queries, then the source will open but the first attempt to retrieve will kill the source. For
+    Queries, defaults to the configured file or returns an error if there was none.
 *   fileExtension: Optional. Config and Query. The type of file it is, "mov" for video files, "img" for image files.
     Defaults to image files.
 *   fps: Optional. Config only. Requires `fileExtension` be "mov". How many frames to retrieve for every second in the
@@ -214,7 +215,31 @@ Queries, defaults to the configured file or returns an error if there was none.
 *   targetTime: Optional. Query only. Requires `fileExtension` be "mov". The second in the video that you would like to
     access, with the first frame being at second 0. Exceptions will be thrown if this targets an invalid frame, i.e.
     negative or beyond the video's frame count. Non-integer values are allowed. Mutually exclusive with targetFrame.
-Defaults to 0.
+    Defaults to 0.
+
+### FTP Retriever<a name="ftpRet" id="ftpRet"></a>
+
+This implementation can read files from FTP, FTPS, and SFTP servers. Not all options available for each protocol are
+implemented. Only Queries are allowed, for which `file` is necessary. The server created at initialization will be used
+if no new options are set for the server and `noDefault` was not set to `true` for the configuration. If some but not
+all options are set for a Query, then the values from the initial configuration are used.  
+
+Errors are thrown whenever an image or video frame cannot be read. Fatal errors are thrown only when the initial server
+cannot be created.  
+The options are as follows. Remember to prepend "DS" when using an option in a Query.
+*   noDefault: Optional. Config only. When true, no default server is created and no default settings are saved. This
+    means that when true all options without defaults are required for Queries. When false or unset, *all other
+    Configuration settings without default values are required*.
+*   server: Optional. Config and Query. The URL of the server to connect to. It is preferred if the URL is only the
+    domain name, e.g. "site.name.com", though the source will try to obtain the domain name from a URL if necessary.
+*   username: Optional. Config and Query. The username for the given server.
+*   password: Optional. Config and Query. The password for the given server.
+*   conType: Optional. Config and Query. The type of connection you would like, one of "FTP", "FTPS", or "SFTP". Case
+    sensitivity does not matter. Defaults to "FTP".
+*   implicit: Optional. Config and Query. For FTPS only. Whether to connect using implicit security. Defaults to false
+    (i.e. explicit mode).
+*   protocol: Optional. Config and Query. For FTPS only. Which security mechanism to use. Typically either "SSL"
+    or "TLS". Default to "TLS".
 
 #### Example: Reading an Entire Video Through Queries
 If you want to read a video file from a source using Queries, this method will work.
