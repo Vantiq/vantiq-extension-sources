@@ -189,8 +189,8 @@ public class FtpRetriever implements ImageRetrieverInterface {
                 } else {
                     isImplicit = this.isImplicit;
                 }
-                if (request.get("protocol") instanceof String) {
-                    protocol = (String) request.get("protocol");
+                if (request.get("DSprotocol") instanceof String) {
+                    protocol = (String) request.get("DSprotocol");
                     if (!protocol.equals(this.protocol)) {
                         newServer = true;
                     }

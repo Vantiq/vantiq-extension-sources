@@ -292,6 +292,74 @@ public class TestFtpRetriever extends ObjRecTestBase {
         }
     }
     
+    @Test
+    public void testBadConnections() {
+        Map<String, String> config = workingFtpConfig();
+        config.put("username", "VERY MUCH INVALID");
+        
+        try {
+            retriever.setupDataRetrieval(config, source);
+            fail("Should fail with invalid username");
+        } catch (Exception e) {
+            // Expected
+        }
+        
+        retriever.close();
+        retriever = new FtpRetriever();
+        
+        config = workingSftpConfig();
+        config.put("password", "VERY MUCH INVALID");
+        
+        try {
+            retriever.setupDataRetrieval(config, source);
+            fail("Should fail with invalid password");
+        } catch (Exception e) {
+            // Expected
+        }
+        
+        retriever.close();
+        retriever = new FtpRetriever();
+        
+        config = workingSftpConfig();
+        config.put("server", "VERY MUCH INVALID");
+        
+        try {
+            retriever.setupDataRetrieval(config, source);
+            fail("Should fail with invalid server");
+        } catch (Exception e) {
+            // Expected
+        }
+    }
+    
+    @Test
+    public void testReuseOldConnectionOnSameSettings() {
+        Map<String, Object> config = workingImplicitFtpsConfig();
+        config.put("protocol", "SSL"); 
+        try {
+            retriever.setupDataRetrieval(config, source);
+        } catch (Exception e) {
+            fail("Should not fail with full config. exception message was : " + e.getMessage());
+        }
+        
+        // Copy all the values in config into the request Map
+        Map<String, Object> request = new LinkedHashMap<>();
+        for (Map.Entry<String, Object> entry : config.entrySet()) {
+            request.put("DS" + entry.getKey(), entry.getValue());
+        }
+        request.put("DSfile", "pub/example/winceclient.png");
+        
+        String lastReply = retriever.ftpClient.getReplyString();
+        try {
+            byte[] results = retriever.getImage(request);
+            assert results != null;
+            assert results.length == 19871;
+        } catch (ImageAcquisitionException e) {
+            fail("Should not throw exception trying for the sample file. Message: " + e.getMessage());
+        }
+        
+        // Make sure a new message has been received since the last attempt
+        assert lastReply != retriever.ftpClient.getReplyString();
+    }
 // ================================================= Helper functions =================================================
     public Map<String, String> workingFtpConfig() {
         Map<String, String> config = new LinkedHashMap<>();
