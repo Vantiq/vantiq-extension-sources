@@ -55,8 +55,9 @@ import io.vantiq.extsrc.objectRecognition.neuralNet.NeuralNetInterface;
  * {@link NeuralNetInterface} specified through the {@code type} option. {@code type} is the fully qualified class name
  * of the implementation. It can also be unset, in which case it will attempt to find {@code DefaultRetriever} and 
  * {@code DefaultProcessor}, which will be written by you, for your specific needs. {@code type} can also be set to the
- * implementations included in the standard package, {@code file} for FileRetriever and {@code camera} for 
- * CameraRetriever for the dataSource config, and {@code yolo} for YoloProcessor for the neuralNet config.
+ * implementations included in the standard package: {@code file} for FileRetriever, {@code camera} for 
+ * CameraRetriever, {@code ftp} for FtpRetriever, and {@code network} for NetworkRetriever for the dataSource config; 
+ * and {@code yolo} for YoloProcessor for the neuralNet config.
  */
 public class ObjectRecognitionConfigHandler extends Handler<ExtensionServiceMessage> {
     
@@ -105,6 +106,7 @@ public class ObjectRecognitionConfigHandler extends Handler<ExtensionServiceMess
     final String FILE_RETRIEVER_FQCN        = "io.vantiq.extsrc.objectRecognition.imageRetriever.FileRetriever";
     final String CAMERA_RETRIEVER_FQCN      = "io.vantiq.extsrc.objectRecognition.imageRetriever.CameraRetriever";
     final String NETWORK_RETRIEVER_FQCN     = "io.vantiq.extsrc.objectRecognition.imageRetriever.NetworkRetriever";
+    final String FTP_RETRIEVER_FQCN         = "io.vantiq.extsrc.objectRecognition.imageRetriever.FtpRetriever";
     final String DEFAULT_IMAGE_RETRIEVER    = "io.vantiq.extsrc.objectRecognition.imageRetriever.DefaultRetriever";
     
     /*
@@ -239,6 +241,8 @@ public class ObjectRecognitionConfigHandler extends Handler<ExtensionServiceMess
                 retrieverType = CAMERA_RETRIEVER_FQCN;
             } else if (retrieverType.equals("network")) {
                 retrieverType = NETWORK_RETRIEVER_FQCN;
+            } else if (retrieverType.equals("ftp")) {
+                retrieverType = FTP_RETRIEVER_FQCN;
             } else if (retrieverType.equals("default")) {
                 retrieverType = DEFAULT_IMAGE_RETRIEVER;
             }

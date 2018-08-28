@@ -22,6 +22,35 @@ import io.vantiq.extsrc.objectRecognition.ObjectRecognitionCore;
 import io.vantiq.extsrc.objectRecognition.exception.FatalImageException;
 import io.vantiq.extsrc.objectRecognition.exception.ImageAcquisitionException;
 
+/**
+ * This implementation can read files from FTP, FTPS, and SFTP servers. Not all options available for each protocol are
+ * implemented. Only Queries are allowed, for which {@code file} is necessary. The server created at initialization will
+ * be used if no new options are set for the server and {@code noDefault} was not set to {@code true} for the
+ * configuration. If some but notall options are set for a Query, then the values from the initial configuration are
+ * used.
+ * <br>
+ *
+ * Errors are thrown whenever an image or video frame cannot be read. Fatal errors are thrown only when the initial
+ * server cannot be created.
+ * <br>
+ * The options are as follows. Remember to prepend "DS" when using an option in a Query.
+ * <ul>
+ *   <li>{@code noDefault}: Optional. Config only. When true, no default server is created and no default settings are
+ *                  saved. This means that when true all options without defaults are required for Queries. When false
+ *                  or unset, <i>all other Configuration settings without default values are required</i>.
+ *   <li>{@code server}: Optional. Config and Query. The URL of the server to connect to. It is preferred if the URL
+ *                  is only the domain name, e.g. "site.name.com", though the source will try to obtain the domain name
+ *                  from a URL if necessary.
+ *   <li>{@code username}: Optional. Config and Query. The username for the given server.
+ *   <li>{@code password}: Optional. Config and Query. The password for the given server.
+ *   <li>{@code conType}: Optional. Config and Query. The type of connection you would like, one of "FTP", "FTPS", or
+ *                  "SFTP". Case sensitivity does not matter. Defaults to "FTP".
+ *   <li>{@code implicit}: Optional. Config and Query. For FTPS only. Whether to connect using implicit security.
+ *                  Defaults to false (i.e. explicit mode).
+ *   <li>{@code protocol}: Optional. Config and Query. For FTPS only. Which security mechanism to use. Typically either
+ *                  "SSL" or "TLS". Default to "TLS". 
+ * </ul>
+ */
 public class FtpRetriever implements ImageRetrieverInterface {
 
     final static String FTPS = "ftps";

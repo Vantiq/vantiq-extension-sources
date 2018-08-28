@@ -133,7 +133,8 @@ are:
 *   type: Optional. Can be one of three situations
     1.  The fully qualified class name of an implementation of ImageRetrieverInterface, e.g.
         "io.vantiq.extsrc.objectRecognition.imageRetriever.CameraRetriever".
-    2.  The short name of one of the standard implementations, i.e. one of "[file](#fileRet)", "[camera](#camRet)", [network](#netRet) or "[default](#defaultRet)".
+    2.  The short name of one of the standard implementations, i.e. one of "[file](#fileRet)", "[camera](#camRet)",
+        "[ftp](#ftpRet)", "[network](#netRet)", or "[default](#defaultRet)".
     3.  Empty, in which case the program will try to find an implementation with the name "DefaultRetriever" in
         the `io.vantiq.objectRecognition.imageRetriever` package. This implementation is not provided, and must be
         written by the user.
@@ -307,7 +308,9 @@ stating the type of the object identified, a `confidence` specifying on a scale 
 that the identification is accurate, and a `location` containing the coordinates for the `top`,`left`, `bottom`,
 and `right` edges of the bounding box for the object. It can also save images with the bounding boxes drawn. The options
 are as follows. Remember to prepend "NN" when using an option in a Query.
-*   pbFile: Required. Config only. The .pb file for the model. The model can be trained using [darknet](https://pjreddie.com/darknet/install/) and then translated to tensorflow format using [darkflow](https://github.com/thtrieu/darkflow).
+*   pbFile: Required. Config only. The .pb file for the model. The model can be trained using
+    [darknet](https://pjreddie.com/darknet/install/) and then translated to tensorflow format using
+    [darkflow](https://github.com/thtrieu/darkflow).
 *   labelFile: Required. Config only. The labels for the model.
 *   outputDir: Optional. Config and Query. The directory in which the images (object boxes included) will be placed.
     Images will be saved as "&lt;year&gt;-&lt;month&gt;-&lt;day&gt;--&lt;hour&gt;-&lt;minute&gt;-&lt;second&gt;.jpg"
