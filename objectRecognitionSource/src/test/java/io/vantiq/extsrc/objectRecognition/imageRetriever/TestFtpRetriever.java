@@ -90,11 +90,11 @@ public class TestFtpRetriever extends ObjRecTestBase {
         }
         
         Map<String, String> request = new LinkedHashMap<>();
-        request.put("DSfile", "readme.txt");
+        request.put("DSfile", "pub/example/winceclient.png");
         try {
             byte[] results = retriever.getImage(request);
             assert results != null;
-            assert results.length == 403;
+            assert results.length == 19871;
         } catch (ImageAcquisitionException e) {
             fail("Should not throw exception trying for the sample file");
         }
@@ -118,11 +118,11 @@ public class TestFtpRetriever extends ObjRecTestBase {
         }
         
         Map<String, String> request = new LinkedHashMap<>();
-        request.put("DSfile", "pub/example/readme.txt");
+        request.put("DSfile", "pub/example/winceclient.png");
         try {
             byte[] results = retriever.getImage(request);
             assert results != null;
-            assert results.length == 407;
+            assert results.length == 19871;
         } catch (ImageAcquisitionException e) {
             fail("Should not throw exception trying for the sample file. Message: " + e.getMessage());
         }
@@ -146,11 +146,11 @@ public class TestFtpRetriever extends ObjRecTestBase {
         }
         
         Map<String, String> request = new LinkedHashMap<>();
-        request.put("DSfile", "pub/example/readme.txt");
+        request.put("DSfile", "pub/example/winceclient.png");
         try {
             byte[] results = retriever.getImage(request);
             assert results != null;
-            assert results.length == 407;
+            assert results.length == 19871;
         } catch (ImageAcquisitionException e) {
             fail("Should not throw exception trying for the sample file. Message: " + e.getMessage());
         }
@@ -174,11 +174,11 @@ public class TestFtpRetriever extends ObjRecTestBase {
         }
         
         Map<String, String> request = new LinkedHashMap<>();
-        request.put("DSfile", "readme.txt");
+        request.put("DSfile", "pub/example/winceclient.png");
         try {
             byte[] results = retriever.getImage(request);
             assert results != null;
-            assert results.length == 403;
+            assert results.length == 19871;
         } catch (ImageAcquisitionException e) {
             fail("Should not throw exception trying for the sample file. Message: " + e.getMessage());
         }
@@ -189,6 +189,106 @@ public class TestFtpRetriever extends ObjRecTestBase {
             fail("Should throw exception trying for invalid sample file");
         } catch (ImageAcquisitionException e) {
             // Expected
+        }
+    }
+    
+    @Test
+    public void testNonImageFile() {
+        Map<String, String> config = workingFtpConfig();
+        try {
+            retriever.setupDataRetrieval(config, source);
+        } catch (Exception e) {
+            fail("Should not fail with full config. exception message was : " + e.getMessage());
+        }
+        
+        Map<String, String> request = new LinkedHashMap<>();
+        request.put("DSfile", "pub/example/readme.txt");
+        try {
+            retriever.getImage(request);
+            fail("Should throw exception trying for a non-image file");
+        } catch (ImageAcquisitionException e) {
+            // Expected
+        }
+    }
+    
+    @Test
+    public void testQueryServer() {
+        Map<String, Object> config = new LinkedHashMap<>();
+        config.put("noDefault", true);
+        try {
+            retriever.setupDataRetrieval(config, source);
+        } catch (Exception e) {
+            fail("Should not fail with full config. exception message was : " + e.getMessage());
+        }
+        
+        Map<String, String> request = fullFtpRequest();
+        request.put("DSfile", "pub/example/winceclient.png");
+        try {
+            byte[] results = retriever.getImage(request);
+            assert results != null;
+            assert results.length == 19871;
+        } catch (ImageAcquisitionException e) {
+            fail("Should not throw exception trying for a valid new server");
+        }
+    }
+    
+    @Test
+    public void testIncompleteQuery() {
+        Map<String, Object> config = new LinkedHashMap<>();
+        config.put("noDefault", true);
+        try {
+            retriever.setupDataRetrieval(config, source);
+        } catch (Exception e) {
+            fail("Should not fail with full config. exception message was : " + e.getMessage());
+        }
+        
+        Map<String, String> request = fullFtpRequest();
+        request.put("DSfile", "pub/example/winceclient.png");
+        try {
+            byte[] results = retriever.getImage(request);
+            assert results != null;
+            assert results.length == 19871;
+        } catch (ImageAcquisitionException e) {
+            fail("Should no throw exception for valid file");
+        }
+        
+        request = fullFtpRequest();
+        request.put("DSfile", "pub/example/winceclient.png");
+        request.remove("DSserver");
+        try {
+            retriever.getImage(request);
+            fail("Should throw exception when missing server and has no defaults");
+        } catch (ImageAcquisitionException e) {
+            // Expected
+        }
+        
+        request = fullFtpRequest();
+        request.put("DSfile", "pub/example/winceclient.png");
+        request.remove("DSusername");
+        try {
+            retriever.getImage(request);
+            fail("Should throw exception when missing username and has no defaults");
+        } catch (ImageAcquisitionException e) {
+            // Expected
+        }
+        
+        request = fullFtpRequest();
+        request.put("DSfile", "pub/example/winceclient.png");
+        request.remove("DSpassword");
+        try {
+            retriever.getImage(request);
+            fail("Should throw exception when missing password and has no defaults");
+        } catch (ImageAcquisitionException e) {
+            // Expected
+        }
+        
+        request = fullFtpRequest();
+        request.put("DSfile", "pub/example/winceclient.png");
+        request.remove("DSconType");
+        try {
+            retriever.getImage(request);
+        } catch (ImageAcquisitionException e) {
+            fail("Should succeed when missing conType and has no defaults");
         }
     }
     
@@ -230,5 +330,15 @@ public class TestFtpRetriever extends ObjRecTestBase {
         config.put("conType", "sftp");
         
         return config;
+    }
+    
+    public Map<String, String> fullFtpRequest() {
+        Map<String, String> request = new LinkedHashMap<>();
+        request.put("DSserver", ftpUrl);
+        request.put("DSusername", "demo");
+        request.put("DSpassword", "password");
+        request.put("DSconType", "ftp");
+        
+        return request;
     }
 }

@@ -1,9 +1,14 @@
 package io.vantiq.extsrc.objectRecognition.imageRetriever;
 
+import java.awt.image.BufferedImage;
+import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.net.ConnectException;
+import java.util.Arrays;
 import java.util.Map;
+
+import javax.imageio.ImageIO;
 
 import org.apache.commons.net.ftp.FTPClient;
 import org.apache.commons.net.ftp.FTPReply;
@@ -205,11 +210,8 @@ public class FtpRetriever implements ImageRetrieverInterface {
             if (!conType.equals(this.conType)) {
                 newServer = true;
             }
-        } else if (!noDefault) {
-            conType = this.conType;
         } else {
-            throw new ImageAcquisitionException(this.getClass().getCanonicalName() + ".queryNoDefaultConnectionType: "
-                    + "Connection type option required when configured with no defaults");
+            conType = this.conType;
         }
         
         if (request.get("DSusername") instanceof String) {
@@ -255,13 +257,13 @@ public class FtpRetriever implements ImageRetrieverInterface {
             }
         }
 
-        byte[] results;
+        ByteArrayOutputStream file;
         
         try {
             if (conType == FTP || conType == FTPS) {
-                results = readFromFtpServer(ftpClient, fileName); 
+                file = readFromFtpServer(ftpClient, fileName); 
             } else {
-                results = readFromSftpServer(session, fileName);
+                file = readFromSftpServer(session, fileName);
             }
         } finally {
             if (newServer) {
@@ -281,7 +283,31 @@ public class FtpRetriever implements ImageRetrieverInterface {
                 }
             }
         }
-        return results;
+        
+        ByteArrayInputStream fileInput = new ByteArrayInputStream(file.toByteArray());
+        BufferedImage image;
+        
+        try {
+            image = ImageIO.read(fileInput);
+        } catch (IOException e) {
+            throw new ImageAcquisitionException(this.getClass().getCanonicalName() + ".fileParseError: "
+                    + "Error occurred while reading the file"
+                    , e);
+        }
+        
+        if (image == null) {
+            throw new ImageAcquisitionException(this.getClass().getCanonicalName() + ".unreadableFileType: "
+                    + "Could not understand the requested file. Only " + Arrays.asList(ImageIO.getReaderFormatNames()));
+        }
+        
+        ByteArrayOutputStream results = new ByteArrayOutputStream();
+        try {
+            ImageIO.write(image, "jpeg", results);
+        } catch (IOException e) {
+            throw new ImageAcquisitionException(this.getClass().getCanonicalName() + ".untranslatableFileType: "
+                    + "Could not translate the requested image to jpeg.", e);
+        }
+        return results.toByteArray();
     }
 
     @Override
@@ -405,7 +431,7 @@ public class FtpRetriever implements ImageRetrieverInterface {
      * @return                              The bytes of the file.
      * @throws ImageAcquisitionException    Thrown when the image cannot be retrieved for any reason
      */
-    public byte[] readFromFtpServer(FTPClient client, String filePath) throws ImageAcquisitionException {
+    public ByteArrayOutputStream readFromFtpServer(FTPClient client, String filePath) throws ImageAcquisitionException {
         ByteArrayOutputStream image = new ByteArrayOutputStream(64 * 1024); // Start at 64 kB
         try {
             
@@ -423,7 +449,7 @@ public class FtpRetriever implements ImageRetrieverInterface {
                     + client.getRemoteAddress().getCanonicalHostName()
                     + "' with given username and password. Error message was: " + e.getMessage(), e); 
         }
-        return image.toByteArray();
+        return image;
     }
     
     /**
@@ -433,7 +459,7 @@ public class FtpRetriever implements ImageRetrieverInterface {
      * @return                              The bytes of the file.
      * @throws ImageAcquisitionException    Thrown when the image cannot be retrieved for any reason
      */
-    public byte[] readFromSftpServer(Session session, String fileName) throws ImageAcquisitionException {
+    public ByteArrayOutputStream readFromSftpServer(Session session, String fileName) throws ImageAcquisitionException {
         
         ChannelSftp sftpChannel;
         try {
@@ -462,7 +488,7 @@ public class FtpRetriever implements ImageRetrieverInterface {
             sftpChannel.exit();
         }
         
-        return image.toByteArray();
+        return image;
     }
     
     public String stripDomainName(String url) {

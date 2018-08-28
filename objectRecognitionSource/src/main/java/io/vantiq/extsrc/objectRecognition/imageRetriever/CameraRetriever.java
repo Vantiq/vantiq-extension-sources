@@ -9,9 +9,6 @@
 
 package io.vantiq.extsrc.objectRecognition.imageRetriever;
 
-import java.io.InputStream;
-import java.net.MalformedURLException;
-import java.net.URL;
 import java.util.Map;
 
 import org.opencv.core.Core;
