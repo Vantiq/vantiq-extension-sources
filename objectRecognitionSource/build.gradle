@@ -151,6 +151,7 @@ dependencies {
     
     // Used by FtpRetriever alone. Can be removed if FtpRetriever is removed
     compile "commons-net:commons-net:3.6"
+    compile "com.jcraft:jsch:0.1.54"
     
     if (!opencvDependentFiles.getFiles().isEmpty()) { // Only look for OpenCV if we need it
         if (System.env.OPENCV_LOC == null ) { // Fail out if OpenCV is not available 

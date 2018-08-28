@@ -12,6 +12,12 @@ import org.apache.commons.net.util.TrustManagerUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.jcraft.jsch.ChannelSftp;
+import com.jcraft.jsch.JSch;
+import com.jcraft.jsch.JSchException;
+import com.jcraft.jsch.Session;
+import com.jcraft.jsch.SftpException;
+
 import io.vantiq.extsrc.objectRecognition.ObjectRecognitionCore;
 import io.vantiq.extsrc.objectRecognition.exception.FatalImageException;
 import io.vantiq.extsrc.objectRecognition.exception.ImageAcquisitionException;
@@ -28,9 +34,11 @@ public class FtpRetriever implements ImageRetrieverInterface {
     String  password    = null;
     String  username    = null;
     String  server      = null;
+    String  protocol    = "SSL";
     boolean isImplicit  = false;
     
     FTPClient ftpClient;
+    Session   session;
     
     @Override
     public void setupDataRetrieval(Map<String, ?> dataSourceConfig, ObjectRecognitionCore source) throws Exception {
@@ -49,6 +57,9 @@ public class FtpRetriever implements ImageRetrieverInterface {
                 conType = FTPS;
                 if (dataSourceConfig.get("implicit") instanceof Boolean && (Boolean) dataSourceConfig.get("implicit")) {
                     isImplicit = true;
+                }
+                if (dataSourceConfig.get("protocol") instanceof String) {
+                    protocol = (String) dataSourceConfig.get("protocol");
                 }
             } else if (type.equalsIgnoreCase("sftp")) {
                 conType = SFTP;
@@ -72,54 +83,16 @@ public class FtpRetriever implements ImageRetrieverInterface {
         
         if (conType == FTP || conType == FTPS) { 
             try {
-                ftpClient = connectToFtpServer(server, username, password, conType, isImplicit);
+                ftpClient = connectToFtpServer(server, username, password, conType, protocol, isImplicit);
             } catch (IOException e) {
                 throw new Exception(this.getClass().getCanonicalName() + ".ftpClientSetup: "
                         + "Attempt to connect to the server threw an error with message: " + e.getMessage(), e);
             }
+        } else {
+            session = connectToSftpServer(server, username, password);
         }
     }
     
-    /**
-     * Attempts to connect to server using the arguments passed and returns the result. If {@code conType} is {@link #FTP} or {@link #FTPS}
-     * then an {@link #ftpClient} is set to the correct type. 
-     * @param server        The server url to connect to
-     * @param username      The username to connect with
-     * @param password      The password to connect with
-     * @param conType       The type of connection to use, one of {@link #FTP}, {@link #FTPS}
-     * @return              The server 
-     * @throws IOException  When an attempt to connect with FTPClient throws an IOException
-     */
-    public FTPClient connectToFtpServer(String server, String username, 
-                String password, String conType, boolean isImplicit) throws IOException {
-        FTPClient client;
-        if (conType == FTPS) {
-            client = new FTPSClient(isImplicit);
-            ((FTPSClient) client).setTrustManager(TrustManagerUtils.getAcceptAllTrustManager());
-        } else {
-            client = new FTPClient();
-        }
-        
-        client.connect(server);
-        
-        int reply = client.getReplyCode();
-        if (!FTPReply.isPositiveCompletion(reply)) {
-            client.disconnect();
-            throw new ConnectException(this.getClass().getCanonicalName() + ".failedConnection: "
-                    + "Could not connect to server '" + server + "'");
-        }
-        
-        boolean success = client.login(username, password);
-        if (!success) {
-            client.logout();
-            client.disconnect();
-            throw new ConnectException(this.getClass().getCanonicalName() + ".failedLogin: "
-                    + "Could not log into server '" + server + "' using the given credentials");
-        }
-        
-        return client;
-    }
-
     @Override
     public byte[] getImage() throws ImageAcquisitionException {
         throw new FatalImageException(this.getClass().getCanonicalName() + ".pollingNotAllowed: "
@@ -135,8 +108,10 @@ public class FtpRetriever implements ImageRetrieverInterface {
         String      conType;
         String      username;
         String      password;
+        String      protocol   = null;
         boolean     isImplicit = false;
         FTPClient   ftpClient;
+        Session     session;
         
         if (request.get("DSfile") instanceof String) {
             fileName = (String) request.get("DSfile");
@@ -160,6 +135,19 @@ public class FtpRetriever implements ImageRetrieverInterface {
                 conType = FTPS;
                 if (request.get("DSimplicit") instanceof Boolean && (Boolean) request.get("DSimplicit")) {
                     isImplicit = true;
+                    if (isImplicit != this.isImplicit) {
+                        newServer = true;
+                    }
+                } else {
+                    isImplicit = this.isImplicit;
+                }
+                if (request.get("protocol") instanceof String) {
+                    protocol = (String) request.get("protocol");
+                    if (!protocol.equals(this.protocol)) {
+                        newServer = true;
+                    }
+                } else {
+                    protocol = this.protocol;
                 }
             } else if (type.equalsIgnoreCase("sftp")) {
                 conType = SFTP;
@@ -193,35 +181,53 @@ public class FtpRetriever implements ImageRetrieverInterface {
             password = this.password;
         }
         
+        ftpClient = this.ftpClient;
+        session = this.session;
         if (newServer) {
-            try {
-                ftpClient = connectToFtpServer(server, username, password, conType, isImplicit);
-            } catch (IOException e) {
-                throw new ImageAcquisitionException(this.getClass().getCanonicalName() + ".queryFailedConnection: "
-                        + "Could not connect to server '" + server + "' with given username and password", e); 
+            if (conType == FTP || conType == FTPS) {
+                try {
+                    ftpClient = connectToFtpServer(server, username, password, conType, protocol, isImplicit);
+                } catch (IOException e) {
+                    throw new ImageAcquisitionException(this.getClass().getCanonicalName() + ".queryFailedConnection: "
+                            + "Could not connect to server '" + server + "' with given username and password", e); 
+                }
+            } else {
+                try {
+                    session = connectToSftpServer(server, username, password);
+                } catch (Exception e) {
+                    throw new ImageAcquisitionException(this.getClass().getCanonicalName() + ".queryFailedConnection: "
+                            + "", e);
+                }
             }
-        } else {
-            ftpClient = this.ftpClient;
         }
+
+        byte[] results;
         
-        ByteArrayOutputStream image = new ByteArrayOutputStream(64 * 1024); // Start at 64 kB
         try {
-            
-            boolean success = ftpClient.retrieveFile(fileName, image);
+            if (conType == FTP || conType == FTPS) {
+                results = readFromFtpServer(ftpClient, fileName); 
+            } else {
+                results = readFromSftpServer(session, fileName);
+            }
+        } finally {
             if (newServer) {
-                ftpClient.logout();
-                ftpClient.disconnect();
+                if (conType == FTP || conType == FTPS) {
+                    try {
+                        ftpClient.logout();
+                    } catch (IOException e) {
+                        // Do nothing
+                    }
+                    try {
+                        ftpClient.disconnect();
+                    } catch (IOException e) {
+                        // Do nothing
+                    }
+                } else {
+                    session.disconnect();
+                }
             }
-            if (!success) {
-                throw new ImageAcquisitionException(this.getClass().getCanonicalName() + ".fileRetrievalError: "
-                        + "File could not be retreived. Most likely the file could not be found.");
-            }
-        } catch (IOException e) {
-            throw new ImageAcquisitionException(this.getClass().getCanonicalName() + ".fileRetrievalError: "
-                    + "Could not read file '" + fileName + "' from server '" + server 
-                    + "' with given username and password. Error message was: " + e.getMessage(), e); 
         }
-        return image.toByteArray();
+        return results;
     }
 
     @Override
@@ -239,5 +245,116 @@ public class FtpRetriever implements ImageRetrieverInterface {
             }
             ftpClient = null;
         }
+        if (session != null) {
+            session.disconnect();
+        }
+    }
+    
+    /**
+     * Attempts to connect to server using the arguments passed and returns the result. If {@code conType} is {@link #FTP} or {@link #FTPS}
+     * then an {@link #ftpClient} is set to the correct type. 
+     * @param server        The server url to connect to
+     * @param username      The username to connect with
+     * @param password      The password to connect with
+     * @param conType       The type of connection to use, one of {@link #FTP}, {@link #FTPS}
+     * @return              The server 
+     * @throws IOException  When an attempt to connect with FTPClient throws an IOException
+     */
+    public FTPClient connectToFtpServer(String server, String username,
+                String password, String conType, String protocol, boolean isImplicit) throws IOException {
+        FTPClient client;
+        if (conType == FTPS) {
+            client = new FTPSClient(protocol, isImplicit);
+            ((FTPSClient) client).setTrustManager(TrustManagerUtils.getAcceptAllTrustManager());
+            client.enterLocalPassiveMode();
+        } else {
+            client = new FTPClient();
+        }
+        
+        client.connect(server);
+        
+        int reply = client.getReplyCode();
+        if (!FTPReply.isPositiveCompletion(reply)) {
+            client.disconnect();
+            throw new ConnectException(this.getClass().getCanonicalName() + ".failedConnection: "
+                    + "Could not connect to server '" + server + "'");
+        }
+        
+        boolean success = client.login(username, password);
+        if (!success) {
+            client.logout();
+            client.disconnect();
+            throw new ConnectException(this.getClass().getCanonicalName() + ".failedLogin: "
+                    + "Could not log into server '" + server + "' using the given credentials");
+        }
+        
+        return client;
+    }
+    
+    public Session connectToSftpServer(String server, String username, String password) throws Exception {
+        JSch jsch = new JSch();
+        Session sess;
+        try {
+            sess = jsch.getSession(username, server);
+        } catch (JSchException e) {
+            throw new Exception(this.getClass().getCanonicalName() + ".failedSftpSessionSetup: "
+                    + "Could not create session at host '" + server + "' with given username");
+        }
+        
+        sess.setConfig("StrictHostKeyChecking", "no");
+        sess.setPassword(password);
+        
+        try {
+            sess.connect();
+        } catch (JSchException e) {
+            throw new Exception(this.getClass().getCanonicalName() + ".failedSftpConnection: "
+                    + "Could not connect to session at host '" + server + "' with given username and password.", e);
+        }
+        
+        return sess;
+    }
+    
+    public byte[] readFromFtpServer(FTPClient client, String fileName) throws ImageAcquisitionException {
+        ByteArrayOutputStream image = new ByteArrayOutputStream(64 * 1024); // Start at 64 kB
+        try {
+            
+            boolean success = client.retrieveFile(fileName, image);
+            
+            if (!success) {
+                throw new ImageAcquisitionException(this.getClass().getCanonicalName() + ".fileRetrievalError: "
+                        + "File could not be retreived. Most likely the file could not be found. "
+                        + "Reply was : " + client.getReplyString());
+            }
+        } catch(IOException e) {
+            throw new ImageAcquisitionException(this.getClass().getCanonicalName() + ".fileConnectionError: "
+                    + "Could not read file '" + fileName + "' from server '" 
+                    + client.getRemoteAddress().getCanonicalHostName()
+                    + "' with given username and password. Error message was: " + e.getMessage(), e); 
+        }
+        return image.toByteArray();
+    }
+    
+    public byte[] readFromSftpServer(Session session, String fileName) throws ImageAcquisitionException {
+        
+        ChannelSftp sftpChannel;
+        try {
+            sftpChannel = (ChannelSftp) session.openChannel("sftp");
+        } catch (JSchException e) {
+            throw new ImageAcquisitionException(this.getClass().getCanonicalName() + ".sftpChannelFailure: "
+                    + "Could not connect to server with SFTP protocol. The target server may not be configured for SFTP"
+                    , e);
+        }
+        
+        ByteArrayOutputStream image = new ByteArrayOutputStream(64 * 1024); // Start at 64 kB
+        try {
+            sftpChannel.get(fileName, image);
+        } catch (SftpException e) {
+            throw new ImageAcquisitionException(this.getClass().getCanonicalName() + ".sftpRetrieval: "
+                    + "Error when trying to retrieve file '" + fileName + "' from server", e);
+        } finally {
+            sftpChannel.exit();
+        }
+        
+        return image.toByteArray();
     }
 }
