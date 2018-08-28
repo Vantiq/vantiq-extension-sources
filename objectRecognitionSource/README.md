@@ -324,6 +324,8 @@ to [the original library](https://github.com/szaza/tensorflow-example-java), mos
 functions, and changing the program to perform better when sending images consecutively. Changed and added functions
 are documented, and most if not all are in ObjectDetector and IOUtil.  
 
+JSch is licensed under a [BSD-style license](http://www.jcraft.com/jsch/LICENSE.txt).
+
 OpenCV is licensed under the [BSD 3-clause license](https://opencv.org/license.html). OpenCV typically uses third party
 components that may have stricter licenses than BSD3 and other licenses in this project. It is the responsibility of the
 user of this library to ensure that they meet all licensing requirements of components in or used by their OpenCV build.
