@@ -359,6 +359,18 @@ public class TestFtpRetriever extends ObjRecTestBase {
         
         // Make sure a new message has been received since the last attempt
         assert lastReply != retriever.ftpClient.getReplyString();
+        
+        lastReply = retriever.ftpClient.getReplyString();
+        request.put("DSimplicit", !((Boolean)request.get("DSimplicit")));
+        try {
+            byte[] results = retriever.getImage(request);
+            assert results != null;
+            assert results.length == 19871;
+        } catch (ImageAcquisitionException e) {
+            fail("Should not throw exception trying for the sample file. Message: " + e.getMessage());
+        }
+        // Make sure the reply has not changed
+        assert lastReply == retriever.ftpClient.getReplyString();
     }
 // ================================================= Helper functions =================================================
     public Map<String, String> workingFtpConfig() {

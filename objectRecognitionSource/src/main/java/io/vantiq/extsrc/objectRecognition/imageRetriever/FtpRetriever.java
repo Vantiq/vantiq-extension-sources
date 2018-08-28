@@ -181,8 +181,12 @@ public class FtpRetriever implements ImageRetrieverInterface {
             String type = (String) request.get("DSconType");
             if (type.equalsIgnoreCase("ftps")) {
                 conType = FTPS;
-                if (request.get("DSimplicit") instanceof Boolean && (Boolean) request.get("DSimplicit")) {
-                    isImplicit = true;
+                if (request.get("DSimplicit") instanceof Boolean) {
+                    if ((Boolean) request.get("DSimplicit")) {
+                        isImplicit = true;
+                    } else {
+                        isImplicit = false;
+                    }
                     if (isImplicit != this.isImplicit) {
                         newServer = true;
                     }
