@@ -133,8 +133,7 @@ are:
 *   type: Optional. Can be one of three situations
     1.  The fully qualified class name of an implementation of ImageRetrieverInterface, e.g.
         "io.vantiq.extsrc.objectRecognition.imageRetriever.CameraRetriever".
-    2.  The short name of one of the standard implementations, i.e. one of "[file](#fileRet)", "[camera](#camRet)",
-        or "[default](#defaultRet)".
+    2.  The short name of one of the standard implementations, i.e. one of "[file](#fileRet)", "[camera](#camRet)", [network](#netRet) or "[default](#defaultRet)".
     3.  Empty, in which case the program will try to find an implementation with the name "DefaultRetriever" in
         the `io.vantiq.objectRecognition.imageRetriever` package. This implementation is not provided, and must be
         written by the user.
@@ -187,6 +186,15 @@ mode.
 
 The options are as follows. Remember to prepend "DS" when using an option in a Query.
 *   camera: Required for Config, optional for Query. The index of the camera to read images from. For queries, defaults
+    to the camera specified in the Config.
+    
+### Network Retriever<a name="netRet" id="netRet"></a>
+
+This implementation uses OpenCV to capture live frames from a camera connected to a network address. Errors are thrown
+whenever an image cannot be read successfully, whenever the provided URL uses an unsupported protocol, whenever the URL was unable to be opened, or whenever the URL does not represent a video stream. Fatal errors are thrown only when the camera is inaccessible in non-Query mode, (i.e. if the video stream has ended).  
+
+The options are as follows. Remember to prepend "DS" when using an option in a Query.
+*   camera: Required for Config, optional for Query. The URL of the camera to read images from. For queries, defaults
     to the camera specified in the Config.
 
 ### File Retriever<a name="fileRet" id="fileRet"></a>
