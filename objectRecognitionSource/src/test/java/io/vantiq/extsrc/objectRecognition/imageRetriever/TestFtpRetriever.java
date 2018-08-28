@@ -1,7 +1,6 @@
 package io.vantiq.extsrc.objectRecognition.imageRetriever;
 
 import static org.junit.Assert.fail;
-import static org.junit.Assume.assumeTrue;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -19,9 +18,9 @@ public class TestFtpRetriever extends ObjRecTestBase {
     FtpRetriever retriever;
     NoSendORCore source;
     
-    String ftpUrl   = "speedtest.tele2.net";
-    String ftpsUrl  = "ftps.cs.brown.edu";
-    String sftpUrl  = "demo.wftpserver.com";
+    String ftpUrl   = "test.rebex.net";
+    String ftpsUrl  = "test.rebex.net";
+    String sftpUrl  = "test.rebex.net";
     
     @Before
     public void setup() {
@@ -37,8 +36,6 @@ public class TestFtpRetriever extends ObjRecTestBase {
     
     @Test
     public void testSetup() {
-        assumeFtpConnect();
-        
         Map<String, String> config = workingFtpConfig();
         
         try {
@@ -85,8 +82,6 @@ public class TestFtpRetriever extends ObjRecTestBase {
     
     @Test
     public void testFtpDownload() {
-        assumeFtpConnect();
-        
         Map<String, String> config = workingFtpConfig();
         try {
             retriever.setupDataRetrieval(config, source);
@@ -95,11 +90,11 @@ public class TestFtpRetriever extends ObjRecTestBase {
         }
         
         Map<String, String> request = new LinkedHashMap<>();
-        request.put("DSfile", "1KB.zip");
+        request.put("DSfile", "readme.txt");
         try {
             byte[] results = retriever.getImage(request);
             assert results != null;
-            assert results.length == 1024;
+            //assert results.length == 407;
         } catch (ImageAcquisitionException e) {
             fail("Should not throw exception trying for the sample file");
         }
@@ -115,8 +110,6 @@ public class TestFtpRetriever extends ObjRecTestBase {
     
     @Test
     public void testFtpsDownload() {
-        //assumeFtpsConnect();
-        
         Map<String, Object> config = workingFtpsConfig();
         try {
             retriever.setupDataRetrieval(config, source);
@@ -145,8 +138,6 @@ public class TestFtpRetriever extends ObjRecTestBase {
     
     @Test
     public void testSftpDownload() {
-        //assumeFtpsConnect();
-        
         Map<String, String> config = workingSftpConfig();
         try {
             retriever.setupDataRetrieval(config, source);
@@ -177,8 +168,8 @@ public class TestFtpRetriever extends ObjRecTestBase {
     public Map<String, String> workingFtpConfig() {
         Map<String, String> config = new LinkedHashMap<>();
         config.put("server", ftpUrl);
-        config.put("username", "anonymous");
-        config.put("password", UNUSED);
+        config.put("username", "demo");
+        config.put("password", "password");
         config.put("conType", "ftp");
         
         return config;
@@ -186,8 +177,8 @@ public class TestFtpRetriever extends ObjRecTestBase {
     public Map<String, Object> workingFtpsConfig() {
         Map<String, Object> config = new LinkedHashMap<>();
         config.put("server", ftpsUrl);
-        config.put("username", "anonymous");
-        config.put("password", UNUSED);
+        config.put("username", "demo");
+        config.put("password", "password");
         config.put("conType", "ftps");
         config.put("implicit", true);
         
@@ -196,20 +187,10 @@ public class TestFtpRetriever extends ObjRecTestBase {
     public Map<String, String> workingSftpConfig() {
         Map<String, String> config = new LinkedHashMap<>();
         config.put("server", sftpUrl);
-        config.put("username", "demo-user");
-        config.put("password", "demo-user");
+        config.put("username", "demo");
+        config.put("password", "password");
         config.put("conType", "sftp");
         
         return config;
-    }
-    
-    void assumeFtpConnect() {
-        assumeTrue("Could not connect to test url", checkUrl("ftp://" + ftpUrl));
-    }
-    void assumeFtpsConnect() {
-        assumeTrue("Could not connect to test url", checkUrl("ftps://" + ftpsUrl) || checkUrl("ftpes://" + ftpsUrl));
-    }
-    void assumeSftpConnect() {
-        assumeTrue("Could not connect to test url", checkUrl("sftp://" + ftpUrl));
     }
 }

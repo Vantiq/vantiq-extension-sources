@@ -266,10 +266,10 @@ public class FtpRetriever implements ImageRetrieverInterface {
         if (conType == FTPS) {
             client = new FTPSClient(protocol, isImplicit);
             ((FTPSClient) client).setTrustManager(TrustManagerUtils.getAcceptAllTrustManager());
-            client.enterLocalPassiveMode();
         } else {
             client = new FTPClient();
         }
+        // client.enterLocalPassiveMode();
         
         client.connect(server);
         
@@ -345,6 +345,14 @@ public class FtpRetriever implements ImageRetrieverInterface {
                     , e);
         }
         
+        try {
+            sftpChannel.connect();
+        } catch (JSchException e) {
+            e.printStackTrace();
+            throw new ImageAcquisitionException(this.getClass().getCanonicalName() + ".sftpRetrieval: "
+                    + "Error when trying to retrieve file '" + fileName + "' from server", e);
+        }
+
         ByteArrayOutputStream image = new ByteArrayOutputStream(64 * 1024); // Start at 64 kB
         try {
             sftpChannel.get(fileName, image);
