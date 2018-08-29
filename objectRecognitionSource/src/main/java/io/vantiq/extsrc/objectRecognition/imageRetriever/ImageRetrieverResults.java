@@ -4,8 +4,7 @@ import java.util.Date;
 import java.util.Map;
 
 /**
- * A class used to transfer the image, timestamp, and miscellaneous data from image retrievers. All constructors and
- * setters are protected so that only neural nets can create and change these objects.
+ * A class used to transfer the image, timestamp, and miscellaneous data from image retrievers.
  */
 public class ImageRetrieverResults {
 
@@ -23,14 +22,14 @@ public class ImageRetrieverResults {
      */
     protected Map<String, ?>    otherData   = null;
     
-    protected ImageRetrieverResults() {
+    public ImageRetrieverResults() {
         // Do nothing
     }
     
     /**
      * @param image     The image captured
      */
-    protected ImageRetrieverResults(byte[] image) {
+    public ImageRetrieverResults(byte[] image) {
         this.image = image;
     }
     
@@ -39,7 +38,7 @@ public class ImageRetrieverResults {
      * @param timestamp The time at which the image was captured.
      * @param otherData A Map containing any data that should be passed to the source
      */
-    protected ImageRetrieverResults(byte[] image, Date timestamp, Map<String, ?> otherData) {
+    public ImageRetrieverResults(byte[] image, Date timestamp, Map<String, ?> otherData) {
         this.image = image;
         this.timestamp = timestamp;
         this.otherData = otherData;
@@ -55,7 +54,7 @@ public class ImageRetrieverResults {
     /**
      * @param image   The image captured
      */
-    protected void setImage(byte[] image) {
+    public void setImage(byte[] image) {
         this.image = image;
     }
     
@@ -83,7 +82,7 @@ public class ImageRetrieverResults {
     /**
      * @param otherData A Map containing any data that should be passed to the source
      */
-    protected void setOtherData(Map<String, ?> otherData) {
+    public void setOtherData(Map<String, ?> otherData) {
         this.otherData = otherData;
     }
     

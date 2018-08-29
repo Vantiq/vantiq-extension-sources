@@ -4,8 +4,7 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * A class used to transfer the results and miscellaneous data from neural nets. All constructors and setters are
- * protected so that only neural nets can create and change these objects.
+ * A class used to transfer the results and miscellaneous data from neural nets.
  */
 public class NeuralNetResults {
 
@@ -18,13 +17,13 @@ public class NeuralNetResults {
      */
     protected Map<String, ?>          otherData   = null;
     
-    protected NeuralNetResults() {
+    public NeuralNetResults() {
         // Do nothing
     }
     /**
      * @param results   The results of processing the image received
      */
-    protected NeuralNetResults(List<Map<String, ?>> results) {
+    public NeuralNetResults(List<Map<String, ?>> results) {
         this.results = results;
     }
     
@@ -32,7 +31,7 @@ public class NeuralNetResults {
      * @param results   The results of processing the image received
      * @param otherData A Map containing any data that should be passed to the source
      */
-    protected NeuralNetResults(List<Map<String, ?>> results, Map<String, ?> otherData) {
+    public NeuralNetResults(List<Map<String, ?>> results, Map<String, ?> otherData) {
         this.results = results;
         this.otherData = otherData;
     }
@@ -47,7 +46,7 @@ public class NeuralNetResults {
     /**
      * @param results   The results of processing the image received
      */
-    protected void setResults(List<Map<String, ?>> results) {
+    public void setResults(List<Map<String, ?>> results) {
         this.results = results;
     }
 
@@ -61,7 +60,7 @@ public class NeuralNetResults {
     /**
      * @param otherData A Map containing any data that should be passed to the source
      */
-    protected void setOtherData(Map<String, ?> otherData) {
+    public void setOtherData(Map<String, ?> otherData) {
         this.otherData = otherData;
     }
     

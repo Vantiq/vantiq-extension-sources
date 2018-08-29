@@ -5,13 +5,16 @@
 *   [ObjectRecognitionCore](#core) -- Controls the connection to a source, the input images, and the output.
 *   [ObjectRecognitionConfigHandler](#srcConfig) -- Sets up the neural net and image retriever based on the source's
     configuration document.
+*   NeuralNetResults -- A class that holds the data passed back by neural net implementations.
 *   [NeuralNetInterface](#netInterface) -- An interface that allows other neural nets to be more easily integrated
     without changes to the rest of the code.
     *   [YoloProcessor](#yoloNet) -- An implementation of the [You Only Look Once](https://pjreddie.com/darknet/yolo/)
         (YOLO) object detection software using Java Tensorflow.
+*   ImageRetrieverResults -- A class that holds the data passed back by image retriever implementations.
 *   [ImageRetrieverInterface](#retrieveInterface) -- An interface that allows different image retrieval mechanisms to be
         more easily integrated without changes to the rest of the code.
     *   [CameraRetriever](#cameraRet) -- Retrieves images from a directly connected camera using OpenCV.
+    *   [NetworkStreamRetriever](#netRet) -- Retrieves images from an IP camera.
     *   [FileRetriever](#fileRet) -- Retrieves images and videos from disk.
     *   [FtpRetriever](#ftpRet) -- Retrieves images through FTP, FTPS, and SFTP.
 
@@ -152,6 +155,25 @@ Most of the options required for neuralNet are dependent on the specific impleme
         the `io.vantiq.objectRecognition.neuralNet` package. This implementation is not provided, and must be written by
         the user.
 
+## Messages from the Source
+
+Messages from the source are JSON objects in the following format:
+```
+{
+    results: [<object found>, <object found>],
+    timestamp: <seconds since Jan 1 1970 00:00:00, a.k.a standard Unix time>,
+    dataSource: {
+        <additional data sent back by data source>
+    },
+    neuralNet: {
+        <additional data sent back by neural net>
+    }
+}
+```
+The contents and ordering of the objects in `results` are dependent on the implementation of the neural net, but they
+are guaranteed to be JSON objects. The contents of `dataSource` and `neuralNet` are dependent on the implementation of
+each. The timestamp is not required. Note that the timestamp is immediately usable as the VAIL DateTime type.
+
 ## Queries
 
 Options can be specified through the WITH clause for both the neuralNet and dataSource. The options for Queries are
@@ -160,12 +182,20 @@ sections. Since it is possible for both the data source and the neural net to us
 standard implementations prepend the options with DS and NN for all queries, i.e. if you want to Query using the
 `fileLocation` option for a data source you would set the `DSfileLocation` property in the WITH clause. This may or may
 not apply for non-standard implementations, though developers are advised to follow this rule for consistency's sake.  
-The SELECT statement that created the Query will receive results in the same format that a source normally receives.
+The SELECT statement that created the Query will only receive an array of JSON objects representing the objects 
+identified, in the format used by the neural [net implementation](#netInterface).  
+
+Options available for all Queries (not prepended by anything) are:
+*   sendFullResponse: Optional. Specifies that this request should send back data in the same format as a notification
+    instead of only the objects recognized. Note that the data will be the sole occupant of a 1-element array when
+    received, instead of being immediately available as a JSON object. This is because Query results are mandated
+    to be arrays. Default is false.
 
 ## Image Retriever Interface<a name="retrieveInterface" id="retrieveInterface"></a>
 
-This is an interface that returns a jpeg encoded image. Settings may or may not differ for periodic messages versus
-Query responses. There are two implementations included in the standard package.
+This is an interface that returns a jpeg encoded image, a timestamp (optional), and a Map containing any data that a
+source may need. Settings may or may not differ for periodic messages versus Query responses. There are four
+implementations included in the standard package.
 
 ### Default Retriever<a name="defaultRet" id="defaultRet"></a>
 
@@ -188,15 +218,22 @@ mode.
 The options are as follows. Remember to prepend "DS" when using an option in a Query.
 *   camera: Required for Config, optional for Query. The index of the camera to read images from. For queries, defaults
     to the camera specified in the Config.
+
+The timestamp is captured immediately before the image is grabbed from the camera. No other data is included.
     
-### Network Retriever<a name="netRet" id="netRet"></a>
+### Network Stream Retriever<a name="netRet" id="netRet"></a>
 
 This implementation uses OpenCV to capture live frames from a camera connected to a network address. Errors are thrown
-whenever an image cannot be read successfully, whenever the provided URL uses an unsupported protocol, whenever the URL was unable to be opened, or whenever the URL does not represent a video stream. Fatal errors are thrown only when the camera is inaccessible in non-Query mode, (i.e. if the video stream has ended).  
+whenever an image cannot be read successfully, whenever the provided URL uses an unsupported protocol, whenever the URL
+was unable to be opened, or whenever the URL does not represent a video stream. Fatal errors are thrown only when the
+camera is inaccessible in non-Query mode, (i.e. if the video stream has ended).  
 
 The options are as follows. Remember to prepend "DS" when using an option in a Query.
 *   camera: Required for Config, optional for Query. The URL of the camera to read images from. For queries, defaults
     to the camera specified in the Config.
+
+The timestamp is captured immediately before the image is grabbed from the camera. The additional data is:
+*   camera: The URL of the camera that the image was read from.
 
 ### File Retriever<a name="fileRet" id="fileRet"></a>
 
@@ -226,6 +263,10 @@ The options are as follows. Remember to prepend "DS" when using an option in a Q
     negative or beyond the video's frame count. Non-integer values are allowed. Mutually exclusive with targetFrame.
     Defaults to 0.
 
+No timestamp is captured. The additional data is:
+*   file: The path of the file read.
+*   frame: Which frame of the file this represents. Only included when `fileExtension` is set to "mov".
+
 ### FTP Retriever<a name="ftpRet" id="ftpRet"></a>
 
 This implementation can read files from FTP, FTPS, and SFTP servers. Not all options available for each protocol are
@@ -235,6 +276,7 @@ all options are set for a Query, then the values from the initial configuration 
 
 Errors are thrown whenever an image or video frame cannot be read. Fatal errors are thrown only when the initial server
 cannot be created.  
+
 The options are as follows. Remember to prepend "DS" when using an option in a Query.
 *   noDefault: Optional. Config only. When true, no default server is created and no default settings are saved. This
     means that when true all options without defaults are required for Queries. When false or unset, *all other
@@ -249,6 +291,10 @@ The options are as follows. Remember to prepend "DS" when using an option in a Q
     (i.e. explicit mode).
 *   protocol: Optional. Config and Query. For FTPS only. Which security mechanism to use. Typically either "SSL"
     or "TLS". Default to "TLS".
+
+The timestamp is captured immediately before the copy request is sent. The additional data is:
+*   file: The path of the file read.
+*   server: The domain name of the server which the file was read from.
 
 #### Example: Reading an Entire Video Through Queries
 If you want to read a video file from a source using Queries, this method will work.
@@ -288,8 +334,9 @@ try {
 
 ## Neural Net Interface<a name="netInterface" id="netInterface"></a>
 
-This is a user written interface that interprets a jpeg encoded image and returns the results in a List of JSON-friendly
-Maps. Settings can be set through configuration or Query messages, and settings may differ between the two.
+This is a user written interface that interprets a jpeg encoded image and returns the results in a List of Maps and any
+other data that the source may need. Settings can be set through configuration or Query messages, and settings may
+differ between the two.
 
 ### Default Processor<a name="defaultNet" id="defaultNet"></a>
 
@@ -326,6 +373,8 @@ The options are as follows. Remember to prepend "NN" when using an option in a Q
     "&lt;year&gt;-&lt;month&gt;-&lt;day&gt;--&lt;hour&gt;-&lt;minute&gt;-&lt;second&gt;.jpg" if not set.
 *   saveRate: Optional. Config only. The rate at which images will be saved, once every n frames captured. Default is
     every frame captured when unset or a non-positive number. Does nothing if outputDir is not set at config.
+
+No additional data is sent.
 
 ## Testing
 

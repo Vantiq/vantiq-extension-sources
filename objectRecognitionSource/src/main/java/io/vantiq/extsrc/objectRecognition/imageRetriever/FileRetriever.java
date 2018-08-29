@@ -244,6 +244,7 @@ public class FileRetriever implements ImageRetrieverInterface {
                 return results;
             } else {
                 File imageFile = new File((String) request.get("DSfileLocation"));
+                otherData.put("file", (String) request.get("DSfileLocation"));
                 try {
                     results.setImage(Files.readAllBytes(imageFile.toPath()));
                     return results;
