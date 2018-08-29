@@ -90,13 +90,14 @@ public class YoloProcessor implements NeuralNetInterface {
      * Run the image through a YOLO net. May save the resulting image depending on the settings.
      */
     @Override
-    public List<Map> processImage(byte[] image) throws ImageProcessingException {
-        List<Map> results;
+    public NeuralNetResults processImage(byte[] image) throws ImageProcessingException {
+        List<Map<String, ?>> foundObjects;
+        NeuralNetResults results = new NeuralNetResults();
         long after;
         long before = System.currentTimeMillis();
 
         try {
-            results = objectDetector.detect(image);
+            foundObjects = objectDetector.detect(image);
         } catch (IllegalArgumentException e) {
             throw new ImageProcessingException(this.getClass().getCanonicalName() + ".invalidImage: " 
                     + "Data to be processed was invalid. Most likely it was not correctly encoded as a jpg.", e);
@@ -104,7 +105,9 @@ public class YoloProcessor implements NeuralNetInterface {
 
         after = System.currentTimeMillis();
         log.debug("Image processing time: {}.{} seconds"
-                , (after - before) / 1000, String.format("%0.3d", (after - before) % 1000));
+                , (after - before) / 1000, String.format("%03d", (after - before) % 1000));
+        
+        results.setResults(foundObjects);
         return results;
     }
     
@@ -112,8 +115,9 @@ public class YoloProcessor implements NeuralNetInterface {
      * Run the image through a YOLO net. May save the resulting image depending on the request.
      */
     @Override
-    public List<Map> processImage(byte[] image, Map<String, ?> request) throws ImageProcessingException {
-        List<Map> results;
+    public NeuralNetResults processImage(byte[] image, Map<String, ?> request) throws ImageProcessingException {
+        List<Map<String, ?>> foundObjects;
+        NeuralNetResults results = new NeuralNetResults();
         String outputDir = null;
         String fileName = null;
         
@@ -127,7 +131,7 @@ public class YoloProcessor implements NeuralNetInterface {
         long after;
         long before = System.currentTimeMillis();
         try {
-            results = objectDetector.detect(image, outputDir, fileName);
+            foundObjects = objectDetector.detect(image, outputDir, fileName);
         } catch (IllegalArgumentException e) {
             throw new ImageProcessingException(this.getClass().getCanonicalName() + ".queryInvalidImage: " 
                     + "Data to be processed was invalid. Most likely it was not correctly encoded as a jpg.", e);
@@ -135,7 +139,10 @@ public class YoloProcessor implements NeuralNetInterface {
         
 
         after = System.currentTimeMillis();
-        log.debug("Image processing time: " + (after - before) / 1000 + "." + (after - before) % 1000 + " seconds");
+        log.debug("Image processing time: {}.{} seconds"
+                , (after - before) / 1000, String.format("%03d", (after - before) % 1000));
+        
+        results.setResults(foundObjects);
         return results;
     }
 

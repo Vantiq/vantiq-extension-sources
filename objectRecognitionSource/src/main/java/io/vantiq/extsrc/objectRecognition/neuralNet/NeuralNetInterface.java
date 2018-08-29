@@ -35,13 +35,15 @@ public interface NeuralNetInterface {
      * depending on whether the source is setup for Queries.
      *
      * @param image                     The bytes of a jpg file.
-     * @return                          A List returning Maps describing the objects identified. The ordering and 
-     *                                  contents of the Maps is implementation dependent.
+     * @return                          A {@link NeuralNetInterface} containing a List of Maps describing the objects
+     *                                  identified and a Map containing other data that the source may need to know.
+     *                                  The ordering and contents of the List of Maps is implementation dependent, as 
+     *                                  is the contents of the Map containing other useful data.
      * @throws ImageProcessingException Thrown when the image could not be processed for any reason
      * @throws FatalImageException      Thrown when the image processing fails in such a way that the processor cannot
      *                                  recover
      */
-    List<Map> processImage(byte[] image) throws ImageProcessingException;
+    NeuralNetResults processImage(byte[] image) throws ImageProcessingException;
     
     /**
      * Process the image using the options in {@code request} and return a List of Maps describing the objects
@@ -50,13 +52,15 @@ public interface NeuralNetInterface {
      *
      * @param image                     The bytes of a jpg file.
      * @param request                   The options accompanying a Query message.
-     * @return                          A List returning Maps describing the objects identified. The ordering and 
-     *                                  contents of the Maps is implementation dependent.
+     * @return                          A {@link NeuralNetInterface} containing a List of Maps describing the objects
+     *                                  identified and a Map containing other data that the source may need to know.
+     *                                  The ordering and contents of the List of Maps is implementation dependent, as 
+     *                                  is the contents of the Map containing other useful data.
      * @throws ImageProcessingException Thrown when the image could not be processed for any reason
      * @throws FatalImageException      Thrown when the image processing fails in such a way that the processor cannot
      *                                  recover
      */
-    List<Map> processImage(byte[] image, Map<String, ?> request) throws ImageProcessingException;
+    NeuralNetResults processImage(byte[] image, Map<String, ?> request) throws ImageProcessingException;
     
     /**
      * Safely close any resources obtained by the net

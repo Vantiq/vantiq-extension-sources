@@ -36,7 +36,6 @@ public class TestYoloProcessor extends NeuralNetTestBase {
     static final String OUTPUT_DIR         = "src/test/resources/out";
     static final int    SAVE_RATE          = 2; // Saves every other so that we can know it counts correctly
     
-    static YoloProcessor ypImageSaver;
     static YoloProcessor ypJson;
     
     static final String timestampPattern   = "\\d{4}-\\d{2}-\\d{2}--\\d{2}-\\d{2}-\\d{2}\\.jpg";
@@ -47,7 +46,6 @@ public class TestYoloProcessor extends NeuralNetTestBase {
         assumeTrue("No model file for test. Should be at " + new File(MODEL_DIRECTORY + "/" + PB_FILE).getAbsolutePath() + ""
                 , new File(MODEL_DIRECTORY + "/" + PB_FILE).exists());
         
-        ypImageSaver = new YoloProcessor();
         ypJson = new YoloProcessor();
         
         Map<String, Object> config = new LinkedHashMap<>();
@@ -58,21 +56,10 @@ public class TestYoloProcessor extends NeuralNetTestBase {
         } catch (Exception e) {
             fail("Could not setup the JSON YoloProcessor");
         }
-        
-        config.put("outputDir", OUTPUT_DIR);
-        config.put("saveRate", SAVE_RATE);
-        try {
-            ypImageSaver.setupImageProcessing(config, MODEL_DIRECTORY);
-        } catch (Exception e) {
-            fail("Could not setup the JSON YoloProcessor");
-        }
     }
     
     @AfterClass
     public static void classTearDown() {
-        ypImageSaver.close();
-        ypImageSaver = null;
-        
         ypJson.close();
         ypJson = null;
         
@@ -84,10 +71,11 @@ public class TestYoloProcessor extends NeuralNetTestBase {
     
     @Test
     public void testResults() throws ImageProcessingException {
-        List<Map> results = ypJson.processImage(getTestImage());
+        NeuralNetResults results = ypJson.processImage(getTestImage());
         assert results != null;
+        assert results.getResults() != null;
         try {
-            resultsEquals(results, getExpectedResults()); // Will throw assert error with a message when not equivalent
+            resultsEquals(results.getResults(), getExpectedResults()); // Will throw assert error with a message when not equivalent
         }
         catch (IOException e) {
             fail("Could not interpret json string" + e.getMessage());
@@ -113,6 +101,19 @@ public class TestYoloProcessor extends NeuralNetTestBase {
     
     @Test
     public void testImageSaving() throws ImageProcessingException {
+        Map config = new LinkedHashMap<>();
+        YoloProcessor ypImageSaver = new YoloProcessor();
+        
+        config.put("pbFile", PB_FILE);
+        config.put("labelFile", LABEL_FILE);
+        config.put("outputDir", OUTPUT_DIR);
+        config.put("saveRate", SAVE_RATE);
+        try {
+            ypImageSaver.setupImageProcessing(config, MODEL_DIRECTORY);
+        } catch (Exception e) {
+            fail("Could not setup the JSON YoloProcessor");
+        }
+        
         File d = new File(OUTPUT_DIR);
         try {
             // Ensure no results from previous tests
@@ -120,8 +121,9 @@ public class TestYoloProcessor extends NeuralNetTestBase {
                 deleteDirectory(OUTPUT_DIR);
             }
             
-            List<Map> results = ypImageSaver.processImage(getTestImage());
+            NeuralNetResults results = ypImageSaver.processImage(getTestImage());
             assert results != null;
+            assert results.getResults() != null;
             
             // Should save first image with timestamp
             assert d.exists();
@@ -129,16 +131,20 @@ public class TestYoloProcessor extends NeuralNetTestBase {
             assert d.listFiles().length == 1;
             assert d.listFiles()[0].getName().matches(timestampPattern);
             
+            results = null;
             results = ypImageSaver.processImage(getTestImage());
             assert results != null;
+            assert results.getResults() != null;
             
             // Every other so second should not save
             assert d.exists();
             assert d.isDirectory();
             assert d.listFiles().length == 1;
             
+            results = null;
             results = ypImageSaver.processImage(getTestImage());
             assert results != null;
+            assert results.getResults() != null;
             
             // Every other so third and first should be saved
             assert d.exists();
@@ -152,11 +158,27 @@ public class TestYoloProcessor extends NeuralNetTestBase {
             if (d.exists()) {
                 deleteDirectory(OUTPUT_DIR);
             }
+            
+            ypImageSaver.close();
         }
     }
     
     @Test
     public void testQuery() throws ImageProcessingException {
+        Map config = new LinkedHashMap<>();
+        YoloProcessor ypImageSaver = new YoloProcessor();
+        
+        config.put("pbFile", PB_FILE);
+        config.put("labelFile", LABEL_FILE);
+        config.put("outputDir", OUTPUT_DIR);
+        config.put("saveRate", SAVE_RATE);
+        try {
+            ypImageSaver.setupImageProcessing(config, MODEL_DIRECTORY);
+        } catch (Exception e) {
+            fail("Could not setup the JSON YoloProcessor");
+        }
+        
+        
         String queryOutputDir = OUTPUT_DIR + "query";
         String queryOutputFile = "file";
         File d = new File(OUTPUT_DIR);
@@ -171,15 +193,18 @@ public class TestYoloProcessor extends NeuralNetTestBase {
             }
             
             Map request = new LinkedHashMap<>();
-            List<Map> results = ypImageSaver.processImage(getTestImage(), request);
+            NeuralNetResults results = ypJson.processImage(getTestImage(), request);
             assert results != null;
+            assert results.getResults() != null;
             
             // Should not have saved image
             assert !d.exists();
             
             request.put("NNfileName", queryOutputFile);
+            results = null;
             results = ypImageSaver.processImage(getTestImage(), request);
             assert results != null;
+            assert results.getResults() != null;
             
             // Should have saved the image at queryOutputFile + ".jpg"
             assert d.exists();
@@ -190,8 +215,10 @@ public class TestYoloProcessor extends NeuralNetTestBase {
             request.put("NNoutputDir", queryOutputDir);
             request.remove("NNfileName");
             assert !dNew.exists();
+            results = null;
             results = ypImageSaver.processImage(getTestImage(), request);
             assert results != null;
+            assert results.getResults() != null;            
             
             // Should be saved with a timestamp
             assert dNew.exists();
@@ -201,13 +228,21 @@ public class TestYoloProcessor extends NeuralNetTestBase {
             
             queryOutputFile += ".jpeg";
             request.put("NNfileName", queryOutputFile);
+            results = null;
             results = ypImageSaver.processImage(getTestImage(), request);
             assert results != null;
+            assert results.getResults() != null;
             
             assert dNew.listFiles().length == 2;
-            for (File f : dNew.listFiles()) {
-                String name = f.getName();
-                assert name.matches(timestampPattern) || name.equals(queryOutputFile);
+            
+            File[] files = dNew.listFiles();
+            
+            if (files[0].getName().matches(timestampPattern)) {
+                assert files[1].getName().equals(queryOutputFile);
+            } else if (files[0].getName().equals(queryOutputFile)) {
+                assert files[1].getName().matches(timestampPattern);
+            } else {
+                fail("Files are improperly named");
             }
             
         } finally {
@@ -218,6 +253,8 @@ public class TestYoloProcessor extends NeuralNetTestBase {
             if (dNew.exists()) {
                 deleteDirectory(queryOutputDir);
             }
+            
+            ypImageSaver.close();
         }
     }
     
@@ -231,10 +268,10 @@ public class TestYoloProcessor extends NeuralNetTestBase {
         return m.readValue(imageResultsAsString, List.class);
     }
     
-    void resultsEquals(List<Map> actualRes, List<Map> expectedRes) {
-        assert actualRes.size() == expectedRes.size();
-        for (int i = 0; i < actualRes.size(); i ++) {
-            mapEquals(actualRes.get(i), expectedRes.get(i));
+    void resultsEquals(List<Map<String, ?>> list, List<Map> expectedRes) {
+        assert list.size() == expectedRes.size();
+        for (int i = 0; i < list.size(); i ++) {
+            mapEquals(list.get(i), expectedRes.get(i));
         }
     }
     

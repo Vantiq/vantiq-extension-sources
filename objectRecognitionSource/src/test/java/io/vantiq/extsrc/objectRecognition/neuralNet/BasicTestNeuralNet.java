@@ -37,7 +37,7 @@ public class BasicTestNeuralNet implements NeuralNetInterface {
     }
 
     @Override
-    public List<Map> processImage(byte[] image) throws ImageProcessingException {
+    public NeuralNetResults processImage(byte[] image) throws ImageProcessingException {
         if (config.containsKey(THROW_EXCEPTION_ON_REQ)) {
             throw new ImageProcessingException("Exception on request");
         } else if (config.containsKey(THROW_FATAL_ON_REQ)) {
@@ -48,13 +48,14 @@ public class BasicTestNeuralNet implements NeuralNetInterface {
             return null;
         } else {
             Map<String, String> m = new LinkedHashMap<>();
-            List<Map> l = new ArrayList<>(); l.add(m);
-            return l;
+            List<Map<String, ?>> l = new ArrayList<>(); l.add(m);
+            
+            return new NeuralNetResults(l);
         }
     }
     
     @Override
-    public List<Map> processImage(byte[] image, Map<String, ?> request) throws ImageProcessingException {
+    public NeuralNetResults processImage(byte[] image, Map<String, ?> request) throws ImageProcessingException {
         if (config.containsKey(THROW_EXCEPTION_ON_REQ)) {
             throw new ImageProcessingException("Exception on request");
         } else if (config.containsKey(THROW_FATAL_ON_REQ)) {
@@ -65,8 +66,9 @@ public class BasicTestNeuralNet implements NeuralNetInterface {
             return null;
         } else {
             Map<String, String> m = new LinkedHashMap<>();
-            List<Map> l = new ArrayList<>(); l.add(m);
-            return l;
+            List<Map<String, ?>> l = new ArrayList<>(); l.add(m);
+            
+            return new NeuralNetResults(l);
         }
     }
 

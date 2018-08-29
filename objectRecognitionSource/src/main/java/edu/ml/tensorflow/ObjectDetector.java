@@ -86,7 +86,7 @@ public class ObjectDetector {
      *              identification is accurate, and a {@code location} containing the coordinates for the
      *              {@code top},{@code left}, {@code bottom}, and {@code right} edges of the bounding box for the object.
      */
-    public List<Map> detect(final byte[] image) {
+    public List<Map<String, ?>> detect(final byte[] image) {
         try (Tensor<Float> normalizedImage = normalizeImage(image)) {
             Date now = new Date(); // Saves the time before
             List<Recognition> recognitions = YOLOClassifier.getInstance().classifyImage(executeYOLOGraph(normalizedImage), LABELS);
@@ -119,7 +119,7 @@ public class ObjectDetector {
      *                  {@code top},{@code left}, {@code bottom}, and {@code right} edges of the bounding box for
      *                  the object.
      */
-    public List<Map> detect(final byte[] image, String outputDir, String fileName) {
+    public List<Map<String, ?>> detect(final byte[] image, String outputDir, String fileName) {
         try (Tensor<Float> normalizedImage = normalizeImage(image)) {
             Date now = new Date(); // Saves the time before
             List<Recognition> recognitions = YOLOClassifier.getInstance().classifyImage(executeYOLOGraph(normalizedImage), LABELS);
@@ -217,8 +217,8 @@ public class ObjectDetector {
      * ADDED BY NAMIR - Used to convert recognitions to JSON
      * @param recognitions
      */
-    private List<Map> returnJSON(final List<Recognition> recognitions) {
-    	List<Map> jsonRecognitions = new ArrayList<Map>();
+    private List<Map<String, ?>> returnJSON(final List<Recognition> recognitions) {
+        List<Map<String, ?>> jsonRecognitions = new ArrayList<>();
         for (Recognition recognition : recognitions) {
             //recognition.getTitle(), recognition.getConfidence(), recognition.getLocation());
         	HashMap map = new HashMap();

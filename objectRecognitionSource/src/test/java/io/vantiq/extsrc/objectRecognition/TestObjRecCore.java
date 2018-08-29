@@ -190,6 +190,11 @@ public class TestObjRecCore extends ObjRecTestBase {
         core.sendDataFromImage(imageData);
         sentMsg = core.fClient.getLastMessageAsMap();
         assert sentMsg.get("op").equals(ExtensionServiceMessage.OP_NOTIFICATION);
+        assert sentMsg.get("object") instanceof Map;
+        Map<String, ?> sentObj = (Map) sentMsg.get("object");
+        assert sentObj.get("results") instanceof List;
+        assert sentObj.get("dataSource") instanceof Map;
+        assert sentObj.get("neuralNet") instanceof Map;
         assertFalse("Core should not be closed", core.isClosed());
         
         assertTrue("Test helper setupNeuralNet failed unexpectedly"
@@ -223,6 +228,7 @@ public class TestObjRecCore extends ObjRecTestBase {
         Map<String, String> header = new LinkedHashMap<>();
         header.put(ExtensionServiceMessage.ORIGIN_ADDRESS_HEADER, "queryAddress");
         msg.messageHeaders = header;
+        msg.object = new LinkedHashMap<>();
         
         assertTrue("Test helper setupNeuralNet failed unexpectedly"
                 , setupNeuralNet(BasicTestNeuralNet.THROW_EXCEPTION_ON_REQ));

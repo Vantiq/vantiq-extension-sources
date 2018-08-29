@@ -10,7 +10,6 @@
 package io.vantiq.extsrc.objectRecognition;
 
 import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Timer;
 import java.util.concurrent.CompletableFuture;
@@ -31,6 +30,7 @@ import io.vantiq.extsrc.objectRecognition.exception.ImageProcessingException;
 import io.vantiq.extsrc.objectRecognition.imageRetriever.ImageRetrieverInterface;
 import io.vantiq.extsrc.objectRecognition.imageRetriever.ImageRetrieverResults;
 import io.vantiq.extsrc.objectRecognition.neuralNet.NeuralNetInterface;
+import io.vantiq.extsrc.objectRecognition.neuralNet.NeuralNetResults;
 
 /**
  * Controls the connection and interaction with the Vantiq server. Initialize it and call start() and it will run 
@@ -269,8 +269,9 @@ public class ObjectRecognitionCore {
                 if (neuralNet == null) { // Should only happen when close() runs just before sendDataFromImage()
                     return;
                 }
-                List<Map> data = neuralNet.processImage(image);
-                client.sendNotification(data);
+                NeuralNetResults results = neuralNet.processImage(image);
+                Map message = createMapFromResults(imageResults, results);
+                client.sendNotification(message);
             }
         } catch (ImageProcessingException e) {
             log.warn("Could not process image", e);
@@ -314,11 +315,16 @@ public class ObjectRecognitionCore {
                    }
                    return;
                }
-               List<Map> data = neuralNet.processImage(image, request);
-               if (data.isEmpty()) {
+               NeuralNetResults results = neuralNet.processImage(image, request);
+               
+               if (request.get("sendFullResponse") instanceof Boolean && (Boolean) request.get("sendFullResponse")) {
+                   Map response = createMapFromResults(imageResults, results);
+                   client.sendQueryResponse(200, replyAddress, response);
+               }
+               if (results.getResults().isEmpty()) {
                    client.sendQueryResponse(204, replyAddress, new LinkedHashMap<>());
                } else {
-                   client.sendQueryResponse(200, replyAddress, data.toArray(new Map[0]));
+                   client.sendQueryResponse(200, replyAddress, results.getResults().toArray(new Map[0]));
                }
            }
        } catch (ImageProcessingException e) {
@@ -348,14 +354,23 @@ public class ObjectRecognitionCore {
        }
    }
    
-   Map<String, Object> createMapFromResults(ImageRetrieverResults imageResults, List<Map> neuralNetResults) {
+   Map<String, Object> createMapFromResults(ImageRetrieverResults imageResults, NeuralNetResults neuralNetResults) {
        Map<String, Object> map = new LinkedHashMap<>();
        
        map.put("timestamp", imageResults.getTimestamp());
-       map.put("dataSource", imageResults.getOtherData());
+       if (neuralNetResults.getOtherData() != null) {
+           map.put("dataSource", imageResults.getOtherData());
+       } else {
+           map.put("dataSource", new LinkedHashMap<>());
+       }
        
-       // TODO update when adding NeuralNetResults
-       map.put("results", neuralNetResults);
+       map.put("results", neuralNetResults.getResults());
+       if (neuralNetResults.getOtherData() != null) {
+           map.put("neuralNet", neuralNetResults.getOtherData());
+       } else {
+           map.put("neuralNet", new LinkedHashMap<>());
+       }
+       
        
        return map;
    }

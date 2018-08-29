@@ -31,6 +31,8 @@ public interface ImageRetrieverInterface {
      * Obtain an image's bytes in jpeg format. For each instance of the retriever, only one of {@link #getImage()} and
      * {@link #getImage(Map)} will be called depending on whether the source is setup for Queries.
      * @return                              An {@link ImageRetrieverResults} object containing an image in jpeg format
+     *                                      and a Map containing any other data the source may need to know. The
+     *                                      contents of the Map are implementation dependent.
      * @throws ImageAcquisitionException    Thrown when an image could not be acquired
      * @throws FatalImageException          Thrown when the image retrieval fails in such a way that the retriever
      *                                      cannot recover
@@ -43,6 +45,8 @@ public interface ImageRetrieverInterface {
      * the source is setup for Queries.
      * @param request                       The data sent in the Query request.
      * @return                              An {@link ImageRetrieverResults} object containing an image in jpeg format
+     *                                      and a Map containing any other data the source may need to know. The
+     *                                      contents of the Map are implementation dependent.
      * @throws ImageAcquisitionException    Thrown when an image could not be acquired
      * @throws FatalImageException          Thrown when the image retrieval fails in such a way that the retriever
      *                                      cannot recover
