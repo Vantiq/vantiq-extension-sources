@@ -13,16 +13,38 @@ repositories {
 
 mainClassName = 'io.vantiq.extsrc.objectRecognition.ObjectRecognitionMain'
 
+// Used to check if OpenCV is needed, and compile with OpenCV or throw errors if needed
+// Should be "**/<source file name>.java" for every file that need openCV to run
 def opencvDependentSourceFilePatterns = new ArrayList<String>(
     [
         "**/CameraRetriever.java",
-        "**/FileRetriever.java"
+        "**/FileRetriever.java",
+        "**/NetworkStreamRetriever.java"
     ]
 )
 def opencvDependentFiles = sourceSets.main.java.matching(
         { delegate.setIncludes(opencvDependentSourceFilePatterns) }
 )
 
+// Used to automatically ignore tests for implementations that have been removed.
+// The tests should be called "Test<source file name>.java"
+// And should be included in the list as "**/Test<source file name>.java"
+def standardImplementationTestPatterns = new ArrayList<String>(
+    [
+        "**/TestCameraRetriever.java",
+        "**/TestFileRetriever.java",
+        "**/TestYoloProcessor.java",
+        "**/TestNetworkStreamRetriever",
+        "**/TestFtpRetriever.java"
+    ]
+)
+
+// This is the version of OpenCV that you will be using. Should be "XYZ" for version X.Y.Z
+def opencvVersion = "342"
+
+// Add the logConfig folder to the classpath so that changes to logConfig/log4j2.xml will be used for logging
+// and set java.library.path to the contents of the environment variable OPENCV_LOC so the OpenCV native libraries are
+// usable 
 startScripts{
     doLast{
         def windowsScriptFile = file getWindowsScript()
@@ -39,20 +61,23 @@ startScripts{
     }
 }
 
+// Don't javadoc the Yolo code
 javadoc.exclude("edu/*")
 
+// Copies the README and licenses into the distribution
 applicationDistribution.from(".") {
     include "README.md"
     include "LICENSE/*"
     into ""
 }
 
+// Copies the logger setup into logConfig in the distribution
 applicationDistribution.from("src/main/resources") {
     include "log4j2.xml"
     into "logConfig"
 }
 
-
+// Downloads the large (100 MB+) video and graph files used for Yolo tests
 task addTestFiles {
     // Download 'sampleVideo.mov' if it doesn't already exist
     def sampleVideoUrl = new URL("https://www.dropbox.com/s/h5yd00qr8sfgdlt/sampleVideo.mov?dl=1")
@@ -74,23 +99,24 @@ tasks.withType(Test) {
     systemProperty "java.library.path", "${System.env.OPENCV_LOC}"
 }
 
+// Logs a warning if the .dll/.so/.dylib cannot be found for OpenCV when OpenCV is needed
 assemble.doLast {
     def os = org.gradle.internal.os.OperatingSystem.current()
     // Only need to warn about missing libraries if there are files dependent on OpenCV
     if (!opencvDependentFiles.getFiles().isEmpty()) {
         if (os.isWindows()) {
-            if (!file("${System.env.OPENCV_LOC}\\opencv_java342.dll").exists()) {
-                logger.warn("Cannot find opencv_java342.dll in '${System.env.OPENCV_LOC}'. Ensure that the requested "
+            if (!file("${System.env.OPENCV_LOC}\\opencv_java${opencvVersion}.dll").exists()) {
+                logger.warn("Cannot find opencv_java${opencvVersion}.dll in '${System.env.OPENCV_LOC}'. Ensure that the requested "
                     + "file exists at the folder specified in the environment variable OPENCV_LOC")
             }
         } else if (os.isLinux()) {
-            if (!file("${System.env.OPENCV_LOC}/libopencv_java342.so").exists()) {
-                logger.warn("Cannot find libopencv_java342.so in '${System.env.OPENCV_LOC}'. Ensure that the requested "
+            if (!file("${System.env.OPENCV_LOC}/libopencv_java${opencvVersion}.so").exists()) {
+                logger.warn("Cannot find libopencv_java${opencvVersion}.so in '${System.env.OPENCV_LOC}'. Ensure that the requested "
                     + "file exists at the folder specified in the environment variable OPENCV_LOC")
             }
         } else if (os.isMacOsX()) {
-            if (!file("${System.env.OPENCV_LOC}/libopencv_java342.dylib").exists()) {
-                logger.warn("Cannot find libopencv_java342.dylib in '${System.env.OPENCV_LOC}/'. Ensure that the "
+            if (!file("${System.env.OPENCV_LOC}/libopencv_java${opencvVersion}.dylib").exists()) {
+                logger.warn("Cannot find libopencv_java${opencvVersion}.dylib in '${System.env.OPENCV_LOC}/'. Ensure that the "
                     + "requested file exists at the folder specified in the environment variable OPENCV_LOC")
             }
         } else {
@@ -104,16 +130,8 @@ compileJava.doFirst {
     removeUnnecessaryTests()
 }
 
-def standardImplementationTestPatterns = new ArrayList<String>(
-    [
-        "**/TestCameraRetriever.java",
-        "**/TestFileRetriever.java",
-        "**/TestYoloProcessor.java"
-    ]
-)
-
 // Make 'removeUnnecessaryTests' a callable function
-// It makes the build skip tests for any of the standard image retriever or neural net implementations that
+// It makes the build not compile tests for any of the standard image retriever or neural net implementations that
 // have been deleted 
 ext.removeUnnecessaryTests = {
 
@@ -122,6 +140,8 @@ ext.removeUnnecessaryTests = {
             def testedFile = testPattern.substring(7) // Remove '**/Test' from the Pattern, leaving the tested file
             def testedFilePattern = '**/' + testedFile // Add '**/' to the tested file so it can be found in the source sets
             
+            // Get all files that match "**/<source file>" which should just be the source file or nothing if the
+            // source file has been removed
             def standardFile = sourceSets.main.java.matching(
                     { delegate.include(testedFilePattern) }
             )
@@ -153,6 +173,8 @@ dependencies {
     compile "commons-net:commons-net:3.6"
     compile "com.jcraft:jsch:0.1.54"
     
+    // This imports OpenCV if it is needed, and throws an error if OpenCV is needed but not properly setup
+    // The opencv
     if (!opencvDependentFiles.getFiles().isEmpty()) { // Only look for OpenCV if we need it
         if (System.env.OPENCV_LOC == null ) { // Fail out if OpenCV is not available 
             // Setting depFileNames to the files still dependent on OpenCV
@@ -160,16 +182,16 @@ dependencies {
             opencvDependentFiles.getFiles().forEach {file -> depFileNames += file.getName() + "', '"}
             depFileNames = depFileNames.substring(0, depFileNames.length() - 3) // Remove the last ", '"
             throw new Exception("Environment variable 'OPENCV_LOC' is not set. Either set it to a location containing " + 
-            "opencv-342.jar and the compiled OpenCV library, or remove ${depFileNames}")
-        } else if (!file("${System.env.OPENCV_LOC}/opencv-342.jar").exists()) { // Fail out if the OpenCV jar is missing
+            "opencv-${opencvVersion}.jar and the compiled OpenCV library, or remove ${depFileNames}")
+        } else if (!file("${System.env.OPENCV_LOC}/opencv-${opencvVersion}.jar").exists()) { // Fail out if the OpenCV jar is missing
             // Setting depFileNames to the files still dependent on OpenCV
             def depFileNames = "'"
             opencvDependentFiles.getFiles().forEach {file -> depFileNames += file.getName() + "', '"}
             depFileNames = depFileNames.substring(0, depFileNames.length() - 3) // Remove the last ", '"
-            throw new Exception("Could not find opencv-342.jar in '${System.env.OPENCV_LOC}'. Either add the jar to the "
+            throw new Exception("Could not find opencv-${opencvVersion}.jar in '${System.env.OPENCV_LOC}'. Either add the jar to the "
                 + "folder specified in the environment variable OPENCV_LOC or remove ${depFileNames}")
         } else {
-            compile files("${System.env.OPENCV_LOC}/opencv-342.jar")
+            compile files("${System.env.OPENCV_LOC}/opencv-${opencvVersion}.jar")
         }
     }
 
