@@ -42,6 +42,10 @@ public class ExtensionWebSocketClient {
      * The code for a query response where data is sent and no more is coming.
      */
     public static final int QUERY_DATA_CODE     = 200;
+    /**
+     * The code for a query response where no data is sent and no more is coming.
+     */
+    public static final int QUERY_NODATA_CODE   = 204;
     
     /**
      * An {@link ObjectMapper} used to transform objects into JSON before sending
@@ -237,7 +241,7 @@ public class ExtensionWebSocketClient {
      */
     public void sendQueryResponseEmpty(String replyAddress) {
         Response response = new Response()
-                .status(204)
+                .status(QUERY_NODATA_CODE)
                 .addHeader(ExtensionServiceMessage.RESPONSE_ADDRESS_HEADER, replyAddress);
         send(response);
     }
