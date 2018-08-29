@@ -358,7 +358,7 @@ public class ObjectRecognitionCore {
        Map<String, Object> map = new LinkedHashMap<>();
        
        map.put("timestamp", imageResults.getTimestamp());
-       if (neuralNetResults.getOtherData() != null) {
+       if (imageResults.getOtherData() != null) {
            map.put("dataSource", imageResults.getOtherData());
        } else {
            map.put("dataSource", new LinkedHashMap<>());
