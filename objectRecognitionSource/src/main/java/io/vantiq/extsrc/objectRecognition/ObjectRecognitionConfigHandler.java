@@ -129,26 +129,26 @@ public class ObjectRecognitionConfigHandler extends Handler<ExtensionServiceMess
         
         // Obtain the Maps for each object
         if ( !(config.get("config") instanceof Map && ((Map)config.get("config")).get("objRecConfig") instanceof Map) ) {
-            log.error("No configuration received for source ' " + sourceName + "'. Exiting...");
+            log.error("No configuration suitable for an objectRecognition. Waiting for valid config...");
             failConfig();
             return;
         }
         config = (Map) ((Map) config.get("config")).get("objRecConfig");
         
         if ( !(config.get("general") instanceof Map)) {
-            log.error("No general options specified. Exiting...");
+            log.error("No general options specified. Waiting for valid config...");
             failConfig();
             return;
         }
         general = (Map) config.get("general");
         if ( !(config.get("dataSource") instanceof Map)) {
-            log.error("No data source specified. Exiting...");
+            log.error("No data source specified. Waiting for valid config...");
             failConfig();
             return;
         }
         dataSource = (Map) config.get("dataSource");
         if ( !(config.get("neuralNet") instanceof Map)) {
-            log.error("No neural net specified. Exiting...");
+            log.error("No neural net specified. Waiting for valid config...");
             failConfig();
             return;
         }
@@ -306,7 +306,7 @@ public class ObjectRecognitionConfigHandler extends Handler<ExtensionServiceMess
         
         if (polling < 0 && !queryable) {
             log.error("Not configured for data to be sent");
-            log.error("Exiting...");
+            log.error("Waiting for valid config...");
             failConfig();
             return false;
         }
@@ -315,10 +315,12 @@ public class ObjectRecognitionConfigHandler extends Handler<ExtensionServiceMess
     }
     
     /**
-     * Stops the host {@link ObjectRecognitionCore} and marks the configuration as completed.
+     * Closes the source {@link ObjectRecognitionCore} and marks the configuration as completed. The source will
+     * be reactivated when the source reconnects, due either to a Reconnect message (likely created by an update to the
+     * configuration document) or to the WebSocket connection crashing momentarily.
      */
     private void failConfig() {
-        source.stop();
+        source.close();
         configComplete = true;
     }
     
