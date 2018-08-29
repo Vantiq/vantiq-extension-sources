@@ -22,6 +22,8 @@ public class TestFtpRetriever extends ObjRecTestBase {
     String ftpsUrl  = "test.rebex.net";
     String sftpUrl  = "test.rebex.net";
     
+    // final static int IMAGE_FILE_SIZE = 19872;
+    
     @Before
     public void setup() {
         retriever = new FtpRetriever();
@@ -92,7 +94,9 @@ public class TestFtpRetriever extends ObjRecTestBase {
         Map<String, String> request = new LinkedHashMap<>();
         request.put("DSfile", "pub/example/winceclient.png");
         try {
-            byte[] results = retriever.getImage(request);
+            ImageRetrieverResults imgResults = retriever.getImage(request);
+            assert imgResults != null;
+            byte[] results = imgResults.getImage();
             assert results != null;
             assert results.length == 19871;
         } catch (ImageAcquisitionException e) {
@@ -120,7 +124,9 @@ public class TestFtpRetriever extends ObjRecTestBase {
         Map<String, String> request = new LinkedHashMap<>();
         request.put("DSfile", "pub/example/winceclient.png");
         try {
-            byte[] results = retriever.getImage(request);
+            ImageRetrieverResults imgResults = retriever.getImage(request);
+            assert imgResults != null;
+            byte[] results = imgResults.getImage();
             assert results != null;
             assert results.length == 19871;
         } catch (ImageAcquisitionException e) {
@@ -148,7 +154,9 @@ public class TestFtpRetriever extends ObjRecTestBase {
         Map<String, String> request = new LinkedHashMap<>();
         request.put("DSfile", "pub/example/winceclient.png");
         try {
-            byte[] results = retriever.getImage(request);
+            ImageRetrieverResults imgResults = retriever.getImage(request);
+            assert imgResults != null;
+            byte[] results = imgResults.getImage();
             assert results != null;
             assert results.length == 19871;
         } catch (ImageAcquisitionException e) {
@@ -176,7 +184,9 @@ public class TestFtpRetriever extends ObjRecTestBase {
         Map<String, String> request = new LinkedHashMap<>();
         request.put("DSfile", "pub/example/winceclient.png");
         try {
-            byte[] results = retriever.getImage(request);
+            ImageRetrieverResults imgResults = retriever.getImage(request);
+            assert imgResults != null;
+            byte[] results = imgResults.getImage();
             assert results != null;
             assert results.length == 19871;
         } catch (ImageAcquisitionException e) {
@@ -224,7 +234,9 @@ public class TestFtpRetriever extends ObjRecTestBase {
         Map<String, String> request = fullFtpRequest();
         request.put("DSfile", "pub/example/winceclient.png");
         try {
-            byte[] results = retriever.getImage(request);
+            ImageRetrieverResults imgResults = retriever.getImage(request);
+            assert imgResults != null;
+            byte[] results = imgResults.getImage();
             assert results != null;
             assert results.length == 19871;
         } catch (ImageAcquisitionException e) {
@@ -245,7 +257,9 @@ public class TestFtpRetriever extends ObjRecTestBase {
         Map<String, String> request = fullFtpRequest();
         request.put("DSfile", "pub/example/winceclient.png");
         try {
-            byte[] results = retriever.getImage(request);
+            ImageRetrieverResults imgResults = retriever.getImage(request);
+            assert imgResults != null;
+            byte[] results = imgResults.getImage();
             assert results != null;
             assert results.length == 19871;
         } catch (ImageAcquisitionException e) {
@@ -350,7 +364,9 @@ public class TestFtpRetriever extends ObjRecTestBase {
         
         String lastReply = retriever.ftpClient.getReplyString();
         try {
-            byte[] results = retriever.getImage(request);
+            ImageRetrieverResults imgResults = retriever.getImage(request);
+            assert imgResults != null;
+            byte[] results = imgResults.getImage();
             assert results != null;
             assert results.length == 19871;
         } catch (ImageAcquisitionException e) {
@@ -363,7 +379,9 @@ public class TestFtpRetriever extends ObjRecTestBase {
         lastReply = retriever.ftpClient.getReplyString();
         request.put("DSimplicit", !((Boolean)request.get("DSimplicit")));
         try {
-            byte[] results = retriever.getImage(request);
+            ImageRetrieverResults imgResults = retriever.getImage(request);
+            assert imgResults != null;
+            byte[] results = imgResults.getImage();
             assert results != null;
             assert results.length == 19871;
         } catch (ImageAcquisitionException e) {

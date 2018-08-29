@@ -59,7 +59,9 @@ public class TestFileRetriever extends ObjRecTestBase {
             fail("Exception occurred when setting up: " + e.toString());
         }
         try {
-            byte[] data = fr.getImage();
+            ImageRetrieverResults results;
+            results = fr.getImage();
+            byte[] data = results.getImage();
             assert data != null;
             assert data.length > 0;
         } catch (ImageAcquisitionException e) {
@@ -106,7 +108,9 @@ public class TestFileRetriever extends ObjRecTestBase {
             copyFile(IMAGE_LOCATION, location2);
             
             try {
-                byte[] data = fr.getImage();
+                ImageRetrieverResults results;
+                results = fr.getImage();
+                byte[] data = results.getImage();
                 assert data != null;
                 assert data.length > 0;
             } catch (ImageAcquisitionException e) {
@@ -129,7 +133,9 @@ public class TestFileRetriever extends ObjRecTestBase {
         try {
             Map<String, String> message = new LinkedHashMap<>();
             message.put("DSfileLocation", IMAGE_LOCATION);
-            byte[] data = fr.getImage(message);
+            ImageRetrieverResults results;
+            results = fr.getImage(message);
+            byte[] data = results.getImage();
             assert data != null;
             assert data.length > 0;
         } catch (ImageAcquisitionException e) {
@@ -167,7 +173,9 @@ public class TestFileRetriever extends ObjRecTestBase {
         }
         try {
             Map<String, String> message = new LinkedHashMap<>();
-            byte[] data = fr.getImage(message);
+            ImageRetrieverResults results;
+            results = fr.getImage(message);
+            byte[] data = results.getImage();
             assert data != null;
             assert data.length > 0;
         } catch (ImageAcquisitionException e) {
@@ -186,7 +194,9 @@ public class TestFileRetriever extends ObjRecTestBase {
             fail("Exception occurred when setting up " + e.toString());
         }
         try {
-            byte[] data = fr.getImage();
+            ImageRetrieverResults results;
+            results = fr.getImage();
+            byte[] data = results.getImage();
             assert data != null;
             assert data.length > 0;
         } catch (ImageAcquisitionException e) {
@@ -222,7 +232,9 @@ public class TestFileRetriever extends ObjRecTestBase {
             request.put("DSfileExtension", "mov");
             request.put("DSfileLocation", VIDEO_LOCATION);
             request.put("DStargetFrame", (double) 3);
-            byte[] data = fr.getImage(request);
+            ImageRetrieverResults results;
+            results = fr.getImage(request);
+            byte[] data = results.getImage();
             assert data != null;
             assert data.length > 0;
         } catch (ImageAcquisitionException e) {

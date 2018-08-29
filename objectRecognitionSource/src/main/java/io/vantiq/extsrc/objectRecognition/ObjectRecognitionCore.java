@@ -29,6 +29,7 @@ import io.vantiq.extsrc.objectRecognition.exception.FatalImageException;
 import io.vantiq.extsrc.objectRecognition.exception.ImageAcquisitionException;
 import io.vantiq.extsrc.objectRecognition.exception.ImageProcessingException;
 import io.vantiq.extsrc.objectRecognition.imageRetriever.ImageRetrieverInterface;
+import io.vantiq.extsrc.objectRecognition.imageRetriever.ImageRetrieverResults;
 import io.vantiq.extsrc.objectRecognition.neuralNet.NeuralNetInterface;
 
 /**
@@ -182,7 +183,7 @@ public class ObjectRecognitionCore {
      * Retrieves an image using the Core's image retriever. Calls {@code stop()} if a FatalImageException was received.
      * @return  The image retrieved in jpeg format, or null if a problem occurred.
      */
-    public synchronized byte[] retrieveImage() {
+    public synchronized ImageRetrieverResults retrieveImage() {
         if (imageRetriever == null) { // Should only happen if close() was called immediately before retreiveImage()
             return null;
         }
@@ -209,7 +210,7 @@ public class ObjectRecognitionCore {
      * @param message   The Query message.
      * @return          The image retrieved in jpeg format, or null if a problem occurred.
      */
-    public synchronized byte[] retrieveImage(ExtensionServiceMessage message) {
+    public synchronized ImageRetrieverResults retrieveImage(ExtensionServiceMessage message) {
         Map<String, ?> request = (Map<String, ?>) message.getObject();
         String replyAddress = ExtensionServiceMessage.extractReplyAddress(message);
         if (imageRetriever == null) { // Should only happen if close() was called immediately before retreiveImage()
@@ -256,17 +257,20 @@ public class ObjectRecognitionCore {
      * received.
      * @param image An OpenCV Mat representing the image to be translated
      */
-    public void sendDataFromImage(byte[] image) {
+    public void sendDataFromImage(ImageRetrieverResults imageResults) {
+        byte[] image = imageResults.getImage();
+        
         if (image == null || image.length == 0) {
             return;
         }
+        
         try {
             synchronized (this) {
                 if (neuralNet == null) { // Should only happen when close() runs just before sendDataFromImage()
                     return;
                 }
-                List<Map> imageResults = neuralNet.processImage(image);
-                client.sendNotification(imageResults);
+                List<Map> data = neuralNet.processImage(image);
+                client.sendNotification(data);
             }
         } catch (ImageProcessingException e) {
             log.warn("Could not process image", e);
@@ -288,9 +292,11 @@ public class ObjectRecognitionCore {
     * @param image      An OpenCV Mat representing the image to be translated
     * @param message    The Query message
     */
-   public void sendDataFromImage(byte[] image, ExtensionServiceMessage message) {
+   public void sendDataFromImage(ImageRetrieverResults imageResults, ExtensionServiceMessage message) {
        Map<String, ?> request = (Map<String, ?>) message.getObject();
        String replyAddress = ExtensionServiceMessage.extractReplyAddress(message);
+       byte[] image = imageResults.getImage();
+       
        if (image == null || image.length == 0) {
            if (client != null) {
                client.sendQueryError(replyAddress, this.getClass().getName() + ".closed",
@@ -298,6 +304,7 @@ public class ObjectRecognitionCore {
            }
            return;
        }
+       
        try {
            synchronized (this) {
                if (neuralNet == null) { // Should only happen when close() runs just before sendDataFromImage()
@@ -339,6 +346,18 @@ public class ObjectRecognitionCore {
                    , new Object[] {e.getMessage(), e, request});
            stop();
        }
+   }
+   
+   Map<String, Object> createMapFromResults(ImageRetrieverResults imageResults, List<Map> neuralNetResults) {
+       Map<String, Object> map = new LinkedHashMap<>();
+       
+       map.put("timestamp", imageResults.getTimestamp());
+       map.put("dataSource", imageResults.getOtherData());
+       
+       // TODO update when adding NeuralNetResults
+       map.put("results", neuralNetResults);
+       
+       return map;
    }
     
     /**

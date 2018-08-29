@@ -39,7 +39,7 @@ public class BasicTestRetriever implements ImageRetrieverInterface {
     }
 
     @Override
-    public byte[] getImage() throws ImageAcquisitionException {
+    public ImageRetrieverResults getImage() throws ImageAcquisitionException {
         if (config.containsKey(THROW_EXCEPTION_ON_REQ)) {
             throw new ImageAcquisitionException("Exception on request");
         } else if (config.containsKey(RETURN_NULL)) {
@@ -50,7 +50,7 @@ public class BasicTestRetriever implements ImageRetrieverInterface {
             throw new RuntimeException("Exception on request");
         } else {
             try {
-                return Files.readAllBytes(new File(ObjRecTestBase.IMAGE_LOCATION).toPath());
+                return new ImageRetrieverResults(Files.readAllBytes(new File(ObjRecTestBase.IMAGE_LOCATION).toPath()));
             } catch (IOException e) {
                 throw new FatalImageException("Couldn't find the image location");
             }
@@ -58,7 +58,7 @@ public class BasicTestRetriever implements ImageRetrieverInterface {
     }
 
     @Override
-    public byte[] getImage(Map<String, ?> request) throws ImageAcquisitionException {
+    public ImageRetrieverResults getImage(Map<String, ?> request) throws ImageAcquisitionException {
         if (request.containsKey(THROW_EXCEPTION_ON_REQ)) {
             throw new ImageAcquisitionException("Exception on request");
         } else if (request.containsKey(RETURN_NULL)) {
@@ -67,7 +67,7 @@ public class BasicTestRetriever implements ImageRetrieverInterface {
             throw new FatalImageException("Exception on request");
         } else {
             try {
-                return Files.readAllBytes(new File(ObjRecTestBase.IMAGE_LOCATION).toPath());
+                return new ImageRetrieverResults(Files.readAllBytes(new File(ObjRecTestBase.IMAGE_LOCATION).toPath()));
             } catch (IOException e) {
                 throw new FatalImageException("Couldn't find the image location");
             }

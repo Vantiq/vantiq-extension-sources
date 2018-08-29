@@ -29,6 +29,7 @@ import io.vantiq.extjsdk.ExtensionServiceMessage;
 import io.vantiq.extjsdk.FalseClient;
 import io.vantiq.extsrc.objectRecognition.imageRetriever.BasicTestRetriever;
 import io.vantiq.extsrc.objectRecognition.imageRetriever.ImageRetrieverInterface;
+import io.vantiq.extsrc.objectRecognition.imageRetriever.ImageRetrieverResults;
 import io.vantiq.extsrc.objectRecognition.neuralNet.BasicTestNeuralNet;
 import io.vantiq.extsrc.objectRecognition.neuralNet.NeuralNetInterface;
 
@@ -73,27 +74,29 @@ public class TestObjRecCore extends ObjRecTestBase {
         
         assertTrue("Test helper setupRetriever failed unexpectedly"
                 , setupRetriever(null));
+        ImageRetrieverResults retrieverResults; 
         byte[] data;
-        data = core.retrieveImage();
+        retrieverResults = core.retrieveImage();
+        data = retrieverResults.getImage();
         assert data != null && data.length > 1; 
         assertFalse("Core should not be closed", core.isClosed());
         
         assertTrue("Test helper setupRetriever failed unexpectedly"
                 , setupRetriever(BasicTestRetriever.RETURN_NULL));
-        data = core.retrieveImage();
-        assert data == null; 
+        retrieverResults = core.retrieveImage();
+        assert retrieverResults == null; 
         assertFalse("Core should not be closed", core.isClosed());
         
         assertTrue("Test helper setupRetriever failed unexpectedly"
                 , setupRetriever(BasicTestRetriever.THROW_EXCEPTION_ON_REQ));
-        data = core.retrieveImage();
-        assert data == null;
+        retrieverResults = core.retrieveImage();
+        assert retrieverResults == null;
         assertFalse("Core should not be closed", core.isClosed());
         
         assertTrue("Test helper setupRetriever failed unexpectedly"
                 , setupRetriever(BasicTestRetriever.THROW_FATAL_ON_REQ));
-        data = core.retrieveImage();
-        assert data == null;
+        retrieverResults = core.retrieveImage();
+        assert retrieverResults == null;
         assertTrue("Core should be closed after fatal error", core.isClosed());
         
         core.closed = false;
@@ -103,8 +106,8 @@ public class TestObjRecCore extends ObjRecTestBase {
         
         assertTrue("Test helper setupRetriever failed unexpectedly"
                 , setupRetriever(BasicTestRetriever.THROW_RUNTIME_ON_REQ));
-        data = core.retrieveImage();
-        assert data == null;
+        retrieverResults = core.retrieveImage();
+        assert retrieverResults == null;
         assertTrue("Core should be closed after runtime error", core.isClosed());
     }
     
@@ -118,34 +121,37 @@ public class TestObjRecCore extends ObjRecTestBase {
         header.put(ExtensionServiceMessage.ORIGIN_ADDRESS_HEADER, "queryAddress");
         msg.messageHeaders = header;
         byte[] data;
+        ImageRetrieverResults retrieverResults; 
         
         assertTrue("Test helper setupRetriever failed unexpectedly"
                 , setupRetriever(null));
         request = new LinkedHashMap<>();
         request.put(BasicTestRetriever.RETURN_NULL, null);
         msg.object = request;
-        data = core.retrieveImage(msg);
-        assert data == null;
+        retrieverResults = core.retrieveImage(msg);
+        assert retrieverResults == null;
         assertFalse("Core should not be closed", core.isClosed());
         
         request = new LinkedHashMap<>();
         request.put(BasicTestRetriever.THROW_EXCEPTION_ON_REQ, null);
         msg.object = request;
-        data = core.retrieveImage(msg);
-        assert data == null;
+        retrieverResults = core.retrieveImage(msg);
+        assert retrieverResults == null;
         assertFalse("Core should not be closed", core.isClosed());
         
         request = new LinkedHashMap<>();
         msg.object = request;
-        data = core.retrieveImage(msg);
+        retrieverResults = core.retrieveImage(msg);
+        assert retrieverResults != null;
+        data = retrieverResults.getImage();
         assert data != null && data.length > 1;
         assertFalse("Core should not be closed", core.isClosed());
         
         request = new LinkedHashMap<>();
         request.put(BasicTestRetriever.THROW_FATAL_ON_REQ, null);
         msg.object = request;
-        data = core.retrieveImage(msg);
-        assert data == null;
+        retrieverResults = core.retrieveImage(msg);
+        assert retrieverResults == null;
         assertTrue("Core should be closed after fatal error", core.isClosed());
         
         core.closed = false;
@@ -154,19 +160,19 @@ public class TestObjRecCore extends ObjRecTestBase {
         assertFalse("Resetting closed status failed", core.isClosed());
         
         msg.object = null;
-        data = core.retrieveImage(msg);
-        assert data == null;
+        retrieverResults = core.retrieveImage(msg);
+        assert retrieverResults == null;
         assertTrue("Core should be closed after runtime error", core.isClosed());
     }
     
     
     @Test
     public void testProcessImage() throws IOException {
-        final byte[] imageData;
+        final LocalImageRetrieverResults imageData;
         Map sentMsg;
         byte[] lastBytes;
         try {
-            imageData = Files.readAllBytes(new File(IMAGE_LOCATION).toPath());
+            imageData = new LocalImageRetrieverResults(Files.readAllBytes(new File(IMAGE_LOCATION).toPath()));
         } catch (IOException e) {
             assumeFalse("Could not read image for the test", true);
             return; // Never reaches, just silences imageData not initialized errors
@@ -204,10 +210,10 @@ public class TestObjRecCore extends ObjRecTestBase {
     
     @Test
     public void testProcessImageQuery() {
-        final byte[] imageData;
+        final LocalImageRetrieverResults imageData;
         Map sentMsg;
         try {
-            imageData = Files.readAllBytes(new File(IMAGE_LOCATION).toPath());
+            imageData = new LocalImageRetrieverResults(Files.readAllBytes(new File(IMAGE_LOCATION).toPath()));
         } catch (IOException e) {
             assumeFalse("Could not read image for the test", true);
             return; // Never reaches, just silences imageData not initialized errors
@@ -311,6 +317,12 @@ public class TestObjRecCore extends ObjRecTestBase {
             return true;
         } catch (Exception e) {
             return false;
+        }
+    }
+    
+    public class LocalImageRetrieverResults extends ImageRetrieverResults {
+        public LocalImageRetrieverResults(byte[] image) {
+            super(image);
         }
     }
 }

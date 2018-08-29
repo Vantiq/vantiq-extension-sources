@@ -22,6 +22,7 @@ import io.vantiq.extjsdk.ExtensionServiceMessage;
 import io.vantiq.extjsdk.ExtensionWebSocketClient;
 import io.vantiq.extjsdk.Handler;
 import io.vantiq.extsrc.objectRecognition.imageRetriever.ImageRetrieverInterface;
+import io.vantiq.extsrc.objectRecognition.imageRetriever.ImageRetrieverResults;
 import io.vantiq.extsrc.objectRecognition.neuralNet.NeuralNetInterface;
 
 /**
@@ -89,7 +90,7 @@ public class ObjectRecognitionConfigHandler extends Handler<ExtensionServiceMess
                     client.sendQueryError(replyAddress, "io.vantiq.extsrc.objectRecognition.invalidImageRequest", 
                             "Request must be a map", null);
                 }
-                byte[] data = source.retrieveImage(message);
+                ImageRetrieverResults data = source.retrieveImage(message);
                 
                 if (data != null) {
                     source.sendDataFromImage(data, message);
@@ -277,27 +278,21 @@ public class ObjectRecognitionConfigHandler extends Handler<ExtensionServiceMess
     private boolean prepareCommunication(Map<String, ?> general) {
         int polling = -1; // initializing to an invalid input
         boolean queryable = false;
+        TimerTask task = new TimerTask() {
+            @Override
+            public void run() {
+                ImageRetrieverResults image = source.retrieveImage();
+                source.sendDataFromImage(image);
+            }
+        };
+        
         if (general.get("pollRate") instanceof Integer) {
             polling = (Integer) general.get("pollRate");
             if (polling > 0) {
                 int pollRate = polling;
-                TimerTask task = new TimerTask() {
-                    @Override
-                    public void run() {
-                        byte[] image = source.retrieveImage();
-                        source.sendDataFromImage(image);
-                    }
-                };
                 source.pollTimer = new Timer("dataCapture");
                 source.pollTimer.schedule(task, 0, pollRate);
             } else if (polling == 0) {
-                TimerTask task = new TimerTask() {
-                    @Override
-                    public void run() {
-                        byte[] image = source.retrieveImage();
-                        source.sendDataFromImage(image);
-                    }
-                };
                 source.pollTimer = new Timer("dataCapture");
                 source.pollTimer.scheduleAtFixedRate(task, 0, 1);
                 // 1 ms will be fast enough unless image gathering, image processing, and data sending combined are

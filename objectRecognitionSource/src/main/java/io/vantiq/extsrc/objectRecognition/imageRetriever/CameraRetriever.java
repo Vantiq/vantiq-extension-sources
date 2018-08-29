@@ -9,6 +9,7 @@
 
 package io.vantiq.extsrc.objectRecognition.imageRetriever;
 
+import java.util.Date;
 import java.util.Map;
 
 import org.opencv.core.Core;
@@ -61,9 +62,11 @@ public class CameraRetriever implements ImageRetrieverInterface {
 	 * Obtain the most recent image from the camera
 	 */
 	@Override
-	public byte[] getImage() throws ImageAcquisitionException {
+	public ImageRetrieverResults getImage() throws ImageAcquisitionException {
 		// Reading the next video frame from the camera
 		Mat matrix = new Mat();
+		ImageRetrieverResults results = new ImageRetrieverResults();
+        Date captureTime = new Date();
 
 		capture.read(matrix);
 		
@@ -78,23 +81,28 @@ public class CameraRetriever implements ImageRetrieverInterface {
 	                    + "Could not obtain frame from camera + '" + camera + "'");
 		    }
 		}
-	  
 	    MatOfByte matOfByte = new MatOfByte();
 	    Imgcodecs.imencode(".jpg", matrix, matOfByte);
 	    byte [] imageByte = matOfByte.toArray();
 	    matOfByte.release();
 	    matrix.release();
 	    	    
-	    return imageByte;
+	    results.setImage(imageByte);
+        results.setTimestamp(captureTime);
+        
+        return results;
 	}
 	
 	/**
 	 * Obtain the most recent image from the specified camera, or the configured camera if no camera is specified
 	 */
 	@Override
-    public byte[] getImage(Map<String, ?> request) throws ImageAcquisitionException {
+    public ImageRetrieverResults getImage(Map<String, ?> request) throws ImageAcquisitionException {
 	    VideoCapture cap;
 	    Object camId;
+	    ImageRetrieverResults results = new ImageRetrieverResults();
+        Date captureTime;
+        
 	    if (request.get("DScamera") instanceof Integer) {
 	        int cam = (Integer) request.get("DScamera");
 	        camId = cam;
@@ -122,6 +130,7 @@ public class CameraRetriever implements ImageRetrieverInterface {
         }
         Mat mat = new Mat();
         
+        captureTime = new Date();
         cap.read(mat);
         if (mat.empty()) {
             cap.release();
@@ -136,8 +145,10 @@ public class CameraRetriever implements ImageRetrieverInterface {
         mat.release();
         cap.release();
                 
-        return imageByte;
-	     
+        results.setImage(imageByte);
+        results.setTimestamp(captureTime);
+        
+        return results;
     }
 	
 	public void close() {

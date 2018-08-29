@@ -46,7 +46,9 @@ public class TestNetworkStreamRetriever {
         }
         
         try {
-            byte[] data = retriever.getImage();
+            ImageRetrieverResults imgResults = retriever.getImage();
+            assert imgResults != null;
+            byte[] data = imgResults.getImage();
             assert data != null;
             assert data.length > 0;
         } catch (ImageAcquisitionException e) {

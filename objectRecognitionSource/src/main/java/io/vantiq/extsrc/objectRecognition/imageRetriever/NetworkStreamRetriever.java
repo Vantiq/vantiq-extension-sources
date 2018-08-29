@@ -12,6 +12,7 @@ package io.vantiq.extsrc.objectRecognition.imageRetriever;
 import java.io.InputStream;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.util.Date;
 import java.util.Map;
 
 import org.opencv.core.Core;
@@ -74,9 +75,11 @@ public class NetworkStreamRetriever implements ImageRetrieverInterface {
      * Obtain the most recent image from the camera
      */
     @Override
-    public byte[] getImage() throws ImageAcquisitionException {
+    public ImageRetrieverResults getImage() throws ImageAcquisitionException {
         // Reading the next video frame from the camera
         Mat matrix = new Mat();
+        ImageRetrieverResults results = new ImageRetrieverResults();
+        Date captureTime = new Date();
 
         capture.read(matrix);
         
@@ -97,17 +100,23 @@ public class NetworkStreamRetriever implements ImageRetrieverInterface {
         byte [] imageByte = matOfByte.toArray();
         matOfByte.release();
         matrix.release();
-                
-        return imageByte;
+        
+        results.setImage(imageByte);
+        results.setTimestamp(captureTime);
+        
+        return results;
     }
     
     /**
      * Obtain the most recent image from the specified camera, or the configured camera if no camera is specified
      */
     @Override
-    public byte[] getImage(Map<String, ?> request) throws ImageAcquisitionException {
+    public ImageRetrieverResults getImage(Map<String, ?> request) throws ImageAcquisitionException {
         VideoCapture cap;
         Object camId;
+        ImageRetrieverResults results = new ImageRetrieverResults();
+        Date captureTime;
+        
         if (request.get("DScamera") instanceof String) {
             String cam = (String) request.get("DScamera");
             camId = cam;
@@ -135,6 +144,7 @@ public class NetworkStreamRetriever implements ImageRetrieverInterface {
         }
         Mat mat = new Mat();
         
+        captureTime = new Date();
         cap.read(mat);
         if (mat.empty()) {
             cap.release();
@@ -148,9 +158,10 @@ public class NetworkStreamRetriever implements ImageRetrieverInterface {
         matOfByte.release();
         mat.release();
         cap.release();
-                
-        return imageByte;
-         
+        
+        results.setImage(imageByte);
+        results.setTimestamp(captureTime);
+        return results;
     }
     
     public void close() {

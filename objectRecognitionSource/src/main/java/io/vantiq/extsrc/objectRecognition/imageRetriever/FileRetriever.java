@@ -12,6 +12,7 @@ package io.vantiq.extsrc.objectRecognition.imageRetriever;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
+import java.util.LinkedHashMap;
 import java.util.Map;
 
 import io.vantiq.extsrc.objectRecognition.ObjectRecognitionCore;
@@ -59,6 +60,7 @@ import org.opencv.videoio.Videoio;
  */
 public class FileRetriever implements ImageRetrieverInterface {
 
+    String imageLocation;
     File defaultImageFile;
     VideoCapture capture;
     Boolean isMov = false;
@@ -83,7 +85,7 @@ public class FileRetriever implements ImageRetrieverInterface {
                     + "requested by the attached error", t);
         }
         if (dataSourceConfig.get("fileLocation") instanceof String) {
-            String imageLocation = (String) dataSourceConfig.get("fileLocation");
+            imageLocation = (String) dataSourceConfig.get("fileLocation");
             if (isMov) {
                 capture = new VideoCapture(imageLocation);
                 if (!capture.isOpened()) {
@@ -116,7 +118,13 @@ public class FileRetriever implements ImageRetrieverInterface {
     }
 
     @Override
-    public byte[] getImage() throws ImageAcquisitionException {
+    public ImageRetrieverResults getImage() throws ImageAcquisitionException {
+        ImageRetrieverResults results = new ImageRetrieverResults();
+        Map<String, Object> otherData = new LinkedHashMap<>();
+        
+        results.setOtherData(otherData);
+        otherData.put("file", imageLocation);
+        
         if (isMov) {
             Mat matrix = new Mat();
             double val = capture.get(Videoio.CAP_PROP_POS_FRAMES);
@@ -137,11 +145,16 @@ public class FileRetriever implements ImageRetrieverInterface {
             byte [] imageByte = matOfByte.toArray();
             matOfByte.release();
             matrix.release();
+            
+            
+            otherData.put("frame", val);
+            results.setImage(imageByte);
                     
-            return imageByte;
+            return results;
         } else if (defaultImageFile != null){
             try {
-                return Files.readAllBytes(defaultImageFile.toPath());
+                results.setImage(Files.readAllBytes(defaultImageFile.toPath()));
+                return results;
             } catch (IOException e) {
                 throw new ImageAcquisitionException(this.getClass().getCanonicalName() + ".defaultImageReadError: " 
                         + "Could not read '" + defaultImageFile.toPath() + "'");
@@ -153,7 +166,12 @@ public class FileRetriever implements ImageRetrieverInterface {
     }
 
     @Override
-    public byte[] getImage(Map<String, ?> request) throws ImageAcquisitionException {
+    public ImageRetrieverResults getImage(Map<String, ?> request) throws ImageAcquisitionException {
+        ImageRetrieverResults results = new ImageRetrieverResults();
+        Map<String, Object> otherData = new LinkedHashMap<>();
+        
+        results.setOtherData(otherData);
+        
         boolean isMov = false; // Make it local so we don't overwrite the class variable
         if (request.get("DSfileExtension") instanceof String) {
             String ext = (String) request.get("DSfileExtension");
@@ -165,6 +183,8 @@ public class FileRetriever implements ImageRetrieverInterface {
         if (request.get("DSfileLocation") instanceof String) {
             if (isMov) {
                 String imageFile = (String) request.get("DSfileLocation");
+                otherData.put("file", imageFile);
+                
                 VideoCapture newcapture = new VideoCapture(imageFile);
                 Mat matrix = new Mat();
                 
@@ -218,11 +238,15 @@ public class FileRetriever implements ImageRetrieverInterface {
                 matrix.release();
                 newcapture.release();
                         
-                return imageByte;
+                otherData.put("frame", targetFrame);
+                results.setImage(imageByte);
+                        
+                return results;
             } else {
                 File imageFile = new File((String) request.get("DSfileLocation"));
                 try {
-                    return Files.readAllBytes(imageFile.toPath());
+                    results.setImage(Files.readAllBytes(imageFile.toPath()));
+                    return results;
                 } catch (IOException e) {
                     throw new ImageAcquisitionException(this.getClass().getCanonicalName() + ".imageUnreadable: " 
                             + "Could not read requested file '" + imageFile.getAbsolutePath() + "'. "
