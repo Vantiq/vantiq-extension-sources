@@ -306,8 +306,13 @@ and `<install location>/objectRecognitionSource/bin/objectRecognitionSource.bat`
 This is a TensorFlow implementation of YOLO (You Only Look Once). It returns a List of Maps, each of which has a `label`
 stating the type of the object identified, a `confidence` specifying on a scale of 0-1 how confident the neural net is
 that the identification is accurate, and a `location` containing the coordinates for the `top`,`left`, `bottom`,
-and `right` edges of the bounding box for the object. It can also save images with the bounding boxes drawn. The options
-are as follows. Remember to prepend "NN" when using an option in a Query.
+and `right` edges of the bounding box for the object. It can also save images with the bounding boxes drawn.  
+
+The standard implementation expects a net trained on 416x416 images, and automatically resizes images to those 
+dimensions. If different dimensions are required, then changing `edu.ml.tensorflow.Config.SIZE` to the correct
+dimension will change the dimensions of the image sent to the neural net. The dimensions will still be a square.  
+
+The options are as follows. Remember to prepend "NN" when using an option in a Query.
 *   pbFile: Required. Config only. The .pb file for the model. The model can be trained using
     [darknet](https://pjreddie.com/darknet/install/) and then translated to tensorflow format using
     [darkflow](https://github.com/thtrieu/darkflow).
