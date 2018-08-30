@@ -6,8 +6,6 @@ import java.io.ByteArrayOutputStream;
 import java.io.Closeable;
 import java.io.IOException;
 import java.net.ConnectException;
-import java.net.MalformedURLException;
-import java.net.URL;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.LinkedHashMap;
@@ -104,12 +102,7 @@ public class FtpRetriever implements ImageRetrieverInterface {
         
         // Get the domain name to connect to
         if (dataSourceConfig.get("server") instanceof String) {
-            try {
-                server = new URL((String) dataSourceConfig.get("server")).getHost();
-            } catch (MalformedURLException e) {
-                throw new ImageAcquisitionException(this.getClass().getCanonicalName() + ".invalidServerUrl: "
-                        + "Server '" + (String) dataSourceConfig.get("server") + "' is not a valid url");
-            }
+            server = obtainDomainName((String) dataSourceConfig.get("server"));
         } else {
             throw new Exception(this.getClass().getCanonicalName() + ".noServerSpecified: "
                     + "No server was specified in the configuration setup." );
@@ -205,12 +198,7 @@ public class FtpRetriever implements ImageRetrieverInterface {
         
         // Use the specified server, or the original server if none specified. 
         if (request.get("DSserver") instanceof String) {
-            try {
-                server = new URL((String) request.get("DSserver")).getHost();
-            } catch (MalformedURLException e) {
-                throw new ImageAcquisitionException(this.getClass().getCanonicalName() + ".queryInvalidServerUrl: "
-                        + "Server '" + (String) request.get("DSserver") + "' is not a valid url");
-            }
+            server = obtainDomainName((String) request.get("DSserver"));
             if (!server.equals(this.server)) {
                 newServer = true;
             }
@@ -607,6 +595,28 @@ public class FtpRetriever implements ImageRetrieverInterface {
         
         sftpChannel.exit();
         return image;
+    }
+    
+    /**
+     * Obtain the domain name from a URL by removing the protocol type and path name. For example, if {@code url} is 
+     * "http://site.name.com/home/index.html" this function will return "site.name.com"
+     * @param url   The url to obtain a domain name from
+     * @return      The original string with "*://" removed from the beginning and everything after and including the
+     *              first "/" removed
+     */
+    public String obtainDomainName(String url) {
+        String domain = url;
+        // Remove any prefixes, such as "ftp://"
+        if (domain.matches(".+://")) {
+            domain = domain.replaceFirst(".+://", "");
+        }
+        
+        // Remove paths from the url, e.g. remove "/home/index.html" from "site.name.com/home/index.html"
+        if (domain.indexOf('/') != -1) {
+            domain = domain.substring(0, domain.indexOf('/'));
+        }
+        
+        return domain;
     }
     
     /**
