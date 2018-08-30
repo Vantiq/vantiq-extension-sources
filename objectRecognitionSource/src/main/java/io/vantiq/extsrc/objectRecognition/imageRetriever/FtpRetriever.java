@@ -3,6 +3,7 @@ package io.vantiq.extsrc.objectRecognition.imageRetriever;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.io.Closeable;
 import java.io.IOException;
 import java.net.ConnectException;
 import java.util.Arrays;
@@ -334,7 +335,9 @@ public class FtpRetriever implements ImageRetrieverInterface {
         }
         
         byte[] fileBytes = file.toByteArray();
+        quietClose(file);
         if (fileBytes == null || fileBytes.length == 0 ) {
+            quietClose(file);
             throw new ImageAcquisitionException(this.getClass().getCanonicalName() + ".emptyFile: "
                     + "The file '" + fileName + "' from server '" + server + "' was null or empty.");
         }
@@ -346,6 +349,7 @@ public class FtpRetriever implements ImageRetrieverInterface {
         try {
             image = ImageIO.read(fileInput);
         } catch (IOException e) {
+            quietClose(fileInput);
             throw new ImageAcquisitionException(this.getClass().getCanonicalName() + ".fileParseError: "
                     + "Error occurred while reading the file"
                     , e);
@@ -353,6 +357,7 @@ public class FtpRetriever implements ImageRetrieverInterface {
         
         // Make sure the image was actually created. It should only be null with no exception if the file was not
         // an image type readable by ImageIO
+        quietClose(fileInput);
         if (image == null) {
             throw new ImageAcquisitionException(this.getClass().getCanonicalName() + ".unreadableFileType: "
                     + "Could not understand the requested file. Only " + Arrays.asList(ImageIO.getReaderFormatNames()));
@@ -433,6 +438,7 @@ public class FtpRetriever implements ImageRetrieverInterface {
                     + "Could not connect to server '" + server + "'");
         }
         
+        client.setFileType(FTPClient.BINARY_FILE_TYPE);
         // Helps when dealing with firewalls
         client.enterLocalPassiveMode();
         
@@ -519,12 +525,13 @@ public class FtpRetriever implements ImageRetrieverInterface {
             boolean success = client.retrieveFile(filePath, image);
             
             if (!success) {
+                quietClose(image);
                 throw new ImageAcquisitionException(this.getClass().getCanonicalName() + ".fileRetrievalError: "
                         + "File could not be retreived. "
                         + "Reply was : " + client.getReplyString());
             }
         } catch(IOException e) {
-            e.printStackTrace();
+            quietClose(image);
             throw new ImageAcquisitionException(this.getClass().getCanonicalName() + ".fileConnectionError: "
                     + "Could not read file '" + filePath + "' from server '" 
                     + client.getRemoteAddress().getCanonicalHostName()
@@ -578,6 +585,7 @@ public class FtpRetriever implements ImageRetrieverInterface {
         try {
             sftpChannel.get(fileName, image);
         } catch (SftpException e) {
+            quietClose(image);
             throw new ImageAcquisitionException(this.getClass().getCanonicalName() + ".sftpRetrieval: "
                     + "Error when trying to retrieve file '" + fileName + "' from server", e);
         } finally {
@@ -607,5 +615,13 @@ public class FtpRetriever implements ImageRetrieverInterface {
         }
         
         return domain;
+    }
+    
+    public void quietClose(Closeable c) {
+        try {
+            c.close();
+        } catch (IOException e) {
+            // Do nothing
+        }
     }
 }

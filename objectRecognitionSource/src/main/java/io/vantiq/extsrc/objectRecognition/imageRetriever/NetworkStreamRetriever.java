@@ -50,7 +50,7 @@ public class NetworkStreamRetriever implements ImageRetrieverInterface {
             throw new Exception(this.getClass().getCanonicalName() + ".opencvDependency" 
                     + ": Could not load OpenCv for CameraRetriever."
                     + "This is most likely due to a missing .dll/.so/.dylib. Please ensure that the environment "
-                    + "variable 'OPENCV_LOC' is set to the directory containing 'opencv_java342' and any other library"
+                    + "variable 'OPENCV_LOC' is set to the directory containing 'opencv_java342' and any other library "
                     + "requested by the attached error", t);
         }
         if (dataSourceConfig.get("camera") instanceof String){
