@@ -26,10 +26,15 @@ import io.vantiq.extsrc.objectRecognition.exception.FatalImageException;
 import io.vantiq.extsrc.objectRecognition.exception.ImageAcquisitionException;
 
 /**
- * Captures images and returns them as jpeg encoded bytes.
+ * Captures images from an IP camera.
  * Unique settings are: 
  * <ul>
  *  <li>{@code camera}: Required for Config, optional for Query. The URL of the video stream to read images from. For queries, defaults to the camera specified in the Config.
+ * </ul>
+ * 
+ * The timestamp is captured immediately before the image is grabbed from the camera. The additional data is:
+ * <ul>
+ *      <li>{@code camera}: The URL of the camera that the image was read from.
  * </ul>
  */
 public class NetworkStreamRetriever implements ImageRetrieverInterface {

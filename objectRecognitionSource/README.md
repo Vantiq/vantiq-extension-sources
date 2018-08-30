@@ -337,6 +337,7 @@ The options are as follows. Remember to prepend "DS" when using an option in a Q
     (i.e. explicit mode).
 *   protocol: Optional. Config and Query. For FTPS only. Which security mechanism to use. Typically either "SSL"
     or "TLS". Default to "TLS".
+*   file: Required. Query only. The path of the target file.
 
 The timestamp is captured immediately before the copy request is sent. The additional data is:
 *   file: The path of the file read.
@@ -360,7 +361,7 @@ and `<install location>/objectRecognitionSource/bin/objectRecognitionSource.bat`
 
 ### Yolo Processor<a name="yoloNet" id="yoloNet"></a>
 
-This is a TensorFlow implementation of YOLO (You Only Look Once). It returns a List of Maps, each of which has a `label`
+This is a TensorFlow implementation of YOLO (You Only Look Once). The identified objects have a `label`
 stating the type of the object identified, a `confidence` specifying on a scale of 0-1 how confident the neural net is
 that the identification is accurate, and a `location` containing the coordinates for the `top`,`left`, `bottom`,
 and `right` edges of the bounding box for the object. It can also save images with the bounding boxes drawn.  

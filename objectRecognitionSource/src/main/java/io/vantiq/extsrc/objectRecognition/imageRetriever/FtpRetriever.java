@@ -55,7 +55,14 @@ import io.vantiq.extsrc.objectRecognition.exception.ImageAcquisitionException;
  *   <li>{@code implicit}: Optional. Config and Query. For FTPS only. Whether to connect using implicit security.
  *                  Defaults to false (i.e. explicit mode).
  *   <li>{@code protocol}: Optional. Config and Query. For FTPS only. Which security mechanism to use. Typically either
- *                  "SSL" or "TLS". Default to "TLS". 
+ *                  "SSL" or "TLS". Default to "TLS".
+ *   <li>{@code file}: Required. Query only. The path of the target file.
+ * </ul>
+ * 
+ * The timestamp is captured immediately before the copy request is sent. The additional data is:
+ * <ul>
+ *      <li>{@code file}: The path of the file read.
+ *      <li>{@code server}: The domain name of the server from which the file was read.
  * </ul>
  */
 public class FtpRetriever implements ImageRetrieverInterface {

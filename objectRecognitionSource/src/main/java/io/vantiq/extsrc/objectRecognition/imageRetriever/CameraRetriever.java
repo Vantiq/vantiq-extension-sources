@@ -28,6 +28,8 @@ import io.vantiq.extsrc.objectRecognition.exception.ImageAcquisitionException;
  * <ul>
  *  <li>{@code camera}: Required for Config, optional for Query. The index of the camera to read images from. For queries, defaults to the camera specified in the Config.
  * </ul>
+ * 
+ * The timestamp is captured immediately before the image is grabbed from the camera. No other data is included.
  */
 public class CameraRetriever implements ImageRetrieverInterface {
 	VideoCapture   capture;

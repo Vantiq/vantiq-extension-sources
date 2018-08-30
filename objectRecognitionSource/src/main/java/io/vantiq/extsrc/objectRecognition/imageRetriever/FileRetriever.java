@@ -27,7 +27,7 @@ import org.opencv.videoio.VideoCapture;
 import org.opencv.videoio.Videoio;
 
 /**
- * This implementation reads files from the disk using OpenCV for the videos. {@code fileLocation} must be a valid file
+ * This implementation reads files from the disk, using OpenCV for the videos. {@code fileLocation} must be a valid file
  * at initialization. The initial image file can be replaced while the source is running, but the video cannot. For
  * Queries, new files can be specified using the {@code fileLocation} and {@code fileExtension} options, and defaults
  * to the initial file if {@code fileLocation} is not set. Queried videos can specify which frame of the video to access
@@ -56,6 +56,12 @@ import org.opencv.videoio.Videoio;
  *                      that you would like to access, with the first frame being 0. Exceptions will be thrown if this
  *                      targets an invalid frame, i.e. negative or beyond the video's frame count. Non-integer values 
  *                      are allowed. Mutually exclusive with {@code targetFrame}. Defaults to 0.
+ * </ul>
+ * 
+ * No timestamp is captured. The additional data is:
+ * <ul>
+ *      <li>{@code file}: The path of the file read.
+ *      <li>{@code frame}: Which frame of the file this represents. Only included when `fileExtension` is set to "mov".
  * </ul>
  */
 public class FileRetriever implements ImageRetrieverInterface {

@@ -19,6 +19,16 @@ import edu.ml.tensorflow.ObjectDetector;
 import io.vantiq.extsrc.objectRecognition.exception.ImageProcessingException;
 
 /**
+ * This is a TensorFlow implementation of YOLO (You Only Look Once). The identified objects have a {@code label} stating
+ * the type of the object identified, a {@code confidence} specifying on a scale of 0-1 how confident the neural net is
+ * that the identification is accurate, and a {@code location} containing the coordinates for the {@code top},
+ * {@code left}, {@code bottom}, and {@code right} edges of the bounding box for the object. It can also save images
+ * with the bounding boxes drawn.
+ * <br>
+ * The standard implementation expects a net trained on 416x416 images, and automatically resizes images to those
+ * dimensions. If different dimensions are required, then changing {@code edu.ml.tensorflow.Config.SIZE} to the correct
+ * dimension will change the dimensions of the image sent to the neural net. The dimensions will still be a square.
+ * <br>
  * Unique settings are: 
  * <ul>
  *      <li>{@code pbFile}: Required. Config only. The .pb file for the model.
@@ -37,6 +47,8 @@ import io.vantiq.extsrc.objectRecognition.exception.ImageProcessingException;
  *                      captured. Default is every frame captured when unset or a non-positive number. Does nothing if
  *                      outputDir is not set at config.
  * </ul>
+ * 
+ * No additional data is given.
  */
 public class YoloProcessor implements NeuralNetInterface {
     
