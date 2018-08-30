@@ -72,6 +72,7 @@ public class ObjectRecognitionMain {
      */
     private static void startSources(List<ObjectRecognitionCore> sources) {
         for (ObjectRecognitionCore source : sources) {
+            // Starting in threads so they can all connect at once
             new Thread( () -> {source.start(10);} ).start();;
         }
     }
@@ -128,6 +129,7 @@ public class ObjectRecognitionMain {
         
         modelDirectory = config.getProperty("modelDirectory", DEFAULT_MODEL_DIRECTORY);
         
+        // Obtain potentially multiple sources from a comma delimited string of sources 
         String[] sourceNames = sourceStr.split(",");
         sources = new ArrayList<>();
         for (String sourceName : sourceNames) {

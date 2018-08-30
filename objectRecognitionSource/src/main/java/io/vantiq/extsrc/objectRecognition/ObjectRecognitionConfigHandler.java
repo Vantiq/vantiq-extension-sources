@@ -85,17 +85,18 @@ public class ObjectRecognitionConfigHandler extends Handler<ExtensionServiceMess
             
             @Override
             public void handleMessage(ExtensionServiceMessage message) {
+                // Should never happen, but just in case something changes in the backend
                 if ( !(message.getObject() instanceof Map) ) {
                     String replyAddress = ExtensionServiceMessage.extractReplyAddress(message);
                     client.sendQueryError(replyAddress, "io.vantiq.extsrc.objectRecognition.invalidImageRequest", 
                             "Request must be a map", null);
                 }
-                ImageRetrieverResults data = source.retrieveImage(message);
                 
+                // Read, process, and send the image
+                ImageRetrieverResults data = source.retrieveImage(message);
                 if (data != null) {
                     source.sendDataFromImage(data, message);
                 }
-                
             }
         };
     }
@@ -154,6 +155,8 @@ public class ObjectRecognitionConfigHandler extends Handler<ExtensionServiceMess
         }
         neuralNetConfig = (Map) config.get("neuralNet");
         
+        
+        // Only create a new data source if the config changed, to save time and state
         if (lastDataSource != null && dataSource.equals(lastDataSource)) {
             log.info("dataSource unchanged, keeping previous");
         } else {
@@ -163,6 +166,7 @@ public class ObjectRecognitionConfigHandler extends Handler<ExtensionServiceMess
             }
         }
         
+        // Only create a new neural net if the config changed, to save time and state
         if (lastNeuralNet != null && neuralNetConfig.equals(lastNeuralNet)) {
             log.info("neuralNet unchanged, keeping previous");
         } else {
@@ -172,6 +176,7 @@ public class ObjectRecognitionConfigHandler extends Handler<ExtensionServiceMess
             }
         }
         
+        // Start listening for queries and/or polling as requested by the config
         boolean success = prepareCommunication(general);
         if (!success) {
             return; // Exit if the settings were invalid. Closing taken care of by prepareCommunication()
@@ -190,7 +195,7 @@ public class ObjectRecognitionConfigHandler extends Handler<ExtensionServiceMess
     boolean createNeuralNet(Map<String, ?> neuralNetConfig ) {
         lastNeuralNet = neuralNetConfig;
         
-        // Identify and setup the neural net
+        // Identify the type of neural net
         String neuralNetType = DEFAULT_NEURAL_NET;
         if (neuralNetConfig.get("type") instanceof String) {
             neuralNetType = (String) neuralNetConfig.get("type");
@@ -203,11 +208,13 @@ public class ObjectRecognitionConfigHandler extends Handler<ExtensionServiceMess
             log.debug("No neural net type specified. Trying for default of '{}'", DEFAULT_NEURAL_NET);
         }
         
+        // Create the neural net
         NeuralNetInterface neuralNet = getNeuralNet(neuralNetType);
         if (neuralNet == null) {
             return false; // Error message and exiting taken care of by getNeuralNet()
         }
         
+        // Setup the neural net
         try {
             neuralNet.setupImageProcessing(neuralNetConfig, source.modelDirectory);
             source.neuralNet = neuralNet;
@@ -251,11 +258,13 @@ public class ObjectRecognitionConfigHandler extends Handler<ExtensionServiceMess
             log.debug("No image retriever type specified. Trying for default of '{}'", DEFAULT_IMAGE_RETRIEVER);
         }
         
+        // Create the image retriever
         ImageRetrieverInterface ir = getImageRetriever(retrieverType);
         if (ir == null) {
             return false; // Error message and exiting taken care of by getImageRetriever()
         }
         
+        // Setup the image retriever
         try {
             ir.setupDataRetrieval(dataSourceConfig, source);
             source.imageRetriever = ir;
@@ -286,6 +295,7 @@ public class ObjectRecognitionConfigHandler extends Handler<ExtensionServiceMess
             }
         };
         
+        // Start polling if pollRate is non-negative
         if (general.get("pollRate") instanceof Integer) {
             polling = (Integer) general.get("pollRate");
             if (polling > 0) {
@@ -298,14 +308,17 @@ public class ObjectRecognitionConfigHandler extends Handler<ExtensionServiceMess
                 // 1 ms will be fast enough unless image gathering, image processing, and data sending combined are
                 // sub millisecond
             }
-        } 
+        }
+        
+        // Setup queries if requested
         if (general.get("allowQueries") instanceof Boolean && (Boolean) general.get("allowQueries")) {
             queryable = true;
             source.client.setQueryHandler(queryHandler);
         }
         
+        // Fail if the config doesn't setup any method to send data
         if (polling < 0 && !queryable) {
-            log.error("Not configured for data to be sent");
+            log.error("No queries allowed and no valid pollRate (should be non-negative)");
             log.error("Waiting for valid config...");
             failConfig();
             return false;
@@ -343,6 +356,8 @@ public class ObjectRecognitionConfigHandler extends Handler<ExtensionServiceMess
         Class<?> clazz = null;
         Constructor<?> constructor = null;
         Object object = null;
+        
+        // Try to find the intended class, fail if it can't be found
         try {
             clazz = Class.forName(className);
         } catch (ClassNotFoundException e) {
@@ -351,6 +366,7 @@ public class ObjectRecognitionConfigHandler extends Handler<ExtensionServiceMess
             return null;
         }
         
+        // Try to find a public no-argument constructor for the class, fail if none exists
         try {
             constructor = clazz.getConstructor();
         } catch (NoSuchMethodException | SecurityException e) {
@@ -359,6 +375,7 @@ public class ObjectRecognitionConfigHandler extends Handler<ExtensionServiceMess
             return null;
         }
 
+        // Try to create an instance of the class, fail if it can't
         try {
             object = constructor.newInstance();
         } catch (InstantiationException | IllegalAccessException | IllegalArgumentException
@@ -368,6 +385,7 @@ public class ObjectRecognitionConfigHandler extends Handler<ExtensionServiceMess
             return null;
         }
         
+        // Fail if the created object is not a NeuralNetInterface
         if ( !(object instanceof NeuralNetInterface) )
         {
             log.error("Class '" + className + "' is not an implementation of NeuralNetInterface");
@@ -388,6 +406,8 @@ public class ObjectRecognitionConfigHandler extends Handler<ExtensionServiceMess
         Class<?> clazz = null;
         Constructor<?> constructor = null;
         Object object = null;
+        
+        // Try to find the intended class, fail if it can't be found
         try {
             clazz = Class.forName(className);
         } catch (ClassNotFoundException e) {
@@ -396,6 +416,7 @@ public class ObjectRecognitionConfigHandler extends Handler<ExtensionServiceMess
             return null;
         }
         
+        // Try to find a public no-argument constructor for the class, fail if none exists
         try {
             constructor = clazz.getConstructor();
         } catch (NoSuchMethodException | SecurityException e) {
@@ -404,6 +425,7 @@ public class ObjectRecognitionConfigHandler extends Handler<ExtensionServiceMess
             return null;
         }
 
+        // Try to create an instance of the class, fail if it can't
         try {
             object = constructor.newInstance();
         } catch (InstantiationException | IllegalAccessException | IllegalArgumentException
@@ -413,6 +435,7 @@ public class ObjectRecognitionConfigHandler extends Handler<ExtensionServiceMess
             return null;
         }
         
+        // Fail if the created object is not a NeuralNetInterface
         if ( !(object instanceof ImageRetrieverInterface) )
         {
             log.error("Class '" + className + "' is not an implementation of ImageRetriever");

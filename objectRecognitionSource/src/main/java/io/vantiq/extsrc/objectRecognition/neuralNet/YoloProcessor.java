@@ -78,6 +78,8 @@ public class YoloProcessor implements NeuralNetInterface {
            throw new Exception(this.getClass().getCanonicalName() + ".missingConfig: " 
                    + "Could not find 'pbFile' and/or 'labelFile' in the neuralNet configuration");
        }
+       
+       // Setup the variables for saving images
        if (neuralNet.get("outputDir") instanceof String) {
            outputDir = (String) neuralNet.get("outputDir");
            if (neuralNet.get("saveRate") instanceof Integer) {

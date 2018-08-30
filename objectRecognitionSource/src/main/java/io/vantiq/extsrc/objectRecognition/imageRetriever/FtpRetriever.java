@@ -86,11 +86,13 @@ public class FtpRetriever implements ImageRetrieverInterface {
     public void setupDataRetrieval(Map<String, ?> dataSourceConfig, ObjectRecognitionCore source) throws Exception {
         log = LoggerFactory.getLogger(this.getClass().getCanonicalName() + "#" + source.getSourceName());
         
+        // Return and don't save values if the config doesn't want a default
         if (dataSourceConfig.get("noDefault") instanceof Boolean && (Boolean) dataSourceConfig.get("noDefault")) {
             noDefault = true;
             return;
         }
         
+        // Get the domain name to connect to
         if (dataSourceConfig.get("server") instanceof String) {
             server = stripDomainName((String) dataSourceConfig.get("server"));
         } else {
@@ -98,10 +100,12 @@ public class FtpRetriever implements ImageRetrieverInterface {
                     + "No server was specified in the configuration setup." );
         }
         
+        // Setup for FTP/FTPS/SFTP based on the config. Default to FTP
         if (dataSourceConfig.get("conType") instanceof String) {
             String type = (String) dataSourceConfig.get("conType");
             if (type.equalsIgnoreCase("ftps")) {
                 conType = FTPS;
+                // FTPS has a few more options available
                 if (dataSourceConfig.get("implicit") instanceof Boolean && (Boolean) dataSourceConfig.get("implicit")) {
                     isImplicit = true;
                 }
@@ -115,6 +119,7 @@ public class FtpRetriever implements ImageRetrieverInterface {
             }
         }
         
+        // Obtain the username and password
         if (dataSourceConfig.get("username") instanceof String) {
             username = (String) dataSourceConfig.get("username");
         } else {
@@ -128,6 +133,7 @@ public class FtpRetriever implements ImageRetrieverInterface {
                     + "No username was given in the configuration setup");
         }
         
+        // Connect to the file server using the requested connection type
         if (conType == FTP || conType == FTPS) { 
             try {
                 ftpClient = connectToFtpServer(server, username, password, conType, protocol, isImplicit);
@@ -140,6 +146,10 @@ public class FtpRetriever implements ImageRetrieverInterface {
         }
     }
     
+    /**
+     * Automatically fails, as no polling is allowed for the FTP retriever.
+     * @throws FatalImageException  Always. No polling is allowed for this source
+     */
     @Override
     public ImageRetrieverResults getImage() throws ImageAcquisitionException {
         throw new FatalImageException(this.getClass().getCanonicalName() + ".pollingNotAllowed: "
@@ -166,6 +176,7 @@ public class FtpRetriever implements ImageRetrieverInterface {
         
         results.setOtherData(otherData);
         
+        // Obtain the file path that is requested
         if (request.get("DSfile") instanceof String) {
             fileName = (String) request.get("DSfile");
         } else {
@@ -174,6 +185,7 @@ public class FtpRetriever implements ImageRetrieverInterface {
         }
         otherData.put("file", fileName);
         
+        // Use the specified server, or the original server if none specified. 
         if (request.get("DSserver") instanceof String) {
             server = stripDomainName((String) request.get("DSserver"));
             if (!server.equals(this.server)) {
@@ -187,6 +199,7 @@ public class FtpRetriever implements ImageRetrieverInterface {
         }
         otherData.put("server", server);
         
+        // Use the specified connection type, the original connection type if none specified, or FTP if noDefault was set
         if (request.get("DSconType") instanceof String) {
             String type = (String) request.get("DSconType");
             if (type.equalsIgnoreCase("ftps")) {
@@ -197,6 +210,7 @@ public class FtpRetriever implements ImageRetrieverInterface {
                     } else {
                         isImplicit = false;
                     }
+                    
                     if (isImplicit != this.isImplicit) {
                         newServer = true;
                     }
@@ -225,9 +239,11 @@ public class FtpRetriever implements ImageRetrieverInterface {
                 newServer = true;
             }
         } else {
+            // This will be FTP if noDefault was setup
             conType = this.conType;
         }
         
+        // Use the specified username, or the original username if none specified
         if (request.get("DSusername") instanceof String) {
             username = (String) request.get("DSusername");
             if (!username.equals(this.username)) {
@@ -239,6 +255,8 @@ public class FtpRetriever implements ImageRetrieverInterface {
             throw new ImageAcquisitionException(this.getClass().getCanonicalName() + ".queryNoDefaultUsername: "
                     + "Username option required when configured with no defaults");
         }
+        
+        // Use the specified password, or the original password if none specified
         if (request.get("DSpassword") instanceof String) {
             password = (String) request.get("DSpassword");
             if (!password.equals(this.password)) {
@@ -253,6 +271,7 @@ public class FtpRetriever implements ImageRetrieverInterface {
         
         ftpClient = this.ftpClient;
         session = this.session;
+        // Create a new server only if a setting was changed from the initial settings
         if (newServer) {
             if (conType == FTP || conType == FTPS) {
                 try {
@@ -272,7 +291,7 @@ public class FtpRetriever implements ImageRetrieverInterface {
         }
 
         ByteArrayOutputStream file;
-        
+        // Read the file from the file server
         try {
             if (conType == FTP || conType == FTPS) {
                 readTime = new Date(); // Log when the file request is made 
@@ -285,6 +304,7 @@ public class FtpRetriever implements ImageRetrieverInterface {
             }
             results.setTimestamp(readTime);
         } finally {
+            // Only close the FTPClient/Session if it was not the default one 
             if (newServer) {
                 if (conType == FTP || conType == FTPS) {
                     try {
@@ -306,6 +326,7 @@ public class FtpRetriever implements ImageRetrieverInterface {
         ByteArrayInputStream fileInput = new ByteArrayInputStream(file.toByteArray());
         BufferedImage image;
         
+        // Create an image from the file. This is to translate it into jpeg format
         try {
             image = ImageIO.read(fileInput);
         } catch (IOException e) {
@@ -314,6 +335,8 @@ public class FtpRetriever implements ImageRetrieverInterface {
                     , e);
         }
         
+        // Make sure the image was actually created. It should only be null with no exception if the file was not
+        // an image type readable by ImageIO
         if (image == null) {
             throw new ImageAcquisitionException(this.getClass().getCanonicalName() + ".unreadableFileType: "
                     + "Could not understand the requested file. Only " + Arrays.asList(ImageIO.getReaderFormatNames()));
@@ -321,6 +344,7 @@ public class FtpRetriever implements ImageRetrieverInterface {
         
         ByteArrayOutputStream jpegFile = new ByteArrayOutputStream();
         boolean success = false;
+        // Write save the image in jpeg format
         try {
             success = ImageIO.write(image, "jpeg", jpegFile);
         } catch (IOException e) {
@@ -330,7 +354,7 @@ public class FtpRetriever implements ImageRetrieverInterface {
         
         if (!success) {
             throw new ImageAcquisitionException(this.getClass().getCanonicalName() + ".unwritableImage: "
-                    + "Could not find an ImageIO Writer for jpg images.");
+                    + "Could not find an ImageIO Writer capable of writing the image as a jpeg.");
         }
         
         results.setImage(jpegFile.toByteArray());
@@ -354,6 +378,7 @@ public class FtpRetriever implements ImageRetrieverInterface {
         }
         if (session != null) {
             session.disconnect();
+            session = null;
         }
     }
     
@@ -372,6 +397,8 @@ public class FtpRetriever implements ImageRetrieverInterface {
     public FTPClient connectToFtpServer(String server, String username,
                 String password, String conType, String protocol, boolean isImplicit) throws IOException {
         FTPClient client;
+        
+        // Create the client as FTP or FTPS based on the settings.
         if (conType == FTPS) {
             client = new FTPSClient(protocol, isImplicit);
             ((FTPSClient) client).setTrustManager(TrustManagerUtils.getAcceptAllTrustManager());
@@ -379,9 +406,10 @@ public class FtpRetriever implements ImageRetrieverInterface {
             client = new FTPClient();
         }
         
-        
+        // Connect to target domain
         client.connect(server);
         
+        // Make sure the connection succeeded.
         int reply = client.getReplyCode();
         if (!FTPReply.isPositiveCompletion(reply)) {
             client.disconnect();
@@ -389,15 +417,19 @@ public class FtpRetriever implements ImageRetrieverInterface {
                     + "Could not connect to server '" + server + "'");
         }
         
-        client.enterLocalPassiveMode(); // So it can get around firewalls
+        // Helps when dealing with firewalls
+        client.enterLocalPassiveMode();
         
         // Only needs to be done for FTPS implicit. Unclear why only implicit requires it
         if (conType == FTPS && isImplicit) {
             // Necessary, not entirely clear on why it is necessary only for implicit
+            // Possibly it expects normal FTP until told otherwise?
+            
             // PBSZ sets the size of the "protection buffer" and PROT sets the security level
             ((FTPSClient) client).execPBSZ(0); 
             ((FTPSClient) client).execPROT("P"); 
             
+            // Make sure the commands made it through
             reply = client.getReplyCode();
             if (!FTPReply.isPositiveCompletion(reply)) {
                 client.disconnect();
@@ -408,6 +440,8 @@ public class FtpRetriever implements ImageRetrieverInterface {
         
         // Login to the server
         boolean success = client.login(username, password);
+        
+        // Exit if the login failed
         if (!success) {
             client.logout();
             client.disconnect();
@@ -431,6 +465,8 @@ public class FtpRetriever implements ImageRetrieverInterface {
     public Session connectToSftpServer(String server, String username, String password) throws Exception {
         JSch jsch = new JSch();
         Session sess;
+        
+        // Create the Session for the target server
         try {
             sess = jsch.getSession(username, server);
         } catch (JSchException e) {
@@ -440,7 +476,8 @@ public class FtpRetriever implements ImageRetrieverInterface {
         
         sess.setConfig("StrictHostKeyChecking", "no"); // Accept any connection made
         sess.setPassword(password);
-        
+
+        // Connect to the server
         try {
             sess.connect();
         } catch (JSchException e) {
@@ -460,8 +497,9 @@ public class FtpRetriever implements ImageRetrieverInterface {
      */
     public ByteArrayOutputStream readFromFtpServer(FTPClient client, String filePath) throws ImageAcquisitionException {
         ByteArrayOutputStream image = new ByteArrayOutputStream(64 * 1024); // Start at 64 kB
+        
+        // Retrieve the file, exit if it cannot
         try {
-            
             boolean success = client.retrieveFile(filePath, image);
             
             if (!success) {
@@ -481,6 +519,8 @@ public class FtpRetriever implements ImageRetrieverInterface {
     
     public ChannelSftp createChannelFromSession(Session session) throws ImageAcquisitionException {
         ChannelSftp sftpChannel;
+        
+        // Make a new SFTP channel
         try {
             sftpChannel = (ChannelSftp) session.openChannel("sftp");
         } catch (JSchException e) {
@@ -489,6 +529,7 @@ public class FtpRetriever implements ImageRetrieverInterface {
                     , e);
         }
         
+        // Connect using the SFTP channel
         try {
             sftpChannel.connect();
         } catch (JSchException e) {
@@ -510,6 +551,8 @@ public class FtpRetriever implements ImageRetrieverInterface {
     public ByteArrayOutputStream readFromSftpServer(ChannelSftp sftpChannel, String fileName) throws ImageAcquisitionException {
         
         ByteArrayOutputStream image = new ByteArrayOutputStream(64 * 1024); // Start at 64 kB
+        
+        // Read the image from the SFTP channel
         try {
             sftpChannel.get(fileName, image);
         } catch (SftpException e) {
@@ -522,6 +565,13 @@ public class FtpRetriever implements ImageRetrieverInterface {
         return image;
     }
     
+    /**
+     * Obtain the domain name from a URL by removing the protocol type and path name. For example, if {@code url} is 
+     * "http://site.name.com/home/index.html" this function will return "site.name.com"
+     * @param url   The url to obtain a domain name from
+     * @return      The original string with "*://" removed from the beginning and everything after and including the
+     *              first "/" removed
+     */
     public String stripDomainName(String url) {
         String domain = url;
         // Remove any prefixes, such as "ftp://"
@@ -529,6 +579,7 @@ public class FtpRetriever implements ImageRetrieverInterface {
             domain = domain.replaceFirst(".+://", "");
         }
         
+        // Remove paths from the url, e.g. remove "/home/index.html" from "site.name.com/home/index.html"
         if (domain.indexOf('/') != -1) {
             domain = domain.substring(0, domain.indexOf('/'));
         }

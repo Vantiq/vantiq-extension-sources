@@ -187,6 +187,8 @@ public class ObjectRecognitionCore {
         if (imageRetriever == null) { // Should only happen if close() was called immediately before retreiveImage()
             return null;
         }
+        
+        // Return the retriever's results, or return null on an exception
         try {
             return imageRetriever.getImage();
         } catch (ImageAcquisitionException e) {
@@ -201,7 +203,7 @@ public class ObjectRecognitionCore {
             log.error("Please ask the developer of the image retriever to check for the exception. Exiting...");
             stop();
         }
-        return null;
+        return null; // This will keep the program from trying to do anything with an image when retrieval fails
     }
     
     /**
@@ -221,6 +223,7 @@ public class ObjectRecognitionCore {
             return null;
         }
         
+        // Return the retriever's results, or send a query error and return null on an exception
         try {
             return imageRetriever.getImage(request);
         } catch (ImageAcquisitionException e) {
@@ -249,7 +252,7 @@ public class ObjectRecognitionCore {
                     , new Object[] {e.getMessage(), e, request});
             stop();
         }
-        return null;
+        return null; // This will keep the program from trying to do anything with an image when retrieval fails
     }
     
     /**
@@ -258,18 +261,25 @@ public class ObjectRecognitionCore {
      * @param image An OpenCV Mat representing the image to be translated
      */
     public void sendDataFromImage(ImageRetrieverResults imageResults) {
+        
+        if (imageResults == null) {
+            return;
+        }
         byte[] image = imageResults.getImage();
         
         if (image == null || image.length == 0) {
             return;
         }
         
+        // Send the results of the neural net if it doesn't error out
         try {
             synchronized (this) {
                 if (neuralNet == null) { // Should only happen when close() runs just before sendDataFromImage()
                     return;
                 }
                 NeuralNetResults results = neuralNet.processImage(image);
+                
+                // Translate the results from the neural net and image into a message to send back 
                 Map message = createMapFromResults(imageResults, results);
                 client.sendNotification(message);
             }
@@ -306,6 +316,7 @@ public class ObjectRecognitionCore {
            return;
        }
        
+       // Send the results of the neural net, or send a Query error if an exception occurs
        try {
            synchronized (this) {
                if (neuralNet == null) { // Should only happen when close() runs just before sendDataFromImage()
@@ -317,6 +328,7 @@ public class ObjectRecognitionCore {
                }
                NeuralNetResults results = neuralNet.processImage(image, request);
                
+               // Send the normal message as the response if requested, otherwise just send the data 
                if (request.get("sendFullResponse") instanceof Boolean && (Boolean) request.get("sendFullResponse")) {
                    Map response = createMapFromResults(imageResults, results);
                    client.sendQueryResponse(200, replyAddress, response);
@@ -358,13 +370,14 @@ public class ObjectRecognitionCore {
        Map<String, Object> map = new LinkedHashMap<>();
        
        map.put("timestamp", imageResults.getTimestamp());
+       map.put("results", neuralNetResults.getResults());
+       
        if (imageResults.getOtherData() != null) {
            map.put("dataSource", imageResults.getOtherData());
        } else {
            map.put("dataSource", new LinkedHashMap<>());
        }
        
-       map.put("results", neuralNetResults.getResults());
        if (neuralNetResults.getOtherData() != null) {
            map.put("neuralNet", neuralNetResults.getOtherData());
        } else {
@@ -420,7 +433,7 @@ public class ObjectRecognitionCore {
             sourcesSucceeded = client.getSourceConnectionFuture().get(timeout, TimeUnit.SECONDS);
         }
         catch (TimeoutException e) {
-            log.error("Timeout: not all WebSocket connections succeeded within 10 seconds.");
+            log.error("Timeout: full connection did not succeed within {} seconds.", timeout);
         }
         catch (Exception e) {
             log.error("Exception occurred while waiting for webSocket connection", e);

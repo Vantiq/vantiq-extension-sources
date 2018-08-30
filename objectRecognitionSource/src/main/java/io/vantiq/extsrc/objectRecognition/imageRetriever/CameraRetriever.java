@@ -35,6 +35,7 @@ public class CameraRetriever implements ImageRetrieverInterface {
 	
 	@Override
     public void setupDataRetrieval(Map<String, ?> dataSourceConfig, ObjectRecognitionCore source) throws Exception {
+	    // Try to load OpenCV
 	    try {
             System.loadLibrary(Core.NATIVE_LIBRARY_NAME);
         } catch (Throwable t) {
@@ -44,6 +45,8 @@ public class CameraRetriever implements ImageRetrieverInterface {
                     + "variable 'OPENCV_LOC' is set to the directory containing 'opencv_java342' and any other library"
                     + "requested by the attached error", t);
         }
+	    
+	    // Specify which camera to read
         if (dataSourceConfig.get("camera") instanceof Integer) {
             camera = (Integer) dataSourceConfig.get("camera");
 
@@ -52,9 +55,15 @@ public class CameraRetriever implements ImageRetrieverInterface {
             throw new IllegalArgumentException(this.getClass().getCanonicalName() + ".configMissingOptions: "  + 
                     "No camera specified in dataSourceConfig");
         }
+        
+        // Error out if the camera could not be opened
         if (!capture.isOpened()) {
             throw new Exception(this.getClass().getCanonicalName() + ".cameraUnreadable: " 
-                    + "Could not open requested camera '" + camera + "'");
+                    + "Could not open requested camera '" + camera + "'. Common reasons are: "
+                    + "The camera is not connected properly; "
+                    + "OpenCV is not compiled with the correct codecs to deal with the camera type or is missing a "
+                    + "specific .dll/.so/.dylib file (typically FFmpeg);"
+                    + "The program is not allowed access to the camera");
         }
     }
 	
@@ -63,30 +72,42 @@ public class CameraRetriever implements ImageRetrieverInterface {
 	 */
 	@Override
 	public ImageRetrieverResults getImage() throws ImageAcquisitionException {
-		// Reading the next video frame from the camera
+		// Read the next video frame from the camera
 		Mat matrix = new Mat();
 		ImageRetrieverResults results = new ImageRetrieverResults();
         Date captureTime = new Date();
 
 		capture.read(matrix);
 		
+		// Exit if nothing was read
 		if (matrix.empty()) {
 		    matrix.release();
+		    // If the camera is no longer open, then nothing can be read in the future
 		    if (!capture.isOpened() ) {
 		        capture.release();
 		        throw new FatalImageException(this.getClass().getCanonicalName() + ".mainCameraClosed: " 
 	                    + "Camera '" + camera + "' has closed");
 		    } else {
 		        throw new ImageAcquisitionException(this.getClass().getCanonicalName() + ".mainCameraReadError: " 
-	                    + "Could not obtain frame from camera + '" + camera + "'");
+	                    + "Could not obtain frame from camera '" + camera + "'");
 		    }
 		}
+		
+		
 	    MatOfByte matOfByte = new MatOfByte();
-	    Imgcodecs.imencode(".jpg", matrix, matOfByte);
+	    // Translate the image into jpeg, error out if it cannot
+	    if (!Imgcodecs.imencode(".jpg", matrix, matOfByte)) {
+	        matOfByte.release();
+	        matrix.release();
+	        throw new ImageAcquisitionException(this.getClass().getCanonicalName() + ".mainCameraConversionError: " 
+                    + "Could not convert the frame from camera '" + camera + "' into a jpeg image");
+	    }
+	    
+	    // Save the jpeg image into as a byte array
 	    byte [] imageByte = matOfByte.toArray();
 	    matOfByte.release();
 	    matrix.release();
-	    	    
+	    
 	    results.setImage(imageByte);
         results.setTimestamp(captureTime);
         
@@ -103,6 +124,7 @@ public class CameraRetriever implements ImageRetrieverInterface {
 	    ImageRetrieverResults results = new ImageRetrieverResults();
         Date captureTime;
         
+        // Specify which camera to read
 	    if (request.get("DScamera") instanceof Integer) {
 	        int cam = (Integer) request.get("DScamera");
 	        camId = cam;
@@ -111,6 +133,7 @@ public class CameraRetriever implements ImageRetrieverInterface {
 	        throw new ImageAcquisitionException(this.getClass().getCanonicalName() + ".noMainCamera: " 
                     + "No camera was requested and no main camera was specified at initialization.");
         } else if (capture.isOpened()){
+            // Try to use the main camera if none was specified
             try {
                 return getImage();
             } catch (FatalImageException e) {
@@ -123,6 +146,7 @@ public class CameraRetriever implements ImageRetrieverInterface {
                     + "previous fatal error for the main camera.");
         }
 	    
+	    // Error out if the camera could not be opened
         if (!cap.isOpened()) {
             cap.release();
             throw new ImageAcquisitionException(this.getClass().getCanonicalName() + ".queryCameraUnreadable: " 
@@ -132,6 +156,8 @@ public class CameraRetriever implements ImageRetrieverInterface {
         
         captureTime = new Date();
         cap.read(mat);
+        
+        // Exit if nothing was read
         if (mat.empty()) {
             cap.release();
             mat.release();
@@ -139,7 +165,16 @@ public class CameraRetriever implements ImageRetrieverInterface {
                     + "Could not obtain frame from camera '" + camId + "'");
         }
         MatOfByte matOfByte = new MatOfByte();
-        Imgcodecs.imencode(".jpg", mat, matOfByte);
+        
+        // Translate the image into jpeg, error out if it cannot
+        if (!Imgcodecs.imencode(".jpg", mat, matOfByte)) {
+            matOfByte.release();
+            mat.release();
+            throw new ImageAcquisitionException(this.getClass().getCanonicalName() + ".queryCameraConversionError: " 
+                    + "Could not convert the frame from camera '" + camera + "' into a jpeg image");
+        }
+        
+        // Save the jpeg image into as a byte array
         byte [] imageByte = matOfByte.toArray();
         matOfByte.release();
         mat.release();
@@ -152,6 +187,8 @@ public class CameraRetriever implements ImageRetrieverInterface {
     }
 	
 	public void close() {
-	    capture.release();
+	    if (capture != null) {
+	        capture.release();
+	    }
 	}
 }

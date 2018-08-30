@@ -96,7 +96,13 @@ public class NetworkStreamRetriever implements ImageRetrieverInterface {
         }
       
         MatOfByte matOfByte = new MatOfByte();
-        Imgcodecs.imencode(".jpg", matrix, matOfByte);
+        // Translate the image into jpeg, error out if it cannot
+        if (!Imgcodecs.imencode(".jpg", matrix, matOfByte)) {
+            matOfByte.release();
+            matrix.release();
+            throw new ImageAcquisitionException(this.getClass().getCanonicalName() + ".mainCameraConversionError: " 
+                    + "Could not convert the frame from camera '" + camera + "' into a jpeg image");
+        }
         byte [] imageByte = matOfByte.toArray();
         matOfByte.release();
         matrix.release();
@@ -153,7 +159,13 @@ public class NetworkStreamRetriever implements ImageRetrieverInterface {
                     + "Could not obtain frame from camera '" + camId + "'");
         }
         MatOfByte matOfByte = new MatOfByte();
-        Imgcodecs.imencode(".jpg", mat, matOfByte);
+        // Translate the image into jpeg, error out if it cannot
+        if (!Imgcodecs.imencode(".jpg", mat, matOfByte)) {
+            matOfByte.release();
+            mat.release();
+            throw new ImageAcquisitionException(this.getClass().getCanonicalName() + ".queryCameraConversionError: " 
+                    + "Could not convert the frame from camera '" + camera + "' into a jpeg image");
+        }
         byte [] imageByte = matOfByte.toArray();
         matOfByte.release();
         mat.release();
@@ -165,6 +177,8 @@ public class NetworkStreamRetriever implements ImageRetrieverInterface {
     }
     
     public void close() {
-        capture.release();
+        if (capture != null) {
+            capture.release();
+        }
     }
 }
