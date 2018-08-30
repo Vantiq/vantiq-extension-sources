@@ -32,7 +32,6 @@ import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-// TODO change to match README
 /**
  * This class is a customizable handler that will convert UDP messages to a Notification message to a Vantiq deployment.
  * The target server and transformations are defined by a Configuration document passed into the constructor
@@ -150,7 +149,7 @@ public class UDPNotificationHandler extends Handler<DatagramPacket>{
     /**
      * A Slf4j logger.
      */
-    final private Logger log = LoggerFactory.getLogger(this.getClass());
+    final private Logger log;
     /**
      * An {@link ObjectMapper} used to translate received objects into {@link Map}
      */
@@ -195,6 +194,7 @@ public class UDPNotificationHandler extends Handler<DatagramPacket>{
      * @param client        The {@link ExtensionWebSocketClient} through which data will be sent
      */
     public UDPNotificationHandler(Map incoming, ExtensionWebSocketClient client) {
+        log = LoggerFactory.getLogger(this.getClass().getCanonicalName() + "#" + client.getSourceName());
         this.client = client;
         if (incoming.get("passRecAddress") instanceof String) {
             recAddressKey = (String) incoming.get("passRecAddress");
@@ -241,8 +241,8 @@ public class UDPNotificationHandler extends Handler<DatagramPacket>{
                         regexPattern = null;
                         patternLocations = null;
                         log.error("The number of capture groups in the regex pattern and the number of locations do "
-                                + "not match. Found " + regexPattern.matcher("").groupCount() + "capture groups and "
-                                + patternLocations.length + "locations.");
+                                + "not match. Found {} capture groups and {} locations."
+                                , regexPattern.matcher("").groupCount(), patternLocations.length);
                     }
                 }
                 catch (Exception e) {
@@ -387,8 +387,8 @@ public class UDPNotificationHandler extends Handler<DatagramPacket>{
         
         Matcher regexMatcher = regexPattern.matcher(str);
         if (!regexMatcher.find()) {
-            log.warn("Message failed to match the requested pattern for source '" + client.getSourceName() + "'");
-            log.debug("String '" + str + "' \nfailed to match pattern '" + regexPattern.pattern() + "'");
+            log.warn("Message failed to match the requested pattern.");
+            log.debug("String '{}' \nfailed to match pattern '{}'", str, regexPattern.pattern());
             return null;
         }
         

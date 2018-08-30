@@ -312,18 +312,18 @@ public class TestConfigurableUDPSource extends UDPTestBase {
         } catch (RuntimeException e) {}
         
         config.put("authToken", "token");
+        config.put("targetServer", "ws://localhost:8080");
         
         ConfigurableUDPSource.setupServer(config); // Should not throw RTE
         
         // check defaults
-        assert ConfigurableUDPSource.targetVantiqServer.equals("wss://dev.vantiq.com/api/v1/wsock/websocket");
+        assert ConfigurableUDPSource.targetVantiqServer.equals("ws://localhost:8080");
         assert ConfigurableUDPSource.MAX_UDP_DATA == 1024;
         assert ConfigurableUDPSource.LISTENING_PORT == 3141;
         assert ConfigurableUDPSource.LISTENING_ADDRESS.equals(InetAddress.getLocalHost());
         assert ConfigurableUDPSource.authToken.equals("token");
         
         
-        config.put("targetServer", "ws://localhost:8080");
         config.put("maxPacketSize", 2048);
         config.put("defaultBindPort", 10213);
         config.put("defaultBindAddress", "localhost");
@@ -340,6 +340,7 @@ public class TestConfigurableUDPSource extends UDPTestBase {
         // reset it back to defaults
         config = new LinkedHashMap<>();
         config.put("authToken", "token");
+        config.put("targetServer", "ws://localhost:8080");
         
         ConfigurableUDPSource.setupServer(config);
     }

@@ -33,6 +33,20 @@ import org.slf4j.LoggerFactory;
  * A client that handles the WebSocket connection with a Vantiq deployment, for the purposes of Extension sources.
  */
 public class ExtensionWebSocketClient {
+    
+    /**
+     * The code for a query response where more data will be sent.
+     */
+    public static final int QUERY_CHUNK_CODE    = 100;
+    /**
+     * The code for a query response where data is sent and no more is coming.
+     */
+    public static final int QUERY_DATA_CODE     = 200;
+    /**
+     * The code for a query response where no data is sent and no more is coming.
+     */
+    public static final int QUERY_NODATA_CODE   = 204;
+    
     /**
      * An {@link ObjectMapper} used to transform objects into JSON before sending
      */
@@ -220,13 +234,26 @@ public class ExtensionWebSocketClient {
     }
 
     /**
-     * Send the response to a specific query message.
+     * Send the response to a specific query message stating that the query returned no data.
      *
-     * @param httpCode      The HTTP code to accompany the response. This should be one of: 100, there is data in this
-     *                      message and more will be coming; 200, there is data and this is the last or only message; or
-     *                      204, no (more) data needs to be returned
      * @param replyAddress  The address where the reply will go. This is a UUID that must be obtained from the original
-     *                      query message
+     *                      query message through {@link ExtensionServiceMessage#extractReplyAddress(Object)}
+     */
+    public void sendQueryResponseEmpty(String replyAddress) {
+        Response response = new Response()
+                .status(QUERY_NODATA_CODE)
+                .addHeader(ExtensionServiceMessage.RESPONSE_ADDRESS_HEADER, replyAddress);
+        send(response);
+    }
+    
+    /**
+     * Send a single Map as the response to a specific query message.
+     *
+     * @param httpCode      The HTTP code to accompany the response. This should be one of: {@link #QUERY_CHUNK_CODE}
+     *                      , there is data in this message and more will be coming; {@link #QUERY_DATA_CODE}, there is
+     *                      data and this is the last or only message
+     * @param replyAddress  The address where the reply will go. This is a UUID that must be obtained from the original
+     *                      query message through {@link ExtensionServiceMessage#extractReplyAddress(Object)}
      * @param body          The data to be sent back as the result of the query
      */
     public void sendQueryResponse(int httpCode, String replyAddress, Map body){
@@ -238,13 +265,13 @@ public class ExtensionWebSocketClient {
     }
 
     /**
-     * Send the response to a specific query message.
+     * Send multiple Maps as the response to a specific query message.
      *
-     * @param httpCode      The HTTP code to accompany the response. This should be one of: 100, there is data in this
-     *                      message and more will be coming; 200, there is data and this is the last or only message; or
-     *                      204, no (more) data needs to be returned
+     * @param httpCode      The HTTP code to accompany the response. This should be one of: {@link #QUERY_CHUNK_CODE}
+     *                      , there is data in this message and more will be coming; {@link #QUERY_DATA_CODE}, there is
+     *                      data and this is the last or only message
      * @param replyAddress  The address where the reply will go. This is a UUID that must be obtained from the original
-     *                      query message
+     *                      query message through {@link ExtensionServiceMessage#extractReplyAddress(Object)}
      * @param body          An array of the data to be sent back as the result of the query
      */
     public void sendQueryResponse(int httpCode, String replyAddress, Map[] body) {
@@ -258,8 +285,8 @@ public class ExtensionWebSocketClient {
     /**
      * Sends an error for a specific query message
      *
-     * @param replyAddress The address where the reply will go. This is a UUID that must be obtained from the original
-     *                          query message
+     * @param replyAddress  The address where the reply will go. This is a UUID that must be obtained from the original
+     *                      query message through {@link ExtensionServiceMessage#extractReplyAddress(Object)}
      * @param messageCode A error code that might be used for message lookup or categorization. This is a string,
      *                          and it is generally specific to the server or class therein.
      * @param messageTemplate A string that is the (in this case) the error. Places where parameters should be
@@ -632,7 +659,7 @@ public class ExtensionWebSocketClient {
     /**
      * Set the {@link Handler} for any queries that are received.
      * <br>
-     * Upon initialization a default Handler is created that will send back an error message saying
+     * If no Handler is set then Vantiq will receive an errore for any Queries, which will say
      * "Unset Handler: No handler has been set for source &lt;sourceName&gt;".
      * <br>
      * The handler will receive an {@link Map} that represents the Query message. The most

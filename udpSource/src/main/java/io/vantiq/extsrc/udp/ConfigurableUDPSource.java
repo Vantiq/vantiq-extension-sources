@@ -40,7 +40,6 @@ import org.slf4j.LoggerFactory;
  * <dt><span class="strong">Vantiq Options</span></dt>
  * <dd><ul>
  * <li>{@code targetServer} -- The Vantiq site that hosts the projects to which the sources will connect. 
- *              Defaults to "dev.vantiq.com" when not set.
  * <li>{@code authToken} -- The authentication token that will allow this server to connect to Vantiq. Be aware that 
  *              this is namespace specific, so if you intend to connect to sources across several namespaces then 
  *              multiple config files will be required, each with its own instance of ConfigurableUDPSource. 
@@ -102,26 +101,7 @@ public class ConfigurableUDPSource {
         @Override
         public void handleMessage(ExtensionServiceMessage message) {
             // Translate the data from the Publish message to what we want it to be
-            log.warn("Vantiq requesting message sent from" +  message.getSourceName()
-                    + ", but no handler is set up for it");
-        }
-    };
-
-    /**
-     *  Shuts down the server when a query is received. This is largely a debug decision, as a) queries are not expected
-     *  for UDP sources, and b) problems occur when the WebSocket connection is violently shut down
-     */
-    static Handler<ExtensionServiceMessage> UDPDefaultQuery = new Handler<ExtensionServiceMessage>() {
-        @Override
-        public void handleMessage(ExtensionServiceMessage msg) {
-            String srcName = msg.getSourceName();
-            // Prepare a response with an empty body, so that the query doesn't wait for a timeout
-            clients.get(srcName).sendQueryResponse(204,
-                    ExtensionServiceMessage.extractReplyAddress(msg),
-                    new LinkedHashMap<>());
-
-            // Allow the system to stop
-            stopLatch.countDown();
+            log.warn("Vantiq requesting message sent from {}, but no handler is set up for it", message.getSourceName());
         }
     };
 
@@ -169,6 +149,14 @@ public class ConfigurableUDPSource {
             
             ExtensionWebSocketClient client = clients.get(message.getSourceName());
             client.connectToSource();
+            try {
+                if (client.getSourceConnectionFuture().get(10, TimeUnit.SECONDS) == false) {
+                    client.stop();
+                }
+            } catch (InterruptedException | ExecutionException | TimeoutException e) {
+                client.stop();
+                e.printStackTrace();
+            }
         }
         
     };
@@ -180,10 +168,10 @@ public class ConfigurableUDPSource {
             
             client.initiateFullConnection(targetVantiqServer, authToken);
             try {
-                if (client.getSourceConnectionFuture().get() == false) {
+                if (client.getSourceConnectionFuture().get(10, TimeUnit.SECONDS) == false) {
                     client.stop();
                 }
-            } catch (InterruptedException | ExecutionException e) {
+            } catch (InterruptedException | ExecutionException | TimeoutException e) {
                 client.stop();
                 e.printStackTrace();
             }
@@ -209,13 +197,13 @@ public class ConfigurableUDPSource {
             sources.add(sourceName);
             udpSocketToSources.put(socket, sources);
             new Thread(new UDPListener(socket)).start();
-            log.debug("Source '" + sourceName + "' succeeded in creating UDP socket on " +
-                    "port '" + port + "' and address '" + address + "'");
+            log.debug("Source '{}' succeeded in creating UDP socket on port '{}' and address '{}'"
+                    , sourceName, port, address);
             return socket;
         }
         catch (Exception e) {
-            log.debug("Source '" + sourceName + "' failed to create UDP socket on port '" + port +
-                    "' and address '" + address + "'. Will try to share with other sources.");
+            log.debug("Source '{}' failed to create UDP socket on port '{}' and address '{}'. Will try to share with "
+                    + "other sources.", sourceName, port, address);
             log.trace("Error for binding failure is ", e);
             return null;
         }
@@ -237,7 +225,7 @@ public class ConfigurableUDPSource {
             DatagramSocket sock = entry.getKey();
             if (sock.getLocalAddress().equals(address) && sock.getLocalPort() == port) {
                 List<String> sources = entry.getValue();
-                log.debug("Source '" + sourceName + "' is sharing its UDP socket with sources " + sources);
+                log.debug("Source '{}' is sharing its UDP socket with sources {}", sourceName, sources);
                 sources.add(sourceName);
                 return sock;
             }
@@ -256,7 +244,7 @@ public class ConfigurableUDPSource {
      * @param incoming      The 'incoming' section source's Configuration document
      */
     public static void setNotificationHandler(UDPNotificationHandler handler, String sourceName, Map incoming) {
-        log.trace("Setting Notification handler for '" + sourceName + "'");
+        log.trace("Setting Notification handler for '{}'", sourceName);
         notificationHandlers.put(sourceName, handler);
 
         List<InetAddress> addresses = null;
@@ -279,7 +267,7 @@ public class ConfigurableUDPSource {
         // Use the addresses specified
         if (addresses != null) {
             sourceAddresses.put(sourceName, addresses);
-            log.debug("Source '" + sourceName + "' listening for addresses " + addresses);
+            log.debug("Source '{}' listening for addresses {}", sourceName, addresses);
         }
         // We should ignore all addresses only if there are requested servers and no valid settings for addresses or ports
         else if (servers != null && !valueIsTrue(incoming, "receiveAllAddresses")
@@ -290,13 +278,13 @@ public class ConfigurableUDPSource {
         // or the settings allow defaulting to all addresses
         else {
             sourceAddresses.put(sourceName, ALL_ADDR);
-            log.debug("Source '" + sourceName + "' listening for all addresses");
+            log.debug("Source '{}' listening for all addresses", sourceName);
         }
 
         // Use the ports if specified
         if (ports != null) {
             sourcePorts.put(sourceName, ports);
-            log.debug("Source '" + sourceName + "' listening on ports " + ports);
+            log.debug("Source '{}' listening on ports {}", sourceName, ports);
         }
         // We should ignore all ports only if there are requested servers and no valid settings for addresses or ports
         else if (servers != null && !valueIsTrue(incoming, "receiveAllAddresses")
@@ -306,7 +294,7 @@ public class ConfigurableUDPSource {
         // Either receiveAllPorts is set to true with no ports specified or the settings allow defaulting to all ports
         else {
             sourcePorts.put(sourceName, ALL_PORTS);
-            log.debug("Source '" + sourceName + "' listening on all ports");
+            log.debug("Source '{}' listening on all ports", sourceName);
         }
 
         // Use the servers specified
@@ -334,8 +322,8 @@ public class ConfigurableUDPSource {
                     addresses.add(a);
                 }
                 catch (UnknownHostException e) {
-                    log.warn("Requested receiving address '" + name + "' specified for source '" + sourceName +
-                            "' could not be found. This address will be ignored");
+                    log.warn("Requested receiving address '{}' specified for source '{}' "
+                            + "could not be found. This address will be ignored", name, sourceName);
                 }
             }
         }
@@ -384,8 +372,8 @@ public class ConfigurableUDPSource {
                     servers.add(s);
                 }
                 catch (UnknownHostException e) {
-                    log.warn("Requested receiving address '" + addressName + "' specified for server '" + server +
-                            "'" + "could not be found. This address will be ignored");
+                    log.warn("Requested receiving address '{}' specified for server '{}'" + "could not be found. "
+                            + "This address will be ignored", addressName, server);
                 }
             }
         }
@@ -405,11 +393,6 @@ public class ConfigurableUDPSource {
                 (int) ((List) server).get(1) <= 65535;
     }
 
-    /**
-     * A {@link CountDownLatch} used to keep the program from ending until we want it to. Currently, allows the program
-     * to gracefully end when a query is received on any connected source.
-     */
-    static CountDownLatch stopLatch = new CountDownLatch(1);
     /**
      * A set of {@link UDPNotificationHandler} keyed to the name of the source it is connected to
      */
@@ -490,7 +473,7 @@ public class ConfigurableUDPSource {
      */
     static Map<String, Object> obtainServerConfig(String fileName) {
         File configFile = new File(fileName);
-        log.debug(configFile.getAbsolutePath());
+        log.debug("{}", configFile.getAbsolutePath());
         Map<String, Object>  config = new LinkedHashMap();
         ObjectMapper mapper = new ObjectMapper();
         try {
@@ -513,11 +496,16 @@ public class ConfigurableUDPSource {
      * @param config    The {@link Map} obtained from the config file
      */
     static void setupServer(Map config) {
-        targetVantiqServer = config.get("targetServer") instanceof String ? (String) config.get("targetServer") :
-                "wss://dev.vantiq.com/api/v1/wsock/websocket";
         MAX_UDP_DATA = config.get("maxPacketSize") instanceof Integer ? (int) config.get("maxPacketSize") : 1024;
         LISTENING_PORT = config.get("defaultBindPort") instanceof Integer ? (int) config.get("defaultBindPort") :
                 3141;
+        
+        if (config.get("targetServer") instanceof String) {
+            targetVantiqServer = (String) config.get("targetServer") ;
+        } else {
+            throw new RuntimeException("Missing VANTIQ server in config file. Please place in 'targetServer'.");
+        }
+        
         if (config.get("authToken") instanceof String) {
             authToken = (String) config.get("authToken") ;
         } else {
@@ -529,7 +517,7 @@ public class ConfigurableUDPSource {
                 String address = (String) config.get("defaultBindAddress");
                 LISTENING_ADDRESS = InetAddress.getByName(address);
             } catch (UnknownHostException e) {
-                log.error("Given default bind address could not be found. Using 'localhost' instead");
+                log.error("Given default bind address could not be found. Trying to find local address");
             }
         }
         // There was no valid defaultBindAddress use the default of localhost
@@ -592,7 +580,6 @@ public class ConfigurableUDPSource {
 
             // Set the handlers for the client
             client.setPublishHandler(UDPDefaultPublish);
-            client.setQueryHandler(UDPDefaultQuery);
             client.setConfigHandler(UDPConfig);
             client.setReconnectHandler(UDPReconnectHandler);
             client.setCloseHandler(UDPCloseHandler);
@@ -622,13 +609,13 @@ public class ConfigurableUDPSource {
             log.error("Failed to connect to all sources. Exiting...");
             for (String sourceName : sources) {
                 if (!clients.get(sourceName).isOpen()) {
-                    log.error("Failed to connect to '" + targetVantiqServer + "' for source '" + sourceName + "'");
+                    log.error("Failed to connect to '{}' for source '{}'", targetVantiqServer, sourceName);
                 }
                 else if (!clients.get(sourceName).isAuthed()) {
-                    log.error("Failed to auth within 10 seconds using the given auth data for source '" + sourceName + "'");
+                    log.error("Failed to auth within 10 seconds using the given auth data for source '{}'", sourceName);
                 }
                 else if (!clients.get(sourceName).isConnected()) {
-                    log.error("Failed to connect to '" + sourceName + "' within 10 seconds");
+                    log.error("Failed to connect to '{}' within 10 seconds", sourceName);
                 }
                 clients.get(sourceName).stop();
             }
@@ -636,34 +623,8 @@ public class ConfigurableUDPSource {
             return;
         }
 
-        /*
-         * 4) Stall until told to shutdown
-         *
-         * Waits until {@link #stopLatch} counts down, which occurs when a query is sent to any source controlled by the program.
-         * See {@link UDPDefaultQuery} for the code that orders the latch released
-         */
-        try {
-            stopLatch.await();
-        }
-        catch (InterruptedException e) {
-            log.error("Stop latch interrupted while waiting for exit signal ", e);
-        }
-
-        /*
-         * 5) Exits upon receiving a signal
-         *
-         * The signal is received from a publish message using {@link ConfigurableUDPSource#UDPDefaultPublish} {@link Handler}. Once it exits,
-         * it simply closes the {@link DatagramSocket} and {@link ExtensionWebSocketClient}
-         */
-        for (String sourceName : sources) {
-            if (clients.get(sourceName).isOpen()) {
-                clients.get(sourceName).stop();
-            }
-        }
-        for (Map.Entry<DatagramSocket,List<String>> entry : udpSocketToSources.entrySet()) {
-            entry.getKey().close();
-        }
-        log.info("WebSocket closed");
+        // The ExtensionWebSocketClients have separate threads, thanks to the WebSocket being its own thread
+        // Because of this, exiting main means that the program will only end once all Clients close connections
     }
 
     /**
@@ -725,14 +686,12 @@ public class ConfigurableUDPSource {
         log.trace("{}", new String(packet.getData()));
         InetAddress address = packet.getAddress();
         int port = packet.getPort();
-        log.debug("UDP message received from address '" + address + "' and port '" + port + "' for sources " + sources);
+        log.debug("UDP message received from address '{}' and port '{}' for sources {}", address, port, sources);
 
         for (String sourceName : sources) {
             // Notify
             if (receivingFromServer(sourceName, port, address)) {
-                log.debug("Sending Notification for source '" + sourceName + "'");
-                log.debug(notificationHandlers.toString());
-                log.debug(notificationHandlers.get(sourceName).toString());
+                log.debug("Sending Notification for source '{}'", sourceName);
                 notificationHandlers.get(sourceName).handleMessage(packet);
             }
         }

@@ -73,7 +73,7 @@ public class TestUDPPublishHandler {
         // Fill the three parts of a config document
 
         // Create the UUT
-        pHandler = new UDPPublishHandler(outgoing, fakeSocket);
+        pHandler = new UDPPublishHandler(outgoing, fakeSocket, sourceName);
 
         // Create sample data
         Map<String,Object> testMap = new LinkedHashMap<>();
@@ -99,7 +99,7 @@ public class TestUDPPublishHandler {
         outgoing.put("passPureMapOut", true);
 
         // Create the UUT
-        pHandler = new UDPPublishHandler(outgoing, fakeSocket);
+        pHandler = new UDPPublishHandler(outgoing, fakeSocket, sourceName);
 
         // Create sample data
         Map<String,Object> testMap = new LinkedHashMap<>();
@@ -137,7 +137,7 @@ public class TestUDPPublishHandler {
         outgoing.put("transformations", transformations);
 
         // Create the UUT
-        pHandler = new UDPPublishHandler(outgoing, fakeSocket);
+        pHandler = new UDPPublishHandler(outgoing, fakeSocket, sourceName);
 
         // Create sample data
         String expectedAddress = "127.0.0.1";
@@ -183,7 +183,7 @@ public class TestUDPPublishHandler {
         outgoing.put("transformations", transformations);
 
         // Create the UUT
-        pHandler = new UDPPublishHandler(outgoing, fakeSocket);
+        pHandler = new UDPPublishHandler(outgoing, fakeSocket, sourceName);
 
         // Create sample data
         String expectedAddress = "127.0.0.1";
@@ -213,7 +213,7 @@ public class TestUDPPublishHandler {
     public void testPassBytesOutFrom() {
         outgoing.put("passBytesOutFrom", "byteLoc");
         
-        pHandler = new UDPPublishHandler(outgoing, fakeSocket);
+        pHandler = new UDPPublishHandler(outgoing, fakeSocket, sourceName);
         
         Map<String,Object> testMap = new LinkedHashMap<>();
         testMap.put("byteLoc", "msg");
@@ -239,7 +239,7 @@ public class TestUDPPublishHandler {
         
         outgoing.put("formatParser", formatParser);
         
-        pHandler = new UDPPublishHandler(outgoing, fakeSocket);
+        pHandler = new UDPPublishHandler(outgoing, fakeSocket, sourceName);
         
         // ============ Testing standard locations and pattern ============
         Map<String,Object> testMap = new LinkedHashMap<>();
@@ -294,7 +294,7 @@ public class TestUDPPublishHandler {
         outgoing.put("sendXmlRoot", "route");
         outgoing.put("passPureMapOut", true);
         
-        pHandler = new UDPPublishHandler(outgoing, fakeSocket);
+        pHandler = new UDPPublishHandler(outgoing, fakeSocket, sourceName);
         
         Map<String,Object> testMap = new LinkedHashMap<>();
         testMap.put("Hello", "World");
@@ -315,7 +315,7 @@ public class TestUDPPublishHandler {
         String[] schema = {"name","id#"}; 
         outgoing.put("useCsvSchema", Arrays.asList(schema));
         
-        pHandler = new UDPPublishHandler(outgoing, fakeSocket);
+        pHandler = new UDPPublishHandler(outgoing, fakeSocket, sourceName);
         
         Map<String,Object> testMap = new LinkedHashMap<>();
         Map<String,Object> obj1 = new LinkedHashMap<>();
@@ -343,7 +343,7 @@ public class TestUDPPublishHandler {
         outgoing.put("passCsvOutFrom", "csv");
         outgoing.put("useCsvSchema", "schemaLoc");
         
-        pHandler = new UDPPublishHandler(outgoing, fakeSocket);
+        pHandler = new UDPPublishHandler(outgoing, fakeSocket, sourceName);
         
         Map<String,Object> testMap = new LinkedHashMap<>();
         Map<String,Object> obj1 = new LinkedHashMap<>();

@@ -1,5 +1,10 @@
 # vantiq-extension-sources
 
+> Note:  Use Extension Sources requires VANTIQ Version 1.23 or later.
+
+> Please ensure that the VANTIQ instance with which you are working has been
+> updated to this version or later.
+ 
 # Repository Overview
 
 This repository contains the source code for various VANTIQ Extension Sources as well as SDKs for building these sources.  VANTIQ Extension Sources provide a means by which VANTIQ sources can operate outside of (but related to) a VANTIQ installation.
