@@ -5,12 +5,12 @@
 *   [ObjectRecognitionCore](#core) -- Controls the connection to a source, the input images, and the output.
 *   [ObjectRecognitionConfigHandler](#srcConfig) -- Sets up the neural net and image retriever based on the source's
     configuration document.
-*   NeuralNetResults -- A class that holds the data passed back by neural net implementations.
+*   [NeuralNetResults](#msgFormat) -- A class that holds the data passed back by neural net implementations.
 *   [NeuralNetInterface](#netInterface) -- An interface that allows other neural nets to be more easily integrated
     without changes to the rest of the code.
     *   [YoloProcessor](#yoloNet) -- An implementation of the [You Only Look Once](https://pjreddie.com/darknet/yolo/)
         (YOLO) object detection software using Java Tensorflow.
-*   ImageRetrieverResults -- A class that holds the data passed back by image retriever implementations.
+*   [ImageRetrieverResults](#msgFormat) -- A class that holds the data passed back by image retriever implementations.
 *   [ImageRetrieverInterface](#retrieveInterface) -- An interface that allows different image retrieval mechanisms to be
         more easily integrated without changes to the rest of the code.
     *   [CameraRetriever](#cameraRet) -- Retrieves images from a directly connected camera using OpenCV.
@@ -155,7 +155,7 @@ Most of the options required for neuralNet are dependent on the specific impleme
         the `io.vantiq.objectRecognition.neuralNet` package. This implementation is not provided, and must be written by
         the user.
 
-## Messages from the Source
+## Messages from the Source<a name="msgFormat" id="msgFormat"></a>
 
 Messages from the source are JSON objects in the following format:
 ```
@@ -416,8 +416,7 @@ This program uses several licensed libraries.
 TensorFlow, okhttp3, Apache commons, log4j, and jackson-databind are licensed under
 [Apache Version 2.0 License](http://www.apache.org/licenses/LICENSE-2.0).  
 
-slf4j and the [openpnp](https://github.com/openpnp/opencv) distribution of OpenCV used by this library are licensed
-under the [MIT License](https://opensource.org/licenses/MIT).  
+slf4j and is licensed under the [MIT License](https://opensource.org/licenses/MIT).  
 
 The TensorFlow implementation of YOLO found in the edu.ml.* packages uses the
 [WTFPL](https://github.com/szaza/tensorflow-example-java/blob/master/LICENSE) public license. A few changes were made
