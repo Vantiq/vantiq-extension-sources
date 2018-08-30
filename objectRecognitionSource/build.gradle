@@ -34,7 +34,7 @@ def standardImplementationTestPatterns = new ArrayList<String>(
         "**/TestCameraRetriever.java",
         "**/TestFileRetriever.java",
         "**/TestYoloProcessor.java",
-        "**/TestNetworkStreamRetriever",
+        "**/TestNetworkStreamRetriever.java",
         "**/TestFtpRetriever.java"
     ]
 )
