@@ -63,7 +63,7 @@ public class TestFileRetriever extends ObjRecTestBase {
             results = fr.getImage();
             byte[] data = results.getImage();
             assert data != null;
-            assert data.length > 0;
+            assert data.length == 64668;
         } catch (ImageAcquisitionException e) {
             fail("Exception occurred when obtaining image " + e.toString());
         }
@@ -112,7 +112,7 @@ public class TestFileRetriever extends ObjRecTestBase {
                 results = fr.getImage();
                 byte[] data = results.getImage();
                 assert data != null;
-                assert data.length > 0;
+                assert data.length == 64668;
             } catch (ImageAcquisitionException e) {
                 fail("Exception occurred when obtaining image after creating it " + e.toString());
             }
@@ -137,7 +137,7 @@ public class TestFileRetriever extends ObjRecTestBase {
             results = fr.getImage(message);
             byte[] data = results.getImage();
             assert data != null;
-            assert data.length > 0;
+            assert data.length == 64668;
         } catch (ImageAcquisitionException e) {
             fail("Exception occurred when obtaining image " + e.toString());
         }
@@ -177,7 +177,7 @@ public class TestFileRetriever extends ObjRecTestBase {
             results = fr.getImage(message);
             byte[] data = results.getImage();
             assert data != null;
-            assert data.length > 0;
+            assert data.length == 64668;
         } catch (ImageAcquisitionException e) {
             fail("Exception occurred when obtaining image: " + e.toString());
         }
@@ -198,7 +198,7 @@ public class TestFileRetriever extends ObjRecTestBase {
             results = fr.getImage();
             byte[] data = results.getImage();
             assert data != null;
-            assert data.length > 0;
+            assert data.length == 652762;
         } catch (ImageAcquisitionException e) {
             fail("Exception occurred when obtaining image: " + e.toString());
         }
@@ -222,8 +222,6 @@ public class TestFileRetriever extends ObjRecTestBase {
         Map<String, Object> request = new LinkedHashMap<>();
         try {
             Map<String, String> config = new LinkedHashMap<>();
-            config.put("fileLocation", VIDEO_LOCATION);
-            config.put("fileExtension", "mov");
             fr.setupDataRetrieval(config, source);
         } catch (Exception e) {
             fail("Exception occurred when obtaining image: " + e.toString());
@@ -236,7 +234,7 @@ public class TestFileRetriever extends ObjRecTestBase {
             results = fr.getImage(request);
             byte[] data = results.getImage();
             assert data != null;
-            assert data.length > 0;
+            assert data.length == 632148;
         } catch (ImageAcquisitionException e) {
             fail("Exception occurred when requesting frame 4 of video: " + e.toString());
         }
