@@ -21,15 +21,14 @@ public interface ImageRetrieverInterface {
      * Configures the data retriever.
      * @param dataSourceConfig  A map containing the configuration necessary to setup the retriever. This will be the
      *                          'dataSource' object in the source configuration document.
-     * @param source            The ObjectRecognitionSource that will be using the retriever. It is not necessarily
+     * @param source            The ObjectRecognitionCore that will be using the retriever. It is not necessarily
      *                          expected that this will be used
      * @throws Exception        Thrown if the retriever cannot be setup 
      */
     void setupDataRetrieval(Map<String, ?> dataSourceConfig, ObjectRecognitionCore source) throws Exception;
     
     /**
-     * Obtain an image's bytes in jpeg format. For each instance of the retriever, only one of {@link #getImage()} and
-     * {@link #getImage(Map)} will be called depending on whether the source is setup for Queries.
+     * Obtain an image's bytes in jpeg format and any other information the implementation deems relevant.
      * @return                              An {@link ImageRetrieverResults} object containing an image in jpeg format
      *                                      and a Map containing any other data the source may need to know. The
      *                                      contents of the Map are implementation dependent.
@@ -40,9 +39,8 @@ public interface ImageRetrieverInterface {
     ImageRetrieverResults getImage() throws ImageAcquisitionException;
     
     /**
-     * Obtain an image's bytes in jpeg format using the options specified in {@code request}. For each instance of the
-     * retriever, only one of {@link #getImage()} and {@link #getImage(Map)} will be called depending on whether
-     * the source is setup for Queries.
+     * Obtain an image's bytes in jpeg format and any other information the implementation deems relevant 
+     * using the options specified in {@code request}.
      * @param request                       The data sent in the Query request.
      * @return                              An {@link ImageRetrieverResults} object containing an image in jpeg format
      *                                      and a Map containing any other data the source may need to know. The
@@ -54,7 +52,7 @@ public interface ImageRetrieverInterface {
     ImageRetrieverResults getImage(Map<String, ?> request) throws ImageAcquisitionException;
     
     /**
-     * Safely close any resources obtained by the retriever.
+     * Safely close any resources held by the retriever.
      */
     void close();
 }

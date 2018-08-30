@@ -28,7 +28,7 @@ import org.opencv.videoio.Videoio;
 
 /**
  * This implementation reads files from the disk, using OpenCV for the videos. {@code fileLocation} must be a valid file
- * at initialization. The initial image file can be replaced while the source is running, but the video cannot. For
+ * at initialization if specified for a video. The initial image file can be replaced while the source is running, but the video cannot. For
  * Queries, new files can be specified using the {@code fileLocation} and {@code fileExtension} options, and defaults
  * to the initial file if {@code fileLocation} is not set. Queried videos can specify which frame of the video to access
  * using the {@code targetFrame} option.
@@ -36,11 +36,11 @@ import org.opencv.videoio.Videoio;
  * Errors are thrown whenever an image or video frame cannot be read. Fatal errors are thrown only when a video finishes
  * being read when the source is not setup for to receive Queries.
  * <br>
- * The options are:
+ * The options are as follows. Remember to prepend "DS" when using an option in a Query.
  * <ul>
- *     <li>{@code fileLocation}: Required for Config, Optional for Query. The location of the file to be read.
+ *     <li>{@code fileLocation}: Optional. Config and  Query. The location of the file to be read.
  *                      For Config where {@code fileExtension} is "mov", the file must exist at initialization. If this
- *                      is not set at Config and the source is configured to poll, then the source will open but
+ *                      option is not set at Config and the source is configured to poll, then the source will open but
  *                      the first attempt to retrieve will kill the source. For Queries, defaults to the configured file
  *                      or returns an error if there was none.
  *     <li>{@code fileExtension}: Optional. Config and Query. The type of file it is, "mov" for video files, "img" for
@@ -132,6 +132,10 @@ public class FileRetriever implements ImageRetrieverInterface {
         }
     }
 
+    /**
+     * Read the file specified at configuration
+     * @throws FatalImageException  If no file was specified at configuration, or if the video has completed
+     */
     @Override
     public ImageRetrieverResults getImage() throws ImageAcquisitionException {
         ImageRetrieverResults results = new ImageRetrieverResults();
@@ -189,6 +193,9 @@ public class FileRetriever implements ImageRetrieverInterface {
         }
     }
 
+    /**
+     * Read the specified file, or the file specified at configuration
+     */
     @Override
     public ImageRetrieverResults getImage(Map<String, ?> request) throws ImageAcquisitionException {
         ImageRetrieverResults results = new ImageRetrieverResults();

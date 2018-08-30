@@ -27,9 +27,10 @@ import io.vantiq.extsrc.objectRecognition.exception.ImageAcquisitionException;
 
 /**
  * Captures images from an IP camera.
- * Unique settings are: 
+ * Unique settings are as follows. Remember to prepend "DS" when using an option in a Query. 
  * <ul>
- *  <li>{@code camera}: Required for Config, optional for Query. The URL of the video stream to read images from. For queries, defaults to the camera specified in the Config.
+ *      <li>{@code camera}: Required for Config, optional for Query. The URL of the video stream to read images from. For
+ *                      queries, defaults to the camera specified in the Config.
  * </ul>
  * 
  * The timestamp is captured immediately before the image is grabbed from the camera. The additional data is:
@@ -78,6 +79,7 @@ public class NetworkStreamRetriever implements ImageRetrieverInterface {
     
     /**
      * Obtain the most recent image from the camera
+     * @throws FatalImageException  If the IP camera is no longer open
      */
     @Override
     public ImageRetrieverResults getImage() throws ImageAcquisitionException {

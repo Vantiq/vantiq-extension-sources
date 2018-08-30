@@ -33,7 +33,7 @@ import io.vantiq.extsrc.objectRecognition.exception.ImageAcquisitionException;
  * This implementation can read files from FTP, FTPS, and SFTP servers. Not all options available for each protocol are
  * implemented. Only Queries are allowed, for which {@code file} is necessary. The server created at initialization will
  * be used if no new options are set for the server and {@code noDefault} was not set to {@code true} for the
- * configuration. If some but notall options are set for a Query, then the values from the initial configuration are
+ * configuration. If some but not all options are set for a Query, then the values from the initial configuration are
  * used.
  * <br>
  *
@@ -163,6 +163,9 @@ public class FtpRetriever implements ImageRetrieverInterface {
                 + "Polling is not allowed for the FTPRetriever.");
     }
 
+    /**
+     * Retrieve an image from an FTP/FTPS/SFTP server.
+     */
     @Override
     public ImageRetrieverResults getImage(Map<String, ?> request) throws ImageAcquisitionException {
         boolean newServer = false; // Do we need to create a new server for this request
@@ -524,6 +527,12 @@ public class FtpRetriever implements ImageRetrieverInterface {
         return image;
     }
     
+    /**
+     * Creates and starts an SFTP channel from the given session
+     * @param session                       The Session to create a channel from 
+     * @return                              An SFTP channel
+     * @throws ImageAcquisitionException    If the SFTP channel could not be properly opened.
+     */
     public ChannelSftp createChannelFromSession(Session session) throws ImageAcquisitionException {
         ChannelSftp sftpChannel;
         
@@ -549,7 +558,7 @@ public class FtpRetriever implements ImageRetrieverInterface {
     }
     
     /**
-     * Read the specified file from {@code session}
+     * Read the specified file from {@code sftpChannel}
      * @param sftpChannel                   The channel to use for reading.
      * @param fileName                      The path to the file to read.
      * @return                              The bytes of the file.

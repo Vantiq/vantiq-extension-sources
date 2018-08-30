@@ -256,8 +256,8 @@ option.
 Errors are thrown whenever an image or video frame cannot be read. Fatal errors are thrown only when a video finishes
 being read when the source is not setup for to receive Queries.
 The options are as follows. Remember to prepend "DS" when using an option in a Query.
-*   fileLocation: Required for Config, Optional for Query. The location of the file to be read. For Config
-    where `fileExtension` is "mov", the file must exist at initialization. If this is not set at Config and the source
+*   fileLocation: Optional. Config and Query. The location of the file to be read. For Config where
+    `fileExtension` is "mov", the file must exist at initialization. If this option is not set at Config and the source
     is configured for polling, then the source will open but the first attempt to retrieve will kill the source. For
     Queries, defaults to the configured file or returns an error if there was none.
 *   fileExtension: Optional. Config and Query. The type of file it is, "mov" for video files, "img" for image files.

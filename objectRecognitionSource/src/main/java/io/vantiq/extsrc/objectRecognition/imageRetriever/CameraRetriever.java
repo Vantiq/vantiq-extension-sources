@@ -24,9 +24,10 @@ import io.vantiq.extsrc.objectRecognition.exception.ImageAcquisitionException;
 
 /**
  * Captures images and returns them as jpeg encoded bytes.
- * Unique settings are: 
+ * Unique settings are as follows. Remember to prepend "DS" when using an option in a Query.
  * <ul>
- *  <li>{@code camera}: Required for Config, optional for Query. The index of the camera to read images from. For queries, defaults to the camera specified in the Config.
+ *      <li>{@code camera}: Required for Config, optional for Query. The index of the camera to read images from. For
+ *      Queries, defaults to the camera specified in the Config.
  * </ul>
  * 
  * The timestamp is captured immediately before the image is grabbed from the camera. No other data is included.
@@ -71,6 +72,7 @@ public class CameraRetriever implements ImageRetrieverInterface {
 	
 	/**
 	 * Obtain the most recent image from the camera
+	 * @throws FatalImageException     If the camera is no longer open.
 	 */
 	@Override
 	public ImageRetrieverResults getImage() throws ImageAcquisitionException {
