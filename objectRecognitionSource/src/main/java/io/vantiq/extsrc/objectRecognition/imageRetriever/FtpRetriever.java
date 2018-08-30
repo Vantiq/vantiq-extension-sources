@@ -333,7 +333,13 @@ public class FtpRetriever implements ImageRetrieverInterface {
             }
         }
         
-        ByteArrayInputStream fileInput = new ByteArrayInputStream(file.toByteArray());
+        byte[] fileBytes = file.toByteArray();
+        if (fileBytes == null || fileBytes.length == 0 ) {
+            throw new ImageAcquisitionException(this.getClass().getCanonicalName() + ".emptyFile: "
+                    + "The file '" + fileName + "' from server '" + server + "' was null or empty.");
+        }
+        
+        ByteArrayInputStream fileInput = new ByteArrayInputStream(fileBytes);
         BufferedImage image;
         
         // Create an image from the file. This is to translate it into jpeg format

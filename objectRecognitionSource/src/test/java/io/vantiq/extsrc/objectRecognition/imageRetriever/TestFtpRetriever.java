@@ -100,7 +100,7 @@ public class TestFtpRetriever extends ObjRecTestBase {
             assert results != null;
             assert results.length == 19871;
         } catch (ImageAcquisitionException e) {
-            fail("Should not throw exception trying for the sample file");
+            fail("Should not throw exception trying for the sample file. Message was: " + e.getMessage());
         }
         
         request.put("DSfile", "notAFile");
@@ -178,7 +178,7 @@ public class TestFtpRetriever extends ObjRecTestBase {
         try {
             retriever.setupDataRetrieval(config, source);
         } catch (Exception e) {
-            fail("Should not fail with full config. exception message was : " + e.getMessage());
+            fail("Should not fail with full config. Exception message was : " + e.getMessage());
         }
         
         Map<String, String> request = new LinkedHashMap<>();
@@ -240,7 +240,7 @@ public class TestFtpRetriever extends ObjRecTestBase {
             assert results != null;
             assert results.length == 19871;
         } catch (ImageAcquisitionException e) {
-            fail("Should not throw exception trying for a valid new server");
+            fail("Should not throw exception trying for a valid new server. Message was: " + e.getMessage());
         }
     }
     
@@ -263,7 +263,7 @@ public class TestFtpRetriever extends ObjRecTestBase {
             assert results != null;
             assert results.length == 19871;
         } catch (ImageAcquisitionException e) {
-            fail("Should no throw exception for valid file");
+            fail("Should no throw exception for valid file. Message was: " + e.getMessage());
         }
         
         request = fullFtpRequest();
