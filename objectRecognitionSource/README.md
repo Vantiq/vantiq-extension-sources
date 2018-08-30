@@ -191,6 +191,16 @@ Options available for all Queries (not prepended by anything) are:
     received, instead of being immediately available as a JSON object. This is because Query results are mandated
     to be arrays. Default is false.
 
+### Error Messages
+
+Query errors originating from the source will always have the code be the FQCN with a small descriptor attached, and
+the message will include the exception causing it and the request that spawned it. The error's parameters will be, in
+order, the message of the java exception thrown, the java exception thrown, and a JSON object containing the properties
+of the query that caused the error.  
+
+The messages of exceptions thrown by the standard implementations of NeuralNets and ImageRetrievers will always be in
+the form "<FQCN of the class that spawned the error>.<mini descriptor>: <longer description>".
+
 ## Image Retriever Interface<a name="retrieveInterface" id="retrieveInterface"></a>
 
 This is an interface that returns a jpeg encoded image, a timestamp (optional), and a Map containing any data that a
@@ -267,6 +277,42 @@ No timestamp is captured. The additional data is:
 *   file: The path of the file read.
 *   frame: Which frame of the file this represents. Only included when `fileExtension` is set to "mov".
 
+#### Example: Reading an Entire Video Through Queries
+If you want to read a video file from a source using Queries, this method will work.
+```
+var frameResults = []
+var frameSkip = 72
+var maxCaptures = 100
+var myVideoLocation = "movie.mov"
+PROCEDURE queryAndSaveVideoData(video String)
+
+try {
+    // We expect the error received when the bounds are overrun to stop the loop,
+    // so we needn't worry about the while condition
+    FOR (frame in range(0, maxCaptures)) {
+        SELECT * FROM SOURCE Camera3 AS results WITH 
+                        //sendFullResponse = true,
+                        // Uncomment previous line if you want the metadata for each, not just the objects
+                        DSfileLocation:myVideoLocation,
+                        DSfileExtension:"mov",
+                        DStargetFrame:frame * frameSkip,
+    }
+} catch (error) {
+    if ( !(typeOf(error.params[0]) == "String" 
+            && error.params[0].startsWith("io.vantiq.extsrc.objectRecognition.imageRetriever.FileRetriever.invalidTargetFrame")) ) {
+        // The parameter 0 of the query error is ALWAYS the message
+        // from the originating exception if the exception comes from the source.
+        // FileRetriever throws an exception whose message
+        // starts with:
+        // "io.vantiq.extsrc.objectRecognition.imageRetriever.FileRetriever.invalidTargetFrame"
+        // when a frame past the end of the video is requested
+        // If this changes or becomes unpredictable, use an else instead with a debug() statement
+        exception(error.code, error.message)
+    }
+}
+// At this point, frameResults[f] will contain the objects identified in frame f * frameSkip
+```
+
 ### FTP Retriever<a name="ftpRet" id="ftpRet"></a>
 
 This implementation can read files from FTP, FTPS, and SFTP servers. Not all options available for each protocol are
@@ -295,42 +341,6 @@ The options are as follows. Remember to prepend "DS" when using an option in a Q
 The timestamp is captured immediately before the copy request is sent. The additional data is:
 *   file: The path of the file read.
 *   server: The domain name of the server which the file was read from.
-
-#### Example: Reading an Entire Video Through Queries
-If you want to read a video file from a source using Queries, this method will work.
-```
-var frameResults = []
-var frameSkip = 72
-var maxCaptures = 100
-var myVideoLocation = "movie.mov"
-try {
-    // We expect the error received when the bounds are overrun to stop the loop,
-    // so maxCaptures can be higher than the expected number of captures
-    FOR (frame in range(0, maxCaptures - 1)) {
-        SELECT * FROM VideoSource AS results WITH 
-                        DSfileLocation:myVideoLocation,
-                        DSfileExtension:"mov",
-                        DStargetFrame:frame*frameSkip
-        frameResults.push(results)
-        frame += frameSkip
-    }
-} catch (error) {
-    // This indicates to us that the video is done receiving
-    if (frameResults.length == 0) {
-        // This means nothing was received, indicating that the error was a serious problem
-        // and not just the video's end
-        // We'll throw the exception again, so that it is received correctly
-        exception(error.code, error.message)
-    } else if ( !(error.params[0].equals("Requested frame outside valid bounds")) ) {
-        // AS OF WRITING (8/17/18), the parameter 0 of the query error is ALWAYS the message
-        // from the originating exception, and FileRetriever throws an exception with the message
-        // "Requested frame outside valid bounds" when an invalid frame is requested
-        // If this changes or becomes unpredictable, use an else instead with a debug() statement
-        exception(error.code, error.message)
-    }
-}
-// At this point, frameResults[f] will contain the objects identified in frame f * frameSkip
-```
 
 ## Neural Net Interface<a name="netInterface" id="netInterface"></a>
 
