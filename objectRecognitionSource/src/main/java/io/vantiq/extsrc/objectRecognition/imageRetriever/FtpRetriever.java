@@ -550,8 +550,8 @@ public class FtpRetriever implements ImageRetrieverInterface {
     
     /**
      * Read the specified file from {@code session}
-     * @param session                       The session to use for reading.
-     * @param filePath                      The path to the file to read.
+     * @param sftpChannel                   The channel to use for reading.
+     * @param fileName                      The path to the file to read.
      * @return                              The bytes of the file.
      * @throws ImageAcquisitionException    Thrown when the image cannot be retrieved for any reason
      */

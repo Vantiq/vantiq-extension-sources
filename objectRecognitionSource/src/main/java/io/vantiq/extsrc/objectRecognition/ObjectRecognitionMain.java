@@ -16,7 +16,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
-import java.util.concurrent.CompletableFuture;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -29,7 +28,7 @@ import org.slf4j.LoggerFactory;
  *                      namespace admin.
  *      <li>{@code sources}: Required. A comma separated list of the sources to which you wish to connect. Whitespace 
  *                      around each name will be removed when read.
- *      <li>{@code targetServer}: Optional. The Vantiq server hosting the sources. Defaults to "dev.vantiq.com"
+ *      <li>{@code targetServer}: Required. The Vantiq server hosting the sources.
  *      <li>{@code modelDirectory}: Optional. The directory in which the files for your neural networks will be.
  *                      Defaults to the working directory.
  *  </ul>
@@ -39,13 +38,10 @@ public class ObjectRecognitionMain {
     static       List<ObjectRecognitionCore>    sources;
     
     public static final String DEFAULT_MODEL_DIRECTORY = "";
-    public static final String DEFAULT_VANTIQ_SERVER = "wss://dev.vantiq.com/api/v1/wsock/websocket";
     
     static String authToken;
     static String targetVantiqServer;
     static String modelDirectory;
-    
-    public static CompletableFuture<Void> stop = new CompletableFuture<>();
     
     /**
      * Connects to the Vantiq source and starts polling for data. Exits when all sources are done running.

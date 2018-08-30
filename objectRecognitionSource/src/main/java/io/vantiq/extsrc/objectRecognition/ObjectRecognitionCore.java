@@ -58,7 +58,10 @@ public class ObjectRecognitionCore {
     // final vars
     final Logger log;
     
-    public Handler<Response> httpHandler = new Handler<Response>() {
+    /**
+     * Logs http messages at the debug level 
+     */
+    public final Handler<Response> httpHandler = new Handler<Response>() {
         @Override
         public void handleMessage(Response message) {
             log.debug(message.toString());
@@ -66,9 +69,9 @@ public class ObjectRecognitionCore {
     };
     
     /**
-     * Cancels the previous communication method and tries to reconnect to the source, closing on a failure
+     * Stops sending messages to the source and tries to reconnect, closing on a failure
      */
-    public Handler<ExtensionServiceMessage> reconnectHandler = new Handler<ExtensionServiceMessage>() {
+    public final Handler<ExtensionServiceMessage> reconnectHandler = new Handler<ExtensionServiceMessage>() {
         @Override
         public void handleMessage(ExtensionServiceMessage message) {
             log.info("Reconnect message received. Reinitializing configuration");
@@ -98,9 +101,9 @@ public class ObjectRecognitionCore {
     };
     
     /**
-     * Cancels the previous communication method and tries to reconnect, closing on a failure
+     * Stops sending messages to the source and tries to reconnect, closing on a failure
      */
-    public Handler<ExtensionWebSocketClient> closeHandler = new Handler<ExtensionWebSocketClient>() {
+    public final Handler<ExtensionWebSocketClient> closeHandler = new Handler<ExtensionWebSocketClient>() {
         @Override
         public void handleMessage(ExtensionWebSocketClient message) {
             log.info("WebSocket closed unexpectedly. Attempting to reconnect");
@@ -258,7 +261,7 @@ public class ObjectRecognitionCore {
     /**
      * Processes the image then sends the results to the Vantiq source. Calls {@code stop()} if a FatalImageException is
      * received.
-     * @param image An OpenCV Mat representing the image to be translated
+     * @param imageResults An {@link ImageRetrieverResults} containing the image to be translated
      */
     public void sendDataFromImage(ImageRetrieverResults imageResults) {
         
@@ -300,8 +303,8 @@ public class ObjectRecognitionCore {
    /**
     * Processes the image using the options specified in the Query message then sends a Query response containing the
     * results. Calls {@code stop()} if a FatalImageException is received.
-    * @param image      An OpenCV Mat representing the image to be translated
-    * @param message    The Query message
+    * @param imageResults   An {@link ImageRetrieverResults} containing the image to be translated
+    * @param message        The Query message
     */
    public void sendDataFromImage(ImageRetrieverResults imageResults, ExtensionServiceMessage message) {
        Map<String, ?> request = (Map<String, ?>) message.getObject();
@@ -389,7 +392,7 @@ public class ObjectRecognitionCore {
    }
     
     /**
-     * Closes all resources held by this program except for the {@link ExtenstionWebSocketClient}. 
+     * Closes all resources held by this program except for the {@link ExtensionWebSocketClient}. 
      */
     public void close() {
         if (pollTimer != null) {

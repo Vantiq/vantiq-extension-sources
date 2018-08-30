@@ -30,13 +30,13 @@ import io.vantiq.extsrc.objectRecognition.neuralNet.NeuralNetInterface;
  *<pre> {
  *      objRecConfig: {
  *          general: {
- *              &lt;general options&lt;
+ *              &lt;general options&gt;
  *          },
  *          dataSource: {
- *              &lt;image retriever options&lt;
+ *              &lt;image retriever options&gt;
  *          },
  *          neuralNet: {
- *              &lt;neural net options&lt;
+ *              &lt;neural net options&gt;
  *          }
  *      }
  * }</pre>
@@ -46,8 +46,8 @@ import io.vantiq.extsrc.objectRecognition.neuralNet.NeuralNetInterface;
  *      <li>{@code pollRate}: This indicates how often an image should be captured. A positive number
  *                      represents the number of milliseconds between captures. If the specified time is less than
  *                      the amount of time it takes to process the image then images will be taken as soon as the
- *                      previous finishes. If this is set to 0, the next image will be captured as soon as the previous
- *                      is sent.
+ *                      previous finishes. If this is set to ero, the next image will be captured as soon as the
+ *                      previous is sent.
  *      <li>{@code allowQueries}: This option allows Queries to be received when set to {@code true}
  *                      
  * </ul>
@@ -57,8 +57,8 @@ import io.vantiq.extsrc.objectRecognition.neuralNet.NeuralNetInterface;
  * of the implementation. It can also be unset, in which case it will attempt to find {@code DefaultRetriever} and 
  * {@code DefaultProcessor}, which will be written by you, for your specific needs. {@code type} can also be set to the
  * implementations included in the standard package: {@code file} for FileRetriever, {@code camera} for 
- * CameraRetriever, {@code ftp} for FtpRetriever, and {@code network} for NetworkRetriever for the dataSource config; 
- * and {@code yolo} for YoloProcessor for the neuralNet config.
+ * CameraRetriever, {@code ftp} for FtpRetriever, and {@code network} for NetworkStreamRetriever for the dataSource
+ * config; and {@code yolo} for YoloProcessor for the neuralNet config.
  */
 public class ObjectRecognitionConfigHandler extends Handler<ExtensionServiceMessage> {
     
@@ -73,7 +73,7 @@ public class ObjectRecognitionConfigHandler extends Handler<ExtensionServiceMess
     Handler<ExtensionServiceMessage> queryHandler;
     
     /**
-     * Initializes the Handler for a source 
+     * Initializes the Handler for a source. The source name will be used in the logger's name.
      * @param source    The source that this handler is attached to
      */
     public ObjectRecognitionConfigHandler(ObjectRecognitionCore source) {
@@ -81,7 +81,7 @@ public class ObjectRecognitionConfigHandler extends Handler<ExtensionServiceMess
         this.sourceName = source.getSourceName();
         log = LoggerFactory.getLogger(this.getClass().getCanonicalName() + "#" + sourceName);
         queryHandler = new Handler<ExtensionServiceMessage>() {
-        ExtensionWebSocketClient client = source.client;
+            ExtensionWebSocketClient client = source.client;
             
             @Override
             public void handleMessage(ExtensionServiceMessage message) {
@@ -193,7 +193,8 @@ public class ObjectRecognitionConfigHandler extends Handler<ExtensionServiceMess
      * @return                  true if the neural net could be created, false otherwise
      */
     boolean createNeuralNet(Map<String, ?> neuralNetConfig ) {
-        lastNeuralNet = neuralNetConfig;
+        // Null the last config so if it fails it will know the last failed
+        lastNeuralNet = null;
         
         // Identify the type of neural net
         String neuralNetType = DEFAULT_NEURAL_NET;
@@ -224,6 +225,9 @@ public class ObjectRecognitionConfigHandler extends Handler<ExtensionServiceMess
             return false;
         }
         
+        // Only save the last config if the creation succeeded.
+        lastNeuralNet = neuralNetConfig;
+        
         log.info("Neural net created");
         log.debug("Neural net class is {}", neuralNet);
         return true;
@@ -235,7 +239,8 @@ public class ObjectRecognitionConfigHandler extends Handler<ExtensionServiceMess
      * @return                  true if the requested image retriever could be created, false otherwise
      */
     boolean createImageRetriever(Map<String, ?> dataSourceConfig) {
-        lastDataSource = dataSourceConfig;
+        // Null the last config so if it fails it will know the last failed
+        lastDataSource = null;
         
         // Figure out where to receive the data from
         // Initialize to default in case no type was given
@@ -273,6 +278,9 @@ public class ObjectRecognitionConfigHandler extends Handler<ExtensionServiceMess
             failConfig();
             return false;
         }
+        
+        // Only save the last config if the creation succeeded.
+        lastDataSource = dataSourceConfig;
         
         log.info("Image retriever created");
         log.debug("Image retriever class is {}", retrieverType);

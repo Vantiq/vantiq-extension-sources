@@ -52,7 +52,7 @@ own line.
 *   authToken: Required. The authentication token to connect with. These can be obtained from the namespace admin.
 *   sources: Required. A comma separated list of the sources to which you wish to connect. Any whitespace will be
     removed when read.
-*   targetServer: Optional. The Vantiq server hosting the sources. Defaults to "dev.vantiq.com"
+*   targetServer: Required. The Vantiq server hosting the sources.
 
 ### Local Options
 *   modelDirectory: Optional. The directory in which the files for your neural networks will be. Defaults to the current
