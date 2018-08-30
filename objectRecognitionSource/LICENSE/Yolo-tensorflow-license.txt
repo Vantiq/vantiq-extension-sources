@@ -1,1 +1,1 @@
-https://github.com/szaza/tensorflow-example-java/blob/master/LICENSE
+https://github.com/szaza/tensorflow-example-java

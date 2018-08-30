@@ -21,7 +21,7 @@
 ## How to Run the Program<a name="objRecMain" id="objRecMain"></a>
 
 1.  If you intend to use any of the implementations that require OpenCV, you must install OpenCV version 3.4.2 for
-Java. The [official site](https://docs.opencv.org/3.4.2/d9/d52/tutorial_java_dev_intro.html) and[this more
+Java. The [official site](https://docs.opencv.org/3.4.2/d9/d52/tutorial_java_dev_intro.html) and [this more
 in-depth tutorial](https://opencv-java-tutorials.readthedocs.io/en/latest/01-installing-opencv-for-java.html)
 describe how to install it. Once it's installed, copy the jar and (lib)opencv_java342.dll/.so/.dylib to a single
 folder, then set the environment variable OPENCV_LOC to that folder. Some features may depend on additional
