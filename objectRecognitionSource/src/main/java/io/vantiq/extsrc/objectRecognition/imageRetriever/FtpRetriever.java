@@ -337,7 +337,6 @@ public class FtpRetriever implements ImageRetrieverInterface {
         byte[] fileBytes = file.toByteArray();
         quietClose(file);
         if (fileBytes == null || fileBytes.length == 0 ) {
-            quietClose(file);
             throw new ImageAcquisitionException(this.getClass().getCanonicalName() + ".emptyFile: "
                     + "The file '" + fileName + "' from server '" + server + "' was null or empty.");
         }
@@ -368,7 +367,10 @@ public class FtpRetriever implements ImageRetrieverInterface {
         // Write save the image in jpeg format
         try {
             success = ImageIO.write(image, "jpeg", jpegFile);
+            results.setImage(jpegFile.toByteArray());
+            quietClose(jpegFile);
         } catch (IOException e) {
+            quietClose(jpegFile);
             throw new ImageAcquisitionException(this.getClass().getCanonicalName() + ".untranslatableFileType: "
                     + "Could not translate the requested image to jpeg.", e);
         }
@@ -378,7 +380,7 @@ public class FtpRetriever implements ImageRetrieverInterface {
                     + "Could not find an ImageIO Writer capable of writing the image as a jpeg.");
         }
         
-        results.setImage(jpegFile.toByteArray());
+        
         return results;
     }
 
@@ -585,13 +587,13 @@ public class FtpRetriever implements ImageRetrieverInterface {
         try {
             sftpChannel.get(fileName, image);
         } catch (SftpException e) {
+            sftpChannel.exit();
             quietClose(image);
             throw new ImageAcquisitionException(this.getClass().getCanonicalName() + ".sftpRetrieval: "
                     + "Error when trying to retrieve file '" + fileName + "' from server", e);
-        } finally {
-            sftpChannel.exit();
         }
         
+        sftpChannel.exit();
         return image;
     }
     
