@@ -9,7 +9,6 @@
 
 package io.vantiq.extsrc.objectRecognition.neuralNet;
 
-import java.util.List;
 import java.util.Map;
 
 import io.vantiq.extsrc.objectRecognition.exception.FatalImageException;
@@ -30,9 +29,8 @@ public interface NeuralNetInterface {
     void setupImageProcessing(Map<String, ?> neuralNetConfig, String modelDirectory) throws Exception;
     
     /**
-     * Process the image and return a List of Maps describing the objects identified. For each instance of the
-     * retriever, only one of {@link #processImage(byte[])} and {@link #processImage(byte[], Map)} will be called
-     * depending on whether the source is setup for Queries.
+     * Process the image and return a List of Maps describing the objects identified, and any other data the 
+     * implementation deems relevant.
      *
      * @param image                     The bytes of a jpg file.
      * @return                          A {@link NeuralNetInterface} containing a List of Maps describing the objects
@@ -47,8 +45,7 @@ public interface NeuralNetInterface {
     
     /**
      * Process the image using the options in {@code request} and return a List of Maps describing the objects
-     * identified. For each instance of the retriever, only one of {@link #processImage(byte[])} and
-     * {@link #processImage(byte[], Map)} will be called depending on whether the source is setup for Queries.
+     * identified, and any other data the implementation deems relevant
      *
      * @param image                     The bytes of a jpg file.
      * @param request                   The options accompanying a Query message.
