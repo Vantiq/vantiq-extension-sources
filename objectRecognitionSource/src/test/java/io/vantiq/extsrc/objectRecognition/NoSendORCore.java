@@ -21,7 +21,7 @@ public class NoSendORCore extends ObjectRecognitionCore{
     }
     
     /**
-     * Tries to connect to a source and waits up to 10 seconds for it to succeed or fail.
+     * Tries to connect to a source and waits up to {@code timeout} seconds for it to succeed or fail.
      * @return  true if the source connection succeeds, false if it fails.
      */
     @Override
