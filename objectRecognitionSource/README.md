@@ -306,7 +306,7 @@ try {
         // starts with:
         // "io.vantiq.extsrc.objectRecognition.imageRetriever.FileRetriever.invalidTargetFrame"
         // when a frame past the end of the video is requested
-        // If this changes or becomes unpredictable, use an else instead with a debug() statement
+        // If this changes or becomes unpredictable, use a log.debug() statement instead of this if statement
         exception(error.code, error.message)
     }
 }
@@ -345,7 +345,7 @@ The timestamp is captured immediately before the copy request is sent. The addit
 
 ## Neural Net Interface<a name="netInterface" id="netInterface"></a>
 
-This is a user written interface that interprets a jpeg encoded image and returns the results in a List of Maps and any
+This is an interface that should interpret a jpeg encoded image and return the results in a List of Maps and any
 other data that the source may need. Settings can be set through configuration or Query messages, and settings may
 differ between the two.
 
