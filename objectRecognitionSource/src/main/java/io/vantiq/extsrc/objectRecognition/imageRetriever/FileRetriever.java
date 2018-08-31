@@ -9,6 +9,7 @@
 
 package io.vantiq.extsrc.objectRecognition.imageRetriever;
 
+import java.io.File;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
@@ -100,6 +101,10 @@ public class FileRetriever implements ImageRetrieverInterface {
                 // Exit if the video cannot be read
                 if (!capture.isOpened()) {
                     capture.release();
+                    if (!new File(defaultImageLocation).exists()) {
+                        throw new ImageAcquisitionException(this.getClass().getCanonicalName() + ".queryVideoDoesNotExist: "
+                                + "The requested video '" + defaultImageLocation + "' does not exist");
+                    }
                     throw new IllegalArgumentException(this.getClass().getCanonicalName() + ".invalidMainVideo: " 
                             + "Intended video '" + defaultImageLocation + "' could not be opened. Most likely OpenCV is not "
                             + "compiled with the codecs required to read this video type");
@@ -176,9 +181,15 @@ public class FileRetriever implements ImageRetrieverInterface {
                 if (image != null) {
                     image.release();
                 }
+                
+                if (!new File(defaultImageLocation).exists()) {
+                    throw new ImageAcquisitionException(this.getClass().getCanonicalName() + ".defaultImageDoesNotExist: "
+                            + "The default image does not exist");
+                }
+                
                 throw new ImageAcquisitionException(this.getClass().getCanonicalName() + ".defaultImageUnreadable: " 
                         + "Could not read requested file '" + defaultImageLocation + "'. "
-                        + "Most likely the image did not exist or was in an unreadable format");
+                        + "Most likely the image was in an unreadable format");
             }
             
             byte[] jpegImage = convertToJpeg(image);
@@ -228,6 +239,11 @@ public class FileRetriever implements ImageRetrieverInterface {
                 if (!newcapture.isOpened()) {
                     newcapture.release();
                     matrix.release();
+                    
+                    if (!new File(imageFile).exists()) {
+                        throw new ImageAcquisitionException(this.getClass().getCanonicalName() + ".queryVideoDoesNotExist: "
+                                + "The requested video '" + imageFile + "' does not exist");
+                    }
                     throw new ImageAcquisitionException(this.getClass().getCanonicalName() + ".invalidVideoQueried: " 
                             + "Requested video '" + imageFile + "' could not be opened");
                 }
@@ -267,6 +283,7 @@ public class FileRetriever implements ImageRetrieverInterface {
                 if (matrix.empty()) {
                     newcapture.release();
                     matrix.release();
+                    
                     throw new ImageAcquisitionException(this.getClass().getCanonicalName() + ".videoUnreadable: " 
                             + "Video '" + imageFile + "' could not be read");
                 }
@@ -278,7 +295,6 @@ public class FileRetriever implements ImageRetrieverInterface {
                             + "Could not convert frame #" + targetFrame + " from video '" + imageFile
                             + "' into a jpeg image");
                 }
-                
                         
                 otherData.put("frame", targetFrame);
                 results.setImage(imageBytes);
@@ -293,9 +309,14 @@ public class FileRetriever implements ImageRetrieverInterface {
                     if (image != null) {
                         image.release();
                     }
+                    
+                    if (!new File(imageFile).exists()) {
+                        throw new ImageAcquisitionException(this.getClass().getCanonicalName() + ".queryImageDoesNotExist: "
+                                + "The requested image '" + imageFile + "' does not exist");
+                    }
                     throw new ImageAcquisitionException(this.getClass().getCanonicalName() + ".queryImageUnreadable: " 
                             + "Could not read requested file '" + imageFile + "'. "
-                            + "Most likely the image did not exist or was in an unreadable format");
+                            + "Most likely the image was in an unreadable format");
                 }
                 
                 byte[] jpegImage = convertToJpeg(image);
