@@ -401,7 +401,7 @@ set the environment variable `TENSORFLOW_JNI` to the folder containing all the .
 the `libtensorflow-<version>.jar` in `<install location>/objectRecognitionSource/lib` with the built jar or add the jar
 into the `CLASSPATH` variable found in `<install location>/objectRecognitionSource/bin/objectRecognitionSource`
 and `<install location>/objectRecognitionSource/bin/objectRecognitionSource.bat` and remove the `libtensorflow*` files
-in `<install location>/objectRecognitionSource/lib`. (This method is expected, but not certain not work).  
+in `<install location>/objectRecognitionSource/lib`.  
 
 OpenCV will also display errors that look like `warning: Error opening file
 (/build/opencv/modules/videoio/src/cap_ffmpeg_impl.hpp:856)` and `warning: invalidLocation
