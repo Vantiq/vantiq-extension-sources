@@ -131,26 +131,33 @@ public class FtpRetriever implements ImageRetrieverInterface {
         if (dataSourceConfig.get("username") instanceof String) {
             username = (String) dataSourceConfig.get("username");
         } else {
-            throw new Exception(this.getClass().getCanonicalName() + ".noPassword: "
-                    + "No password was given in the configuration setup");
+            throw new Exception(this.getClass().getCanonicalName() + ".noUsername: "
+                    + "No username was given in the configuration setup");
         }
         if (dataSourceConfig.get("password") instanceof String) {
             password = (String) dataSourceConfig.get("password");
         } else {
-            throw new Exception(this.getClass().getCanonicalName() + ".noUsername: "
-                    + "No username was given in the configuration setup");
+            throw new Exception(this.getClass().getCanonicalName() + ".noPassword: "
+                    + "No password was given in the configuration setup");
         }
         
         // Connect to the file server using the requested connection type
         if (conType == FTP || conType == FTPS) { 
             try {
                 ftpClient = connectToFtpServer(server, username, password, conType, protocol, isImplicit);
-            } catch (IOException e) {
-                throw new Exception(this.getClass().getCanonicalName() + ".ftpClientSetup: "
-                        + "Attempt to connect to the server threw an error with message: " + e.getMessage(), e);
+            } catch (Exception e) {
+                // Use the base message of the exception thrown, but add the error-specifier 
+                throw new Exception(this.getClass().getCanonicalName() + "." + e.getMessage()
+                , e);
             }
         } else {
-            session = connectToSftpServer(server, username, password);
+            try {
+                session = connectToSftpServer(server, username, password);
+            } catch (Exception e) {
+                // Use the base message of the exception thrown, but add the error-specifier 
+                throw new Exception(this.getClass().getCanonicalName() + "." + e.getMessage()
+                , e);
+            }
         }
     }
     
@@ -287,16 +294,18 @@ public class FtpRetriever implements ImageRetrieverInterface {
             if (conType == FTP || conType == FTPS) {
                 try {
                     ftpClient = connectToFtpServer(server, username, password, conType, protocol, isImplicit);
-                } catch (IOException e) {
-                    throw new ImageAcquisitionException(this.getClass().getCanonicalName() + ".queryFailedConnection: "
-                            + "Could not connect to server '" + server + "' with given username and password", e); 
+                } catch (Exception e) {
+                    // Use the base message from the exception, just turn it into an ImageAcquisitionException
+                    throw new ImageAcquisitionException(this.getClass().getCanonicalName() + ".query-" + e.getMessage()
+                    , e);
                 }
             } else {
                 try {
                     session = connectToSftpServer(server, username, password);
                 } catch (Exception e) {
-                    throw new ImageAcquisitionException(this.getClass().getCanonicalName() + ".queryFailedConnection: "
-                            + "", e);
+                    // Use the base message from the exception, just turn it into an ImageAcquisitionException
+                    throw new ImageAcquisitionException(this.getClass().getCanonicalName() + ".query-" + e.getMessage()
+                            , e);
                 }
             }
         }
@@ -418,7 +427,7 @@ public class FtpRetriever implements ImageRetrieverInterface {
      * @throws IOException  When an attempt to connect with FTPClient throws an IOException
      */
     public FTPClient connectToFtpServer(String server, String username,
-                String password, String conType, String protocol, boolean isImplicit) throws IOException {
+                String password, String conType, String protocol, boolean isImplicit) throws Exception {
         FTPClient client;
         
         // Create the client as FTP or FTPS based on the settings.
@@ -430,17 +439,32 @@ public class FtpRetriever implements ImageRetrieverInterface {
         }
         
         // Connect to target domain
-        client.connect(server);
+        try {
+            client.connect(server);
+        } catch (IOException e) {
+            // Doesn't include the full class name so the caller can catch and add its own identifier
+            throw new Exception(this.getClass().getCanonicalName() + ".ftpConnectionException: "
+                    + "Exception occurred when trying to connect to server '" + server + "'", e);
+        }
         
         // Make sure the connection succeeded.
         int reply = client.getReplyCode();
         if (!FTPReply.isPositiveCompletion(reply)) {
-            client.disconnect();
-            throw new ConnectException(this.getClass().getCanonicalName() + ".failedConnection: "
+            try {
+                client.disconnect();
+            } catch (Exception e) {} // do nothing if disconnect fails
+            // Doesn't include the full class name so the caller can catch and add its own identifier
+            throw new ConnectException("failedConnection: "
                     + "Could not connect to server '" + server + "'");
         }
         
-        client.setFileType(FTPClient.BINARY_FILE_TYPE);
+        try {
+            client.setFileType(FTPClient.BINARY_FILE_TYPE);
+        } catch (IOException e) {
+            // Doesn't include the full class name so the caller can catch and add its own identifier
+            throw new Exception("ftpTypeSetting: "
+                    + "Exception occurred when trying to specify binary files only for '" + server + "'", e);
+        }
         // Helps when dealing with firewalls
         client.enterLocalPassiveMode();
         
@@ -456,8 +480,11 @@ public class FtpRetriever implements ImageRetrieverInterface {
             // Make sure the commands made it through
             reply = client.getReplyCode();
             if (!FTPReply.isPositiveCompletion(reply)) {
-                client.disconnect();
-                throw new IOException(this.getClass().getCanonicalName() + ".failedSecurityNegotiation: "
+                try {
+                    client.disconnect();
+                } catch (Exception e) {} // Do nothing if disconnect fails
+                // Doesn't include the full class name so the caller can catch and add its own identifier
+                throw new IOException("failedSecurityNegotiation: "
                         + "Could not setup proper security for server '" + server + "'");
             }
         }
@@ -467,9 +494,14 @@ public class FtpRetriever implements ImageRetrieverInterface {
         
         // Exit if the login failed
         if (!success) {
-            client.logout();
-            client.disconnect();
-            throw new ConnectException(this.getClass().getCanonicalName() + ".failedLogin: "
+            try {
+                client.logout();
+            } catch (IOException e) {} // Do nothing if logout fails
+            try {
+                client.disconnect();
+            } catch (IOException e) {} // Do nothing if disconnection fails
+            // Doesn't include the full class name so the caller can catch and add its own identifier
+            throw new ConnectException("failedLogin: "
                     + "Could not log into server '" + server + "' using the given credentials");
         }
         
@@ -494,7 +526,8 @@ public class FtpRetriever implements ImageRetrieverInterface {
         try {
             sess = jsch.getSession(username, server);
         } catch (JSchException e) {
-            throw new Exception(this.getClass().getCanonicalName() + ".failedSftpSessionSetup: "
+            // Doesn't include the full class name so the caller can catch and add its own identifier
+            throw new Exception("failedSftpSessionSetup: "
                     + "Could not create session at host '" + server + "' with given username");
         }
         
@@ -505,7 +538,8 @@ public class FtpRetriever implements ImageRetrieverInterface {
         try {
             sess.connect();
         } catch (JSchException e) {
-            throw new Exception(this.getClass().getCanonicalName() + ".failedSftpConnection: "
+            // Doesn't include the full class name so the caller can catch and add its own identifier
+            throw new Exception("failedSftpConnection: "
                     + "Could not connect to session at host '" + server + "' with given username and password.", e);
         }
         

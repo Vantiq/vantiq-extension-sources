@@ -29,18 +29,25 @@ import io.vantiq.extjsdk.FalseClient;
 public class TestConfigurableUDPSource extends UDPTestBase {
     FalseClient client;
     String sourceName;
+    InetAddress invalidAddress;
     
     @Before
     public void setup() {
         sourceName = "src";
         client = new FalseClient(sourceName);
         ConfigurableUDPSource.clients.put(sourceName, client);
+        try {
+            invalidAddress = InetAddress.getByAddress(new byte[] {1,2,3,4});
+        } catch (UnknownHostException e) {
+            // All tests that use invalidAddress should assumeTrue(invalidAddress != null) 
+        }
     }
     
     @After
     public void tearDown() {
         sourceName = null;
         client = null;
+        invalidAddress = null;
         ConfigurableUDPSource.clients.clear();
         ConfigurableUDPSource.notificationHandlers.clear();
         ConfigurableUDPSource.sourcePorts.clear();
@@ -209,6 +216,7 @@ public class TestConfigurableUDPSource extends UDPTestBase {
     
     @Test
     public void testReceivingFromServer() throws UnknownHostException {
+        assumeTrue(invalidAddress != null);
         InetAddress address = InetAddress.getByName("localhost");
         int port = 10213;
         
@@ -224,7 +232,7 @@ public class TestConfigurableUDPSource extends UDPTestBase {
         ConfigurableUDPSource.sourcePorts.put(sourceName, l);
         assert ConfigurableUDPSource.receivingFromServer(sourceName, port, address);
         
-        l = new ArrayList<>(); l.add(InetAddress.getLocalHost()); // getLocalHost() != getByName("localhost") 
+        l = new ArrayList<>(); l.add(invalidAddress);
         ConfigurableUDPSource.sourceAddresses.put(sourceName, l);
         assert !ConfigurableUDPSource.receivingFromServer(sourceName, port, address);
         
@@ -236,8 +244,8 @@ public class TestConfigurableUDPSource extends UDPTestBase {
         assert !ConfigurableUDPSource.receivingFromServer(sourceName, port, address);
         
         List<List> list = new ArrayList<>();
-        List<Object> subl = new ArrayList<>(); subl.add(InetAddress.getLocalHost()); subl.add(port); list.add(subl);
-        subl = new ArrayList<>(); subl.add(InetAddress.getLocalHost()); subl.add(123); list.add(subl);
+        List<Object> subl = new ArrayList<>(); subl.add(invalidAddress); subl.add(port); list.add(subl);
+        subl = new ArrayList<>(); subl.add(invalidAddress); subl.add(123); list.add(subl);
         subl = new ArrayList<>(); subl.add(address); subl.add(123); list.add(subl);
         ConfigurableUDPSource.sourceServers.put(sourceName, list);
         assert !ConfigurableUDPSource.receivingFromServer(sourceName, port, address);

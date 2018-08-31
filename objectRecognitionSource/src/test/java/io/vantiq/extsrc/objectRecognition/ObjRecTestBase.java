@@ -18,7 +18,8 @@ import java.nio.file.Files;
 public class ObjRecTestBase {
     public static final String UNUSED = "unused";
     
-    public static final String IMAGE_LOCATION = "src/test/resources/sampleImage.jpg";
+    public static final String JPEG_IMAGE_LOCATION = "src/test/resources/sampleImage.jpg";
+    public static final String PNG_IMAGE_LOCATION = "src/test/resources/sampleImage.png";
     public static final String VIDEO_LOCATION = "src/test/resources/sampleVideo.mov";
     
     public static void deleteFile(String fileName) {

@@ -10,8 +10,6 @@
 package io.vantiq.extsrc.objectRecognition.imageRetriever;
 
 import java.io.File;
-import java.io.IOException;
-import java.nio.file.Files;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
@@ -66,8 +64,7 @@ import org.opencv.videoio.Videoio;
  */
 public class FileRetriever implements ImageRetrieverInterface {
 
-    String imageLocation;
-    File defaultImageFile;
+    String defaultImageLocation;
     VideoCapture capture;
     Boolean isMov = false;
     int frameInterval;
@@ -89,23 +86,27 @@ public class FileRetriever implements ImageRetrieverInterface {
             throw new Exception(this.getClass().getCanonicalName() + ".opencvDependency" 
                     + ": Could not load OpenCv for FileRetriever."
                     + "This is most likely due to a missing .dll/.so/.dylib. Please ensure that the environment "
-                    + "variable 'OPENCV_LOC' is set to the directory containing 'opencv_java342' and any other library"
-                    + "requested by the attached error", t);
+                    + "variable 'OPENCV_LOC' is set to the directory containing '" + Core.NATIVE_LIBRARY_NAME
+                    + "' and any other library requested by the attached error", t);
         }
         
         // Save the initial file location
         if (dataSourceConfig.get("fileLocation") instanceof String) {
-            imageLocation = (String) dataSourceConfig.get("fileLocation");
-            // Setup OpenCV to read the video
+            defaultImageLocation = (String) dataSourceConfig.get("fileLocation");
+            // Setup OpenCV to read the video if the file is a video
             if (isMov) {
                 // Open the requested file
-                capture = new VideoCapture(imageLocation);
+                capture = new VideoCapture(defaultImageLocation);
                 
                 // Exit if the video cannot be read
                 if (!capture.isOpened()) {
                     capture.release();
+                    if (!new File(defaultImageLocation).exists()) {
+                        throw new ImageAcquisitionException(this.getClass().getCanonicalName() + ".mainVideoDoesNotExist: "
+                                + "The requested video '" + defaultImageLocation + "' does not exist");
+                    }
                     throw new IllegalArgumentException(this.getClass().getCanonicalName() + ".invalidMainVideo: " 
-                            + "Intended video '" + imageLocation + "' could not be opened. Most likely OpenCV is not"
+                            + "Intended video '" + defaultImageLocation + "' could not be opened. Most likely OpenCV is not "
                             + "compiled with the codecs required to read this video type");
                 }
                 
@@ -126,8 +127,6 @@ public class FileRetriever implements ImageRetrieverInterface {
                     frameInterval = (int) Math.ceil(videoFps / fps);
                 }
                 
-            } else {
-                defaultImageFile = new File(imageLocation);
             }
         }
     }
@@ -142,7 +141,7 @@ public class FileRetriever implements ImageRetrieverInterface {
         Map<String, Object> otherData = new LinkedHashMap<>();
         
         results.setOtherData(otherData);
-        otherData.put("file", imageLocation);
+        otherData.put("file", defaultImageLocation);
         
         if (isMov) {
             Mat matrix = new Mat();
@@ -162,31 +161,45 @@ public class FileRetriever implements ImageRetrieverInterface {
             val += frameInterval;
             capture.set(Videoio.CAP_PROP_POS_FRAMES, val);
             
-            MatOfByte matOfByte = new MatOfByte();
-            // Translate the image into jpeg, error out if it cannot
-            if (!Imgcodecs.imencode(".jpg", matrix, matOfByte)) {
-                matOfByte.release();
-                matrix.release();
-                throw new ImageAcquisitionException(this.getClass().getCanonicalName() + ".mainVideoConversionError: " 
-                        + "Could not convert frame #" + val + " from video '" + imageLocation + "' into a jpeg image");
+            // Translate the image to jpeg
+            byte[] imageBytes = convertToJpeg(matrix);
+            if (imageBytes == null) {
+                throw new ImageAcquisitionException(this.getClass().getCanonicalName() + ".videoConversionError: " 
+                        + "Could not convert frame #" + val + " from video '" + defaultImageLocation 
+                        + "' into a jpeg image");
             }
-            byte [] imageByte = matOfByte.toArray();
-            matOfByte.release();
-            matrix.release();
-            
             
             otherData.put("frame", val);
-            results.setImage(imageByte);
+            results.setImage(imageBytes);
                     
             return results;
-        } else if (defaultImageFile != null){
-            try {
-                results.setImage(Files.readAllBytes(defaultImageFile.toPath()));
-                return results;
-            } catch (IOException e) {
-                throw new ImageAcquisitionException(this.getClass().getCanonicalName() + ".defaultImageReadError: " 
-                        + "Could not read '" + defaultImageFile.toPath() + "'");
+        } else if (defaultImageLocation != null){
+            // Read the expected image
+            otherData.put("file", defaultImageLocation);
+            Mat image = Imgcodecs.imread(defaultImageLocation);
+            if (image == null || image.empty()) {
+                if (image != null) {
+                    image.release();
+                }
+                
+                if (!new File(defaultImageLocation).exists()) {
+                    throw new ImageAcquisitionException(this.getClass().getCanonicalName() + ".defaultImageDoesNotExist: "
+                            + "The default image does not exist");
+                }
+                
+                throw new ImageAcquisitionException(this.getClass().getCanonicalName() + ".defaultImageUnreadable: " 
+                        + "Could not read requested file '" + defaultImageLocation + "'. "
+                        + "Most likely the image was in an unreadable format");
             }
+            
+            byte[] jpegImage = convertToJpeg(image);
+            if (jpegImage == null) {
+                throw new ImageAcquisitionException(this.getClass().getCanonicalName() + ".imageConversionError: " 
+                        + "Could not convert file '" + defaultImageLocation + "' into a jpeg image");
+            }
+            
+            results.setImage(jpegImage);
+            return results;
         } else {
             throw new FatalImageException(this.getClass().getCanonicalName() + ".noDefaultFile: " 
                     + "No default file found. Most likely none was specified in the configuration.");
@@ -226,6 +239,11 @@ public class FileRetriever implements ImageRetrieverInterface {
                 if (!newcapture.isOpened()) {
                     newcapture.release();
                     matrix.release();
+                    
+                    if (!new File(imageFile).exists()) {
+                        throw new ImageAcquisitionException(this.getClass().getCanonicalName() + ".queryVideoDoesNotExist: "
+                                + "The requested video '" + imageFile + "' does not exist");
+                    }
                     throw new ImageAcquisitionException(this.getClass().getCanonicalName() + ".invalidVideoQueried: " 
                             + "Requested video '" + imageFile + "' could not be opened");
                 }
@@ -260,49 +278,59 @@ public class FileRetriever implements ImageRetrieverInterface {
                 newcapture.set(Videoio.CAP_PROP_POS_FRAMES, targetFrame);
                 
                 newcapture.read(matrix);
+                newcapture.release();
                 // Exit if nothing could be read
                 if (matrix.empty()) {
                     newcapture.release();
                     matrix.release();
+                    
                     throw new ImageAcquisitionException(this.getClass().getCanonicalName() + ".videoUnreadable: " 
                             + "Video '" + imageFile + "' could not be read");
                 }
                 
                 // Translate the image to jpeg
-                MatOfByte matOfByte = new MatOfByte();
-                // Translate the image into jpeg, error out if it cannot
-                if (!Imgcodecs.imencode(".jpg", matrix, matOfByte)) {
-                    matOfByte.release();
-                    matrix.release();
+                byte[] imageBytes = convertToJpeg(matrix);
+                if (imageBytes == null) {
                     throw new ImageAcquisitionException(this.getClass().getCanonicalName() + ".queryVideoConversionError: " 
-                            + "Could not convert frame #" + targetFrame + " from video '" + imageLocation 
+                            + "Could not convert frame #" + targetFrame + " from video '" + imageFile
                             + "' into a jpeg image");
                 }
-                byte [] imageByte = matOfByte.toArray();
-                matOfByte.release();
-                matrix.release();
-                newcapture.release();
                         
                 otherData.put("frame", targetFrame);
-                results.setImage(imageByte);
+                results.setImage(imageBytes);
                         
                 return results;
             } else {
                 // Read the expected image
-                File imageFile = new File((String) request.get("DSfileLocation"));
-                otherData.put("file", (String) request.get("DSfileLocation"));
-                try {
-                    results.setImage(Files.readAllBytes(imageFile.toPath()));
-                    return results;
-                } catch (IOException e) {
-                    throw new ImageAcquisitionException(this.getClass().getCanonicalName() + ".imageUnreadable: " 
-                            + "Could not read requested file '" + imageFile.getAbsolutePath() + "'. "
-                            + "Most likely the image did not exist", e);
+                String imageFile = (String) request.get("DSfileLocation");
+                otherData.put("file", imageFile);
+                Mat image = Imgcodecs.imread(imageFile);
+                if (image == null || image.empty()) {
+                    if (image != null) {
+                        image.release();
+                    }
+                    
+                    if (!new File(imageFile).exists()) {
+                        throw new ImageAcquisitionException(this.getClass().getCanonicalName() + ".queryImageDoesNotExist: "
+                                + "The requested image '" + imageFile + "' does not exist");
+                    }
+                    throw new ImageAcquisitionException(this.getClass().getCanonicalName() + ".queryImageUnreadable: " 
+                            + "Could not read requested file '" + imageFile + "'. "
+                            + "Most likely the image was in an unreadable format");
                 }
+                
+                byte[] jpegImage = convertToJpeg(image);
+                if (jpegImage == null) {
+                    throw new ImageAcquisitionException(this.getClass().getCanonicalName() + ".queryImageConversionError: " 
+                            + "Could not convert file '" + defaultImageLocation + "' into a jpeg image");
+                }
+                
+                results.setImage(jpegImage);
+                return results;
             }
         } else {
             // Only try to use default if it is set
-            if ((isMov && capture.isOpened()) || defaultImageFile != null) {
+            if ((isMov && capture.isOpened()) || defaultImageLocation != null) {
                 try {
                     return getImage();
                 } catch (FatalImageException e) {
@@ -324,4 +352,23 @@ public class FileRetriever implements ImageRetrieverInterface {
         }
     }
 
+    /**
+     * Converts an image into jpeg format and releases the Mat that held the original image
+     * @param image The image to convert
+     * @return      The bytes of the image in jpeg format, or null if it could not be converted 
+     */
+    byte[] convertToJpeg(Mat image) {
+        MatOfByte matOfByte = new MatOfByte();
+        // Translate the image into jpeg, return null if it cannot
+        if (!Imgcodecs.imencode(".jpg", image, matOfByte)) {
+            matOfByte.release();
+            image.release();
+            return null;
+        }
+        byte [] imageByte = matOfByte.toArray();
+        matOfByte.release();
+        image.release();
+        
+        return imageByte;
+    }
 }

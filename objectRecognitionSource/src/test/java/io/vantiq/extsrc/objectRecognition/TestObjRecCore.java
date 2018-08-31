@@ -70,7 +70,7 @@ public class TestObjRecCore extends ObjRecTestBase {
     
     @Test
     public void testRetrieveImage() {
-        assumeTrue("Can't test retrieveImage without file to retrieve", new File(IMAGE_LOCATION).exists());
+        assumeTrue("Can't test retrieveImage without file to retrieve", new File(JPEG_IMAGE_LOCATION).exists());
         
         assertTrue("Test helper setupRetriever failed unexpectedly"
                 , setupRetriever(null));
@@ -113,7 +113,7 @@ public class TestObjRecCore extends ObjRecTestBase {
     
     @Test
     public void testRetrieveImageQuery() {
-        assumeTrue("Can't test retrieveImage without file to retrieve", new File(IMAGE_LOCATION).exists());
+        assumeTrue("Can't test retrieveImage without file to retrieve", new File(JPEG_IMAGE_LOCATION).exists());
         
         Map<String, Object> request;
         ExtensionServiceMessage msg = new ExtensionServiceMessage("");
@@ -172,7 +172,7 @@ public class TestObjRecCore extends ObjRecTestBase {
         Map sentMsg;
         byte[] lastBytes;
         try {
-            imageData = new LocalImageRetrieverResults(Files.readAllBytes(new File(IMAGE_LOCATION).toPath()));
+            imageData = new LocalImageRetrieverResults(Files.readAllBytes(new File(JPEG_IMAGE_LOCATION).toPath()));
         } catch (IOException e) {
             assumeFalse("Could not read image for the test", true);
             return; // Never reaches, just silences imageData not initialized errors
@@ -218,7 +218,7 @@ public class TestObjRecCore extends ObjRecTestBase {
         final LocalImageRetrieverResults imageData;
         Map sentMsg;
         try {
-            imageData = new LocalImageRetrieverResults(Files.readAllBytes(new File(IMAGE_LOCATION).toPath()));
+            imageData = new LocalImageRetrieverResults(Files.readAllBytes(new File(JPEG_IMAGE_LOCATION).toPath()));
         } catch (IOException e) {
             assumeFalse("Could not read image for the test", true);
             return; // Never reaches, just silences imageData not initialized errors

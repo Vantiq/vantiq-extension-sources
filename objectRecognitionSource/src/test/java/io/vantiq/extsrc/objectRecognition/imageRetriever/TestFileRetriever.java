@@ -9,6 +9,7 @@
 
 package io.vantiq.extsrc.objectRecognition.imageRetriever;
 
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeTrue;
 
@@ -53,7 +54,7 @@ public class TestFileRetriever extends ObjRecTestBase {
     public void testImageReadBasic() {
         try {
             Map<String, String> config = new LinkedHashMap<>();
-            config.put("fileLocation", IMAGE_LOCATION);
+            config.put("fileLocation", JPEG_IMAGE_LOCATION);
             fr.setupDataRetrieval(config, source);
         } catch (Exception e) {
             fail("Exception occurred when setting up: " + e.toString());
@@ -63,7 +64,27 @@ public class TestFileRetriever extends ObjRecTestBase {
             results = fr.getImage();
             byte[] data = results.getImage();
             assert data != null;
-            assert data.length == 64668;
+            assert data.length == 64585;
+        } catch (ImageAcquisitionException e) {
+            fail("Exception occurred when obtaining image " + e.toString());
+        }
+    }
+    
+    @Test
+    public void testImagePngConversion() {
+        try {
+            Map<String, String> config = new LinkedHashMap<>();
+            config.put("fileLocation", PNG_IMAGE_LOCATION);
+            fr.setupDataRetrieval(config, source);
+        } catch (Exception e) {
+            fail("Exception occurred when setting up: " + e.toString());
+        }
+        try {
+            ImageRetrieverResults results;
+            results = fr.getImage();
+            byte[] data = results.getImage();
+            assert data != null;
+            assert data.length == 123383;
         } catch (ImageAcquisitionException e) {
             fail("Exception occurred when obtaining image " + e.toString());
         }
@@ -82,7 +103,8 @@ public class TestFileRetriever extends ObjRecTestBase {
             fr.getImage();
             fail("Expected exception when calling with invalid default");
         } catch (ImageAcquisitionException e) {
-            // Should create exception
+            assertTrue("Failure should be caused by unreadable default image. Error actually was: " + e.getMessage()
+                , e.getMessage().startsWith(FileRetriever.class.getCanonicalName() + ".defaultImageDoesNotExist"));
         }
     }
     
@@ -102,17 +124,18 @@ public class TestFileRetriever extends ObjRecTestBase {
                 fr.getImage();
                 fail("Expected exception when calling with invalid default");
             } catch (ImageAcquisitionException e) {
-                // Should create exception
+                assertTrue("Failure should be caused by unreadable default image. Error actually was: " + e.getMessage()
+                    , e.getMessage().startsWith(FileRetriever.class.getCanonicalName() + ".defaultImageDoesNotExist"));
             }
             
-            copyFile(IMAGE_LOCATION, location2);
+            copyFile(JPEG_IMAGE_LOCATION, location2);
             
             try {
                 ImageRetrieverResults results;
                 results = fr.getImage();
                 byte[] data = results.getImage();
                 assert data != null;
-                assert data.length == 64668;
+                assert data.length == 64585;
             } catch (ImageAcquisitionException e) {
                 fail("Exception occurred when obtaining image after creating it " + e.toString());
             }
@@ -132,12 +155,12 @@ public class TestFileRetriever extends ObjRecTestBase {
         }
         try {
             Map<String, String> message = new LinkedHashMap<>();
-            message.put("DSfileLocation", IMAGE_LOCATION);
+            message.put("DSfileLocation", JPEG_IMAGE_LOCATION);
             ImageRetrieverResults results;
             results = fr.getImage(message);
             byte[] data = results.getImage();
             assert data != null;
-            assert data.length == 64668;
+            assert data.length == 64585;
         } catch (ImageAcquisitionException e) {
             fail("Exception occurred when obtaining image " + e.toString());
         }
@@ -147,7 +170,7 @@ public class TestFileRetriever extends ObjRecTestBase {
     public void testImageReadQueryWithInvalidLocation() {
         try {
             Map<String, String> config = new LinkedHashMap<>();
-            config.put("fileLocation", IMAGE_LOCATION);
+            config.put("fileLocation", JPEG_IMAGE_LOCATION);
             fr.setupDataRetrieval(config, source);
         } catch (Exception e) {
             fail("Exception occurred when setting up: " + e.toString());
@@ -158,7 +181,8 @@ public class TestFileRetriever extends ObjRecTestBase {
             fr.getImage(message);
             fail("Expected exception when calling with invalid default");
         } catch (ImageAcquisitionException e) {
-            // Should create exception
+            assertTrue("Failure should be caused by unreadable image. Error actually was: " + e.getMessage()
+                , e.getMessage().startsWith(FileRetriever.class.getCanonicalName() + ".queryImageDoesNotExist"));
         }
     }
     
@@ -166,7 +190,7 @@ public class TestFileRetriever extends ObjRecTestBase {
     public void testImageReadEmptyQuery() {
         try {
             Map<String, String> config = new LinkedHashMap<>();
-            config.put("fileLocation", IMAGE_LOCATION);
+            config.put("fileLocation", JPEG_IMAGE_LOCATION);
             fr.setupDataRetrieval(config, source);
         } catch (Exception e) {
             fail("Exception occurred when setting up: " + e.toString());
@@ -177,7 +201,7 @@ public class TestFileRetriever extends ObjRecTestBase {
             results = fr.getImage(message);
             byte[] data = results.getImage();
             assert data != null;
-            assert data.length == 64668;
+            assert data.length == 64585;
         } catch (ImageAcquisitionException e) {
             fail("Exception occurred when obtaining image: " + e.toString());
         }
@@ -213,7 +237,8 @@ public class TestFileRetriever extends ObjRecTestBase {
             fr.setupDataRetrieval(config, source);
             fail("Expected setup exception on invalid video");
         } catch (Exception e) {
-            // Should create exception
+            assertTrue("Failure should be caused by nonexistent video. Error actually was: " + e.getMessage()
+                , e.getMessage().startsWith(FileRetriever.class.getCanonicalName() + ".mainVideoDoesNotExist"));
         }
     }
     
@@ -243,14 +268,16 @@ public class TestFileRetriever extends ObjRecTestBase {
             fr.getImage(request);
             fail("Did not reject frame past end of video");
         } catch (ImageAcquisitionException e) {
-            // Expected
+            assertTrue("Failure should be caused by invalid target frame. Error actually was: " + e.getMessage()
+                , e.getMessage().startsWith(FileRetriever.class.getCanonicalName() + ".invalidTargetFrame"));
         }
         try {
             request.put("DStargetFrame", (double) -1);
             fr.getImage(request);
             fail("Did not reject negative frame");
         } catch (ImageAcquisitionException e) {
-            // Expected
+            assertTrue("Failure should be caused by invalid target frame. Error actually was: " + e.getMessage()
+                , e.getMessage().startsWith(FileRetriever.class.getCanonicalName() + ".invalidTargetFrame"));
         }
     }
     
