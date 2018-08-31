@@ -104,7 +104,7 @@ public class TestFileRetriever extends ObjRecTestBase {
             fail("Expected exception when calling with invalid default");
         } catch (ImageAcquisitionException e) {
             assertTrue("Failure should be caused by unreadable default image. Error actually was: " + e.getMessage()
-                , e.getMessage().startsWith(FileRetriever.class.getCanonicalName() + ".defaultImageUnreadable"));
+                , e.getMessage().startsWith(FileRetriever.class.getCanonicalName() + ".defaultImageDoesNotExist"));
         }
     }
     
@@ -125,7 +125,7 @@ public class TestFileRetriever extends ObjRecTestBase {
                 fail("Expected exception when calling with invalid default");
             } catch (ImageAcquisitionException e) {
                 assertTrue("Failure should be caused by unreadable default image. Error actually was: " + e.getMessage()
-                    , e.getMessage().startsWith(FileRetriever.class.getCanonicalName() + ".defaultImageUnreadable"));
+                    , e.getMessage().startsWith(FileRetriever.class.getCanonicalName() + ".defaultImageDoesNotExist"));
             }
             
             copyFile(JPEG_IMAGE_LOCATION, location2);
@@ -182,7 +182,7 @@ public class TestFileRetriever extends ObjRecTestBase {
             fail("Expected exception when calling with invalid default");
         } catch (ImageAcquisitionException e) {
             assertTrue("Failure should be caused by unreadable image. Error actually was: " + e.getMessage()
-                , e.getMessage().startsWith(FileRetriever.class.getCanonicalName() + ".queryImageUnreadable"));
+                , e.getMessage().startsWith(FileRetriever.class.getCanonicalName() + ".queryImageDoesNotExist"));
         }
     }
     
@@ -238,7 +238,7 @@ public class TestFileRetriever extends ObjRecTestBase {
             fail("Expected setup exception on invalid video");
         } catch (Exception e) {
             assertTrue("Failure should be caused by nonexistent video. Error actually was: " + e.getMessage()
-                , e.getMessage().startsWith(FileRetriever.class.getCanonicalName() + ".invalidMainVideo"));
+                , e.getMessage().startsWith(FileRetriever.class.getCanonicalName() + ".mainVideoDoesNotExist"));
         }
     }
     

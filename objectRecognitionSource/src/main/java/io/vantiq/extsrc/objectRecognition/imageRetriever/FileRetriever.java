@@ -102,7 +102,7 @@ public class FileRetriever implements ImageRetrieverInterface {
                 if (!capture.isOpened()) {
                     capture.release();
                     if (!new File(defaultImageLocation).exists()) {
-                        throw new ImageAcquisitionException(this.getClass().getCanonicalName() + ".queryVideoDoesNotExist: "
+                        throw new ImageAcquisitionException(this.getClass().getCanonicalName() + ".mainVideoDoesNotExist: "
                                 + "The requested video '" + defaultImageLocation + "' does not exist");
                     }
                     throw new IllegalArgumentException(this.getClass().getCanonicalName() + ".invalidMainVideo: " 
