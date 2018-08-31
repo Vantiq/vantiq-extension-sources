@@ -9,9 +9,6 @@
 
 package io.vantiq.extsrc.objectRecognition.imageRetriever;
 
-import java.io.File;
-import java.io.IOException;
-import java.nio.file.Files;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
@@ -95,7 +92,7 @@ public class FileRetriever implements ImageRetrieverInterface {
         // Save the initial file location
         if (dataSourceConfig.get("fileLocation") instanceof String) {
             defaultImageLocation = (String) dataSourceConfig.get("fileLocation");
-            // Setup OpenCV to read the video if hte file is a video
+            // Setup OpenCV to read the video if the file is a video
             if (isMov) {
                 // Open the requested file
                 capture = new VideoCapture(defaultImageLocation);
@@ -175,8 +172,10 @@ public class FileRetriever implements ImageRetrieverInterface {
             // Read the expected image
             otherData.put("file", defaultImageLocation);
             Mat image = Imgcodecs.imread(defaultImageLocation);
-            if (image.empty()) {
-                image.release();
+            if (image == null || image.empty()) {
+                if (image != null) {
+                    image.release();
+                }
                 throw new ImageAcquisitionException(this.getClass().getCanonicalName() + ".defaultImageUnreadable: " 
                         + "Could not read requested file '" + defaultImageLocation + "'. "
                         + "Most likely the image did not exist or was in an unreadable format");
@@ -290,8 +289,10 @@ public class FileRetriever implements ImageRetrieverInterface {
                 String imageFile = (String) request.get("DSfileLocation");
                 otherData.put("file", imageFile);
                 Mat image = Imgcodecs.imread(imageFile);
-                if (image.empty()) {
-                    image.release();
+                if (image == null || image.empty()) {
+                    if (image != null) {
+                        image.release();
+                    }
                     throw new ImageAcquisitionException(this.getClass().getCanonicalName() + ".queryImageUnreadable: " 
                             + "Could not read requested file '" + imageFile + "'. "
                             + "Most likely the image did not exist or was in an unreadable format");
