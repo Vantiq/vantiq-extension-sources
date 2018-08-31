@@ -89,8 +89,8 @@ public class FileRetriever implements ImageRetrieverInterface {
             throw new Exception(this.getClass().getCanonicalName() + ".opencvDependency" 
                     + ": Could not load OpenCv for FileRetriever."
                     + "This is most likely due to a missing .dll/.so/.dylib. Please ensure that the environment "
-                    + "variable 'OPENCV_LOC' is set to the directory containing 'opencv_java342' and any other library "
-                    + "requested by the attached error", t);
+                    + "variable 'OPENCV_LOC' is set to the directory containing '" + Core.NATIVE_LIBRARY_NAME
+                    + "' and any other library requested by the attached error", t);
         }
         
         // Save the initial file location
@@ -105,7 +105,7 @@ public class FileRetriever implements ImageRetrieverInterface {
                 if (!capture.isOpened()) {
                     capture.release();
                     throw new IllegalArgumentException(this.getClass().getCanonicalName() + ".invalidMainVideo: " 
-                            + "Intended video '" + imageLocation + "' could not be opened. Most likely OpenCV is not"
+                            + "Intended video '" + imageLocation + "' could not be opened. Most likely OpenCV is not "
                             + "compiled with the codecs required to read this video type");
                 }
                 
