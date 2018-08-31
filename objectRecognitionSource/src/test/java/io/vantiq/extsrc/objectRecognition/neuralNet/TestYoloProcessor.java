@@ -28,6 +28,7 @@ import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import io.vantiq.extsrc.objectRecognition.exception.ImageProcessingException;
+import io.vantiq.extsrc.objectRecognition.imageRetriever.FileRetriever;
 
 public class TestYoloProcessor extends NeuralNetTestBase {
     
@@ -89,13 +90,15 @@ public class TestYoloProcessor extends NeuralNetTestBase {
             ypJson.processImage(invalidImage);
             fail("Should throw Exception when not a jpeg");
         } catch (ImageProcessingException e) {
-            // Expected exception
+            assertTrue("Failure should be caused by invalid image type. Error actually was: " + e.getMessage()
+                , e.getMessage().startsWith(YoloProcessor.class.getCanonicalName() + ".invalidImage"));
         }
         try {
             ypJson.processImage(invalidImage);
             fail("Should throw Exception when not a jpeg");
         } catch (ImageProcessingException e) {
-            // Expected results
+            assertTrue("Failure should be caused by invalid image type. Error actually was: " + e.getMessage()
+                , e.getMessage().startsWith(YoloProcessor.class.getCanonicalName() + ".invalidImage"));
         }
     }
     

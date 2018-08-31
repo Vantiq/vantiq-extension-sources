@@ -295,7 +295,7 @@ public class FileRetriever implements ImageRetrieverInterface {
                     results.setImage(Files.readAllBytes(imageFile.toPath()));
                     return results;
                 } catch (IOException e) {
-                    throw new ImageAcquisitionException(this.getClass().getCanonicalName() + ".imageUnreadable: " 
+                    throw new ImageAcquisitionException(this.getClass().getCanonicalName() + ".queryImageUnreadable: " 
                             + "Could not read requested file '" + imageFile.getAbsolutePath() + "'. "
                             + "Most likely the image did not exist", e);
                 }

@@ -1,5 +1,6 @@
 package io.vantiq.extsrc.objectRecognition.imageRetriever;
 
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 import java.util.LinkedHashMap;
@@ -52,7 +53,8 @@ public class TestFtpRetriever extends ObjRecTestBase {
             retriever.setupDataRetrieval(config, source);
             fail("Should fail when missing username");
         } catch (Exception e) {
-            // Expected result
+            assertTrue("Failure should be caused by a missing username. Error actually was: " + e.getMessage()
+                    , e.getMessage().startsWith(FtpRetriever.class.getCanonicalName() + ".noUsername"));
         }
         
         config = workingFtpConfig();
@@ -61,7 +63,8 @@ public class TestFtpRetriever extends ObjRecTestBase {
             retriever.setupDataRetrieval(config, source);
             fail("Should fail when missing password");
         } catch (Exception e) {
-            // Expected result
+            assertTrue("Failure should be caused by a missing password. Error actually was: " + e.getMessage()
+                    , e.getMessage().startsWith(FtpRetriever.class.getCanonicalName() + ".noPassword"));
         }
         
         config = workingFtpConfig();
@@ -70,7 +73,8 @@ public class TestFtpRetriever extends ObjRecTestBase {
             retriever.setupDataRetrieval(config, source);
             fail("Should fail when missing server");
         } catch (Exception e) {
-            // Expected result
+            assertTrue("Failure should be caused by a missing server URL. Error actually was: " + e.getMessage()
+                , e.getMessage().startsWith(FtpRetriever.class.getCanonicalName() + ".noServerSpecified"));
         }
         
         config = workingFtpConfig();
@@ -108,7 +112,8 @@ public class TestFtpRetriever extends ObjRecTestBase {
             retriever.getImage(request);
             fail("Should throw exception trying for invalid sample file");
         } catch (ImageAcquisitionException e) {
-            // Expected
+            assertTrue("Failure should be caused by file not retrieving. Error actually was: " + e.getMessage()
+                , e.getMessage().startsWith(FtpRetriever.class.getCanonicalName() + ".fileRetrievalError"));
         }
     }
     
@@ -138,7 +143,8 @@ public class TestFtpRetriever extends ObjRecTestBase {
             retriever.getImage(request);
             fail("Should throw exception trying for invalid sample file");
         } catch (ImageAcquisitionException e) {
-            // Expected
+            assertTrue("Failure should be caused by file not retrieving. Error actually was: " + e.getMessage()
+                , e.getMessage().startsWith(FtpRetriever.class.getCanonicalName() + ".fileRetrievalError"));
         }
     }
     
@@ -168,7 +174,8 @@ public class TestFtpRetriever extends ObjRecTestBase {
             retriever.getImage(request);
             fail("Should throw exception trying for invalid sample file");
         } catch (ImageAcquisitionException e) {
-            // Expected
+            assertTrue("Failure should be caused by file not retrieving. Error actually was: " + e.getMessage()
+                , e.getMessage().startsWith(FtpRetriever.class.getCanonicalName() + ".fileRetrievalError"));
         }
     }
     
@@ -198,7 +205,8 @@ public class TestFtpRetriever extends ObjRecTestBase {
             retriever.getImage(request);
             fail("Should throw exception trying for invalid sample file");
         } catch (ImageAcquisitionException e) {
-            // Expected
+            assertTrue("Failure should be caused by file not retrieving. Error actually was: " + e.getMessage()
+                , e.getMessage().startsWith(FtpRetriever.class.getCanonicalName() + ".sftpRetrieval"));
         }
     }
     
@@ -217,7 +225,8 @@ public class TestFtpRetriever extends ObjRecTestBase {
             retriever.getImage(request);
             fail("Should throw exception trying for a non-image file");
         } catch (ImageAcquisitionException e) {
-            // Expected
+            assertTrue("Failure should be caused by file being unreadable. Error actually was: " + e.getMessage()
+                , e.getMessage().startsWith(FtpRetriever.class.getCanonicalName() + ".unreadableFileType"));
         }
     }
     
@@ -273,7 +282,8 @@ public class TestFtpRetriever extends ObjRecTestBase {
             retriever.getImage(request);
             fail("Should throw exception when missing server and has no defaults");
         } catch (ImageAcquisitionException e) {
-            // Expected
+            assertTrue("Failure should be caused by missing the server URL. Error actually was: " + e.getMessage()
+                , e.getMessage().startsWith(FtpRetriever.class.getCanonicalName() + ".queryNoDefaultServer"));
         }
         
         request = fullFtpRequest();
@@ -283,7 +293,8 @@ public class TestFtpRetriever extends ObjRecTestBase {
             retriever.getImage(request);
             fail("Should throw exception when missing username and has no defaults");
         } catch (ImageAcquisitionException e) {
-            // Expected
+            assertTrue("Failure should be caused by missing username. Error actually was: " + e.getMessage()
+                , e.getMessage().startsWith(FtpRetriever.class.getCanonicalName() + ".queryNoDefaultUsername"));
         }
         
         request = fullFtpRequest();
@@ -293,7 +304,8 @@ public class TestFtpRetriever extends ObjRecTestBase {
             retriever.getImage(request);
             fail("Should throw exception when missing password and has no defaults");
         } catch (ImageAcquisitionException e) {
-            // Expected
+            assertTrue("Failure should be caused by missing password. Error actually was: " + e.getMessage()
+                , e.getMessage().startsWith(FtpRetriever.class.getCanonicalName() + ".queryNoDefaultPassword"));
         }
         
         request = fullFtpRequest();
@@ -315,7 +327,8 @@ public class TestFtpRetriever extends ObjRecTestBase {
             retriever.setupDataRetrieval(config, source);
             fail("Should fail with invalid username");
         } catch (Exception e) {
-            // Expected
+            assertTrue("Failure should be caused by bad login. Error actually was: " + e.getMessage()
+                , e.getMessage().startsWith(FtpRetriever.class.getCanonicalName() + ".failedLogin"));
         }
         
         retriever.close();
@@ -328,7 +341,8 @@ public class TestFtpRetriever extends ObjRecTestBase {
             retriever.setupDataRetrieval(config, source);
             fail("Should fail with invalid password");
         } catch (Exception e) {
-            // Expected
+            assertTrue("Failure should be caused by bad login. Error actually was: " + e.getMessage()
+                , e.getMessage().startsWith(FtpRetriever.class.getCanonicalName() + ".failedSftpConnection"));
         }
         
         retriever.close();
@@ -341,7 +355,8 @@ public class TestFtpRetriever extends ObjRecTestBase {
             retriever.setupDataRetrieval(config, source);
             fail("Should fail with invalid server");
         } catch (Exception e) {
-            // Expected
+            assertTrue("Failure should be caused by failed connection. Error actually was: " + e.getMessage()
+                , e.getMessage().startsWith(FtpRetriever.class.getCanonicalName() + ".failedSftpConnection"));
         }
     }
     

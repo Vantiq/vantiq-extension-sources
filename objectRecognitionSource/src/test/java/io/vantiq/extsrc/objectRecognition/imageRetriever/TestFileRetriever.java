@@ -9,6 +9,7 @@
 
 package io.vantiq.extsrc.objectRecognition.imageRetriever;
 
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeTrue;
 
@@ -82,7 +83,8 @@ public class TestFileRetriever extends ObjRecTestBase {
             fr.getImage();
             fail("Expected exception when calling with invalid default");
         } catch (ImageAcquisitionException e) {
-            // Should create exception
+            assertTrue("Failure should be caused by unreadable default image. Error actually was: " + e.getMessage()
+                , e.getMessage().startsWith(FileRetriever.class.getCanonicalName() + ".defaultImageReadError"));
         }
     }
     
@@ -102,7 +104,8 @@ public class TestFileRetriever extends ObjRecTestBase {
                 fr.getImage();
                 fail("Expected exception when calling with invalid default");
             } catch (ImageAcquisitionException e) {
-                // Should create exception
+                assertTrue("Failure should be caused by unreadable default image. Error actually was: " + e.getMessage()
+                    , e.getMessage().startsWith(FileRetriever.class.getCanonicalName() + ".defaultImageReadError"));
             }
             
             copyFile(IMAGE_LOCATION, location2);
@@ -158,7 +161,8 @@ public class TestFileRetriever extends ObjRecTestBase {
             fr.getImage(message);
             fail("Expected exception when calling with invalid default");
         } catch (ImageAcquisitionException e) {
-            // Should create exception
+            assertTrue("Failure should be caused by unreadable image. Error actually was: " + e.getMessage()
+                , e.getMessage().startsWith(FileRetriever.class.getCanonicalName() + ".queryImageUnreadable"));
         }
     }
     
@@ -213,7 +217,8 @@ public class TestFileRetriever extends ObjRecTestBase {
             fr.setupDataRetrieval(config, source);
             fail("Expected setup exception on invalid video");
         } catch (Exception e) {
-            // Should create exception
+            assertTrue("Failure should be caused by nonexistent video. Error actually was: " + e.getMessage()
+                , e.getMessage().startsWith(FileRetriever.class.getCanonicalName() + ".invalidMainVideo"));
         }
     }
     
@@ -243,14 +248,16 @@ public class TestFileRetriever extends ObjRecTestBase {
             fr.getImage(request);
             fail("Did not reject frame past end of video");
         } catch (ImageAcquisitionException e) {
-            // Expected
+            assertTrue("Failure should be caused by invalid target frame. Error actually was: " + e.getMessage()
+                , e.getMessage().startsWith(FileRetriever.class.getCanonicalName() + ".invalidTargetFrame"));
         }
         try {
             request.put("DStargetFrame", (double) -1);
             fr.getImage(request);
             fail("Did not reject negative frame");
         } catch (ImageAcquisitionException e) {
-            // Expected
+            assertTrue("Failure should be caused by invalid target frame. Error actually was: " + e.getMessage()
+                , e.getMessage().startsWith(FileRetriever.class.getCanonicalName() + ".invalidTargetFrame"));
         }
     }
     
