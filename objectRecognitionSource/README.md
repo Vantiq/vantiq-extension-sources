@@ -199,7 +199,7 @@ order, the message of the java exception thrown, the java exception thrown, and 
 of the query that caused the error.  
 
 The messages of exceptions thrown by the standard implementations of NeuralNets and ImageRetrievers will always be in
-the form "<FQCN of the class that spawned the error>.<mini descriptor>: <longer description>".
+the form "&lt;FQCN of the class that spawned the error&gt;.&lt;mini descriptor&gt;: &lt;longer description&gt;".
 
 ## Image Retriever Interface<a name="retrieveInterface" id="retrieveInterface"></a>
 
