@@ -55,8 +55,10 @@ startScripts{
         
         if (!opencvDependentFiles.getFiles().isEmpty()) { // Only set java.library.path for OpenCV if we need it
             // Set the path to the location of the native libraries
-            windowsScriptFile.text = windowsScriptFile.text.replace('DEFAULT_JVM_OPTS=', 'DEFAULT_JVM_OPTS=-Djava.library.path=%OPENCV_LOC%')
-            unixScriptFile.text = unixScriptFile.text.replace('DEFAULT_JVM_OPTS=', 'DEFAULT_JVM_OPTS=-Djava.library.path=$OPENCV_LOC')
+            windowsScriptFile.text = windowsScriptFile.text.replace('DEFAULT_JVM_OPTS=',
+                    'DEFAULT_JVM_OPTS=-Djava.library.path=%OPENCV_LOC%;%TENSORFLOW_JNI%')
+            unixScriptFile.text = unixScriptFile.text.replace('DEFAULT_JVM_OPTS=',
+                    'DEFAULT_JVM_OPTS=-Djava.library.path=$OPENCV_LOC:$TENSORFLOW_JNI')
         }
     }
 }

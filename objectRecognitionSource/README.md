@@ -26,7 +26,7 @@ in-depth tutorial](https://opencv-java-tutorials.readthedocs.io/en/latest/01-ins
 describe how to install it. Once it's installed, copy the jar and (lib)opencv_java342.dll/.so/.dylib to a single
 folder, then set the environment variable OPENCV_LOC to that folder. Some features may depend on additional
 .dll/.so/.dylib files, such as FFmpeg for IP cameras.
-    *   The implementations dependent on OpenCV are FileRetriever and CameraRetriever.
+    *   The implementations dependent on OpenCV are FileRetriever, NetworkStreamRetriever, and CameraRetriever.
 2.  Clone this repository (vantiq-extension-sources) and navigate into `<repo location>/vantiq-extension-sources`.
 3.  Run `./gradlew objectRecognitionSource:assemble`.
 4.  Navigate to `<repo location>/vantiq-extension-sources/objectRecognitionSource/build/distributions`. The zip and tar
@@ -68,10 +68,10 @@ sources inside your own code, then it is what you will use.
 1.  Clone this repository (vantiq-extension-sources) and navigate into `<repo location>/vantiq-extension-sources`.
     *   If you know that you will not use specific classes in the *.neuralNet or *.imageRetriever packages you can
         remove them now.
-    *   FileRetriever and CameraRetriever both use OpenCV, which is not in the gradle dependencies. If they are not
-        removed you must install OpenCV version 3.4.2, set the environment variable OPENCV_LOC to the folder 
-        containing the jar, and ensure that when running your code the jar is in the classpath and 
-        (lib)opencv_java342.dll/.so/.dylib is in a folder in `java.library.path`. You may see a warning about not 
+    *   FileRetriever, NetworkStreamRetriever, and CameraRetriever all use OpenCV, which is not in the gradle
+        dependencies. If they are not removed you must install OpenCV version 3.4.2, set the environment variable
+        OPENCV_LOC to the folder containing the jar, and ensure that when running your code the jar is in the classpath
+        and (lib)opencv_java342.dll/.so/.dylib is in a folder in `java.library.path`. You may see a warning about not 
         having (lib)opencv_java342.dll/.so/.dylib in the correct directory when compiling the objectRecognition jar,
         but this can be safely ignored since you will be setting the path yourself. Instructions for installing
         OpenCV can be found at the [official site](https://docs.opencv.org/3.4.2/d9/d52/tutorial_java_dev_intro.html)
@@ -389,7 +389,7 @@ No additional data is sent.
 
 ## Testing
 
-The test will download two large (~200 MB)files before running the test. If you do not want this to occur, do not run
+The test will download two large (~200 MB) files before running the test. If you do not want this to occur, do not run
 test or build.  
 
 There are some jni errors that will appear during testing that do not indicate test problems or failures. TensorFlow may
@@ -397,11 +397,11 @@ display errors that look like `I tensorflow/core/platform/cpu_feature_guard.cc:1
 this TensorFlow binary was not compiled to use:`. This merely indicates that there are improvements that could be made
 to performance by compiling the code specifically for your computer. If you wish to use these features, see [how to
 build TensorFlow Java](https://www.tensorflow.org/install/install_sources#build_the_c_or_java_libraries). Once built,
-either replace the `libtensorflow-<version>.jar` in `<install location>/objectRecognitionSource/lib` and run
-`<install location>/objectRecognitionSource/scripts/replaceJni <the built .so/.dll file>`; or add the locations of the
-new files into the `CLASSPATH` variable found in `<install location>/objectRecognitionSource/bin/objectRecognitionSource`
+set the environment variable `TENSORFLOW_JNI` to the folder containing all the .dll/.so/.dylib files, and either replace
+the `libtensorflow-<version>.jar` in `<install location>/objectRecognitionSource/lib` with the built jar or add the jar
+into the `CLASSPATH` variable found in `<install location>/objectRecognitionSource/bin/objectRecognitionSource`
 and `<install location>/objectRecognitionSource/bin/objectRecognitionSource.bat` and remove the `libtensorflow*` files
-in `<install location>/objectRecognitionSource/lib`.  
+in `<install location>/objectRecognitionSource/lib`. (This method is expected, but not certain not work).  
 
 OpenCV will also display errors that look like `warning: Error opening file
 (/build/opencv/modules/videoio/src/cap_ffmpeg_impl.hpp:856)` and `warning: invalidLocation
