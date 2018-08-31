@@ -254,7 +254,7 @@ if `fileLocation` is not set. Queried videos can specify which frame of the vide
 option.  
 
 Errors are thrown whenever an image or video frame cannot be read. Fatal errors are thrown only when a video finishes
-being read when the source setup for constant polling.
+being read when the source is setup for constant polling.
 The options are as follows. Remember to prepend "DS" when using an option in a Query.
 *   fileLocation: Optional. Config and Query. The location of the file to be read. For Config where
     `fileExtension` is "mov", the file must exist at initialization. If this option is not set at Config and the source
