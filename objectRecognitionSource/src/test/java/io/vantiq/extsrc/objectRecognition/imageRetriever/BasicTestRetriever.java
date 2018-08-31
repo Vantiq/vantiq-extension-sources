@@ -50,7 +50,7 @@ public class BasicTestRetriever implements ImageRetrieverInterface {
             throw new RuntimeException("Exception on request");
         } else {
             try {
-                return new ImageRetrieverResults(Files.readAllBytes(new File(ObjRecTestBase.IMAGE_LOCATION).toPath()));
+                return new ImageRetrieverResults(Files.readAllBytes(new File(ObjRecTestBase.JPEG_IMAGE_LOCATION).toPath()));
             } catch (IOException e) {
                 throw new FatalImageException("Couldn't find the image location");
             }
@@ -67,7 +67,7 @@ public class BasicTestRetriever implements ImageRetrieverInterface {
             throw new FatalImageException("Exception on request");
         } else {
             try {
-                return new ImageRetrieverResults(Files.readAllBytes(new File(ObjRecTestBase.IMAGE_LOCATION).toPath()));
+                return new ImageRetrieverResults(Files.readAllBytes(new File(ObjRecTestBase.JPEG_IMAGE_LOCATION).toPath()));
             } catch (IOException e) {
                 throw new FatalImageException("Couldn't find the image location");
             }
