@@ -36,21 +36,18 @@ startScripts{
     }
 }
 
-task copyLogFiles(type: Copy) {
-    from("src/main/resources") 
-    include "log4j2.xml"
-    into "src/dist/logConfig"
-}
-
-task copyDocumentationFiles(type: Copy, dependsOn:copyLogFiles) {
-    from "."
+// Copies the README and licenses into the distribution
+applicationDistribution.from(".") {
     include "README.md"
     include "LICENSE/*"
-    into "src/dist"
+    into ""
 }
 
-distZip.dependsOn copyDocumentationFiles
-distTar.dependsOn copyDocumentationFiles
+// Copies the logger setup into logConfig in the distribution
+applicationDistribution.from("src/main/resources") {
+    include "log4j2.xml"
+    into "logConfig"
+}
 
 dependencies {
    // compile 'extjsdk' // extjsdk.jar must be in

@@ -199,7 +199,7 @@ order, the message of the java exception thrown, the java exception thrown, and 
 of the query that caused the error.  
 
 The messages of exceptions thrown by the standard implementations of NeuralNets and ImageRetrievers will always be in
-the form "<FQCN of the class that spawned the error>.<mini descriptor>: <longer description>".
+the form "&lt;FQCN of the class that spawned the error&gt;.&lt;mini descriptor&gt;: &lt;longer description&gt;".
 
 ## Image Retriever Interface<a name="retrieveInterface" id="retrieveInterface"></a>
 
@@ -254,7 +254,7 @@ if `fileLocation` is not set. Queried videos can specify which frame of the vide
 option.  
 
 Errors are thrown whenever an image or video frame cannot be read. Fatal errors are thrown only when a video finishes
-being read when the source is not setup for to receive Queries.
+being read when the source is setup for constant polling.
 The options are as follows. Remember to prepend "DS" when using an option in a Query.
 *   fileLocation: Optional. Config and Query. The location of the file to be read. For Config where
     `fileExtension` is "mov", the file must exist at initialization. If this option is not set at Config and the source
@@ -306,7 +306,7 @@ try {
         // starts with:
         // "io.vantiq.extsrc.objectRecognition.imageRetriever.FileRetriever.invalidTargetFrame"
         // when a frame past the end of the video is requested
-        // If this changes or becomes unpredictable, use an else instead with a debug() statement
+        // If this changes or becomes unpredictable, use a log.debug() statement instead of this if statement
         exception(error.code, error.message)
     }
 }
@@ -345,7 +345,7 @@ The timestamp is captured immediately before the copy request is sent. The addit
 
 ## Neural Net Interface<a name="netInterface" id="netInterface"></a>
 
-This is a user written interface that interprets a jpeg encoded image and returns the results in a List of Maps and any
+This is an interface that should interpret a jpeg encoded image and return the results in a List of Maps and any
 other data that the source may need. Settings can be set through configuration or Query messages, and settings may
 differ between the two.
 

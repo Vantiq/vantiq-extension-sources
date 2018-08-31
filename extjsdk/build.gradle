@@ -3,13 +3,9 @@ version 'unspecified'
 
 buildscript {
     repositories {jcenter() }
-    dependencies {
-        classpath 'com.github.jengelman.gradle.plugins:shadow:2.0.0'
-    }
 }
 
 apply plugin: 'java'
-apply plugin: 'com.github.johnrengelman.shadow'
 
 sourceCompatibility = 1.8
 
@@ -25,6 +21,14 @@ ext {
     rxjavaVersion = '2.1.11'
     slf4jApiVersion = '1.7.25'
 }
+
+// Copies the README and licenses into the jar
+jar.from(".") {
+    include "README.md"
+    include "LICENSE/*"
+    into ""
+}
+
 
 
 repositories {
@@ -51,4 +55,18 @@ dependencies {
     compile "com.fasterxml.jackson.core:jackson-databind:${jacksonVersion}"
 
     testCompile group: 'junit', name: 'junit', version: '4.12'
+}
+
+// Create a jar with all dependencies included
+task fatJar(type: Jar) {
+    appendix = 'fat'
+    from sourceSets.main.output
+    from(".") {
+        include "README.md"
+        include "LICENSE/*"
+        into ""
+    }
+    from configurations.runtimeClasspath.
+                findAll( { it.name.endsWith('jar') && !it.name.startsWith('groovy')}).
+                collect( { zipTree(it) })
 }

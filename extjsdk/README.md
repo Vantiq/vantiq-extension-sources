@@ -24,10 +24,10 @@ dependencies on mvnrepository.com are included.
     *   [org.slf4j:slf4j-api Version 1.7.25](https://mvnrepository.com/artifact/org.slf4j/slf4j-api/1.7.25)
 
 ### Method 2 - .jar with dependencies included
-1.	Clone this repository and navigate to <repo location>/vantiq-extension-sources.
-2.	Call `./gradlew extjsdk:shadowJar` or `gradlew extjsdk:shadowJar` depending on your OS.
-3.	Navigate to <repo location>/vantiq-extension-sources/extjsdk/build/libs
-4.	Copy and connect extjsdk-all.jar to your project.
+1.	Clone this repository and navigate to `<repo location>/vantiq-extension-sources`.
+2.	Run `./gradlew extjsdk:fatJar`.
+3.	Navigate to `<repo location>/vantiq-extension-sources/extjsdk/build/libs`
+4.	Copy and connect extjsdk-fat.jar to your project.
 
 
 ## Logging
