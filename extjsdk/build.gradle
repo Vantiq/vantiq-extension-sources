@@ -26,6 +26,19 @@ ext {
     slf4jApiVersion = '1.7.25'
 }
 
+// Copies the README and licenses into the jar
+jar.from(".") {
+    include "README.md"
+    include "LICENSE/*"
+    into ""
+}
+
+// Copies the README and licenses into the jar
+shadowJar.from(".") {
+    include "README.md"
+    include "LICENSE/*"
+    into ""
+}
 
 repositories {
     mavenCentral()
