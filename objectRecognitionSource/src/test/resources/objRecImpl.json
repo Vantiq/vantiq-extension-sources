@@ -1,0 +1,6 @@
+{
+   "name" : "OBJECT_RECOGNITION",
+   "baseType" : "EXTENSION",
+   "verticle" : "service:extensionSource",
+   "config" : {}
+}
