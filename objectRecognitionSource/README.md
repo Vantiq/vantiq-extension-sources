@@ -103,20 +103,23 @@ stopped as well.
 
 ## Source Configuration Document<a name="srcConfig" id="srcConfig"></a>
 
-The Configuration document looks as below:
+The Configuration document may look similar to the following example:
 
     {
-        objRecConfig:{,
-            general: {
-                <general options>
-            },
-            dataSource: {
-                <data source options>
-            },
-            neuralNet: {
-                <neural net options>
-            }
-        }
+       "objRecConfig": {
+          "general": {
+             "pollRate": 3000
+          },
+          "dataSource": {
+             "camera": "http://166.155.71.82:8080/mjpg/video.mjpg",
+             "type": "network"
+          },
+          "neuralNet": {
+             "labelFile": "yolo.txt",
+             "pbFile": "yolo.pb",
+             "type": "yolo"
+          }
+       }
     }
 
 ### Options Available for General
@@ -161,7 +164,7 @@ Messages from the source are JSON objects in the following format:
 ```
 {
     results: [<object found>, <object found>],
-    timestamp: <seconds since Jan 1 1970 00:00:00, a.k.a standard Unix time>,
+    timestamp: <milliseconds since Jan 1 1970 00:00:00, a.k.a standard Unix time>,
     dataSource: {
         <additional data sent back by data source>
     },
