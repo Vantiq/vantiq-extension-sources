@@ -1,6 +1,6 @@
 ## Overview
 
-The following documentation outlines how to incorporate an Object Recognition Source as part of your Vantiq project. This allows a user to store and process data with Vantiq, all of which is collected by analyzing images/videos using any Tensorflow-compatible Neural Network. 
+The following documentation outlines how to incorporate an Object Recognition Source as part of your VANTIQ project. This allows a user to store and process data with VANTIQ, all of which is collected by analyzing images/videos using any Tensorflow-compatible Neural Network. 
 
 This implementation of the Object Recognition Source includes built-in functionality for the Yolo Processor, though any Tensorflow-compatible neural network can be used by implementing the NeuralNetInterface. Additionally, this implementation includes functionality to retrieve four different types of images:
 *   Camera Retriever - used to retrieve images from a serially-connected camera.
@@ -12,11 +12,11 @@ Again, other types of images and videos can be processed by implementing the Ima
 
 ## Prerequisites
 
-An understanding of the Vantiq Extension Source SDK is assumed. Please read the Extension Source README.md for more information.
+An understanding of the VANTIQ Extension Source SDK is assumed. Please read the Extension Source README.md for more information.
 
-The user must define the Object Recognition Source implementation in Vantiq. For an example of this implementation, please find the *objRecImpl.json* file located in the *src/test/resources* directory.
+The user must define the Object Recognition Source implementation in Vantiq. For an example of the definition, please find the *objRecImpl.json* file located in the *src/test/resources* directory.
 
-Additionally, an example Vantiq project named *objRecExample.zip* can be found in the *src/test/resources* directory.
+Additionally, an example VANTIQ project named *objRecExample.zip* can be found in the *src/test/resources* directory.
 *   It should be noted that this example uses the yolo.pb and coco.names files that are downloaded as part of running the tests associated with the project.
 
 ## Repository Contents
