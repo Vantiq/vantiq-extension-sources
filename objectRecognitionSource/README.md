@@ -1,3 +1,24 @@
+## Overview
+
+The following documentation outlines how to incorporate an Object Recognition Source as part of your Vantiq project. This allows a user to store and process data with Vantiq, all of which is collected by analyzing images/videos using any Tensorflow-compatible Neural Network. 
+
+This implementation of the Object Recognition Source includes built-in functionality for the Yolo Processor, though any Tensorflow-compatible neural network can be used by implementing the NeuralNetInterface. Additionally, this implementation includes functionality to retrieve four different types of images:
+*   Camera Retriever - used to retrieve images from a serially-connected camera.
+*   Network Stream Retriever - used to retrieve images from a network-connected camera.
+*   File Retriever - used to retrieve images and videos from disk.
+*   FTP Retriever - used to retrieve images trhough FTP, FTPS, and SFTP.
+
+Again, other types of images and videos can be processed by implementing the ImageRetrieverInterface.
+
+## Prerequisites
+
+An understanding of the Vantiq Extension Source SDK is assumed. Please read the Extension Source README.md for more information.
+
+The user must define the Object Recognition Source implementation in Vantiq. For an example of this implementation, please find the *objRecImpl.json* file located in the *src/test/resources* directory.
+
+Additionally, an example Vantiq project named *objRecExample.zip* can be found in the *src/test/resources* directory.
+*   It should be noted that this example uses the yolo.pb and coco.names files that are downloaded as part of running the tests associated with the project.
+
 ## Repository Contents
 
 *   [ObjectRecognitionMain](#objRecMain) -- The main function for the program. Connects to sources as specified in a
@@ -13,7 +34,7 @@
 *   [ImageRetrieverResults](#msgFormat) -- A class that holds the data passed back by image retriever implementations.
 *   [ImageRetrieverInterface](#retrieveInterface) -- An interface that allows different image retrieval mechanisms to be
         more easily integrated without changes to the rest of the code.
-    *   [CameraRetriever](#cameraRet) -- Retrieves images from a directly connected camera using OpenCV.
+    *   [CameraRetriever](#camRet) -- Retrieves images from a directly connected camera using OpenCV.
     *   [NetworkStreamRetriever](#netRet) -- Retrieves images from an IP camera.
     *   [FileRetriever](#fileRet) -- Retrieves images and videos from disk.
     *   [FtpRetriever](#ftpRet) -- Retrieves images through FTP, FTPS, and SFTP.
@@ -46,7 +67,13 @@ to this will be included in future distributions produced through gradle.
 ## Server Config File<a name="serverConfig" id="serverConfig"></a>
 
 The server config file is written as `property=value`, with each property on its
-own line.
+own line. The following is an example of a valid server.config file:
+```
+authToken=vadfEarscQadfagdfjrKt7Fj1xjfjzBxliahO9adliiH-Dj--gNM=
+sources=Camera1
+targetServer=https://dev.vantiq.com/
+modelDirectory=<path_to_your_pb_file>
+```
 
 ### Vantiq Options
 *   authToken: Required. The authentication token to connect with. These can be obtained from the namespace admin.
