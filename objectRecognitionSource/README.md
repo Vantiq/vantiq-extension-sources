@@ -14,7 +14,7 @@ Again, other types of images and videos can be processed by implementing the Ima
 
 An understanding of the VANTIQ Extension Source SDK is assumed. Please read the Extension Source README.md for more information.
 
-The user must define the Object Recognition Source implementation in VANTIQ. For an example of the definition, please find the *objRecImpl.json* file located in the *src/test/resources* directory.
+The user must define the Object Recognition Source implementation in VANTIQ. For an example of the definition, please see the *objRecImpl.json* file located in the *src/test/resources* directory.
 
 Additionally, an example VANTIQ project named *objRecExample.zip* can be found in the *src/test/resources* directory.
 *   It should be noted that this example uses the yolo.pb and coco.names files that are downloaded as part of running the tests associated with the project.
