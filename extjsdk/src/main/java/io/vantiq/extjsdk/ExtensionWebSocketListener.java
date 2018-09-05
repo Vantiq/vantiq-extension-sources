@@ -245,8 +245,18 @@ public class ExtensionWebSocketListener implements WebSocketListener{
             log.warn("Failed to interpret WebSocket message as Map.", e);
             return;
         }
-        log.debug("Map of the received message: {}", msg);
         
+        //Check to see if we should use log with Debug, or with Error
+        if (msg.containsKey("status")) {
+            int statusCheck = (Integer) msg.get("status");
+            if (statusCheck >= 300) {
+                log.error("Map of the received message: {}", msg);
+            } else {
+                log.debug("Map of the received message: {}", msg);
+            }
+        } else {
+            log.debug("Map of the received message: {}", msg);
+        }
         
         // Now we figure out which handler should receive the message
         
