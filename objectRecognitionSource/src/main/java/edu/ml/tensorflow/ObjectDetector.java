@@ -39,6 +39,7 @@ public class ObjectDetector {
     private ImageUtil imageUtil;
     private int saveRate = 0;
     private int frameCount = 0;
+    private float threshold;
     
     private Graph yoloGraph;
     private Session yoloSession;
@@ -57,7 +58,7 @@ public class ObjectDetector {
      * @param saveRate  The rate at which images will be saved, once per every saveRate frames. Non-positive values are
      *                  functionally equivalent to 1. If outputDir is null does nothing.
      */
-    public ObjectDetector(String graphFile, String labelFile, String outputDir, int saveRate) {
+    public ObjectDetector(float thresh, String graphFile, String labelFile, String outputDir, int saveRate) {
         try {
             GRAPH_DEF = IOUtil.readAllBytesOrExit(graphFile);
             LABELS = IOUtil.readAllLinesOrExit(labelFile);
@@ -69,6 +70,8 @@ public class ObjectDetector {
         } catch (ServiceException ex) {
             throw new IllegalArgumentException("Problem reading files for the yolo graph.", ex);
         }
+        
+        threshold = thresh;
         
         yoloGraph = createYoloGraph();
         yoloSession = new Session(yoloGraph);
@@ -89,7 +92,7 @@ public class ObjectDetector {
     public List<Map<String, ?>> detect(final byte[] image) {
         try (Tensor<Float> normalizedImage = normalizeImage(image)) {
             Date now = new Date(); // Saves the time before
-            List<Recognition> recognitions = YOLOClassifier.getInstance().classifyImage(executeYOLOGraph(normalizedImage), LABELS);
+            List<Recognition> recognitions = YOLOClassifier.getInstance(threshold).classifyImage(executeYOLOGraph(normalizedImage), LABELS);
             
             // Saves an image every saveRate frames
             if (imageUtil != null && ++frameCount >= saveRate) {
@@ -122,7 +125,7 @@ public class ObjectDetector {
     public List<Map<String, ?>> detect(final byte[] image, String outputDir, String fileName) {
         try (Tensor<Float> normalizedImage = normalizeImage(image)) {
             Date now = new Date(); // Saves the time before
-            List<Recognition> recognitions = YOLOClassifier.getInstance().classifyImage(executeYOLOGraph(normalizedImage), LABELS);
+            List<Recognition> recognitions = YOLOClassifier.getInstance(threshold).classifyImage(executeYOLOGraph(normalizedImage), LABELS);
             
             // Saves an image if requested
             if (outputDir != null || (fileName != null && this.imageUtil != null)) {
@@ -206,7 +209,7 @@ public class ObjectDetector {
         // Reusing the same session reduces runtime significantly (by ~13x on the developer's computer)
         try(Tensor<Float> result =
                 yoloSession.runner().feed("input", 0, image).fetch("output").run().get(0).expect(Float.class)) {
-            float[] outputTensor = new float[YOLOClassifier.getInstance().getOutputSizeByShape(result)];
+            float[] outputTensor = new float[YOLOClassifier.getInstance(threshold).getOutputSizeByShape(result)];
             FloatBuffer floatBuffer = FloatBuffer.wrap(outputTensor);
             result.writeTo(floatBuffer);
             return outputTensor;
