@@ -56,6 +56,7 @@ public class YoloProcessor implements NeuralNetInterface {
     String pbFile = null;
     String labelsFile = null;
     String outputDir = null;
+    float threshold = 0.5f;
     int saveRate = 1;
     
     ObjectDetector objectDetector = null;
@@ -65,7 +66,7 @@ public class YoloProcessor implements NeuralNetInterface {
     public void setupImageProcessing(Map<String, ?> neuralNetConfig, String modelDirectory) throws Exception {
         setup(neuralNetConfig, modelDirectory);
         try {
-            objectDetector = new ObjectDetector(pbFile, labelsFile, outputDir, saveRate);
+            objectDetector = new ObjectDetector(threshold, pbFile, labelsFile, outputDir, saveRate);
         } catch (Exception e) {
             throw new Exception(this.getClass().getCanonicalName() + ".yoloBackendSetupError: " 
                     + "Failed to create new ObjectDetector", e);
@@ -91,6 +92,21 @@ public class YoloProcessor implements NeuralNetInterface {
                    + "Could not find 'pbFile' and/or 'labelFile' in the neuralNet configuration");
        }
        
+       if (neuralNet.get("threshold") instanceof Number) {
+           Number threshNum = (Number) neuralNet.get("threshold");
+           float tempThresh = threshNum.floatValue();
+           if (0 <= tempThresh && tempThresh <= 1) {
+               threshold = tempThresh;
+           } else if (0 <= tempThresh && tempThresh <= 100) {
+               threshold = tempThresh/100;
+           } else {
+               log.warn("The threshold specified in the config is not valid. The threshold was set to its default "
+                       + "value of 0.5");
+           }
+       } else {
+           log.debug("The threshold was not specified in the config. Using default threshold value of 0.5.");
+       }
+              
        // Setup the variables for saving images
        if (neuralNet.get("outputDir") instanceof String) {
            outputDir = (String) neuralNet.get("outputDir");
