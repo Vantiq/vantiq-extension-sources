@@ -18,13 +18,13 @@ import java.util.PriorityQueue;
  * I also used this class in my android sample application here: https://github.com/szaza/android-yolo-v2
  */
 public class YOLOClassifier {
+    private final static float OVERLAP_THRESHOLD = 0.5f;
     private final static double anchors[] = {1.08,1.19,  3.42,4.41,  6.63,11.38,  9.42,5.11,  16.62,10.52};
     private final static int SIZE = 13;
     private final static int MAX_RECOGNIZED_CLASSES = 24;
     private final static int MAX_RESULTS = 24;
     private final static int NUMBER_OF_BOUNDING_BOX = 5;
     private static float threshold;
-    private static float overlapThreshold;
     private static YOLOClassifier classifier;
 
     private YOLOClassifier() {}
@@ -33,7 +33,6 @@ public class YOLOClassifier {
         if (classifier == null) {
             classifier = new YOLOClassifier();
             threshold = thresh;
-            overlapThreshold = thresh;
         }
 
         return  classifier;
@@ -122,7 +121,7 @@ public class YOLOClassifier {
                 boolean overlaps = false;
                 for (Recognition previousRecognition : recognitions) {
                     overlaps = overlaps || (getIntersectionProportion(previousRecognition.getLocation(),
-                            recognition.getLocation()) > overlapThreshold);
+                            recognition.getLocation()) > OVERLAP_THRESHOLD);
                 }
 
                 if (!overlaps) {
