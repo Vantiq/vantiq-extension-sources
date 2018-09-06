@@ -151,6 +151,37 @@ public class TestObjRecConfig {
     }
     
     @Test
+    public void testInvalidThreshold() {
+        Map conf = minimalConfig();
+        neuralNet.put("threshold", 1000);
+        sendConfig(conf);
+        assertFalse("Should not fail when missing 'neuralNet' configuration", configIsFailed());
+        
+        neuralNet.remove("threshold");
+        neuralNet.put("threshold", -1);
+        sendConfig(conf);
+        assertFalse("Should not fail when missing 'neuralNet' configuration", configIsFailed());
+    }
+    
+    @Test
+    public void testValidThreshold() {
+        Map conf = minimalConfig();
+        neuralNet.put("threshold", 0);
+        sendConfig(conf);
+        assertFalse("Should not fail when missing 'neuralNet' configuration", configIsFailed());
+        
+        neuralNet.remove("threshold");
+        neuralNet.put("threshold", 40);
+        sendConfig(conf);
+        assertFalse("Should not fail when missing 'neuralNet' configuration", configIsFailed());
+        
+        neuralNet.remove("threshold");
+        neuralNet.put("threshold", 0.3);
+        sendConfig(conf);
+        assertFalse("Should not fail when missing 'neuralNet' configuration", configIsFailed());
+    }
+    
+    @Test
     public void testMinimalConfig() {
         nCore.start(5); // Need a client to avoid NPEs on sends
         

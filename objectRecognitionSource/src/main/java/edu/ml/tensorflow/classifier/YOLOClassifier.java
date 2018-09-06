@@ -18,13 +18,13 @@ import java.util.PriorityQueue;
  * I also used this class in my android sample application here: https://github.com/szaza/android-yolo-v2
  */
 public class YOLOClassifier {
-    private static float OVERLAP_THRESHOLD;
     private final static double anchors[] = {1.08,1.19,  3.42,4.41,  6.63,11.38,  9.42,5.11,  16.62,10.52};
     private final static int SIZE = 13;
     private final static int MAX_RECOGNIZED_CLASSES = 24;
-    private static float THRESHOLD;
     private final static int MAX_RESULTS = 24;
     private final static int NUMBER_OF_BOUNDING_BOX = 5;
+    private static float threshold;
+    private static float overlapThreshold;
     private static YOLOClassifier classifier;
 
     private YOLOClassifier() {}
@@ -32,8 +32,8 @@ public class YOLOClassifier {
     public static YOLOClassifier getInstance(float thresh) {
         if (classifier == null) {
             classifier = new YOLOClassifier();
-            THRESHOLD = thresh;
-            OVERLAP_THRESHOLD = thresh;
+            threshold = thresh;
+            overlapThreshold = thresh;
         }
 
         return  classifier;
@@ -99,7 +99,7 @@ public class YOLOClassifier {
         for (int i=0; i<boundingBox.getClasses().length; i++) {
             ArgMax.Result argMax = new ArgMax(new SoftMax(boundingBox.getClasses()).getValue()).getResult();
             double confidenceInClass = argMax.getMaxValue() * boundingBox.getConfidence();
-            if (confidenceInClass > THRESHOLD) {
+            if (confidenceInClass > threshold) {
                 predictionQueue.add(new Recognition(argMax.getIndex(), labels.get(argMax.getIndex()), (float) confidenceInClass,
                         new BoxPosition((float) (boundingBox.getX() - boundingBox.getWidth() / 2),
                                 (float) (boundingBox.getY() - boundingBox.getHeight() / 2),
@@ -122,7 +122,7 @@ public class YOLOClassifier {
                 boolean overlaps = false;
                 for (Recognition previousRecognition : recognitions) {
                     overlaps = overlaps || (getIntersectionProportion(previousRecognition.getLocation(),
-                            recognition.getLocation()) > OVERLAP_THRESHOLD);
+                            recognition.getLocation()) > overlapThreshold);
                 }
 
                 if (!overlaps) {
