@@ -92,6 +92,21 @@ public class NetworkStreamRetriever implements ImageRetrieverInterface {
         
         if (matrix.empty()) {
             matrix.release();
+            // Check connection to URL first
+            try {
+                URL urlProtocolTest = new URL((String) camera);
+                InputStream urlReadTest = urlProtocolTest.openStream();
+            } catch (MalformedURLException e) {
+                throw new IllegalArgumentException(this.getClass().getCanonicalName() + ".unknownProtocol: "
+                        + "URL specifies unknown protocol");
+            } catch (java.io.IOException e) {
+                throw new ImageAcquisitionException(this.getClass().getCanonicalName() + ".badRead: "
+                        + "URL was unable to be read");
+            }
+            // Try to recreate video capture once connection is reestablished 
+            capture = new VideoCapture(camera);
+            
+            // Otherwise, check to see if camera has closed
             if (!capture.isOpened() ) {
                 capture.release();
                 throw new FatalImageException(this.getClass().getCanonicalName() + ".mainCameraClosed: " 
