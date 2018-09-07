@@ -62,16 +62,7 @@ public class NetworkStreamRetriever implements ImageRetrieverInterface {
                     "No camera specified in dataSourceConfig");
         }
         if (!capture.isOpened()) {
-            try {
-                URL urlProtocolTest = new URL((String) camera);
-                InputStream urlReadTest = urlProtocolTest.openStream();
-            } catch (MalformedURLException e) {
-                throw new IllegalArgumentException(this.getClass().getCanonicalName() + ".unknownProtocol: "
-                        + "URL specifies unknown protocol");
-            } catch (java.io.IOException e) {
-                throw new ImageAcquisitionException(this.getClass().getCanonicalName() + ".badRead: "
-                        + "URL was unable to be read");
-            }
+            diagnoseConnection();
             throw new IllegalArgumentException(this.getClass().getCanonicalName() + ".notVideoStream: " 
                     + "URL does not represent a video stream");
         }
@@ -93,16 +84,8 @@ public class NetworkStreamRetriever implements ImageRetrieverInterface {
         if (matrix.empty()) {
             matrix.release();
             // Check connection to URL first
-            try {
-                URL urlProtocolTest = new URL((String) camera);
-                InputStream urlReadTest = urlProtocolTest.openStream();
-            } catch (MalformedURLException e) {
-                throw new IllegalArgumentException(this.getClass().getCanonicalName() + ".unknownProtocol: "
-                        + "URL specifies unknown protocol");
-            } catch (java.io.IOException e) {
-                throw new ImageAcquisitionException(this.getClass().getCanonicalName() + ".badRead: "
-                        + "URL was unable to be read");
-            }
+            diagnoseConnection();
+            
             // Try to recreate video capture once connection is reestablished 
             capture = new VideoCapture(camera);
             
@@ -196,6 +179,19 @@ public class NetworkStreamRetriever implements ImageRetrieverInterface {
         results.setImage(imageByte);
         results.setTimestamp(captureTime);
         return results;
+    }
+    
+    public void diagnoseConnection() throws ImageAcquisitionException{
+        try {
+            URL urlProtocolTest = new URL((String) camera);
+            InputStream urlReadTest = urlProtocolTest.openStream();
+        } catch (MalformedURLException e) {
+            throw new IllegalArgumentException(this.getClass().getCanonicalName() + ".unknownProtocol: "
+                    + "URL specifies unknown protocol");
+        } catch (java.io.IOException e) {
+            throw new ImageAcquisitionException(this.getClass().getCanonicalName() + ".badRead: "
+                    + "URL was unable to be read");
+        }
     }
     
     public void close() {
