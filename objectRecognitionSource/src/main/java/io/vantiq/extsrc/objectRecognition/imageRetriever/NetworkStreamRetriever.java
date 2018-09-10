@@ -193,7 +193,7 @@ public class NetworkStreamRetriever implements ImageRetrieverInterface {
         } catch (MalformedURLException e) {
 //            throw new IllegalArgumentException(this.getClass().getCanonicalName() + ".unknownProtocol: "
 //                    + "URL specifies unknown protocol");
-            log.error(".unknownProtocol: URL specifies unknown protocol");
+            log.error(".unknownProtocol: Error parsing URL: ", e);
             
         } catch (java.io.IOException e) {
             throw new ImageAcquisitionException(this.getClass().getCanonicalName() + ".badRead: "
