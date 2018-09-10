@@ -144,7 +144,8 @@ The Configuration document may look similar to the following example:
           "neuralNet": {
              "labelFile": "yolo.txt",
              "pbFile": "yolo.pb",
-             "type": "yolo"
+             "type": "yolo",
+             "threshold": 0.2
           }
        }
     }
@@ -184,6 +185,9 @@ Most of the options required for neuralNet are dependent on the specific impleme
     3.  Empty, in which case the program will try to find an implementation with the name "DefaultProcessor" in
         the `io.vantiq.objectRecognition.neuralNet` package. This implementation is not provided, and must be written by
         the user.
+*   threshold: Optional. Threshold is used to decide if the Neural Net's result is a valid one, by comparing the resulting confidence of the recognition against the threshold value. A high threshold will lead to fewer results, all with a higher confidence. A low threshold will lead to more results, some of which having a lower confidence. Threshold defaults to 0.5 if not specified, or if invalid. There are two ways to specify this value:
+    1.   The value can be a number between 0 and 1 (i.e. 0.4, or 0.2, etc...)
+    2.   The value can be a number between 0 and 100 (i.e. 40, or 20, etc...)
 
 ## Messages from the Source<a name="msgFormat" id="msgFormat"></a>
 
