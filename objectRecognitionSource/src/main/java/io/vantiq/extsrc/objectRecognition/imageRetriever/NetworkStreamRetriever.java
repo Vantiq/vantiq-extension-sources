@@ -15,6 +15,9 @@ import java.net.URL;
 import java.util.Date;
 import java.util.Map;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import org.opencv.core.Core;
 import org.opencv.core.Mat;
 import org.opencv.core.MatOfByte;
@@ -41,6 +44,8 @@ import io.vantiq.extsrc.objectRecognition.exception.ImageAcquisitionException;
 public class NetworkStreamRetriever implements ImageRetrieverInterface {
     VideoCapture   capture;
     String         camera;
+    Logger         log = LoggerFactory.getLogger(this.getClass().getCanonicalName());
+
     
     @Override
     public void setupDataRetrieval(Map<String, ?> dataSourceConfig, ObjectRecognitionCore source) throws Exception {
@@ -63,8 +68,8 @@ public class NetworkStreamRetriever implements ImageRetrieverInterface {
         }
         if (!capture.isOpened()) {
             diagnoseConnection();
-            throw new IllegalArgumentException(this.getClass().getCanonicalName() + ".notVideoStream: " 
-                    + "URL does not represent a video stream");
+//            throw new IllegalArgumentException(this.getClass().getCanonicalName() + ".notVideoStream: " 
+//                    + "URL does not represent a video stream");
         }
     }
     
@@ -96,7 +101,7 @@ public class NetworkStreamRetriever implements ImageRetrieverInterface {
                         + "Camera '" + camera + "' has closed");
             } else {
                 throw new ImageAcquisitionException(this.getClass().getCanonicalName() + ".mainCameraReadError: " 
-                        + "Could not obtain frame from camera + '" + camera + "'");
+                        + "Could not obtain frame from camera '" + camera + "'");
             }
         }
       
@@ -186,8 +191,10 @@ public class NetworkStreamRetriever implements ImageRetrieverInterface {
             URL urlProtocolTest = new URL((String) camera);
             InputStream urlReadTest = urlProtocolTest.openStream();
         } catch (MalformedURLException e) {
-            throw new IllegalArgumentException(this.getClass().getCanonicalName() + ".unknownProtocol: "
-                    + "URL specifies unknown protocol");
+//            throw new IllegalArgumentException(this.getClass().getCanonicalName() + ".unknownProtocol: "
+//                    + "URL specifies unknown protocol");
+            log.error(".unknownProtocol: Error parsing URL: ", e);
+            
         } catch (java.io.IOException e) {
             throw new ImageAcquisitionException(this.getClass().getCanonicalName() + ".badRead: "
                     + "URL was unable to be read");
