@@ -468,7 +468,6 @@ public class ObjectRecognitionCore {
             } else {
                 log.error("Failed to connect within 10 seconds");
             }
-            //stop();
             return false;
         }
         return true;
