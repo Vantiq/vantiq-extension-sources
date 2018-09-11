@@ -71,7 +71,7 @@ public class NetworkStreamRetriever implements ImageRetrieverInterface {
         if (!capture.isOpened()) {
             diagnoseConnection();
             throw new IllegalArgumentException(this.getClass().getCanonicalName() + ".notVideoStream: " 
-                    + "URL does not represent a video stream");
+                    + "Stream at URL cannot be opened as a video stream");
         }
     }
     
@@ -197,10 +197,10 @@ public class NetworkStreamRetriever implements ImageRetrieverInterface {
                   InputStream urlReadTest = urlProtocolTest.openStream();
               } catch (MalformedURLException e) {
                   throw new IllegalArgumentException(this.getClass().getCanonicalName() + ".unknownProtocol: "
-                          + "URL specifies unknown protocol, or protocol was improperly formatted");
+                          + "URL specifies unknown protocol, or protocol was improperly formatted. Error Message: ", e);
               } catch (java.io.IOException e) {
                   throw new ImageAcquisitionException(this.getClass().getCanonicalName() + ".badRead: "
-                          + "URL was unable to be read");
+                          + "URL was unable to be read. Error Message: ", e);
               }
             } else {
                 throw new ImageAcquisitionException(this.getClass().getCanonicalName() + ".badRead: "
@@ -208,7 +208,7 @@ public class NetworkStreamRetriever implements ImageRetrieverInterface {
             }
         } catch (URISyntaxException e) {
             throw new IllegalArgumentException(this.getClass().getCanonicalName() + ".unknownProtocol: "
-                    + "URL specifies unknown protocol, or protocol was improperly formatted");
+                    + "URL specifies unknown protocol, or protocol was improperly formatted. Error Message: ", e);
         }
     }
     
