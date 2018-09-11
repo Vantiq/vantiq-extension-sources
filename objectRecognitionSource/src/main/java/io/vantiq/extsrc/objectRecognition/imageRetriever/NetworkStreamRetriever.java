@@ -11,6 +11,8 @@ package io.vantiq.extsrc.objectRecognition.imageRetriever;
 
 import java.io.InputStream;
 import java.net.MalformedURLException;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.net.URL;
 import java.util.Date;
 import java.util.Map;
@@ -68,8 +70,8 @@ public class NetworkStreamRetriever implements ImageRetrieverInterface {
         }
         if (!capture.isOpened()) {
             diagnoseConnection();
-//            throw new IllegalArgumentException(this.getClass().getCanonicalName() + ".notVideoStream: " 
-//                    + "URL does not represent a video stream");
+            throw new IllegalArgumentException(this.getClass().getCanonicalName() + ".notVideoStream: " 
+                    + "Stream at URL cannot be opened as a video stream");
         }
     }
     
@@ -186,18 +188,27 @@ public class NetworkStreamRetriever implements ImageRetrieverInterface {
         return results;
     }
     
-    public void diagnoseConnection() throws ImageAcquisitionException{
+    public void diagnoseConnection() throws ImageAcquisitionException {
         try {
-            URL urlProtocolTest = new URL((String) camera);
-            InputStream urlReadTest = urlProtocolTest.openStream();
-        } catch (MalformedURLException e) {
-//            throw new IllegalArgumentException(this.getClass().getCanonicalName() + ".unknownProtocol: "
-//                    + "URL specifies unknown protocol");
-            log.error(".unknownProtocol: Error parsing URL: ", e);
-            
-        } catch (java.io.IOException e) {
-            throw new ImageAcquisitionException(this.getClass().getCanonicalName() + ".badRead: "
-                    + "URL was unable to be read");
+            URI URITest = new URI(camera);
+            if (URITest.getScheme().equals("http") || URITest.getScheme().equals("https")) {
+                try {
+                  URL urlProtocolTest = new URL((String) camera);
+                  InputStream urlReadTest = urlProtocolTest.openStream();
+              } catch (MalformedURLException e) {
+                  throw new IllegalArgumentException(this.getClass().getCanonicalName() + ".unknownProtocol: "
+                          + "URL specifies unknown protocol, or protocol was improperly formatted. Error Message: ", e);
+              } catch (java.io.IOException e) {
+                  throw new ImageAcquisitionException(this.getClass().getCanonicalName() + ".badRead: "
+                          + "URL was unable to be read. Error Message: ", e);
+              }
+            } else {
+                throw new ImageAcquisitionException(this.getClass().getCanonicalName() + ".badRead: "
+                        + "URL was unable to be read");
+            }
+        } catch (URISyntaxException e) {
+            throw new IllegalArgumentException(this.getClass().getCanonicalName() + ".unknownProtocol: "
+                    + "URL specifies unknown protocol, or protocol was improperly formatted. Error Message: ", e);
         }
     }
     
