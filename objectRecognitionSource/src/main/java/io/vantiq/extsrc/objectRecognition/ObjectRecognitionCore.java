@@ -57,6 +57,7 @@ public class ObjectRecognitionCore {
     
     // final vars
     final Logger log;
+    final static int    RECONNECT_INTERVAL = 5000;
     
     /**
      * Logs http messages at the debug level 
@@ -124,7 +125,7 @@ public class ObjectRecognitionCore {
                 sourcesSucceeded = exitIfConnectionFails(client, 10);
                 
                 try {
-                    Thread.sleep(5000);
+                    Thread.sleep(RECONNECT_INTERVAL);
                 } catch (InterruptedException e) {
                     log.error("An error occurred when trying to sleep the current thread. Error Message: ", e);
                 }
@@ -192,7 +193,7 @@ public class ObjectRecognitionCore {
             
             sourcesSucceeded = exitIfConnectionFails(client, timeout);
             try {
-                Thread.sleep(5000);
+                Thread.sleep(RECONNECT_INTERVAL);
             } catch (InterruptedException e) {
                 log.error("An error occurred when trying to sleep the current thread. Error Message: ", e);
             }
