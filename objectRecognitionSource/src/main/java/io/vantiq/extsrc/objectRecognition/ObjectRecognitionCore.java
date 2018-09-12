@@ -57,6 +57,7 @@ public class ObjectRecognitionCore {
     
     // final vars
     final Logger log;
+    final static int    RECONNECT_INTERVAL = 5000;
     
     /**
      * Logs http messages at the debug level 
@@ -113,13 +114,22 @@ public class ObjectRecognitionCore {
                 pollTimer.cancel();
                 pollTimer = null;
             }
-            
+   
             objRecConfigHandler.configComplete = false;
             
-            client.setQueryHandler(defaultQueryHandler);
-            
-            client.initiateFullConnection(targetVantiqServer, authToken);
-            exitIfConnectionFails(client, 10);
+            boolean sourcesSucceeded = false;
+            while (!sourcesSucceeded) {
+                client.setQueryHandler(defaultQueryHandler);
+                
+                client.initiateFullConnection(targetVantiqServer, authToken);
+                sourcesSucceeded = exitIfConnectionFails(client, 10);
+                
+                try {
+                    Thread.sleep(RECONNECT_INTERVAL);
+                } catch (InterruptedException e) {
+                    log.error("An error occurred when trying to sleep the current thread. Error Message: ", e);
+                }
+            }
         }
     };
     
@@ -170,16 +180,25 @@ public class ObjectRecognitionCore {
      * @return          true if the source connection succeeds, false if it fails.
      */
     public boolean start(int timeout) {
-        client = new ExtensionWebSocketClient(sourceName);
-        objRecConfigHandler = new ObjectRecognitionConfigHandler(this);
-        
-        client.setConfigHandler(objRecConfigHandler);
-        client.setReconnectHandler(reconnectHandler);
-        client.setCloseHandler(closeHandler);
-        client.setQueryHandler(defaultQueryHandler);
-        client.initiateFullConnection(targetVantiqServer, authToken);
-        
-        return exitIfConnectionFails(client, timeout);
+        boolean sourcesSucceeded = false;
+        while (!sourcesSucceeded) {
+            client = new ExtensionWebSocketClient(sourceName);
+            objRecConfigHandler = new ObjectRecognitionConfigHandler(this);
+            
+            client.setConfigHandler(objRecConfigHandler);
+            client.setReconnectHandler(reconnectHandler);
+            client.setCloseHandler(closeHandler);
+            client.setQueryHandler(defaultQueryHandler);
+            client.initiateFullConnection(targetVantiqServer, authToken);
+            
+            sourcesSucceeded = exitIfConnectionFails(client, timeout);
+            try {
+                Thread.sleep(RECONNECT_INTERVAL);
+            } catch (InterruptedException e) {
+                log.error("An error occurred when trying to sleep the current thread. Error Message: ", e);
+            }
+        }
+        return true;
     }
     
     /**
@@ -442,7 +461,7 @@ public class ObjectRecognitionCore {
             log.error("Exception occurred while waiting for webSocket connection", e);
         }
         if (!sourcesSucceeded) {
-            log.error("Failed to connect to all sources. Exiting...");
+            log.error("Failed to connect to all sources. Retrying...");
             if (!client.isOpen()) {
                 log.error("Failed to connect to server url '" + targetVantiqServer + "'.");
             } else if (!client.isAuthed()) {
@@ -450,7 +469,6 @@ public class ObjectRecognitionCore {
             } else {
                 log.error("Failed to connect within 10 seconds");
             }
-            stop();
             return false;
         }
         return true;

@@ -275,7 +275,7 @@ public class TestObjRecCore extends ObjRecTestBase {
         fc.completeWebSocketConnection(true);
         fc.completeAuthentication(false);
         assertFalse("Should fail due to authentication failing", core.exitIfConnectionFails(core.client, 3));
-        assertTrue("Failure means it should be closed", core.isClosed());
+        assertFalse("Failure does not mean it should be closed", core.isClosed());
         
         core.close();
         core = new NoSendORCore(sourceName, authToken, targetVantiqServer, modelDirectory);
@@ -284,7 +284,7 @@ public class TestObjRecCore extends ObjRecTestBase {
         fc.initiateFullConnection(targetVantiqServer, authToken);
         fc.completeWebSocketConnection(false);
         assertFalse("Should fail due to WebSocket failing", core.exitIfConnectionFails(core.client, 3));
-        assertTrue("Failure means it should be closed", core.isClosed());
+        assertFalse("Failure does not mean it should be closed", core.isClosed());
         
         core.close();
         core = new NoSendORCore(sourceName, authToken, targetVantiqServer, modelDirectory);
@@ -294,7 +294,7 @@ public class TestObjRecCore extends ObjRecTestBase {
         fc.completeWebSocketConnection(true);
         fc.completeAuthentication(true);
         assertFalse("Should fail due to timeout on source connection", core.exitIfConnectionFails(core.client, 3));
-        assertTrue("Failure means it should be closed", core.isClosed());
+        assertFalse("Failure does not mean it should be closed", core.isClosed());
     }
 // ================================================= Helper functions =================================================
     
