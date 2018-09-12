@@ -176,7 +176,7 @@ public class TestObjRecConfig {
         assertFalse("Should not fail when missing 'neuralNet' configuration", configIsFailed());
         
         neuralNet.remove("threshold");
-        neuralNet.put("threshold", 0.3);
+        neuralNet.put("threshold", 0.6);
         sendConfig(conf);
         assertFalse("Should not fail when missing 'neuralNet' configuration", configIsFailed());
     }
