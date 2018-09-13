@@ -354,8 +354,7 @@ public class ObjectRecognitionCore {
                if (request.get("sendFullResponse") instanceof Boolean && (Boolean) request.get("sendFullResponse")) {
                    Map response = createMapFromResults(imageResults, results);
                    client.sendQueryResponse(200, replyAddress, response);
-               }
-               if (results.getResults().isEmpty()) {
+               } else if (results.getResults().isEmpty()) {
                    client.sendQueryResponse(204, replyAddress, new LinkedHashMap<>());
                } else {
                    client.sendQueryResponse(200, replyAddress, results.getResults().toArray(new Map[0]));
