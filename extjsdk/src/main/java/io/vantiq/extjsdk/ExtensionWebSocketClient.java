@@ -257,7 +257,7 @@ public class ExtensionWebSocketClient {
      * @param body          The data to be sent back as the result of the query
      */
     public void sendQueryResponse(int httpCode, String replyAddress, Map body){
-        if (httpCode >= 200 && body != null && !body.isEmpty()) {
+        if (httpCode >= 200 && httpCode < 300 && body != null && !body.isEmpty()) {
 
             // Vertx bus protocol says that the EOF indicator (the 2xx code) comes after
             // all the data.  So we'll send two messages -- one with the data, and one with the
@@ -292,7 +292,7 @@ public class ExtensionWebSocketClient {
      * @param body          An array of the data to be sent back as the result of the query
      */
     public void sendQueryResponse(int httpCode, String replyAddress, Map[] body) {
-        if (httpCode >= 200 && body != null && body.length > 0) {
+        if (httpCode >= 200 && httpCode < 300 && body != null && body.length > 0) {
 
             // Vertx bus protocol says that the EOF indicator (the 2xx code) comes after
             // all the data.  So we'll send two messages -- one with the data, and one with the
