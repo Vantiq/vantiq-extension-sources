@@ -257,11 +257,28 @@ public class ExtensionWebSocketClient {
      * @param body          The data to be sent back as the result of the query
      */
     public void sendQueryResponse(int httpCode, String replyAddress, Map body){
-        Response response = new Response()
-                .status(httpCode)
-                .addHeader(ExtensionServiceMessage.RESPONSE_ADDRESS_HEADER, replyAddress)
-                .body(body);
-        send(response);
+        if (httpCode >= 200 && body != null && !body.isEmpty()) {
+
+            // Vertx bus protocol says that the EOF indicator (the 2xx code) comes after
+            // all the data.  So we'll send two messages -- one with the data, and one with the
+            // th,th,that's all code.  Fixes Bug #64
+            Response response = new Response()
+                    .status(QUERY_CHUNK_CODE)
+                    .addHeader(ExtensionServiceMessage.RESPONSE_ADDRESS_HEADER, replyAddress)
+                    .body(body);
+            send(response);
+            Response terminal = new Response()
+                    .status(httpCode)
+                    .addHeader(ExtensionServiceMessage.RESPONSE_ADDRESS_HEADER, replyAddress);
+            send(terminal);
+
+        } else {
+            Response response = new Response()
+                    .status(httpCode)
+                    .addHeader(ExtensionServiceMessage.RESPONSE_ADDRESS_HEADER, replyAddress)
+                    .body(body);
+            send(response);
+        }
     }
 
     /**
@@ -275,11 +292,28 @@ public class ExtensionWebSocketClient {
      * @param body          An array of the data to be sent back as the result of the query
      */
     public void sendQueryResponse(int httpCode, String replyAddress, Map[] body) {
-        Response response = new Response()
-                .status(httpCode)
-                .addHeader(ExtensionServiceMessage.RESPONSE_ADDRESS_HEADER, replyAddress)
-                .body(body);
-        send(response);
+        if (httpCode >= 200 && body != null && body.length > 0) {
+
+            // Vertx bus protocol says that the EOF indicator (the 2xx code) comes after
+            // all the data.  So we'll send two messages -- one with the data, and one with the
+            // th,th,that's all code.  Fixes Bug #64
+            Response response = new Response()
+                    .status(QUERY_CHUNK_CODE)
+                    .addHeader(ExtensionServiceMessage.RESPONSE_ADDRESS_HEADER, replyAddress)
+                    .body(body);
+            send(response);
+            Response terminal = new Response()
+                    .status(httpCode)
+                    .addHeader(ExtensionServiceMessage.RESPONSE_ADDRESS_HEADER, replyAddress);
+            send(terminal);
+
+        } else {
+            Response response = new Response()
+                    .status(httpCode)
+                    .addHeader(ExtensionServiceMessage.RESPONSE_ADDRESS_HEADER, replyAddress)
+                    .body(body);
+            send(response);
+        }
     }
 
     /**
