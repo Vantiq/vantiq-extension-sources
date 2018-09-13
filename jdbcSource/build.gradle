@@ -1,0 +1,28 @@
+group 'io.vantiq'
+version 'unspecified'
+
+apply plugin: 'java'
+apply plugin: 'application'
+
+sourceCompatibility = 1.8
+
+repositories {
+    mavenCentral()
+    jcenter()
+}
+
+mainClassName = 'io.vantiq.extsrc.jdbcSource.JDBCMain'
+
+dependencies {
+    // This dependency is used internally, and not exposed to consumers on their own compile classpath.
+    implementation 'com.google.guava:guava:23.0'
+    
+    compile project(':extjsdk')
+    
+    compile "org.slf4j:slf4j-api:1.7.25"
+    compile "org.apache.logging.log4j:log4j-slf4j-impl:2.11.0"
+    
+    // Use JUnit test framework
+    testCompile 'junit:junit:4.12'
+    testCompile project(path:":extjsdk", configuration:"testArtifacts")
+}
