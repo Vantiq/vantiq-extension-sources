@@ -20,6 +20,7 @@ import okhttp3.*;
 import okhttp3.ws.WebSocket;
 import okhttp3.ws.WebSocketCall;
 
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
@@ -330,12 +331,17 @@ public class ExtensionWebSocketClient {
      */
     public void sendQueryError(String replyAddress, String messageCode, String messageTemplate, Object[] parameters) {
         // Create the body
-        Map<String,Object> body = new LinkedHashMap<>();
-        body.put("messageCode", messageCode);
-        body.put("messageTemplate", messageTemplate);
-        body.put("parameters", parameters);
+        // Note that VANTIQ allows a list of errors, so the body of the error message sent MUST be an array of maps.
+        // For our simpler interface, we'll set up an array of size one to send error
+        @SuppressWarnings("unchecked")
+        Map<String,Object>[] errorBunch = new HashMap[1];
+        Map<String, Object> err = new HashMap<>();
+        err.put("messageCode", messageCode);
+        err.put("messageTemplate", messageTemplate);
+        err.put("parameters", parameters);
+        errorBunch[0] = err;
 
-        sendQueryResponse(400, replyAddress, body);
+        sendQueryResponse(400, replyAddress, errorBunch);
     }
 
     /**
