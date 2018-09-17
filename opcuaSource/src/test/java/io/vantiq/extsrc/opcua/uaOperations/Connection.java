@@ -608,7 +608,7 @@ public class Connection extends OpcUaTestBase {
         if (!inProcessOnly) {
             pubServers = Arrays.asList(Utils.OPC_INPROCESS_SERVER,
                     Utils.OPC_PUBLIC_SERVER_1,
-                    // Utils.OPC_PUBLIC_SERVER_2,   // The sterfive server appears to be down
+                    Utils.OPC_PUBLIC_SERVER_2,
                     Utils.OPC_PUBLIC_SERVER_3,
                     Utils.OPC_PUBLIC_SERVER_NO_GOOD
             );
