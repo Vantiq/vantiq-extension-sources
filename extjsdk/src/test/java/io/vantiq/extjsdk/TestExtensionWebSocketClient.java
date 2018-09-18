@@ -19,7 +19,6 @@ import okhttp3.RequestBody;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
@@ -296,7 +295,7 @@ public class TestExtensionWebSocketClient extends ExtjsdkTestBase{
     
     private class FalseWebSocket implements WebSocket {
         
-        Map<String,Object> lastData = new HashMap();
+        Map<String,Object> lastData = null;
         boolean messageReceived = false;
         
         
@@ -309,13 +308,7 @@ public class TestExtensionWebSocketClient extends ExtjsdkTestBase{
                 e.printStackTrace();
             }
             try {
-                Map<String, Object> latestData = mapper.readValue(buf.inputStream(), Map.class);
-                for (String k : latestData.keySet()) {
-                    Object o = latestData.get(k);
-                    if (o != null) {
-                        lastData.put(k, latestData.get(k));
-                    }
-                }
+                lastData = mapper.readValue(buf.inputStream(), Map.class);
             } catch (IOException e) {
                 e.printStackTrace();
             }
