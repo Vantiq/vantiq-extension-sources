@@ -56,6 +56,7 @@ public class YoloProcessor implements NeuralNetInterface {
     String pbFile = null;
     String labelsFile = null;
     String outputDir = null;
+    String saveImage = null;
     float threshold = 0.5f;
     int saveRate = 1;
     
@@ -66,7 +67,7 @@ public class YoloProcessor implements NeuralNetInterface {
     public void setupImageProcessing(Map<String, ?> neuralNetConfig, String modelDirectory) throws Exception {
         setup(neuralNetConfig, modelDirectory);
         try {
-            objectDetector = new ObjectDetector(threshold, pbFile, labelsFile, outputDir, saveRate);
+            objectDetector = new ObjectDetector(threshold, pbFile, labelsFile, saveImage, outputDir, saveRate);
         } catch (Exception e) {
             throw new Exception(this.getClass().getCanonicalName() + ".yoloBackendSetupError: " 
                     + "Failed to create new ObjectDetector", e);
@@ -108,8 +109,13 @@ public class YoloProcessor implements NeuralNetInterface {
        }
               
        // Setup the variables for saving images
-       if (neuralNet.get("outputDir") instanceof String) {
-           outputDir = (String) neuralNet.get("outputDir");
+       if (neuralNet.get("saveImage") instanceof String) {
+           saveImage = (String) neuralNet.get("saveImage");
+           if (!saveImage.equals("vantiq")) {
+               if (neuralNet.get("outputDir") instanceof String) {
+                   outputDir = (String) neuralNet.get("outputDir");
+               }
+           }
            if (neuralNet.get("saveRate") instanceof Integer) {
                saveRate = (Integer) neuralNet.get("saveRate");
            }
@@ -148,9 +154,13 @@ public class YoloProcessor implements NeuralNetInterface {
     public NeuralNetResults processImage(byte[] image, Map<String, ?> request) throws ImageProcessingException {
         List<Map<String, ?>> foundObjects;
         NeuralNetResults results = new NeuralNetResults();
+        String saveImage = null;
         String outputDir = null;
         String fileName = null;
         
+        if (request.get("NNsaveImage") instanceof String) {
+            saveImage = (String) request.get("NNsaveImage");
+        }
         if (request.get("NNoutputDir") instanceof String) {
             outputDir = (String) request.get("NNoutputDir");
         }
@@ -161,7 +171,7 @@ public class YoloProcessor implements NeuralNetInterface {
         long after;
         long before = System.currentTimeMillis();
         try {
-            foundObjects = objectDetector.detect(image, outputDir, fileName);
+            foundObjects = objectDetector.detect(image, saveImage, outputDir, fileName);
         } catch (IllegalArgumentException e) {
             throw new ImageProcessingException(this.getClass().getCanonicalName() + ".queryInvalidImage: " 
                     + "Data to be processed was invalid. Most likely it was not correctly encoded as a jpg.", e);

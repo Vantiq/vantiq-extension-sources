@@ -9,6 +9,11 @@ sourceCompatibility = 1.8
 repositories {
     mavenCentral()
     jcenter()
+    
+    // Used for uploading documents (images) to VANTIQ with VANTIQ SDK
+    maven {
+    	url "https://dl.bintray.com/vantiq/maven"
+    }
 }
 
 mainClassName = 'io.vantiq.extsrc.objectRecognition.ObjectRecognitionMain'
@@ -201,6 +206,9 @@ dependencies {
             compile files("${System.env.OPENCV_LOC}/opencv-${opencvVersion}.jar")
         }
     }
+    
+    // Used for uploading documents (images) to VANTIQ with VANTIQ SDK
+    compile 'io.vantiq:vantiq-sdk:1.0.17'
 
     // Use JUnit test framework
     testCompile 'junit:junit:4.12'

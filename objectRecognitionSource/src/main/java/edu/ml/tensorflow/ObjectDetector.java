@@ -12,6 +12,10 @@ import org.tensorflow.Graph;
 import org.tensorflow.Output;
 import org.tensorflow.Session;
 import org.tensorflow.Tensor;
+import io.vantiq.client.BaseResponseHandler;
+import io.vantiq.client.Vantiq;
+import io.vantiq.client.VantiqError;
+import okhttp3.Response;
 
 import java.nio.FloatBuffer;
 import java.text.SimpleDateFormat;
@@ -31,6 +35,7 @@ public class ObjectDetector {
     private final static Logger LOGGER = LoggerFactory.getLogger(ObjectDetector.class);
     private byte[] GRAPH_DEF;
     private List<String> LABELS;
+    private final static String SERVER = "https://dev.vantiq.com";  // URL for the VANTIQ server to connect to
 
     // This will be used to create
     // "year-month-date-hour-minute-seconds"
@@ -40,6 +45,7 @@ public class ObjectDetector {
     private int saveRate = 0;
     private int frameCount = 0;
     private float threshold;
+    private Vantiq vantiq = null;
     
     private Graph yoloGraph;
     private Session yoloSession;
@@ -54,18 +60,28 @@ public class ObjectDetector {
      * <br>Edited to initialize and save the graph for reuse, and allow the files to be specified dynamically.
      * @param graphFile The location of a proto buffer file describing the YOLO net 
      * @param labelFile The location of the labels for the given net.
-     * @param outputDir The directory to which images will be saved. If null no images are saved.
+     * @param saveImage The method in which the image shall be saved, (either in VANTIQ, locally, or both). If null no
+     *                  images are saved.
+     * @param outputDir The directory to which images will be saved.
      * @param saveRate  The rate at which images will be saved, once per every saveRate frames. Non-positive values are
      *                  functionally equivalent to 1. If outputDir is null does nothing.
      */
-    public ObjectDetector(float thresh, String graphFile, String labelFile, String outputDir, int saveRate) {
+    public ObjectDetector(float thresh, String graphFile, String labelFile, String saveImage, String outputDir, int saveRate) {
         try {
             GRAPH_DEF = IOUtil.readAllBytesOrExit(graphFile);
             LABELS = IOUtil.readAllLinesOrExit(labelFile);
-            if (outputDir != null) {
-                imageUtil = new ImageUtil(outputDir);
-                this.saveRate = saveRate;
-                frameCount = saveRate; // Capture the first image
+            if (saveImage != null) {
+                if (!saveImage.equals("vantiq") && !saveImage.equals("both") && !saveImage.equals("local")) {
+                    LOGGER.error("The config value for saveImage was invalid. Images will not be saved.");
+                } else {
+                    if (saveImage.equals("vantiq") || saveImage.equals("both")) {
+                        vantiq = new io.vantiq.client.Vantiq(SERVER);
+                        vantiq.setAccessToken("Ax6jSjrrwqnaHmZtWhXvVV1ym8ARfpta6wwmuPhy928=");
+                    }
+                    imageUtil = new ImageUtil(vantiq, outputDir);
+                    this.saveRate = saveRate;
+                    frameCount = saveRate; // Capture the first image
+                }
             }
         } catch (ServiceException ex) {
             throw new IllegalArgumentException("Problem reading files for the yolo graph.", ex);
@@ -109,9 +125,10 @@ public class ObjectDetector {
      * Detect objects on the given image
      * <br>Edited to return the results as a map and conditionally save the image
      * @param image     The image in jpeg format
-     * @param outputDir The directory to which the image should be written. If null and fileName is null, no image is 
-     *                  saved. If null and fileName is non-null, it uses the default directory if it exists or doesn't 
-     *                  save an image if the default directory doesn't exist.
+     * @param outputDir The directory to which the image should be written. If saveImage is null, no image is 
+     *                  saved. If null and saveImage is non-null, it uses the default directory "images"
+     * @param saveImage The method in which the image shall be saved, (either in VANTIQ, locally, or both). If null and
+     *                  filename is null, no image is saved. If null and fileName is non-null, images will be saved.
      * @param fileName  The name of the file to which the image is saved, with ".jpg" appended if necessary. If
      *                  {@code outputDir} is null and no default exists, no image is saved. If {@code fileName} is null
      *                  and {@code outputDir} is non-null, then the file is saved as
@@ -122,17 +139,25 @@ public class ObjectDetector {
      *                  {@code top},{@code left}, {@code bottom}, and {@code right} edges of the bounding box for
      *                  the object.
      */
-    public List<Map<String, ?>> detect(final byte[] image, String outputDir, String fileName) {
+    public List<Map<String, ?>> detect(final byte[] image, String saveImage, String outputDir, String fileName) {
         try (Tensor<Float> normalizedImage = normalizeImage(image)) {
             Date now = new Date(); // Saves the time before
             List<Recognition> recognitions = YOLOClassifier.getInstance(threshold).classifyImage(executeYOLOGraph(normalizedImage), LABELS);
             
             // Saves an image if requested
-            if (outputDir != null || (fileName != null && this.imageUtil != null)) {
+            if (saveImage != null || (fileName != null && this.imageUtil != null)) {
                 ImageUtil imageUtil = this.imageUtil;
-                
-                if (outputDir != null) {
-                    imageUtil = new ImageUtil(outputDir);
+                Vantiq vantiq = null;
+                if (saveImage != null) {
+                    if (!saveImage.equals("vantiq") || !saveImage.equals("both") || !saveImage.equals("local")) {
+                        LOGGER.error("The config value for saveImage was invalid. Images will not be saved.");
+                    } else {
+                        if (saveImage.equals("vantiq") || saveImage.equals("both")) {
+                            vantiq = new io.vantiq.client.Vantiq(SERVER);
+                            vantiq.setAccessToken("Ax6jSjrrwqnaHmZtWhXvVV1ym8ARfpta6wwmuPhy928=");
+                        }
+                        imageUtil = new ImageUtil(vantiq, outputDir);
+                    }
                 }
                 if (fileName == null) {
                     fileName = format.format(now) + ".jpg";
