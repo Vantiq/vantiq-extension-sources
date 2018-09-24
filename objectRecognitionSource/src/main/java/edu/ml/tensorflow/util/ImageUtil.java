@@ -24,7 +24,8 @@ import java.util.List;
  * Util class for image processing.
  */
 public class ImageUtil {
-    private final static Logger LOGGER = LoggerFactory.getLogger(ImageUtil.class);
+//    private final static Logger LOGGER = LoggerFactory.getLogger(ImageUtil.class);
+    Logger LOGGER = LoggerFactory.getLogger(this.getClass());
     private String outputDir = null; // Added to remember the output dir for each instance
     private Vantiq vantiq = null; // Added to allow image saving with VANTIQ
 
@@ -61,11 +62,7 @@ public class ImageUtil {
         }
 
         graphics.dispose();
-        if (outputDir.equals(null)) {
-            saveImage(vantiq, bufferedImage, "./" + fileName);
-        } else {
-            saveImage(vantiq, bufferedImage, "./" + outputDir + "/" + fileName);
-        }
+        saveImage(vantiq, bufferedImage, fileName);
     }
 
     /**
@@ -77,11 +74,11 @@ public class ImageUtil {
      * @param target    The name of the file to be written
      */
     public void saveImage(Vantiq vantiq, final BufferedImage image, final String target) {
-        if (!vantiq.equals(null) && !outputDir.equals(null)) {
+        if (!(vantiq==null) && !(outputDir==null)) {
             try {
                 IOUtil.createDirIfNotExists(new File(outputDir));
-                ImageIO.write(image,"jpg", new File(target));
-                File imgFile = new File(target);
+                ImageIO.write(image,"jpg", new File(outputDir + "/" + target));
+                File imgFile = new File(outputDir + "/" + target);
                 vantiq.upload(imgFile, 
                         "image/jpeg", 
                         target,
@@ -89,7 +86,6 @@ public class ImageUtil {
                             @Override public void onSuccess(Object body, Response response) {
                                 super.onSuccess(body, response);
                                 LOGGER.info("Content Location = " + this.getBodyAsJsonObject().get("content"));
-                                System.out.println("Content Location = " + this.getBodyAsJsonObject().get("content"));
                             }
                             
                             @Override public void onError(List<VantiqError> errors, Response response) {
@@ -101,18 +97,18 @@ public class ImageUtil {
                 LOGGER.error("Unable to save image {}!", target);
             }
             
-        } else if (!outputDir.equals(null)) {
+        } else if (!(outputDir==null)) {
             try {
                 IOUtil.createDirIfNotExists(new File(outputDir));
-                ImageIO.write(image,"jpg", new File(target));
+                ImageIO.write(image,"jpg", new File(outputDir + "/" + target));
             } catch (IOException e) {
                 LOGGER.error("Unable to save image {}!", target);
             }
-        } else if (!vantiq.equals(null)) {
+        } else if (!(vantiq==null)) {
             try {
-                IOUtil.createDirIfNotExists(new File(outputDir));
-                ImageIO.write(image,"jpg", new File(target));
-                File imgFile = new File(target);
+                IOUtil.createDirIfNotExists(new File("temp"));
+                ImageIO.write(image,"jpg", new File("temp/" + target));
+                File imgFile = new File("temp/" + target);
                 vantiq.upload(imgFile, 
                         "image/jpeg", 
                         target,

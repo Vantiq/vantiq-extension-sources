@@ -32,7 +32,8 @@ import static edu.ml.tensorflow.Config.SIZE;
  * ObjectDetector class to detect objects using pre-trained models with TensorFlow Java API.
  */
 public class ObjectDetector {
-    private final static Logger LOGGER = LoggerFactory.getLogger(ObjectDetector.class);
+//    private final static Logger LOGGER = LoggerFactory.getLogger(ObjectDetector.class);
+    Logger LOGGER = LoggerFactory.getLogger(this.getClass());
     private byte[] GRAPH_DEF;
     private List<String> LABELS;
     private final static String SERVER = "https://dev.vantiq.com";  // URL for the VANTIQ server to connect to
