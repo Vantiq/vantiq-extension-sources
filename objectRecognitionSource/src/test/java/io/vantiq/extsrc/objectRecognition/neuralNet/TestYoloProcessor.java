@@ -36,6 +36,7 @@ public class TestYoloProcessor extends NeuralNetTestBase {
     static final String PB_FILE            = "yolo.pb";
     static final String OUTPUT_DIR         = "src/test/resources/out";
     static final int    SAVE_RATE          = 2; // Saves every other so that we can know it counts correctly
+    static final String AUTH_TOKEN         = "Ax6jSjrrwqnaHmZtWhXvVV1ym8ARfpta6wwmuPhy928=";
     
     static YoloProcessor ypJson;
     
@@ -53,7 +54,7 @@ public class TestYoloProcessor extends NeuralNetTestBase {
         config.put("pbFile", PB_FILE);
         config.put("labelFile", LABEL_FILE);
         try {
-            ypJson.setupImageProcessing(config, MODEL_DIRECTORY);
+            ypJson.setupImageProcessing(config, MODEL_DIRECTORY, AUTH_TOKEN);
         } catch (Exception e) {
             fail("Could not setup the JSON YoloProcessor");
         }
@@ -111,8 +112,9 @@ public class TestYoloProcessor extends NeuralNetTestBase {
         config.put("labelFile", LABEL_FILE);
         config.put("outputDir", OUTPUT_DIR);
         config.put("saveRate", SAVE_RATE);
+        config.put("saveImage", "local");
         try {
-            ypImageSaver.setupImageProcessing(config, MODEL_DIRECTORY);
+            ypImageSaver.setupImageProcessing(config, MODEL_DIRECTORY, AUTH_TOKEN);
         } catch (Exception e) {
             fail("Could not setup the JSON YoloProcessor");
         }
@@ -166,6 +168,114 @@ public class TestYoloProcessor extends NeuralNetTestBase {
         }
     }
     
+    // Identical to testImageSaving(), but saveImage is set to "both". Behavior should be identical.
+    @Test
+    public void testImageSaving2() throws ImageProcessingException {
+        Map config = new LinkedHashMap<>();
+        YoloProcessor ypImageSaver = new YoloProcessor();
+        
+        config.put("pbFile", PB_FILE);
+        config.put("labelFile", LABEL_FILE);
+        config.put("outputDir", OUTPUT_DIR);
+        config.put("saveRate", SAVE_RATE);
+        config.put("saveImage", "both");
+        try {
+            ypImageSaver.setupImageProcessing(config, MODEL_DIRECTORY, AUTH_TOKEN);
+        } catch (Exception e) {
+            fail("Could not setup the JSON YoloProcessor");
+        }
+        
+        File d = new File(OUTPUT_DIR);
+        try {
+            // Ensure no results from previous tests
+            if (d.exists()) {
+                deleteDirectory(OUTPUT_DIR);
+            }
+            
+            NeuralNetResults results = ypImageSaver.processImage(getTestImage());
+            assert results != null;
+            assert results.getResults() != null;
+            
+            // Should save first image with timestamp
+            assert d.exists();
+            assert d.isDirectory();
+            assert d.listFiles().length == 1;
+            assert d.listFiles()[0].getName().matches(timestampPattern);
+            
+            results = null;
+            results = ypImageSaver.processImage(getTestImage());
+            assert results != null;
+            assert results.getResults() != null;
+            
+            // Every other so second should not save
+            assert d.exists();
+            assert d.isDirectory();
+            assert d.listFiles().length == 1;
+            
+            results = null;
+            results = ypImageSaver.processImage(getTestImage());
+            assert results != null;
+            assert results.getResults() != null;
+            
+            // Every other so third and first should be saved
+            assert d.exists();
+            assert d.isDirectory();
+            assert d.listFiles().length == 2;
+            assert d.listFiles()[0].getName().matches(timestampPattern);
+            assert d.listFiles()[1].getName().matches(timestampPattern);
+            
+        } finally {
+            // delete the directory even if the test fails
+            if (d.exists()) {
+                deleteDirectory(OUTPUT_DIR);
+            }
+            
+            ypImageSaver.close();
+        }
+    }
+    
+    // Similar to testImageSaving() and testImageSaving2(), but saveImage is set to "vantiq".
+    // No images should be saved locally.
+    @Test
+    public void testImageSaving3() throws ImageProcessingException {
+        Map config = new LinkedHashMap<>();
+        YoloProcessor ypImageSaver = new YoloProcessor();
+        
+        config.put("pbFile", PB_FILE);
+        config.put("labelFile", LABEL_FILE);
+        config.put("outputDir", OUTPUT_DIR);
+        config.put("saveRate", SAVE_RATE);
+        config.put("saveImage", "vantiq");
+        try {
+            ypImageSaver.setupImageProcessing(config, MODEL_DIRECTORY, AUTH_TOKEN);
+        } catch (Exception e) {
+            fail("Could not setup the JSON YoloProcessor");
+        }
+        
+        File d = new File(OUTPUT_DIR);
+        try {
+            // Ensure no results from previous tests
+            if (d.exists()) {
+                deleteDirectory(OUTPUT_DIR);
+            }
+            
+            NeuralNetResults results = ypImageSaver.processImage(getTestImage());
+            assert results != null;
+            assert results.getResults() != null;
+            
+            // Should not exist since images are not being saved locally.
+            assert !d.exists();
+            
+        } finally {
+            // delete the directory even if the test fails
+            if (d.exists()) {
+                deleteDirectory(OUTPUT_DIR);
+            }
+            
+            ypImageSaver.close();
+        }
+    }
+    
     @Test
     public void testQuery() throws ImageProcessingException {
         Map config = new LinkedHashMap<>();
@@ -176,7 +286,7 @@ public class TestYoloProcessor extends NeuralNetTestBase {
         config.put("outputDir", OUTPUT_DIR);
         config.put("saveRate", SAVE_RATE);
         try {
-            ypImageSaver.setupImageProcessing(config, MODEL_DIRECTORY);
+            ypImageSaver.setupImageProcessing(config, MODEL_DIRECTORY, AUTH_TOKEN);
         } catch (Exception e) {
             fail("Could not setup the JSON YoloProcessor");
         }
@@ -203,21 +313,49 @@ public class TestYoloProcessor extends NeuralNetTestBase {
             // Should not have saved image
             assert !d.exists();
             
+            // Test when saveImage is not set correctly
+            request.put("NNsaveImage", "jibberish");
             request.put("NNfileName", queryOutputFile);
+            request.put("NNoutputDir", queryOutputDir);
+            results = null;
+            results = ypImageSaver.processImage(getTestImage(), request);
+            assert results != null;
+            assert results.getResults() != null;
+            
+            // Should not have saved the image
+            assert !dNew.exists();
+            
+            // Test when saveImage is set to vantiq, even when NNoutputDir is specified
+            request.remove("NNsaveImage");
+            request.put("NNsaveImage", "vantiq");
+            results = null;
+            results = ypImageSaver.processImage(getTestImage(), request);
+            assert results != null;
+            assert results.getResults() != null;
+            
+            // Should not have saved the image locally
+            assert !dNew.exists();
+            
+            
+            request.put("NNsaveImage", "both");
+            request.put("NNfileName", queryOutputFile);
+            request.put("NNoutputDir", queryOutputDir);
             results = null;
             results = ypImageSaver.processImage(getTestImage(), request);
             assert results != null;
             assert results.getResults() != null;
             
             // Should have saved the image at queryOutputFile + ".jpg"
-            assert d.exists();
-            assert d.isDirectory();
-            assert d.listFiles().length == 1;
-            assert d.listFiles()[0].getName().equals(queryOutputFile + ".jpg");
+            assert dNew.exists();
+            assert dNew.isDirectory();
+            assert dNew.listFiles().length == 1;
+            assert dNew.listFiles()[0].getName().equals(queryOutputFile + ".jpg");
             
-            request.put("NNoutputDir", queryOutputDir);
+            
+            // Save with "local" instead of "both", and remove fileName
             request.remove("NNfileName");
-            assert !dNew.exists();
+            request.remove("NNsaveImage");
+            request.put("NNsaveImage", "local");
             results = null;
             results = ypImageSaver.processImage(getTestImage(), request);
             assert results != null;
@@ -226,8 +364,8 @@ public class TestYoloProcessor extends NeuralNetTestBase {
             // Should be saved with a timestamp
             assert dNew.exists();
             assert dNew.isDirectory();
-            assert dNew.listFiles().length == 1;
-            assert dNew.listFiles()[0].getName().matches(timestampPattern);
+            assert dNew.listFiles().length == 2;
+            assert dNew.listFiles()[1].getName().matches(timestampPattern);
             
             queryOutputFile += ".jpeg";
             request.put("NNfileName", queryOutputFile);
@@ -236,17 +374,7 @@ public class TestYoloProcessor extends NeuralNetTestBase {
             assert results != null;
             assert results.getResults() != null;
             
-            assert dNew.listFiles().length == 2;
-            
-            File[] files = dNew.listFiles();
-            
-            if (files[0].getName().matches(timestampPattern)) {
-                assert files[1].getName().equals(queryOutputFile);
-            } else if (files[0].getName().equals(queryOutputFile)) {
-                assert files[1].getName().matches(timestampPattern);
-            } else {
-                fail("Files are improperly named");
-            }
+            assert dNew.listFiles().length == 3;
             
         } finally {
             // delete the directory even if the test fails

@@ -37,9 +37,10 @@ import io.vantiq.extsrc.objectRecognition.exception.ImageProcessingException;
  *                      will be placed. Images will be saved as
  *                      "&lt;year&gt;-&lt;month&gt;-&lt;day&gt;--&lt;hour&gt;-&lt;minute&gt;-&lt;second&gt;.jpg"
  *                      where each value will zero-filled if necessary, e.g. "2018-08-14--06-30-22.jpg". For
- *                      non-Queries, no images will be saved if not set. For Queries, either this must be set in the
- *                      Query, or this must be set in the config and fileName must be set in the Query for images to be
- *                      saved.
+ *                      non-Queries, no images will be saved if not set.
+ *      <li>{@code saveImage}: Optional. Config and Query. Must be set in order to save images. Acceptable values are
+ *                      "local", "vantiq", or "both".
+ *      <li>{@code authToken}: Required. Config and Query. Must be set in order use VANTIQ SDK.
  *      <li>{@code fileName}: Optional. Query only. The name of the file that will be saved. Defaults to
  *                      "&lt;year&gt;-&lt;month&gt;-&lt;day&gt;--&lt;hour&gt;-&lt;minute&gt;-&lt;second&gt;.jpg"
  *                      if not set.
@@ -57,6 +58,7 @@ public class YoloProcessor implements NeuralNetInterface {
     String labelsFile = null;
     String outputDir = null;
     String saveImage = null;
+    String authToken;
     float threshold = 0.5f;
     int saveRate = 1;
     
@@ -64,10 +66,10 @@ public class YoloProcessor implements NeuralNetInterface {
     
     
     @Override
-    public void setupImageProcessing(Map<String, ?> neuralNetConfig, String modelDirectory) throws Exception {
-        setup(neuralNetConfig, modelDirectory);
+    public void setupImageProcessing(Map<String, ?> neuralNetConfig, String modelDirectory, String authToken) throws Exception {
+        setup(neuralNetConfig, modelDirectory, authToken);
         try {
-            objectDetector = new ObjectDetector(threshold, pbFile, labelsFile, saveImage, outputDir, saveRate);
+            objectDetector = new ObjectDetector(threshold, pbFile, labelsFile, saveImage, outputDir, saveRate, authToken);
         } catch (Exception e) {
             throw new Exception(this.getClass().getCanonicalName() + ".yoloBackendSetupError: " 
                     + "Failed to create new ObjectDetector", e);
@@ -78,9 +80,11 @@ public class YoloProcessor implements NeuralNetInterface {
      * Save the necessary data from the given map.
      * @param neuralNet         The configuration from 'neuralNet' in the config document
      * @param modelDirectory    The directory in which the .pb and label files are placed
+     * @param authToken         The authToken used to with the VANTIQ SDK
      * @throws Exception        Thrown when an invalid configuration is requested
      */
-    private void setup(Map<String, ?> neuralNet, String modelDirectory) throws Exception {
+    private void setup(Map<String, ?> neuralNet, String modelDirectory, String authToken) throws Exception {
+        this.authToken = authToken;
         // Obtain the files for the net
        if (neuralNet.get("pbFile") instanceof String && neuralNet.get("labelFile") instanceof String) {
            if (!modelDirectory.equals("") && !modelDirectory.endsWith("/") && !modelDirectory.endsWith("\\")) {
@@ -171,7 +175,7 @@ public class YoloProcessor implements NeuralNetInterface {
         long after;
         long before = System.currentTimeMillis();
         try {
-            foundObjects = objectDetector.detect(image, saveImage, outputDir, fileName);
+            foundObjects = objectDetector.detect(image, saveImage, outputDir, fileName, authToken);
         } catch (IllegalArgumentException e) {
             throw new ImageProcessingException(this.getClass().getCanonicalName() + ".queryInvalidImage: " 
                     + "Data to be processed was invalid. Most likely it was not correctly encoded as a jpg.", e);
