@@ -12,10 +12,7 @@ import org.tensorflow.Graph;
 import org.tensorflow.Output;
 import org.tensorflow.Session;
 import org.tensorflow.Tensor;
-import io.vantiq.client.BaseResponseHandler;
 import io.vantiq.client.Vantiq;
-import io.vantiq.client.VantiqError;
-import okhttp3.Response;
 
 import java.nio.FloatBuffer;
 import java.text.SimpleDateFormat;
@@ -32,11 +29,9 @@ import static edu.ml.tensorflow.Config.SIZE;
  * ObjectDetector class to detect objects using pre-trained models with TensorFlow Java API.
  */
 public class ObjectDetector {
-//    private final static Logger LOGGER = LoggerFactory.getLogger(ObjectDetector.class);
-    Logger LOGGER = LoggerFactory.getLogger(this.getClass());
+    private final static Logger LOGGER = LoggerFactory.getLogger(ObjectDetector.class);
     private byte[] GRAPH_DEF;
     private List<String> LABELS;
-    private final static String SERVER = "https://dev.vantiq.com";  // URL for the VANTIQ server to connect to
 
     // This will be used to create
     // "year-month-date-hour-minute-seconds"
@@ -61,29 +56,21 @@ public class ObjectDetector {
      * <br>Edited to initialize and save the graph for reuse, and allow the files to be specified dynamically.
      * @param graphFile The location of a proto buffer file describing the YOLO net 
      * @param labelFile The location of the labels for the given net.
-     * @param saveImage The method in which the image shall be saved, (either in VANTIQ, locally, or both). If null no
-     *                  images are saved.
+     * @param imageUtil The instance of the ImageUtil class used to save images. Either initialized, or set to null.
      * @param outputDir The directory to which images will be saved.
      * @param saveRate  The rate at which images will be saved, once per every saveRate frames. Non-positive values are
      *                  functionally equivalent to 1. If outputDir is null does nothing.
-     * @param authToken The authToken used to access the VANTIQ SDK
+     * @param vantiq    The Vantiq variable used to connect to the VANTIQ SDK. Either authenticated, or set to null.
      */
-    public ObjectDetector(float thresh, String graphFile, String labelFile, String saveImage, String outputDir, int saveRate, String authToken) {
+    public ObjectDetector(float thresh, String graphFile, String labelFile, ImageUtil imageUtil, String outputDir, int saveRate, Vantiq vantiq) {
         try {
             GRAPH_DEF = IOUtil.readAllBytesOrExit(graphFile);
             LABELS = IOUtil.readAllLinesOrExit(labelFile);
-            if (saveImage != null) {
-                if (!saveImage.equals("vantiq") && !saveImage.equals("both") && !saveImage.equals("local")) {
-                    LOGGER.error("The config value for saveImage was invalid. Images will not be saved.");
-                } else {
-                    if (saveImage.equals("vantiq") || saveImage.equals("both")) {
-                        vantiq = new io.vantiq.client.Vantiq(SERVER);
-                        vantiq.setAccessToken(authToken);
-                    }
-                    imageUtil = new ImageUtil(vantiq, outputDir);
-                    this.saveRate = saveRate;
-                    frameCount = saveRate; // Capture the first image
-                }
+            this.imageUtil = imageUtil;
+            this.vantiq = vantiq;
+            if (imageUtil != null) {
+                this.saveRate = saveRate;
+                frameCount = saveRate;
             }
         } catch (ServiceException ex) {
             throw new IllegalArgumentException("Problem reading files for the yolo graph.", ex);
@@ -118,7 +105,6 @@ public class ObjectDetector {
                 imageUtil.labelImage(image, recognitions, fileName);
                 frameCount = 0;
             }
-            //Namir's Method
             return returnJSON(recognitions);
         }
     }
@@ -127,54 +113,38 @@ public class ObjectDetector {
      * Detect objects on the given image
      * <br>Edited to return the results as a map and conditionally save the image
      * @param image     The image in jpeg format
-     * @param outputDir The directory to which the image should be written. If saveImage is null, no image is 
-     *                  saved. If null and saveImage is non-null, it uses the default directory "images"
-     * @param saveImage The method in which the image shall be saved, (either in VANTIQ, locally, or both). If null and
+     * @param outputDir The directory to which the image should be written, (under current working directory unless
+     *                  otherwise specified). If saveImage is null, no image is saved.
+     * @param saveImage The destination to which the image shall be saved, (either in VANTIQ, locally, or both). If null and
      *                  filename is null, no image is saved. If null and fileName is non-null, images will be saved.
      * @param fileName  The name of the file to which the image is saved, with ".jpg" appended if necessary. If
      *                  {@code outputDir} is null and no default exists, no image is saved. If {@code fileName} is null
      *                  and {@code outputDir} is non-null, then the file is saved as
      *                  "&lt;year&gt;-&lt;month&gt;-&lt;day&gt;--&lt;hour&gt;-&lt;minute&gt;-&lt;second&gt;.jpg"
-     * @param authToken The authToken used to access the VANTIQ SDK.
+     * @param vantiq    The Vantiq variable used to connect to the VANTIQ SDK. Either authenticated, or set to null.
      * @return          A List of Maps, each of which has a {@code label} stating the type of the object identified, a
      *                  {@code confidence} specifying on a scale of 0-1 how confident the neural net is that the
      *                  identification is accurate, and a {@code location} containing the coordinates for the
      *                  {@code top},{@code left}, {@code bottom}, and {@code right} edges of the bounding box for
      *                  the object.
      */
-    public List<Map<String, ?>> detect(final byte[] image, String saveImage, String outputDir, String fileName, String authToken) {
+    public List<Map<String, ?>> detect(final byte[] image, String outputDir, String fileName, Vantiq vantiq) {
         try (Tensor<Float> normalizedImage = normalizeImage(image)) {
             Date now = new Date(); // Saves the time before
             List<Recognition> recognitions = YOLOClassifier.getInstance(threshold).classifyImage(executeYOLOGraph(normalizedImage), LABELS);
             
             // Saves an image if requested
-            if (saveImage != null || (fileName != null && this.imageUtil != null)) {
+            if (outputDir != null || (fileName != null && this.imageUtil != null)) {
                 ImageUtil imageUtil = this.imageUtil;
-                Vantiq vantiq = null;
-                if (saveImage != null) {
-                    if (!saveImage.equals("vantiq") && !saveImage.equals("both") && !saveImage.equals("local")) {
-                        LOGGER.error("The config value for saveImage was invalid. Images will not be saved.");
-                    } else {
-                        if (saveImage.equals("vantiq") || saveImage.equals("both")) {
-                            vantiq = new io.vantiq.client.Vantiq(SERVER);
-                            vantiq.setAccessToken(authToken);
-                        }
-                        if (saveImage.equals("vantiq")) {
-                            imageUtil = new ImageUtil(vantiq, null);
-                        } else {
-                            imageUtil = new ImageUtil(vantiq, outputDir);
-                        }
-                        if (fileName == null) {
-                            fileName = format.format(now) + ".jpg";
-                        } else if (!fileName.endsWith(".jpg") && !fileName.endsWith(".jpeg")) {
-                            fileName += ".jpg";
-                        }
-                        
-                        imageUtil.labelImage(image, recognitions, fileName);
-                    }
+                imageUtil = new ImageUtil(vantiq, outputDir);
+                if (fileName == null) {
+                    fileName = format.format(now) + ".jpg";
+                } else if (!fileName.endsWith(".jpg") && !fileName.endsWith(".jpeg")) {
+                    fileName += ".jpg";
                 }
+                
+                imageUtil.labelImage(image, recognitions, fileName);
             }
-            //Namir's Method
             return returnJSON(recognitions);
         }
     }

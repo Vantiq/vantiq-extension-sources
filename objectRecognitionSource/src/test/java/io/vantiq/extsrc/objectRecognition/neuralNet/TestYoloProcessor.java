@@ -37,6 +37,7 @@ public class TestYoloProcessor extends NeuralNetTestBase {
     static final String OUTPUT_DIR         = "src/test/resources/out";
     static final int    SAVE_RATE          = 2; // Saves every other so that we can know it counts correctly
     static final String AUTH_TOKEN         = "Ax6jSjrrwqnaHmZtWhXvVV1ym8ARfpta6wwmuPhy928=";
+    static final String SERVER             = "https://dev.vantiq.com";
     
     static YoloProcessor ypJson;
     
@@ -54,7 +55,7 @@ public class TestYoloProcessor extends NeuralNetTestBase {
         config.put("pbFile", PB_FILE);
         config.put("labelFile", LABEL_FILE);
         try {
-            ypJson.setupImageProcessing(config, MODEL_DIRECTORY, AUTH_TOKEN);
+            ypJson.setupImageProcessing(config, MODEL_DIRECTORY, AUTH_TOKEN, SERVER);
         } catch (Exception e) {
             fail("Could not setup the JSON YoloProcessor");
         }
@@ -114,7 +115,7 @@ public class TestYoloProcessor extends NeuralNetTestBase {
         config.put("saveRate", SAVE_RATE);
         config.put("saveImage", "local");
         try {
-            ypImageSaver.setupImageProcessing(config, MODEL_DIRECTORY, AUTH_TOKEN);
+            ypImageSaver.setupImageProcessing(config, MODEL_DIRECTORY, AUTH_TOKEN, SERVER);
         } catch (Exception e) {
             fail("Could not setup the JSON YoloProcessor");
         }
@@ -170,7 +171,7 @@ public class TestYoloProcessor extends NeuralNetTestBase {
     
     // Identical to testImageSaving(), but saveImage is set to "both". Behavior should be identical.
     @Test
-    public void testImageSaving2() throws ImageProcessingException {
+    public void testImageSavingBoth() throws ImageProcessingException {
         Map config = new LinkedHashMap<>();
         YoloProcessor ypImageSaver = new YoloProcessor();
         
@@ -180,7 +181,7 @@ public class TestYoloProcessor extends NeuralNetTestBase {
         config.put("saveRate", SAVE_RATE);
         config.put("saveImage", "both");
         try {
-            ypImageSaver.setupImageProcessing(config, MODEL_DIRECTORY, AUTH_TOKEN);
+            ypImageSaver.setupImageProcessing(config, MODEL_DIRECTORY, AUTH_TOKEN, SERVER);
         } catch (Exception e) {
             fail("Could not setup the JSON YoloProcessor");
         }
@@ -237,7 +238,7 @@ public class TestYoloProcessor extends NeuralNetTestBase {
     // Similar to testImageSaving() and testImageSaving2(), but saveImage is set to "vantiq".
     // No images should be saved locally.
     @Test
-    public void testImageSaving3() throws ImageProcessingException {
+    public void testImageSavingVantiq() throws ImageProcessingException {
         Map config = new LinkedHashMap<>();
         YoloProcessor ypImageSaver = new YoloProcessor();
         
@@ -247,7 +248,7 @@ public class TestYoloProcessor extends NeuralNetTestBase {
         config.put("saveRate", SAVE_RATE);
         config.put("saveImage", "vantiq");
         try {
-            ypImageSaver.setupImageProcessing(config, MODEL_DIRECTORY, AUTH_TOKEN);
+            ypImageSaver.setupImageProcessing(config, MODEL_DIRECTORY, AUTH_TOKEN, SERVER);
         } catch (Exception e) {
             fail("Could not setup the JSON YoloProcessor");
         }
@@ -286,7 +287,7 @@ public class TestYoloProcessor extends NeuralNetTestBase {
         config.put("outputDir", OUTPUT_DIR);
         config.put("saveRate", SAVE_RATE);
         try {
-            ypImageSaver.setupImageProcessing(config, MODEL_DIRECTORY, AUTH_TOKEN);
+            ypImageSaver.setupImageProcessing(config, MODEL_DIRECTORY, AUTH_TOKEN, SERVER);
         } catch (Exception e) {
             fail("Could not setup the JSON YoloProcessor");
         }
@@ -364,8 +365,16 @@ public class TestYoloProcessor extends NeuralNetTestBase {
             // Should be saved with a timestamp
             assert dNew.exists();
             assert dNew.isDirectory();
-            assert dNew.listFiles().length == 2;
-            assert dNew.listFiles()[1].getName().matches(timestampPattern);
+            File[]  listOfFiles =  dNew.listFiles();
+            assert listOfFiles.length == 2;
+            
+            // listFiles() Returns data in no specific order, so we check to make sure we are grabbing correct file
+            if (listOfFiles[0].getName().equals("file.jpg")) {
+                assert listOfFiles[1].getName().matches(timestampPattern);
+            } else {
+                assert listOfFiles[0].getName().matches(timestampPattern);
+            }
+            
             
             queryOutputFile += ".jpeg";
             request.put("NNfileName", queryOutputFile);

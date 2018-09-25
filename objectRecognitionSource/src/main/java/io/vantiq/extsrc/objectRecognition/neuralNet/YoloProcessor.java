@@ -16,7 +16,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import edu.ml.tensorflow.ObjectDetector;
+import edu.ml.tensorflow.util.ImageUtil;
 import io.vantiq.extsrc.objectRecognition.exception.ImageProcessingException;
+
+import io.vantiq.client.Vantiq;
 
 /**
  * This is a TensorFlow implementation of YOLO (You Only Look Once). The identified objects have a {@code label} stating
@@ -58,7 +61,10 @@ public class YoloProcessor implements NeuralNetInterface {
     String labelsFile = null;
     String outputDir = null;
     String saveImage = null;
+    Vantiq vantiq;
+    String server;
     String authToken;
+    ImageUtil imageUtil;
     float threshold = 0.5f;
     int saveRate = 1;
     
@@ -66,10 +72,10 @@ public class YoloProcessor implements NeuralNetInterface {
     
     
     @Override
-    public void setupImageProcessing(Map<String, ?> neuralNetConfig, String modelDirectory, String authToken) throws Exception {
-        setup(neuralNetConfig, modelDirectory, authToken);
+    public void setupImageProcessing(Map<String, ?> neuralNetConfig, String modelDirectory, String authToken, String server) throws Exception {
+        setup(neuralNetConfig, modelDirectory, authToken, server);
         try {
-            objectDetector = new ObjectDetector(threshold, pbFile, labelsFile, saveImage, outputDir, saveRate, authToken);
+            objectDetector = new ObjectDetector(threshold, pbFile, labelsFile, imageUtil, outputDir, saveRate, vantiq);
         } catch (Exception e) {
             throw new Exception(this.getClass().getCanonicalName() + ".yoloBackendSetupError: " 
                     + "Failed to create new ObjectDetector", e);
@@ -83,7 +89,8 @@ public class YoloProcessor implements NeuralNetInterface {
      * @param authToken         The authToken used to with the VANTIQ SDK
      * @throws Exception        Thrown when an invalid configuration is requested
      */
-    private void setup(Map<String, ?> neuralNet, String modelDirectory, String authToken) throws Exception {
+    private void setup(Map<String, ?> neuralNet, String modelDirectory, String authToken, String server) throws Exception {
+        this.server = server;
         this.authToken = authToken;
         // Obtain the files for the net
        if (neuralNet.get("pbFile") instanceof String && neuralNet.get("labelFile") instanceof String) {
@@ -115,14 +122,23 @@ public class YoloProcessor implements NeuralNetInterface {
        // Setup the variables for saving images
        if (neuralNet.get("saveImage") instanceof String) {
            saveImage = (String) neuralNet.get("saveImage");
-           if (!saveImage.equals("vantiq")) {
+           if (!saveImage.equalsIgnoreCase("vantiq") && !saveImage.equalsIgnoreCase("both") && !saveImage.equalsIgnoreCase("local")) {
+               log.error("The config value for saveImage was invalid. Images will not be saved.");
+           }
+           if (!saveImage.equalsIgnoreCase("vantiq")) {
                if (neuralNet.get("outputDir") instanceof String) {
                    outputDir = (String) neuralNet.get("outputDir");
                }
            }
+           if (saveImage.equalsIgnoreCase("vantiq") || saveImage.equalsIgnoreCase("both")) {
+               vantiq = new io.vantiq.client.Vantiq(server);
+               vantiq.setAccessToken(authToken);
+           }
+           imageUtil = new ImageUtil(vantiq, outputDir);
            if (neuralNet.get("saveRate") instanceof Integer) {
                saveRate = (Integer) neuralNet.get("saveRate");
            }
+           
        }
    }
 
@@ -161,21 +177,32 @@ public class YoloProcessor implements NeuralNetInterface {
         String saveImage = null;
         String outputDir = null;
         String fileName = null;
+        Vantiq vantiq = null;
         
         if (request.get("NNsaveImage") instanceof String) {
             saveImage = (String) request.get("NNsaveImage");
-        }
-        if (request.get("NNoutputDir") instanceof String) {
-            outputDir = (String) request.get("NNoutputDir");
-        }
-        if (request.get("NNfileName") instanceof String) {
-            fileName = (String) request.get("NNfileName");
+            if (!saveImage.equalsIgnoreCase("vantiq") && !saveImage.equalsIgnoreCase("both") && !saveImage.equalsIgnoreCase("local")) {
+                log.error("The config value for saveImage was invalid. Images will not be saved.");
+            } else {
+                if (saveImage.equalsIgnoreCase("vantiq") || saveImage.equalsIgnoreCase("both")) {
+                    vantiq = new io.vantiq.client.Vantiq(server);
+                    vantiq.setAccessToken(authToken);
+                }
+                if (!saveImage.equalsIgnoreCase("vantiq")) {
+                    if (request.get("NNoutputDir") instanceof String) {
+                        outputDir = (String) request.get("NNoutputDir");
+                    }
+                }
+                if (request.get("NNfileName") instanceof String) {
+                    fileName = (String) request.get("NNfileName");
+                }
+            }
         }
         
         long after;
         long before = System.currentTimeMillis();
         try {
-            foundObjects = objectDetector.detect(image, saveImage, outputDir, fileName, authToken);
+            foundObjects = objectDetector.detect(image, outputDir, fileName, vantiq);
         } catch (IllegalArgumentException e) {
             throw new ImageProcessingException(this.getClass().getCanonicalName() + ".queryInvalidImage: " 
                     + "Data to be processed was invalid. Most likely it was not correctly encoded as a jpg.", e);

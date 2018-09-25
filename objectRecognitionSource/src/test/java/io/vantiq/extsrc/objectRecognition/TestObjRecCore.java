@@ -319,7 +319,7 @@ public class TestObjRecCore extends ObjRecTestBase {
         }
         
         try {
-            neuralNet.setupImageProcessing(conf, modelDirectory, authToken);
+            neuralNet.setupImageProcessing(conf, modelDirectory, authToken, targetVantiqServer);
             return true;
         } catch (Exception e) {
             return false;

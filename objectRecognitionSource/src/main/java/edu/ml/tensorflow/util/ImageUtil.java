@@ -23,8 +23,7 @@ import java.util.List;
  * Util class for image processing.
  */
 public class ImageUtil {
-//    private final static Logger LOGGER = LoggerFactory.getLogger(ImageUtil.class);
-    Logger LOGGER = LoggerFactory.getLogger(this.getClass());
+    private final static Logger LOGGER = LoggerFactory.getLogger(ImageUtil.class);
     private String outputDir = null; // Added to remember the output dir for each instance
     private Vantiq vantiq = null; // Added to allow image saving with VANTIQ
 
@@ -73,54 +72,25 @@ public class ImageUtil {
      * @param target    The name of the file to be written
      */
     public void saveImage(Vantiq vantiq, final BufferedImage image, final String target) {
-        if (!(vantiq==null) && !(outputDir==null)) {
+        File fileToUpload = null;
+        if (outputDir != null) {
             try {
                 IOUtil.createDirIfNotExists(new File(outputDir));
-                ImageIO.write(image,"jpg", new File(outputDir + "/" + target));
-                File imgFile = new File(outputDir + "/" + target);
-                vantiq.upload(imgFile, 
-                        "image/jpeg", 
-                        target,
-                        new BaseResponseHandler() {
-                            @Override public void onSuccess(Object body, Response response) {
-                                super.onSuccess(body, response);
-                                LOGGER.info("Content Location = " + this.getBodyAsJsonObject().get("content"));
-                            }
-                            
-                            @Override public void onError(List<VantiqError> errors, Response response) {
-                                super.onError(errors, response);
-                                LOGGER.error("Errors uploading image with VANTIQ SDK: " + errors);
-                            }
-                });
-            } catch(IOException e) {
-                LOGGER.error("Unable to save image {}!", target);
-            }
-            
-        } else if (!(outputDir==null)) {
-            try {
-                IOUtil.createDirIfNotExists(new File(outputDir));
-                ImageIO.write(image,"jpg", new File(outputDir + "/" + target));
+                ImageIO.write(image,"jpg", new File(outputDir + File.separator + target));
+                fileToUpload = new File(outputDir + File.separator + target);
             } catch (IOException e) {
-                LOGGER.error("Unable to save image {}!", target);
+                LOGGER.error("Unable to save image {}", target, e);
             }
-        } else if (!(vantiq==null)) {
-            try {
-                IOUtil.createDirIfNotExists(new File("temp"));
-                ImageIO.write(image,"jpg", new File("temp/" + target));
-                File imgFile = new File("temp/" + target);
-                vantiq.upload(imgFile, 
+        }
+        if (vantiq != null) {
+            if (fileToUpload != null) {
+                vantiq.upload(fileToUpload, 
                         "image/jpeg", 
                         target,
                         new BaseResponseHandler() {
                             @Override public void onSuccess(Object body, Response response) {
                                 super.onSuccess(body, response);
-                                LOGGER.info("Content Location = " + this.getBodyAsJsonObject().get("content"));
-                                
-                                if(imgFile.delete()) { 
-                                    LOGGER.info("Temp file deleted successfully"); 
-                                } else { 
-                                    LOGGER.warn("Failed to delete temp file"); 
-                                } 
+                                LOGGER.trace("Content Location = " + this.getBodyAsJsonObject().get("content"));
                             }
                             
                             @Override public void onError(List<VantiqError> errors, Response response) {
@@ -128,13 +98,34 @@ public class ImageUtil {
                                 LOGGER.error("Errors uploading image with VANTIQ SDK: " + errors);
                             }
                 });
-                
-                
-            } catch(IOException e) {
-                LOGGER.error("Unable to save image {}!", target);
+            } else {
+                try {
+                    File imgFile = File.createTempFile("tmp", ".jpg");
+                    imgFile.deleteOnExit();
+                    ImageIO.write(image, "jpg", imgFile);
+                    vantiq.upload(imgFile, 
+                            "image/jpeg", 
+                            target,
+                            new BaseResponseHandler() {
+                                @Override public void onSuccess(Object body, Response response) {
+                                    super.onSuccess(body, response);
+                                    LOGGER.trace("Content Location = " + this.getBodyAsJsonObject().get("content"));
+                                    if(imgFile.delete()) { 
+                                        LOGGER.trace("Temp file deleted successfully"); 
+                                    } else { 
+                                        LOGGER.warn("Failed to delete temp file"); 
+                                    } 
+                                }
+                                
+                                @Override public void onError(List<VantiqError> errors, Response response) {
+                                    super.onError(errors, response);
+                                    LOGGER.error("Errors uploading image with VANTIQ SDK: " + errors);
+                                }
+                    });
+                } catch (IOException e) {
+                    LOGGER.error("Unable to save image {}", target, e);
+                }
             }
-        } else {
-            LOGGER.error("Unable to save image {}!", target);
         }
     }
 
