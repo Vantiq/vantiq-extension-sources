@@ -138,7 +138,6 @@ public class YoloProcessor implements NeuralNetInterface {
            if (neuralNet.get("saveRate") instanceof Integer) {
                saveRate = (Integer) neuralNet.get("saveRate");
            }
-           
        }
    }
 
