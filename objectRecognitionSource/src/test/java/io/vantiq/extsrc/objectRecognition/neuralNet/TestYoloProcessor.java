@@ -36,8 +36,8 @@ public class TestYoloProcessor extends NeuralNetTestBase {
     static final String PB_FILE            = "yolo.pb";
     static final String OUTPUT_DIR         = "src/test/resources/out";
     static final int    SAVE_RATE          = 2; // Saves every other so that we can know it counts correctly
-    static final String AUTH_TOKEN         = "Ax6jSjrrwqnaHmZtWhXvVV1ym8ARfpta6wwmuPhy928=";
-    static final String SERVER             = "https://dev.vantiq.com";
+    static final String AUTH_TOKEN         = testAuthToken; // "Ax6jSjrrwqnaHmZtWhXvVV1ym8ARfpta6wwmuPhy928=";
+    static final String SERVER             = testVantiqServer; // "https://dev.vantiq.com";
     
     static YoloProcessor ypJson;
     

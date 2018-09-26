@@ -109,6 +109,12 @@ tasks.withType(Test) {
     } else {
         systemProperty "java.library.path", "${System.env.OPENCV_LOC}:${System.env.TENSORFLOW_JNI}"
     }
+    if ("$System.env.TestAuthToken" != "") {
+        systemProperty "TestAuthToken", rootProject.findProperty("TestAuthToken") ?: "empty"
+    }
+    if (rootProject.hasProperty("TestVantiqServer")) {
+        systemProperty "TestVantiqServer", rootProject.findProperty("TestVantiqServer") ?: "empty"
+    }
 }
 
 // Logs a warning if the .dll/.so/.dylib cannot be found for OpenCV when OpenCV is needed
