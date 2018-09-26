@@ -30,7 +30,6 @@ public class ObjRecTestBase {
     public static void getProps() {
         testAuthToken = System.getProperty("TestAuthToken", null);
         testVantiqServer = System.getProperty("TestVantiqServer", null);
-        System.out.println("SETUP: Got VS: " + testVantiqServer + ", Token: " + testVantiqServer);
     }
     
     public static void deleteFile(String fileName) {
