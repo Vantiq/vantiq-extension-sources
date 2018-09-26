@@ -134,7 +134,7 @@ public class ObjectDetector {
             List<Recognition> recognitions = YOLOClassifier.getInstance(threshold).classifyImage(executeYOLOGraph(normalizedImage), LABELS);
             
             // Saves an image if requested
-            if (outputDir != null || (fileName != null && this.imageUtil != null)) {
+            if (outputDir != null || vantiq != null || (fileName != null && this.imageUtil != null)) {
                 ImageUtil imageUtil = this.imageUtil;
                 imageUtil = new ImageUtil(vantiq, outputDir);
                 if (fileName == null) {
