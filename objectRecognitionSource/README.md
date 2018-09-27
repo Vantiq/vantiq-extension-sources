@@ -12,6 +12,8 @@ Again, other types of images and videos can be processed by implementing the Ima
 
 ## Prerequisites
 
+**IMPORTANT:** Read the [Testing](#testing) section before building this project.
+
 An understanding of the VANTIQ Extension Source SDK is assumed. Please read the Extension Source README.md for more information.
 
 The user must define the Object Recognition Source implementation in VANTIQ. For an example of the definition, please see the *objRecImpl.json* file located in the *src/test/resources* directory.
@@ -186,8 +188,14 @@ Most of the options required for neuralNet are dependent on the specific impleme
         the `io.vantiq.objectRecognition.neuralNet` package. This implementation is not provided, and must be written by
         the user.
 *   threshold: Optional. Threshold is used to decide if the Neural Net's result is a valid one, by comparing the resulting confidence of the recognition against the threshold value. A high threshold will lead to fewer results, all with a higher confidence. A low threshold will lead to more results, some of which having a lower confidence. Threshold defaults to 0.5 if not specified, or if invalid. There are two ways to specify this value:
-    1.   The value can be a number between 0 and 1 (i.e. 0.4, or 0.2, etc...)
-    2.   The value can be a number between 0 and 100 (i.e. 40, or 20, etc...)
+    1.  The value can be a number between 0 and 1 (i.e. 0.4, or 0.2, etc...)
+    2.  The value can be a number between 0 and 100 (i.e. 40, or 20, etc...)
+*   saveImage: Optional. The value can be one of the following three options:
+    1.  "local"     - This will save images to the disk (outputDir must be specified in order for this to work).
+    2.  "vantiq"    - This will save images as documents in VANTIQ. No images will be saved locally even if outputDir is specified.
+    3.  "both"      - This will save the images both to the disk and as documents in VANTIQ. (outputDir must be specified in order to save locally)
+*   outputDir: Optional. The directory in which images will be saved locally. Images will only be saved locally if saveImage is set to be either "local" or "both".
+*   saveRate: Optional. The rate at which images will be saved (i.e. "saveRate": 3 - This will save every 3rd image that is captured). If not specified, the value will default to 1 which saves every captured image.
 
 ## Messages from the Source<a name="msgFormat" id="msgFormat"></a>
 
@@ -421,7 +429,12 @@ The options are as follows. Remember to prepend "NN" when using an option in a Q
 
 No additional data is sent.
 
-## Testing
+## Testing<a name="testing" id="testing"></a>
+    
+In order to properly run the tests, you must first add the VANTIQ server you wish to connect to and corresponding auth token to your gradle.properties file in the ~/.gradle directory as follows:
+    
+    TestAuthToken=<yourAuthToken>
+    TestVantiqServer=<desiredVantiqServer>
 
 The test will download two large (~200 MB) files before running the test. If you do not want this to occur, do not run
 test or build.  
