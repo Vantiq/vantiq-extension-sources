@@ -15,6 +15,7 @@ import static org.junit.Assume.assumeTrue;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -27,8 +28,13 @@ import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import io.vantiq.client.BaseResponseHandler;
+import io.vantiq.client.Vantiq;
+import io.vantiq.client.VantiqError;
+import io.vantiq.client.VantiqResponse;
 import io.vantiq.extsrc.objectRecognition.exception.ImageProcessingException;
 import io.vantiq.extsrc.objectRecognition.imageRetriever.FileRetriever;
+import okhttp3.Response;
 
 public class TestYoloProcessor extends NeuralNetTestBase {
 
@@ -36,8 +42,13 @@ public class TestYoloProcessor extends NeuralNetTestBase {
     static final String PB_FILE = "yolo.pb";
     static final String OUTPUT_DIR = "src/test/resources/out";
     static final int SAVE_RATE = 2; // Saves every other so that we can know it counts correctly
+    static final String NOT_FOUND_CODE = "io.vantiq.resource.not.found";
 
     static YoloProcessor ypJson;
+    static Vantiq vantiq;
+    static VantiqResponse vantiqResponse;
+    
+    static List<String> vantiqSavedFiles = new ArrayList<>();
 
     static final String timestampPattern = "\\d{4}-\\d{2}-\\d{2}--\\d{2}-\\d{2}-\\d{2}\\.jpg";
 
@@ -56,6 +67,26 @@ public class TestYoloProcessor extends NeuralNetTestBase {
             ypJson.setupImageProcessing(config, MODEL_DIRECTORY, testAuthToken, testVantiqServer);
         } catch (Exception e) {
             fail("Could not setup the JSON YoloProcessor");
+        }
+        
+        vantiq = new io.vantiq.client.Vantiq(testVantiqServer);
+        vantiq.setAccessToken(testAuthToken); 
+    }
+    
+    @AfterClass
+    public static void deleteFromVantiq() throws InterruptedException {
+        for(int i = 0; i < vantiqSavedFiles.size(); i++) {
+            Thread.sleep(1000);
+            vantiq.deleteOne("system.documents", vantiqSavedFiles.get(i), new BaseResponseHandler() {
+
+                @Override public void onSuccess(Object body, Response response) {
+                    super.onSuccess(body, response);
+                }
+                @Override public void onError(List<VantiqError> errors, Response response) {
+                    super.onError(errors, response);
+                }
+
+            });
         }
     }
 
@@ -102,7 +133,7 @@ public class TestYoloProcessor extends NeuralNetTestBase {
     }
 
     @Test
-    public void testImageSaving() throws ImageProcessingException {
+    public void testImageSavingLocal() throws ImageProcessingException {
         Map config = new LinkedHashMap<>();
         YoloProcessor ypImageSaver = new YoloProcessor();
 
@@ -132,6 +163,12 @@ public class TestYoloProcessor extends NeuralNetTestBase {
             assert d.isDirectory();
             assert d.listFiles().length == 1;
             assert d.listFiles()[0].getName().matches(timestampPattern);
+            
+            // Check it didn't save to VANTIQ
+            vantiqResponse = vantiq.selectOne("system.documents", results.getLastFilename());
+            if (vantiqResponse.isSuccess()) {
+                fail();
+            }
 
             results = null;
             results = ypImageSaver.processImage(getTestImage());
@@ -142,6 +179,12 @@ public class TestYoloProcessor extends NeuralNetTestBase {
             assert d.exists();
             assert d.isDirectory();
             assert d.listFiles().length == 1;
+            
+            // Check it didn't save to VANTIQ
+            vantiqResponse = vantiq.selectOne("system.documents", results.getLastFilename());
+            if (vantiqResponse.isSuccess()) {
+                fail();
+            }
 
             results = null;
             results = ypImageSaver.processImage(getTestImage());
@@ -154,6 +197,12 @@ public class TestYoloProcessor extends NeuralNetTestBase {
             assert d.listFiles().length == 2;
             assert d.listFiles()[0].getName().matches(timestampPattern);
             assert d.listFiles()[1].getName().matches(timestampPattern);
+            
+            // Check it didn't save to VANTIQ
+            vantiqResponse = vantiq.selectOne("system.documents", results.getLastFilename());
+            if (vantiqResponse.isSuccess()) {
+                fail();
+            }
 
         } finally {
             // delete the directory even if the test fails
@@ -165,9 +214,9 @@ public class TestYoloProcessor extends NeuralNetTestBase {
         }
     }
 
-    // Identical to testImageSaving(), but saveImage is set to "both". Behavior should be identical.
+    // Identical to testImageSavingLocal(), but saveImage is set to "both". Behavior should be identical.
     @Test
-    public void testImageSavingBoth() throws ImageProcessingException {
+    public void testImageSavingBoth() throws ImageProcessingException, InterruptedException {
 
         // Only run test with intended vantiq availability
         assumeTrue(testAuthToken != null && testVantiqServer != null);
@@ -202,7 +251,20 @@ public class TestYoloProcessor extends NeuralNetTestBase {
             assert d.isDirectory();
             assert d.listFiles().length == 1;
             assert d.listFiles()[0].getName().matches(timestampPattern);
-
+                    
+            // Checking that image was saved to VANTIQ
+            Thread.sleep(1000);
+            vantiqResponse = vantiq.selectOne("system.documents", results.getLastFilename());
+            if (vantiqResponse.hasErrors()) {
+                List<VantiqError> errors = vantiqResponse.getErrors();
+                for (int i = 0; i < errors.size(); i++) {
+                    if (errors.get(i).getCode().equals(NOT_FOUND_CODE)) {
+                        fail();
+                    }
+                }
+            }
+            vantiqSavedFiles.add(results.getLastFilename());
+            
             results = null;
             results = ypImageSaver.processImage(getTestImage());
             assert results != null;
@@ -224,6 +286,19 @@ public class TestYoloProcessor extends NeuralNetTestBase {
             assert d.listFiles().length == 2;
             assert d.listFiles()[0].getName().matches(timestampPattern);
             assert d.listFiles()[1].getName().matches(timestampPattern);
+            
+            // Checking that image was saved to VANTIQ
+            Thread.sleep(1000);
+            vantiqResponse = vantiq.selectOne("system.documents", results.getLastFilename());
+            if (vantiqResponse.hasErrors()) {
+                List<VantiqError> errors = vantiqResponse.getErrors();
+                for (int i = 0; i < errors.size(); i++) {
+                    if (errors.get(i).getCode().equals(NOT_FOUND_CODE)) {
+                        fail();
+                    }
+                }
+            }
+            vantiqSavedFiles.add(results.getLastFilename());
 
         } finally {
             // delete the directory even if the test fails
@@ -235,10 +310,10 @@ public class TestYoloProcessor extends NeuralNetTestBase {
         }
     }
 
-    // Similar to testImageSaving() and testImageSaving2(), but saveImage is set to "vantiq".
+    // Similar to testImageSavingLocal() and testImageSavingBoth(), but saveImage is set to "vantiq".
     // No images should be saved locally.
     @Test
-    public void testImageSavingVantiq() throws ImageProcessingException {
+    public void testImageSavingVantiq() throws ImageProcessingException, InterruptedException {
 
         // Only run test with intended vantiq availability
 
@@ -271,7 +346,20 @@ public class TestYoloProcessor extends NeuralNetTestBase {
 
             // Should not exist since images are not being saved locally.
             assert !d.exists();
-
+            
+            // Checking that image was saved to VANTIQ
+            Thread.sleep(1000);
+            vantiqResponse = vantiq.selectOne("system.documents", results.getLastFilename());
+            if (vantiqResponse.hasErrors()) {
+                List<VantiqError> errors = vantiqResponse.getErrors();
+                for (int i = 0; i < errors.size(); i++) {
+                    if (errors.get(i).getCode().equals(NOT_FOUND_CODE)) {
+                        fail();
+                    }
+                }
+            }
+            vantiqSavedFiles.add(results.getLastFilename());
+            
         } finally {
             // delete the directory even if the test fails
             if (d.exists()) {
@@ -283,126 +371,158 @@ public class TestYoloProcessor extends NeuralNetTestBase {
     }
 
     @Test
-    public void testQuery() throws ImageProcessingException {
-        if (testAuthToken != null && testVantiqServer != null) {
-            Map config = new LinkedHashMap<>();
-            YoloProcessor ypImageSaver = new YoloProcessor();
+    public void testQuery() throws ImageProcessingException, InterruptedException {
+        // Only run test with intended vantiq availability
+        assumeTrue(testAuthToken != null && testVantiqServer != null);
+        
+        Map config = new LinkedHashMap<>();
+        YoloProcessor ypImageSaver = new YoloProcessor();
 
-            config.put("pbFile", PB_FILE);
-            config.put("labelFile", LABEL_FILE);
-            config.put("outputDir", OUTPUT_DIR);
-            config.put("saveRate", SAVE_RATE);
-            try {
-                ypImageSaver.setupImageProcessing(config, MODEL_DIRECTORY, testAuthToken, testVantiqServer);
-            } catch (Exception e) {
-                fail("Could not setup the JSON YoloProcessor");
-            }
-
-
-            String queryOutputDir = OUTPUT_DIR + "query";
-            String queryOutputFile = "file";
-            File d = new File(OUTPUT_DIR);
-            File dNew = new File(queryOutputDir);
-            try {
-                // Ensure no results from previous tests
-                if (d.exists()) {
-                    deleteDirectory(OUTPUT_DIR);
-                }
-                if (dNew.exists()) {
-                    deleteDirectory(queryOutputDir);
-                }
-
-                Map request = new LinkedHashMap<>();
-                NeuralNetResults results = ypJson.processImage(getTestImage(), request);
-                assert results != null;
-                assert results.getResults() != null;
-
-                // Should not have saved image
-                assert !d.exists();
-
-                // Test when saveImage is not set correctly
-                request.put("NNsaveImage", "jibberish");
-                request.put("NNfileName", queryOutputFile);
-                request.put("NNoutputDir", queryOutputDir);
-                results = null;
-                results = ypImageSaver.processImage(getTestImage(), request);
-                assert results != null;
-                assert results.getResults() != null;
-
-                // Should not have saved the image
-                assert !dNew.exists();
-
-                // Test when saveImage is set to vantiq, even when NNoutputDir is specified
-                request.remove("NNsaveImage");
-                request.put("NNsaveImage", "vantiq");
-                results = null;
-                results = ypImageSaver.processImage(getTestImage(), request);
-                assert results != null;
-                assert results.getResults() != null;
-
-                // Should not have saved the image locally
-                assert !dNew.exists();
-
-
-                request.put("NNsaveImage", "both");
-                request.put("NNfileName", queryOutputFile);
-                request.put("NNoutputDir", queryOutputDir);
-                results = null;
-                results = ypImageSaver.processImage(getTestImage(), request);
-                assert results != null;
-                assert results.getResults() != null;
-
-                // Should have saved the image at queryOutputFile + ".jpg"
-                assert dNew.exists();
-                assert dNew.isDirectory();
-                assert dNew.listFiles().length == 1;
-                assert dNew.listFiles()[0].getName().equals(queryOutputFile + ".jpg");
-
-
-                // Save with "local" instead of "both", and remove fileName
-                request.remove("NNfileName");
-                request.remove("NNsaveImage");
-                request.put("NNsaveImage", "local");
-                results = null;
-                results = ypImageSaver.processImage(getTestImage(), request);
-                assert results != null;
-                assert results.getResults() != null;
-
-                // Should be saved with a timestamp
-                assert dNew.exists();
-                assert dNew.isDirectory();
-                File[] listOfFiles = dNew.listFiles();
-                assert listOfFiles.length == 2;
-
-                // listFiles() Returns data in no specific order, so we check to make sure we are grabbing correct file
-                if (listOfFiles[0].getName().equals("file.jpg")) {
-                    assert listOfFiles[1].getName().matches(timestampPattern);
-                } else {
-                    assert listOfFiles[0].getName().matches(timestampPattern);
-                }
-
-
-                queryOutputFile += ".jpeg";
-                request.put("NNfileName", queryOutputFile);
-                results = null;
-                results = ypImageSaver.processImage(getTestImage(), request);
-                assert results != null;
-                assert results.getResults() != null;
-
-                assert dNew.listFiles().length == 3;
-
-            } finally {
-                // delete the directory even if the test fails
-                if (d.exists()) {
-                    deleteDirectory(OUTPUT_DIR);
-                }
-                if (dNew.exists()) {
-                    deleteDirectory(queryOutputDir);
-                }
-
-                ypImageSaver.close();
-            }
+        config.put("pbFile", PB_FILE);
+        config.put("labelFile", LABEL_FILE);
+        config.put("outputDir", OUTPUT_DIR);
+        config.put("saveRate", SAVE_RATE);
+        try {
+            ypImageSaver.setupImageProcessing(config, MODEL_DIRECTORY, testAuthToken, testVantiqServer);
+        } catch (Exception e) {
+            fail("Could not setup the JSON YoloProcessor");
         }
+
+        String queryOutputDir = OUTPUT_DIR + "query";
+        String queryOutputFileVantiq = "vantiqTest";
+        String queryOutputFile = "file";
+        File d = new File(OUTPUT_DIR);
+        File dNew = new File(queryOutputDir);
+        try {
+            // Ensure no results from previous tests
+            if (d.exists()) {
+                deleteDirectory(OUTPUT_DIR);
+            }
+            if (dNew.exists()) {
+                deleteDirectory(queryOutputDir);
+            }
+
+            Map request = new LinkedHashMap<>();
+            NeuralNetResults results = ypJson.processImage(getTestImage(), request);
+            assert results != null;
+            assert results.getResults() != null;
+
+            // Should not have saved image
+            assert !d.exists();
+
+            // Test when saveImage is not set correctly
+            request.put("NNsaveImage", "jibberish");
+            request.put("NNoutputDir", queryOutputDir);
+            results = null;
+            results = ypImageSaver.processImage(getTestImage(), request);
+            assert results != null;
+            assert results.getResults() != null;
+
+            // Should not have saved the image
+            assert !dNew.exists();
+
+            // Test when saveImage is set to vantiq, even when NNoutputDir is specified
+            request.remove("NNsaveImage");
+            request.put("NNsaveImage", "vantiq");
+            request.put("NNfileName", queryOutputFileVantiq);
+            results = null;
+            results = ypImageSaver.processImage(getTestImage(), request);
+            assert results != null;
+            assert results.getResults() != null;
+
+            // Should not have saved the image locally
+            assert !dNew.exists();
+            
+            // Checking that image was saved in VANTIQ
+            Thread.sleep(1000);
+            vantiqResponse = vantiq.selectOne("system.documents", results.getLastFilename());
+            if (vantiqResponse.hasErrors()) {
+                List<VantiqError> errors = vantiqResponse.getErrors();
+                for (int i = 0; i < errors.size(); i++) {
+                    if (errors.get(i).getCode().equals(NOT_FOUND_CODE)) {
+                        fail();
+                    }
+                }
+            }
+            vantiqSavedFiles.add(results.getLastFilename());
+
+            request.put("NNsaveImage", "both");
+            request.put("NNfileName", queryOutputFile);
+            request.put("NNoutputDir", queryOutputDir);
+            results = null;
+            results = ypImageSaver.processImage(getTestImage(), request);
+            assert results != null;
+            assert results.getResults() != null;
+
+            // Should have saved the image at queryOutputFile + ".jpg"
+            assert dNew.exists();
+            assert dNew.isDirectory();
+            assert dNew.listFiles().length == 1;
+            assert dNew.listFiles()[0].getName().equals(queryOutputFile + ".jpg");
+            
+            // Checking that image was saved in VANTIQ
+            Thread.sleep(1000);
+            vantiqResponse = vantiq.selectOne("system.documents", results.getLastFilename());
+            if (vantiqResponse.hasErrors()) {
+                List<VantiqError> errors = vantiqResponse.getErrors();
+                for (int i = 0; i < errors.size(); i++) {
+                    if (errors.get(i).getCode().equals(NOT_FOUND_CODE)) {
+                        fail();
+                    }
+                }
+            }
+            vantiqSavedFiles.add(results.getLastFilename());            
+
+            // Save with "local" instead of "both", and remove fileName
+            request.remove("NNfileName");
+            request.remove("NNsaveImage");
+            request.put("NNsaveImage", "local");
+            results = null;
+            results = ypImageSaver.processImage(getTestImage(), request);
+            assert results != null;
+            assert results.getResults() != null;
+
+            // Should be saved with a timestamp
+            assert dNew.exists();
+            assert dNew.isDirectory();
+            File[] listOfFiles = dNew.listFiles();
+            assert listOfFiles.length == 2;
+
+            // listFiles() Returns data in no specific order, so we check to make sure we are grabbing correct file
+            if (listOfFiles[0].getName().equals("file.jpg")) {
+                assert listOfFiles[1].getName().matches(timestampPattern);
+            } else {
+                assert listOfFiles[0].getName().matches(timestampPattern);
+            }
+            
+            // Checking that image was not saved in VANTIQ
+            Thread.sleep(1000);
+            vantiqResponse = vantiq.selectOne("system.documents", results.getLastFilename());
+            if (vantiqResponse.isSuccess()) {
+                fail();
+            }
+
+            queryOutputFile += ".jpeg";
+            request.put("NNfileName", queryOutputFile);
+            results = null;
+            results = ypImageSaver.processImage(getTestImage(), request);
+            assert results != null;
+            assert results.getResults() != null;
+
+            assert dNew.listFiles().length == 3;
+
+        } finally {
+            // delete the directory even if the test fails
+            if (d.exists()) {
+                deleteDirectory(OUTPUT_DIR);
+            }
+            if (dNew.exists()) {
+                deleteDirectory(queryOutputDir);
+            }
+
+            ypImageSaver.close();
+        }
+
     }
 
     // ================================================= Helper functions =================================================

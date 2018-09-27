@@ -50,6 +50,8 @@ public class ObjectDetector {
     private Session normalizerSession;
     private String normalizerInputName;
     private String normalizerOutputName;
+    
+    public String lastFilename;
 
     /**
      * Initializes the ObjectDetector with the given graph and and labels.
@@ -102,6 +104,7 @@ public class ObjectDetector {
             // Saves an image every saveRate frames
             if (imageUtil != null && ++frameCount >= saveRate) {
                 String fileName = format.format(now) + ".jpg";
+                lastFilename = fileName;
                 imageUtil.labelImage(image, recognitions, fileName);
                 frameCount = 0;
             }
@@ -142,7 +145,7 @@ public class ObjectDetector {
                 } else if (!fileName.endsWith(".jpg") && !fileName.endsWith(".jpeg")) {
                     fileName += ".jpg";
                 }
-                
+                lastFilename = fileName;
                 imageUtil.labelImage(image, recognitions, fileName);
             }
             return returnJSON(recognitions);
