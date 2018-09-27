@@ -16,7 +16,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import edu.ml.tensorflow.ObjectDetector;
+import edu.ml.tensorflow.util.ImageUtil;
 import io.vantiq.extsrc.objectRecognition.exception.ImageProcessingException;
+
+import io.vantiq.client.Vantiq;
 
 /**
  * This is a TensorFlow implementation of YOLO (You Only Look Once). The identified objects have a {@code label} stating
@@ -37,9 +40,10 @@ import io.vantiq.extsrc.objectRecognition.exception.ImageProcessingException;
  *                      will be placed. Images will be saved as
  *                      "&lt;year&gt;-&lt;month&gt;-&lt;day&gt;--&lt;hour&gt;-&lt;minute&gt;-&lt;second&gt;.jpg"
  *                      where each value will zero-filled if necessary, e.g. "2018-08-14--06-30-22.jpg". For
- *                      non-Queries, no images will be saved if not set. For Queries, either this must be set in the
- *                      Query, or this must be set in the config and fileName must be set in the Query for images to be
- *                      saved.
+ *                      non-Queries, no images will be saved if not set.
+ *      <li>{@code saveImage}: Optional. Config and Query. Must be set in order to save images. Acceptable values are
+ *                      "local", "vantiq", or "both".
+ *      <li>{@code authToken}: Required. Config and Query. Must be set in order use VANTIQ SDK.
  *      <li>{@code fileName}: Optional. Query only. The name of the file that will be saved. Defaults to
  *                      "&lt;year&gt;-&lt;month&gt;-&lt;day&gt;--&lt;hour&gt;-&lt;minute&gt;-&lt;second&gt;.jpg"
  *                      if not set.
@@ -56,6 +60,11 @@ public class YoloProcessor implements NeuralNetInterface {
     String pbFile = null;
     String labelsFile = null;
     String outputDir = null;
+    String saveImage = null;
+    Vantiq vantiq;
+    String server;
+    String authToken;
+    ImageUtil imageUtil;
     float threshold = 0.5f;
     int saveRate = 1;
     
@@ -63,10 +72,10 @@ public class YoloProcessor implements NeuralNetInterface {
     
     
     @Override
-    public void setupImageProcessing(Map<String, ?> neuralNetConfig, String modelDirectory) throws Exception {
-        setup(neuralNetConfig, modelDirectory);
+    public void setupImageProcessing(Map<String, ?> neuralNetConfig, String modelDirectory, String authToken, String server) throws Exception {
+        setup(neuralNetConfig, modelDirectory, authToken, server);
         try {
-            objectDetector = new ObjectDetector(threshold, pbFile, labelsFile, outputDir, saveRate);
+            objectDetector = new ObjectDetector(threshold, pbFile, labelsFile, imageUtil, outputDir, saveRate, vantiq);
         } catch (Exception e) {
             throw new Exception(this.getClass().getCanonicalName() + ".yoloBackendSetupError: " 
                     + "Failed to create new ObjectDetector", e);
@@ -77,9 +86,12 @@ public class YoloProcessor implements NeuralNetInterface {
      * Save the necessary data from the given map.
      * @param neuralNet         The configuration from 'neuralNet' in the config document
      * @param modelDirectory    The directory in which the .pb and label files are placed
+     * @param authToken         The authToken used to with the VANTIQ SDK
      * @throws Exception        Thrown when an invalid configuration is requested
      */
-    private void setup(Map<String, ?> neuralNet, String modelDirectory) throws Exception {
+    private void setup(Map<String, ?> neuralNet, String modelDirectory, String authToken, String server) throws Exception {
+        this.server = server;
+        this.authToken = authToken;
         // Obtain the files for the net
        if (neuralNet.get("pbFile") instanceof String && neuralNet.get("labelFile") instanceof String) {
            if (!modelDirectory.equals("") && !modelDirectory.endsWith("/") && !modelDirectory.endsWith("\\")) {
@@ -108,8 +120,21 @@ public class YoloProcessor implements NeuralNetInterface {
        }
               
        // Setup the variables for saving images
-       if (neuralNet.get("outputDir") instanceof String) {
-           outputDir = (String) neuralNet.get("outputDir");
+       if (neuralNet.get("saveImage") instanceof String) {
+           saveImage = (String) neuralNet.get("saveImage");
+           if (!saveImage.equalsIgnoreCase("vantiq") && !saveImage.equalsIgnoreCase("both") && !saveImage.equalsIgnoreCase("local")) {
+               log.error("The config value for saveImage was invalid. Images will not be saved.");
+           }
+           if (!saveImage.equalsIgnoreCase("vantiq")) {
+               if (neuralNet.get("outputDir") instanceof String) {
+                   outputDir = (String) neuralNet.get("outputDir");
+               }
+           }
+           if (saveImage.equalsIgnoreCase("vantiq") || saveImage.equalsIgnoreCase("both")) {
+               vantiq = new io.vantiq.client.Vantiq(server);
+               vantiq.setAccessToken(authToken);
+           }
+           imageUtil = new ImageUtil(vantiq, outputDir);
            if (neuralNet.get("saveRate") instanceof Integer) {
                saveRate = (Integer) neuralNet.get("saveRate");
            }
@@ -137,6 +162,7 @@ public class YoloProcessor implements NeuralNetInterface {
         log.debug("Image processing time: {}.{} seconds"
                 , (after - before) / 1000, String.format("%03d", (after - before) % 1000));
         
+        results.setLastFilename(objectDetector.lastFilename);
         results.setResults(foundObjects);
         return results;
     }
@@ -148,20 +174,35 @@ public class YoloProcessor implements NeuralNetInterface {
     public NeuralNetResults processImage(byte[] image, Map<String, ?> request) throws ImageProcessingException {
         List<Map<String, ?>> foundObjects;
         NeuralNetResults results = new NeuralNetResults();
+        String saveImage = null;
         String outputDir = null;
         String fileName = null;
+        Vantiq vantiq = null;
         
-        if (request.get("NNoutputDir") instanceof String) {
-            outputDir = (String) request.get("NNoutputDir");
-        }
-        if (request.get("NNfileName") instanceof String) {
-            fileName = (String) request.get("NNfileName");
+        if (request.get("NNsaveImage") instanceof String) {
+            saveImage = (String) request.get("NNsaveImage");
+            if (!saveImage.equalsIgnoreCase("vantiq") && !saveImage.equalsIgnoreCase("both") && !saveImage.equalsIgnoreCase("local")) {
+                log.error("The config value for saveImage was invalid. Images will not be saved.");
+            } else {
+                if (saveImage.equalsIgnoreCase("vantiq") || saveImage.equalsIgnoreCase("both")) {
+                    vantiq = new io.vantiq.client.Vantiq(server);
+                    vantiq.setAccessToken(authToken);
+                }
+                if (!saveImage.equalsIgnoreCase("vantiq")) {
+                    if (request.get("NNoutputDir") instanceof String) {
+                        outputDir = (String) request.get("NNoutputDir");
+                    }
+                }
+                if (request.get("NNfileName") instanceof String) {
+                    fileName = (String) request.get("NNfileName");
+                }
+            }
         }
         
         long after;
         long before = System.currentTimeMillis();
         try {
-            foundObjects = objectDetector.detect(image, outputDir, fileName);
+            foundObjects = objectDetector.detect(image, outputDir, fileName, vantiq);
         } catch (IllegalArgumentException e) {
             throw new ImageProcessingException(this.getClass().getCanonicalName() + ".queryInvalidImage: " 
                     + "Data to be processed was invalid. Most likely it was not correctly encoded as a jpg.", e);
@@ -172,6 +213,7 @@ public class YoloProcessor implements NeuralNetInterface {
         log.debug("Image processing time: {}.{} seconds"
                 , (after - before) / 1000, String.format("%03d", (after - before) % 1000));
         
+        results.setLastFilename(objectDetector.lastFilename);
         results.setResults(foundObjects);
         return results;
     }

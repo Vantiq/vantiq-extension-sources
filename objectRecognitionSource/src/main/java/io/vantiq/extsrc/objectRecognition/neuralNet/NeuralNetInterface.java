@@ -24,9 +24,11 @@ public interface NeuralNetInterface {
      * @param neuralNetConfig   A map containing the configuration necessary to setup the neural net. This will be the
      *                          'neuralNet' object in the source configuration document.
      * @param modelDirectory    The directory in which it should look for the models
+     * @param authToken         The authToken used to access the VANTIQ SDK
+     * @param server            The server to connect to using the VANTIQ SDK
      * @throws Exception        Thrown when an error occurs during setup.
      */
-    void setupImageProcessing(Map<String, ?> neuralNetConfig, String modelDirectory) throws Exception;
+    void setupImageProcessing(Map<String, ?> neuralNetConfig, String modelDirectory, String authToken, String server) throws Exception;
     
     /**
      * Process the image and return a List of Maps describing the objects identified, and any other data the 

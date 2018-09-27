@@ -7,6 +7,10 @@ import java.util.Map;
  * A class used to transfer the results and miscellaneous data from neural nets.
  */
 public class NeuralNetResults {
+    /**
+     * The name of the last saved image (used in tests)
+     */
+    protected String                  lastFilename   = null;
 
     /**
      * The results of processing the image received
@@ -62,6 +66,20 @@ public class NeuralNetResults {
      */
     public void setOtherData(Map<String, ?> otherData) {
         this.otherData = otherData;
+    }
+    
+    /**
+     * @return A Map containing any data that should be passed to the source
+     */
+    public String getLastFilename() {
+        return lastFilename;
+    }
+
+    /**
+     * @param otherData A Map containing any data that should be passed to the source
+     */
+    public void setLastFilename(String lastFilename) {
+        this.lastFilename = lastFilename;
     }
     
 }
