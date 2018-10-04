@@ -23,7 +23,7 @@ import io.vantiq.extsrc.jdbcSource.JDBCCore;
 /**
  * Sets up the source using the configuration document, which looks as below.
  *<pre> {
- *      objRecConfig: {
+ *      jdbcConfig: {
  *          general: {
  *              &lt;general options&gt;
  *          }
@@ -32,22 +32,12 @@ import io.vantiq.extsrc.jdbcSource.JDBCCore;
  * 
  * The options for general are as follows. At least one must be valid for the source to function:
  * <ul>
- *      <li>{@code pollRate}: This indicates how often an image should be captured. A positive number
- *                      represents the number of milliseconds between captures. If the specified time is less than
- *                      the amount of time it takes to process the image then images will be taken as soon as the
- *                      previous finishes. If this is set to ero, the next image will be captured as soon as the
- *                      previous is sent.
- *      <li>{@code allowQueries}: This option allows Queries to be received when set to {@code true}
+ *      <li>{@code username}: The username to log into the SQL Database.
+ *      <li>{@code password}: The password to log into the SQL Database.
+ *      <li>{@code dbURL}: The URL of the SQL Database to be used.
+ *      <li>{@code driver}: The JDBC Driver that will be used to connect to the SQL Database.
  *                      
  * </ul>
- * 
- * Most options for dataSource and neuralNet are dependent on the implementation of {@link ImageRetrieverInterface} and
- * {@link NeuralNetInterface} specified through the {@code type} option. {@code type} is the fully qualified class name
- * of the implementation. It can also be unset, in which case it will attempt to find {@code DefaultRetriever} and 
- * {@code DefaultProcessor}, which will be written by you, for your specific needs. {@code type} can also be set to the
- * implementations included in the standard package: {@code file} for FileRetriever, {@code camera} for 
- * CameraRetriever, {@code ftp} for FtpRetriever, and {@code network} for NetworkStreamRetriever for the dataSource
- * config; and {@code yolo} for YoloProcessor for the neuralNet config.
  */
 
 public class JDBCConfigHandler extends Handler<ExtensionServiceMessage> {
@@ -106,7 +96,7 @@ public class JDBCConfigHandler extends Handler<ExtensionServiceMessage> {
     }
     
     /**
-     * Interprets the configuration message sent by the Vantiq server and sets up the neural network and data retriever.
+     * Interprets the configuration message sent by the Vantiq server and sets up the JDBC Source.
      */
     @Override
     public void handleMessage(ExtensionServiceMessage message) {
@@ -145,7 +135,7 @@ public class JDBCConfigHandler extends Handler<ExtensionServiceMessage> {
     }
     
     /**
-     * Attempts to create an image retriever based on the configuration document.
+     * Attempts to create the JDBC Source based on the configuration document.
      * @param generalConfig     The general configuration JDBC Source
      * @return                  true if the JDBC source could be created, false otherwise
      */
@@ -193,7 +183,6 @@ public class JDBCConfigHandler extends Handler<ExtensionServiceMessage> {
         
         // Initialize JDBC Source with config values
         try {
-            //JDBC jdbc = new JDBC(dbDriver, dbURL, username, password);
             JDBC jdbc = new JDBC();
             jdbc.setupJDBC(dbDriver, dbURL, username, password);
             source.jdbc = jdbc; 
@@ -211,7 +200,7 @@ public class JDBCConfigHandler extends Handler<ExtensionServiceMessage> {
             return false;
         }
         
-        // Start listening for queriesd and publishes
+        // Start listening for queries and publishes
         source.client.setQueryHandler(queryHandler);
         source.client.setPublishHandler(publishHandler);
 

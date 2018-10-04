@@ -85,7 +85,7 @@ public class JDBCCore {
     };
     
     /**
-     * Stops sending messages to the source and tries to reconnect, closing on a failure
+     * Stops sending messages to the source and tries to reconnect indefinitely
      */
     public final Handler<ExtensionWebSocketClient> closeHandler = new Handler<ExtensionWebSocketClient>() {
         @Override
@@ -109,11 +109,10 @@ public class JDBCCore {
     };    
     
     /**
-     * Creates a new ObjectRecognitionCore with the settings given.
+     * Creates a new JDBCCore with the settings given.
      * @param sourceName            The name of the source to connect to.
      * @param authToken             The authentication token to use to connect.
      * @param targetVantiqServer    The url to connect to.
-     * @param modelDirectory        The directory in which the model files for the neural net will be stored.
      */
     public JDBCCore(String sourceName, String authToken, String targetVantiqServer) {
         log = LoggerFactory.getLogger(this.getClass().getCanonicalName() + '#' + sourceName);
@@ -157,10 +156,10 @@ public class JDBCCore {
     }
     
     /**
-     * Retrieves an image using the Core's image retriever using the options specified in the object of the Query
-     * message. Calls {@code stop()} if a FatalImageException is received.
+     * Executes the query that is provided as a String in the options specified by the "query" key in the
+     * object of the Query message.
      * @param message   The Query message.
-     * @return          The image retrieved in jpeg format, or null if a problem occurred.
+     * @return          The ResultSet that is obtained from executing the Query.
      */
     public ResultSet executeQuery(ExtensionServiceMessage message) {
         Map<String, ?> request = (Map<String, ?>) message.getObject();
@@ -173,7 +172,7 @@ public class JDBCCore {
             return null;
         }
         
-        // Return the retriever's results, or send a query error and return null on an exception
+        // Return the query results, or send a query error and return null on an exception
         try {
             if (request.get("query") instanceof String) {
                 String queryString = (String) request.get("query");
@@ -191,6 +190,13 @@ public class JDBCCore {
         return null; // This will keep the program from trying to do anything with an image when retrieval fails
     }
     
+    /**
+     * Executes the query that is provided as a String in the options specified by the "query" key in the
+     * object of the Publish message.
+     * @param message   The Query message.
+     * @return          The int value that is obtained from executing the Query. A value of 0 indicates 
+     *                  something went wrong.
+     */
     public int executePublish(ExtensionServiceMessage message) {
         Map<String, ?> request = (Map<String, ?>) message.getObject();
         String replyAddress = ExtensionServiceMessage.extractReplyAddress(message);
@@ -202,7 +208,7 @@ public class JDBCCore {
             return 0;
         }
         
-        // Return the retriever's results, or send a query error and return null on an exception
+        // Return the query results, or send a query error and return null on an exception
         try {
             if (request.get("query") instanceof String) {
                 String queryString = (String) request.get("query");
@@ -221,9 +227,9 @@ public class JDBCCore {
     }
     
    /**
-    * Processes the image using the options specified in the Query message then sends a Query response containing the
-    * results. Calls {@code stop()} if a FatalImageException is received.
-    * @param imageResults   An {@link ImageRetrieverResults} containing the image to be translated
+    * Takes the data returned from executeQuery() and calls a helper function, createMapFromResults(), to convert
+    * data into a list of maps for each row, and send this all together as a map.
+    * @param queryResults   A ResultSet containing return value from executeQuery()
     * @param message        The Query message
     */
    public void sendDataFromQuery(ResultSet queryResults, ExtensionServiceMessage message) {
@@ -255,20 +261,12 @@ public class JDBCCore {
    }
    
    /**
-    * Processes the image using the options specified in the Query message then sends a Query response containing the
-    * results. Calls {@code stop()} if a FatalImageException is received.
-    * @param imageResults   An {@link ImageRetrieverResults} containing the image to be translated
-    * @param message        The Query message
+    * 
+    * @param queryResults   A ResultSet containing return value from executeQuery()
+    * @return               The map containing a key/value pair where key = "queryResult" and
+    *                       value = an ArrayList of maps each representing one row of the ResultSet
+    * @throws SQLException
     */
-   public void sendDataFromPublish(int publishResults, ExtensionServiceMessage message) {
-       String replyAddress = ExtensionServiceMessage.extractReplyAddress(message);
-       Map<String, Integer> publishResultsMap = new HashMap<String, Integer>();
-       
-       
-//       client.sendQueryResponse(200, replyAddress, publishResultsMap);
-   }
-   
-   
    Map<String, ArrayList<HashMap>> createMapFromResults(ResultSet queryResults) throws SQLException{
        Map<String, ArrayList<HashMap>> map = new LinkedHashMap<>();
        ArrayList<HashMap> rows = new ArrayList<HashMap>();
