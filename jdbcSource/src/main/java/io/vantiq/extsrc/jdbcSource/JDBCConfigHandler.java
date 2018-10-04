@@ -59,6 +59,7 @@ public class JDBCConfigHandler extends Handler<ExtensionServiceMessage> {
     Map<String, ?> lastGeneral = null;
     
     Handler<ExtensionServiceMessage> queryHandler;
+    Handler<ExtensionServiceMessage> publishHandler;
     
     public JDBCConfigHandler(JDBCCore source) {
         this.source = source;
@@ -80,6 +81,25 @@ public class JDBCConfigHandler extends Handler<ExtensionServiceMessage> {
                 ResultSet data = source.executeQuery(message);
                 if (data != null) {
                     source.sendDataFromQuery(data, message);
+                }
+            }
+        };
+        publishHandler = new Handler<ExtensionServiceMessage>() {
+            ExtensionWebSocketClient client = source.client;
+            
+            @Override
+            public void handleMessage(ExtensionServiceMessage message) {
+                // Should never happen, but just in case something changes in the backend
+                if ( !(message.getObject() instanceof Map) ) {
+                    String replyAddress = ExtensionServiceMessage.extractReplyAddress(message);
+                    client.sendQueryError(replyAddress, "io.vantiq.extsrc.JDBC.invalidPublishRequest", 
+                            "Request must be a map", null);
+                }
+                
+                // Process query and send the results
+                int data = source.executePublish(message);
+                if (data == 0) {
+                     // Send something to say that there was an issue
                 }
             }
         };
@@ -191,8 +211,9 @@ public class JDBCConfigHandler extends Handler<ExtensionServiceMessage> {
             return false;
         }
         
-        // Start listening for queries
+        // Start listening for queriesd and publishes
         source.client.setQueryHandler(queryHandler);
+        source.client.setPublishHandler(publishHandler);
 
         log.info("JDBC source created");
         return true;

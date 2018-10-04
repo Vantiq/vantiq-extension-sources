@@ -15,7 +15,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
-import java.util.Timer;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
@@ -70,9 +69,7 @@ public class JDBCCore {
             log.info("Reconnect message received. Reinitializing configuration");
             
             jdbcConfigHandler.configComplete = false;
-            
-            client.setQueryHandler(defaultQueryHandler);
-            
+                        
             CompletableFuture<Boolean> success = client.connectToSource();
             
             try {
@@ -99,8 +96,6 @@ public class JDBCCore {
             
             boolean sourcesSucceeded = false;
             while (!sourcesSucceeded) {
-                client.setQueryHandler(defaultQueryHandler);
-                
                 client.initiateFullConnection(targetVantiqServer, authToken);
                 sourcesSucceeded = exitIfConnectionFails(client, 10);
                 
@@ -111,25 +106,7 @@ public class JDBCCore {
                 }
             }
         }
-    };
-    
-    /**
-     * Sends back an error when no query handler has been set by the config
-     */
-    Handler<ExtensionServiceMessage> defaultQueryHandler = new Handler<ExtensionServiceMessage>() {
-        @Override
-        public void handleMessage(ExtensionServiceMessage msg) {
-            log.warn("Query received with no user-set handler");
-            log.debug("Full message: " + msg);
-            // Prepare a response with an empty body, so that the query doesn't wait for a timeout
-            Object[] body = {msg.getSourceName()};
-            client.sendQueryError(ExtensionServiceMessage.extractReplyAddress(msg),
-                    "io.vantiq.extsrc.objectRecognition.noQueryConfigured",
-                    "Source '{0}' is not configured for Queries. Queries require objRecConfig.general.pollRate < 0",
-                    body);
-        }
-    };
-    
+    };    
     
     /**
      * Creates a new ObjectRecognitionCore with the settings given.
@@ -167,7 +144,6 @@ public class JDBCCore {
             client.setConfigHandler(jdbcConfigHandler);
             client.setReconnectHandler(reconnectHandler);
             client.setCloseHandler(closeHandler);
-            client.setQueryHandler(defaultQueryHandler);
             client.initiateFullConnection(targetVantiqServer, authToken);
             
             sourcesSucceeded = exitIfConnectionFails(client, timeout);
@@ -215,6 +191,35 @@ public class JDBCCore {
         return null; // This will keep the program from trying to do anything with an image when retrieval fails
     }
     
+    public int executePublish(ExtensionServiceMessage message) {
+        Map<String, ?> request = (Map<String, ?>) message.getObject();
+        String replyAddress = ExtensionServiceMessage.extractReplyAddress(message);
+        if (jdbc == null) { // Should only happen if close() was called immediately before retreiveImage()
+            if (client != null) {
+                client.sendQueryError(replyAddress, this.getClass().getName() + ".closed",
+                        "The source closed mid message", null);
+            }
+            return 0;
+        }
+        
+        // Return the retriever's results, or send a query error and return null on an exception
+        try {
+            if (request.get("query") instanceof String) {
+                String queryString = (String) request.get("query");
+                return jdbc.processPublish(queryString);
+            } else {
+                log.error("Query could not be executed because query was not a String");
+            }
+        } catch (SQLException e) {
+            log.warn("Could not execute requested query.", e);
+            log.debug("Request was: {}", request);
+            client.sendQueryError(replyAddress, SQLException.class.getCanonicalName(), 
+                    "Failed to execute query for reason '{0}'. Exception was {1}. Request was {2}"
+                    , new Object[] {e.getMessage(), e, request});
+        }
+        return 0; // This will keep the program from trying to do anything with an image when retrieval fails
+    }
+    
    /**
     * Processes the image using the options specified in the Query message then sends a Query response containing the
     * results. Calls {@code stop()} if a FatalImageException is received.
@@ -222,7 +227,6 @@ public class JDBCCore {
     * @param message        The Query message
     */
    public void sendDataFromQuery(ResultSet queryResults, ExtensionServiceMessage message) {
-       Map<String, ?> request = (Map<String, ?>) message.getObject();
        String replyAddress = ExtensionServiceMessage.extractReplyAddress(message);
        
        if (queryResults == null) {
@@ -249,6 +253,21 @@ public class JDBCCore {
            log.error("An error occured when processing the query results: ", e);
        }
    }
+   
+   /**
+    * Processes the image using the options specified in the Query message then sends a Query response containing the
+    * results. Calls {@code stop()} if a FatalImageException is received.
+    * @param imageResults   An {@link ImageRetrieverResults} containing the image to be translated
+    * @param message        The Query message
+    */
+   public void sendDataFromPublish(int publishResults, ExtensionServiceMessage message) {
+       String replyAddress = ExtensionServiceMessage.extractReplyAddress(message);
+       Map<String, Integer> publishResultsMap = new HashMap<String, Integer>();
+       
+       
+//       client.sendQueryResponse(200, replyAddress, publishResultsMap);
+   }
+   
    
    Map<String, ArrayList<HashMap>> createMapFromResults(ResultSet queryResults) throws SQLException{
        Map<String, ArrayList<HashMap>> map = new LinkedHashMap<>();
