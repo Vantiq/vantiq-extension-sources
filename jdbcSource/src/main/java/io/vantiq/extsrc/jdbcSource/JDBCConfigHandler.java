@@ -8,9 +8,9 @@
 
 package io.vantiq.extsrc.jdbcSource;
 
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.util.Map;
-import java.util.Timer;
-import java.util.TimerTask;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -19,8 +19,6 @@ import io.vantiq.extjsdk.ExtensionServiceMessage;
 import io.vantiq.extjsdk.ExtensionWebSocketClient;
 import io.vantiq.extjsdk.Handler;
 import io.vantiq.extsrc.jdbcSource.JDBCCore;
-import io.vantiq.extsrc.objectRecognition.imageRetriever.ImageRetrieverInterface;
-import io.vantiq.extsrc.objectRecognition.neuralNet.NeuralNetInterface;
 
 /**
  * Sets up the source using the configuration document, which looks as below.
@@ -78,10 +76,10 @@ public class JDBCConfigHandler extends Handler<ExtensionServiceMessage> {
                             "Request must be a map", null);
                 }
                 
-                // Read, process, and send the image
-                ImageRetrieverResults data = source.retrieveImage(message);
+                // Process query and send the results
+                ResultSet data = source.executeQuery(message);
                 if (data != null) {
-                    source.sendDataFromImage(data, message);
+                    source.sendDataFromQuery(data, message);
                 }
             }
         };
@@ -116,12 +114,10 @@ public class JDBCConfigHandler extends Handler<ExtensionServiceMessage> {
         } else {
             boolean success = createDBConnection(general);
             if (!success) {
-                return; // Exit if the image retriever could not be created. Closing taken care of by createImageRetriever()
+                failConfig();
+                return;
             }
         }
-        
-        // Start listening for queries as requested by the config
-        source.client.setQueryHandler(queryHandler);
         
         log.info("Setup complete");
         
@@ -130,16 +126,43 @@ public class JDBCConfigHandler extends Handler<ExtensionServiceMessage> {
     
     /**
      * Attempts to create an image retriever based on the configuration document.
-     * @param dataSourceConfig  The configuration for the image retriever
-     * @return                  true if the requested image retriever could be created, false otherwise
+     * @param generalConfig     The general configuration JDBC Source
+     * @return                  true if the JDBC source could be created, false otherwise
      */
     boolean createDBConnection(Map<String, ?> generalConfig) {
         // Null the last config so if it fails it will know the last failed
         lastGeneral = null;
         
-        // Figure out where to receive the data from
-        // Initialize to default in case no type was given
+        // Get Username/Password, DB URL, and DB Driver
+        String username;
+        String password;
+        String dbURL;
         String dbDriver; 
+        
+        if (generalConfig.get("username") instanceof String) {
+            username = (String) generalConfig.get("username");
+        } else {
+            log.debug("No db username was specified");
+            failConfig();
+            return false;
+        }
+        
+        if (generalConfig.get("password") instanceof String) {
+            password = (String) generalConfig.get("password");
+        } else {
+            log.debug("No db password was specified");
+            failConfig();
+            return false;
+        }
+        
+        if (generalConfig.get("dbURL") instanceof String) {
+            dbURL = (String) generalConfig.get("dbURL");
+        } else {
+            log.debug("No db URL was specified");
+            failConfig();
+            return false;
+        }
+        
         if (generalConfig.get("driver") instanceof String) {
             dbDriver = (String) generalConfig.get("driver");
         } else {
@@ -148,32 +171,35 @@ public class JDBCConfigHandler extends Handler<ExtensionServiceMessage> {
             return false;
         }
         
-//        // Create the image retriever
-//        ImageRetrieverInterface ir = getImageRetriever(retrieverType);
-//        if (ir == null) {
-//            return false; // Error message and exiting taken care of by getImageRetriever()
-//        }
-//        
-//        // Setup the image retriever
-//        try {
-//            ir.setupDataRetrieval(dataSourceConfig, source);
-//            source.imageRetriever = ir;
-//        } catch (Exception e) {
-//            log.error("Exception occurred while setting up image retriever.", e);
-//            failConfig();
-//            return false;
-//        }
-//        
-//        // Only save the last config if the creation succeeded.
-//        lastGeneral = generalConfig;
-//        
-        log.info("DB Connection created");
-//        log.debug("Image retriever class is {}", retrieverType);
+        // Initialize JDBC Source with config values
+        try {
+            //JDBC jdbc = new JDBC(dbDriver, dbURL, username, password);
+            JDBC jdbc = new JDBC();
+            jdbc.setupJDBC(dbDriver, dbURL, username, password);
+            source.jdbc = jdbc; 
+        } catch (SQLException e) {
+            log.error("Exception occured while setting up JDBC Source: ", e);
+            failConfig();
+            return false;
+        } catch (LinkageError e) {
+            log.error("Exception occured while setting up JDBC Source: ", e);
+            failConfig();
+            return false;
+        } catch (ClassNotFoundException e) {
+            log.error("Exception occured while setting up JDBC Source: ", e);
+            failConfig();
+            return false;
+        }
+        
+        // Start listening for queries
+        source.client.setQueryHandler(queryHandler);
+
+        log.info("JDBC source created");
         return true;
     }
     
     /**
-     * Closes the source {@link ObjectRecognitionCore} and marks the configuration as completed. The source will
+     * Closes the source {@link JDBCCore} and marks the configuration as completed. The source will
      * be reactivated when the source reconnects, due either to a Reconnect message (likely created by an update to the
      * configuration document) or to the WebSocket connection crashing momentarily.
      */
