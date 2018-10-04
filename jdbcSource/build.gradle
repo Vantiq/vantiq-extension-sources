@@ -13,6 +13,22 @@ repositories {
 
 mainClassName = 'io.vantiq.extsrc.jdbcSource.JDBCMain'
 
+startScripts{
+    doLast{
+        def windowsScriptFile = file getWindowsScript()
+        def unixScriptFile = file getUnixScript()
+        // Add the log Config to the top of the classpath
+        windowsScriptFile.text = windowsScriptFile.text.replace("CLASSPATH=", "CLASSPATH=%APP_HOME%\\logConfig;")
+        unixScriptFile.text = unixScriptFile.text.replace('CLASSPATH=', 'CLASSPATH=$APP_HOME/logConfig:')
+    }
+}
+
+// Copies the logger setup into logConfig in the distribution
+applicationDistribution.from("src/main/resources") {
+    include "log4j2.xml"
+    into "logConfig"
+}
+
 dependencies {
     // This dependency is used internally, and not exposed to consumers on their own compile classpath.
     implementation 'com.google.guava:guava:23.0'
