@@ -29,6 +29,10 @@ applicationDistribution.from("src/main/resources") {
     into "logConfig"
 }
 
+tasks.withType(Test) {
+	systemProperty "java.library.path", "${System.env.JDBC_DRIVER_LOC}"
+}
+
 dependencies {
     // This dependency is used internally, and not exposed to consumers on their own compile classpath.
     implementation 'com.google.guava:guava:23.0'
@@ -37,6 +41,14 @@ dependencies {
     
     compile "org.slf4j:slf4j-api:1.7.25"
     compile "org.apache.logging.log4j:log4j-slf4j-impl:2.11.0"
+    
+    //  Compiling relevant JDBC Driver .jar file
+    if (System.env.JDBC_DRIVER_LOC == null) {
+    	throw new Exception("Environment variable 'JDBC_DRIVER_LOC' is not set. Please set it to a location " +
+    			"containing the appropriate JDBC Driver .jar file.")
+    } else {
+    	compile files("${System.env.JDBC_DRIVER_LOC}")
+    }
     
     // Use JUnit test framework
     testCompile 'junit:junit:4.12'
