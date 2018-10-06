@@ -31,6 +31,19 @@ applicationDistribution.from("src/main/resources") {
 
 tasks.withType(Test) {
 	systemProperty "java.library.path", "${System.env.JDBC_DRIVER_LOC}"
+	
+	if (rootProject.hasProperty("TestDBUsername")) {
+        systemProperty "TestDBUsername", rootProject.findProperty("TestDBUsername") ?: "empty"
+    }
+    if (rootProject.hasProperty("TestDBPassword")) {
+        systemProperty "TestDBPassword", rootProject.findProperty("TestDBPassword") ?: "empty"
+    }
+    if (rootProject.hasProperty("TestDBURL")) {
+        systemProperty "TestDBURL", rootProject.findProperty("TestDBURL") ?: "empty"
+    }
+    if (rootProject.hasProperty("TestDBDriver")) {
+        systemProperty "TestDBDriver", rootProject.findProperty("TestDBDriver") ?: "empty"
+    }
 }
 
 dependencies {

@@ -88,9 +88,7 @@ public class JDBCConfigHandler extends Handler<ExtensionServiceMessage> {
                 
                 // Process query and send the results
                 int data = source.executePublish(message);
-                if (data == 0) {
-                     // Send something to say that there was an issue
-                }
+                log.trace("The returned integer value from Publish Query is the following: ", data);
             }
         };
     }
