@@ -1,6 +1,7 @@
 package io.vantiq.extsrc.jdbcSource;
 
 import static org.junit.Assert.fail;
+import static org.junit.Assume.assumeTrue;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -53,6 +54,7 @@ public class TestJDBC {
     
     @Test
     public void testProcessPublish() {
+        assumeTrue(testDBUsername != null && testDBPassword != null && testDBURL != null && testDBDriver != null);
         int queryResult;
         
         // Try processPublish with a nonsense query
@@ -82,6 +84,7 @@ public class TestJDBC {
     
     @Test
     public void testProcessQuery() {
+        assumeTrue(testDBUsername != null && testDBPassword != null && testDBURL != null && testDBDriver != null);
         ResultSet queryResult;
         int deleteResult;
         
