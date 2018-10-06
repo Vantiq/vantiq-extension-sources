@@ -37,24 +37,27 @@ public class TestJDBC {
     }
     
     @Before
-    public void setup() throws SQLException, LinkageError, ClassNotFoundException { 
+    public void setup() { 
         jdbc = new JDBC();
-        jdbc.setupJDBC(testDBDriver, testDBURL, testDBUsername, testDBPassword);
     }
     
     @AfterClass
     public static void tearDown() {
-        try {
-            jdbc.processPublish(DELETE_TABLE);
-        } catch (SQLException e) {
-            //Shoudn't throw Exception
+        if (testDBUsername != null && testDBPassword != null && testDBURL != null && testDBDriver != null) {
+            try {
+                jdbc.processPublish(DELETE_TABLE);
+            } catch (SQLException e) {
+                //Shoudn't throw Exception
+            }
         }
         jdbc.close();
     }
     
     @Test
-    public void testProcessPublish() {
+    public void testProcessPublish() throws SQLException, LinkageError, ClassNotFoundException {
         assumeTrue(testDBUsername != null && testDBPassword != null && testDBURL != null && testDBDriver != null);
+        jdbc.setupJDBC(testDBDriver, testDBURL, testDBUsername, testDBPassword);
+        
         int queryResult;
         
         // Try processPublish with a nonsense query
@@ -83,8 +86,10 @@ public class TestJDBC {
     }
     
     @Test
-    public void testProcessQuery() {
+    public void testProcessQuery() throws SQLException, LinkageError, ClassNotFoundException {
         assumeTrue(testDBUsername != null && testDBPassword != null && testDBURL != null && testDBDriver != null);
+        jdbc.setupJDBC(testDBDriver, testDBURL, testDBUsername, testDBPassword);
+        
         ResultSet queryResult;
         int deleteResult;
         

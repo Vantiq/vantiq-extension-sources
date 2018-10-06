@@ -55,13 +55,12 @@ public class TestJDBCCore {
     }
     
     @Before
-    public void setup() throws SQLException, LinkageError, ClassNotFoundException {
+    public void setup() {
         sourceName = "src";
         authToken = "token";
         targetVantiqServer = "dev.vantiq.com";
         
         jdbc = new JDBC();
-        jdbc.setupJDBC(testDBDriver, testDBURL, testDBUsername, testDBPassword);
         core = new NoSendJDBCCore(sourceName, authToken, targetVantiqServer);
         core.jdbc = jdbc;
         core.start(10);
@@ -73,8 +72,9 @@ public class TestJDBCCore {
     }
     
     @Test
-    public void testPublishQuery() {
+    public void testPublishQuery() throws SQLException, LinkageError, ClassNotFoundException {
         assumeTrue(testDBUsername != null && testDBPassword != null && testDBURL != null && testDBDriver != null);
+        jdbc.setupJDBC(testDBDriver, testDBURL, testDBUsername, testDBPassword);
         
         Map<String, Object> request;
         ExtensionServiceMessage msg = new ExtensionServiceMessage("");
@@ -98,8 +98,9 @@ public class TestJDBCCore {
     }
     
     @Test
-    public void testExecuteQuery() {
+    public void testExecuteQuery() throws SQLException, LinkageError, ClassNotFoundException {
         assumeTrue(testDBUsername != null && testDBPassword != null && testDBURL != null && testDBDriver != null);
+        jdbc.setupJDBC(testDBDriver, testDBURL, testDBUsername, testDBPassword);
         
         Map<String, Object> request;
         ExtensionServiceMessage msg = new ExtensionServiceMessage("");
@@ -123,7 +124,10 @@ public class TestJDBCCore {
     }
     
     @Test
-    public void testExitIfConnectionFails() {
+    public void testExitIfConnectionFails() throws SQLException, LinkageError, ClassNotFoundException {
+        assumeTrue(testDBUsername != null && testDBPassword != null && testDBURL != null && testDBDriver != null);
+        jdbc.setupJDBC(testDBDriver, testDBURL, testDBUsername, testDBPassword);
+        
         core.start(3);
         assertTrue("Should have succeeded", core.exitIfConnectionFails(core.client, 3));
         assertFalse("Success means it shouldn't be closed", core.isClosed());
