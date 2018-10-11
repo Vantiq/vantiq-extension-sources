@@ -47,6 +47,7 @@ public class NetworkStreamRetriever implements ImageRetrieverInterface {
     VideoCapture   capture;
     String         camera;
     Logger         log = LoggerFactory.getLogger(this.getClass().getCanonicalName());
+    Boolean        isRTSP = false;
 
     
     @Override
@@ -62,6 +63,15 @@ public class NetworkStreamRetriever implements ImageRetrieverInterface {
         }
         if (dataSourceConfig.get("camera") instanceof String){
             camera = (String) dataSourceConfig.get("camera");
+            try {
+                URI httpCheck = new URI(camera);
+                if (!(httpCheck.getScheme().equals("http")) && !(httpCheck.getScheme().equals("https"))) {
+                    isRTSP = true;
+                }
+            } catch (URISyntaxException e) {
+                throw new IllegalArgumentException(this.getClass().getCanonicalName() + ".unknownProtocol: "
+                        + "URL specifies unknown protocol, or protocol was improperly formatted. Error Message: ", e);
+            }
             
             capture = new VideoCapture(camera);
         } else {
@@ -85,7 +95,10 @@ public class NetworkStreamRetriever implements ImageRetrieverInterface {
         Mat matrix = new Mat();
         ImageRetrieverResults results = new ImageRetrieverResults();
         Date captureTime = new Date();
-
+        
+        if (isRTSP) {
+            capture = new VideoCapture(camera);
+        }
         capture.read(matrix);
         
         if (matrix.empty()) {
