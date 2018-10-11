@@ -65,7 +65,7 @@ public class NetworkStreamRetriever implements ImageRetrieverInterface {
             camera = (String) dataSourceConfig.get("camera");
             try {
                 URI pushCheck = new URI(camera);
-                if ((!(pushCheck.getScheme().equals("http")) && !(pushCheck.getScheme().equals("https"))) ||
+                if ((!(pushCheck.getScheme().equalsIgnoreCase("http")) && !(pushCheck.getScheme().equalsIgnoreCase("https"))) ||
                         pushCheck.getPath().endsWith("m3u") || pushCheck.getPath().endsWith("m3u8")) {
                     isPushProtocol = true;
                 }
@@ -206,7 +206,7 @@ public class NetworkStreamRetriever implements ImageRetrieverInterface {
     public void diagnoseConnection() throws ImageAcquisitionException {
         try {
             URI URITest = new URI(camera);
-            if (URITest.getScheme().equals("http") || URITest.getScheme().equals("https")) {
+            if (URITest.getScheme().equalsIgnoreCase("http") || URITest.getScheme().equalsIgnoreCase("https")) {
                 try {
                   URL urlProtocolTest = new URL((String) camera);
                   InputStream urlReadTest = urlProtocolTest.openStream();
