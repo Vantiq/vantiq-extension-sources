@@ -47,6 +47,7 @@ public class NetworkStreamRetriever implements ImageRetrieverInterface {
     VideoCapture   capture;
     String         camera;
     Logger         log = LoggerFactory.getLogger(this.getClass().getCanonicalName());
+    Boolean        isPushProtocol = false;
 
     
     @Override
@@ -62,6 +63,16 @@ public class NetworkStreamRetriever implements ImageRetrieverInterface {
         }
         if (dataSourceConfig.get("camera") instanceof String){
             camera = (String) dataSourceConfig.get("camera");
+            try {
+                URI pushCheck = new URI(camera);
+                if ((!(pushCheck.getScheme().equals("http")) && !(pushCheck.getScheme().equals("https"))) ||
+                        pushCheck.getPath().endsWith("m3u") || pushCheck.getPath().endsWith("m3u8")) {
+                    isPushProtocol = true;
+                }
+            } catch (URISyntaxException e) {
+                throw new IllegalArgumentException(this.getClass().getCanonicalName() + ".unknownProtocol: "
+                        + "URL specifies unknown protocol, or protocol was improperly formatted. Error Message: ", e);
+            }
             
             capture = new VideoCapture(camera);
         } else {
@@ -85,7 +96,11 @@ public class NetworkStreamRetriever implements ImageRetrieverInterface {
         Mat matrix = new Mat();
         ImageRetrieverResults results = new ImageRetrieverResults();
         Date captureTime = new Date();
-
+        
+        if (isPushProtocol) {
+            capture.release();
+            capture = new VideoCapture(camera);
+        }
         capture.read(matrix);
         
         if (matrix.empty()) {
