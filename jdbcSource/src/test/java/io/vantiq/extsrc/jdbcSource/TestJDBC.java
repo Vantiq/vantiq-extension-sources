@@ -3,8 +3,10 @@ package io.vantiq.extsrc.jdbcSource;
 import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeTrue;
 
-import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
 
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -16,7 +18,6 @@ public class TestJDBC {
     static String testDBUsername;
     static String testDBPassword;
     static String testDBURL;
-    static String testDBDriver;
     
     // Queries to be tested
     static final String CREATE_TABLE = "create table Test(id int not null, age int not null, "
@@ -30,10 +31,9 @@ public class TestJDBC {
         
     @BeforeClass
     public static void getProps() {
-        testDBUsername = System.getProperty("TestDBUsername", null);
-        testDBPassword = System.getProperty("TestDBPassword", null);
-        testDBURL = System.getProperty("TestDBURL", null);
-        testDBDriver = System.getProperty("TestDBDriver", null);
+        testDBUsername = System.getProperty("EntConJDBCUsername", null);
+        testDBPassword = System.getProperty("EntConJDBCPassword", null);
+        testDBURL = System.getProperty("EntConJDBCURL", null);
     }
     
     @Before
@@ -43,7 +43,7 @@ public class TestJDBC {
     
     @AfterClass
     public static void tearDown() {
-        if (testDBUsername != null && testDBPassword != null && testDBURL != null && testDBDriver != null) {
+        if (testDBUsername != null && testDBPassword != null && testDBURL != null) {
             try {
                 jdbc.processPublish(DELETE_TABLE);
             } catch (SQLException e) {
@@ -55,17 +55,17 @@ public class TestJDBC {
     
     @Test
     public void testProcessPublish() throws SQLException, LinkageError, ClassNotFoundException {
-        assumeTrue(testDBUsername != null && testDBPassword != null && testDBURL != null && testDBDriver != null);
-        jdbc.setupJDBC(testDBDriver, testDBURL, testDBUsername, testDBPassword);
+        assumeTrue(testDBUsername != null && testDBPassword != null && testDBURL != null);
+        jdbc.setupJDBC(testDBURL, testDBUsername, testDBPassword);
         
         int queryResult;
         
         // Try processPublish with a nonsense query
         try {
             queryResult = jdbc.processPublish("jibberish");
-            assert queryResult == 0;
+            fail("Should have thrown an exception");
         } catch (SQLException e) {
-            fail("Should not throw an exception");
+            // Expected behavior
         }
         
         // Create table that will be used for testing
@@ -73,7 +73,7 @@ public class TestJDBC {
             queryResult = jdbc.processPublish(CREATE_TABLE);
             assert queryResult == 0;
         } catch (SQLException e) {
-            fail("Should not throw an exception");
+            fail("Should not throw an exception: " + e.getMessage());
         }
         
         // Insert a row of data into the table
@@ -81,38 +81,35 @@ public class TestJDBC {
             queryResult = jdbc.processPublish(PUBLISH_QUERY);
             assert queryResult > 0;
         } catch (SQLException e) {
-            fail("Should not throw an exception");
+            fail("Should not throw an exception: " + e.getMessage());
         }
     }
     
     @Test
     public void testProcessQuery() throws SQLException, LinkageError, ClassNotFoundException {
-        assumeTrue(testDBUsername != null && testDBPassword != null && testDBURL != null && testDBDriver != null);
-        jdbc.setupJDBC(testDBDriver, testDBURL, testDBUsername, testDBPassword);
+        assumeTrue(testDBUsername != null && testDBPassword != null && testDBURL != null);
+        jdbc.setupJDBC(testDBURL, testDBUsername, testDBPassword);
         
-        ResultSet queryResult;
+        Map<String, ArrayList<HashMap>> queryResult;
         int deleteResult;
         
         // Try processQuery with a nonsense query
         try {
             queryResult = jdbc.processQuery("jibberish");
-            assert queryResult == null;
+            fail("Should have thrown excpetion.");
         } catch (SQLException e) {
-            fail("Should not throw an exception");
+            // Expected behavior
         }
         
         // Select the row that we previously inserted
         try {
             queryResult = jdbc.processQuery(SELECT_QUERY);
-            //assert queryResult != null;
-            while(queryResult.next()) {
-                assert queryResult.getInt("id") == 1;
-                assert queryResult.getInt("age") == 25;
-                assert queryResult.getString("first").equals("Santa");
-                assert queryResult.getString("last").equals("Claus");
-            }
+            assert (Integer) queryResult.get("queryResult").get(0).get("id") == 1;
+            assert (Integer) queryResult.get("queryResult").get(0).get("age") == 25;
+            assert queryResult.get("queryResult").get(0).get("first").equals("Santa");
+            assert queryResult.get("queryResult").get(0).get("last").equals("Claus");
         } catch (SQLException e) {
-            fail("Should not throw an exception");
+            fail("Should not throw an exception: " + e.getMessage());
         }
         
         // Delete row from the table
@@ -120,15 +117,15 @@ public class TestJDBC {
             deleteResult = jdbc.processPublish(DELETE_ROW);
             assert deleteResult > 0;
         } catch (SQLException e) {
-            fail("Should not throw an exception");
+            fail("Should not throw an exception: " + e.getMessage());
         }
         
         // Try selecting again, should return null since row was deleted
         try {
             queryResult = jdbc.processQuery(SELECT_QUERY);
-            assert queryResult.next() == false;
+            assert queryResult == null;
         } catch (SQLException e) {
-            fail("Should not throw an exception");
+            fail("Should not throw an exception: " + e.getMessage());
         }
     }
 }

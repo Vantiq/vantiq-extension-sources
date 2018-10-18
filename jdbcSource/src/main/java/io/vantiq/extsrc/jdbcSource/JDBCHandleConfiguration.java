@@ -8,7 +8,6 @@
 
 package io.vantiq.extsrc.jdbcSource;
 
-import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Map;
 
@@ -40,7 +39,7 @@ import io.vantiq.extsrc.jdbcSource.JDBCCore;
  * </ul>
  */
 
-public class JDBCConfigHandler extends Handler<ExtensionServiceMessage> {
+public class JDBCHandleConfiguration extends Handler<ExtensionServiceMessage> {
     Logger                  log;
     String                  sourceName;
     JDBCCore                source;
@@ -51,7 +50,7 @@ public class JDBCConfigHandler extends Handler<ExtensionServiceMessage> {
     Handler<ExtensionServiceMessage> queryHandler;
     Handler<ExtensionServiceMessage> publishHandler;
     
-    public JDBCConfigHandler(JDBCCore source) {
+    public JDBCHandleConfiguration(JDBCCore source) {
         this.source = source;
         this.sourceName = source.getSourceName();
         log = LoggerFactory.getLogger(this.getClass().getCanonicalName() + "#" + sourceName);
@@ -63,15 +62,12 @@ public class JDBCConfigHandler extends Handler<ExtensionServiceMessage> {
                 // Should never happen, but just in case something changes in the backend
                 if ( !(message.getObject() instanceof Map) ) {
                     String replyAddress = ExtensionServiceMessage.extractReplyAddress(message);
-                    client.sendQueryError(replyAddress, "io.vantiq.extsrc.JDBC.invalidQueryRequest", 
+                    client.sendQueryError(replyAddress, "io.vantiq.extsrc.JDBCConfigHandler.invalidQueryRequest", 
                             "Request must be a map", null);
                 }
                 
                 // Process query and send the results
-                ResultSet data = source.executeQuery(message);
-                if (data != null) {
-                    source.sendDataFromQuery(data, message);
-                }
+                source.executeQuery(message);
             }
         };
         publishHandler = new Handler<ExtensionServiceMessage>() {
@@ -82,13 +78,12 @@ public class JDBCConfigHandler extends Handler<ExtensionServiceMessage> {
                 // Should never happen, but just in case something changes in the backend
                 if ( !(message.getObject() instanceof Map) ) {
                     String replyAddress = ExtensionServiceMessage.extractReplyAddress(message);
-                    client.sendQueryError(replyAddress, "io.vantiq.extsrc.JDBC.invalidPublishRequest", 
+                    client.sendQueryError(replyAddress, "io.vantiq.extsrc.JDBCConfigHandler.invalidPublishRequest", 
                             "Request must be a map", null);
                 }
                 
-                // Process query and send the results
-                int data = source.executePublish(message);
-                log.trace("The returned integer value from Publish Query is the following: ", data);
+                // Process query
+                source.executePublish(message);
             }
         };
     }
@@ -118,7 +113,7 @@ public class JDBCConfigHandler extends Handler<ExtensionServiceMessage> {
         
         // Only create a new data source if the config changed, to save time and state
         if (lastGeneral != null && general.equals(lastGeneral)) {
-            log.info("config unchanged, keeping previous");
+            log.trace("config unchanged, keeping previous");
         } else {
             boolean success = createDBConnection(general);
             if (!success) {
@@ -127,7 +122,7 @@ public class JDBCConfigHandler extends Handler<ExtensionServiceMessage> {
             }
         }
         
-        log.info("Setup complete");
+        log.trace("Setup complete");
         
         configComplete = true;
     }
@@ -145,7 +140,6 @@ public class JDBCConfigHandler extends Handler<ExtensionServiceMessage> {
         String username;
         String password;
         String dbURL;
-        String dbDriver; 
         
         if (generalConfig.get("username") instanceof String) {
             username = (String) generalConfig.get("username");
@@ -171,28 +165,12 @@ public class JDBCConfigHandler extends Handler<ExtensionServiceMessage> {
             return false;
         }
         
-        if (generalConfig.get("driver") instanceof String) {
-            dbDriver = (String) generalConfig.get("driver");
-        } else {
-            log.debug("No db driver was specified");
-            failConfig();
-            return false;
-        }
-        
         // Initialize JDBC Source with config values
         try {
             JDBC jdbc = new JDBC();
-            jdbc.setupJDBC(dbDriver, dbURL, username, password);
+            jdbc.setupJDBC(dbURL, username, password);
             source.jdbc = jdbc; 
         } catch (SQLException e) {
-            log.error("Exception occured while setting up JDBC Source: ", e);
-            failConfig();
-            return false;
-        } catch (LinkageError e) {
-            log.error("Exception occured while setting up JDBC Source: ", e);
-            failConfig();
-            return false;
-        } catch (ClassNotFoundException e) {
             log.error("Exception occured while setting up JDBC Source: ", e);
             failConfig();
             return false;
@@ -202,7 +180,7 @@ public class JDBCConfigHandler extends Handler<ExtensionServiceMessage> {
         source.client.setQueryHandler(queryHandler);
         source.client.setPublishHandler(publishHandler);
 
-        log.info("JDBC source created");
+        log.trace("JDBC source created");
         return true;
     }
     

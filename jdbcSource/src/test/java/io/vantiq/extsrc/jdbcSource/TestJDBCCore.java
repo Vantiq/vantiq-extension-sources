@@ -42,16 +42,14 @@ public class TestJDBCCore {
     static String testDBUsername;
     static String testDBPassword;
     static String testDBURL;
-    static String testDBDriver;
     
     JDBC jdbc;
     
     @BeforeClass
     public static void getProps() {
-        testDBUsername = System.getProperty("TestDBUsername", null);
-        testDBPassword = System.getProperty("TestDBPassword", null);
-        testDBURL = System.getProperty("TestDBURL", null);
-        testDBDriver = System.getProperty("TestDBDriver", null);
+        testDBUsername = System.getProperty("EntConJDBCUsername", null);
+        testDBPassword = System.getProperty("EntConJDBCPassword", null);
+        testDBURL = System.getProperty("EntConJDBCURL", null);
     }
     
     @Before
@@ -73,60 +71,54 @@ public class TestJDBCCore {
     
     @Test
     public void testPublishQuery() throws SQLException, LinkageError, ClassNotFoundException {
-        assumeTrue(testDBUsername != null && testDBPassword != null && testDBURL != null && testDBDriver != null);
-        jdbc.setupJDBC(testDBDriver, testDBURL, testDBUsername, testDBPassword);
+        assumeTrue(testDBUsername != null && testDBPassword != null && testDBURL != null);
+        jdbc.setupJDBC(testDBURL, testDBUsername, testDBPassword);
         
         Map<String, Object> request;
         ExtensionServiceMessage msg = new ExtensionServiceMessage("");
         Map<String, String> header = new LinkedHashMap<>();
         header.put(ExtensionServiceMessage.ORIGIN_ADDRESS_HEADER, "queryAddress");
         msg.messageHeaders = header;
-        int queryResults; 
         
         request = new LinkedHashMap<>();
         msg.object = request;
-        queryResults = core.executePublish(msg);
-        assert queryResults == 0;
+        core.executePublish(msg);
         assertFalse("Core should not be closed", core.isClosed());
         
         request = new LinkedHashMap<>();
         request.put("query", "jibberish");
         msg.object = request;
-        queryResults = core.executePublish(msg);
-        assert queryResults == 0;
+        core.executePublish(msg);
         assertFalse("Core should not be closed", core.isClosed());
     }
     
     @Test
     public void testExecuteQuery() throws SQLException, LinkageError, ClassNotFoundException {
-        assumeTrue(testDBUsername != null && testDBPassword != null && testDBURL != null && testDBDriver != null);
-        jdbc.setupJDBC(testDBDriver, testDBURL, testDBUsername, testDBPassword);
+        assumeTrue(testDBUsername != null && testDBPassword != null && testDBURL != null);
+        jdbc.setupJDBC(testDBURL, testDBUsername, testDBPassword);
         
         Map<String, Object> request;
         ExtensionServiceMessage msg = new ExtensionServiceMessage("");
         Map<String, String> header = new LinkedHashMap<>();
         header.put(ExtensionServiceMessage.ORIGIN_ADDRESS_HEADER, "queryAddress");
         msg.messageHeaders = header;
-        ResultSet queryResults; 
         
         request = new LinkedHashMap<>();
         msg.object = request;
-        queryResults = core.executeQuery(msg);
-        assert queryResults == null;
+        core.executeQuery(msg);
         assertFalse("Core should not be closed", core.isClosed());
         
         request = new LinkedHashMap<>();
         request.put("query", "jibberish");
         msg.object = request;
-        queryResults = core.executeQuery(msg);
-        assert queryResults == null;
+        core.executeQuery(msg);
         assertFalse("Core should not be closed", core.isClosed());
     }
     
     @Test
     public void testExitIfConnectionFails() throws SQLException, LinkageError, ClassNotFoundException {
-        assumeTrue(testDBUsername != null && testDBPassword != null && testDBURL != null && testDBDriver != null);
-        jdbc.setupJDBC(testDBDriver, testDBURL, testDBUsername, testDBPassword);
+        assumeTrue(testDBUsername != null && testDBPassword != null && testDBURL != null);
+        jdbc.setupJDBC(testDBURL, testDBUsername, testDBPassword);
         
         core.start(3);
         assertTrue("Should have succeeded", core.exitIfConnectionFails(core.client, 3));

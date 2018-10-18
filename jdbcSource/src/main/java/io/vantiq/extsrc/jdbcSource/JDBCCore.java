@@ -40,7 +40,7 @@ public class JDBCCore {
     String authToken;
     String targetVantiqServer;    
     
-    JDBCConfigHandler jdbcConfigHandler;
+    JDBCHandleConfiguration jdbcConfigHandler;
     
     // vars for internal use
     ExtensionWebSocketClient    client  = null;
@@ -66,7 +66,7 @@ public class JDBCCore {
     public final Handler<ExtensionServiceMessage> reconnectHandler = new Handler<ExtensionServiceMessage>() {
         @Override
         public void handleMessage(ExtensionServiceMessage message) {
-            log.info("Reconnect message received. Reinitializing configuration");
+            log.trace("Reconnect message received. Reinitializing configuration");
             
             jdbcConfigHandler.configComplete = false;
                         
@@ -78,7 +78,7 @@ public class JDBCCore {
                     close();
                 }
             } catch (InterruptedException | ExecutionException | TimeoutException e) {
-                log.error("Could not reconnect to source within 10 seconds");
+                log.error("Could not reconnect to source within 10 seconds: ", e);
                 close();
             }
         }
@@ -90,7 +90,7 @@ public class JDBCCore {
     public final Handler<ExtensionWebSocketClient> closeHandler = new Handler<ExtensionWebSocketClient>() {
         @Override
         public void handleMessage(ExtensionWebSocketClient message) {
-            log.info("WebSocket closed unexpectedly. Attempting to reconnect");
+            log.trace("WebSocket closed unexpectedly. Attempting to reconnect");
    
             jdbcConfigHandler.configComplete = false;
             
@@ -130,7 +130,7 @@ public class JDBCCore {
     }
     
     /**
-     * Tries to connect to a source and waits up to {@code timeout} seconds for it to succeed or fail.
+     * Tries to connect to a source and waits up to {@code timeout} seconds before failing and trying again.
      * @param timeout   The maximum number of seconds to wait before assuming failure and stopping.
      * @return          true if the source connection succeeds, false if it fails.
      */
@@ -138,7 +138,7 @@ public class JDBCCore {
         boolean sourcesSucceeded = false;
         while (!sourcesSucceeded) {
             client = new ExtensionWebSocketClient(sourceName);
-            jdbcConfigHandler = new JDBCConfigHandler(this);
+            jdbcConfigHandler = new JDBCHandleConfiguration(this);
             
             client.setConfigHandler(jdbcConfigHandler);
             client.setReconnectHandler(reconnectHandler);
@@ -161,24 +161,27 @@ public class JDBCCore {
      * @param message   The Query message.
      * @return          The ResultSet that is obtained from executing the Query.
      */
-    public ResultSet executeQuery(ExtensionServiceMessage message) {
+    public void executeQuery(ExtensionServiceMessage message) {
         Map<String, ?> request = (Map<String, ?>) message.getObject();
         String replyAddress = ExtensionServiceMessage.extractReplyAddress(message);
-        if (jdbc == null) { // Should only happen if close() was called immediately before retreiveImage()
+        if (jdbc == null) {
             if (client != null) {
                 client.sendQueryError(replyAddress, this.getClass().getName() + ".closed",
-                        "The source closed mid message", null);
+                        "JDBC connection closed before operation could complete", null);
             }
-            return null;
         }
         
-        // Return the query results, or send a query error and return null on an exception
+        // Gather query results and send the appropriate response, or send a query error if an exception is caught
         try {
             if (request.get("query") instanceof String) {
                 String queryString = (String) request.get("query");
-                return jdbc.processQuery(queryString);
+                Map<String, ArrayList<HashMap>> queryMap = jdbc.processQuery(queryString);
+                sendDataFromQuery(queryMap, message);
             } else {
                 log.error("Query could not be executed because query was not a String");
+                client.sendQueryError(replyAddress, this.getClass().getName() + ".queryNotString", 
+                        "The Publish Request could not be executed because the query property is"
+                        + "not a string", null);
             }
         } catch (SQLException e) {
             log.warn("Could not execute requested query.", e);
@@ -187,43 +190,45 @@ public class JDBCCore {
                     "Failed to execute query for reason '{0}'. Exception was {1}. Request was {2}"
                     , new Object[] {e.getMessage(), e, request});
         }
-        return null; // This will keep the program from trying to do anything with an image when retrieval fails
     }
     
     /**
      * Executes the query that is provided as a String in the options specified by the "query" key in the
      * object of the Publish message.
      * @param message   The Query message.
-     * @return          The int value that is obtained from executing the Query. A value of 0 indicates 
+     * @return          The int value that is obtained from executing the Query. A value of -1 indicates 
      *                  something went wrong.
      */
-    public int executePublish(ExtensionServiceMessage message) {
+    public void executePublish(ExtensionServiceMessage message) {
         Map<String, ?> request = (Map<String, ?>) message.getObject();
         String replyAddress = ExtensionServiceMessage.extractReplyAddress(message);
-        if (jdbc == null) { // Should only happen if close() was called immediately before retreiveImage()
+        if (jdbc == null) {
             if (client != null) {
                 client.sendQueryError(replyAddress, this.getClass().getName() + ".closed",
-                        "The source closed mid message", null);
+                        "JDBC connection closed before operation could complete", null);
             }
-            return 0;
+            log.error("JDBC connection closed before operation could complete");
         }
         
-        // Return the query results, or send a query error and return null on an exception
+        // Gather query results, or send a query error if an exception is caught
         try {
             if (request.get("query") instanceof String) {
                 String queryString = (String) request.get("query");
-                return jdbc.processPublish(queryString);
+                int data = jdbc.processPublish(queryString);
+                log.trace("The returned integer value from Publish Query is the following: ", data);
             } else {
                 log.error("Query could not be executed because query was not a String");
+                client.sendQueryError(replyAddress, this.getClass().getName() + ".queryNotString", 
+                        "The Publish Request could not be executed because the query property is"
+                        + "not a string", null);
             }
         } catch (SQLException e) {
-            log.warn("Could not execute requested query.", e);
+            log.error("Could not execute requested query.", e);
             log.debug("Request was: {}", request);
             client.sendQueryError(replyAddress, SQLException.class.getCanonicalName(), 
                     "Failed to execute query for reason '{0}'. Exception was {1}. Request was {2}"
                     , new Object[] {e.getMessage(), e, request});
         }
-        return 0; // This will keep the program from trying to do anything with an image when retrieval fails
     }
     
    /**
@@ -232,61 +237,18 @@ public class JDBCCore {
     * @param queryResults   A ResultSet containing return value from executeQuery()
     * @param message        The Query message
     */
-   public void sendDataFromQuery(ResultSet queryResults, ExtensionServiceMessage message) {
+   public void sendDataFromQuery(Map<String, ArrayList<HashMap>> queryMap, ExtensionServiceMessage message) {
        String replyAddress = ExtensionServiceMessage.extractReplyAddress(message);
        
-       if (queryResults == null) {
-           if (client != null) {
-               client.sendQueryError(replyAddress, this.getClass().getName(),
-                       "The JDBC source could not complete the query", null);
-           }
-           return;
-       }
-       
        // Send the results of the query
-       try {
+       if (queryMap == null) {
            // If data is empty send empty list with 204 code
-           if (!queryResults.next()) { 
-               client.sendQueryResponse(204, replyAddress, new LinkedHashMap<>());    
-               queryResults.close();
-           } else {
-               queryResults.beforeFirst();
-               Map<String, ArrayList<HashMap>> queryResultsMap = createMapFromResults(queryResults);
-               client.sendQueryResponse(200, replyAddress, queryResultsMap);
-               queryResults.close();
-           }
-       } catch (SQLException e) {
-           log.error("An error occured when processing the query results: ", e);
+           client.sendQueryResponse(204, replyAddress, new LinkedHashMap<>());
+       } else {
+           client.sendQueryResponse(200, replyAddress, queryMap);
        }
    }
    
-   /**
-    * 
-    * @param queryResults   A ResultSet containing return value from executeQuery()
-    * @return               The map containing a key/value pair where key = "queryResult" and
-    *                       value = an ArrayList of maps each representing one row of the ResultSet
-    * @throws SQLException
-    */
-   Map<String, ArrayList<HashMap>> createMapFromResults(ResultSet queryResults) throws SQLException{
-       Map<String, ArrayList<HashMap>> map = new LinkedHashMap<>();
-       ArrayList<HashMap> rows = new ArrayList<HashMap>();
-       ResultSetMetaData md = queryResults.getMetaData(); 
-       int columns = md.getColumnCount();
-       
-       // Iterate over rows of Result Set and create a map for each row
-       while(queryResults.next()) {
-           HashMap row = new HashMap(columns);
-           for (int i=1; i<=columns; ++i) {
-               row.put(md.getColumnName(i), queryResults.getObject(i));
-           }
-           // Add each row map to the list of rows
-           rows.add(row);
-       }
-       
-       // Put list of maps as value to the key "queryResult"
-       map.put("queryResult", rows);
-       return map;
-   }
     
     /**
      * Closes all resources held by this program except for the {@link ExtensionWebSocketClient}. 
@@ -323,13 +285,13 @@ public class JDBCCore {
             sourcesSucceeded = client.getSourceConnectionFuture().get(timeout, TimeUnit.SECONDS);
         }
         catch (TimeoutException e) {
-            log.error("Timeout: full connection did not succeed within {} seconds.", timeout);
+            log.error("Timeout: full connection did not succeed within {} seconds: {}", timeout, e);
         }
         catch (Exception e) {
             log.error("Exception occurred while waiting for webSocket connection", e);
         }
         if (!sourcesSucceeded) {
-            log.error("Failed to connect to all sources. Retrying...");
+            log.error("Failed to connect to all sources.");
             if (!client.isOpen()) {
                 log.error("Failed to connect to server url '" + targetVantiqServer + "'.");
             } else if (!client.isAuthed()) {

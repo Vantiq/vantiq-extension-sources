@@ -29,7 +29,7 @@ public class NoSendJDBCCore extends JDBCCore {
         closed = false;
         fClient = new FalseClient(sourceName);
         client = fClient;
-        jdbcConfigHandler = new JDBCConfigHandler(this);
+        jdbcConfigHandler = new JDBCHandleConfiguration(this);
         
         client.setConfigHandler(jdbcConfigHandler);
         client.setReconnectHandler(reconnectHandler);

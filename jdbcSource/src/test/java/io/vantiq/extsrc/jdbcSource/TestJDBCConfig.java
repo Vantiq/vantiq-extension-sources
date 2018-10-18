@@ -24,7 +24,7 @@ import io.vantiq.extjsdk.ExtensionServiceMessage;
 
 public class TestJDBCConfig {
 
-    JDBCConfigHandler handler;
+    JDBCHandleConfiguration handler;
     
     NoSendJDBCCore nCore;
     
@@ -43,10 +43,9 @@ public class TestJDBCConfig {
     
     @BeforeClass
     public static void getProps() {
-        testDBUsername = System.getProperty("TestDBUsername", null);
-        testDBPassword = System.getProperty("TestDBPassword", null);
-        testDBURL = System.getProperty("TestDBURL", null);
-        testDBDriver = System.getProperty("TestDBDriver", null);
+        testDBUsername = System.getProperty("EntConJDBCUsername", null);
+        testDBPassword = System.getProperty("EntConJDBCPassword", null);
+        testDBURL = System.getProperty("EntConJDBCURL", null);
     }
     
     @Before
@@ -55,7 +54,7 @@ public class TestJDBCConfig {
         authToken = "token";
         targetVantiqServer = "dev.vantiq.com";
         nCore = new NoSendJDBCCore(sourceName, authToken, targetVantiqServer);
-        handler = new JDBCConfigHandler(nCore);
+        handler = new JDBCHandleConfiguration(nCore);
     }
     
     @After
@@ -81,7 +80,7 @@ public class TestJDBCConfig {
     
     @Test
     public void testMinimalConfig() {
-        assumeTrue(testDBUsername != null && testDBPassword != null && testDBURL != null && testDBDriver != null);
+        assumeTrue(testDBUsername != null && testDBPassword != null && testDBURL != null);
         nCore.start(5); // Need a client to avoid NPEs on sends
         
         Map conf = minimalConfig();

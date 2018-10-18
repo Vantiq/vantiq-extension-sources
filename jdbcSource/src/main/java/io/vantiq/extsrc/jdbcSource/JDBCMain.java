@@ -39,6 +39,13 @@ public class JDBCMain {
     static String authToken;
     static String targetVantiqServer;
     
+    // Exit Error Codes
+    static final int NO_AUTH_EXIT = 1;
+    static final int NO_SOURCE_EXIT = 2;
+    static final int NO_SERVER_EXIT = 3;
+    
+    
+    
     /**
      * Connects to the Vantiq source and starts polling for data. Exits when all sources are done running.
      * @param args  Should be either null or the first argument as a config file
@@ -102,21 +109,21 @@ public class JDBCMain {
         if (authToken == null) {
             log.error("No valid authentication token in server settings");
             log.error("Exiting...");
-            exit(0);
+            exit(NO_AUTH_EXIT);
         }
         
         String sourceStr = config.getProperty("sources");
         if (sourceStr == null || sourceStr.equals("")) {
             log.error("No sources in server settings");
             log.error("Exiting...");
-            exit(0);
+            exit(NO_SOURCE_EXIT);
         }
         
         targetVantiqServer = config.getProperty("targetServer");
         if (targetVantiqServer == null || targetVantiqServer.equals("")) {
             log.error("No server URL specified in server settings");
             log.error("Exiting...");
-            exit(0);
+            exit(NO_SERVER_EXIT);
         }
                 
         // Obtain potentially multiple sources from a comma delimited string of sources 

@@ -46,6 +46,7 @@ public class TestJDBCMain {
             JDBCMain.createSources(props);
             fail("Didn't exit when missing authToken and sources");
         } catch (ExitException e) {
+            assert e.getMessage().equals("Exit Requested: auth token was not specified.");
             // Expected this Exception
         }
         
@@ -55,6 +56,17 @@ public class TestJDBCMain {
             JDBCMain.createSources(props);
             fail("Didn't exit when missing sources");
         } catch (ExitException e) {
+            assert e.getMessage().equals("Exit Requested: source(s) not specified.");
+            // Expected this Exception
+        }
+        
+        try {
+            // Fail when only authToken and sources are set
+            props.setProperty("sources", "a source");
+            JDBCMain.createSources(props);
+            fail("Didn't exit when missing server");
+        } catch (ExitException e) {
+            assert e.getMessage().equals("Exit Requested: target server not specified.");
             // Expected this Exception
         }
         
@@ -73,6 +85,7 @@ public class TestJDBCMain {
             JDBCMain.createSources(props);
             fail("Didn't exit when missing authToken");
         } catch (ExitException e) {
+            assert e.getMessage().equals("Exit Requested: auth token was not specified.");
             // Expected this Exception
         }
         
@@ -102,7 +115,15 @@ public class TestJDBCMain {
         public void checkExit(int status) 
         {
             super.checkExit(status);
-            throw new ExitException("Exit Requested");
+            if (status == 1) {
+                throw new ExitException("Exit Requested: auth token was not specified.");
+            } else if (status == 2) {
+                throw new ExitException("Exit Requested: source(s) not specified.");
+            } else if (status == 3) {
+                throw new ExitException("Exit Requested: target server not specified.");
+            } else {
+                throw new ExitException("Exit Requested");
+            }
         }
     }
     

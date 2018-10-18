@@ -3,47 +3,39 @@ package io.vantiq.extsrc.jdbcSource;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.ResultSet;
+import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.Map;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class JDBC {
-    Logger                  log  = LoggerFactory.getLogger(this.getClass().getCanonicalName());
-    private Connection      conn = null;
-    private Statement       stmt = null;
-    private ResultSet       rs   = null;    
+    Logger              log  = LoggerFactory.getLogger(this.getClass().getCanonicalName());
+    private Connection  conn = null;
+    private Statement   stmt = null;
+    private ResultSet   rs   = null;    
     
     /**
      * The method used to setup the connection to the SQL Database, using the values retrieved from the source config.
-     * @param jdbcDriver    The JDBC Driver Class to be used to connect to the SQL Database.
      * @param dbURL         The Database URL to be used to connect to the SQL Database.    
      * @param username      The username to be used to connect to the SQL Database.
      * @param password      The password to be used to connect to the SQL Database.
      * @throws SQLException
-     * @throws LinkageError
-     * @throws ClassNotFoundException
      */
-    public void setupJDBC(String jdbcDriver, String dbURL, String username, String password) 
-            throws SQLException, LinkageError, ClassNotFoundException {        
+    public void setupJDBC(String dbURL, String username, String password) throws SQLException {        
         try {
-            // Register JDBC driver
-            Class.forName(jdbcDriver);
-            
             // Open a connection
             conn = DriverManager.getConnection(dbURL,username,password);
             
         } catch (SQLException e) {
             // Handle errors for JDBC
-            log.error("A database error occured: ", e);
-        } catch(LinkageError e){
-            // Handle errors for Class.forName and also handles ExceptionInInitializerError 
-            log.error("A JDBC Driver error occured: ", e);
-        } catch (ClassNotFoundException e) {
-            // Handle errors for Class.forName
-            log.error("JDBC Driver class was not found: ", e);
-        }
+            throw new SQLException(this.getClass().getCanonicalName() + "A database error occured: " + e);
+        } 
     }
     
     /**
@@ -53,7 +45,7 @@ public class JDBC {
      *                          was caught.
      * @throws SQLException
      */
-    public ResultSet processQuery(String sqlQuery) throws SQLException{
+    public Map<String, ArrayList<HashMap>> processQuery(String sqlQuery) throws SQLException {
         try {
             if (stmt!=null) {
                 stmt.close();
@@ -61,19 +53,20 @@ public class JDBC {
             // Create statement used to execute query
             stmt = conn.createStatement();
             rs = stmt.executeQuery(sqlQuery);
-            return rs;
+            Map<String, ArrayList<HashMap>> rsMap = createMapFromResults(rs);
+            return rsMap;
             
-        } catch(SQLException e){
+        } catch(SQLException e) {
             // Handle errors for JDBC
-            log.error("A database error occured: ", e);
+            throw new SQLException(this.getClass().getCanonicalName() + "A database error occured: " + e);
+        } finally {
+            if (rs!=null) {
+                rs.close();
+            }
+            if (stmt!=null) {
+                stmt.close();
+            }
         }
-        if (rs!=null) {
-            rs.close();
-        }
-        if (stmt!=null) {
-            stmt.close();
-        }
-        return null;
     }
     
     /**
@@ -83,7 +76,7 @@ public class JDBC {
      *                          or 0 if an exception was caught.
      * @throws SQLException
      */
-    public int processPublish(String sqlQuery) throws SQLException{
+    public int processPublish(String sqlQuery) throws SQLException {
         try {
             // Create statement used to execute query
             stmt = conn.createStatement();
@@ -91,32 +84,94 @@ public class JDBC {
             stmt.close();
             return publishSuccess;
             
-        } catch(SQLException e){
+        } catch(SQLException e) {
             // Handle errors for JDBC
-            log.error("A database error occured: ", e);
+            throw new SQLException(this.getClass().getCanonicalName() + "A database error occured: " + e);
+        } finally {
+            if (stmt!=null) {
+                stmt.close();
+            }
         }
-        if (stmt!=null) {
-            stmt.close();
-        }
-        return 0;
     }
     
     /**
-     * Closes the SQL ResultSet, Statement and Connection.
+     * 
+     * @param queryResults   A ResultSet containing return value from executeQuery()
+     * @return               The map containing a key/value pair where key = "queryResult" and
+     *                       value = an ArrayList of maps each representing one row of the ResultSet
+     * @throws SQLException
+     */
+    Map<String, ArrayList<HashMap>> createMapFromResults(ResultSet queryResults) throws SQLException {
+        if (!queryResults.next()) { 
+            return null;
+        } else {
+            queryResults.beforeFirst();
+            Map<String, ArrayList<HashMap>> map = new LinkedHashMap<>();
+            ArrayList<HashMap> rows = new ArrayList<HashMap>();
+            ResultSetMetaData md = queryResults.getMetaData(); 
+            int columns = md.getColumnCount();
+            
+            // Iterate over rows of Result Set and create a map for each row
+            while(queryResults.next()) {
+                HashMap row = new HashMap(columns);
+                for (int i=1; i<=columns; ++i) {
+                    row.put(md.getColumnName(i), queryResults.getObject(i));
+                }
+                // Add each row map to the list of rows
+                rows.add(row);
+            }
+            
+            // Put list of maps as value to the key "queryResult"
+            map.put("queryResult", rows);
+            return map;
+        }
+    }
+    
+    /**
+     * Calls the close functions for the SQL ResultSet, Statement, and Connection.
      */
     public void close() {
+        closeResultSet();
+        closeStatement();
+        closeConnection();
+    }
+    
+    /**
+     * Closes the SQL ResultSet.
+     */
+    public void closeResultSet() {
         try {
             if (rs!=null) {
                 rs.close();
             }
+        } catch(SQLException e) {
+            log.error("A error occured when closing the ResultSet: ", e);
+        }
+    }
+    
+    /**
+     * Closes the SQL Statement.
+     */
+    public void closeStatement() {
+        try {
             if (stmt!=null) {
                 stmt.close();
             }
+        } catch(SQLException e) {
+            log.error("A error occured when closing the Statement: ", e);
+        }
+    }
+    
+    /**
+     * Closes the SQL Connection.
+     */
+    public void closeConnection() {
+        try {
             if (conn!=null) {
                 conn.close();
             }
         } catch(SQLException e) {
-            log.error("A database error occured: ", e);
+            log.error("A error occured when closing the Connection: ", e);
         }
     }
 }
