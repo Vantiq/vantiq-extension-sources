@@ -63,15 +63,19 @@ public class TestExtensionWebSocketClient extends ExtjsdkTestBase{
         
         url = "http://prod.vantiq.com/api/v1/wsock/websocket";
         url = client.validifyUrl(url);
-        assert url.equals("wss://prod.vantiq.com/api/v1/wsock/websocket");
-        
+        assert url.equals("ws://prod.vantiq.com/api/v1/wsock/websocket");
+
+        url = "http://prod.vantiq.com/";
+        url = client.validifyUrl(url);
+        assert url.equals("ws://prod.vantiq.com/api/v1/wsock/websocket");
+
         url = "http://prod.vantiq.com/api/v/wsock/websocket";
         url = client.validifyUrl(url);
-        assert url.equals("wss://prod.vantiq.com/api/v/wsock/websocket/api/v1/wsock/websocket");
-        
+        assert url.equals("ws://prod.vantiq.com/api/v/wsock/websocket/api/v1/wsock/websocket");
+
         url = "http://prod.vantiq.com/api/v47/wsock/websocket";
         url = client.validifyUrl(url);
-        assert url.equals("wss://prod.vantiq.com/api/v47/wsock/websocket");
+        assert url.equals("ws://prod.vantiq.com/api/v47/wsock/websocket");
         
         url = "https://dev.vantiq.com";
         url = client.validifyUrl(url);
@@ -84,6 +88,22 @@ public class TestExtensionWebSocketClient extends ExtjsdkTestBase{
         url = "dev.vantiq.com";
         url = client.validifyUrl(url);
         assert url.equals("wss://dev.vantiq.com/api/v1/wsock/websocket");
+
+        url = "https://prod.vantiq.com/api/v1/wsock/websocket";
+        url = client.validifyUrl(url);
+        assert url.equals("wss://prod.vantiq.com/api/v1/wsock/websocket");
+
+        url = "https://prod.vantiq.com/";
+        url = client.validifyUrl(url);
+        assert url.equals("wss://prod.vantiq.com/api/v1/wsock/websocket");
+
+        url = "https://prod.vantiq.com/api/v/wsock/websocket";
+        url = client.validifyUrl(url);
+        assert url.equals("wss://prod.vantiq.com/api/v/wsock/websocket/api/v1/wsock/websocket");
+
+        url = "https://prod.vantiq.com/api/v47/wsock/websocket";
+        url = client.validifyUrl(url);
+        assert url.equals("wss://prod.vantiq.com/api/v47/wsock/websocket");
     }
     
     @Test
