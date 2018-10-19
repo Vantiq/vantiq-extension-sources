@@ -45,8 +45,20 @@ def standardImplementationTestPatterns = new ArrayList<String>(
 )
 
 // This is the version of OpenCV that you will be using. Should be "XYZ" for version X.Y.Z
+
 def opencvVersion = "342"
 
+if (System.env.OPENCV_LOC != null ) { // Fail out if OpenCV is not available
+    def ocv = new File(System.env.OPENCV_LOC)
+    ocv.eachFile { fname ->
+        if (fname.name.startsWith("opencv-") && fname.name.endsWith(".jar")) {
+            opencvVersion = fname.name.substring("opencv-".length(), fname.name.lastIndexOf(".jar"))
+            logger.warn("Detected OpenCV Version ${opencvVersion}")
+        }
+    }
+} else {
+    logger.warn("No OPENCV Located.  Defaulting to OpenCV Version ${opencvVersion}")
+}
 // Add the logConfig folder to the classpath so that changes to logConfig/log4j2.xml will be used for logging
 // and set java.library.path to the contents of the environment variable OPENCV_LOC so the OpenCV native libraries are
 // usable 
@@ -200,14 +212,14 @@ dependencies {
             opencvDependentFiles.getFiles().forEach {file -> depFileNames += file.getName() + "', '"}
             depFileNames = depFileNames.substring(0, depFileNames.length() - 3) // Remove the last ", '"
             throw new Exception("Environment variable 'OPENCV_LOC' is not set. Either set it to a location containing " + 
-            "opencv-${opencvVersion}.jar and the compiled OpenCV library, or remove ${depFileNames}")
+            "opencv-${opencvVersion}.jar and the compiled OpenCV library, or remove the following files: ${depFileNames}")
         } else if (!file("${System.env.OPENCV_LOC}/opencv-${opencvVersion}.jar").exists()) { // Fail out if the OpenCV jar is missing
             // Setting depFileNames to the files still dependent on OpenCV
             def depFileNames = "'"
             opencvDependentFiles.getFiles().forEach {file -> depFileNames += file.getName() + "', '"}
             depFileNames = depFileNames.substring(0, depFileNames.length() - 3) // Remove the last ", '"
             throw new Exception("Could not find opencv-${opencvVersion}.jar in '${System.env.OPENCV_LOC}'. Either add the jar to the "
-                + "folder specified in the environment variable OPENCV_LOC or remove ${depFileNames}")
+                + "folder specified in the environment variable OPENCV_LOC or remove the following files: ${depFileNames}")
         } else {
             compile files("${System.env.OPENCV_LOC}/opencv-${opencvVersion}.jar")
         }
