@@ -48,7 +48,7 @@ def standardImplementationTestPatterns = new ArrayList<String>(
 
 def opencvVersion = "342"
 
-if (System.env.OPENCV_LOC != null ) { // Fail out if OpenCV is not available
+if (System.env.OPENCV_LOC != null ) {
     def ocv = new File(System.env.OPENCV_LOC)
     ocv.eachFile { fname ->
         if (fname.name.startsWith("opencv-") && fname.name.endsWith(".jar")) {
