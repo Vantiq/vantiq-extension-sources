@@ -24,7 +24,7 @@ public class TestObjRecMain {
     @Before
     public void setup() {
         ObjectRecognitionMain.authToken             = "gcy1hHR39ge2PNCZeiUbYKAev-G7u-KyPh2Ns4gI0Y8=";
-        ObjectRecognitionMain.targetVantiqServer    = "ws://localhost:8080";
+        ObjectRecognitionMain.targetVantiqServer    = "http://localhost:8080";  // Used to be ws:  -- should handle this directly
         ObjectRecognitionMain.modelDirectory        = "models/";
         System.setSecurityManager(new NoExit());
     }

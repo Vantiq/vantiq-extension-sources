@@ -190,16 +190,22 @@ public class ExtensionWebSocketClient {
         if (url == null) {
             throw new IllegalArgumentException("Must give a valid URL to connect to the websocket");
         }
-        
+
+        boolean usesSSL = true;
         // Ensure prepended by wss:// and not http:// or https://
         if (url.startsWith("http://")) {
             url = url.substring("http://".length());
+            usesSSL = false;
         }
         else if (url.startsWith("https://")) {
             url = url.substring("https://".length());
         }
         if (!url.startsWith("ws://") && !url.startsWith("wss://")) {
-            url = "wss://" + url;
+            String prefix = "wss://";
+            if (!usesSSL) {
+                prefix = "ws://";
+            }
+            url = prefix + url;
         }
         
         // Ensure it ends with /api/v{version number}/wsock/websocket
