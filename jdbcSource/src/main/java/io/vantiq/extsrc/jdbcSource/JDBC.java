@@ -34,7 +34,7 @@ public class JDBC {
             
         } catch (SQLException e) {
             // Handle errors for JDBC
-            throw new SQLException(this.getClass().getCanonicalName() + "A database error occured: " + e);
+            throw new SQLException(this.getClass().getCanonicalName() + ": A database error occurred: " + e.getMessage(), e);
         } 
     }
     
@@ -46,27 +46,17 @@ public class JDBC {
      * @throws SQLException
      */
     public Map<String, ArrayList<HashMap>> processQuery(String sqlQuery) throws SQLException {
-        try {
-            if (stmt!=null) {
-                stmt.close();
-            }
-            // Create statement used to execute query
-            stmt = conn.createStatement();
-            rs = stmt.executeQuery(sqlQuery);
+        try (Statement stmt = conn.createStatement();
+                ResultSet rs = stmt.executeQuery(sqlQuery)) {
+            this.stmt = stmt;
+            this.rs = rs;
             Map<String, ArrayList<HashMap>> rsMap = createMapFromResults(rs);
             return rsMap;
             
         } catch(SQLException e) {
             // Handle errors for JDBC
-            throw new SQLException(this.getClass().getCanonicalName() + "A database error occured: " + e);
-        } finally {
-            if (rs!=null) {
-                rs.close();
-            }
-            if (stmt!=null) {
-                stmt.close();
-            }
-        }
+            throw new SQLException(this.getClass().getCanonicalName() + ": A database error occurred: " + e.getMessage(), e);
+        } 
     }
     
     /**
@@ -77,21 +67,15 @@ public class JDBC {
      * @throws SQLException
      */
     public int processPublish(String sqlQuery) throws SQLException {
-        try {
-            // Create statement used to execute query
-            stmt = conn.createStatement();
+        try (Statement stmt = conn.createStatement()) {
+            this.stmt = stmt;
             int publishSuccess = stmt.executeUpdate(sqlQuery);
-            stmt.close();
             return publishSuccess;
             
         } catch(SQLException e) {
             // Handle errors for JDBC
-            throw new SQLException(this.getClass().getCanonicalName() + "A database error occured: " + e);
-        } finally {
-            if (stmt!=null) {
-                stmt.close();
-            }
-        }
+            throw new SQLException(this.getClass().getCanonicalName() + ": A database error occurred: " + e.getMessage(), e);
+        } 
     }
     
     /**
@@ -145,7 +129,7 @@ public class JDBC {
                 rs.close();
             }
         } catch(SQLException e) {
-            log.error("A error occured when closing the ResultSet: ", e);
+            log.error("A error occurred when closing the ResultSet: ", e);
         }
     }
     
@@ -158,7 +142,7 @@ public class JDBC {
                 stmt.close();
             }
         } catch(SQLException e) {
-            log.error("A error occured when closing the Statement: ", e);
+            log.error("A error occurred when closing the Statement: ", e);
         }
     }
     
@@ -171,7 +155,7 @@ public class JDBC {
                 conn.close();
             }
         } catch(SQLException e) {
-            log.error("A error occured when closing the Connection: ", e);
+            log.error("A error occurred when closing the Connection: ", e);
         }
     }
 }

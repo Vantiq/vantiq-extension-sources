@@ -43,7 +43,7 @@ public class JDBCHandleConfiguration extends Handler<ExtensionServiceMessage> {
     Logger                  log;
     String                  sourceName;
     JDBCCore                source;
-    boolean                 configComplete = false;
+    boolean                 configComplete = false; // Not currently used
     
     Map<String, ?> lastGeneral = null;
     
