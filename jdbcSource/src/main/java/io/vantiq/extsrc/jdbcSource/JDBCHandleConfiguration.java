@@ -33,9 +33,7 @@ import io.vantiq.extsrc.jdbcSource.JDBCCore;
  * <ul>
  *      <li>{@code username}: The username to log into the SQL Database.
  *      <li>{@code password}: The password to log into the SQL Database.
- *      <li>{@code dbURL}: The URL of the SQL Database to be used.
- *      <li>{@code driver}: The JDBC Driver that will be used to connect to the SQL Database.
- *                      
+ *      <li>{@code dbURL}: The URL of the SQL Database to be used. *                      
  * </ul>
  */
 
@@ -98,7 +96,7 @@ public class JDBCHandleConfiguration extends Handler<ExtensionServiceMessage> {
         
         // Obtain the Maps for each object
         if ( !(config.get("config") instanceof Map && ((Map)config.get("config")).get("jdbcConfig") instanceof Map) ) {
-            log.error("No configuration suitable for an objectRecognition. Waiting for valid config...");
+            log.error("No configuration suitable for JDBC Source. Waiting for valid config...");
             failConfig();
             return;
         }
@@ -144,7 +142,7 @@ public class JDBCHandleConfiguration extends Handler<ExtensionServiceMessage> {
         if (generalConfig.get("username") instanceof String) {
             username = (String) generalConfig.get("username");
         } else {
-            log.debug("No db username was specified");
+            log.error("No db username was specified");
             failConfig();
             return false;
         }
@@ -152,7 +150,7 @@ public class JDBCHandleConfiguration extends Handler<ExtensionServiceMessage> {
         if (generalConfig.get("password") instanceof String) {
             password = (String) generalConfig.get("password");
         } else {
-            log.debug("No db password was specified");
+            log.error("No db password was specified");
             failConfig();
             return false;
         }
@@ -160,18 +158,21 @@ public class JDBCHandleConfiguration extends Handler<ExtensionServiceMessage> {
         if (generalConfig.get("dbURL") instanceof String) {
             dbURL = (String) generalConfig.get("dbURL");
         } else {
-            log.debug("No db URL was specified");
+            log.error("No db URL was specified");
             failConfig();
             return false;
         }
         
         // Initialize JDBC Source with config values
         try {
+            if (source.jdbc != null) {
+                source.jdbc.close();
+            }
             JDBC jdbc = new JDBC();
             jdbc.setupJDBC(dbURL, username, password);
             source.jdbc = jdbc; 
         } catch (SQLException e) {
-            log.error("Exception occured while setting up JDBC Source: ", e);
+            log.error("Exception occurred while setting up JDBC Source: ", e);
             failConfig();
             return false;
         }
@@ -179,7 +180,9 @@ public class JDBCHandleConfiguration extends Handler<ExtensionServiceMessage> {
         // Start listening for queries and publishes
         source.client.setQueryHandler(queryHandler);
         source.client.setPublishHandler(publishHandler);
-
+        
+        // Save most recent config as the last config used
+        lastGeneral = generalConfig;
         log.trace("JDBC source created");
         return true;
     }

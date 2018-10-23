@@ -8,8 +8,6 @@
 
 package io.vantiq.extsrc.jdbcSource;
 
-import java.sql.ResultSet;
-import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -72,13 +70,20 @@ public class JDBCCore {
                         
             CompletableFuture<Boolean> success = client.connectToSource();
             
+//            try {
+//                if ( !success.get(10, TimeUnit.SECONDS) ) {
+//                    log.error("Source reconnection failed");
+//                    close();
+//                }
+//            } catch (InterruptedException | ExecutionException | TimeoutException e) {
+//                log.error("Could not reconnect to source within 10 seconds: ", e);
+//                close();
+//            }
+            
             try {
-                if ( !success.get(10, TimeUnit.SECONDS) ) {
-                    log.error("Source reconnection failed");
-                    close();
-                }
-            } catch (InterruptedException | ExecutionException | TimeoutException e) {
-                log.error("Could not reconnect to source within 10 seconds: ", e);
+                success.join();
+            } catch (Throwable t) {
+                log.error("Could not reconnect to source: ", t);
                 close();
             }
         }
@@ -132,7 +137,7 @@ public class JDBCCore {
     /**
      * Tries to connect to a source and waits up to {@code timeout} seconds before failing and trying again.
      * @param timeout   The maximum number of seconds to wait before assuming failure and stopping.
-     * @return          true if the source connection succeeds, false if it fails.
+     * @return          true if the source connection succeeds, (will retry indefinitely and never return false).
      */
     public boolean start(int timeout) {
         boolean sourcesSucceeded = false;
@@ -146,20 +151,22 @@ public class JDBCCore {
             client.initiateFullConnection(targetVantiqServer, authToken);
             
             sourcesSucceeded = exitIfConnectionFails(client, timeout);
-            try {
-                Thread.sleep(RECONNECT_INTERVAL);
-            } catch (InterruptedException e) {
-                log.error("An error occurred when trying to sleep the current thread. Error Message: ", e);
+            if (!sourcesSucceeded) {
+                try {
+                    Thread.sleep(RECONNECT_INTERVAL);
+                } catch (InterruptedException e) {
+                    log.error("An error occurred when trying to sleep the current thread. Error Message: ", e);
+                }
             }
         }
         return true;
     }
     
     /**
-     * Executes the query that is provided as a String in the options specified by the "query" key in the
-     * object of the Query message.
+     * Executes the query that is provided as a String in the options specified by the "query" key, as part of the
+     * object of the Query message. Calls sendDataFromQuery() if the query is executed successfully, otherwise sends
+     * a query error using sendQueryError()
      * @param message   The Query message.
-     * @return          The ResultSet that is obtained from executing the Query.
      */
     public void executeQuery(ExtensionServiceMessage message) {
         Map<String, ?> request = (Map<String, ?>) message.getObject();
@@ -167,7 +174,7 @@ public class JDBCCore {
         if (jdbc == null) {
             if (client != null) {
                 client.sendQueryError(replyAddress, this.getClass().getName() + ".closed",
-                        "JDBC connection closed before operation could complete", null);
+                        "JDBC connection closed before operation could complete.", null);
             }
         }
         
@@ -178,10 +185,10 @@ public class JDBCCore {
                 Map<String, ArrayList<HashMap>> queryMap = jdbc.processQuery(queryString);
                 sendDataFromQuery(queryMap, message);
             } else {
-                log.error("Query could not be executed because query was not a String");
+                log.error("Query could not be executed because query was not a String.");
                 client.sendQueryError(replyAddress, this.getClass().getName() + ".queryNotString", 
                         "The Publish Request could not be executed because the query property is"
-                        + "not a string", null);
+                        + "not a string.", null);
             }
         } catch (SQLException e) {
             log.warn("Could not execute requested query.", e);
@@ -196,17 +203,11 @@ public class JDBCCore {
      * Executes the query that is provided as a String in the options specified by the "query" key in the
      * object of the Publish message.
      * @param message   The Query message.
-     * @return          The int value that is obtained from executing the Query. A value of -1 indicates 
-     *                  something went wrong.
      */
     public void executePublish(ExtensionServiceMessage message) {
         Map<String, ?> request = (Map<String, ?>) message.getObject();
         String replyAddress = ExtensionServiceMessage.extractReplyAddress(message);
         if (jdbc == null) {
-            if (client != null) {
-                client.sendQueryError(replyAddress, this.getClass().getName() + ".closed",
-                        "JDBC connection closed before operation could complete", null);
-            }
             log.error("JDBC connection closed before operation could complete");
         }
         
@@ -218,24 +219,17 @@ public class JDBCCore {
                 log.trace("The returned integer value from Publish Query is the following: ", data);
             } else {
                 log.error("Query could not be executed because query was not a String");
-                client.sendQueryError(replyAddress, this.getClass().getName() + ".queryNotString", 
-                        "The Publish Request could not be executed because the query property is"
-                        + "not a string", null);
             }
         } catch (SQLException e) {
             log.error("Could not execute requested query.", e);
             log.debug("Request was: {}", request);
-            client.sendQueryError(replyAddress, SQLException.class.getCanonicalName(), 
-                    "Failed to execute query for reason '{0}'. Exception was {1}. Request was {2}"
-                    , new Object[] {e.getMessage(), e, request});
         }
     }
     
    /**
-    * Takes the data returned from executeQuery() and calls a helper function, createMapFromResults(), to convert
-    * data into a list of maps for each row, and send this all together as a map.
-    * @param queryResults   A ResultSet containing return value from executeQuery()
-    * @param message        The Query message
+    * Called by executeQuery() once the query has been executed, and sends the retrieved data back to VANTIQ.
+    * @param queryMap   A Map containing the retrieved data from processQuery().
+    * @param message    The Query message
     */
    public void sendDataFromQuery(Map<String, ArrayList<HashMap>> queryMap, ExtensionServiceMessage message) {
        String replyAddress = ExtensionServiceMessage.extractReplyAddress(message);

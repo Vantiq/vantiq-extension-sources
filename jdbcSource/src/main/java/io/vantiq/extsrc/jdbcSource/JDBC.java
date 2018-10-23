@@ -41,8 +41,7 @@ public class JDBC {
     /**
      * The method used to execute the provided query, triggered by a SELECT on the respective source from VANTIQ.
      * @param sqlQuery          A String representation of the query, retrieved from the WITH clause from VANTIQ.
-     * @return                  The ResultSet that is returned by the executeQuery() method, or null if an exception
-     *                          was caught.
+     * @return                  A Map containing all of the data retrieved by the query, (null if nothing was returned)
      * @throws SQLException
      */
     public Map<String, ArrayList<HashMap>> processQuery(String sqlQuery) throws SQLException {
@@ -62,8 +61,7 @@ public class JDBC {
     /**
      * The method used to execute the provided query, triggered by a PUBLISH on the respective source from VANTIQ.
      * @param sqlQuery          A String representation of the query, retrieved from the PUBLISH message.
-     * @return                  The integer value that is returned by the executeUpdate() method representing the row count,
-     *                          or 0 if an exception was caught.
+     * @return                  The integer value that is returned by the executeUpdate() method representing the row count.
      * @throws SQLException
      */
     public int processPublish(String sqlQuery) throws SQLException {
@@ -82,7 +80,8 @@ public class JDBC {
      * 
      * @param queryResults   A ResultSet containing return value from executeQuery()
      * @return               The map containing a key/value pair where key = "queryResult" and
-     *                       value = an ArrayList of maps each representing one row of the ResultSet
+     *                       value = an ArrayList of maps each representing one row of the ResultSet,
+     *                       (null if the ResultSet was empty).
      * @throws SQLException
      */
     Map<String, ArrayList<HashMap>> createMapFromResults(ResultSet queryResults) throws SQLException {

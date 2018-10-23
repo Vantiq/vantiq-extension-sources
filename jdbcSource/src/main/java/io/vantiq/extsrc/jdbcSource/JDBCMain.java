@@ -20,8 +20,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- *  The main of this program. It connects to sources using the specified configuration. Options are in a file where each
- *  option has its own line, and is in the form {@code property=value} with no quotes required for Strings. Options are:
+ *  The main class of this program. It connects to sources using the specified configuration. All sources must belong to
+ *  the same VANTIQ Server & Namespace (i.e. same authtoken). Options are in a file where each option has its own line,
+ *  and is in the form {@code property=value} with no quotes required for Strings. Options are:
  *  <ul>
  *      <li>{@code authToken}: Required. The authentication token to connect with. These can be obtained from the 
  *                      namespace admin.
