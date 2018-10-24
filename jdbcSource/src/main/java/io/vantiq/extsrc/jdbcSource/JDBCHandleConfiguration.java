@@ -10,6 +10,8 @@ package io.vantiq.extsrc.jdbcSource;
 
 import java.sql.SQLException;
 import java.util.Map;
+import java.util.Timer;
+import java.util.TimerTask;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -41,6 +43,7 @@ public class JDBCHandleConfiguration extends Handler<ExtensionServiceMessage> {
     Logger                  log;
     String                  sourceName;
     JDBCCore                source;
+    int                     polling = 0;
     boolean                 configComplete = false; // Not currently used
     
     Map<String, ?> lastGeneral = null;
@@ -60,12 +63,34 @@ public class JDBCHandleConfiguration extends Handler<ExtensionServiceMessage> {
                 // Should never happen, but just in case something changes in the backend
                 if ( !(message.getObject() instanceof Map) ) {
                     String replyAddress = ExtensionServiceMessage.extractReplyAddress(message);
-                    client.sendQueryError(replyAddress, "io.vantiq.extsrc.JDBCConfigHandler.invalidQueryRequest", 
+                    client.sendQueryError(replyAddress, "io.vantiq.extsrc.JDBCHandleConfiguration.invalidQueryRequest", 
                             "Request must be a map", null);
                 }
                 
                 // Process query and send the results
-                source.executeQuery(message);
+                Map<String, ?> request = (Map<String, ?>) message.getObject();
+                // Check if pollRate is set
+                if (request.get("pollRate") instanceof Integer) {
+                    int pollRate = (Integer) request.get("pollRate");
+                    if (pollRate > 0) {
+                        // Create task to run executeQuery with the given message
+                        TimerTask task = new TimerTask() {
+                            @Override
+                            public void run() {
+                                source.executeQuery(message);
+                            }
+                        };
+                        // Create new Timer, and schedule the task according to the pollRate
+                        source.pollTimer = new Timer("executeQuery");
+                        source.pollTimer.schedule(task, 0, pollRate);
+                    } else {
+                        String replyAddress = ExtensionServiceMessage.extractReplyAddress(message);
+                        client.sendQueryError(replyAddress, "io.vantiq.extsrc.JDBCHandleConfiguration.invalidPollRate", 
+                                "The pollRate must be a number greater than 0", null);
+                    }
+                } else {
+                    source.executeQuery(message);
+                }
             }
         };
         publishHandler = new Handler<ExtensionServiceMessage>() {
@@ -81,7 +106,29 @@ public class JDBCHandleConfiguration extends Handler<ExtensionServiceMessage> {
                 }
                 
                 // Process query
-                source.executePublish(message);
+                Map<String, ?> request = (Map<String, ?>) message.getObject();
+                // Check if pollRate is set
+                if (request.get("pollRate") instanceof Integer) {
+                    int pollRate = (Integer) request.get("pollRate");
+                    if (pollRate > 0) {
+                        // Create task to run executeQuery with the given message
+                        TimerTask task = new TimerTask() {
+                            @Override
+                            public void run() {
+                                source.executePublish(message);
+                            }
+                        };
+                        // Create new Timer, and schedule the task according to the pollRate
+                        source.pollTimer = new Timer("executeQuery");
+                        source.pollTimer.schedule(task, 0, pollRate);
+                    } else {
+                        String replyAddress = ExtensionServiceMessage.extractReplyAddress(message);
+                        client.sendQueryError(replyAddress, "io.vantiq.extsrc.JDBCHandleConfiguration.invalidPollRate", 
+                                "The pollRate must be a number greater than 0", null);
+                    }
+                } else {
+                    source.executePublish(message);
+                }
             }
         };
     }

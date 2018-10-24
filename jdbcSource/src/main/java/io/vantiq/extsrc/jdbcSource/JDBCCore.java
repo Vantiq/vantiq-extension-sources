@@ -13,6 +13,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Timer;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
@@ -41,6 +42,7 @@ public class JDBCCore {
     JDBCHandleConfiguration jdbcConfigHandler;
     
     // vars for internal use
+    Timer                       pollTimer = null;
     ExtensionWebSocketClient    client  = null;
     JDBC                        jdbc    = null;
     
@@ -65,6 +67,11 @@ public class JDBCCore {
         @Override
         public void handleMessage(ExtensionServiceMessage message) {
             log.trace("Reconnect message received. Reinitializing configuration");
+            
+            if (pollTimer != null) {
+                pollTimer.cancel();
+                pollTimer = null;
+            }
             
             jdbcConfigHandler.configComplete = false;
                         
@@ -96,6 +103,11 @@ public class JDBCCore {
         @Override
         public void handleMessage(ExtensionWebSocketClient message) {
             log.trace("WebSocket closed unexpectedly. Attempting to reconnect");
+            
+            if (pollTimer != null) {
+                pollTimer.cancel();
+                pollTimer = null;
+            }
    
             jdbcConfigHandler.configComplete = false;
             
@@ -168,7 +180,7 @@ public class JDBCCore {
      * a query error using sendQueryError()
      * @param message   The Query message.
      */
-    public void executeQuery(ExtensionServiceMessage message) {
+    public synchronized void executeQuery(ExtensionServiceMessage message) {
         Map<String, ?> request = (Map<String, ?>) message.getObject();
         String replyAddress = ExtensionServiceMessage.extractReplyAddress(message);
         if (jdbc == null) {
@@ -180,15 +192,17 @@ public class JDBCCore {
         
         // Gather query results and send the appropriate response, or send a query error if an exception is caught
         try {
-            if (request.get("query") instanceof String) {
-                String queryString = (String) request.get("query");
-                Map<String, ArrayList<HashMap>> queryMap = jdbc.processQuery(queryString);
-                sendDataFromQuery(queryMap, message);
-            } else {
-                log.error("Query could not be executed because query was not a String.");
-                client.sendQueryError(replyAddress, this.getClass().getName() + ".queryNotString", 
-                        "The Publish Request could not be executed because the query property is"
-                        + "not a string.", null);
+            synchronized (this) {
+                if (request.get("query") instanceof String) {
+                    String queryString = (String) request.get("query");
+                    Map<String, ArrayList<HashMap>> queryMap = jdbc.processQuery(queryString);
+                    sendDataFromQuery(queryMap, message);
+                } else {
+                    log.error("Query could not be executed because query was not a String.");
+                    client.sendQueryError(replyAddress, this.getClass().getName() + ".queryNotString", 
+                            "The Publish Request could not be executed because the query property is"
+                            + "not a string.", null);
+                }
             }
         } catch (SQLException e) {
             log.warn("Could not execute requested query.", e);
@@ -204,7 +218,7 @@ public class JDBCCore {
      * object of the Publish message.
      * @param message   The Query message.
      */
-    public void executePublish(ExtensionServiceMessage message) {
+    public synchronized void executePublish(ExtensionServiceMessage message) {
         Map<String, ?> request = (Map<String, ?>) message.getObject();
         String replyAddress = ExtensionServiceMessage.extractReplyAddress(message);
         if (jdbc == null) {
@@ -213,12 +227,14 @@ public class JDBCCore {
         
         // Gather query results, or send a query error if an exception is caught
         try {
-            if (request.get("query") instanceof String) {
-                String queryString = (String) request.get("query");
-                int data = jdbc.processPublish(queryString);
-                log.trace("The returned integer value from Publish Query is the following: ", data);
-            } else {
-                log.error("Query could not be executed because query was not a String");
+            synchronized (this) {
+                if (request.get("query") instanceof String) {
+                    String queryString = (String) request.get("query");
+                    int data = jdbc.processPublish(queryString);
+                    log.trace("The returned integer value from Publish Query is the following: ", data);
+                } else {
+                    log.error("Query could not be executed because query was not a String");
+                }
             }
         } catch (SQLException e) {
             log.error("Could not execute requested query.", e);
@@ -248,9 +264,15 @@ public class JDBCCore {
      * Closes all resources held by this program except for the {@link ExtensionWebSocketClient}. 
      */
     public void close() {
-        if (jdbc != null) {
-            jdbc.close();
-            jdbc = null;
+        if (pollTimer != null) {
+            pollTimer.cancel();
+            pollTimer = null;
+        }
+        synchronized (this) {
+            if (jdbc != null) {
+                jdbc.close();
+                jdbc = null;
+            }
         }
     }
     
