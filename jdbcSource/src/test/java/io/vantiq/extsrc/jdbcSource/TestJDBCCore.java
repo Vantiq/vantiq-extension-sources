@@ -29,9 +29,10 @@ import org.junit.Test;
 
 import io.vantiq.extjsdk.ExtensionServiceMessage;
 import io.vantiq.extjsdk.FalseClient;
+import io.vantiq.extsrc.jdbcSource.exception.VantiqSQLException;
 
 
-public class TestJDBCCore {
+public class TestJDBCCore extends TestJDBCBase {
     
     NoSendJDBCCore core;
     
@@ -39,18 +40,7 @@ public class TestJDBCCore {
     String authToken;
     String targetVantiqServer;
     
-    static String testDBUsername;
-    static String testDBPassword;
-    static String testDBURL;
-    
     JDBC jdbc;
-    
-    @BeforeClass
-    public static void getProps() {
-        testDBUsername = System.getProperty("EntConJDBCUsername", null);
-        testDBPassword = System.getProperty("EntConJDBCPassword", null);
-        testDBURL = System.getProperty("EntConJDBCURL", null);
-    }
     
     @Before
     public void setup() {
@@ -70,8 +60,8 @@ public class TestJDBCCore {
     }
     
     @Test
-    public void testPublishQuery() throws SQLException, LinkageError, ClassNotFoundException {
-        assumeTrue(testDBUsername != null && testDBPassword != null && testDBURL != null);
+    public void testPublishQuery() throws VantiqSQLException {
+        assumeTrue(testDBUsername != null && testDBPassword != null && testDBURL != null && jdbcDriverLoc != null);
         jdbc.setupJDBC(testDBURL, testDBUsername, testDBPassword);
         
         Map<String, Object> request;
@@ -93,8 +83,8 @@ public class TestJDBCCore {
     }
     
     @Test
-    public void testExecuteQuery() throws SQLException, LinkageError, ClassNotFoundException {
-        assumeTrue(testDBUsername != null && testDBPassword != null && testDBURL != null);
+    public void testExecuteQuery() throws VantiqSQLException {
+        assumeTrue(testDBUsername != null && testDBPassword != null && testDBURL != null && jdbcDriverLoc != null);
         jdbc.setupJDBC(testDBURL, testDBUsername, testDBPassword);
         
         Map<String, Object> request;
@@ -116,8 +106,8 @@ public class TestJDBCCore {
     }
     
     @Test
-    public void testExitIfConnectionFails() throws SQLException, LinkageError, ClassNotFoundException {
-        assumeTrue(testDBUsername != null && testDBPassword != null && testDBURL != null);
+    public void testExitIfConnectionFails() throws VantiqSQLException {
+        assumeTrue(testDBUsername != null && testDBPassword != null && testDBURL != null && jdbcDriverLoc != null);
         jdbc.setupJDBC(testDBURL, testDBUsername, testDBPassword);
         
         core.start(3);

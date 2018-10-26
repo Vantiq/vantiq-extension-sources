@@ -30,12 +30,10 @@ applicationDistribution.from("src/main/resources") {
 }
 
 tasks.withType(Test) {
-	doFirst {
-		if (System.env.JDBC_DRIVER_LOC == null) {
-	    	throw new Exception("Environment variable 'JDBC_DRIVER_LOC' is not set. Please set it to a location " +
-	    			"containing the appropriate JDBC Driver .jar file.")
-	    }	
-	}
+	if (System.env.JDBC_DRIVER_LOC == null) {
+    	logger.warn("Some tests may have been skipped. Environment variable 'JDBC_DRIVER_LOC' is not set. " +
+    			"Please set it to a location containing the appropriate JDBC Driver .jar file.")
+    }	
 	if (rootProject.hasProperty("EntConJDBCUsername")) {
         systemProperty "EntConJDBCUsername", rootProject.findProperty("EntConJDBCUsername") ?: "empty"
     }

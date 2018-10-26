@@ -13,11 +13,9 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-public class TestJDBC {
-    
-    static String testDBUsername;
-    static String testDBPassword;
-    static String testDBURL;
+import io.vantiq.extsrc.jdbcSource.exception.VantiqSQLException;
+
+public class TestJDBC extends TestJDBCBase {
     
     // Queries to be tested
     static final String CREATE_TABLE = "create table Test(id int not null, age int not null, "
@@ -27,14 +25,14 @@ public class TestJDBC {
     static final String DELETE_ROW = "DELETE FROM Test WHERE first='Santa';";
     static final String DELETE_TABLE = "DROP TABLE Test;";
     
+    // Queries to test errors
+    static final String NO_TABLE = "SELECT * FROM jibberish";
+    static final String NO_FIELD = "SELECT jibberish FROM Test";
+    static final String SYNTAX_ERROR = "ELECT * FROM Test";
+    static final String INSERT_NO_FIELD = "INSERT INTO Test VALUES (1, 25, 'Santa', 'Claus', 'jibberish')";
+    static final String INSERT_WRONG_TYPE = "INSERT INTO Test VALUES ('string', 'string', 3, 4)";
+    
     static JDBC jdbc;
-        
-    @BeforeClass
-    public static void getProps() {
-        testDBUsername = System.getProperty("EntConJDBCUsername", null);
-        testDBPassword = System.getProperty("EntConJDBCPassword", null);
-        testDBURL = System.getProperty("EntConJDBCURL", null);
-    }
     
     @Before
     public void setup() { 
@@ -43,10 +41,10 @@ public class TestJDBC {
     
     @AfterClass
     public static void tearDown() {
-        if (testDBUsername != null && testDBPassword != null && testDBURL != null) {
+        if (testDBUsername != null && testDBPassword != null && testDBURL != null && jdbcDriverLoc != null) {
             try {
                 jdbc.processPublish(DELETE_TABLE);
-            } catch (SQLException e) {
+            } catch (VantiqSQLException e) {
                 //Shoudn't throw Exception
             }
         }
@@ -54,8 +52,8 @@ public class TestJDBC {
     }
     
     @Test
-    public void testProcessPublish() throws SQLException, LinkageError, ClassNotFoundException {
-        assumeTrue(testDBUsername != null && testDBPassword != null && testDBURL != null);
+    public void testProcessPublish() throws VantiqSQLException {
+        assumeTrue(testDBUsername != null && testDBPassword != null && testDBURL != null && jdbcDriverLoc != null);
         jdbc.setupJDBC(testDBURL, testDBUsername, testDBPassword);
         
         int queryResult;
@@ -64,7 +62,7 @@ public class TestJDBC {
         try {
             queryResult = jdbc.processPublish("jibberish");
             fail("Should have thrown an exception");
-        } catch (SQLException e) {
+        } catch (VantiqSQLException e) {
             // Expected behavior
         }
         
@@ -72,7 +70,7 @@ public class TestJDBC {
         try {
             queryResult = jdbc.processPublish(CREATE_TABLE);
             assert queryResult == 0;
-        } catch (SQLException e) {
+        } catch (VantiqSQLException e) {
             fail("Should not throw an exception: " + e.getMessage());
         }
         
@@ -80,14 +78,16 @@ public class TestJDBC {
         try {
             queryResult = jdbc.processPublish(PUBLISH_QUERY);
             assert queryResult > 0;
-        } catch (SQLException e) {
+        } catch (VantiqSQLException e) {
             fail("Should not throw an exception: " + e.getMessage());
         }
+        
+        jdbc.close();
     }
     
     @Test
-    public void testProcessQuery() throws SQLException, LinkageError, ClassNotFoundException {
-        assumeTrue(testDBUsername != null && testDBPassword != null && testDBURL != null);
+    public void testProcessQuery() throws VantiqSQLException {
+        assumeTrue(testDBUsername != null && testDBPassword != null && testDBURL != null && jdbcDriverLoc != null);
         jdbc.setupJDBC(testDBURL, testDBUsername, testDBPassword);
         
         Map<String, ArrayList<HashMap>> queryResult;
@@ -96,8 +96,8 @@ public class TestJDBC {
         // Try processQuery with a nonsense query
         try {
             queryResult = jdbc.processQuery("jibberish");
-            fail("Should have thrown excpetion.");
-        } catch (SQLException e) {
+            fail("Should have thrown exception.");
+        } catch (VantiqSQLException e) {
             // Expected behavior
         }
         
@@ -108,7 +108,7 @@ public class TestJDBC {
             assert (Integer) queryResult.get("queryResult").get(0).get("age") == 25;
             assert queryResult.get("queryResult").get(0).get("first").equals("Santa");
             assert queryResult.get("queryResult").get(0).get("last").equals("Claus");
-        } catch (SQLException e) {
+        } catch (VantiqSQLException e) {
             fail("Should not throw an exception: " + e.getMessage());
         }
         
@@ -116,7 +116,7 @@ public class TestJDBC {
         try {
             deleteResult = jdbc.processPublish(DELETE_ROW);
             assert deleteResult > 0;
-        } catch (SQLException e) {
+        } catch (VantiqSQLException e) {
             fail("Should not throw an exception: " + e.getMessage());
         }
         
@@ -124,8 +124,74 @@ public class TestJDBC {
         try {
             queryResult = jdbc.processQuery(SELECT_QUERY);
             assert queryResult == null;
-        } catch (SQLException e) {
+        } catch (VantiqSQLException e) {
             fail("Should not throw an exception: " + e.getMessage());
         }
+        
+        jdbc.close();
+    }
+    
+    @Test
+    public void testCorrectErrors() throws VantiqSQLException {
+        assumeTrue(testDBUsername != null && testDBPassword != null && testDBURL != null && jdbcDriverLoc != null);
+        assumeTrue(testDBURL.contains("mysql"));
+        jdbc.setupJDBC(testDBURL, testDBUsername, testDBPassword);
+        Map<String, ArrayList<HashMap>> queryResult;
+        int publishResult;
+        
+        // Check error code for selecting from non-existent table
+        try {
+            queryResult = jdbc.processQuery(NO_TABLE);
+            fail("Should have thrown an exception.");
+        } catch (VantiqSQLException e) {
+            String message = e.getMessage();
+            assert message.contains("1146");
+        }
+        
+        // Check error code for selecting non-existent field
+        try {
+            queryResult = jdbc.processQuery(NO_FIELD);
+            fail("Should have thrown an exception.");
+        } catch (VantiqSQLException e) {
+            String message = e.getMessage();
+            assert message.contains("1054");
+        }
+        
+        // Check error code for syntax error
+        try {
+            queryResult = jdbc.processQuery(SYNTAX_ERROR);
+            fail("Should have thrown an exception.");
+        } catch (VantiqSQLException e) {
+            String message = e.getMessage();
+            assert message.contains("1064");
+        }
+        
+        // Check error code for using INSERT with executeQuery() method
+        try {
+            queryResult = jdbc.processQuery(PUBLISH_QUERY);
+            fail("Should have thrown an exception.");
+        } catch (VantiqSQLException e) {
+            String message = e.getMessage();
+            assert message.contains("0");
+        }
+        
+        // Check error code for INSERT not matching columns
+        try {
+            publishResult = jdbc.processPublish(INSERT_NO_FIELD);
+            fail("Should have thrown an exception.");
+        } catch (VantiqSQLException e) {
+            String message = e.getMessage();
+            assert message.contains("1136");
+        }
+        
+        // Check error code for inserting wrong types
+        try {
+            publishResult = jdbc.processPublish(INSERT_WRONG_TYPE);
+            fail("Should have thrown an exception.");
+        } catch (VantiqSQLException e) {
+            String message = e.getMessage();
+            assert message.contains("1366");
+        }
+        
     }
 }

@@ -20,6 +20,7 @@ import io.vantiq.extjsdk.ExtensionServiceMessage;
 import io.vantiq.extjsdk.ExtensionWebSocketClient;
 import io.vantiq.extjsdk.Handler;
 import io.vantiq.extsrc.jdbcSource.JDBCCore;
+import io.vantiq.extsrc.jdbcSource.exception.VantiqSQLException;
 
 /**
  * Sets up the source using the configuration document, which looks as below.
@@ -45,9 +46,7 @@ public class JDBCHandleConfiguration extends Handler<ExtensionServiceMessage> {
     JDBCCore                source;
     int                     polling = 0;
     boolean                 configComplete = false; // Not currently used
-    
-    Map<String, ?> lastGeneral = null;
-    
+        
     Handler<ExtensionServiceMessage> queryHandler;
     Handler<ExtensionServiceMessage> publishHandler;
     
@@ -68,29 +67,7 @@ public class JDBCHandleConfiguration extends Handler<ExtensionServiceMessage> {
                 }
                 
                 // Process query and send the results
-                Map<String, ?> request = (Map<String, ?>) message.getObject();
-                // Check if pollRate is set
-                if (request.get("pollRate") instanceof Integer) {
-                    int pollRate = (Integer) request.get("pollRate");
-                    if (pollRate > 0) {
-                        // Create task to run executeQuery with the given message
-                        TimerTask task = new TimerTask() {
-                            @Override
-                            public void run() {
-                                source.executeQuery(message);
-                            }
-                        };
-                        // Create new Timer, and schedule the task according to the pollRate
-                        source.pollTimer = new Timer("executeQuery");
-                        source.pollTimer.schedule(task, 0, pollRate);
-                    } else {
-                        String replyAddress = ExtensionServiceMessage.extractReplyAddress(message);
-                        client.sendQueryError(replyAddress, "io.vantiq.extsrc.JDBCHandleConfiguration.invalidPollRate", 
-                                "The pollRate must be a number greater than 0", null);
-                    }
-                } else {
-                    source.executeQuery(message);
-                }
+                source.executeQuery(message);
             }
         };
         publishHandler = new Handler<ExtensionServiceMessage>() {
@@ -104,31 +81,7 @@ public class JDBCHandleConfiguration extends Handler<ExtensionServiceMessage> {
                     client.sendQueryError(replyAddress, "io.vantiq.extsrc.JDBCConfigHandler.invalidPublishRequest", 
                             "Request must be a map", null);
                 }
-                
-                // Process query
-                Map<String, ?> request = (Map<String, ?>) message.getObject();
-                // Check if pollRate is set
-                if (request.get("pollRate") instanceof Integer) {
-                    int pollRate = (Integer) request.get("pollRate");
-                    if (pollRate > 0) {
-                        // Create task to run executeQuery with the given message
-                        TimerTask task = new TimerTask() {
-                            @Override
-                            public void run() {
-                                source.executePublish(message);
-                            }
-                        };
-                        // Create new Timer, and schedule the task according to the pollRate
-                        source.pollTimer = new Timer("executeQuery");
-                        source.pollTimer.schedule(task, 0, pollRate);
-                    } else {
-                        String replyAddress = ExtensionServiceMessage.extractReplyAddress(message);
-                        client.sendQueryError(replyAddress, "io.vantiq.extsrc.JDBCHandleConfiguration.invalidPollRate", 
-                                "The pollRate must be a number greater than 0", null);
-                    }
-                } else {
-                    source.executePublish(message);
-                }
+                source.executePublish(message);
             }
         };
     }
@@ -156,19 +109,13 @@ public class JDBCHandleConfiguration extends Handler<ExtensionServiceMessage> {
         }
         general = (Map) config.get("general");
         
-        // Only create a new data source if the config changed, to save time and state
-        if (lastGeneral != null && general.equals(lastGeneral)) {
-            log.trace("config unchanged, keeping previous");
-        } else {
-            boolean success = createDBConnection(general);
-            if (!success) {
-                failConfig();
-                return;
-            }
+        boolean success = createDBConnection(general);
+        if (!success) {
+            failConfig();
+            return;
         }
         
         log.trace("Setup complete");
-        
         configComplete = true;
     }
     
@@ -178,9 +125,6 @@ public class JDBCHandleConfiguration extends Handler<ExtensionServiceMessage> {
      * @return                  true if the JDBC source could be created, false otherwise
      */
     boolean createDBConnection(Map<String, ?> generalConfig) {
-        // Null the last config so if it fails it will know the last failed
-        lastGeneral = null;
-        
         // Get Username/Password, DB URL, and DB Driver
         String username;
         String password;
@@ -218,18 +162,40 @@ public class JDBCHandleConfiguration extends Handler<ExtensionServiceMessage> {
             JDBC jdbc = new JDBC();
             jdbc.setupJDBC(dbURL, username, password);
             source.jdbc = jdbc; 
-        } catch (SQLException e) {
+        } catch (VantiqSQLException e) {
             log.error("Exception occurred while setting up JDBC Source: ", e);
             failConfig();
             return false;
+        }
+        
+        // Create polling query if specified
+        if (generalConfig.get("pollTime") instanceof Integer) {
+            if (generalConfig.get("pollQuery") instanceof String) {
+                int pollTime = (Integer) generalConfig.get("pollTime");
+                if (pollTime > 0) {
+                    String pollQuery = (String) generalConfig.get("pollQuery"); 
+                    TimerTask task = new TimerTask() {
+                        @Override
+                        public void run() {
+                            source.executePolling(pollQuery);
+                        }
+                    };
+                    // Create new Timer, and schedule the task according to the pollTime
+                    source.pollTimer = new Timer("executePolling");
+                    source.pollTimer.schedule(task, 0, pollTime);
+                } else {
+                    log.error("Poll time must be greater than 0.");
+                }
+            } else {
+                log.error("A pollQuery must be specified along with the pollTime.");
+            }
+            
         }
         
         // Start listening for queries and publishes
         source.client.setQueryHandler(queryHandler);
         source.client.setPublishHandler(publishHandler);
         
-        // Save most recent config as the last config used
-        lastGeneral = generalConfig;
         log.trace("JDBC source created");
         return true;
     }

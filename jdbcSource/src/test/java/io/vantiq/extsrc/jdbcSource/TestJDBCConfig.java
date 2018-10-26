@@ -22,7 +22,7 @@ import org.junit.Test;
 
 import io.vantiq.extjsdk.ExtensionServiceMessage;
 
-public class TestJDBCConfig {
+public class TestJDBCConfig extends TestJDBCBase {
 
     JDBCHandleConfiguration handler;
     
@@ -32,21 +32,9 @@ public class TestJDBCConfig {
     String authToken;
     String targetVantiqServer;
     
-    static String testDBUsername;
-    static String testDBPassword;
-    static String testDBURL;
-    static String testDBDriver;
-    
     Map<String, Object> general;
     Map<String, Object> dataSource;
     Map<String, Object> neuralNet;
-    
-    @BeforeClass
-    public static void getProps() {
-        testDBUsername = System.getProperty("EntConJDBCUsername", null);
-        testDBPassword = System.getProperty("EntConJDBCPassword", null);
-        testDBURL = System.getProperty("EntConJDBCURL", null);
-    }
     
     @Before
     public void setup() {
@@ -77,15 +65,34 @@ public class TestJDBCConfig {
         assertTrue("Should fail when missing 'general' configuration", configIsFailed());
     }
     
-    
     @Test
     public void testMinimalConfig() {
-        assumeTrue(testDBUsername != null && testDBPassword != null && testDBURL != null);
+        assumeTrue(testDBUsername != null && testDBPassword != null && testDBURL != null && jdbcDriverLoc != null);
         nCore.start(5); // Need a client to avoid NPEs on sends
         
         Map conf = minimalConfig();
         sendConfig(conf);
         assertFalse("Should not fail with minimal configuration", configIsFailed());
+    }
+    
+    @Test
+    public void testPollingConfig() {
+        assumeTrue(testDBUsername != null && testDBPassword != null && testDBURL != null && jdbcDriverLoc != null);
+        nCore.start(5);
+        
+        Map conf = minimalConfig();
+        conf.put("pollTime", 3000);
+        conf.put("pollQuery", "SELECT * FROM Test");
+        sendConfig(conf);
+        assertFalse("Should not fail with polling configuration", configIsFailed());
+        
+        conf.remove("pollQuery");
+        sendConfig(conf);
+        assertFalse("Should not fail with missing pollQuery configuration", configIsFailed());
+        
+        conf.remove("pollTime");
+        conf.put("pollQuery", "SELECT * FROM Test");
+        assertFalse("Should not fail with missing pollTime configuration", configIsFailed());
     }
     
 // ================================================= Helper functions =================================================
@@ -115,7 +122,6 @@ public class TestJDBCConfig {
         general.put("username", testDBUsername);
         general.put("password", testDBPassword);
         general.put("dbURL", testDBURL);
-        general.put("driver", testDBDriver);
     }
     
     public boolean configIsFailed() {

@@ -26,6 +26,7 @@ import io.vantiq.extjsdk.ExtensionServiceMessage;
 import io.vantiq.extjsdk.ExtensionWebSocketClient;
 import io.vantiq.extjsdk.Handler;
 import io.vantiq.extjsdk.Response;
+import io.vantiq.extsrc.jdbcSource.exception.VantiqSQLException;
 
 /**
  * Controls the connection and interaction with the Vantiq server. Initialize it and call start() and it will run 
@@ -115,11 +116,12 @@ public class JDBCCore {
             while (!sourcesSucceeded) {
                 client.initiateFullConnection(targetVantiqServer, authToken);
                 sourcesSucceeded = exitIfConnectionFails(client, 10);
-                
-                try {
-                    Thread.sleep(RECONNECT_INTERVAL);
-                } catch (InterruptedException e) {
-                    log.error("An error occurred when trying to sleep the current thread. Error Message: ", e);
+                if (!sourcesSucceeded) {
+                    try {
+                        Thread.sleep(RECONNECT_INTERVAL);
+                    } catch (InterruptedException e) {
+                        log.error("An error occurred when trying to sleep the current thread. Error Message: ", e);
+                    }
                 }
             }
         }
@@ -180,7 +182,7 @@ public class JDBCCore {
      * a query error using sendQueryError()
      * @param message   The Query message.
      */
-    public synchronized void executeQuery(ExtensionServiceMessage message) {
+    public void executeQuery(ExtensionServiceMessage message) {
         Map<String, ?> request = (Map<String, ?>) message.getObject();
         String replyAddress = ExtensionServiceMessage.extractReplyAddress(message);
         if (jdbc == null) {
@@ -192,24 +194,22 @@ public class JDBCCore {
         
         // Gather query results and send the appropriate response, or send a query error if an exception is caught
         try {
-            synchronized (this) {
-                if (request.get("query") instanceof String) {
-                    String queryString = (String) request.get("query");
-                    Map<String, ArrayList<HashMap>> queryMap = jdbc.processQuery(queryString);
-                    sendDataFromQuery(queryMap, message);
-                } else {
-                    log.error("Query could not be executed because query was not a String.");
-                    client.sendQueryError(replyAddress, this.getClass().getName() + ".queryNotString", 
-                            "The Publish Request could not be executed because the query property is"
-                            + "not a string.", null);
-                }
+            if (request.get("query") instanceof String) {
+                String queryString = (String) request.get("query");
+                Map<String, ArrayList<HashMap>> queryMap = jdbc.processQuery(queryString);
+                sendDataFromQuery(queryMap, message);
+            } else {
+                log.error("Query could not be executed because query was not a String.");
+                client.sendQueryError(replyAddress, this.getClass().getName() + ".queryNotString", 
+                        "The Publish Request could not be executed because the query property is"
+                        + "not a string.", null);
             }
-        } catch (SQLException e) {
+        } catch (VantiqSQLException e) {
             log.warn("Could not execute requested query.", e);
             log.debug("Request was: {}", request);
-            client.sendQueryError(replyAddress, SQLException.class.getCanonicalName(), 
-                    "Failed to execute query for reason '{0}'. Exception was {1}. Request was {2}"
-                    , new Object[] {e.getMessage(), e, request});
+            client.sendQueryError(replyAddress, VantiqSQLException.class.getCanonicalName(), 
+                    "Failed to execute query for reason: " + e.getMessage() + 
+                    ". Exception was: " + e.getClass().getName() + ". Request was: " + request.get("query"), null);
         }
     }
     
@@ -218,7 +218,7 @@ public class JDBCCore {
      * object of the Publish message.
      * @param message   The Query message.
      */
-    public synchronized void executePublish(ExtensionServiceMessage message) {
+    public void executePublish(ExtensionServiceMessage message) {
         Map<String, ?> request = (Map<String, ?>) message.getObject();
         String replyAddress = ExtensionServiceMessage.extractReplyAddress(message);
         if (jdbc == null) {
@@ -227,18 +227,32 @@ public class JDBCCore {
         
         // Gather query results, or send a query error if an exception is caught
         try {
-            synchronized (this) {
-                if (request.get("query") instanceof String) {
-                    String queryString = (String) request.get("query");
-                    int data = jdbc.processPublish(queryString);
-                    log.trace("The returned integer value from Publish Query is the following: ", data);
-                } else {
-                    log.error("Query could not be executed because query was not a String");
-                }
+            if (request.get("query") instanceof String) {
+                String queryString = (String) request.get("query");
+                int data = jdbc.processPublish(queryString);
+                log.trace("The returned integer value from Publish Query is the following: ", data);
+            } else {
+                log.error("Query could not be executed because query was not a String");
             }
-        } catch (SQLException e) {
+        } catch (VantiqSQLException e) {
             log.error("Could not execute requested query.", e);
             log.debug("Request was: {}", request);
+        }
+    }
+    
+    /**
+     * Executes a query (pollQuery) at a certain rate (pollTime), both specified in the Source Configuration.
+     * The resulting data is sent as a notification back to the Source.
+     * @param pollQuery     The query string
+     */
+    public synchronized void executePolling(String pollQuery) {
+        try {
+            synchronized (this) {
+                Map<String, ArrayList<HashMap>> queryMap = jdbc.processQuery(pollQuery);
+                client.sendNotification(queryMap);
+            }
+        } catch (VantiqSQLException e) {
+            log.error("Could not execute polling query.", e);
         }
     }
     

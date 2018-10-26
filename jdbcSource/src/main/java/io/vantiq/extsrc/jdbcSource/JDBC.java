@@ -14,6 +14,8 @@ import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import io.vantiq.extsrc.jdbcSource.exception.VantiqSQLException;
+
 public class JDBC {
     Logger              log  = LoggerFactory.getLogger(this.getClass().getCanonicalName());
     private Connection  conn = null;
@@ -26,15 +28,16 @@ public class JDBC {
      * @param username      The username to be used to connect to the SQL Database.
      * @param password      The password to be used to connect to the SQL Database.
      * @throws SQLException
+     * @throws VantiqSQLException 
      */
-    public void setupJDBC(String dbURL, String username, String password) throws SQLException {        
+    public void setupJDBC(String dbURL, String username, String password) throws VantiqSQLException {        
         try {
             // Open a connection
             conn = DriverManager.getConnection(dbURL,username,password);
             
         } catch (SQLException e) {
             // Handle errors for JDBC
-            throw new SQLException(this.getClass().getCanonicalName() + ": A database error occurred: " + e.getMessage(), e);
+            reportSQLError(e);
         } 
     }
     
@@ -44,18 +47,18 @@ public class JDBC {
      * @return                  A Map containing all of the data retrieved by the query, (null if nothing was returned)
      * @throws SQLException
      */
-    public Map<String, ArrayList<HashMap>> processQuery(String sqlQuery) throws SQLException {
+    public Map<String, ArrayList<HashMap>> processQuery(String sqlQuery) throws VantiqSQLException {
+        Map<String, ArrayList<HashMap>> rsMap = null;
         try (Statement stmt = conn.createStatement();
                 ResultSet rs = stmt.executeQuery(sqlQuery)) {
             this.stmt = stmt;
             this.rs = rs;
-            Map<String, ArrayList<HashMap>> rsMap = createMapFromResults(rs);
-            return rsMap;
-            
-        } catch(SQLException e) {
+            rsMap = createMapFromResults(rs);           
+        } catch (SQLException e) {
             // Handle errors for JDBC
-            throw new SQLException(this.getClass().getCanonicalName() + ": A database error occurred: " + e.getMessage(), e);
+            reportSQLError(e);
         } 
+        return rsMap;
     }
     
     /**
@@ -64,16 +67,17 @@ public class JDBC {
      * @return                  The integer value that is returned by the executeUpdate() method representing the row count.
      * @throws SQLException
      */
-    public int processPublish(String sqlQuery) throws SQLException {
+    public int processPublish(String sqlQuery) throws VantiqSQLException {
+        int publishSuccess = -1;
         try (Statement stmt = conn.createStatement()) {
             this.stmt = stmt;
-            int publishSuccess = stmt.executeUpdate(sqlQuery);
-            return publishSuccess;
+            publishSuccess = stmt.executeUpdate(sqlQuery);
             
-        } catch(SQLException e) {
+        } catch (SQLException e) {
             // Handle errors for JDBC
-            throw new SQLException(this.getClass().getCanonicalName() + ": A database error occurred: " + e.getMessage(), e);
+            reportSQLError(e);
         } 
+        return publishSuccess;
     }
     
     /**
@@ -84,30 +88,40 @@ public class JDBC {
      *                       (null if the ResultSet was empty).
      * @throws SQLException
      */
-    Map<String, ArrayList<HashMap>> createMapFromResults(ResultSet queryResults) throws SQLException {
-        if (!queryResults.next()) { 
-            return null;
-        } else {
-            queryResults.beforeFirst();
-            Map<String, ArrayList<HashMap>> map = new LinkedHashMap<>();
-            ArrayList<HashMap> rows = new ArrayList<HashMap>();
-            ResultSetMetaData md = queryResults.getMetaData(); 
-            int columns = md.getColumnCount();
-            
-            // Iterate over rows of Result Set and create a map for each row
-            while(queryResults.next()) {
-                HashMap row = new HashMap(columns);
-                for (int i=1; i<=columns; ++i) {
-                    row.put(md.getColumnName(i), queryResults.getObject(i));
+    Map<String, ArrayList<HashMap>> createMapFromResults(ResultSet queryResults) throws VantiqSQLException {
+        Map<String, ArrayList<HashMap>> map = new LinkedHashMap<>();
+        try {
+            if (!queryResults.next()) { 
+                return null;
+            } else {
+                queryResults.beforeFirst();
+                ArrayList<HashMap> rows = new ArrayList<HashMap>();
+                ResultSetMetaData md = queryResults.getMetaData(); 
+                int columns = md.getColumnCount();
+                
+                // Iterate over rows of Result Set and create a map for each row
+                while(queryResults.next()) {
+                    HashMap row = new HashMap(columns);
+                    for (int i=1; i<=columns; ++i) {
+                        row.put(md.getColumnName(i), queryResults.getObject(i));
+                    }
+                    // Add each row map to the list of rows
+                    rows.add(row);
                 }
-                // Add each row map to the list of rows
-                rows.add(row);
+                
+                // Put list of maps as value to the key "queryResult"
+                map.put("queryResult", rows);
             }
-            
-            // Put list of maps as value to the key "queryResult"
-            map.put("queryResult", rows);
-            return map;
+        } catch (SQLException e) {
+            reportSQLError(e);
         }
+        return map;
+    }
+    
+    public void reportSQLError(SQLException e) throws VantiqSQLException {
+        String message = this.getClass().getCanonicalName() + ": A database error occurred: " + e.getMessage() +
+                " SQL State: " + e.getSQLState() + ", Error Code: " + e.getErrorCode();
+        throw new VantiqSQLException(message);
     }
     
     /**
