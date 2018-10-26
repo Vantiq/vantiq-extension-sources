@@ -81,7 +81,7 @@ public class JDBC {
     }
     
     /**
-     * 
+     * Method used to create a map out of the output ResultSet. Map is needed in order to send the data back to VANTIQ
      * @param queryResults   A ResultSet containing return value from executeQuery()
      * @return               The map containing a key/value pair where key = "queryResult" and
      *                       value = an ArrayList of maps each representing one row of the ResultSet,
@@ -118,6 +118,11 @@ public class JDBC {
         return map;
     }
     
+    /**
+     * Method used to throw the VantiqSQLException whenever is necessary
+     * @param e The SQLException caught by the calling method
+     * @throws VantiqSQLException
+     */
     public void reportSQLError(SQLException e) throws VantiqSQLException {
         String message = this.getClass().getCanonicalName() + ": A database error occurred: " + e.getMessage() +
                 " SQL State: " + e.getSQLState() + ", Error Code: " + e.getErrorCode();

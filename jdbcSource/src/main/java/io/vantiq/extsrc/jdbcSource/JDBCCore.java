@@ -78,20 +78,19 @@ public class JDBCCore {
                         
             CompletableFuture<Boolean> success = client.connectToSource();
             
-//            try {
-//                if ( !success.get(10, TimeUnit.SECONDS) ) {
-//                    log.error("Source reconnection failed");
-//                    close();
-//                }
-//            } catch (InterruptedException | ExecutionException | TimeoutException e) {
-//                log.error("Could not reconnect to source within 10 seconds: ", e);
-//                close();
-//            }
-            
             try {
-                success.join();
-            } catch (Throwable t) {
-                log.error("Could not reconnect to source: ", t);
+                if ( !success.get(10, TimeUnit.SECONDS) ) {
+                    if (!client.isOpen()) {
+                        log.error("Failed to connect to server url '" + targetVantiqServer + "'.");
+                    } else if (!client.isAuthed()) {
+                        log.error("Failed to authenticate within 10 seconds using the given authentication data.");
+                    } else {
+                        log.error("Failed to connect within 10 seconds");
+                    }
+                    close();
+                }
+            } catch (InterruptedException | ExecutionException | TimeoutException e) {
+                log.error("Could not reconnect to source within 10 seconds: ", e);
                 close();
             }
         }
