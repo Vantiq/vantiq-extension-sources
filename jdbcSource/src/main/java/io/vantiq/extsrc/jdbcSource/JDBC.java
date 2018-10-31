@@ -8,12 +8,18 @@
 
 package io.vantiq.extsrc.jdbcSource;
 
+import java.math.BigDecimal;
 import java.sql.Connection;
+import java.sql.Date;
 import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.sql.Time;
+import java.sql.Timestamp;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -29,6 +35,10 @@ public class JDBC {
     private Connection  conn = null;
     private Statement   stmt = null;
     private ResultSet   rs   = null;    
+    
+    DateFormat dfTimestamp  = new SimpleDateFormat("yyyy-dd-mm'T'HH:mm:ss.SSSZ");
+    DateFormat dfDate       = new SimpleDateFormat("yyyy-dd-mm");
+    DateFormat dfTime       = new SimpleDateFormat("HH:mm:ss.SSSZ");
     
     /**
      * The method used to setup the connection to the SQL Database, using the values retrieved from the source config.
@@ -58,7 +68,7 @@ public class JDBC {
     public Map<String, ArrayList<HashMap>> processQuery(String sqlQuery) throws VantiqSQLException {
         Map<String, ArrayList<HashMap>> rsMap = null;
         try (Statement stmt = conn.createStatement();
-                ResultSet rs = stmt.executeQuery(sqlQuery)) {
+            ResultSet rs = stmt.executeQuery(sqlQuery)) {
             this.stmt = stmt;
             this.rs = rs;
             rsMap = createMapFromResults(rs);           
@@ -111,7 +121,29 @@ public class JDBC {
                 while(queryResults.next()) {
                     HashMap row = new HashMap(columns);
                     for (int i=1; i<=columns; ++i) {
-                        row.put(md.getColumnName(i), queryResults.getObject(i));
+                        // Check column type to retrieve data in appropriate manner
+                        int columnType = md.getColumnType(i);
+                        switch (columnType) {
+                            case 3:
+                                //BigDecimal rowDecimal = queryResults.getBigDecimal(i);
+                                row.put(md.getColumnName(i), queryResults.getBigDecimal(i));
+                                break;
+                            case 91:
+                                Date rowDate = queryResults.getDate(i);
+                                row.put(md.getColumnName(i), dfDate.format(rowDate));
+                                break;
+                            case 92:
+                                Time rowTime = queryResults.getTime(i);
+                                row.put(md.getColumnName(i), dfTime.format(rowTime));
+                                break;
+                            case 93:
+                                Timestamp rowTimestamp = queryResults.getTimestamp(i);
+                                row.put(md.getColumnName(i), dfTimestamp.format(rowTimestamp));
+                                break;
+                            default:
+                                row.put(md.getColumnName(i), queryResults.getObject(i));
+                                break;
+                        }
                     }
                     // Add each row map to the list of rows
                     rows.add(row);

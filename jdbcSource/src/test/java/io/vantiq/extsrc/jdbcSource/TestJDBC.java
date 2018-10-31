@@ -11,14 +11,15 @@ package io.vantiq.extsrc.jdbcSource;
 import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeTrue;
 
-import java.sql.SQLException;
+import java.math.BigDecimal;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 
 import org.junit.AfterClass;
 import org.junit.Before;
-import org.junit.BeforeClass;
 import org.junit.Test;
 
 import io.vantiq.extsrc.jdbcSource.exception.VantiqSQLException;
@@ -33,12 +34,28 @@ public class TestJDBC extends TestJDBCBase {
     static final String DELETE_ROW = "DELETE FROM Test WHERE first='Santa';";
     static final String DELETE_TABLE = "DROP TABLE Test;";
     
+    // Queries to test oddball types
+    static final String CREATE_TABLE_ODD_TYPES = "create table TestTypes(id int, ts TIMESTAMP DEFAULT CURRENT_TIMESTAMP,"
+            + " testDate DATE, testTime TIME, testDec decimal(5,2));";
+    static final String PUBLISH_QUERY_ODD_TYPES = "INSERT INTO TestTypes VALUES (1, CURRENT_TIMESTAMP, '2018-08-15',"
+            + " '9:24:18', 145.86);";
+    static final String SELECT_QUERY_ODD_TYPES = "SELECT * FROM TestTypes;";
+    static final String DELETE_ROW_ODD_TYPES = "DELETE FROM TestTypes;";
+    static final String DELETE_TABLE_ODD_TYPES = "DROP TABLE TestTypes;";
+    
     // Queries to test errors
     static final String NO_TABLE = "SELECT * FROM jibberish";
     static final String NO_FIELD = "SELECT jibberish FROM Test";
     static final String SYNTAX_ERROR = "ELECT * FROM Test";
     static final String INSERT_NO_FIELD = "INSERT INTO Test VALUES (1, 25, 'Santa', 'Claus', 'jibberish')";
     static final String INSERT_WRONG_TYPE = "INSERT INTO Test VALUES ('string', 'string', 3, 4)";
+    
+    DateFormat dfTimestamp  = new SimpleDateFormat("yyyy-dd-mm'T'HH:mm:ss.SSSZ");
+    DateFormat dfDate       = new SimpleDateFormat("yyyy-dd-mm");
+    DateFormat dfTime       = new SimpleDateFormat("HH:mm:ss.SSSZ");
+    static final String timestampPattern = "\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}.\\d{3}-\\d{4}";
+    static final String datePattern = "\\d{4}-\\d{2}-\\d{2}";
+    static final String timePattern = "\\d{2}:\\d{2}:\\d{2}.\\d{3}-\\d{4}";
     
     static JDBC jdbc;
     
@@ -52,6 +69,7 @@ public class TestJDBC extends TestJDBCBase {
         if (testDBUsername != null && testDBPassword != null && testDBURL != null && jdbcDriverLoc != null) {
             try {
                 jdbc.processPublish(DELETE_TABLE);
+                jdbc.processPublish(DELETE_TABLE_ODD_TYPES);
             } catch (VantiqSQLException e) {
                 //Shoudn't throw Exception
             }
@@ -137,6 +155,52 @@ public class TestJDBC extends TestJDBCBase {
         }
         
         jdbc.close();
+    }
+    
+    @Test
+    public void testOddTypes() throws VantiqSQLException {
+        assumeTrue(testDBUsername != null && testDBPassword != null && testDBURL != null && jdbcDriverLoc != null);
+        jdbc.setupJDBC(testDBURL, testDBUsername, testDBPassword);
+        Map<String, ArrayList<HashMap>> queryResult;
+        int publishResult;
+        
+        // Create table with odd types including timestamps, dates, times, and decimals
+        try {
+            publishResult = jdbc.processPublish(CREATE_TABLE_ODD_TYPES);
+            assert publishResult == 0;
+        } catch (VantiqSQLException e) {
+            fail("Should not have thrown exception.");
+        }
+        
+        // Insert values into the newly created table
+        try {
+            publishResult = jdbc.processPublish(PUBLISH_QUERY_ODD_TYPES);
+            assert publishResult > 0;
+        } catch (VantiqSQLException e) {
+            fail("Should not have thrown exception.");
+        }
+        
+        // Select the values from the table and make sure the data is retrieved correctly
+        try {
+            queryResult = jdbc.processQuery(SELECT_QUERY_ODD_TYPES);
+            String timestampTest = (String) queryResult.get("queryResult").get(0).get("ts");
+            assert timestampTest.matches(timestampPattern);
+            String dateTest = (String) queryResult.get("queryResult").get(0).get("testDate");
+            assert dateTest.matches(datePattern);
+            String timeTest = (String) queryResult.get("queryResult").get(0).get("testTime");
+            assert timeTest.matches(timePattern);
+            assert ((BigDecimal) queryResult.get("queryResult").get(0).get("testDec")).compareTo(new BigDecimal("145.86")) == 0;
+        } catch (VantiqSQLException e) {
+            fail("Should not have thrown exception.");
+        }
+        
+        // Delete the row of data
+        try {
+            publishResult = jdbc.processPublish(DELETE_ROW_ODD_TYPES);
+            assert publishResult > 0;
+        } catch (VantiqSQLException e) {
+            fail("Should not have thrown exception.");
+        }
     }
     
     @Test
