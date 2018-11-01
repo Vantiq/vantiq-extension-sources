@@ -19,6 +19,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.junit.AfterClass;
+import org.junit.BeforeClass;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -35,13 +36,13 @@ public class TestJDBC extends TestJDBCBase {
     static final String DELETE_TABLE = "DROP TABLE Test;";
     
     // Queries to test oddball types
-    static final String CREATE_TABLE_ODD_TYPES = "create table TestTypes(id int, ts TIMESTAMP DEFAULT CURRENT_TIMESTAMP,"
+    static final String CREATE_TABLE_EXTENDED_TYPES = "create table TestTypes(id int, ts TIMESTAMP DEFAULT CURRENT_TIMESTAMP,"
             + " testDate DATE, testTime TIME, testDec decimal(5,2));";
-    static final String PUBLISH_QUERY_ODD_TYPES = "INSERT INTO TestTypes VALUES (1, CURRENT_TIMESTAMP, '2018-08-15',"
+    static final String PUBLISH_QUERY_EXTENDED_TYPES = "INSERT INTO TestTypes VALUES (1, CURRENT_TIMESTAMP, '2018-08-15',"
             + " '9:24:18', 145.86);";
-    static final String SELECT_QUERY_ODD_TYPES = "SELECT * FROM TestTypes;";
-    static final String DELETE_ROW_ODD_TYPES = "DELETE FROM TestTypes;";
-    static final String DELETE_TABLE_ODD_TYPES = "DROP TABLE TestTypes;";
+    static final String SELECT_QUERY_EXTENDED_TYPES = "SELECT * FROM TestTypes;";
+    static final String DELETE_ROW_EXTENDED_TYPES = "DELETE FROM TestTypes;";
+    static final String DELETE_TABLE_EXTENDED_TYPES = "DROP TABLE TestTypes;";
     
     // Queries to test errors
     static final String NO_TABLE = "SELECT * FROM jibberish";
@@ -64,14 +65,30 @@ public class TestJDBC extends TestJDBCBase {
         jdbc = new JDBC();
     }
     
+    /* Uncomment this BeforeClass when debugging to ensure tables have been properly deleted.
+    
+    @BeforeClass
+    public void debugSetup() {
+        tearDown();
+    }
+    
+    */
+    
     @AfterClass
     public static void tearDown() {
         if (testDBUsername != null && testDBPassword != null && testDBURL != null && jdbcDriverLoc != null) {
+            // Delete first table
             try {
                 jdbc.processPublish(DELETE_TABLE);
-                jdbc.processPublish(DELETE_TABLE_ODD_TYPES);
             } catch (VantiqSQLException e) {
-                //Shoudn't throw Exception
+                // Shoudn't throw Exception
+            }
+            
+            // Delete second table
+            try {
+                jdbc.processPublish(DELETE_TABLE_EXTENDED_TYPES);
+            } catch (VantiqSQLException e) {
+                // Shoudn't throw Exception
             }
         }
         jdbc.close();
@@ -158,7 +175,7 @@ public class TestJDBC extends TestJDBCBase {
     }
     
     @Test
-    public void testOddTypes() throws VantiqSQLException {
+    public void testExtendedTypes() throws VantiqSQLException {
         assumeTrue(testDBUsername != null && testDBPassword != null && testDBURL != null && jdbcDriverLoc != null);
         jdbc.setupJDBC(testDBURL, testDBUsername, testDBPassword);
         Map<String, ArrayList<HashMap>> queryResult;
@@ -166,7 +183,7 @@ public class TestJDBC extends TestJDBCBase {
         
         // Create table with odd types including timestamps, dates, times, and decimals
         try {
-            publishResult = jdbc.processPublish(CREATE_TABLE_ODD_TYPES);
+            publishResult = jdbc.processPublish(CREATE_TABLE_EXTENDED_TYPES);
             assert publishResult == 0;
         } catch (VantiqSQLException e) {
             fail("Should not have thrown exception.");
@@ -174,7 +191,7 @@ public class TestJDBC extends TestJDBCBase {
         
         // Insert values into the newly created table
         try {
-            publishResult = jdbc.processPublish(PUBLISH_QUERY_ODD_TYPES);
+            publishResult = jdbc.processPublish(PUBLISH_QUERY_EXTENDED_TYPES);
             assert publishResult > 0;
         } catch (VantiqSQLException e) {
             fail("Should not have thrown exception.");
@@ -182,7 +199,7 @@ public class TestJDBC extends TestJDBCBase {
         
         // Select the values from the table and make sure the data is retrieved correctly
         try {
-            queryResult = jdbc.processQuery(SELECT_QUERY_ODD_TYPES);
+            queryResult = jdbc.processQuery(SELECT_QUERY_EXTENDED_TYPES);
             String timestampTest = (String) queryResult.get("queryResult").get(0).get("ts");
             assert timestampTest.matches(timestampPattern);
             String dateTest = (String) queryResult.get("queryResult").get(0).get("testDate");
@@ -196,7 +213,7 @@ public class TestJDBC extends TestJDBCBase {
         
         // Delete the row of data
         try {
-            publishResult = jdbc.processPublish(DELETE_ROW_ODD_TYPES);
+            publishResult = jdbc.processPublish(DELETE_ROW_EXTENDED_TYPES);
             assert publishResult > 0;
         } catch (VantiqSQLException e) {
             fail("Should not have thrown exception.");
