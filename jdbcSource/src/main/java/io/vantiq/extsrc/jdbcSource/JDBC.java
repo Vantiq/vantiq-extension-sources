@@ -8,7 +8,6 @@
 
 package io.vantiq.extsrc.jdbcSource;
 
-import java.math.BigDecimal;
 import java.sql.Connection;
 import java.sql.Date;
 import java.sql.DriverManager;
@@ -45,7 +44,6 @@ public class JDBC {
      * @param dbURL         The Database URL to be used to connect to the SQL Database.    
      * @param username      The username to be used to connect to the SQL Database.
      * @param password      The password to be used to connect to the SQL Database.
-     * @throws SQLException
      * @throws VantiqSQLException 
      */
     public void setupJDBC(String dbURL, String username, String password) throws VantiqSQLException {        
@@ -63,27 +61,27 @@ public class JDBC {
      * The method used to execute the provided query, triggered by a SELECT on the respective source from VANTIQ.
      * @param sqlQuery          A String representation of the query, retrieved from the WITH clause from VANTIQ.
      * @return                  A Map containing all of the data retrieved by the query, (null if nothing was returned)
-     * @throws SQLException
+     * @throws VantiqSQLException
      */
-    public Map<String, ArrayList<HashMap>> processQuery(String sqlQuery) throws VantiqSQLException {
-        Map<String, ArrayList<HashMap>> rsMap = null;
+    public ArrayList<HashMap> processQuery(String sqlQuery) throws VantiqSQLException {
+        ArrayList<HashMap> rsMaps = null;
         try (Statement stmt = conn.createStatement();
             ResultSet rs = stmt.executeQuery(sqlQuery)) {
             this.stmt = stmt;
             this.rs = rs;
-            rsMap = createMapFromResults(rs);           
+            rsMaps = createMapFromResults(rs);           
         } catch (SQLException e) {
             // Handle errors for JDBC
             reportSQLError(e);
         } 
-        return rsMap;
+        return rsMaps;
     }
     
     /**
      * The method used to execute the provided query, triggered by a PUBLISH on the respective source from VANTIQ.
      * @param sqlQuery          A String representation of the query, retrieved from the PUBLISH message.
      * @return                  The integer value that is returned by the executeUpdate() method representing the row count.
-     * @throws SQLException
+     * @throws VantiqSQLException
      */
     public int processPublish(String sqlQuery) throws VantiqSQLException {
         int publishSuccess = -1;
@@ -98,22 +96,21 @@ public class JDBC {
         return publishSuccess;
     }
     
-    /**
+    /** CHANGE THIS
      * Method used to create a map out of the output ResultSet. Map is needed in order to send the data back to VANTIQ
      * @param queryResults   A ResultSet containing return value from executeQuery()
      * @return               The map containing a key/value pair where key = "queryResult" and
      *                       value = an ArrayList of maps each representing one row of the ResultSet,
      *                       (null if the ResultSet was empty).
-     * @throws SQLException
+     * @throws VantiqSQLException
      */
-    Map<String, ArrayList<HashMap>> createMapFromResults(ResultSet queryResults) throws VantiqSQLException {
-        Map<String, ArrayList<HashMap>> map = new LinkedHashMap<>();
+    ArrayList<HashMap> createMapFromResults(ResultSet queryResults) throws VantiqSQLException {
+        ArrayList<HashMap> rows = new ArrayList<HashMap>();
         try {
             if (!queryResults.next()) { 
                 return null;
             } else {
                 queryResults.beforeFirst();
-                ArrayList<HashMap> rows = new ArrayList<HashMap>();
                 ResultSetMetaData md = queryResults.getMetaData(); 
                 int columns = md.getColumnCount();
                 
@@ -148,14 +145,11 @@ public class JDBC {
                     // Add each row map to the list of rows
                     rows.add(row);
                 }
-                
-                // Put list of maps as value to the key "queryResult"
-                map.put("queryResult", rows);
             }
         } catch (SQLException e) {
             reportSQLError(e);
         }
-        return map;
+        return rows;
     }
     
     /**

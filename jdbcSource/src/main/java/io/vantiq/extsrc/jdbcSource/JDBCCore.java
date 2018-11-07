@@ -195,7 +195,7 @@ public class JDBCCore {
         try {
             if (request.get("query") instanceof String) {
                 String queryString = (String) request.get("query");
-                Map<String, ArrayList<HashMap>> queryMap = jdbc.processQuery(queryString);
+                ArrayList<HashMap> queryMap = jdbc.processQuery(queryString);
                 sendDataFromQuery(queryMap, message);
             } else {
                 log.error("Query could not be executed because query was not a String.");
@@ -241,14 +241,17 @@ public class JDBCCore {
     
     /**
      * Executes a query (pollQuery) at a certain rate (pollTime), both specified in the Source Configuration.
-     * The resulting data is sent as a notification back to the Source.
+     * The resulting data is sent as a notification back to the Source. If multiple rows of data are returned,
+     * then each row is sent as a spearate notification.
      * @param pollQuery     The query string
      */
     public synchronized void executePolling(String pollQuery) {
         try {
             synchronized (this) {
-                Map<String, ArrayList<HashMap>> queryMap = jdbc.processQuery(pollQuery);
-                client.sendNotification(queryMap);
+                ArrayList<HashMap> queryMap = jdbc.processQuery(pollQuery);
+                for (HashMap h : queryMap) {
+                    client.sendNotification(h);
+                }
             }
         } catch (VantiqSQLException e) {
             log.error("Could not execute polling query.", e);
@@ -260,7 +263,7 @@ public class JDBCCore {
     * @param queryMap   A Map containing the retrieved data from processQuery().
     * @param message    The Query message
     */
-   public void sendDataFromQuery(Map<String, ArrayList<HashMap>> queryMap, ExtensionServiceMessage message) {
+   public void sendDataFromQuery(ArrayList<HashMap> queryMap, ExtensionServiceMessage message) {
        String replyAddress = ExtensionServiceMessage.extractReplyAddress(message);
        
        // Send the results of the query
@@ -268,7 +271,8 @@ public class JDBCCore {
            // If data is empty send empty list with 204 code
            client.sendQueryResponse(204, replyAddress, new LinkedHashMap<>());
        } else {
-           client.sendQueryResponse(200, replyAddress, queryMap);
+           HashMap[] queryArray = queryMap.toArray(new HashMap[queryMap.size()]);
+           client.sendQueryResponse(200, replyAddress, queryArray);
        }
    }
    
