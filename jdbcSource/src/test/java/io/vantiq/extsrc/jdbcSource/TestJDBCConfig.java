@@ -17,7 +17,6 @@ import java.util.Map;
 
 import org.junit.After;
 import org.junit.Before;
-import org.junit.BeforeClass;
 import org.junit.Test;
 
 import io.vantiq.extjsdk.ExtensionServiceMessage;
@@ -33,8 +32,6 @@ public class TestJDBCConfig extends TestJDBCBase {
     String targetVantiqServer;
     
     Map<String, Object> general;
-    Map<String, Object> dataSource;
-    Map<String, Object> neuralNet;
     
     @Before
     public void setup() {
@@ -53,15 +50,43 @@ public class TestJDBCConfig extends TestJDBCBase {
     @Test
     public void testEmptyConfig() {
         Map conf = new LinkedHashMap<>();
-        sendConfig(conf);
+        Map vantiqConf = new LinkedHashMap<>();
+        sendConfig(conf, vantiqConf);
         assertTrue("Should fail on empty configuration", configIsFailed());
     }
     
     @Test
     public void testMissingGeneral() {
         Map conf = minimalConfig();
+        Map vantiqConf = createMinimalVantiq();
         conf.remove("general");
-        sendConfig(conf);
+        sendConfig(conf, vantiqConf);
+        assertTrue("Should fail when missing 'general' configuration", configIsFailed());
+    }
+    
+    @Test 
+    public void testMissingVantiq() {
+        Map conf = minimalConfig();
+        Map vantiqConf = new LinkedHashMap<>();
+        sendConfig(conf, vantiqConf);
+        assertTrue("Should fail when missing 'general' configuration", configIsFailed());
+    }
+    
+    @Test 
+    public void testMissingPackageRows() {
+        Map conf = minimalConfig();
+        Map vantiqConf = createMinimalVantiq();
+        vantiqConf.remove("packageRows");
+        sendConfig(conf, vantiqConf);
+        assertTrue("Should fail when missing 'general' configuration", configIsFailed());
+    }
+    
+    @Test
+    public void testPackageRowsFalse() {
+        Map conf = minimalConfig();
+        Map vantiqConf = createMinimalVantiq();
+        vantiqConf.put("packageRows","false");
+        sendConfig(conf, vantiqConf);
         assertTrue("Should fail when missing 'general' configuration", configIsFailed());
     }
     
@@ -71,7 +96,8 @@ public class TestJDBCConfig extends TestJDBCBase {
         nCore.start(5); // Need a client to avoid NPEs on sends
         
         Map conf = minimalConfig();
-        sendConfig(conf);
+        Map vantiqConf = createMinimalVantiq();
+        sendConfig(conf, vantiqConf);
         assertFalse("Should not fail with minimal configuration", configIsFailed());
     }
     
@@ -83,26 +109,29 @@ public class TestJDBCConfig extends TestJDBCBase {
         Map conf = minimalConfig();
         conf.put("pollTime", 3000);
         conf.put("pollQuery", "SELECT * FROM Test");
-        sendConfig(conf);
+        Map vantiqConf = createMinimalVantiq();
+        sendConfig(conf, vantiqConf);
         assertFalse("Should not fail with polling configuration", configIsFailed());
         
         conf.remove("pollQuery");
-        sendConfig(conf);
+        sendConfig(conf, vantiqConf);
         assertFalse("Should not fail with missing pollQuery configuration", configIsFailed());
         
         conf.remove("pollTime");
         conf.put("pollQuery", "SELECT * FROM Test");
+        sendConfig(conf, vantiqConf);
         assertFalse("Should not fail with missing pollTime configuration", configIsFailed());
     }
     
 // ================================================= Helper functions =================================================
     
-    public void sendConfig(Map<String, ?> ORConfig) {
+    public void sendConfig(Map<String, ?> jdbcConfig, Map<String, ?> vantiqConfig) {
         ExtensionServiceMessage m = new ExtensionServiceMessage("");
         
         Map<String, Object> obj = new LinkedHashMap<>();
         Map<String, Object> config = new LinkedHashMap<>();
-        config.put("jdbcConfig", ORConfig);
+        config.put("jdbcConfig", jdbcConfig);
+        config.put("vantiq", vantiqConfig);
         obj.put("config", config);
         m.object = obj;
         
@@ -122,6 +151,12 @@ public class TestJDBCConfig extends TestJDBCBase {
         general.put("username", testDBUsername);
         general.put("password", testDBPassword);
         general.put("dbURL", testDBURL);
+    }
+    
+    public Map<String, String> createMinimalVantiq() {
+        Map<String, String> vantiq = new LinkedHashMap<>();
+        vantiq.put("packageRows", "true");
+        return vantiq;
     }
     
     public boolean configIsFailed() {

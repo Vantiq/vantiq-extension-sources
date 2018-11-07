@@ -21,8 +21,6 @@ import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.Map;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -60,21 +58,22 @@ public class JDBC {
     /**
      * The method used to execute the provided query, triggered by a SELECT on the respective source from VANTIQ.
      * @param sqlQuery          A String representation of the query, retrieved from the WITH clause from VANTIQ.
-     * @return                  A Map containing all of the data retrieved by the query, (null if nothing was returned)
+     * @return                  A HashMap Array containing all of the data retrieved by the query, (null if 
+     *                          nothing was returned)
      * @throws VantiqSQLException
      */
-    public ArrayList<HashMap> processQuery(String sqlQuery) throws VantiqSQLException {
-        ArrayList<HashMap> rsMaps = null;
+    public HashMap[] processQuery(String sqlQuery) throws VantiqSQLException {
+        HashMap[] rsArray = null;
         try (Statement stmt = conn.createStatement();
             ResultSet rs = stmt.executeQuery(sqlQuery)) {
             this.stmt = stmt;
             this.rs = rs;
-            rsMaps = createMapFromResults(rs);           
+            rsArray = createMapFromResults(rs);           
         } catch (SQLException e) {
             // Handle errors for JDBC
             reportSQLError(e);
         } 
-        return rsMaps;
+        return rsArray;
     }
     
     /**
@@ -96,15 +95,14 @@ public class JDBC {
         return publishSuccess;
     }
     
-    /** CHANGE THIS
+    /**
      * Method used to create a map out of the output ResultSet. Map is needed in order to send the data back to VANTIQ
      * @param queryResults   A ResultSet containing return value from executeQuery()
-     * @return               The map containing a key/value pair where key = "queryResult" and
-     *                       value = an ArrayList of maps each representing one row of the ResultSet,
-     *                       (null if the ResultSet was empty).
+     * @return               A HashMap Array containing all of the rows from the ResultSet, each converted to a HashMap,
+     *                       (or null if the ResultSet was empty).
      * @throws VantiqSQLException
      */
-    ArrayList<HashMap> createMapFromResults(ResultSet queryResults) throws VantiqSQLException {
+    HashMap[] createMapFromResults(ResultSet queryResults) throws VantiqSQLException {
         ArrayList<HashMap> rows = new ArrayList<HashMap>();
         try {
             if (!queryResults.next()) { 
@@ -149,7 +147,8 @@ public class JDBC {
         } catch (SQLException e) {
             reportSQLError(e);
         }
-        return rows;
+        HashMap[] rowsArray = rows.toArray(new HashMap[rows.size()]);
+        return rowsArray;
     }
     
     /**

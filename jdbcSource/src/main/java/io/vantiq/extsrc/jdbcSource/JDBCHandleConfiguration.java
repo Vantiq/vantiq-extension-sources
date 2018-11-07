@@ -8,7 +8,6 @@
 
 package io.vantiq.extsrc.jdbcSource;
 
-import java.sql.SQLException;
 import java.util.Map;
 import java.util.Timer;
 import java.util.TimerTask;
@@ -91,25 +90,38 @@ public class JDBCHandleConfiguration extends Handler<ExtensionServiceMessage> {
      */
     @Override
     public void handleMessage(ExtensionServiceMessage message) {
-        Map<String, Object> config = (Map) message.getObject();
+        Map<String, Object> configObject = (Map) message.getObject();
+        Map<String, Object> config;
+        Map<String, Object> vantiq;
+        Map<String, Object> jdbcConfig;
         Map<String, Object> general;
         
-        // Obtain the Maps for each object
-        if ( !(config.get("config") instanceof Map && ((Map)config.get("config")).get("jdbcConfig") instanceof Map) ) {
-            log.error("No configuration suitable for JDBC Source. Waiting for valid config...");
+        // Obtain entire config from the message object
+        if ( !(configObject.get("config") instanceof Map)) {
+            log.error("Configuration failed. No configuration suitable for JDBC Source.");
             failConfig();
             return;
         }
-        config = (Map) ((Map) config.get("config")).get("jdbcConfig");
+        config = (Map) configObject.get("config");
         
-        if ( !(config.get("general") instanceof Map)) {
-            log.error("No general options specified. Waiting for valid config...");
+        // Retrieve the jdbcConfig and the vantiq config
+        if ( !(config.get("jdbcConfig") instanceof Map && config.get("vantiq") instanceof Map) ) {
+            log.error("Configuration failed. Configuration must contain 'jdbcConfig' and 'vantiq' fields.");
             failConfig();
             return;
         }
-        general = (Map) config.get("general");
+        jdbcConfig = (Map) config.get("jdbcConfig");
+        vantiq = (Map) config.get("vantiq");
         
-        boolean success = createDBConnection(general);
+        // Get the general options from the jdbcConfig
+        if ( !(jdbcConfig.get("general") instanceof Map)) {
+            log.error("Configuration failed. No general options specified.");
+            failConfig();
+            return;
+        }
+        general = (Map) jdbcConfig.get("general");
+        
+        boolean success = createDBConnection(general, vantiq);
         if (!success) {
             failConfig();
             return;
@@ -121,10 +133,17 @@ public class JDBCHandleConfiguration extends Handler<ExtensionServiceMessage> {
     
     /**
      * Attempts to create the JDBC Source based on the configuration document.
-     * @param generalConfig     The general configuration JDBC Source
+     * @param generalConfig     The general configuration for the JDBC Source
+     * @param vantiq            The vantiq configuration for the JDBC Source
      * @return                  true if the JDBC source could be created, false otherwise
      */
-    boolean createDBConnection(Map<String, ?> generalConfig) {
+    boolean createDBConnection(Map<String, ?> generalConfig, Map<String, ?> vantiq) {
+        // Ensuring that packageRows is set to be true, and failing the configuration otherwise
+        if (!(vantiq.get("packageRows") instanceof String) || !(vantiq.get("packageRows").toString().equalsIgnoreCase("true"))) {
+            log.error("Configuration failed. The packageRows field must be set to true.");
+            return false;
+        }
+        
         // Get Username/Password, DB URL, and DB Driver
         String username;
         String password;
@@ -133,24 +152,21 @@ public class JDBCHandleConfiguration extends Handler<ExtensionServiceMessage> {
         if (generalConfig.get("username") instanceof String) {
             username = (String) generalConfig.get("username");
         } else {
-            log.error("No db username was specified");
-            failConfig();
+            log.error("Configuration failed. No db username was specified");
             return false;
         }
         
         if (generalConfig.get("password") instanceof String) {
             password = (String) generalConfig.get("password");
         } else {
-            log.error("No db password was specified");
-            failConfig();
+            log.error("Configuration failed. No db password was specified");
             return false;
         }
         
         if (generalConfig.get("dbURL") instanceof String) {
             dbURL = (String) generalConfig.get("dbURL");
         } else {
-            log.error("No db URL was specified");
-            failConfig();
+            log.error("Configuration failed. No db URL was specified");
             return false;
         }
         
@@ -163,8 +179,7 @@ public class JDBCHandleConfiguration extends Handler<ExtensionServiceMessage> {
             jdbc.setupJDBC(dbURL, username, password);
             source.jdbc = jdbc; 
         } catch (VantiqSQLException e) {
-            log.error("Exception occurred while setting up JDBC Source: ", e);
-            failConfig();
+            log.error("Configuration failed. Exception occurred while setting up JDBC Source: ", e);
             return false;
         }
         

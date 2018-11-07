@@ -14,9 +14,7 @@ import static org.junit.Assume.assumeTrue;
 import java.math.BigDecimal;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.Map;
 
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -133,7 +131,7 @@ public class TestJDBC extends TestJDBCBase {
         assumeTrue(testDBUsername != null && testDBPassword != null && testDBURL != null && jdbcDriverLoc != null);
         jdbc.setupJDBC(testDBURL, testDBUsername, testDBPassword);
         
-        ArrayList<HashMap> queryResult;
+        HashMap[] queryResult;
         int deleteResult;
         
         // Try processQuery with a nonsense query
@@ -147,10 +145,10 @@ public class TestJDBC extends TestJDBCBase {
         // Select the row that we previously inserted
         try {
             queryResult = jdbc.processQuery(SELECT_QUERY);
-            assert (Integer) queryResult.get(0).get("id") == 1;
-            assert (Integer) queryResult.get(0).get("age") == 25;
-            assert queryResult.get(0).get("first").equals("Santa");
-            assert queryResult.get(0).get("last").equals("Claus");
+            assert (Integer) queryResult[0].get("id") == 1;
+            assert (Integer) queryResult[0].get("age") == 25;
+            assert queryResult[0].get("first").equals("Santa");
+            assert queryResult[0].get("last").equals("Claus");
         } catch (VantiqSQLException e) {
             fail("Should not throw an exception: " + e.getMessage());
         }
@@ -178,7 +176,7 @@ public class TestJDBC extends TestJDBCBase {
     public void testExtendedTypes() throws VantiqSQLException {
         assumeTrue(testDBUsername != null && testDBPassword != null && testDBURL != null && jdbcDriverLoc != null);
         jdbc.setupJDBC(testDBURL, testDBUsername, testDBPassword);
-        ArrayList<HashMap> queryResult;
+        HashMap[] queryResult;
         int publishResult;
         
         // Create table with odd types including timestamps, dates, times, and decimals
@@ -200,13 +198,13 @@ public class TestJDBC extends TestJDBCBase {
         // Select the values from the table and make sure the data is retrieved correctly
         try {
             queryResult = jdbc.processQuery(SELECT_QUERY_EXTENDED_TYPES);
-            String timestampTest = (String) queryResult.get(0).get("ts");
+            String timestampTest = (String) queryResult[0].get("ts");
             assert timestampTest.matches(timestampPattern);
-            String dateTest = (String) queryResult.get(0).get("testDate");
+            String dateTest = (String) queryResult[0].get("testDate");
             assert dateTest.matches(datePattern);
-            String timeTest = (String) queryResult.get(0).get("testTime");
+            String timeTest = (String) queryResult[0].get("testTime");
             assert timeTest.matches(timePattern);
-            assert ((BigDecimal) queryResult.get(0).get("testDec")).compareTo(new BigDecimal("145.86")) == 0;
+            assert ((BigDecimal) queryResult[0].get("testDec")).compareTo(new BigDecimal("145.86")) == 0;
         } catch (VantiqSQLException e) {
             fail("Should not have thrown exception.");
         }
@@ -225,7 +223,7 @@ public class TestJDBC extends TestJDBCBase {
         assumeTrue(testDBUsername != null && testDBPassword != null && testDBURL != null && jdbcDriverLoc != null);
         assumeTrue(testDBURL.contains("mysql"));
         jdbc.setupJDBC(testDBURL, testDBUsername, testDBPassword);
-        ArrayList<HashMap> queryResult;
+        HashMap[] queryResult;
         int publishResult;
         
         // Check error code for selecting from non-existent table

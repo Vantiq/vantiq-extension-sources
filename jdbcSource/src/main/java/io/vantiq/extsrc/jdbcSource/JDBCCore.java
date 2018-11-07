@@ -8,8 +8,6 @@
 
 package io.vantiq.extsrc.jdbcSource;
 
-import java.sql.SQLException;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -195,8 +193,8 @@ public class JDBCCore {
         try {
             if (request.get("query") instanceof String) {
                 String queryString = (String) request.get("query");
-                ArrayList<HashMap> queryMap = jdbc.processQuery(queryString);
-                sendDataFromQuery(queryMap, message);
+                HashMap[] queryArray = jdbc.processQuery(queryString);
+                sendDataFromQuery(queryArray, message);
             } else {
                 log.error("Query could not be executed because query was not a String.");
                 client.sendQueryError(replyAddress, this.getClass().getName() + ".queryNotString", 
@@ -242,13 +240,13 @@ public class JDBCCore {
     /**
      * Executes a query (pollQuery) at a certain rate (pollTime), both specified in the Source Configuration.
      * The resulting data is sent as a notification back to the Source. If multiple rows of data are returned,
-     * then each row is sent as a spearate notification.
+     * then each row is sent as a separate notification.
      * @param pollQuery     The query string
      */
     public synchronized void executePolling(String pollQuery) {
         try {
             synchronized (this) {
-                ArrayList<HashMap> queryMap = jdbc.processQuery(pollQuery);
+                HashMap[] queryMap = jdbc.processQuery(pollQuery);
                 for (HashMap h : queryMap) {
                     client.sendNotification(h);
                 }
@@ -260,18 +258,17 @@ public class JDBCCore {
     
    /**
     * Called by executeQuery() once the query has been executed, and sends the retrieved data back to VANTIQ.
-    * @param queryMap   A Map containing the retrieved data from processQuery().
-    * @param message    The Query message
+    * @param queryArray     A HashMap Array containing the retrieved data from processQuery().
+    * @param message        The Query message
     */
-   public void sendDataFromQuery(ArrayList<HashMap> queryMap, ExtensionServiceMessage message) {
+   public void sendDataFromQuery(HashMap[] queryArray, ExtensionServiceMessage message) {
        String replyAddress = ExtensionServiceMessage.extractReplyAddress(message);
        
        // Send the results of the query
-       if (queryMap == null) {
+       if (queryArray == null) {
            // If data is empty send empty list with 204 code
            client.sendQueryResponse(204, replyAddress, new LinkedHashMap<>());
        } else {
-           HashMap[] queryArray = queryMap.toArray(new HashMap[queryMap.size()]);
            client.sendQueryResponse(200, replyAddress, queryArray);
        }
    }
