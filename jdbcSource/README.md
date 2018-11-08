@@ -81,6 +81,9 @@ Document.
 The Configuration document may look similar to the following example:
 
     {
+       "vantiq": { 
+          "packageRows": "true"
+       },
        "jdbcConfig": {
           "general": {
              "username": "sqlUsername",
@@ -92,7 +95,11 @@ The Configuration document may look similar to the following example:
        }
     }
 
-### Options Available
+### Options Available for vantiq
+*   **packageRows**: Required. This value **MUST** be set to "true". In future versions of the JDBC Source, setting this value 
+    to "false" will allow the data to be processed as a stream of rows, instead of an array containing all the rows.
+
+### Options Available for jdbcConfig
 *   **username**: Required. This is the username that will be used to connect to the SQL Database.
 *   **password**: Required. This is the password that will be used to connect to the SQL Database.
 *   **dbURL**: Required. This is the URL corresponding to the SQL Database that you will connect to.
@@ -107,22 +114,16 @@ The Configuration document may look similar to the following example:
     ```
     RULE checkSourceNotification
     WHEN MESSAGE ARRIVES FROM JDBC1 AS message
+    try {  
+        // Creating a map of each row, used to INSERT into our type
+        var resultData = {}
+        resultData.id = message.id
+        resultData.age = message.age
+        resultData.first = message.first
+        resultData.last = message.last
 
-    try {
-        var dbResults = message.queryResult
-
-        // Iterating over each row of data returned by the query
-        FOR i in range(0,size(dbResults)) {
-            // Creating a map of each row, used to INSERT into our type
-            var resultData = {}
-            resultData.id = dbResults[i].id
-            resultData.age = dbResults[i].age
-            resultData.first = dbResults[i].first
-            resultData.last = dbResults[i].last
-
-            // Inserting the map into our JDBCType
-            INSERT JDBCType(resultData)
-        }
+        // Inserting the map into our JDBCType
+        INSERT JDBCType(resultData)
     } catch (error) {
         // Catching any errors and throwing the exception.
         exception(error.code, error.message)
@@ -134,29 +135,49 @@ The Configuration document may look similar to the following example:
 Messages that are sent to the source as Notifications from the pollQuery are JSON objects in the following format:
 ```
 {
-    queryResult: [{columnName:columnValue, columnName:columnValue, etc..}, etc..],
+   {columnName:columnValue, columnName:columnValue, etc..}
 }
 ```
-The queryResult field contains an ArrayList of Maps, each representing a row of data. Each map is a series of key-value pairs
-with the keys being the column name and the values being the column value.
+The data is formatted as a HashMap which represents a row of data. Each map is a series of key-value pairs with the keys 
+being the column name and the values being the column value. If multiple rows of data are returned by the pollQuery, each row
+will be sent as a unique Notification. 
+
+*   (**NOTE:** Multiple rows of data sent as Noticfications will be returned in a random order.)
 
 ## Select Statements
 
 In order to interact with the JDBC Source, one option is to use VAIL to select from the source. To do this, you will need 
 to specify the SQL Query you wish to execute against your database as part of the WITH clause. The SQL Queries used here must 
-only be **SELECT STATEMENTS**. The following is an example of a Procedure created in the VANTIQ IDE querying against a JDBC 
-Source.
+only be **SELECT STATEMENTS**. The data will be returned as an array of the resulting rows. The following is an 
+example of a Procedure created in the VANTIQ IDE querying against a JDBC Source.
 
 ```
 PROCEDURE queryJDBC()
 
-try {
-    SELECT * FROM SOURCE JDBC1 AS results WITH 
-    query: "SELECT id, first, last, age FROM Employees"
-    
-    // Do whatever you want with the returned data stored in 'results'
-    log.info(results.queryResult.toString())
+try {        
+    // Normal SELECT Statement in VAIL, but using WITH Clause is important.
+	var count = 0
+    SELECT * FROM SOURCE JDBC1 AS results WITH
+    // WITH Clause specifies the query, whose value is the SQL Query.
+    // This parameter must be named 'query'.
+    query: "SELECT id, first, last, age FROM Test" 
+
+    {
+        // Iterating over each row of data in 'results'
+        FOR i in range(0,results.size()) {
+            // Creating a map of each row, used to INSERT into our type
+    	    var resultData = {}
+    	    resultData.id = results[i].id
+    	    resultData.age = results[i].age
+    	    resultData.first = results[i].first
+    	    resultData.last = results[i].last
+            
+		    // Inserting the map into our JDBCType
+    	    INSERT JDBCType(resultData)
+        }
+    }
 } catch (error) {
+    // Catching any errors and throwing the exception.
     exception(error.code, error.message)
 }
 ```
