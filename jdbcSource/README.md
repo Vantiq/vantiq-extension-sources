@@ -1,12 +1,13 @@
 # Overview
 
 The following documentation outlines how to incorporate a JDBC Source as part of your project. This allows a user to 
-interact directly with a SQL Database from the VANTIQ IDE, and supports almost all standard SQL Commands. These interactions 
+construct applications that interact with a SQL Database, and supports almost all standard SQL Commands. These interactions 
 include the ability to run queries against the aforementioned SQL Database, periodically poll the database, and use all of the 
 returned data in the given project.
 
 In order to incorporate this Extension Source, you will need to set up your local machine with a JDBC Driver that can connect 
-to your SQL Database. Once you have done this, you will need to create the Source in the VANTIQ IDE. The documentation has been split into two parts, [Setting Up Your Machine](#machine) and [Setting Up Your VANTIQ IDE](#vantiq).
+to your SQL Database. Once you have done this, you will need to create the Source in the VANTIQ Modelo IDE. The documentation 
+has been split into two parts, [Setting Up Your Machine](#machine) and [Setting Up Your VANTIQ Modelo IDE](#vantiq).
 
 # Prerequisites <a name="pre" id="pre"></a>
 
@@ -15,8 +16,8 @@ to your SQL Database. Once you have done this, you will need to create the Sourc
 An understanding of the VANTIQ Extension Source SDK is assumed. Please read the Extension Source README.md for more 
 information.
 
-The user must define the JDBC Source implementation in the VANTIQ IDE. For an example of the definition, please see the 
-*jbdcImpl.json* file located in the *src/test/resources* directory.
+The user must [define the JDBC Source implementation](https://github.com/Vantiq/vantiq-extension-sources/blob/master/README.md#-defining-a-typeimplementation) in the VANTIQ Modelo IDE. For an example of the definition, 
+please see the *jbdcImpl.json* file located in the *src/test/resources* directory.
 
 Additionally, an example project named *jdbcExample.zip* can be found in the *src/test/resources* directory.
 
@@ -29,12 +30,12 @@ Additionally, an example project named *jdbcExample.zip* can be found in the *sr
 
 *   **JDBCMain** -- The main function for the program. Connects to sources as specified in a
     configuration file.
-*   **JDBCCore** -- Coordinates the connections to the database, and sends the resulting data back to the VANTIQ IDE if
+*   **JDBCCore** -- Coordinates the connections to the database, and sends the resulting data back to VANTIQ Modelo if
     necessary.
 *   **JDBCHandleConfiguration** -- Sets up the JDBC connection based on the source's configuration document, and
     initializes the queryHandler and publishHandler.
 *   **JDBC** -- The class that directly interacts with the JDBC Driver, executing the query and publish requests as sent
-    by the VANTIQ IDE and appropriately formatting the results.
+    by the VANTIQ Modelo IDE and appropriately formatting the results.
 
 ## How to Run the Program
 
@@ -69,13 +70,13 @@ targetServer=https://dev.vantiq.com/
     removed when read.
 *   **targetServer**: Required. The Vantiq server hosting the sources.
 
-# Setting Up Your VANTIQ IDE <a name="vantiq" id="vantiq"></a>
+# Setting Up Your VANTIQ Modelo IDE <a name="vantiq" id="vantiq"></a>
 
 ## Source Configuration
 
-To set up the Source in the VANTIQ IDE, you will need to add a Source to your project. Please check the [Prerequisites](#pre) 
-to make sure you have properly added a Source Definition to your VANTIQ IDE. Once this is complete, you can select JDBC (or 
-whatever you named your Source Definition) as the Source Type. You will then need to fill out the Source Configuration 
+To set up the Source in the VANTIQ Modelo IDE, you will need to add a Source to your project. Please check the [Prerequisites]
+(#pre) to make sure you have properly added a Source Definition to VANTIQ Modelo. Once this is complete, you can select JDBC
+(or whatever you named your Source Definition) as the Source Type. You will then need to fill out the Source Configuration 
 Document.
 
 The Configuration document may look similar to the following example:
@@ -109,7 +110,7 @@ The Configuration document may look similar to the following example:
 *   **pollQuery**: Optional. If specified, you must specify the pollRate as well. This option indicates the SQL Query that
     will be executed by the JDBC Source, (frequency assigned by the pollRate). The SQL Query must be a **SELECT** statement,
     and the returned data will be sent as a Notification to the source. The data can be captured by creating a Rule in the
-    VANTIQ IDE, as per the following example:
+    VANTIQ Modelo IDE, as per the following example:
     
     ```
     RULE checkSourceNotification
@@ -149,14 +150,13 @@ will be sent as a unique Notification.
 In order to interact with the JDBC Source, one option is to use VAIL to select from the source. To do this, you will need 
 to specify the SQL Query you wish to execute against your database as part of the WITH clause. The SQL Queries used here must 
 only be **SELECT STATEMENTS**. The data will be returned as an array of the resulting rows. The following is an 
-example of a Procedure created in the VANTIQ IDE querying against a JDBC Source.
+example of a Procedure created in VANTIQ Modelo querying against a JDBC Source.
 
 ```
 PROCEDURE queryJDBC()
 
 try {        
     // Normal SELECT Statement in VAIL, but using WITH Clause is important.
-	var count = 0
     SELECT * FROM SOURCE JDBC1 AS results WITH
     // WITH Clause specifies the query, whose value is the SQL Query.
     // This parameter must be named 'query'.
@@ -164,15 +164,15 @@ try {
 
     {
         // Iterating over each row of data in 'results'
-        FOR i in range(0,results.size()) {
+        FOR (row in results) {
             // Creating a map of each row, used to INSERT into our type
     	    var resultData = {}
-    	    resultData.id = results[i].id
-    	    resultData.age = results[i].age
-    	    resultData.first = results[i].first
-    	    resultData.last = results[i].last
+    	    resultData.id = row.id
+    	    resultData.age = row.age
+    	    resultData.first = row.first
+    	    resultData.last = row.last
             
-		    // Inserting the map into our JDBCType
+	    // Inserting the map into our JDBCType
     	    INSERT JDBCType(resultData)
         }
     }
@@ -187,7 +187,7 @@ try {
 Another method to interact with the JDBC Source is to use VAIL to publish to the source. To do this, you will need to
 specify the SQL Query you wish to execute against your database as part of the Publish Parameters. The SQL Queries used here 
 can be **CREATE**, **INSERT**, **DELETE**, **DROP**, or other commands supported by your SQL database. The following is an 
-example of a Procedure created in the VANTIQ IDE publishing to a JDBC source.
+example of a Procedure created in VANTIQ Modelo publishing to a JDBC source.
 
 ```
 PROCEDURE createTable()
