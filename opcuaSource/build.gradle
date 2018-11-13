@@ -22,7 +22,7 @@ ext {
     logbackVersion = '1.2.3'
     junitVersion = '4.12'
     commonsCliVersion = '1.4'
-    bouncyCastleVersion = '1.54'
+    bouncyCastleVersion = '1.58'
 }
 
 repositories {
