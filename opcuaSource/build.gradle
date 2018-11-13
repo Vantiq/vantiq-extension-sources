@@ -22,6 +22,7 @@ ext {
     logbackVersion = '1.2.3'
     junitVersion = '4.12'
     commonsCliVersion = '1.4'
+    bouncyCastleVersion = '1.54'
 }
 
 repositories {
@@ -40,6 +41,14 @@ dependencies {
     compile "com.fasterxml.jackson.core:jackson-databind:${jacksonVersion}"
     compile "commons-cli:commons-cli:${commonsCliVersion}"
     compile "org.eclipse.milo:sdk-client:${eclipseMiloVersion}"
+
+    // To force the inclusion of the bouncy castle provider libraries into the application build,
+    // we must re-declare these on Milo SDK-client's behalf. The dependency declared
+    // in the stack is optional, so it won't be bundled
+    // into the application plugin's opcuaSource.{tar,zip}
+
+    runtime "org.bouncycastle:bcprov-jdk15on:${bouncyCastleVersion}"
+    runtime "org.bouncycastle:bcpkix-jdk15on:${bouncyCastleVersion}"
 
     testCompile group: 'junit', name: 'junit', version: "${junitVersion}"
     testCompile "org.eclipse.milo:client-examples:${eclipseMiloVersion}"
