@@ -276,8 +276,7 @@ public class Connection extends OpcUaTestBase {
 
         // Below, we'll traverse the valid combinations.  None's must be paired and are tested elsewhere
         for (SecurityPolicy secPol : serverSecPols) {
-            if (!secPol.equals(SecurityPolicy.None) && !secPol.equals(SecurityPolicy.Aes256_Sha256_RsaPss)) {
-                // TODO: don't know why the Aes256... policy fails, even with BouncyCastle added.
+            if (!secPol.equals(SecurityPolicy.None)) {
                 for (MessageSecurityMode msgSec : serverMsgModes) {
                     if (!msgSec.equals(MessageSecurityMode.None)) {
                         log.info("Attempting sync connection using [{}, {}]", secPol, msgSec);
@@ -350,8 +349,7 @@ public class Connection extends OpcUaTestBase {
 
         // Below, we'll traverse the valid combinations.  None's must be paired and are tested elsewhere
         for (SecurityPolicy secPol : serverSecPols) {
-            if (!secPol.equals(SecurityPolicy.None) && !secPol.equals(SecurityPolicy.Aes256_Sha256_RsaPss)) {
-                // TODO: don't know why the Aes256... policy fails, even with BouncyCastle added.
+            if (!secPol.equals(SecurityPolicy.None)) {
                 for (MessageSecurityMode msgSec : serverMsgModes) {
                     if (!msgSec.equals(MessageSecurityMode.None)) {
 
@@ -394,8 +392,7 @@ public class Connection extends OpcUaTestBase {
 
         // Below, we'll traverse the valid combinations.  None's must be paired and are tested elsewhere
         for (SecurityPolicy secPol : serverSecPols) {
-            if (!secPol.equals(SecurityPolicy.None) && !secPol.equals(SecurityPolicy.Aes256_Sha256_RsaPss)) {
-                // TODO: don't know why the Aes256... policy fails, even with BouncyCastle added.
+            if (!secPol.equals(SecurityPolicy.None)) {
                 for (MessageSecurityMode msgSec : serverMsgModes) {
                     if (!msgSec.equals(MessageSecurityMode.None)) {
 
@@ -454,8 +451,7 @@ public class Connection extends OpcUaTestBase {
 
         // Below, we'll traverse the valid combinations.  None's must be paired and are tested elsewhere
         for (SecurityPolicy secPol : serverSecPols) {
-            if (!secPol.equals(SecurityPolicy.None) && !secPol.equals(SecurityPolicy.Aes256_Sha256_RsaPss)) {
-                // TODO: don't know why the Aes256... policy fails, even with BouncyCastle added.
+            if (!secPol.equals(SecurityPolicy.None)) {
                 for (MessageSecurityMode msgSec : serverMsgModes) {
                     if (!msgSec.equals(MessageSecurityMode.None)) {
 
@@ -500,8 +496,7 @@ public class Connection extends OpcUaTestBase {
         String invalidCreds = "bogus1, bogus2";
         // Below, we'll traverse the valid combinations.  None's must be paired and are tested elsewhere
         for (SecurityPolicy secPol : serverSecPols) {
-            if (!secPol.equals(SecurityPolicy.None) && !secPol.equals(SecurityPolicy.Aes256_Sha256_RsaPss)) {
-                // TODO: don't know why the Aes256... policy fails, even with BouncyCastle added.
+            if (!secPol.equals(SecurityPolicy.None)) {
                 for (MessageSecurityMode msgSec : serverMsgModes) {
                     if (!msgSec.equals(MessageSecurityMode.None)) {
                         log.info("Attempting sync connection using [{}, {}] using username/password: '{}'", secPol, msgSec, invalidCreds);

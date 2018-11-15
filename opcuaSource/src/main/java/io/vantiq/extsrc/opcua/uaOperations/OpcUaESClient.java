@@ -178,6 +178,7 @@ public class OpcUaESClient {
     public void connect() throws ExecutionException, OpcExtConfigException, OpcExtRuntimeException {
         try {
             client.connect().get();
+            connected = true;
         } catch (ExecutionException e) {
             if (e.getMessage().equals("java.nio.channels.UnresolvedAddressException")) {
                 // This indicates that the server is not available.  Throw a more useful exception.

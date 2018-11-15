@@ -197,7 +197,7 @@ public class OpcUaSource {
         @Override
         public void handleMessage(ExtensionServiceMessage message) {
 
-            if (opcClient.isConnected()) {
+            if (opcClient != null && opcClient.isConnected()) {
                 log.debug("Sending publish request to OPC");
                 performPublish(message);
             } else {
@@ -216,7 +216,7 @@ public class OpcUaSource {
         public void handleMessage(ExtensionServiceMessage msg) {
             log.debug("Query handler:  Got query: {}", msg);
             String replyAddress = ExtensionServiceMessage.extractReplyAddress(msg);
-            if (opcClient.isConnected()) {
+            if (opcClient != null &&  opcClient.isConnected()) {
                 log.debug("Sending query request to OPC");
                 performQuery(msg);
 
@@ -353,7 +353,9 @@ public class OpcUaSource {
         CompletableFuture.runAsync(() -> {
             Map pubMsg;
             Object maybeMap = msg.getObject();
-            if (!(maybeMap instanceof Map)) {
+            if (opcClient == null || !opcClient.isConnected()) {
+                log.error("Publish Failed: source has not successfully connected to OPC UA server.");
+            } else if (!(maybeMap instanceof Map)) {
                 log.error("Publish Failed: Message format error -- 'object' was a {}, should be Map.  Overall message: {}",
                         maybeMap.getClass().getName(), msg);
             } else {
@@ -402,14 +404,26 @@ public class OpcUaSource {
             String replyAddress = ExtensionServiceMessage.extractReplyAddress(msg);
             Map qryMsg;
             Object maybeMap = msg.getObject();
-            if (!(maybeMap instanceof Map)) {
+            if (opcClient == null || !opcClient.isConnected()) {
+                log.error("Query Failed: source has not successfully connected to OPC UA server.");
+                Object[] parms = new Object[] {};
+                vantiqClient.sendQueryError(replyAddress, this.getClass().getName() + ".opcQueryBeforeConnect",
+                        "Query attempted before successful connection to OPC UA server.", parms);
+
+            } else if (!(maybeMap instanceof Map)) {
                 log.error("Query Failed: Message format error -- 'object' was a {}, should be Map.  Overall message: {}",
                         maybeMap.getClass().getName(), msg);
+                Object[] parms = new Object[] {maybeMap.getClass().getName()};
+                vantiqClient.sendQueryError(replyAddress, this.getClass().getName() + ".opcQueryFormatError",
+                        "Query message was malformed.  'object' should be a Map, it was {}.", parms);
             } else {
                 qryMsg = (Map) maybeMap;
                 String style = (String) qryMsg.get(OpcConstants.QUERY_STYLE);
                 if (OpcConstants.QUERY_STYLE_BROWSE.equalsIgnoreCase(style) || OpcConstants.QUERY_STYLE_QUERY.equalsIgnoreCase(style)) {
                     log.error("Query.style == {} is not yet implemented.", style);
+                    Object[] parms = new Object[] {style};
+                    vantiqClient.sendQueryError(replyAddress, this.getClass().getName() + ".opcQueryStyleError",
+                            "Query style {} is not yet implemented.", parms);
                 }
                 else if (OpcConstants.QUERY_STYLE_NODEID.equalsIgnoreCase(style)) {
                     try {
