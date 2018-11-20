@@ -13,11 +13,11 @@ has been split into two parts, [Setting Up Your Machine](#machine) and [Setting 
 
 **IMPORTANT:** Read the [Testing](#testing) section before building this project.
 
-An understanding of the VANTIQ Extension Source SDK is assumed. Please read the Extension Source README.md for more 
+An understanding of the VANTIQ Extension Source SDK is assumed. Please read the [Extension Source README.md](https://github.com/Vantiq/vantiq-extension-sources/blob/master/README.md) for more 
 information.
 
 The user must [define the JDBC Source implementation](https://github.com/Vantiq/vantiq-extension-sources/blob/master/README.md#-defining-a-typeimplementation) in the VANTIQ Modelo IDE. For an example of the definition, 
-please see the *jbdcImpl.json* file located in the *src/test/resources* directory.
+please see the [*jbdcImpl.json*](https://github.com/Vantiq/vantiq-extension-sources/blob/master/jdbcSource/src/test/resources/jdbcImpl.json) file located in the *src/test/resources* directory.
 
 Additionally, an example project named *jdbcExample.zip* can be found in the *src/test/resources* directory.
 
@@ -110,7 +110,7 @@ The Configuration document may look similar to the following example:
 *   **pollQuery**: Optional. If specified, you must specify the pollRate as well. This option indicates the SQL Query that
     will be executed by the JDBC Source, (frequency assigned by the pollRate). The SQL Query must be a **SELECT** statement,
     and the returned data will be sent as a Notification to the source. The data can be captured by creating a Rule in the
-    VANTIQ Modelo IDE, as per the following example:
+    VANTIQ Modelo IDE, as in the following example:
     
     ```
     RULE checkSourceNotification
@@ -186,8 +186,10 @@ try {
 
 Another method to interact with the JDBC Source is to use VAIL to publish to the source. To do this, you will need to
 specify the SQL Query you wish to execute against your database as part of the Publish Parameters. The SQL Queries used here 
-can be **CREATE**, **INSERT**, **DELETE**, **DROP**, or other commands supported by your SQL database. The following is an 
-example of a Procedure created in VANTIQ Modelo publishing to a JDBC source.
+can be **CREATE**, **INSERT**, **DELETE**, **DROP**, or other commands supported by your SQL database. The following are 
+examples of Procedures created in VANTIQ Modelo publishing to a JDBC source.
+
+**Creating a table:**
 
 ```
 PROCEDURE createTable()
@@ -205,10 +207,39 @@ try {
 }
 ```
 
+**Inserting to table:**
+
+```
+PROCEDURE insertJDBC()
+
+try {
+    // The for-loop is used to insert multiple rows of data
+    FOR i in range(0, 5) {
+       	// Creating the values that will be inserted
+        var id = i.toString()
+	var age = (20+i).toString()
+	var first = "Firstname" + i.toString()
+	var last = "Lastname" + i.toString()
+
+	// The SQL Statement that the JDBC Source will execute
+	// Notice that when inserting Strings, the values must be surrounded by ''. This 
+	// can be seen around the 'first' and 'last' values.
+        var sqlQuery = "INSERT INTO Test VALUES (" + id + ", " + age + ", '" + first + "', '" + last + "');"
+
+        // Normal PUBLISH Statement in VAIL, passing the 'sqlQuery' as a parameter in the 
+        // 'query' field. The field must be named 'query'.
+        PUBLISH {"query":sqlQuery} to SOURCE JDBC1
+    }
+} catch (error) {
+    // Catching any errors and throwing the exception.
+    exception(error.code, error.message)
+}
+```
+
 ## Error Messages
 
-Query errors originating from the source will always have the code be the FQCN with a small descriptor attached, and
-the message will include the exception causing it and the request that spawned it.
+Query errors originating from the source will always have the code be the fully-qualified class name with a small descriptor 
+attached, and the message will include the exception causing it and the request that spawned it.
 
 The exception thrown by the JDBC Class will always be a VantiqSQLException. This is a wrapper around the traditional 
 SQLException, and contains the Error Message, SQL State, and Error Code from the original SQLException.
