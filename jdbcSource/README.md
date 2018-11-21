@@ -17,7 +17,7 @@ An understanding of the VANTIQ Extension Source SDK is assumed. Please read the 
 information.
 
 The user must [define the JDBC Source implementation](../README.md#-defining-a-typeimplementation) in the VANTIQ Modelo IDE. For an example of the definition, 
-please see the [*jbdcImpl.json*](src/test/resources/jdbcImpl.json) file located in the *src/test/resources* directory.
+please see the [*jdbcImpl.json*](src/test/resources/jdbcImpl.json) file located in the *src/test/resources* directory.
 
 Additionally, an example project named *jdbcExample.zip* can be found in the *src/test/resources* directory.
 
