@@ -40,3 +40,6 @@ trace.db/
 *.swp
 *config.json
 *.log
+*server.config
+*.mov
+*.pb
