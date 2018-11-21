@@ -13,11 +13,11 @@ has been split into two parts, [Setting Up Your Machine](#machine) and [Setting 
 
 **IMPORTANT:** Read the [Testing](#testing) section before building this project.
 
-An understanding of the VANTIQ Extension Source SDK is assumed. Please read the [Extension Source README.md](https://github.com/Vantiq/vantiq-extension-sources/blob/master/README.md) for more 
+An understanding of the VANTIQ Extension Source SDK is assumed. Please read the [Extension Source README.md](../README.md) for more 
 information.
 
-The user must [define the JDBC Source implementation](https://github.com/Vantiq/vantiq-extension-sources/blob/master/README.md#-defining-a-typeimplementation) in the VANTIQ Modelo IDE. For an example of the definition, 
-please see the [*jbdcImpl.json*](https://github.com/Vantiq/vantiq-extension-sources/blob/master/jdbcSource/src/test/resources/jdbcImpl.json) file located in the *src/test/resources* directory.
+The user must [define the JDBC Source implementation](../README.md#-defining-a-typeimplementation) in the VANTIQ Modelo IDE. For an example of the definition, 
+please see the [*jbdcImpl.json*](src/test/resources/jdbcImpl.json) file located in the *src/test/resources* directory.
 
 Additionally, an example project named *jdbcExample.zip* can be found in the *src/test/resources* directory.
 
