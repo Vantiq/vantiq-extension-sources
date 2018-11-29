@@ -43,7 +43,7 @@ Additionally, an example project named *jdbcExample.zip* can be found in the *sr
     SQL Database you are using. Once you have installed this, you will need to create an environment variable named
     `JDBC_DRIVER_LOC` that contains the location of the jar file (*i.e.* `/Users/yourName/somePath/mysql-connector-java-8.0.12.jar`)
 2.  Clone this repository (vantiq-extension-sources) and navigate into `<repo location>/vantiq-extension-sources`.
-3.  Run `./gradlew jdbcSource:assemble`.
+3.  Run `./gradlew jdbcSource:run`.
 4.  Navigate to `<repo location>/vantiq-extension-sources/jdbcSource/build/distributions`. The zip and tar files both contain 
     the same files, so choose whichever you prefer.
 5.  Uncompress the file in the location that you would like to install the program.
