@@ -55,7 +55,7 @@ dependencies {
     compile "org.apache.logging.log4j:log4j-slf4j-impl:2.11.0"
     
     //  Compiling relevant JDBC Driver .jar file
-    testRuntime files("${System.env.JDBC_DRIVER_LOC}")
+    runtime files("${System.env.JDBC_DRIVER_LOC}")
     
     // Use JUnit test framework
     testCompile 'junit:junit:4.12'

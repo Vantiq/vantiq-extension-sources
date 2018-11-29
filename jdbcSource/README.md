@@ -90,7 +90,7 @@ The Configuration document may look similar to the following example:
              "username": "sqlUsername",
              "password": "sqlPassword",
              "dbURL": "jdbc:mysql://localhost/myDB?useSSL=false&serverTimezone=UTC"
-             "pollRate": 3000
+             "pollTime": 3000
              "pollQuery": "SELECT * FROM myTable"
           }
        }
@@ -104,11 +104,11 @@ The Configuration document may look similar to the following example:
 *   **username**: Required. This is the username that will be used to connect to the SQL Database.
 *   **password**: Required. This is the password that will be used to connect to the SQL Database.
 *   **dbURL**: Required. This is the URL corresponding to the SQL Database that you will connect to.
-*   **pollRate**: Optional. If specified, you must specify the pollQuery as well. This option allows you to specify a polling 
+*   **pollTime**: Optional. If specified, you must specify the pollQuery as well. This option allows you to specify a polling 
     rate indicating the frequency (in milliseconds) at which the pollQuery will be executed. The value must be a positive
     number greater than 0, (*i.e.* 3000 --> executing every 3 seconds).
-*   **pollQuery**: Optional. If specified, you must specify the pollRate as well. This option indicates the SQL Query that
-    will be executed by the JDBC Source, (frequency assigned by the pollRate). The SQL Query must be a **SELECT** statement,
+*   **pollQuery**: Optional. If specified, you must specify the pollTime as well. This option indicates the SQL Query that
+    will be executed by the JDBC Source, (frequency assigned by the pollTime). The SQL Query must be a **SELECT** statement,
     and the returned data will be sent as a Notification to the source. The data can be captured by creating a Rule in the
     VANTIQ Modelo IDE, as in the following example:
     
