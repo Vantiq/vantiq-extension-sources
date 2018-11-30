@@ -7,10 +7,10 @@
   </Appenders>
   <Loggers>
 
-    <Logger name="org.eclipse.milo" level="WARN"/>
+    <Logger name="org.eclipse.milo" level="DEBUG"/>
     <Logger name="io.netty" level="WARN"/>
     <Logger name="io.vantiq.extsrc.opcua" level="DEBUG"/>
-    <Logger name="io.vantiq.extjsdk" level="info"/>
+    <Logger name="io.vantiq.extjsdk" level="INFO"/>
 
     <Root level="WARN">
       <AppenderRef ref="Console"/>

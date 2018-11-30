@@ -150,10 +150,15 @@ public class OpcUaESClient {
         storageDirectory = opcConfig.get(OpcConstants.CONFIG_STORAGE_DIRECTORY) != null
                 ? (String) opcConfig.get(OpcConstants.CONFIG_STORAGE_DIRECTORY) : defaultStorageDirectory;
 
-        if (theConfig.containsKey(OpcConstants.CONFIG_REPLACE_DISCOVERED_LOCALHOST)) {
-            Object replLH = theConfig.get(OpcConstants.CONFIG_REPLACE_DISCOVERED_LOCALHOST);
+        if (opcConfig.containsKey(OpcConstants.CONFIG_REPLACE_DISCOVERED_LOCALHOST)) {
+            Object replLH = opcConfig.get(OpcConstants.CONFIG_REPLACE_DISCOVERED_LOCALHOST);
             if (replLH instanceof String) {
                 replaceLocalhostInDiscoveredEndpoints = replLH.toString().equalsIgnoreCase("true");
+            } else if (replLH instanceof Boolean) {
+                replaceLocalhostInDiscoveredEndpoints = (Boolean) replLH;
+            } else {
+                log.error(ERROR_PREFIX + ".invalid configuration item: " + OpcConstants.CONFIG_REPLACE_DISCOVERED_LOCALHOST
+                        + " -- type must be string or boolean.  Found: " + replLH.getClass().getName());
             }
         }
 
