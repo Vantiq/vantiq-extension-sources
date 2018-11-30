@@ -22,6 +22,8 @@ public class OpcConstants {
     public static final String CONFIG_SECURITY_POLICY = "securityPolicy";
     public static final String CONFIG_MESSAGE_SECURITY_MODE = "messageSecurityMode";
     public static final String CONFIG_DISCOVERY_ENDPOINT = "discoveryEndpoint";
+    public static final String CONFIG_SERVER_ENDPOINT = "serverEndpointOverride";
+    public static final String CONFIG_REPLACE_DISCOVERED_LOCALHOST = "replaceDiscoveredLocalhost";
     public static final String CONFIG_STORAGE_DIRECTORY = "storageDirectory";
     public static final String CONFIG_IDENTITY_ANONYMOUS = "identityAnonymous";
     public static final String CONFIG_IDENTITY_CERTIFICATE = "identityCertificate";
