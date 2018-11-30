@@ -90,7 +90,18 @@ public class Connection extends OpcUaTestBase {
 
         assert client == null;
 
-        opcConfig.put(OpcConstants.CONFIG_DISCOVERY_ENDPOINT, "/tmp/opcua-storage");
+        opcConfig.put(OpcConstants.CONFIG_DISCOVERY_ENDPOINT, "opc.tcp://somwhere.over.the.rainbow/dorothy");
+
+        try {
+            client = new OpcUaESClient(config);
+        } catch (OpcExtConfigException o) {
+            checkException(o, "noSecurityPolicy");
+        } catch (Throwable e) {
+            fail("Unexpected exception thrown: " + Utils.errFromExc(e));
+        }
+
+        // Now check that we'll accept a server address...
+        opcConfig.put(OpcConstants.CONFIG_SERVER_ENDPOINT, "opc.tcp://rudolph.the.rednosed/reindeer");
 
         try {
             client = new OpcUaESClient(config);
@@ -259,6 +270,60 @@ public class Connection extends OpcUaTestBase {
                 MessageSecurityMode.None.toString(),
                 false);
 
+    }
+
+    @Test
+    public void testConnectionSecNoneWithLocalhostReplacement() {
+
+        try {
+            makeConnection(false,
+                    SecurityPolicy.None.getSecurityPolicyUri(),
+                    null,
+                    null,
+                    null,
+                    false,
+                    false,
+                    false,
+                    true);
+            makeConnection(false,
+                    SecurityPolicy.None.getSecurityPolicyUri(),
+                    MessageSecurityMode.None.toString(),
+                    null,
+                    null,
+                    false,
+                    false,
+                    false,
+                    true);
+        } catch (ExecutionException e) {
+            fail("Unexpected Exception: " + e.getClass().getName() + " -- " + e.getMessage());
+        }
+    }
+
+    @Test
+    public void testConnectionSecNoneWithServerOverride() {
+
+        try {
+            makeConnection(false,
+                    SecurityPolicy.None.getSecurityPolicyUri(),
+                    null,
+                    null,
+                    null,
+                    false,
+                    false,
+                    true,
+                    true);
+            makeConnection(false,
+                    SecurityPolicy.None.getSecurityPolicyUri(),
+                    MessageSecurityMode.None.toString(),
+                    null,
+                    null,
+                    false,
+                    false,
+                    true,
+                    false);
+        } catch (ExecutionException e) {
+            fail("Unexpected Exception: " + e.getClass().getName() + " -- " + e.getMessage());
+        }
     }
 
     @Test
@@ -583,12 +648,31 @@ public class Connection extends OpcUaTestBase {
 
     public void makeConnection(boolean runAsync, String secPolicy, String msgSecMode,
                                String identityType, String identityValue, boolean inProcessOnly, boolean startProcessOnly) throws ExecutionException {
+        try {
+            makeConnection(runAsync, secPolicy, msgSecMode, identityType, identityValue, inProcessOnly, startProcessOnly, false, false);
+        } catch (ExecutionException e) {
+            fail("Unexpected Exception: " + e.getClass().getName() + " -- " + e.getMessage());
+        }
+    }
+
+    public void makeConnection(boolean runAsync,
+                               String secPolicy,
+                               String msgSecMode,
+                               String identityType,
+                               String identityValue,
+                               boolean inProcessOnly,
+                               boolean startProcessOnly,
+                               boolean useServerAddress,
+                               boolean replaceLocalHost) throws ExecutionException {
         HashMap config = new HashMap();
         Map<String, String> opcConfig = new HashMap<>();
 
         config.put(OpcConstants.CONFIG_OPC_UA_INFORMATION, opcConfig);
         opcConfig.put(OpcConstants.CONFIG_STORAGE_DIRECTORY, STANDARD_STORAGE_DIRECTORY);
         opcConfig.put(OpcConstants.CONFIG_SECURITY_POLICY, secPolicy);
+        if (replaceLocalHost) {
+            opcConfig.put(OpcConstants.CONFIG_REPLACE_DISCOVERED_LOCALHOST, "true");
+        }
         if (msgSecMode != null && !msgSecMode.isEmpty()) {
             opcConfig.put(OpcConstants.CONFIG_MESSAGE_SECURITY_MODE, msgSecMode);
         }
@@ -614,6 +698,10 @@ public class Connection extends OpcUaTestBase {
         for (String discEP : pubServers) {
             log.info("Attempting connection to public server: " + discEP);
             opcConfig.put(OpcConstants.CONFIG_DISCOVERY_ENDPOINT, discEP);
+
+            if (useServerAddress && Utils.OPC_PUBLIC_SERVER_1.equals(discEP)) {
+                opcConfig.put(OpcConstants.CONFIG_SERVER_ENDPOINT, discEP);
+            }
             try {
                 performConnection(config, runAsync, startProcessOnly);
             } catch (ExecutionException e) {

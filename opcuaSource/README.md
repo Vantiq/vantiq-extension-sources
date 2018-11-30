@@ -68,6 +68,12 @@ For OPC UA sources, the document contains the following properties
  - `securityPolicy` -- This is the specification (URI) of the security policy to be used to communicate with the OPC UA server. The security policy includes information about how (and whether) signing and encryption is done. The list of security policy URI's can be found in the OPC UA documentation.
  - `monitoredItems` -- This is the list of items to be monitored by the OPC UA source.  More detail can be found below.
 
+Additionally, there are some properties that can be added to deal with unusual situations.
+
+ - `replaceDiscoveredLocalhost` -- If this is set to "true", any endpoints returned by the `discoveryEndpoint` that have a host that is a loopback address will be replaced with the host name from `discoveryEndpoint`. This is useful when the discovery server not configured cooperatively.
+ - `serverEndpointOverride` -- If this is set, any server address returned by the `discoveryEndpoint` will be replaced with this value. Again, this is useful when the discovery server is not configured cooperatively.
+ 
+
 ##### <a id="monitored_items"></a> Monitored Items
 
 The OPC UA source can be configured to monitor items (nodes) within the OPC UA server.  Specifically, the source will watch for data value changes for the nodes listed, reporting changes back to the VANTIQ system in the form of a message from the source.

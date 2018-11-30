@@ -42,7 +42,10 @@ import org.eclipse.milo.opcua.stack.core.types.structured.ReadValueId;
 import org.slf4j.helpers.MessageFormatter;
 
 import java.io.File;
+import java.net.InetAddress;
 import java.net.URI;
+import java.net.URISyntaxException;
+import java.net.UnknownHostException;
 import java.security.PrivateKey;
 import java.security.cert.X509Certificate;
 import java.util.ArrayList;
@@ -73,6 +76,8 @@ public class OpcUaESClient {
     protected OpcUaClient client;
     protected UaSubscription subscription = null;
     protected String discoveryEndpoint = null;
+    protected String serverEndpoint = null;
+    protected boolean replaceLocalhostInDiscoveredEndpoints = false;
     protected BiConsumer<NodeId, Object> subscriptionHandler;
     protected List<UInteger> currentMonitoredItemList = null;
     protected KeyStoreManager keyStoreManager = null;
@@ -145,6 +150,12 @@ public class OpcUaESClient {
         storageDirectory = opcConfig.get(OpcConstants.CONFIG_STORAGE_DIRECTORY) != null
                 ? (String) opcConfig.get(OpcConstants.CONFIG_STORAGE_DIRECTORY) : defaultStorageDirectory;
 
+        if (theConfig.containsKey(OpcConstants.CONFIG_REPLACE_DISCOVERED_LOCALHOST)) {
+            Object replLH = theConfig.get(OpcConstants.CONFIG_REPLACE_DISCOVERED_LOCALHOST);
+            if (replLH instanceof String) {
+                replaceLocalhostInDiscoveredEndpoints = replLH.toString().equalsIgnoreCase("true");
+            }
+        }
 
         client = createClient(opcConfig);
     }
@@ -395,11 +406,14 @@ public class OpcUaESClient {
         EndpointDescription[] endpoints;
 
         discoveryEndpoint = (String) config.get(OpcConstants.CONFIG_DISCOVERY_ENDPOINT);
-        if (discoveryEndpoint == null) {
-            String errorMsg = ERROR_PREFIX + ".noDiscoveryEndpoint: No discovery endpoint was provided in the configuration.";
+        serverEndpoint = (String) config.get(OpcConstants.CONFIG_SERVER_ENDPOINT);
+        if (discoveryEndpoint == null && serverEndpoint == null) {
+            String errorMsg = ERROR_PREFIX + ".noDiscoveryEndpoint: No discovery or server endpoint was provided in the configuration.";
             log.error(errorMsg);
             throw new OpcExtConfigException(errorMsg);
         }
+
+        OpcUaClientConfig opcConfig;
         try {
             endpoints = UaTcpStackClient
                     .getEndpoints(discoveryEndpoint)
@@ -420,13 +434,143 @@ public class OpcUaESClient {
             }
         }
 
-        EndpointDescription endpoint = Arrays.stream(endpoints)
-                .filter(e -> e.getSecurityPolicyUri().equals(securityPolicy.getSecurityPolicyUri()) && e.getSecurityMode().equals(msgSecMode))
-                .findFirst().orElseThrow(() -> new Exception("no acceptable endpoints returned"));
+        if (log.isDebugEnabled()) {
+            log.debug("Endpoints discovered via discoveryEndpoint: " + discoveryEndpoint);
+            for (EndpointDescription e : endpoints) {
+                URI secPolUri = new URI(e.getSecurityPolicyUri());
+                String fragSpec = secPolUri.getFragment();
+                if (fragSpec == null) {
+                    fragSpec = e.getSecurityPolicyUri();
+                }
+                log.debug("    Discovered endpoint: {} [{}, {}])", e.getEndpointUrl(), fragSpec, e.getSecurityMode());
+            }
+        }
 
-        log.info("Using endpoint: {} [{}, {}]", endpoint.getEndpointUrl(), securityPolicy, msgSecMode.toString());
 
-        OpcUaClientConfig opcConfig = OpcUaClientConfig.builder()
+        EndpointDescription[] validEndpoints = (EndpointDescription[]) Arrays.stream(endpoints)
+                .filter(e -> (e.getSecurityPolicyUri().equals(securityPolicy.getSecurityPolicyUri())
+                        && e.getSecurityMode().equals(msgSecMode)))
+                .toArray(EndpointDescription[]::new);
+
+        if (log.isDebugEnabled()) {
+            log.debug("Discovered endpoints that accept the security configuration: [security policy: {}, message security mode: {}]",
+                    securityPolicy.getSecurityPolicyUri(),
+                    msgSecMode);
+            for (EndpointDescription e : validEndpoints) {
+                URI secPolUri = new URI(e.getSecurityPolicyUri());
+                String fragSpec = secPolUri.getFragment();
+                if (fragSpec == null) {
+                    fragSpec = e.getSecurityPolicyUri();
+                }
+                log.debug("    Acceptable endpoint: {} [{}, {}])", e.getEndpointUrl(), fragSpec, e.getSecurityMode());
+            }
+        }
+        //.findFirst().orElseThrow(() -> new Exception("no acceptable endpoints returned"));
+
+        // First, we'll look for an endpoint that doesn't contain localhost.  This is, generally,
+        // a not too useful configuration since localhost is always a relative address.
+
+        EndpointDescription endpoint = Arrays.stream(validEndpoints)
+                .filter(e -> {
+                    try {
+                        // Note:  Must use URI here.  If you use URL, it will fail with
+                        // a MailformedURLException because the generic system doesn't
+                        // understand opc.tcp: as a scheme/protocol.
+                        URI url = new URI(e.getEndpointUrl());
+                        InetAddress ina = InetAddress.getByName(url.getHost());
+                        if (!ina.isLoopbackAddress()) {
+                            return true;
+                        }
+                    } catch (UnknownHostException ex) {
+                        log.warn("Recoverable error during discovered server URL validation:" + ex.getClass().getName() + "::" + ex.getMessage() + "-->" + e.getEndpointUrl());
+                    } catch (URISyntaxException ex) {
+                        log.warn("Recoverable error during discovered server URL validation:" + ex.getClass().getName() + "::" + ex.getMessage() + "-->" + e.getEndpointUrl());
+                    }
+
+                    return false;
+                }).findFirst().orElse(null);
+
+        // If endpoint is set here, then we have a valid address that's not localhost-y.
+        // If not, we'll go find one that is localhost & hope for the best
+
+        if (endpoint == null) {
+            log.warn("No servers at non-loopback addresses found via discovery. " +
+                    "Checking for servers at loopback or otherwise non-optimal addresses.");
+            // Discovery server returned either no reasonable endpoints or none that weren't a loopback.
+            // Here, we'll allow loopbacks as a last resort (though we may try & fix them up below)
+
+            endpoint = Arrays.stream(validEndpoints)
+                    .findFirst().orElse(null);
+            // Here, if we have no endpoint, then we can't go anywhere so we give up.
+            // Otherwise, we'll check if we're supposed to fix up a poorly configured
+            // discovery server by setting the localhost-y address it reported
+            // to be the same host as the discovery server
+
+            if (replaceLocalhostInDiscoveredEndpoints && endpoint != null) {
+                // Fixup loopback address...
+
+                URI url = new URI(endpoint.getEndpointUrl());
+                try {
+                    InetAddress ina = InetAddress.getByName(url.getHost());
+                    if (ina.isLoopbackAddress()) {
+                        // We'll only do this replacement for loopback addresses.
+                        // We can end up here if the addresses are less than optimal, but the SDK can connect.
+                        URI discUrl = new URI(discoveryEndpoint);
+
+                        URI fixedEndpoint = new URI(url.getScheme(),
+                                null,
+                                discUrl.getHost(),
+                                url.getPort(),
+                                url.getPath(),
+                                null,
+                                null);
+                        //EndpointDescription(String endpointUrl, ApplicationDescription server, ByteString serverCertificate, MessageSecurityMode securityMode, String securityPolicyUri, UserTokenPolicy[] userIdentityTokens, String transportProfileUri, UByte securityLevel) {
+
+                        EndpointDescription newEndpoint = new EndpointDescription(fixedEndpoint.toString(),
+                                endpoint.getServer(),
+                                endpoint.getServerCertificate(),
+                                endpoint.getSecurityMode(),
+                                endpoint.getSecurityPolicyUri(),
+                                endpoint.getUserIdentityTokens(),
+                                endpoint.getTransportProfileUri(),
+                                endpoint.getSecurityLevel());
+                        log.debug("Replacing loopback address for endpoint: {} --> {}", endpoint.getEndpointUrl(), newEndpoint.getEndpointUrl());
+
+                        endpoint = newEndpoint;
+                    }
+                } catch (Exception ex) {
+                    // This means that we have some non-optimal addresses returned by discovery.
+                    // In these cases, we'll leave it up to the SDK & network stack to figure out how to get there.
+                    log.debug("Recoverable error during discovered server URL validation. Left to network stack to resolve:" + ex.getClass().getName() + "::" + ex.getMessage() + "-->" + endpoint.getEndpointUrl());
+                }
+            }
+        }
+
+        if (endpoint == null) {
+            throw new Exception("No acceptable endpoints returned for security policy: " +
+                    securityPolicy.getSecurityPolicyUri() + " and security mode " + msgSecMode);
+        }
+
+        if (serverEndpoint != null) {
+            // Then we'll override the endpoint provided but otherwise use the endpoint descriptor returned.
+            // The SDK seems to have an issue when no EndpointDescriptor is provided.
+
+            EndpointDescription newEndpoint = new EndpointDescription(serverEndpoint,
+                    endpoint.getServer(),
+                    endpoint.getServerCertificate(),
+                    endpoint.getSecurityMode(),
+                    endpoint.getSecurityPolicyUri(),
+                    endpoint.getUserIdentityTokens(),
+                    endpoint.getTransportProfileUri(),
+                    endpoint.getSecurityLevel());
+            log.debug("Replacing endpoint address with provided serverEndpoint: {} --> {}", endpoint.getEndpointUrl(), newEndpoint.getEndpointUrl());
+
+            endpoint = newEndpoint;
+        }
+
+        log.info("Using discovered endpoint: {} [{}, {}]", endpoint.getEndpointUrl(), securityPolicy, msgSecMode.toString());
+
+        opcConfig = OpcUaClientConfig.builder()
                 .setApplicationName(LocalizedText.english("VANTIQ OPC-UA Source"))
                 .setApplicationUri("urn:io:vantiq:extsrc:opcua:client")
                 .setCertificate(keyStoreManager.getClientCertificate())
