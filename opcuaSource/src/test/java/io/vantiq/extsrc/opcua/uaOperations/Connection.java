@@ -655,6 +655,7 @@ public class Connection extends OpcUaTestBase {
         }
     }
 
+    private static int invocationCount = 0;
     public void makeConnection(boolean runAsync,
                                String secPolicy,
                                String msgSecMode,
@@ -665,14 +666,12 @@ public class Connection extends OpcUaTestBase {
                                boolean useServerAddress,
                                boolean replaceLocalHost) throws ExecutionException {
         HashMap config = new HashMap();
-        Map<String, String> opcConfig = new HashMap<>();
+        Map<String, Object> opcConfig = new HashMap<>();
 
         config.put(OpcConstants.CONFIG_OPC_UA_INFORMATION, opcConfig);
         opcConfig.put(OpcConstants.CONFIG_STORAGE_DIRECTORY, STANDARD_STORAGE_DIRECTORY);
         opcConfig.put(OpcConstants.CONFIG_SECURITY_POLICY, secPolicy);
-        if (replaceLocalHost) {
-            opcConfig.put(OpcConstants.CONFIG_REPLACE_DISCOVERED_LOCALHOST, "true");
-        }
+
         if (msgSecMode != null && !msgSecMode.isEmpty()) {
             opcConfig.put(OpcConstants.CONFIG_MESSAGE_SECURITY_MODE, msgSecMode);
         }
@@ -702,6 +701,20 @@ public class Connection extends OpcUaTestBase {
             if (useServerAddress && Utils.OPC_PUBLIC_SERVER_1.equals(discEP)) {
                 opcConfig.put(OpcConstants.CONFIG_SERVER_ENDPOINT, discEP);
             }
+
+            if (replaceLocalHost) {
+
+                // Here, we'll alternate testing with both Boolean & Text to be maximally flexible
+                // in terms of the JSON configuration. This setting is to deal with erroneous configurations
+                // anyway, so let's not make things any more difficult than we have to.
+
+                if (invocationCount++ % 2 == 0) {
+                    opcConfig.put(OpcConstants.CONFIG_REPLACE_DISCOVERED_LOCALHOST, Boolean.valueOf(true));
+                } else {
+                    opcConfig.put(OpcConstants.CONFIG_REPLACE_DISCOVERED_LOCALHOST, "true");
+                }
+            }
+
             try {
                 performConnection(config, runAsync, startProcessOnly);
             } catch (ExecutionException e) {
