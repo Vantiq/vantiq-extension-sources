@@ -157,11 +157,11 @@ public class Connection extends OpcUaTestBase {
             checkException(o, ".discoveryError");
             Assert.assertTrue("Incorrect exception cause", o.getCause() instanceof ExecutionException);
             ExecutionException e = (ExecutionException) o.getCause();
-            Assert.assertTrue("Missing UaException", e.getMessage().contains("UaException"));
-            Assert.assertTrue("Missing bad status clause", e.getMessage().contains("status=Bad_"));
-            Assert.assertTrue("Missing exception cause data", e.getMessage().contains("TcpEndpointUrlInvalid"));
-            Assert.assertTrue("Missing message clause", e.getMessage().contains("message="));
-            Assert.assertTrue("Improperly formatted Opc Exception", o.getMessage().contains(OpcUaESClient.ERROR_PREFIX));
+            Assert.assertTrue("Missing UaException: " + e.getMessage(), e.getMessage().contains("UaException"));
+            Assert.assertTrue("Missing bad status clause: " + e.getMessage(), e.getMessage().contains("status=Bad_"));
+            Assert.assertTrue("Missing exception cause data: " + e.getMessage(), e.getMessage().contains("TcpEndpointUrlInvalid"));
+            Assert.assertTrue("Missing message clause: " + e.getMessage(), e.getMessage().contains("message="));
+            Assert.assertTrue("Improperly formatted Opc Exception: " + o.getMessage(), o.getMessage().contains(OpcUaESClient.ERROR_PREFIX));
         } catch (Throwable e) {
             fail("Unexpected exception thrown: " + Utils.errFromExc(e));
         }
@@ -172,8 +172,8 @@ public class Connection extends OpcUaTestBase {
             client = new OpcUaESClient(config);
         } catch (OpcExtConfigException o) {
             checkException(o, ".invalidUserPasswordSpecification");
-            Assert.assertTrue("Wrong Message", o.getMessage().contains("must contain only a username AND password separated by a comma"));
-            Assert.assertTrue("Missing Information", o.getMessage().contains(invalidUPw));
+            Assert.assertTrue("Wrong Message:" + o.getMessage(), o.getMessage().contains("must contain only a username AND password separated by a comma"));
+            Assert.assertTrue("Missing Information:" + o.getMessage(), o.getMessage().contains(invalidUPw));
         } catch (Throwable e) {
             fail("Unexpected exception thrown: " + Utils.errFromExc(e));
         }
@@ -185,11 +185,11 @@ public class Connection extends OpcUaTestBase {
             client = new OpcUaESClient(config);
         } catch (OpcExtConfigException o) {
             checkException(o, ".invalidIdentitySpecification");
-            Assert.assertTrue("Wrong Message", o.getMessage().contains("exactly one identity specification"));
-            Assert.assertTrue("Wrong Message(2)", o.getMessage().contains("is required."));
-            Assert.assertTrue("Missing Info -- Anon", o.getMessage().contains(OpcConstants.CONFIG_IDENTITY_ANONYMOUS));
-            Assert.assertTrue("Missing Info -- Cert", o.getMessage().contains(OpcConstants.CONFIG_IDENTITY_CERTIFICATE));
-            Assert.assertTrue("Missing Info -- UPW", o.getMessage().contains(OpcConstants.CONFIG_IDENTITY_USERNAME_PASSWORD));
+            Assert.assertTrue("Wrong Message:" + o.getMessage(), o.getMessage().contains("exactly one identity specification"));
+            Assert.assertTrue("Wrong Message(2):" + o.getMessage(), o.getMessage().contains("is required."));
+            Assert.assertTrue("Missing Info -- Anon:" + o.getMessage(), o.getMessage().contains(OpcConstants.CONFIG_IDENTITY_ANONYMOUS));
+            Assert.assertTrue("Missing Info -- Cert:" + o.getMessage(), o.getMessage().contains(OpcConstants.CONFIG_IDENTITY_CERTIFICATE));
+            Assert.assertTrue("Missing Info -- UPW:" + o.getMessage(), o.getMessage().contains(OpcConstants.CONFIG_IDENTITY_USERNAME_PASSWORD));
         } catch (Throwable e) {
             fail("Unexpected exception thrown: " + Utils.errFromExc(e));
         }
@@ -201,11 +201,11 @@ public class Connection extends OpcUaTestBase {
             client = new OpcUaESClient(config);
         } catch (OpcExtConfigException o) {
             checkException(o, ".invalidIdentitySpecification");
-            Assert.assertTrue("Wrong Message", o.getMessage().contains("exactly one identity specification"));
-            Assert.assertTrue("Wrong Message(2)", o.getMessage().contains("is required."));
-            Assert.assertTrue("Missing Info -- Anon", o.getMessage().contains(OpcConstants.CONFIG_IDENTITY_ANONYMOUS));
-            Assert.assertTrue("Missing Info -- Cert", o.getMessage().contains(OpcConstants.CONFIG_IDENTITY_CERTIFICATE));
-            Assert.assertTrue("Missing Info -- UPW", o.getMessage().contains(OpcConstants.CONFIG_IDENTITY_USERNAME_PASSWORD));
+            Assert.assertTrue("Wrong Message:" + o.getMessage(), o.getMessage().contains("exactly one identity specification"));
+            Assert.assertTrue("Wrong Message(2):" + o.getMessage(), o.getMessage().contains("is required."));
+            Assert.assertTrue("Missing Info -- Anon:" + o.getMessage(), o.getMessage().contains(OpcConstants.CONFIG_IDENTITY_ANONYMOUS));
+            Assert.assertTrue("Missing Info -- Cert:" + o.getMessage(), o.getMessage().contains(OpcConstants.CONFIG_IDENTITY_CERTIFICATE));
+            Assert.assertTrue("Missing Info -- UPW:" + o.getMessage(), o.getMessage().contains(OpcConstants.CONFIG_IDENTITY_USERNAME_PASSWORD));
         } catch (Throwable e) {
             fail("Unexpected exception thrown: " + Utils.errFromExc(e));
         }
@@ -218,11 +218,11 @@ public class Connection extends OpcUaTestBase {
             client = new OpcUaESClient(config);
         } catch (OpcExtConfigException o) {
             checkException(o, ".invalidIdentitySpecification");
-            Assert.assertTrue("Wrong Message", o.getMessage().contains("exactly one identity specification"));
-            Assert.assertTrue("Wrong Message(2)", o.getMessage().contains("is required."));
-            Assert.assertTrue("Missing Info -- Anon", o.getMessage().contains(OpcConstants.CONFIG_IDENTITY_ANONYMOUS));
-            Assert.assertTrue("Missing Info -- Cert", o.getMessage().contains(OpcConstants.CONFIG_IDENTITY_CERTIFICATE));
-            Assert.assertTrue("Missing Info -- UPW", o.getMessage().contains(OpcConstants.CONFIG_IDENTITY_USERNAME_PASSWORD));
+            Assert.assertTrue("Wrong Message:" + o.getMessage(), o.getMessage().contains("exactly one identity specification"));
+            Assert.assertTrue("Wrong Message(2):" + o.getMessage(), o.getMessage().contains("is required."));
+            Assert.assertTrue("Missing Info -- Anon:" + o.getMessage(), o.getMessage().contains(OpcConstants.CONFIG_IDENTITY_ANONYMOUS));
+            Assert.assertTrue("Missing Info -- Cert:" + o.getMessage(), o.getMessage().contains(OpcConstants.CONFIG_IDENTITY_CERTIFICATE));
+            Assert.assertTrue("Missing Info -- UPW:" + o.getMessage(), o.getMessage().contains(OpcConstants.CONFIG_IDENTITY_USERNAME_PASSWORD));
         } catch (Throwable e) {
             fail("Unexpected exception thrown: " + Utils.errFromExc(e));
         }
@@ -234,11 +234,11 @@ public class Connection extends OpcUaTestBase {
             client = new OpcUaESClient(config);
         } catch (OpcExtConfigException o) {
             checkException(o, ".invalidIdentitySpecification");
-            Assert.assertTrue("Wrong Message", o.getMessage().contains("exactly one identity specification"));
-            Assert.assertTrue("Wrong Message(2)", o.getMessage().contains("is required."));
-            Assert.assertTrue("Missing Info -- Anon", o.getMessage().contains(OpcConstants.CONFIG_IDENTITY_ANONYMOUS));
-            Assert.assertTrue("Missing Info -- Cert", o.getMessage().contains(OpcConstants.CONFIG_IDENTITY_CERTIFICATE));
-            Assert.assertTrue("Missing Info -- UPW", o.getMessage().contains(OpcConstants.CONFIG_IDENTITY_USERNAME_PASSWORD));
+            Assert.assertTrue("Wrong Message:" + o.getMessage(), o.getMessage().contains("exactly one identity specification"));
+            Assert.assertTrue("Wrong Message(2):" + o.getMessage(), o.getMessage().contains("is required."));
+            Assert.assertTrue("Missing Info -- Anon:" + o.getMessage(), o.getMessage().contains(OpcConstants.CONFIG_IDENTITY_ANONYMOUS));
+            Assert.assertTrue("Missing Info -- Cert:" + o.getMessage(), o.getMessage().contains(OpcConstants.CONFIG_IDENTITY_CERTIFICATE));
+            Assert.assertTrue("Missing Info -- UPW:" + o.getMessage(), o.getMessage().contains(OpcConstants.CONFIG_IDENTITY_USERNAME_PASSWORD));
         } catch (Throwable e) {
             fail("Unexpected exception thrown: " + Utils.errFromExc(e));
         }
@@ -251,7 +251,7 @@ public class Connection extends OpcUaTestBase {
         } catch (OpcExtKeyStoreException o) {
             checkException(o, ".fetchCertByAliasNoSuchCertificate");
             Assert.assertTrue("Wrong Message: " + o.getMessage(), o.getMessage().contains("no X509 certificate for alias"));
-            Assert.assertTrue("Missing Info -- Cert Alias", o.getMessage().contains(bogusCertAlias));
+            Assert.assertTrue("Missing Info -- Cert Alias:" + o.getMessage(), o.getMessage().contains(bogusCertAlias));
         } catch (Throwable e) {
             fail("Unexpected exception thrown: " + Utils.errFromExc(e));
         }
@@ -574,9 +574,9 @@ public class Connection extends OpcUaTestBase {
                                     invalidCreds);
                             fail("Expected exception for invalid identity token");
                         } catch (ExecutionException e) {
-                            assert e.getMessage().contains("UaServiceFaultException");
-                            assert e.getMessage().contains("status=Bad_IdentityTokenInvalid");
-                            assert e.getMessage().contains("message=The user identity token is not valid");
+                            Assert.assertTrue("Message should contain 'UaServiceFaultException: " + e.getMessage(), e.getMessage().contains("UaServiceFaultException"));
+                            Assert.assertTrue( "Message should contain 'Bad_IdentityTokenInvalid': " + e.getMessage(), e.getMessage().contains("status=Bad_IdentityTokenInvalid"));
+                            Assert.assertTrue( "Message should contain 'message=The user identity token is not valid': " + e.getMessage(), e.getMessage().contains("message=The user identity token is not valid"));
                         } catch (Exception e) {
                             Utils.unexpectedException(e);
                         }
@@ -592,9 +592,9 @@ public class Connection extends OpcUaTestBase {
                             CompletableFuture<Void> cf = client.getConnectFuture();
                             cf.join();  // Force exception to be thrown now...
                         } catch (CompletionException e) {
-                            assert e.getMessage().contains("UaServiceFaultException");
-                            assert e.getMessage().contains("status=Bad_IdentityTokenInvalid");
-                            assert e.getMessage().contains("message=The user identity token is not valid");
+                            Assert.assertTrue("Message should contain 'UaServiceFaultException: " + e.getMessage(), e.getMessage().contains("UaServiceFaultException"));
+                            Assert.assertTrue( "Message should contain 'Bad_IdentityTokenInvalid': " + e.getMessage(), e.getMessage().contains("status=Bad_IdentityTokenInvalid"));
+                            Assert.assertTrue( "Message should contain 'message=The user identity token is not valid': " + e.getMessage(), e.getMessage().contains("message=The user identity token is not valid"));
                         } catch (Exception e) {
                             Utils.unexpectedException(e);
                         }
@@ -686,7 +686,7 @@ public class Connection extends OpcUaTestBase {
         if (!inProcessOnly) {
             pubServers = Arrays.asList(Utils.OPC_INPROCESS_SERVER,
                     Utils.OPC_PUBLIC_SERVER_1,
-//                    Utils.OPC_PUBLIC_SERVER_2,
+                    Utils.OPC_PUBLIC_SERVER_2,
                     Utils.OPC_PUBLIC_SERVER_3,
                     Utils.OPC_PUBLIC_SERVER_NO_GOOD
             );
@@ -736,7 +736,8 @@ public class Connection extends OpcUaTestBase {
     }
 
     private static void checkException(Exception e, String tagName) {
-        Assert.assertTrue("Incorrect exception tag", e.getMessage().contains(tagName));
+        Assert.assertTrue("Incorrect exception tag: '" + e.getMessage() + "' should contain '" + tagName + "'",
+                e.getMessage().contains(tagName));
         String prefix = "bogusValue";
         if (e instanceof OpcExtConfigException) {
             prefix = OpcUaESClient.ERROR_PREFIX;
@@ -745,6 +746,7 @@ public class Connection extends OpcUaTestBase {
         } else {
             Utils.unexpectedException(e);
         }
-        Assert.assertTrue("Improperly formatted Opc Config Exception", e.getMessage().contains(prefix));
+        Assert.assertTrue("Improperly formatted Opc Config Exception: '" + e.getMessage() + "' should contain prefix: '" + prefix + "'",
+                e.getMessage().contains(prefix));
     }
 }
