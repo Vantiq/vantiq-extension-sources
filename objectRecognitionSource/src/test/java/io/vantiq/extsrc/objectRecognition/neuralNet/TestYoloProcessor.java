@@ -134,6 +134,10 @@ public class TestYoloProcessor extends NeuralNetTestBase {
 
     @Test
     public void testImageSavingLocal() throws ImageProcessingException {
+        
+        // Only run test with intended vantiq availability
+        assumeTrue(testAuthToken != null && testVantiqServer != null);
+        
         Map config = new LinkedHashMap<>();
         YoloProcessor ypImageSaver = new YoloProcessor();
 
