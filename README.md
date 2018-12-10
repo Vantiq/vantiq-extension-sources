@@ -287,11 +287,11 @@ When creating an OPC UA Extension source, you must first create the OPC UA sourc
   - `verticle` -- the string `service:extensionSource`
   - `config` -- an empty JSON object
 
-To make the source type known to VANTIQ, use the vantiq cli command
+To make the source type known to VANTIQ, use the VANTIQ CLI command _load sourceimpls_.
 
 
 For example, suppose we are creating an extension source of type "EXAMPLE".
-To do so, we would first create the file `exampleImpl.json` with the following contents.
+To do so, we would first create the file `exampleImpl.json` with the following contents:
 
 ```
 {
@@ -302,7 +302,7 @@ To do so, we would first create the file `exampleImpl.json` with the following c
 }
 ```
 
-Then, we would us the VANTIQ CLI to load that source implementation.
+Then, we would use the VANTIQ CLI to load that source implementation.
 
 ```
 vantiq -s <profileName> load sourceimpls exampleImpl.json
