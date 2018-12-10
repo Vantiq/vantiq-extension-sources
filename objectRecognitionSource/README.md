@@ -137,7 +137,7 @@ The Configuration document may look similar to the following example:
     {
        "objRecConfig": {
           "general": {
-             "pollRate": 3000
+             "pollTime": 3000
           },
           "dataSource": {
              "camera": "http://166.155.71.82:8080/mjpg/video.mjpg",
@@ -155,10 +155,12 @@ The Configuration document may look similar to the following example:
 ### Options Available for General
 At least one of these options must be set for the source to function
 
-*   pollRate: This indicates how often an image should be captured. A positive number represents the number of
+*   pollTime: This indicates how often an image should be captured. A positive number represents the number of
 milliseconds between captures. If the specified time is less than the amount of time it takes to process the image then
 images will be taken as soon as the previous finishes. If this is set to 0, the next image will be captured as soon as
-the previous is sent.
+the previous is sent. 
+    *   (**NOTE:** Previously named "pollRate". For a limited amount of time, both "pollTime" and "pollRate"
+    will be valid General Config options, but in the future only "pollTime" will be supported.)
 *   allowQueries: This option allows Queries to be received when set to `true'
 
 ### Options Available for Data Source
