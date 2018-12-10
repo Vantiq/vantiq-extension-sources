@@ -308,6 +308,7 @@ public class ObjectRecognitionConfigHandler extends Handler<ExtensionServiceMess
             polling = (Integer) general.get("pollTime");  
         } else if (general.get("pollRate") instanceof Integer) {
             // Old, deprecated setting. Use "pollTime" instead of "pollRate".
+            log.warn("Deprecated config option, please use \"pollTime\" instead of \"pollRate\".");
             polling = (Integer) general.get("pollRate");
         }
         
