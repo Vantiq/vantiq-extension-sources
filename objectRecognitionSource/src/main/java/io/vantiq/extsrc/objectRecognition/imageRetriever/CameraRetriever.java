@@ -43,7 +43,7 @@ public class CameraRetriever implements ImageRetrieverInterface {
             System.loadLibrary(Core.NATIVE_LIBRARY_NAME);
         } catch (Throwable t) {
             throw new Exception(this.getClass().getCanonicalName() + ".opencvDependency" 
-                    + ": Could not load OpenCv for CameraRetriever."
+                    + ": Could not load OpenCv for CameraRetriever. "
                     + "This is most likely due to a missing .dll/.so/.dylib. Please ensure that the environment "
                     + "variable 'OPENCV_LOC' is set to the directory containing '" + Core.NATIVE_LIBRARY_NAME
                     + "' and any other library requested by the attached error", t);

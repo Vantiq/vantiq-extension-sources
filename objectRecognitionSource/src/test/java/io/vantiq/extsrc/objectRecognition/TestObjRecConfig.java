@@ -155,12 +155,12 @@ public class TestObjRecConfig {
         Map conf = minimalConfig();
         neuralNet.put("threshold", 1000);
         sendConfig(conf);
-        assertFalse("Should not fail when missing 'neuralNet' configuration", configIsFailed());
+        assertFalse("Should not fail when threshold is large int.", configIsFailed());
         
         neuralNet.remove("threshold");
         neuralNet.put("threshold", -1);
         sendConfig(conf);
-        assertFalse("Should not fail when missing 'neuralNet' configuration", configIsFailed());
+        assertFalse("Should not fail when threshold is negative.", configIsFailed());
     }
     
     @Test
@@ -168,17 +168,17 @@ public class TestObjRecConfig {
         Map conf = minimalConfig();
         neuralNet.put("threshold", 0);
         sendConfig(conf);
-        assertFalse("Should not fail when missing 'neuralNet' configuration", configIsFailed());
+        assertFalse("Should not fail when threshold is 0.", configIsFailed());
         
         neuralNet.remove("threshold");
         neuralNet.put("threshold", 40);
         sendConfig(conf);
-        assertFalse("Should not fail when missing 'neuralNet' configuration", configIsFailed());
+        assertFalse("Should not fail when threshold is greater than 1.", configIsFailed());
         
         neuralNet.remove("threshold");
         neuralNet.put("threshold", 0.6);
         sendConfig(conf);
-        assertFalse("Should not fail when missing 'neuralNet' configuration", configIsFailed());
+        assertFalse("Should not fail when threshold is a decimal.", configIsFailed());
     }
     
     @Test
