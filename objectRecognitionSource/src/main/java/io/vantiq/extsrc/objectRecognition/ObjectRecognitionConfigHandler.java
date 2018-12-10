@@ -304,7 +304,19 @@ public class ObjectRecognitionConfigHandler extends Handler<ExtensionServiceMess
         };
         
         // Start polling if pollRate is non-negative
-        if (general.get("pollRate") instanceof Integer) {
+        if (general.get("pollTime") instanceof Integer) {
+            polling = (Integer) general.get("pollTime");
+            if (polling > 0) {
+                int pollRate = polling;
+                source.pollTimer = new Timer("dataCapture");
+                source.pollTimer.schedule(task, 0, pollRate);
+            } else if (polling == 0) {
+                source.pollTimer = new Timer("dataCapture");
+                source.pollTimer.scheduleAtFixedRate(task, 0, 1);
+                // 1 ms will be fast enough unless image gathering, image processing, and data sending combined are
+                // sub millisecond
+            }
+        } else if (general.get("pollRate") instanceof Integer) {
             polling = (Integer) general.get("pollRate");
             if (polling > 0) {
                 int pollRate = polling;
