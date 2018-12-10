@@ -193,7 +193,7 @@ public class TestObjRecConfig {
         general.put("pollTime", 300000);
         sendConfig(conf);
         assertFalse("Should not fail with minimal configuration", configIsFailed());
-        assertTrue("Timer should exist after pollRate set to positive number", nCore.pollTimer != null); 
+        assertTrue("Timer should exist after pollTime set to positive number", nCore.pollTimer != null); 
         
         // Making sure pollRate works (backwards compatibility)
         general.remove("pollTime");

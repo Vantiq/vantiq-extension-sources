@@ -305,29 +305,21 @@ public class ObjectRecognitionConfigHandler extends Handler<ExtensionServiceMess
         
         // Start polling if pollTime is non-negative
         if (general.get("pollTime") instanceof Integer) {
-            polling = (Integer) general.get("pollTime");
-            if (polling > 0) {
-                int pollRate = polling;
-                source.pollTimer = new Timer("dataCapture");
-                source.pollTimer.schedule(task, 0, pollRate);
-            } else if (polling == 0) {
-                source.pollTimer = new Timer("dataCapture");
-                source.pollTimer.scheduleAtFixedRate(task, 0, 1);
-                // 1 ms will be fast enough unless image gathering, image processing, and data sending combined are
-                // sub millisecond
-            }
+            polling = (Integer) general.get("pollTime");  
         } else if (general.get("pollRate") instanceof Integer) {
+            // Old, deprecated setting. Use "pollTime" instead of "pollRate".
             polling = (Integer) general.get("pollRate");
-            if (polling > 0) {
-                int pollRate = polling;
-                source.pollTimer = new Timer("dataCapture");
-                source.pollTimer.schedule(task, 0, pollRate);
-            } else if (polling == 0) {
-                source.pollTimer = new Timer("dataCapture");
-                source.pollTimer.scheduleAtFixedRate(task, 0, 1);
-                // 1 ms will be fast enough unless image gathering, image processing, and data sending combined are
-                // sub millisecond
-            }
+        }
+        
+        if (polling > 0) {
+            int pollRate = polling;
+            source.pollTimer = new Timer("dataCapture");
+            source.pollTimer.schedule(task, 0, pollRate);
+        } else if (polling == 0) {
+            source.pollTimer = new Timer("dataCapture");
+            source.pollTimer.scheduleAtFixedRate(task, 0, 1);
+            // 1 ms will be fast enough unless image gathering, image processing, and data sending combined are
+            // sub millisecond
         }
         
         // Setup queries if requested
