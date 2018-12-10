@@ -303,7 +303,7 @@ public class ObjectRecognitionConfigHandler extends Handler<ExtensionServiceMess
             }
         };
         
-        // Start polling if pollRate is non-negative
+        // Start polling if pollTime is non-negative
         if (general.get("pollTime") instanceof Integer) {
             polling = (Integer) general.get("pollTime");
             if (polling > 0) {
