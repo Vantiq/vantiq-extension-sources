@@ -78,7 +78,17 @@ public class Connection extends OpcUaTestBase {
 
         assert client == null;
 
-        opcConfig.put(OpcConstants.CONFIG_STORAGE_DIRECTORY, "/this/directory/should/never/really/and/truly/exist");
+        String osName = System.getProperty("os.name");
+        String fileNameWeCannotCreate = "/this/directory/should/never/really/and/truly/exist";
+        if (osName != null && osName.toLowerCase().contains("windows")) {
+
+            // For windows, we need some different bogus string.  On windows, it's OK to create a top-level
+            // directory whereas on most Unix-based systems (linux, Mac OS) it's not.  So we'll craft a file
+            // name which I think is not creatable...
+
+            fileNameWeCannotCreate = "UtterlyBogusDiskLabelName:\\<?>\\I:\\Cannot:\\Exist:\\Due\\To\\Invalid\\Characters";
+        }
+        opcConfig.put(OpcConstants.CONFIG_STORAGE_DIRECTORY, fileNameWeCannotCreate);
 
         try {
             client = new OpcUaESClient(config);
