@@ -49,9 +49,10 @@ in-depth tutorial](https://opencv-java-tutorials.readthedocs.io/en/latest/01-ins
 describe how to install it. Once it's installed, copy the jar and (lib)opencv_java342.dll/.so/.dylib to a single
 folder, then set the environment variable OPENCV_LOC to that folder. Some features may depend on additional
 .dll/.so/.dylib files, such as FFmpeg for IP cameras.
-    *   **NOTE:** If you are using a Windows or Linux machine, you may need to add the `opencv_ffmpeg342_64.dll` file to the
-    OPENCV_LOC folder. This file is located in the same directory as the other OpenCV .jar/.dll/.so/.dylib files. (Use 
-    `opencv_ffmpeg342.dll` for 32 bit version.)
+    *   **NOTE:** If you are using a Windows or Linux machine, you may need to add the `opencv_ffmpeg342_64.dll` or 
+    `opencv_ffmpeg342_64.so` file, respectively, to the OPENCV_LOC folder. This file is located in the same directory as the 
+    other OpenCV .jar/.dll/.so/.dylib files. (Use `opencv_ffmpeg342.dll` or `opencv_ffmpeg342.so` for 32 bit version.)
+        *   A typical indicator that you will need to add this file is if OpenCV cannot open video streams/files.
     *   The implementations dependent on OpenCV are FileRetriever, NetworkStreamRetriever, and CameraRetriever.
 2.  Clone this repository (vantiq-extension-sources) and navigate into `<repo location>/vantiq-extension-sources`.
 3.  Run `./gradlew objectRecognitionSource:assemble`.
