@@ -39,6 +39,7 @@ public class ObjectDetector {
     
     private ImageUtil imageUtil;
     private int saveRate = 0;
+    private Boolean originalImage;
     private int frameCount = 0;
     private float threshold;
     private Vantiq vantiq = null;
@@ -64,12 +65,13 @@ public class ObjectDetector {
      *                  functionally equivalent to 1. If outputDir is null does nothing.
      * @param vantiq    The Vantiq variable used to connect to the VANTIQ SDK. Either authenticated, or set to null.
      */
-    public ObjectDetector(float thresh, String graphFile, String labelFile, ImageUtil imageUtil, String outputDir, int saveRate, Vantiq vantiq) {
+    public ObjectDetector(float thresh, String graphFile, String labelFile, ImageUtil imageUtil, String outputDir, Boolean originalImage, int saveRate, Vantiq vantiq) {
         try {
             GRAPH_DEF = IOUtil.readAllBytesOrExit(graphFile);
             LABELS = IOUtil.readAllLinesOrExit(labelFile);
             this.imageUtil = imageUtil;
             this.vantiq = vantiq;
+            this.originalImage = originalImage;
             if (imageUtil != null) {
                 this.saveRate = saveRate;
                 frameCount = saveRate;
@@ -105,7 +107,7 @@ public class ObjectDetector {
             if (imageUtil != null && ++frameCount >= saveRate) {
                 String fileName = format.format(now) + ".jpg";
                 lastFilename = fileName;
-                imageUtil.labelImage(image, recognitions, fileName);
+                imageUtil.labelImage(image, recognitions, fileName, originalImage);
                 frameCount = 0;
             }
             return returnJSON(recognitions);
@@ -146,7 +148,7 @@ public class ObjectDetector {
                     fileName += ".jpg";
                 }
                 lastFilename = fileName;
-                imageUtil.labelImage(image, recognitions, fileName);
+                imageUtil.labelImage(image, recognitions, fileName, originalImage);
             }
             return returnJSON(recognitions);
         }

@@ -61,6 +61,7 @@ public class YoloProcessor implements NeuralNetInterface {
     String labelsFile = null;
     String outputDir = null;
     String saveImage = null;
+    Boolean originalImage = false;
     Vantiq vantiq;
     String server;
     String authToken;
@@ -75,7 +76,7 @@ public class YoloProcessor implements NeuralNetInterface {
     public void setupImageProcessing(Map<String, ?> neuralNetConfig, String modelDirectory, String authToken, String server) throws Exception {
         setup(neuralNetConfig, modelDirectory, authToken, server);
         try {
-            objectDetector = new ObjectDetector(threshold, pbFile, labelsFile, imageUtil, outputDir, saveRate, vantiq);
+            objectDetector = new ObjectDetector(threshold, pbFile, labelsFile, imageUtil, outputDir, originalImage, saveRate, vantiq);
         } catch (Exception e) {
             throw new Exception(this.getClass().getCanonicalName() + ".yoloBackendSetupError: " 
                     + "Failed to create new ObjectDetector", e);
@@ -122,6 +123,14 @@ public class YoloProcessor implements NeuralNetInterface {
        // Setup the variables for saving images
        if (neuralNet.get("saveImage") instanceof String) {
            saveImage = (String) neuralNet.get("saveImage");
+           
+           // Check if user wants to save original image without labels
+           if (neuralNet.get("originalImage") instanceof String) {
+               String originalImageString = (String) neuralNet.get("originalImage");
+               originalImage = originalImageString.equalsIgnoreCase("true");
+           }
+           
+           // Check which method of saving the user requests
            if (!saveImage.equalsIgnoreCase("vantiq") && !saveImage.equalsIgnoreCase("both") && !saveImage.equalsIgnoreCase("local")) {
                log.error("The config value for saveImage was invalid. Images will not be saved.");
            }

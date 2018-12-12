@@ -45,21 +45,24 @@ public class ImageUtil {
      * @param recognitions  list of recognized objects
      * @param fileName      The name of the file to be written
      */
-    public void labelImage(final byte[] image, final List<Recognition> recognitions, final String fileName) {
+    public void labelImage(final byte[] image, final List<Recognition> recognitions, final String fileName, boolean originalImage) {
         BufferedImage bufferedImage = createImageFromBytes(image);
-        float scaleX = (float) bufferedImage.getWidth() / (float) Config.SIZE;
-        float scaleY = (float) bufferedImage.getHeight() / (float) Config.SIZE;
-        Graphics2D graphics = (Graphics2D) bufferedImage.getGraphics();
-
-        for (Recognition recognition: recognitions) {
-            BoxPosition box = recognition.getScaledLocation(scaleX, scaleY);
-            //draw text
-            graphics.drawString(recognition.getTitle() + " " + recognition.getConfidence(), box.getLeft(), box.getTop() - 7);
-            // draw bounding box
-            graphics.drawRect(box.getLeftInt(),box.getTopInt(), box.getWidthInt(), box.getHeightInt());
+        // If originalImage is set to true, image is saved without labels
+        if (!originalImage) {
+            float scaleX = (float) bufferedImage.getWidth() / (float) Config.SIZE;
+            float scaleY = (float) bufferedImage.getHeight() / (float) Config.SIZE;
+            Graphics2D graphics = (Graphics2D) bufferedImage.getGraphics();
+    
+            for (Recognition recognition: recognitions) {
+                BoxPosition box = recognition.getScaledLocation(scaleX, scaleY);
+                //draw text
+                graphics.drawString(recognition.getTitle() + " " + recognition.getConfidence(), box.getLeft(), box.getTop() - 7);
+                // draw bounding box
+                graphics.drawRect(box.getLeftInt(),box.getTopInt(), box.getWidthInt(), box.getHeightInt());
+            }
+    
+            graphics.dispose();
         }
-
-        graphics.dispose();
         saveImage(vantiq, bufferedImage, fileName);
     }
 
