@@ -39,7 +39,7 @@ public class ObjectDetector {
     
     private ImageUtil imageUtil;
     private int saveRate = 0;
-    private Boolean originalImage;
+    private Boolean labelImage;
     private int frameCount = 0;
     private float threshold;
     private Vantiq vantiq = null;
@@ -57,21 +57,23 @@ public class ObjectDetector {
     /**
      * Initializes the ObjectDetector with the given graph and and labels.
      * <br>Edited to initialize and save the graph for reuse, and allow the files to be specified dynamically.
-     * @param graphFile The location of a proto buffer file describing the YOLO net 
-     * @param labelFile The location of the labels for the given net.
-     * @param imageUtil The instance of the ImageUtil class used to save images. Either initialized, or set to null.
-     * @param outputDir The directory to which images will be saved.
-     * @param saveRate  The rate at which images will be saved, once per every saveRate frames. Non-positive values are
-     *                  functionally equivalent to 1. If outputDir is null does nothing.
-     * @param vantiq    The Vantiq variable used to connect to the VANTIQ SDK. Either authenticated, or set to null.
+     * @param graphFile     The location of a proto buffer file describing the YOLO net 
+     * @param labelFile     The location of the labels for the given net.
+     * @param imageUtil     The instance of the ImageUtil class used to save images. Either initialized, or set to null.
+     * @param outputDir     The directory to which images will be saved.
+     * @param labelImage    The boolean flag signifying if images should be saved with or without bounding boxes. If true,
+     *                      the frames will be saved with bounding boxes, and vice versa.     
+     * @param saveRate      The rate at which images will be saved, once per every saveRate frames. Non-positive values are
+     *                      functionally equivalent to 1. If outputDir is null does nothing.
+     * @param vantiq        The Vantiq variable used to connect to the VANTIQ SDK. Either authenticated, or set to null.
      */
-    public ObjectDetector(float thresh, String graphFile, String labelFile, ImageUtil imageUtil, String outputDir, Boolean originalImage, int saveRate, Vantiq vantiq) {
+    public ObjectDetector(float thresh, String graphFile, String labelFile, ImageUtil imageUtil, String outputDir, Boolean labelImage, int saveRate, Vantiq vantiq) {
         try {
             GRAPH_DEF = IOUtil.readAllBytesOrExit(graphFile);
             LABELS = IOUtil.readAllLinesOrExit(labelFile);
             this.imageUtil = imageUtil;
             this.vantiq = vantiq;
-            this.originalImage = originalImage;
+            this.labelImage = labelImage;
             if (imageUtil != null) {
                 this.saveRate = saveRate;
                 frameCount = saveRate;
@@ -107,7 +109,7 @@ public class ObjectDetector {
             if (imageUtil != null && ++frameCount >= saveRate) {
                 String fileName = format.format(now) + ".jpg";
                 lastFilename = fileName;
-                imageUtil.labelImage(image, recognitions, fileName, originalImage);
+                imageUtil.labelImage(image, recognitions, fileName, labelImage);
                 frameCount = 0;
             }
             return returnJSON(recognitions);
@@ -148,7 +150,7 @@ public class ObjectDetector {
                     fileName += ".jpg";
                 }
                 lastFilename = fileName;
-                imageUtil.labelImage(image, recognitions, fileName, originalImage);
+                imageUtil.labelImage(image, recognitions, fileName, labelImage);
             }
             return returnJSON(recognitions);
         }

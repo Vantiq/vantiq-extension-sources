@@ -44,11 +44,12 @@ public class ImageUtil {
      * @param image         buffered image to label
      * @param recognitions  list of recognized objects
      * @param fileName      The name of the file to be written
+     * @param labelImage    Boolean flag designating if images should be saved with or without bounding boxes
      */
-    public void labelImage(final byte[] image, final List<Recognition> recognitions, final String fileName, boolean originalImage) {
+    public void labelImage(final byte[] image, final List<Recognition> recognitions, final String fileName, boolean labelImage) {
         BufferedImage bufferedImage = createImageFromBytes(image);
-        // If originalImage is set to true, image is saved without labels
-        if (!originalImage) {
+        // If labelImage is set to true, image is saved with labels
+        if (labelImage) {
             float scaleX = (float) bufferedImage.getWidth() / (float) Config.SIZE;
             float scaleY = (float) bufferedImage.getHeight() / (float) Config.SIZE;
             Graphics2D graphics = (Graphics2D) bufferedImage.getGraphics();
