@@ -9,16 +9,24 @@
 
 package io.vantiq.extsrc.objectRecognition.neuralNet;
 
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeTrue;
 
+import java.awt.image.BufferedImage;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+
+import javax.imageio.ImageIO;
 
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -129,6 +137,129 @@ public class TestYoloProcessor extends NeuralNetTestBase {
         } catch (ImageProcessingException e) {
             assertTrue("Failure should be caused by invalid image type. Error actually was: " + e.getMessage()
                     , e.getMessage().startsWith(YoloProcessor.class.getCanonicalName() + ".invalidImage"));
+        }
+    }
+    
+    @Test
+    public void testImageSavingWithoutLabels() throws ImageProcessingException {
+        
+        // Only run test with intended vantiq availability
+        assumeTrue(testAuthToken != null && testVantiqServer != null);
+        
+        Map config = new LinkedHashMap<>();
+        YoloProcessor ypImageSaver = new YoloProcessor();
+
+        config.put("pbFile", PB_FILE);
+        config.put("labelFile", LABEL_FILE);
+        config.put("outputDir", OUTPUT_DIR);
+        config.put("saveRate", SAVE_RATE);
+        config.put("saveImage", "local");
+        try {
+            ypImageSaver.setupImageProcessing(config, MODEL_DIRECTORY, testAuthToken, testVantiqServer);
+        } catch (Exception e) {
+            fail("Could not setup the JSON YoloProcessor");
+        }
+        File d = new File(OUTPUT_DIR);
+        try {
+            // Ensure no results from previous tests
+            if (d.exists()) {
+                deleteDirectory(OUTPUT_DIR);
+            }
+
+            NeuralNetResults results = ypImageSaver.processImage(getTestImage());
+            assert results != null;
+            assert results.getResults() != null;
+            
+            // Should save first image with timestamp
+            assert d.exists();
+            assert d.isDirectory();
+            assert d.listFiles().length == 1;
+            assert d.listFiles()[0].getName().matches(timestampPattern);
+            
+            try {
+                // Converting original test image to buffered image, since this is how we save images
+                BufferedImage tempOriginal = ImageIO.read(new ByteArrayInputStream(getTestImage()));
+                ByteArrayOutputStream baos = new ByteArrayOutputStream();
+                ImageIO.write(tempOriginal, "jpg", baos);
+                baos.flush();
+                
+                // Getting both images as byte arrays and comparing them for equality
+                byte [] originalImg = baos.toByteArray();
+                byte [] savedImg = Files.readAllBytes(d.listFiles()[0].toPath());
+                assert Arrays.equals(originalImg, savedImg);
+                baos.close();
+            } catch (IOException e) {
+                fail("Should not catch exception when checking saved image vs. original.");
+            }
+        } finally {
+            // delete the directory even if the test fails
+            if (d.exists()) {
+                deleteDirectory(OUTPUT_DIR);
+            }
+
+            ypImageSaver.close();
+        }
+    }
+    
+    @Test
+    public void testImageSavingWithLabels() throws ImageProcessingException {
+        
+        // Only run test with intended vantiq availability
+        assumeTrue(testAuthToken != null && testVantiqServer != null);
+        
+        Map config = new LinkedHashMap<>();
+        YoloProcessor ypImageSaver = new YoloProcessor();
+
+        config.put("pbFile", PB_FILE);
+        config.put("labelFile", LABEL_FILE);
+        config.put("outputDir", OUTPUT_DIR);
+        config.put("saveRate", SAVE_RATE);
+        config.put("saveImage", "local");
+        config.put("labelImage", "true");
+        try {
+            ypImageSaver.setupImageProcessing(config, MODEL_DIRECTORY, testAuthToken, testVantiqServer);
+        } catch (Exception e) {
+            fail("Could not setup the JSON YoloProcessor");
+        }
+        File d = new File(OUTPUT_DIR);
+        try {
+            // Ensure no results from previous tests
+            if (d.exists()) {
+                deleteDirectory(OUTPUT_DIR);
+            }
+
+            NeuralNetResults results = ypImageSaver.processImage(getTestImage());
+            assert results != null;
+            assert results.getResults() != null;
+            
+            // Should save first image with timestamp
+            assert d.exists();
+            assert d.isDirectory();
+            assert d.listFiles().length == 1;
+            assert d.listFiles()[0].getName().matches(timestampPattern);
+            
+            try {
+                // Converting original test image to buffered image, since this is how we save images
+                BufferedImage tempOriginal = ImageIO.read(new ByteArrayInputStream(getTestImage()));
+                ByteArrayOutputStream baos = new ByteArrayOutputStream();
+                ImageIO.write(tempOriginal, "jpg", baos);
+                baos.flush();
+                
+                // Getting both images as byte arrays and comparing them for equality
+                byte [] originalImg = baos.toByteArray();
+                byte [] savedImg = Files.readAllBytes(d.listFiles()[0].toPath());
+                assertFalse("Images should not be identical", Arrays.equals(originalImg, savedImg));
+                baos.close();
+            } catch (IOException e) {
+                fail("Should not catch exception when checking saved image vs. original.");
+            }
+        } finally {
+            // delete the directory even if the test fails
+            if (d.exists()) {
+                deleteDirectory(OUTPUT_DIR);
+            }
+
+            ypImageSaver.close();
         }
     }
 
