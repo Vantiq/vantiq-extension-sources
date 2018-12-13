@@ -212,7 +212,7 @@ public class TestYoloProcessor extends NeuralNetTestBase {
                 if (labelOption) {
                     assertFalse("Images should not be identical", Arrays.equals(originalImg, savedImg));
                 } else {
-                    assert Arrays.equals(originalImg, savedImg);
+                    assertTrue("Images should be identical", Arrays.equals(originalImg, savedImg));
                 }
                 
                 baos.close();
