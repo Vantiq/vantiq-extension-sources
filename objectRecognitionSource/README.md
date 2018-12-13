@@ -200,6 +200,9 @@ Most of the options required for neuralNet are dependent on the specific impleme
     1.  "local"     - This will save images to the disk (outputDir must be specified in order for this to work).
     2.  "vantiq"    - This will save images as documents in VANTIQ. No images will be saved locally even if outputDir is specified.
     3.  "both"      - This will save the images both to the disk and as documents in VANTIQ. (outputDir must be specified in order to save locally)
+    
+**NOTE:** All of the following options are only necessary if the "saveImage" option has been set.
+
 *   outputDir: Optional. The directory in which images will be saved locally. Images will only be saved locally if saveImage is set to be either "local" or "both".
 *   saveRate: Optional. The rate at which images will be saved (i.e. "saveRate": 3 - This will save every 3rd image that is captured). If not specified, the value will default to 1 which saves every captured image.
 *   labelImage: Optional. If set to "true", images will be saved with bounding boxes and labels. If set to "false", or if not set at all, the images will be saved with no bounding boxes or labels.
