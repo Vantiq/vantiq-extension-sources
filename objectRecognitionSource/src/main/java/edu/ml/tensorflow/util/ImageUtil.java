@@ -43,39 +43,32 @@ public class ImageUtil {
      * Label image with classes and predictions given by the ThensorFLow
      * @param image         buffered image to label
      * @param recognitions  list of recognized objects
-     * @param fileName      The name of the file to be written
-     * @param labelImage    Boolean flag designating if images should be saved with or without bounding boxes
      */
-    public void labelImage(final byte[] image, final List<Recognition> recognitions, final String fileName, boolean labelImage) {
-        BufferedImage bufferedImage = createImageFromBytes(image);
-        // If labelImage is set to true, image is saved with labels
-        if (labelImage) {
-            float scaleX = (float) bufferedImage.getWidth() / (float) Config.SIZE;
-            float scaleY = (float) bufferedImage.getHeight() / (float) Config.SIZE;
-            Graphics2D graphics = (Graphics2D) bufferedImage.getGraphics();
-    
-            for (Recognition recognition: recognitions) {
-                BoxPosition box = recognition.getScaledLocation(scaleX, scaleY);
-                //draw text
-                graphics.drawString(recognition.getTitle() + " " + recognition.getConfidence(), box.getLeft(), box.getTop() - 7);
-                // draw bounding box
-                graphics.drawRect(box.getLeftInt(),box.getTopInt(), box.getWidthInt(), box.getHeightInt());
-            }
-    
-            graphics.dispose();
+    public BufferedImage labelImage(BufferedImage bufferedImage, final List<Recognition> recognitions) {
+        float scaleX = (float) bufferedImage.getWidth() / (float) Config.SIZE;
+        float scaleY = (float) bufferedImage.getHeight() / (float) Config.SIZE;
+        Graphics2D graphics = (Graphics2D) bufferedImage.getGraphics();
+
+        for (Recognition recognition: recognitions) {
+            BoxPosition box = recognition.getScaledLocation(scaleX, scaleY);
+            //draw text
+            graphics.drawString(recognition.getTitle() + " " + recognition.getConfidence(), box.getLeft(), box.getTop() - 7);
+            // draw bounding box
+            graphics.drawRect(box.getLeftInt(),box.getTopInt(), box.getWidthInt(), box.getHeightInt());
         }
-        saveImage(vantiq, bufferedImage, fileName);
+
+        graphics.dispose();
+        return bufferedImage;
     }
 
     /**
      * Saves an image to a location, expected to be in the directory specified in the constructor.
      * <br>Edited so that outDir will be recreated if deleted while running, vs making sure it exists initially
      * and erroring out if it disappears in the interim 
-     * @param vantiq    The VANTIQ SDK connection, either authenticated or null
      * @param image     The image to save
      * @param target    The name of the file to be written
      */
-    public void saveImage(Vantiq vantiq, final BufferedImage image, final String target) {
+    public void saveImage(final BufferedImage image, final String target) {
         File fileToUpload = null;
         if (outputDir != null) {
             try {
@@ -133,7 +126,7 @@ public class ImageUtil {
         }
     }
 
-    private BufferedImage createImageFromBytes(final byte[] imageData) {
+    public BufferedImage createImageFromBytes(final byte[] imageData) {
         ByteArrayInputStream bais = new ByteArrayInputStream(imageData);
         try {
             return ImageIO.read(bais);

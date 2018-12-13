@@ -14,6 +14,7 @@ import org.tensorflow.Session;
 import org.tensorflow.Tensor;
 import io.vantiq.client.Vantiq;
 
+import java.awt.image.BufferedImage;
 import java.nio.FloatBuffer;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -109,7 +110,11 @@ public class ObjectDetector {
             if (imageUtil != null && ++frameCount >= saveRate) {
                 String fileName = format.format(now) + ".jpg";
                 lastFilename = fileName;
-                imageUtil.labelImage(image, recognitions, fileName, labelImage);
+                BufferedImage buffImage = imageUtil.createImageFromBytes(image);
+                if (labelImage) {
+                    buffImage = imageUtil.labelImage(buffImage, recognitions);
+                }
+                imageUtil.saveImage(buffImage, fileName);
                 frameCount = 0;
             }
             return returnJSON(recognitions);
@@ -150,7 +155,11 @@ public class ObjectDetector {
                     fileName += ".jpg";
                 }
                 lastFilename = fileName;
-                imageUtil.labelImage(image, recognitions, fileName, labelImage);
+                BufferedImage buffImage = imageUtil.createImageFromBytes(image);
+                if (labelImage) {
+                    buffImage = imageUtil.labelImage(buffImage, recognitions);
+                }
+                imageUtil.saveImage(buffImage, fileName);
             }
             return returnJSON(recognitions);
         }

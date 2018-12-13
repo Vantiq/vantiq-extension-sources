@@ -44,7 +44,7 @@ import io.vantiq.client.Vantiq;
  *      <li>{@code saveImage}: Optional. Config and Query. Must be set in order to save images. Acceptable values are
  *                      "local", "vantiq", or "both".
  *      <li>{@code labelImage}: Optional. Config and Query. A boolean flag used to decide whether to save images with or
- *                      or without labels.
+ *                      or without labels. Only applies if savedImages is true.
  *      <li>{@code fileName}: Optional. Query only. The name of the file that will be saved. Defaults to
  *                      "&lt;year&gt;-&lt;month&gt;-&lt;day&gt;--&lt;hour&gt;-&lt;minute&gt;-&lt;second&gt;.jpg"
  *                      if not set.
