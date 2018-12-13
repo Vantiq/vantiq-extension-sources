@@ -280,7 +280,7 @@ The following diagram represents the overall flow of messages between an extensi
 
 ### Creating the Source Type
 
-When creating an OPC UA Extension source, you must first create the OPC UA source type or implementation. This is done by defining a file containing a JSON document with the following properties.
+When creating an Extension source, you must first create the source type or implementation. This is done by defining a file containing a JSON document with the following properties.
 
   - `name` -- the name of the source type you wish to create
   - `baseType` -- the string `EXTENSION`

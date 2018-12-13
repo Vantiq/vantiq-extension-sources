@@ -14,6 +14,7 @@ import org.tensorflow.Session;
 import org.tensorflow.Tensor;
 import io.vantiq.client.Vantiq;
 
+import java.awt.image.BufferedImage;
 import java.nio.FloatBuffer;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -39,6 +40,7 @@ public class ObjectDetector {
     
     private ImageUtil imageUtil;
     private int saveRate = 0;
+    private Boolean labelImage;
     private int frameCount = 0;
     private float threshold;
     private Vantiq vantiq = null;
@@ -56,21 +58,24 @@ public class ObjectDetector {
     /**
      * Initializes the ObjectDetector with the given graph and and labels.
      * <br>Edited to initialize and save the graph for reuse, and allow the files to be specified dynamically.
-     * @param graphFile The location of a proto buffer file describing the YOLO net 
-     * @param labelFile The location of the labels for the given net.
-     * @param imageUtil The instance of the ImageUtil class used to save images. Either initialized, or set to null.
-     * @param outputDir The directory to which images will be saved.
-     * @param saveRate  The rate at which images will be saved, once per every saveRate frames. Non-positive values are
-     *                  functionally equivalent to 1. If outputDir is null does nothing.
-     * @param vantiq    The Vantiq variable used to connect to the VANTIQ SDK. Either authenticated, or set to null.
+     * @param graphFile     The location of a proto buffer file describing the YOLO net 
+     * @param labelFile     The location of the labels for the given net.
+     * @param imageUtil     The instance of the ImageUtil class used to save images. Either initialized, or set to null.
+     * @param outputDir     The directory to which images will be saved.
+     * @param labelImage    The boolean flag signifying if images should be saved with or without bounding boxes. If true,
+     *                      the frames will be saved with bounding boxes, and vice versa.     
+     * @param saveRate      The rate at which images will be saved, once per every saveRate frames. Non-positive values are
+     *                      functionally equivalent to 1. If outputDir is null does nothing.
+     * @param vantiq        The Vantiq variable used to connect to the VANTIQ SDK. Either authenticated, or set to null.
      */
-    public ObjectDetector(float thresh, String graphFile, String labelFile, ImageUtil imageUtil, String outputDir, int saveRate, Vantiq vantiq) {
+    public ObjectDetector(float thresh, String graphFile, String labelFile, ImageUtil imageUtil, String outputDir, Boolean labelImage, int saveRate, Vantiq vantiq) {
         try {
             GRAPH_DEF = IOUtil.readAllBytesOrExit(graphFile);
             LABELS = IOUtil.readAllLinesOrExit(labelFile);
             this.imageUtil = imageUtil;
             this.vantiq = vantiq;
-            if (imageUtil != null) {
+            this.labelImage = labelImage;
+            if (imageUtil.saveImage) {
                 this.saveRate = saveRate;
                 frameCount = saveRate;
             }
@@ -102,10 +107,14 @@ public class ObjectDetector {
             List<Recognition> recognitions = YOLOClassifier.getInstance(threshold).classifyImage(executeYOLOGraph(normalizedImage), LABELS);
             
             // Saves an image every saveRate frames
-            if (imageUtil != null && ++frameCount >= saveRate) {
+            if (imageUtil.saveImage && ++frameCount >= saveRate) {
                 String fileName = format.format(now) + ".jpg";
                 lastFilename = fileName;
-                imageUtil.labelImage(image, recognitions, fileName);
+                BufferedImage buffImage = imageUtil.createImageFromBytes(image);
+                if (labelImage) {
+                    buffImage = imageUtil.labelImage(buffImage, recognitions);
+                }
+                imageUtil.saveImage(buffImage, fileName);
                 frameCount = 0;
             }
             return returnJSON(recognitions);
@@ -137,16 +146,22 @@ public class ObjectDetector {
             List<Recognition> recognitions = YOLOClassifier.getInstance(threshold).classifyImage(executeYOLOGraph(normalizedImage), LABELS);
             
             // Saves an image if requested
-            if (outputDir != null || vantiq != null || (fileName != null && this.imageUtil != null)) {
-                ImageUtil imageUtil = this.imageUtil;
-                imageUtil = new ImageUtil(vantiq, outputDir);
+            if (outputDir != null || vantiq != null || (fileName != null && this.imageUtil.saveImage)) {
+                ImageUtil imageUtil = new ImageUtil();
+                //imageUtil = new ImageUtil(vantiq, outputDir);
+                imageUtil.outputDir = outputDir;
+                imageUtil.vantiq = vantiq;
                 if (fileName == null) {
                     fileName = format.format(now) + ".jpg";
                 } else if (!fileName.endsWith(".jpg") && !fileName.endsWith(".jpeg")) {
                     fileName += ".jpg";
                 }
                 lastFilename = fileName;
-                imageUtil.labelImage(image, recognitions, fileName);
+                BufferedImage buffImage = imageUtil.createImageFromBytes(image);
+                if (labelImage) {
+                    buffImage = imageUtil.labelImage(buffImage, recognitions);
+                }
+                imageUtil.saveImage(buffImage, fileName);
             }
             return returnJSON(recognitions);
         }

@@ -35,7 +35,7 @@ import io.vantiq.client.Vantiq;
  * Unique settings are: 
  * <ul>
  *      <li>{@code pbFile}: Required. Config only. The .pb file for the model.
- *      <li>{@code labelFile}: Required. Config only. The labels for the model.
+ *      <li>{@code labelsFile}: Required. Config only. The labels for the model.
  *      <li>{@code outputDir}: Optional. Config and Query. The directory in which the images (object boxes included)
  *                      will be placed. Images will be saved as
  *                      "&lt;year&gt;-&lt;month&gt;-&lt;day&gt;--&lt;hour&gt;-&lt;minute&gt;-&lt;second&gt;.jpg"
@@ -43,10 +43,13 @@ import io.vantiq.client.Vantiq;
  *                      non-Queries, no images will be saved if not set.
  *      <li>{@code saveImage}: Optional. Config and Query. Must be set in order to save images. Acceptable values are
  *                      "local", "vantiq", or "both".
- *      <li>{@code authToken}: Required. Config and Query. Must be set in order use VANTIQ SDK.
+ *      <li>{@code labelImage}: Optional. Config and Query. A boolean flag used to decide whether to save images with or
+ *                      or without labels. Only applies if savedImages is true.
  *      <li>{@code fileName}: Optional. Query only. The name of the file that will be saved. Defaults to
  *                      "&lt;year&gt;-&lt;month&gt;-&lt;day&gt;--&lt;hour&gt;-&lt;minute&gt;-&lt;second&gt;.jpg"
  *                      if not set.
+ *      <li>{@code threshold}: Optional. Config and Query. The threshold of confidence used by the Yolo Neural Network 
+ *                      when deciding whether to save a recognition.
  *      <li>{@code saveRate}: Optional. Config only. The rate at which images will be saved, once every n frames
  *                      captured. Default is every frame captured when unset or a non-positive number. Does nothing if
  *                      outputDir is not set at config.
@@ -61,6 +64,7 @@ public class YoloProcessor implements NeuralNetInterface {
     String labelsFile = null;
     String outputDir = null;
     String saveImage = null;
+    Boolean labelImage = false;
     Vantiq vantiq;
     String server;
     String authToken;
@@ -75,7 +79,7 @@ public class YoloProcessor implements NeuralNetInterface {
     public void setupImageProcessing(Map<String, ?> neuralNetConfig, String modelDirectory, String authToken, String server) throws Exception {
         setup(neuralNetConfig, modelDirectory, authToken, server);
         try {
-            objectDetector = new ObjectDetector(threshold, pbFile, labelsFile, imageUtil, outputDir, saveRate, vantiq);
+            objectDetector = new ObjectDetector(threshold, pbFile, labelsFile, imageUtil, outputDir, labelImage, saveRate, vantiq);
         } catch (Exception e) {
             throw new Exception(this.getClass().getCanonicalName() + ".yoloBackendSetupError: " 
                     + "Failed to create new ObjectDetector", e);
@@ -120,8 +124,17 @@ public class YoloProcessor implements NeuralNetInterface {
        }
               
        // Setup the variables for saving images
+       imageUtil = new ImageUtil();
        if (neuralNet.get("saveImage") instanceof String) {
            saveImage = (String) neuralNet.get("saveImage");
+           
+           // Check if user wants to save original image without labels
+           if (neuralNet.get("labelImage") instanceof String) {
+               String labelImageString = (String) neuralNet.get("labelImage");
+               labelImage = labelImageString.equalsIgnoreCase("true");
+           }
+           
+           // Check which method of saving the user requests
            if (!saveImage.equalsIgnoreCase("vantiq") && !saveImage.equalsIgnoreCase("both") && !saveImage.equalsIgnoreCase("local")) {
                log.error("The config value for saveImage was invalid. Images will not be saved.");
            }
@@ -134,10 +147,15 @@ public class YoloProcessor implements NeuralNetInterface {
                vantiq = new io.vantiq.client.Vantiq(server);
                vantiq.setAccessToken(authToken);
            }
-           imageUtil = new ImageUtil(vantiq, outputDir);
+           imageUtil.outputDir = outputDir;
+           imageUtil.vantiq = vantiq;
+           imageUtil.saveImage = true;
            if (neuralNet.get("saveRate") instanceof Integer) {
                saveRate = (Integer) neuralNet.get("saveRate");
            }
+       } else {
+           // Flag to mark that we should not save images
+           imageUtil.saveImage = false;
        }
    }
 

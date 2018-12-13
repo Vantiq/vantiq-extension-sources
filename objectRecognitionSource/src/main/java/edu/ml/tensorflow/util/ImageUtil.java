@@ -24,29 +24,16 @@ import java.util.List;
  */
 public class ImageUtil {
     private final static Logger LOGGER = LoggerFactory.getLogger(ImageUtil.class);
-    private String outputDir = null; // Added to remember the output dir for each instance
-    private Vantiq vantiq = null; // Added to allow image saving with VANTIQ
-
-    /**
-     * Edited so that it can be instanced with its own output directory.
-     * <br>Edited so that outDir will be recreated if deleted while running, vs making sure it exists initially
-     * and erroring out if it disappears in the interim 
-     * @param vant      The VANTIQ SDK connection, either authenticated or null
-     * @param outDir    The directory to which images will be saved
-     */
-    public ImageUtil(Vantiq vant, String outDir) {
-        outputDir = outDir;
-        vantiq = vant;
-    }
+    public String outputDir = null; // Added to remember the output dir for each instance
+    public Vantiq vantiq = null; // Added to allow image saving with VANTIQ
+    public Boolean saveImage;
 
     /**
      * Label image with classes and predictions given by the ThensorFLow
      * @param image         buffered image to label
      * @param recognitions  list of recognized objects
-     * @param fileName      The name of the file to be written
      */
-    public void labelImage(final byte[] image, final List<Recognition> recognitions, final String fileName) {
-        BufferedImage bufferedImage = createImageFromBytes(image);
+    public BufferedImage labelImage(BufferedImage bufferedImage, final List<Recognition> recognitions) {
         float scaleX = (float) bufferedImage.getWidth() / (float) Config.SIZE;
         float scaleY = (float) bufferedImage.getHeight() / (float) Config.SIZE;
         Graphics2D graphics = (Graphics2D) bufferedImage.getGraphics();
@@ -60,18 +47,17 @@ public class ImageUtil {
         }
 
         graphics.dispose();
-        saveImage(vantiq, bufferedImage, fileName);
+        return bufferedImage;
     }
 
     /**
      * Saves an image to a location, expected to be in the directory specified in the constructor.
      * <br>Edited so that outDir will be recreated if deleted while running, vs making sure it exists initially
      * and erroring out if it disappears in the interim 
-     * @param vantiq    The VANTIQ SDK connection, either authenticated or null
      * @param image     The image to save
      * @param target    The name of the file to be written
      */
-    public void saveImage(Vantiq vantiq, final BufferedImage image, final String target) {
+    public void saveImage(final BufferedImage image, final String target) {
         File fileToUpload = null;
         if (outputDir != null) {
             try {
@@ -129,7 +115,7 @@ public class ImageUtil {
         }
     }
 
-    private BufferedImage createImageFromBytes(final byte[] imageData) {
+    public BufferedImage createImageFromBytes(final byte[] imageData) {
         ByteArrayInputStream bais = new ByteArrayInputStream(imageData);
         try {
             return ImageIO.read(bais);
