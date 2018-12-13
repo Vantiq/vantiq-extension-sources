@@ -72,7 +72,7 @@ public class ImageUtil {
             if (fileToUpload != null) {
                 vantiq.upload(fileToUpload, 
                         "image/jpeg", 
-                        target,
+                        "objectRecognition/" + target,
                         new BaseResponseHandler() {
                             @Override public void onSuccess(Object body, Response response) {
                                 super.onSuccess(body, response);
@@ -91,7 +91,7 @@ public class ImageUtil {
                     ImageIO.write(image, "jpg", imgFile);
                     vantiq.upload(imgFile, 
                             "image/jpeg", 
-                            target,
+                            "objectRecognition/" + target,
                             new BaseResponseHandler() {
                                 @Override public void onSuccess(Object body, Response response) {
                                     super.onSuccess(body, response);

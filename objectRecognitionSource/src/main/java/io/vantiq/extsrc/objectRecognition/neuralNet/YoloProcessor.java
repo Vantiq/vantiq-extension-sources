@@ -180,7 +180,7 @@ public class YoloProcessor implements NeuralNetInterface {
         log.debug("Image processing time: {}.{} seconds"
                 , (after - before) / 1000, String.format("%03d", (after - before) % 1000));
         
-        results.setLastFilename(objectDetector.lastFilename);
+        results.setLastFilename("objectRecognition/" + objectDetector.lastFilename);
         results.setResults(foundObjects);
         return results;
     }
@@ -231,7 +231,7 @@ public class YoloProcessor implements NeuralNetInterface {
         log.debug("Image processing time: {}.{} seconds"
                 , (after - before) / 1000, String.format("%03d", (after - before) % 1000));
         
-        results.setLastFilename(objectDetector.lastFilename);
+        results.setLastFilename("objectRecognition/" + objectDetector.lastFilename);
         results.setResults(foundObjects);
         return results;
     }
