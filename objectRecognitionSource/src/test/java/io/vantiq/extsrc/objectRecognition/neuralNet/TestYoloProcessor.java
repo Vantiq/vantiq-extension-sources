@@ -145,60 +145,8 @@ public class TestYoloProcessor extends NeuralNetTestBase {
         
         // Only run test with intended vantiq availability
         assumeTrue(testAuthToken != null && testVantiqServer != null);
+        labelTestHelper(false);
         
-        Map config = new LinkedHashMap<>();
-        YoloProcessor ypImageSaver = new YoloProcessor();
-
-        config.put("pbFile", PB_FILE);
-        config.put("labelFile", LABEL_FILE);
-        config.put("outputDir", OUTPUT_DIR);
-        config.put("saveRate", SAVE_RATE);
-        config.put("saveImage", "local");
-        try {
-            ypImageSaver.setupImageProcessing(config, MODEL_DIRECTORY, testAuthToken, testVantiqServer);
-        } catch (Exception e) {
-            fail("Could not setup the JSON YoloProcessor");
-        }
-        File d = new File(OUTPUT_DIR);
-        try {
-            // Ensure no results from previous tests
-            if (d.exists()) {
-                deleteDirectory(OUTPUT_DIR);
-            }
-
-            NeuralNetResults results = ypImageSaver.processImage(getTestImage());
-            assert results != null;
-            assert results.getResults() != null;
-            
-            // Should save first image with timestamp
-            assert d.exists();
-            assert d.isDirectory();
-            assert d.listFiles().length == 1;
-            assert d.listFiles()[0].getName().matches(timestampPattern);
-            
-            try {
-                // Converting original test image to buffered image, since this is how we save images
-                BufferedImage tempOriginal = ImageIO.read(new ByteArrayInputStream(getTestImage()));
-                ByteArrayOutputStream baos = new ByteArrayOutputStream();
-                ImageIO.write(tempOriginal, "jpg", baos);
-                baos.flush();
-                
-                // Getting both images as byte arrays and comparing them for equality
-                byte [] originalImg = baos.toByteArray();
-                byte [] savedImg = Files.readAllBytes(d.listFiles()[0].toPath());
-                assert Arrays.equals(originalImg, savedImg);
-                baos.close();
-            } catch (IOException e) {
-                fail("Should not catch exception when checking saved image vs. original.");
-            }
-        } finally {
-            // delete the directory even if the test fails
-            if (d.exists()) {
-                deleteDirectory(OUTPUT_DIR);
-            }
-
-            ypImageSaver.close();
-        }
     }
     
     @Test
@@ -206,7 +154,12 @@ public class TestYoloProcessor extends NeuralNetTestBase {
         
         // Only run test with intended vantiq availability
         assumeTrue(testAuthToken != null && testVantiqServer != null);
+        labelTestHelper(true);
         
+    }
+    
+    // Helper function to test the "labelImage" option
+    public void labelTestHelper(Boolean labelOption) throws ImageProcessingException {
         Map config = new LinkedHashMap<>();
         YoloProcessor ypImageSaver = new YoloProcessor();
 
@@ -215,7 +168,13 @@ public class TestYoloProcessor extends NeuralNetTestBase {
         config.put("outputDir", OUTPUT_DIR);
         config.put("saveRate", SAVE_RATE);
         config.put("saveImage", "local");
-        config.put("labelImage", "true");
+        
+        if(labelOption) {
+            config.put("labelImage", "true");
+        } else {
+            config.put("labelImage", "false");
+        }
+        
         try {
             ypImageSaver.setupImageProcessing(config, MODEL_DIRECTORY, testAuthToken, testVantiqServer);
         } catch (Exception e) {
@@ -248,7 +207,14 @@ public class TestYoloProcessor extends NeuralNetTestBase {
                 // Getting both images as byte arrays and comparing them for equality
                 byte [] originalImg = baos.toByteArray();
                 byte [] savedImg = Files.readAllBytes(d.listFiles()[0].toPath());
-                assertFalse("Images should not be identical", Arrays.equals(originalImg, savedImg));
+                
+                // Based on labelOption, check if they are equal or not equal
+                if (labelOption) {
+                    assertFalse("Images should not be identical", Arrays.equals(originalImg, savedImg));
+                } else {
+                    assert Arrays.equals(originalImg, savedImg);
+                }
+                
                 baos.close();
             } catch (IOException e) {
                 fail("Should not catch exception when checking saved image vs. original.");
