@@ -24,20 +24,9 @@ import java.util.List;
  */
 public class ImageUtil {
     private final static Logger LOGGER = LoggerFactory.getLogger(ImageUtil.class);
-    private String outputDir = null; // Added to remember the output dir for each instance
-    private Vantiq vantiq = null; // Added to allow image saving with VANTIQ
-
-    /**
-     * Edited so that it can be instanced with its own output directory.
-     * <br>Edited so that outDir will be recreated if deleted while running, vs making sure it exists initially
-     * and erroring out if it disappears in the interim 
-     * @param vant      The VANTIQ SDK connection, either authenticated or null
-     * @param outDir    The directory to which images will be saved
-     */
-    public ImageUtil(Vantiq vant, String outDir) {
-        outputDir = outDir;
-        vantiq = vant;
-    }
+    public String outputDir = null; // Added to remember the output dir for each instance
+    public Vantiq vantiq = null; // Added to allow image saving with VANTIQ
+    public Boolean saveImage;
 
     /**
      * Label image with classes and predictions given by the ThensorFLow

@@ -75,7 +75,7 @@ public class ObjectDetector {
             this.imageUtil = imageUtil;
             this.vantiq = vantiq;
             this.labelImage = labelImage;
-            if (imageUtil != null) {
+            if (imageUtil.saveImage) {
                 this.saveRate = saveRate;
                 frameCount = saveRate;
             }
@@ -107,7 +107,7 @@ public class ObjectDetector {
             List<Recognition> recognitions = YOLOClassifier.getInstance(threshold).classifyImage(executeYOLOGraph(normalizedImage), LABELS);
             
             // Saves an image every saveRate frames
-            if (imageUtil != null && ++frameCount >= saveRate) {
+            if (imageUtil.saveImage && ++frameCount >= saveRate) {
                 String fileName = format.format(now) + ".jpg";
                 lastFilename = fileName;
                 BufferedImage buffImage = imageUtil.createImageFromBytes(image);
@@ -146,9 +146,11 @@ public class ObjectDetector {
             List<Recognition> recognitions = YOLOClassifier.getInstance(threshold).classifyImage(executeYOLOGraph(normalizedImage), LABELS);
             
             // Saves an image if requested
-            if (outputDir != null || vantiq != null || (fileName != null && this.imageUtil != null)) {
-                ImageUtil imageUtil = this.imageUtil;
-                imageUtil = new ImageUtil(vantiq, outputDir);
+            if (outputDir != null || vantiq != null || (fileName != null && this.imageUtil.saveImage)) {
+                ImageUtil imageUtil = new ImageUtil();
+                //imageUtil = new ImageUtil(vantiq, outputDir);
+                imageUtil.outputDir = outputDir;
+                imageUtil.vantiq = vantiq;
                 if (fileName == null) {
                     fileName = format.format(now) + ".jpg";
                 } else if (!fileName.endsWith(".jpg") && !fileName.endsWith(".jpeg")) {

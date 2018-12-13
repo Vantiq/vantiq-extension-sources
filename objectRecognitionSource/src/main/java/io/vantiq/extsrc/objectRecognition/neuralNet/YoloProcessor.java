@@ -124,6 +124,7 @@ public class YoloProcessor implements NeuralNetInterface {
        }
               
        // Setup the variables for saving images
+       imageUtil = new ImageUtil();
        if (neuralNet.get("saveImage") instanceof String) {
            saveImage = (String) neuralNet.get("saveImage");
            
@@ -146,10 +147,15 @@ public class YoloProcessor implements NeuralNetInterface {
                vantiq = new io.vantiq.client.Vantiq(server);
                vantiq.setAccessToken(authToken);
            }
-           imageUtil = new ImageUtil(vantiq, outputDir);
+           imageUtil.outputDir = outputDir;
+           imageUtil.vantiq = vantiq;
+           imageUtil.saveImage = true;
            if (neuralNet.get("saveRate") instanceof Integer) {
                saveRate = (Integer) neuralNet.get("saveRate");
            }
+       } else {
+           // Flag to mark that we should not save images
+           imageUtil.saveImage = false;
        }
    }
 
