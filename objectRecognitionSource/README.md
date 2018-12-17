@@ -212,6 +212,7 @@ Most of the options required for neuralNet are dependent on the specific impleme
 Messages from the source are JSON objects in the following format:
 ```
 {
+    sourceName: <the name of your VANTIQ Source>,
     results: [<object found>, <object found>],
     timestamp: <milliseconds since Jan 1 1970 00:00:00, a.k.a standard Unix time>,
     dataSource: {
