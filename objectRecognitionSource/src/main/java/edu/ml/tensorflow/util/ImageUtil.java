@@ -26,6 +26,7 @@ public class ImageUtil {
     private final static Logger LOGGER = LoggerFactory.getLogger(ImageUtil.class);
     public String outputDir = null; // Added to remember the output dir for each instance
     public Vantiq vantiq = null; // Added to allow image saving with VANTIQ
+    public String sourceName = null;
     public Boolean saveImage;
 
     /**
@@ -72,7 +73,7 @@ public class ImageUtil {
             if (fileToUpload != null) {
                 vantiq.upload(fileToUpload, 
                         "image/jpeg", 
-                        target,
+                        "objectRecognition/" + sourceName + '/' + target,
                         new BaseResponseHandler() {
                             @Override public void onSuccess(Object body, Response response) {
                                 super.onSuccess(body, response);
@@ -91,7 +92,7 @@ public class ImageUtil {
                     ImageIO.write(image, "jpg", imgFile);
                     vantiq.upload(imgFile, 
                             "image/jpeg", 
-                            target,
+                            "objectRecognition/" + sourceName + '/'  + target,
                             new BaseResponseHandler() {
                                 @Override public void onSuccess(Object body, Response response) {
                                     super.onSuccess(body, response);

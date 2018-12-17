@@ -28,7 +28,7 @@ public class BasicTestNeuralNet implements NeuralNetInterface {
     public final static String      RETURN_NULL             = "retNull";
 
     @Override
-    public void setupImageProcessing(Map<String, ?> neuralNetConfig, String modelDirectory, String authToken, String server) throws Exception {
+    public void setupImageProcessing(Map<String, ?> neuralNetConfig, String sourceName, String modelDirectory, String authToken, String server) throws Exception {
         config = neuralNetConfig;
         this.modelDirectory = modelDirectory;
         if (config.containsKey(THROW_EXCEPTION)) {

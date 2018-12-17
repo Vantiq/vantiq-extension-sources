@@ -72,7 +72,7 @@ public class TestYoloProcessor extends NeuralNetTestBase {
         config.put("pbFile", PB_FILE);
         config.put("labelFile", LABEL_FILE);
         try {
-            ypJson.setupImageProcessing(config, MODEL_DIRECTORY, testAuthToken, testVantiqServer);
+            ypJson.setupImageProcessing(config, SOURCE_NAME, MODEL_DIRECTORY, testAuthToken, testVantiqServer);
         } catch (Exception e) {
             fail("Could not setup the JSON YoloProcessor");
         }
@@ -176,7 +176,7 @@ public class TestYoloProcessor extends NeuralNetTestBase {
         }
         
         try {
-            ypImageSaver.setupImageProcessing(config, MODEL_DIRECTORY, testAuthToken, testVantiqServer);
+            ypImageSaver.setupImageProcessing(config, SOURCE_NAME, MODEL_DIRECTORY, testAuthToken, testVantiqServer);
         } catch (Exception e) {
             fail("Could not setup the JSON YoloProcessor");
         }
@@ -244,7 +244,7 @@ public class TestYoloProcessor extends NeuralNetTestBase {
         config.put("saveRate", SAVE_RATE);
         config.put("saveImage", "local");
         try {
-            ypImageSaver.setupImageProcessing(config, MODEL_DIRECTORY, testAuthToken, testVantiqServer);
+            ypImageSaver.setupImageProcessing(config, SOURCE_NAME, MODEL_DIRECTORY, testAuthToken, testVantiqServer);
         } catch (Exception e) {
             fail("Could not setup the JSON YoloProcessor");
         }
@@ -281,11 +281,8 @@ public class TestYoloProcessor extends NeuralNetTestBase {
             assert d.isDirectory();
             assert d.listFiles().length == 1;
             
-            // Check it didn't save to VANTIQ
-            vantiqResponse = vantiq.selectOne("system.documents", results.getLastFilename());
-            if (vantiqResponse.isSuccess()) {
-                fail();
-            }
+            // Check lastFilename is null, meaning it couldn't have saved in VANTIQ
+            assert results.getLastFilename() == null;
 
             results = null;
             results = ypImageSaver.processImage(getTestImage());
@@ -331,7 +328,7 @@ public class TestYoloProcessor extends NeuralNetTestBase {
         config.put("saveRate", SAVE_RATE);
         config.put("saveImage", "both");
         try {
-            ypImageSaver.setupImageProcessing(config, MODEL_DIRECTORY, testAuthToken, testVantiqServer);
+            ypImageSaver.setupImageProcessing(config, SOURCE_NAME, MODEL_DIRECTORY, testAuthToken, testVantiqServer);
         } catch (Exception e) {
             fail("Could not setup the JSON YoloProcessor");
         }
@@ -429,7 +426,7 @@ public class TestYoloProcessor extends NeuralNetTestBase {
         config.put("saveRate", SAVE_RATE);
         config.put("saveImage", "vantiq");
         try {
-            ypImageSaver.setupImageProcessing(config, MODEL_DIRECTORY, testAuthToken, testVantiqServer);
+            ypImageSaver.setupImageProcessing(config, SOURCE_NAME, MODEL_DIRECTORY, testAuthToken, testVantiqServer);
         } catch (Exception e) {
             fail("Could not setup the JSON YoloProcessor");
         }
@@ -484,7 +481,7 @@ public class TestYoloProcessor extends NeuralNetTestBase {
         config.put("outputDir", OUTPUT_DIR);
         config.put("saveRate", SAVE_RATE);
         try {
-            ypImageSaver.setupImageProcessing(config, MODEL_DIRECTORY, testAuthToken, testVantiqServer);
+            ypImageSaver.setupImageProcessing(config, SOURCE_NAME, MODEL_DIRECTORY, testAuthToken, testVantiqServer);
         } catch (Exception e) {
             fail("Could not setup the JSON YoloProcessor");
         }

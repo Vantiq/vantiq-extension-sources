@@ -32,6 +32,7 @@ import io.vantiq.extsrc.objectRecognition.imageRetriever.ImageRetrieverInterface
 import io.vantiq.extsrc.objectRecognition.imageRetriever.ImageRetrieverResults;
 import io.vantiq.extsrc.objectRecognition.neuralNet.BasicTestNeuralNet;
 import io.vantiq.extsrc.objectRecognition.neuralNet.NeuralNetInterface;
+import io.vantiq.extsrc.objectRecognition.neuralNet.NeuralNetResults;
 
 public class TestObjRecCore extends ObjRecTestBase {
     
@@ -261,6 +262,43 @@ public class TestObjRecCore extends ObjRecTestBase {
     }
     
     @Test
+    public void testSourceNameAndFilenameInResults() {
+        LocalImageRetrieverResults imageResults;
+        LocalNeuralNetResults neuralNetResults = new LocalNeuralNetResults();
+        Map<String,String> imageOtherData = new LinkedHashMap<>();
+        Map<String,String> neuralOtherData = new LinkedHashMap<>();
+        
+        // Initialize image results
+        try {
+            imageResults = new LocalImageRetrieverResults(Files.readAllBytes(new File(JPEG_IMAGE_LOCATION).toPath()));
+        } catch (IOException e) {
+            assumeFalse("Could not read image for the test", true);
+            return; // Never reaches, just silences imageData not initialized errors
+        }
+        
+        // Add fake data into "otherData" maps
+        imageOtherData.put("jibberish", "moreJibberish");
+        neuralOtherData.put("jibberish", "moreJibberish");
+        
+        // Set otherData for both results
+        imageResults.setOtherData(imageOtherData);
+        neuralNetResults.setOtherData(neuralOtherData);
+        
+        // Set last filename for neuralNetResults to ensure it is being sent back to VANTIQ Source
+        neuralNetResults.setLastFilename("testFilename");
+        
+        // Make sure that source name and filename are included in map from results
+        Map<String, Object> testMapFromResults = core.createMapFromResults(imageResults, neuralNetResults);
+        assert testMapFromResults.get("sourceName").equals("src");
+        assert testMapFromResults.get("filename").equals("testFilename");
+        
+        // If lastFilename is null, no "filename" field should be sent back to VANTIQ Source
+        neuralNetResults.setLastFilename(null);
+        testMapFromResults = core.createMapFromResults(imageResults, neuralNetResults);
+        assert testMapFromResults.get("filename") == null;
+    }
+    
+    @Test
     public void testExitIfConnectionFails() {
         core.start(3);
         assertTrue("Should have succeeded", core.exitIfConnectionFails(core.client, 3));
@@ -319,7 +357,7 @@ public class TestObjRecCore extends ObjRecTestBase {
         }
         
         try {
-            neuralNet.setupImageProcessing(conf, modelDirectory, authToken, targetVantiqServer);
+            neuralNet.setupImageProcessing(conf, sourceName, modelDirectory, authToken, targetVantiqServer);
             return true;
         } catch (Exception e) {
             return false;
@@ -329,6 +367,12 @@ public class TestObjRecCore extends ObjRecTestBase {
     public class LocalImageRetrieverResults extends ImageRetrieverResults {
         public LocalImageRetrieverResults(byte[] image) {
             super(image);
+        }
+    }
+    
+    public class LocalNeuralNetResults extends NeuralNetResults {
+        public LocalNeuralNetResults() {
+            super();
         }
     }
 }
