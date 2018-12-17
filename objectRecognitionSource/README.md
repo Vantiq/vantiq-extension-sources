@@ -228,7 +228,7 @@ The contents and ordering of the objects in `results` are dependent on the imple
 are guaranteed to be JSON objects. The contents of `dataSource` and `neuralNet` are dependent on the implementation of
 each. The timestamp is not required. Note that the timestamp is immediately usable as the VAIL DateTime type.
 
-*   **NOTE:** The filename is "N/A" if the saveImage option has not been set.
+*   **NOTE:** The "filename" field will only be present if the "saveImage" config option has been set.
 
 ## Queries
 
