@@ -120,6 +120,8 @@ public class ObjectDetector {
                 }
                 imageUtil.saveImage(buffImage, fileName);
                 frameCount = 0;
+            } else {
+                lastFilename = null;
             }
             return returnJSON(recognitions);
         }
@@ -167,6 +169,8 @@ public class ObjectDetector {
                     buffImage = imageUtil.labelImage(buffImage, recognitions);
                 }
                 imageUtil.saveImage(buffImage, fileName);
+            } else {
+                lastFilename = null;
             }
             return returnJSON(recognitions);
         }

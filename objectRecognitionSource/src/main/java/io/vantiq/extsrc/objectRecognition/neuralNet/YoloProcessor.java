@@ -184,7 +184,12 @@ public class YoloProcessor implements NeuralNetInterface {
         log.debug("Image processing time: {}.{} seconds"
                 , (after - before) / 1000, String.format("%03d", (after - before) % 1000));
         
-        results.setLastFilename("objectRecognition/" + sourceName + '/' + objectDetector.lastFilename);
+        // Save filename, or mark it as null if images are not saved
+        if (objectDetector.lastFilename == null) {
+            results.setLastFilename("N/A");
+        } else {
+            results.setLastFilename("objectRecognition/" + sourceName + '/' + objectDetector.lastFilename);
+        }
         results.setResults(foundObjects);
         return results;
     }
@@ -235,7 +240,12 @@ public class YoloProcessor implements NeuralNetInterface {
         log.debug("Image processing time: {}.{} seconds"
                 , (after - before) / 1000, String.format("%03d", (after - before) % 1000));
         
-        results.setLastFilename("objectRecognition/" + sourceName + '/' + objectDetector.lastFilename);
+        // Save filename, or mark it as null if images are not saved
+        if (objectDetector.lastFilename == null) {
+            results.setLastFilename("N/A");
+        } else {
+            results.setLastFilename("objectRecognition/" + sourceName + '/' + objectDetector.lastFilename);
+        }
         results.setResults(foundObjects);
         return results;
     }
