@@ -281,11 +281,8 @@ public class TestYoloProcessor extends NeuralNetTestBase {
             assert d.isDirectory();
             assert d.listFiles().length == 1;
             
-            // Check it didn't save to VANTIQ
-            vantiqResponse = vantiq.selectOne("system.documents", results.getLastFilename());
-            if (vantiqResponse.isSuccess()) {
-                fail();
-            }
+            // Check lastFilename is null, meaning it couldn't have saved in VANTIQ
+            assert results.getLastFilename() == null;
 
             results = null;
             results = ypImageSaver.processImage(getTestImage());

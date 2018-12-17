@@ -186,7 +186,7 @@ public class YoloProcessor implements NeuralNetInterface {
         
         // Save filename, or mark it as null if images are not saved
         if (objectDetector.lastFilename == null) {
-            results.setLastFilename("N/A");
+            results.setLastFilename(null);
         } else {
             results.setLastFilename("objectRecognition/" + sourceName + '/' + objectDetector.lastFilename);
         }
@@ -242,7 +242,7 @@ public class YoloProcessor implements NeuralNetInterface {
         
         // Save filename, or mark it as null if images are not saved
         if (objectDetector.lastFilename == null) {
-            results.setLastFilename("N/A");
+            results.setLastFilename(null);
         } else {
             results.setLastFilename("objectRecognition/" + sourceName + '/' + objectDetector.lastFilename);
         }

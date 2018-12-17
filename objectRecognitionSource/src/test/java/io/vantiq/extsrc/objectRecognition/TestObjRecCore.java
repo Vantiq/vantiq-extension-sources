@@ -287,10 +287,15 @@ public class TestObjRecCore extends ObjRecTestBase {
         // Set last filename for neuralNetResults to ensure it is being sent back to VANTIQ Source
         neuralNetResults.setLastFilename("testFilename");
         
-        // Make sure that source name is included in map from results
+        // Make sure that source name and filename are included in map from results
         Map<String, Object> testMapFromResults = core.createMapFromResults(imageResults, neuralNetResults);
         assert testMapFromResults.get("sourceName").equals("src");
         assert testMapFromResults.get("filename").equals("testFilename");
+        
+        // If lastFilename is null, no "filename" field should be sent back to VANTIQ Source
+        neuralNetResults.setLastFilename(null);
+        testMapFromResults = core.createMapFromResults(imageResults, neuralNetResults);
+        assert testMapFromResults.get("filename") == null;
     }
     
     @Test
