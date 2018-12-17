@@ -44,6 +44,7 @@ public class ObjectDetector {
     private int frameCount = 0;
     private float threshold;
     private Vantiq vantiq = null;
+    private String sourceName = null;
     
     private Graph yoloGraph;
     private Session yoloSession;
@@ -67,14 +68,17 @@ public class ObjectDetector {
      * @param saveRate      The rate at which images will be saved, once per every saveRate frames. Non-positive values are
      *                      functionally equivalent to 1. If outputDir is null does nothing.
      * @param vantiq        The Vantiq variable used to connect to the VANTIQ SDK. Either authenticated, or set to null.
+     * @param sourceName    The name of the VANTIQ Source
      */
-    public ObjectDetector(float thresh, String graphFile, String labelFile, ImageUtil imageUtil, String outputDir, Boolean labelImage, int saveRate, Vantiq vantiq) {
+    public ObjectDetector(float thresh, String graphFile, String labelFile, ImageUtil imageUtil, String outputDir, 
+            Boolean labelImage, int saveRate, Vantiq vantiq, String sourceName) {
         try {
             GRAPH_DEF = IOUtil.readAllBytesOrExit(graphFile);
             LABELS = IOUtil.readAllLinesOrExit(labelFile);
             this.imageUtil = imageUtil;
             this.vantiq = vantiq;
             this.labelImage = labelImage;
+            this.sourceName = sourceName;
             if (imageUtil.saveImage) {
                 this.saveRate = saveRate;
                 frameCount = saveRate;
@@ -151,6 +155,7 @@ public class ObjectDetector {
                 //imageUtil = new ImageUtil(vantiq, outputDir);
                 imageUtil.outputDir = outputDir;
                 imageUtil.vantiq = vantiq;
+                imageUtil.sourceName = sourceName;
                 if (fileName == null) {
                     fileName = format.format(now) + ".jpg";
                 } else if (!fileName.endsWith(".jpg") && !fileName.endsWith(".jpeg")) {

@@ -390,6 +390,7 @@ public class ObjectRecognitionCore {
    Map<String, Object> createMapFromResults(ImageRetrieverResults imageResults, NeuralNetResults neuralNetResults) {
        Map<String, Object> map = new LinkedHashMap<>();
        
+       map.put("filename", neuralNetResults.getLastFilename());
        map.put("sourceName", sourceName);
        map.put("timestamp", imageResults.getTimestamp());
        map.put("results", neuralNetResults.getResults());

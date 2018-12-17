@@ -262,7 +262,7 @@ public class TestObjRecCore extends ObjRecTestBase {
     }
     
     @Test
-    public void testSourceNameInResults() {
+    public void testSourceNameAndFilenameInResults() {
         LocalImageRetrieverResults imageResults;
         LocalNeuralNetResults neuralNetResults = new LocalNeuralNetResults();
         Map<String,String> imageOtherData = new LinkedHashMap<>();
@@ -284,9 +284,13 @@ public class TestObjRecCore extends ObjRecTestBase {
         imageResults.setOtherData(imageOtherData);
         neuralNetResults.setOtherData(neuralOtherData);
         
+        // Set last filename for neuralNetResults to ensure it is being sent back to VANTIQ Source
+        neuralNetResults.setLastFilename("testFilename");
+        
         // Make sure that source name is included in map from results
         Map<String, Object> testMapFromResults = core.createMapFromResults(imageResults, neuralNetResults);
         assert testMapFromResults.get("sourceName").equals("src");
+        assert testMapFromResults.get("filename").equals("testFilename");
     }
     
     @Test
@@ -348,7 +352,7 @@ public class TestObjRecCore extends ObjRecTestBase {
         }
         
         try {
-            neuralNet.setupImageProcessing(conf, modelDirectory, authToken, targetVantiqServer);
+            neuralNet.setupImageProcessing(conf, sourceName, modelDirectory, authToken, targetVantiqServer);
             return true;
         } catch (Exception e) {
             return false;

@@ -68,6 +68,7 @@ public class YoloProcessor implements NeuralNetInterface {
     Vantiq vantiq;
     String server;
     String authToken;
+    String sourceName;
     ImageUtil imageUtil;
     float threshold = 0.5f;
     int saveRate = 1;
@@ -76,10 +77,10 @@ public class YoloProcessor implements NeuralNetInterface {
     
     
     @Override
-    public void setupImageProcessing(Map<String, ?> neuralNetConfig, String modelDirectory, String authToken, String server) throws Exception {
-        setup(neuralNetConfig, modelDirectory, authToken, server);
+    public void setupImageProcessing(Map<String, ?> neuralNetConfig, String sourceName, String modelDirectory, String authToken, String server) throws Exception {
+        setup(neuralNetConfig, sourceName, modelDirectory, authToken, server);
         try {
-            objectDetector = new ObjectDetector(threshold, pbFile, labelsFile, imageUtil, outputDir, labelImage, saveRate, vantiq);
+            objectDetector = new ObjectDetector(threshold, pbFile, labelsFile, imageUtil, outputDir, labelImage, saveRate, vantiq, sourceName);
         } catch (Exception e) {
             throw new Exception(this.getClass().getCanonicalName() + ".yoloBackendSetupError: " 
                     + "Failed to create new ObjectDetector", e);
@@ -89,13 +90,15 @@ public class YoloProcessor implements NeuralNetInterface {
     /**
      * Save the necessary data from the given map.
      * @param neuralNet         The configuration from 'neuralNet' in the config document
+     * @param sourceName        The name of the VANTIQ Source
      * @param modelDirectory    The directory in which the .pb and label files are placed
      * @param authToken         The authToken used to with the VANTIQ SDK
      * @throws Exception        Thrown when an invalid configuration is requested
      */
-    private void setup(Map<String, ?> neuralNet, String modelDirectory, String authToken, String server) throws Exception {
+    private void setup(Map<String, ?> neuralNet, String sourceName, String modelDirectory, String authToken, String server) throws Exception {
         this.server = server;
         this.authToken = authToken;
+        this.sourceName = sourceName;
         // Obtain the files for the net
        if (neuralNet.get("pbFile") instanceof String && neuralNet.get("labelFile") instanceof String) {
            if (!modelDirectory.equals("") && !modelDirectory.endsWith("/") && !modelDirectory.endsWith("\\")) {
@@ -150,6 +153,7 @@ public class YoloProcessor implements NeuralNetInterface {
            imageUtil.outputDir = outputDir;
            imageUtil.vantiq = vantiq;
            imageUtil.saveImage = true;
+           imageUtil.sourceName = sourceName;
            if (neuralNet.get("saveRate") instanceof Integer) {
                saveRate = (Integer) neuralNet.get("saveRate");
            }
@@ -180,7 +184,7 @@ public class YoloProcessor implements NeuralNetInterface {
         log.debug("Image processing time: {}.{} seconds"
                 , (after - before) / 1000, String.format("%03d", (after - before) % 1000));
         
-        results.setLastFilename("objectRecognition/" + objectDetector.lastFilename);
+        results.setLastFilename("objectRecognition/" + sourceName + '/' + objectDetector.lastFilename);
         results.setResults(foundObjects);
         return results;
     }
@@ -231,7 +235,7 @@ public class YoloProcessor implements NeuralNetInterface {
         log.debug("Image processing time: {}.{} seconds"
                 , (after - before) / 1000, String.format("%03d", (after - before) % 1000));
         
-        results.setLastFilename("objectRecognition/" + objectDetector.lastFilename);
+        results.setLastFilename("objectRecognition/" + sourceName + '/' + objectDetector.lastFilename);
         results.setResults(foundObjects);
         return results;
     }

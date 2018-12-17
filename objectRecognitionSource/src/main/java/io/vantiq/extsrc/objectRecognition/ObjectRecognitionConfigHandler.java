@@ -217,7 +217,7 @@ public class ObjectRecognitionConfigHandler extends Handler<ExtensionServiceMess
         
         // Setup the neural net
         try {
-            neuralNet.setupImageProcessing(neuralNetConfig, source.modelDirectory, source.authToken, source.targetVantiqServer);
+            neuralNet.setupImageProcessing(neuralNetConfig, source.sourceName, source.modelDirectory, source.authToken, source.targetVantiqServer);
             source.neuralNet = neuralNet;
         } catch (Exception e) {
             log.error("Exception occurred while setting up neural net.", e);
