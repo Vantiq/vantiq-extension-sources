@@ -212,6 +212,7 @@ Most of the options required for neuralNet are dependent on the specific impleme
 Messages from the source are JSON objects in the following format:
 ```
 {
+    filename: <the name of the file matching the following pattern: objectRecognition/sourceName/timestamp.jpg>
     sourceName: <the name of your VANTIQ Source>,
     results: [<object found>, <object found>],
     timestamp: <milliseconds since Jan 1 1970 00:00:00, a.k.a standard Unix time>,
@@ -226,6 +227,8 @@ Messages from the source are JSON objects in the following format:
 The contents and ordering of the objects in `results` are dependent on the implementation of the neural net, but they
 are guaranteed to be JSON objects. The contents of `dataSource` and `neuralNet` are dependent on the implementation of
 each. The timestamp is not required. Note that the timestamp is immediately usable as the VAIL DateTime type.
+
+*   **NOTE:** The filename is "N/A" if the saveImage option has not been set.
 
 ## Queries
 
