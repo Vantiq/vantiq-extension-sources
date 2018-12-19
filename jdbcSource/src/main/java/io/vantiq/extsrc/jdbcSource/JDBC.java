@@ -138,7 +138,7 @@ public class JDBC {
                                 row.put(md.getColumnName(i), queryResults.getObject(i));
                                 break;
                         }
-                    } 
+                    }
                     // Add each row map to the list of rows
                     rows.add(row);
                 } while(queryResults.next());
