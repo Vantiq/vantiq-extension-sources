@@ -108,12 +108,11 @@ public class JDBC {
             if (!queryResults.next()) { 
                 return null;
             } else {
-                queryResults.beforeFirst();
                 ResultSetMetaData md = queryResults.getMetaData(); 
                 int columns = md.getColumnCount();
                 
                 // Iterate over rows of Result Set and create a map for each row
-                while(queryResults.next()) {
+                do {
                     HashMap row = new HashMap(columns);
                     for (int i=1; i<=columns; ++i) {
                         // Check column type to retrieve data in appropriate manner
@@ -142,7 +141,7 @@ public class JDBC {
                     }
                     // Add each row map to the list of rows
                     rows.add(row);
-                }
+                } while(queryResults.next());
             }
         } catch (SQLException e) {
             reportSQLError(e);
