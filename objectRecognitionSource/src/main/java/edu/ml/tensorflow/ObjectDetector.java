@@ -109,12 +109,12 @@ public class ObjectDetector {
         try (Tensor<Float> normalizedImage = normalizeImage(image)) {
             Date now = new Date(); // Saves the time before
             List<Recognition> recognitions = YOLOClassifier.getInstance(threshold).classifyImage(executeYOLOGraph(normalizedImage), LABELS);
+            BufferedImage buffImage = imageUtil.createImageFromBytes(image);
             
             // Saves an image every saveRate frames
             if (imageUtil.saveImage && ++frameCount >= saveRate) {
                 String fileName = format.format(now) + ".jpg";
                 lastFilename = fileName;
-                BufferedImage buffImage = imageUtil.createImageFromBytes(image);
                 if (labelImage) {
                     buffImage = imageUtil.labelImage(buffImage, recognitions);
                 }
@@ -123,7 +123,7 @@ public class ObjectDetector {
             } else {
                 lastFilename = null;
             }
-            return returnJSON(recognitions);
+            return returnJSON(recognitions, buffImage);
         }
     }
     
@@ -150,11 +150,11 @@ public class ObjectDetector {
         try (Tensor<Float> normalizedImage = normalizeImage(image)) {
             Date now = new Date(); // Saves the time before
             List<Recognition> recognitions = YOLOClassifier.getInstance(threshold).classifyImage(executeYOLOGraph(normalizedImage), LABELS);
+            BufferedImage buffImage = imageUtil.createImageFromBytes(image);
             
             // Saves an image if requested
             if (outputDir != null || vantiq != null || (fileName != null && this.imageUtil.saveImage)) {
                 ImageUtil imageUtil = new ImageUtil();
-                //imageUtil = new ImageUtil(vantiq, outputDir);
                 imageUtil.outputDir = outputDir;
                 imageUtil.vantiq = vantiq;
                 imageUtil.sourceName = sourceName;
@@ -164,7 +164,6 @@ public class ObjectDetector {
                     fileName += ".jpg";
                 }
                 lastFilename = fileName;
-                BufferedImage buffImage = imageUtil.createImageFromBytes(image);
                 if (labelImage) {
                     buffImage = imageUtil.labelImage(buffImage, recognitions);
                 }
@@ -172,7 +171,7 @@ public class ObjectDetector {
             } else {
                 lastFilename = null;
             }
-            return returnJSON(recognitions);
+            return returnJSON(recognitions, buffImage);
         }
     }
 
@@ -249,19 +248,21 @@ public class ObjectDetector {
      * ADDED BY NAMIR - Used to convert recognitions to JSON
      * @param recognitions
      */
-    private List<Map<String, ?>> returnJSON(final List<Recognition> recognitions) {
+    private List<Map<String, ?>> returnJSON(final List<Recognition> recognitions, BufferedImage buffImage) {
         List<Map<String, ?>> jsonRecognitions = new ArrayList<>();
         for (Recognition recognition : recognitions) {
-            //recognition.getTitle(), recognition.getConfidence(), recognition.getLocation());
         	HashMap map = new HashMap();
         	map.put("label", recognition.getTitle());
         	map.put("confidence", recognition.getConfidence());
         	
+        	float scaleX = (float) buffImage.getWidth() / (float) SIZE;
+            float scaleY = (float) buffImage.getHeight() / (float) SIZE;
+        	
         	HashMap location = new HashMap();
-        	location.put("left", recognition.getLocation().getLeft());
-        	location.put("top", recognition.getLocation().getTop());
-        	location.put("right", recognition.getLocation().getRight());
-        	location.put("bottom", recognition.getLocation().getBottom());
+        	location.put("left", recognition.getScaledLocation(scaleX, scaleY).getLeft());
+            location.put("top", recognition.getScaledLocation(scaleX, scaleY).getTop());
+            location.put("right", recognition.getScaledLocation(scaleX, scaleY).getRight());
+            location.put("bottom", recognition.getScaledLocation(scaleX, scaleY).getBottom());
         	map.put("location", location);
         	
         	jsonRecognitions.add(map);

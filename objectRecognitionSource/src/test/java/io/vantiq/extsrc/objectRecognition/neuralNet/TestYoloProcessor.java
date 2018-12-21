@@ -624,9 +624,9 @@ public class TestYoloProcessor extends NeuralNetTestBase {
     }
 
     // ================================================= Helper functions =================================================
-    String imageResultsAsString = "[{\"confidence\":0.8445639, \"location\":{\"top\":254.66667, \"left\":82.87007, \"bottom\":441.9221, "
-            + "\"right\":309.81705}, \"label\":\"keyboard\"}, {\"confidence\":0.7516027, \"location\":{\"top\":88.22579, \"left\":52.281204, "
-            + "\"bottom\":330.7827, \"right\":429.71838}, \"label\":\"tvmonitor\"}]";
+    String imageResultsAsString = "[{\"confidence\":0.8445639, \"location\":{\"top\":229.5673, \"left\":99.603455, \"bottom\":398.36725, "
+            + "\"right\":372.37628}, \"label\":\"keyboard\"}, {\"confidence\":0.7516027, \"location\":{\"top\":79.53046, \"left\":62.83799, "
+            + "\"bottom\":298.18152, \"right\":516.48846}, \"label\":\"tvmonitor\"}]";
 
     List<Map> getExpectedResults() throws JsonParseException, JsonMappingException, IOException {
         ObjectMapper m = new ObjectMapper();
