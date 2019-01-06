@@ -120,6 +120,63 @@ public class TestYoloProcessor extends NeuralNetTestBase {
             fail("Could not interpret json string" + e.getMessage());
         }
     }
+    
+    @Test
+    public void testValidAnchors() throws ImageProcessingException {
+        Map config = new LinkedHashMap<>();
+        YoloProcessor ypImageSaver = new YoloProcessor();
+        
+        List<Number> anchorList = Arrays.asList(1,1,1,1,1,1,1,1,1,1);
+        config.put("pbFile", PB_FILE);
+        config.put("labelFile", LABEL_FILE);
+        config.put("anchors", anchorList);
+        
+        try {
+            ypImageSaver.setupImageProcessing(config, SOURCE_NAME, MODEL_DIRECTORY, testAuthToken, testVantiqServer);
+        } catch (Exception e) {
+            fail("Should not fail with valid anchors.");
+        }
+    }
+    
+    @Test
+    public void testInvalidAnchors() throws ImageProcessingException {
+        Map config = new LinkedHashMap<>();
+        YoloProcessor ypImageSaver = new YoloProcessor();
+        
+        // anchorList is too short
+        List anchorList = Arrays.asList(0.5);
+        config.put("pbFile", PB_FILE);
+        config.put("labelFile", LABEL_FILE);
+        config.put("anchors", anchorList);
+        
+        try {
+            ypImageSaver.setupImageProcessing(config, SOURCE_NAME, MODEL_DIRECTORY, testAuthToken, testVantiqServer);
+        } catch (Exception e) {
+            fail("Should not fail with invalid anchors");
+        }   
+        
+        // anchorList is too long
+        anchorList = Arrays.asList(1,3,6,4,4,5,7,4,9,0,9);
+        config.remove("anchors");
+        config.put("anchors", anchorList);
+        
+        try {
+            ypImageSaver.setupImageProcessing(config, SOURCE_NAME, MODEL_DIRECTORY, testAuthToken, testVantiqServer);
+        } catch (Exception e) {
+            fail("Should not fail with invalid anchors");
+        } 
+        
+        // anchorList contains non-numbers
+        anchorList = Arrays.asList(1,3,6,"a",4,5,7,4,9,0);
+        config.remove("anchors");
+        config.put("anchors", anchorList);
+        
+        try {
+            ypImageSaver.setupImageProcessing(config, SOURCE_NAME, MODEL_DIRECTORY, testAuthToken, testVantiqServer);
+        } catch (Exception e) {
+            fail("Should not fail with invalid anchors");
+        } 
+    }
 
     @Test
     public void testInvalidData() {
@@ -624,9 +681,9 @@ public class TestYoloProcessor extends NeuralNetTestBase {
     }
 
     // ================================================= Helper functions =================================================
-    String imageResultsAsString = "[{\"confidence\":0.8445639, \"location\":{\"top\":229.5673, \"left\":99.603455, \"bottom\":398.36725, "
-            + "\"right\":372.37628}, \"label\":\"keyboard\"}, {\"confidence\":0.7516027, \"location\":{\"top\":79.53046, \"left\":62.83799, "
-            + "\"bottom\":298.18152, \"right\":516.48846}, \"label\":\"tvmonitor\"}]";
+    String imageResultsAsString = "[{\"confidence\":0.8445639, \"location\":{\"top\":255.70024, \"left\":121.859344, \"bottom\":372.2343, "
+            + "\"right\":350.1204}, \"label\":\"keyboard\"}, {\"confidence\":0.7974271, \"location\":{\"top\":91.255974, \"left\":164.41359, "
+            + "\"bottom\":275.69666, \"right\":350.50714}, \"label\":\"tvmonitor\"}]";
 
     List<Map> getExpectedResults() throws JsonParseException, JsonMappingException, IOException {
         ObjectMapper m = new ObjectMapper();

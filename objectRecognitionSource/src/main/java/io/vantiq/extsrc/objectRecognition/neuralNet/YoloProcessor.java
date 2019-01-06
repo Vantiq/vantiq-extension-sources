@@ -64,6 +64,7 @@ public class YoloProcessor implements NeuralNetInterface {
     String labelsFile = null;
     String outputDir = null;
     String saveImage = null;
+    double[] anchorArray = null;
     Boolean labelImage = false;
     Vantiq vantiq;
     String server;
@@ -80,7 +81,7 @@ public class YoloProcessor implements NeuralNetInterface {
     public void setupImageProcessing(Map<String, ?> neuralNetConfig, String sourceName, String modelDirectory, String authToken, String server) throws Exception {
         setup(neuralNetConfig, sourceName, modelDirectory, authToken, server);
         try {
-            objectDetector = new ObjectDetector(threshold, pbFile, labelsFile, imageUtil, outputDir, labelImage, saveRate, vantiq, sourceName);
+            objectDetector = new ObjectDetector(threshold, pbFile, labelsFile, anchorArray, imageUtil, outputDir, labelImage, saveRate, vantiq, sourceName);
         } catch (Exception e) {
             throw new Exception(this.getClass().getCanonicalName() + ".yoloBackendSetupError: " 
                     + "Failed to create new ObjectDetector", e);
@@ -124,6 +125,40 @@ public class YoloProcessor implements NeuralNetInterface {
            }
        } else {
            log.debug("The threshold was not specified in the config. Using default threshold value of 0.5.");
+       }
+       
+       // Get anchor values if they exist
+       if (neuralNet.get("anchors") instanceof List) {
+           List tempAnchorList = (List) neuralNet.get("anchors");
+           // Checking that there are 5 anchor pairs (10 elements total)
+           if (tempAnchorList.size() != 10) {
+               log.error("Invalid AnchorList Size: there must be exactly 5 anchor pairs, totalling in 10 elements. "
+                       + "Default anchor values will be used.");
+           } else {
+               // Checking to make sure anchor pairs are valid
+               Boolean validElements = true;
+               for (int i = 0; i < tempAnchorList.size(); i++) {
+                   if (!(tempAnchorList.get(i) instanceof Number)) {
+                       log.error("Invalid Type: each anchor element must be a double. Default anchor values will be used.");
+                       validElements = false;
+                       break;
+                   }
+               }
+               
+               // If valid, then creating double[] from List
+               if (validElements) {
+                   anchorArray = new double[10];
+                   for (int i = 0; i< tempAnchorList.size(); i++) {
+                       if (tempAnchorList.get(i) instanceof Integer) {
+                           anchorArray[i] = (double) ((Integer) tempAnchorList.get(i));
+                       } else {
+                           anchorArray[i] = (double) tempAnchorList.get(i);
+                       }
+                   }
+               }
+           }
+       } else {
+           log.debug("Anchor values were not set in the config. Default anchor values will be used.");
        }
               
        // Setup the variables for saving images

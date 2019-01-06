@@ -19,20 +19,24 @@ import java.util.PriorityQueue;
  */
 public class YOLOClassifier {
     private final static float OVERLAP_THRESHOLD = 0.5f;
-    private final static double anchors[] = {1.08,1.19,  3.42,4.41,  6.63,11.38,  9.42,5.11,  16.62,10.52};
     private final static int SIZE = 13;
     private final static int MAX_RECOGNIZED_CLASSES = 24;
     private final static int MAX_RESULTS = 24;
     private final static int NUMBER_OF_BOUNDING_BOX = 5;
+    
+    private static double anchors[] = {0.57273, 0.677385, 1.87446, 2.06253, 3.33843, 5.47434, 7.88282, 3.52778, 9.77052, 9.16828};
     private static float threshold;
     private static YOLOClassifier classifier;
 
     private YOLOClassifier() {}
 
-    public static YOLOClassifier getInstance(float thresh) {
+    public static YOLOClassifier getInstance(float thresh, double[] anchorArray) {
         if (classifier == null) {
             classifier = new YOLOClassifier();
             threshold = thresh;
+            if (anchorArray != null) {
+                anchors = anchorArray;
+            }
         }
 
         return  classifier;
