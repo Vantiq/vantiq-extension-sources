@@ -22,8 +22,9 @@ public class YOLOClassifier {
     private final static int SIZE = 13;
     private final static int MAX_RECOGNIZED_CLASSES = 24;
     private final static int MAX_RESULTS = 24;
-    private final static int NUMBER_OF_BOUNDING_BOX = 5;
+    public final static int NUMBER_OF_BOUNDING_BOX = 5;
     
+    // Default anchor values used to properly label recognitions on original image
     private static double anchors[] = {0.57273, 0.677385, 1.87446, 2.06253, 3.33843, 5.47434, 7.88282, 3.52778, 9.77052, 9.16828};
     private static float threshold;
     private static YOLOClassifier classifier;

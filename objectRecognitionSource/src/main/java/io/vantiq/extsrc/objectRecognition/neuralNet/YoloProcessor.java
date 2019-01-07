@@ -17,6 +17,7 @@ import org.slf4j.LoggerFactory;
 
 import edu.ml.tensorflow.ObjectDetector;
 import edu.ml.tensorflow.util.ImageUtil;
+import edu.ml.tensorflow.classifier.YOLOClassifier;
 import io.vantiq.extsrc.objectRecognition.exception.ImageProcessingException;
 
 import io.vantiq.client.Vantiq;
@@ -76,7 +77,6 @@ public class YoloProcessor implements NeuralNetInterface {
     
     ObjectDetector objectDetector = null;
     
-    
     @Override
     public void setupImageProcessing(Map<String, ?> neuralNetConfig, String sourceName, String modelDirectory, String authToken, String server) throws Exception {
         setup(neuralNetConfig, sourceName, modelDirectory, authToken, server);
@@ -130,35 +130,29 @@ public class YoloProcessor implements NeuralNetInterface {
        // Get anchor values if they exist
        if (neuralNet.get("anchors") instanceof List) {
            List tempAnchorList = (List) neuralNet.get("anchors");
-           // Checking that there are 5 anchor pairs (10 elements total)
-           if (tempAnchorList.size() != 10) {
-               log.error("Invalid AnchorList Size: there must be exactly 5 anchor pairs, totalling in 10 elements. "
+           // Checking that the number of anchor pairs matches NUMBER_OF_BOUNDING_BOXES * 2
+           if (tempAnchorList.size() != YOLOClassifier.NUMBER_OF_BOUNDING_BOX * 2) {
+               log.error("Invalid AnchorList Size: there must be exactly " + YOLOClassifier.NUMBER_OF_BOUNDING_BOX + 
+                       " anchor pairs, totalling in " + YOLOClassifier.NUMBER_OF_BOUNDING_BOX * 2 + " elements. " 
                        + "Default anchor values will be used.");
            } else {
-               // Checking to make sure anchor pairs are valid
-               Boolean validElements = true;
+               // Checking to make sure anchor pairs are valid, and creating double[] from List if they are
+               anchorArray = new double[YOLOClassifier.NUMBER_OF_BOUNDING_BOX * 2];
                for (int i = 0; i < tempAnchorList.size(); i++) {
                    if (!(tempAnchorList.get(i) instanceof Number)) {
-                       log.error("Invalid Type: each anchor element must be a double. Default anchor values will be used.");
-                       validElements = false;
+                       log.error("Invalid Type: each anchor element must be a number. Default anchor values will be used.");
+                       anchorArray = null;
                        break;
-                   }
-               }
-               
-               // If valid, then creating double[] from List
-               if (validElements) {
-                   anchorArray = new double[10];
-                   for (int i = 0; i< tempAnchorList.size(); i++) {
-                       if (tempAnchorList.get(i) instanceof Integer) {
-                           anchorArray[i] = (double) ((Integer) tempAnchorList.get(i));
-                       } else {
-                           anchorArray[i] = (double) tempAnchorList.get(i);
-                       }
+                   } else if (tempAnchorList.get(i) instanceof Integer) {
+                       anchorArray[i] = (double) ((Integer) tempAnchorList.get(i));
+                   } else {
+                       anchorArray[i] = (double) tempAnchorList.get(i);
                    }
                }
            }
        } else {
-           log.debug("Anchor values were not set in the config. Default anchor values will be used.");
+           log.debug("Anchor values were not set, or improperly set, in the config. Anchors must be a list of " 
+                   + YOLOClassifier.NUMBER_OF_BOUNDING_BOX * 2 + " numbers. Default anchor values will be used.");
        }
               
        // Setup the variables for saving images

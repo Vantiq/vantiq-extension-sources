@@ -41,7 +41,7 @@ import io.vantiq.client.Vantiq;
 import io.vantiq.client.VantiqError;
 import io.vantiq.client.VantiqResponse;
 import io.vantiq.extsrc.objectRecognition.exception.ImageProcessingException;
-import io.vantiq.extsrc.objectRecognition.imageRetriever.FileRetriever;
+import io.vantiq.extjsdk.ExtensionServiceMessage;
 import okhttp3.Response;
 
 public class TestYoloProcessor extends NeuralNetTestBase {
@@ -51,6 +51,7 @@ public class TestYoloProcessor extends NeuralNetTestBase {
     static final String OUTPUT_DIR = "src/test/resources/out";
     static final int SAVE_RATE = 2; // Saves every other so that we can know it counts correctly
     static final String NOT_FOUND_CODE = "io.vantiq.resource.not.found";
+    static final String CONFIG_JSON_LOCATION = "src/test/resources/";
 
     static YoloProcessor ypJson;
     static Vantiq vantiq;
@@ -122,6 +123,20 @@ public class TestYoloProcessor extends NeuralNetTestBase {
     }
     
     @Test
+    public void testRealJSONConfig() throws ImageProcessingException {
+        YoloProcessor ypImageSaver = new YoloProcessor();
+        ExtensionServiceMessage msg = createRealConfig();
+        Map config = (Map) msg.getObject();
+        Map neuralNetConfig = (Map) config.get("neuralNet");
+        
+        try {
+            ypImageSaver.setupImageProcessing(neuralNetConfig, SOURCE_NAME, MODEL_DIRECTORY, testAuthToken, testVantiqServer);
+        } catch (Exception e) {
+            fail("Should not fail with valid config.");
+        }
+    }
+    
+    @Test
     public void testValidAnchors() throws ImageProcessingException {
         Map config = new LinkedHashMap<>();
         YoloProcessor ypImageSaver = new YoloProcessor();
@@ -136,6 +151,17 @@ public class TestYoloProcessor extends NeuralNetTestBase {
         } catch (Exception e) {
             fail("Should not fail with valid anchors.");
         }
+        
+        // Checking mix of integers and floating points
+        anchorList = Arrays.asList(1,1.0,0.01,1,1.0,0.01,1,1.0,0.01,1);
+        config.remove("anchors");
+        config.put("anchors", anchorList);
+        
+        try {
+            ypImageSaver.setupImageProcessing(config, SOURCE_NAME, MODEL_DIRECTORY, testAuthToken, testVantiqServer);
+        } catch (Exception e) {
+            fail("Should not fail with invalid anchors");
+        } 
     }
     
     @Test
@@ -716,5 +742,23 @@ public class TestYoloProcessor extends NeuralNetTestBase {
         }
 
         return actual.equals(expected);
+    }
+    
+    ExtensionServiceMessage createRealConfig() {
+        Map msg = new LinkedHashMap();
+        Map object = new LinkedHashMap();
+        Map neuralNet = new LinkedHashMap();
+        
+        neuralNet.put("pbFile", PB_FILE);
+        neuralNet.put("labelFile", LABEL_FILE);
+        neuralNet.put("outputDir", OUTPUT_DIR);
+        neuralNet.put("saveRate", SAVE_RATE);
+        neuralNet.put("anchors", Arrays.asList(1,1,1,1,1,1,1,1,1,1));
+        
+        object.put("neuralNet", neuralNet);
+        msg.put("object", object);
+        
+        ExtensionServiceMessage message = new ExtensionServiceMessage("").fromMap(msg);
+        return message;
     }
 }

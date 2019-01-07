@@ -64,7 +64,7 @@ public class ObjectDetector {
      *                      a recognition. 
      * @param graphFile     The location of a proto buffer file describing the YOLO net 
      * @param labelFile     The location of the labels for the given net.
-     * @param anchorArray    The list of anchor pairs used by the YOLOClassifier to label recognitions.
+     * @param anchorArray   The list of anchor pairs used by the YOLOClassifier to label recognitions.
      * @param imageUtil     The instance of the ImageUtil class used to save images. Either initialized, or set to null.
      * @param outputDir     The directory to which images will be saved.
      * @param labelImage    The boolean flag signifying if images should be saved with or without bounding boxes. If true,
