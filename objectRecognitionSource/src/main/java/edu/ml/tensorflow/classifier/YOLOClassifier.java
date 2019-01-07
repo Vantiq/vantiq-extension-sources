@@ -25,7 +25,13 @@ public class YOLOClassifier {
     public final static int NUMBER_OF_BOUNDING_BOX = 5;
     
     // Default anchor values used to properly label recognitions on original image
-    private static double anchors[] = {0.57273, 0.677385, 1.87446, 2.06253, 3.33843, 5.47434, 7.88282, 3.52778, 9.77052, 9.16828};
+    private final static double[] ANCHORS_FOR_PROVIDED_MODEL = {0.57273, 0.677385, 1.87446, 2.06253, 3.33843, 5.47434, 7.88282, 3.52778, 9.77052, 9.16828};
+    
+    // anchors[] is an array of NUMBER_OF_BOUNDING_BOX pairs of numbers (2 * NUMBER_OF_BOUNDING_BOX numbers), specifying
+    // the most common shapes of objects in the training data (within the YOLO 13x13 grid). It is used to construct the
+    // bounding boxes for detected objects.
+    private static double anchors[] = ANCHORS_FOR_PROVIDED_MODEL;
+    
     private static float threshold;
     private static YOLOClassifier classifier;
 

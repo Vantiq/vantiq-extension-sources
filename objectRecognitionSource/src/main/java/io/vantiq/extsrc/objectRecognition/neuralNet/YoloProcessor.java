@@ -151,7 +151,7 @@ public class YoloProcessor implements NeuralNetInterface {
                }
            }
        } else {
-           log.debug("Anchor values were not set, or improperly set, in the config. Anchors must be a list of " 
+           log.warn("Anchor values were not set, or improperly set, in the config. Anchors must be a list of " 
                    + YOLOClassifier.NUMBER_OF_BOUNDING_BOX * 2 + " numbers. Default anchor values will be used.");
        }
               

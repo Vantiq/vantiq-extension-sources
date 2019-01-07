@@ -123,7 +123,7 @@ public class TestYoloProcessor extends NeuralNetTestBase {
     }
     
     @Test
-    public void testRealJSONConfig() throws ImageProcessingException {
+    public void testRealJSONConfig() throws ImageProcessingException, JsonParseException, JsonMappingException, IOException {
         YoloProcessor ypImageSaver = new YoloProcessor();
         ExtensionServiceMessage msg = createRealConfig();
         Map config = (Map) msg.getObject();
@@ -710,6 +710,17 @@ public class TestYoloProcessor extends NeuralNetTestBase {
     String imageResultsAsString = "[{\"confidence\":0.8445639, \"location\":{\"top\":255.70024, \"left\":121.859344, \"bottom\":372.2343, "
             + "\"right\":350.1204}, \"label\":\"keyboard\"}, {\"confidence\":0.7974271, \"location\":{\"top\":91.255974, \"left\":164.41359, "
             + "\"bottom\":275.69666, \"right\":350.50714}, \"label\":\"tvmonitor\"}]";
+    
+    String neuralNetJSON = 
+              "{"
+            + "     \"neuralNet\":"
+            + "         {"
+            + "             \"anchors\":[0.57273, 0.677385, 1.87446, 2.06253, 3.33843, 5.47434, 7.88282, 3.52778, 9.77052, 9.16828], "
+            + "             \"pbFile\": \"" + PB_FILE + "\", "
+            + "             \"labelFile\": \"" + LABEL_FILE + "\", "
+            + "             \"type\": \"yolo\""
+            + "         }"
+            + "}";
 
     List<Map> getExpectedResults() throws JsonParseException, JsonMappingException, IOException {
         ObjectMapper m = new ObjectMapper();
@@ -744,18 +755,12 @@ public class TestYoloProcessor extends NeuralNetTestBase {
         return actual.equals(expected);
     }
     
-    ExtensionServiceMessage createRealConfig() {
+    ExtensionServiceMessage createRealConfig() throws JsonParseException, JsonMappingException, IOException {
         Map msg = new LinkedHashMap();
         Map object = new LinkedHashMap();
-        Map neuralNet = new LinkedHashMap();
         
-        neuralNet.put("pbFile", PB_FILE);
-        neuralNet.put("labelFile", LABEL_FILE);
-        neuralNet.put("outputDir", OUTPUT_DIR);
-        neuralNet.put("saveRate", SAVE_RATE);
-        neuralNet.put("anchors", Arrays.asList(1,1,1,1,1,1,1,1,1,1));
-        
-        object.put("neuralNet", neuralNet);
+        ObjectMapper m = new ObjectMapper();
+        object = m.readValue(neuralNetJSON, Map.class);
         msg.put("object", object);
         
         ExtensionServiceMessage message = new ExtensionServiceMessage("").fromMap(msg);
