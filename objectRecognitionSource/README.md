@@ -151,7 +151,8 @@ The Configuration document may look similar to the following example:
              "labelFile": "yolo.txt",
              "pbFile": "yolo.pb",
              "type": "yolo",
-             "threshold": 0.2
+             "threshold": 0.2,
+             "anchors": [0.57273, 0.677385, 1.87446, 2.06253, 3.33843, 5.47434, 7.88282, 3.52778, 9.77052, 9.16828]
           }
        }
     }
@@ -193,22 +194,16 @@ Most of the options required for neuralNet are dependent on the specific impleme
     3.  Empty, in which case the program will try to find an implementation with the name "DefaultProcessor" in
         the `io.vantiq.objectRecognition.neuralNet` package. This implementation is not provided, and must be written by
         the user.
-*   threshold: Optional. Threshold is used to decide if the Neural Net's result is a valid one, by comparing the resulting 
-confidence of the recognition against the threshold value. A high threshold will lead to fewer results, all with a higher 
-confidence. A low threshold will lead to more results, some of which having a lower confidence. Threshold defaults to 0.5 if 
-not specified, or if invalid. There are two ways to specify this value:
+*   threshold: Optional. Threshold is used to decide if the Neural Net's result is a valid one, by comparing the resulting confidence of the recognition against the threshold value. A high threshold will lead to fewer results, all with a higher confidence. A low threshold will lead to more results, some of which having a lower confidence. Threshold defaults to 0.5 if not specified, or if invalid. There are two ways to specify this value:
     1.  The value can be a number between 0 and 1 (i.e. 0.4, or 0.2, etc...)
     2.  The value can be a number between 0 and 100 (i.e. 40, or 20, etc...)
-*   anchors: Optional. Used as part of the YOLO standard implementation. A list of numbers which help to correctly label the 
-recognitions on the original image. The list must contain exactly double the number of bounding boxes defined by the YOLO 
-implementation, (the standard number of bounding boxes is 5, meaning the list would contain 10 total numbers).
-    * i.e. `"anchors": [0.57273, 0.677385, 1.87446, 2.06253, 3.33843, 5.47434, 7.88282, 3.52778, 9.77052, 9.16828]`
+*   anchors: Optional, but encouraged if a different model is used. This value is closely tied to the model (as specified in the `neuralNet.pbFile` and `neuralNet.labelFile` configuration parameters). The `anchors` are constructed from the training data, specifying the most likely rectangles that contain objects. These are, in turn, used to define the bounding boxes for objects discovered. If not specified, the default value will be used. The default value corresponds to the correct `anchors` value for the model that is used in the build. If you use a different model, you are encouraged to supply the appropriate `anchor` values. 
+    * (A future release will support (and encourage) supplying the `.meta` file instead of the `labelFile`. The `.meta` file will contain both the labels and the `anchors` value, as well as other data.) 
+    * Note that the anchors value for a particular model can be found in model's `.meta` file.
 *   saveImage: Optional. The value can be one of the following three options:
     1.  "local"     - This will save images to the disk (outputDir must be specified in order for this to work).
-    2.  "vantiq"    - This will save images as documents in VANTIQ. No images will be saved locally even if outputDir is 
-    specified.
-    3.  "both"      - This will save the images both to the disk and as documents in VANTIQ. (outputDir must be specified in 
-    order to save locally)
+    2.  "vantiq"    - This will save images as documents in VANTIQ. No images will be saved locally even if outputDir is    specified.
+    3.  "both"      - This will save the images both to the disk and as documents in VANTIQ. (outputDir must be specified in order to save locally)
     
 **NOTE:** All of the following options are relevant only if the "saveImage" option has been set.
 
