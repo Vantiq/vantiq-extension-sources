@@ -45,6 +45,7 @@ public class ObjectDetector {
     private float threshold;
     private Vantiq vantiq = null;
     private String sourceName = null;
+    private double[] anchorArray;
     
     private Graph yoloGraph;
     private Session yoloSession;
@@ -59,8 +60,11 @@ public class ObjectDetector {
     /**
      * Initializes the ObjectDetector with the given graph and and labels.
      * <br>Edited to initialize and save the graph for reuse, and allow the files to be specified dynamically.
+     * @param thresh        The threshold of confidence used by the Yolo Neural Network when deciding whether to save 
+     *                      a recognition. 
      * @param graphFile     The location of a proto buffer file describing the YOLO net 
      * @param labelFile     The location of the labels for the given net.
+     * @param anchorArray   The list of anchor pairs used by the YOLOClassifier to label recognitions.
      * @param imageUtil     The instance of the ImageUtil class used to save images. Either initialized, or set to null.
      * @param outputDir     The directory to which images will be saved.
      * @param labelImage    The boolean flag signifying if images should be saved with or without bounding boxes. If true,
@@ -70,11 +74,12 @@ public class ObjectDetector {
      * @param vantiq        The Vantiq variable used to connect to the VANTIQ SDK. Either authenticated, or set to null.
      * @param sourceName    The name of the VANTIQ Source
      */
-    public ObjectDetector(float thresh, String graphFile, String labelFile, ImageUtil imageUtil, String outputDir, 
+    public ObjectDetector(float thresh, String graphFile, String labelFile, double[] anchorArray, ImageUtil imageUtil, String outputDir, 
             Boolean labelImage, int saveRate, Vantiq vantiq, String sourceName) {
         try {
             GRAPH_DEF = IOUtil.readAllBytesOrExit(graphFile);
             LABELS = IOUtil.readAllLinesOrExit(labelFile);
+            this.anchorArray = anchorArray;
             this.imageUtil = imageUtil;
             this.vantiq = vantiq;
             this.labelImage = labelImage;
@@ -108,7 +113,7 @@ public class ObjectDetector {
     public List<Map<String, ?>> detect(final byte[] image) {
         try (Tensor<Float> normalizedImage = normalizeImage(image)) {
             Date now = new Date(); // Saves the time before
-            List<Recognition> recognitions = YOLOClassifier.getInstance(threshold).classifyImage(executeYOLOGraph(normalizedImage), LABELS);
+            List<Recognition> recognitions = YOLOClassifier.getInstance(threshold, anchorArray).classifyImage(executeYOLOGraph(normalizedImage), LABELS);
             BufferedImage buffImage = imageUtil.createImageFromBytes(image);
             
             // Saves an image every saveRate frames
@@ -149,7 +154,7 @@ public class ObjectDetector {
     public List<Map<String, ?>> detect(final byte[] image, String outputDir, String fileName, Vantiq vantiq) {
         try (Tensor<Float> normalizedImage = normalizeImage(image)) {
             Date now = new Date(); // Saves the time before
-            List<Recognition> recognitions = YOLOClassifier.getInstance(threshold).classifyImage(executeYOLOGraph(normalizedImage), LABELS);
+            List<Recognition> recognitions = YOLOClassifier.getInstance(threshold, anchorArray).classifyImage(executeYOLOGraph(normalizedImage), LABELS);
             BufferedImage buffImage = imageUtil.createImageFromBytes(image);
             
             // Saves an image if requested
@@ -237,7 +242,7 @@ public class ObjectDetector {
         // Reusing the same session reduces runtime significantly (by ~13x on the developer's computer)
         try(Tensor<Float> result =
                 yoloSession.runner().feed("input", 0, image).fetch("output").run().get(0).expect(Float.class)) {
-            float[] outputTensor = new float[YOLOClassifier.getInstance(threshold).getOutputSizeByShape(result)];
+            float[] outputTensor = new float[YOLOClassifier.getInstance(threshold, anchorArray).getOutputSizeByShape(result)];
             FloatBuffer floatBuffer = FloatBuffer.wrap(outputTensor);
             result.writeTo(floatBuffer);
             return outputTensor;

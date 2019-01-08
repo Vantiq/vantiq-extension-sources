@@ -41,7 +41,7 @@ import io.vantiq.client.Vantiq;
 import io.vantiq.client.VantiqError;
 import io.vantiq.client.VantiqResponse;
 import io.vantiq.extsrc.objectRecognition.exception.ImageProcessingException;
-import io.vantiq.extsrc.objectRecognition.imageRetriever.FileRetriever;
+import io.vantiq.extjsdk.ExtensionServiceMessage;
 import okhttp3.Response;
 
 public class TestYoloProcessor extends NeuralNetTestBase {
@@ -51,6 +51,7 @@ public class TestYoloProcessor extends NeuralNetTestBase {
     static final String OUTPUT_DIR = "src/test/resources/out";
     static final int SAVE_RATE = 2; // Saves every other so that we can know it counts correctly
     static final String NOT_FOUND_CODE = "io.vantiq.resource.not.found";
+    static final String CONFIG_JSON_LOCATION = "src/test/resources/";
 
     static YoloProcessor ypJson;
     static Vantiq vantiq;
@@ -119,6 +120,88 @@ public class TestYoloProcessor extends NeuralNetTestBase {
         } catch (IOException e) {
             fail("Could not interpret json string" + e.getMessage());
         }
+    }
+    
+    @Test
+    public void testRealJSONConfig() throws ImageProcessingException, JsonParseException, JsonMappingException, IOException {
+        YoloProcessor ypImageSaver = new YoloProcessor();
+        ExtensionServiceMessage msg = createRealConfig();
+        Map config = (Map) msg.getObject();
+        Map neuralNetConfig = (Map) config.get("neuralNet");
+        
+        try {
+            ypImageSaver.setupImageProcessing(neuralNetConfig, SOURCE_NAME, MODEL_DIRECTORY, testAuthToken, testVantiqServer);
+        } catch (Exception e) {
+            fail("Should not fail with valid config.");
+        }
+    }
+    
+    @Test
+    public void testValidAnchors() throws ImageProcessingException {
+        Map config = new LinkedHashMap<>();
+        YoloProcessor ypImageSaver = new YoloProcessor();
+        
+        List<Number> anchorList = Arrays.asList(1,1,1,1,1,1,1,1,1,1);
+        config.put("pbFile", PB_FILE);
+        config.put("labelFile", LABEL_FILE);
+        config.put("anchors", anchorList);
+        
+        try {
+            ypImageSaver.setupImageProcessing(config, SOURCE_NAME, MODEL_DIRECTORY, testAuthToken, testVantiqServer);
+        } catch (Exception e) {
+            fail("Should not fail with valid anchors.");
+        }
+        
+        // Checking mix of integers and floating points
+        anchorList = Arrays.asList(1,1.0,0.01,1,1.0,0.01,1,1.0,0.01,1);
+        config.remove("anchors");
+        config.put("anchors", anchorList);
+        
+        try {
+            ypImageSaver.setupImageProcessing(config, SOURCE_NAME, MODEL_DIRECTORY, testAuthToken, testVantiqServer);
+        } catch (Exception e) {
+            fail("Should not fail with invalid anchors");
+        } 
+    }
+    
+    @Test
+    public void testInvalidAnchors() throws ImageProcessingException {
+        Map config = new LinkedHashMap<>();
+        YoloProcessor ypImageSaver = new YoloProcessor();
+        
+        // anchorList is too short
+        List anchorList = Arrays.asList(0.5);
+        config.put("pbFile", PB_FILE);
+        config.put("labelFile", LABEL_FILE);
+        config.put("anchors", anchorList);
+        
+        try {
+            ypImageSaver.setupImageProcessing(config, SOURCE_NAME, MODEL_DIRECTORY, testAuthToken, testVantiqServer);
+        } catch (Exception e) {
+            fail("Should not fail with invalid anchors");
+        }   
+        
+        // anchorList is too long
+        anchorList = Arrays.asList(1,3,6,4,4,5,7,4,9,0,9);
+        config.remove("anchors");
+        config.put("anchors", anchorList);
+        
+        try {
+            ypImageSaver.setupImageProcessing(config, SOURCE_NAME, MODEL_DIRECTORY, testAuthToken, testVantiqServer);
+        } catch (Exception e) {
+            fail("Should not fail with invalid anchors");
+        } 
+        
+        // anchorList contains non-numbers
+        anchorList = Arrays.asList(1,3,6,"a",4,5,7,4,9,0);
+        config.remove("anchors");
+        config.put("anchors", anchorList);
+        
+        try {
+            ypImageSaver.setupImageProcessing(config, SOURCE_NAME, MODEL_DIRECTORY, testAuthToken, testVantiqServer);
+        } catch (Exception e) {
+            fail("Should not fail with invalid anchors");
+        } 
     }
 
     @Test
@@ -624,9 +707,20 @@ public class TestYoloProcessor extends NeuralNetTestBase {
     }
 
     // ================================================= Helper functions =================================================
-    String imageResultsAsString = "[{\"confidence\":0.8445639, \"location\":{\"top\":229.5673, \"left\":99.603455, \"bottom\":398.36725, "
-            + "\"right\":372.37628}, \"label\":\"keyboard\"}, {\"confidence\":0.7516027, \"location\":{\"top\":79.53046, \"left\":62.83799, "
-            + "\"bottom\":298.18152, \"right\":516.48846}, \"label\":\"tvmonitor\"}]";
+    String imageResultsAsString = "[{\"confidence\":0.8445639, \"location\":{\"top\":255.70024, \"left\":121.859344, \"bottom\":372.2343, "
+            + "\"right\":350.1204}, \"label\":\"keyboard\"}, {\"confidence\":0.7974271, \"location\":{\"top\":91.255974, \"left\":164.41359, "
+            + "\"bottom\":275.69666, \"right\":350.50714}, \"label\":\"tvmonitor\"}]";
+    
+    String neuralNetJSON = 
+              "{"
+            + "     \"neuralNet\":"
+            + "         {"
+            + "             \"anchors\":[0.57273, 0.677385, 1.87446, 2.06253, 3.33843, 5.47434, 7.88282, 3.52778, 9.77052, 9.16828], "
+            + "             \"pbFile\": \"" + PB_FILE + "\", "
+            + "             \"labelFile\": \"" + LABEL_FILE + "\", "
+            + "             \"type\": \"yolo\""
+            + "         }"
+            + "}";
 
     List<Map> getExpectedResults() throws JsonParseException, JsonMappingException, IOException {
         ObjectMapper m = new ObjectMapper();
@@ -659,5 +753,17 @@ public class TestYoloProcessor extends NeuralNetTestBase {
         }
 
         return actual.equals(expected);
+    }
+    
+    ExtensionServiceMessage createRealConfig() throws JsonParseException, JsonMappingException, IOException {
+        Map msg = new LinkedHashMap();
+        Map object = new LinkedHashMap();
+        
+        ObjectMapper m = new ObjectMapper();
+        object = m.readValue(neuralNetJSON, Map.class);
+        msg.put("object", object);
+        
+        ExtensionServiceMessage message = new ExtensionServiceMessage("").fromMap(msg);
+        return message;
     }
 }
