@@ -202,7 +202,7 @@ Most of the options required for neuralNet are dependent on the specific impleme
     * Note that the anchors value for a particular model can be found in model's `.meta` file.
 *   saveImage: Optional. The value can be one of the following three options:
     1.  "local"     - This will save images to the disk (outputDir must be specified in order for this to work).
-    2.  "vantiq"    - This will save images as documents in VANTIQ. No images will be saved locally even if outputDir is    specified.
+    2.  "vantiq"    - This will save images as documents in VANTIQ. No images will be saved locally even if outputDir is specified.
     3.  "both"      - This will save the images both to the disk and as documents in VANTIQ. (outputDir must be specified in order to save locally)
     
 **NOTE:** All of the following options are relevant only if the "saveImage" option has been set.
