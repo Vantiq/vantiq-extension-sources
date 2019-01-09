@@ -48,7 +48,8 @@ public class TestYoloProcessor extends NeuralNetTestBase {
 
     static final String COCO_MODEL_VERSION = "1.1";
     static final String LABEL_FILE = "coco-" + COCO_MODEL_VERSION + ".names";
-    static final String PB_FILE = "coco-"+ COCO_MODEL_VERSION  + ".pb";
+    static final String PB_FILE = "coco-" + COCO_MODEL_VERSION  + ".pb";
+    static final String META_FILE = "coco-" + COCO_MODEL_VERSION + ".meta";
     static final String OUTPUT_DIR =  System.getProperty("buildDir") + "/resources/out";
     static final int SAVE_RATE = 2; // Saves every other so that we can know it counts correctly
     static final String NOT_FOUND_CODE = "io.vantiq.resource.not.found";
@@ -108,6 +109,112 @@ public class TestYoloProcessor extends NeuralNetTestBase {
         if (d.exists()) {
             deleteDirectory(OUTPUT_DIR);
         }
+    }
+    
+    @Test
+    public void testInvalidConfig() {
+        Map config = new LinkedHashMap<>();
+        YoloProcessor ypImageSaver = new YoloProcessor();
+        
+        // Nothing included
+        try {
+            ypImageSaver.setupImageProcessing(config, SOURCE_NAME, MODEL_DIRECTORY, testAuthToken, testVantiqServer);
+            fail("Should fail without anything in config.");
+        } catch (Exception e) {
+            assertTrue("Failure should be caused by empty config. Error actually was: " + e.getMessage(), 
+                    e.getMessage().startsWith(YoloProcessor.class.getCanonicalName() + ".missingConfig:"));;
+        }
+        
+        // No meta file or label file
+        config.put("pbFile", PB_FILE);
+        
+        try {
+            ypImageSaver.setupImageProcessing(config, SOURCE_NAME, MODEL_DIRECTORY, testAuthToken, testVantiqServer);
+            fail("Should fail without either a label file or a meta file.");
+        } catch (Exception e) {
+            assertTrue("Failure should be caused by lack of either label or meta file. Error actually was: " 
+                    + e.getMessage(), e.getMessage().startsWith(YoloProcessor.class.getCanonicalName() + ".missingConfig:"));;
+        }
+        
+        // No pb file included but label file included
+        config.remove("pbFile");
+        config.put("labelFile", LABEL_FILE);
+        
+        try {
+            ypImageSaver.setupImageProcessing(config, SOURCE_NAME, MODEL_DIRECTORY, testAuthToken, testVantiqServer);
+            fail("Should fail when label file is included but pbFile is not.");
+        } catch (Exception e) {
+            assertTrue("Failure should be caused by lack of pbFile even when label file is included. Error actually was: " 
+                    + e.getMessage(), e.getMessage().startsWith(YoloProcessor.class.getCanonicalName() + ".missingConfig:"));;
+        }
+        
+        // No pb file included but label file included
+        config.remove("labelFile");
+        config.put("metaFile", META_FILE);
+        
+        try {
+            ypImageSaver.setupImageProcessing(config, SOURCE_NAME, MODEL_DIRECTORY, testAuthToken, testVantiqServer);
+            fail("Should fail when meta file is included but pbFile is not.");
+        } catch (Exception e) {
+            assertTrue("Failure should be caused by lack of pbFile even when meta file is included. Error actually was: " 
+                    + e.getMessage(), e.getMessage().startsWith(YoloProcessor.class.getCanonicalName() + ".missingConfig:"));;
+        }
+    }
+    
+    @Test
+    public void testValidConfig() {
+        Map config = new LinkedHashMap<>();
+        YoloProcessor ypImageSaver = new YoloProcessor();
+        List<Number> anchorList = Arrays.asList(1,1,1,1,1,1,1,1,1,1);
+        
+        // Meta file included, no label file
+        config.put("pbFile", PB_FILE);
+        config.put("metaFile", META_FILE);
+        
+        try {
+            ypImageSaver.setupImageProcessing(config, SOURCE_NAME, MODEL_DIRECTORY, testAuthToken, testVantiqServer);
+        } catch (Exception e) {
+            fail("Should not fail with meta file but no label file.");
+        }
+        
+        // Meta file included and anchors included
+        config.put("anchors", anchorList);
+        
+        try {
+            ypImageSaver.setupImageProcessing(config, SOURCE_NAME, MODEL_DIRECTORY, testAuthToken, testVantiqServer);
+        } catch (Exception e) {
+            fail("Should not fail with meta file and anchors.");
+        }
+        
+        // Label file included, no meta file
+        config.remove("metaFile");
+        config.remove("anchors");
+        config.put("labelFile", LABEL_FILE);
+        
+        try {
+            ypImageSaver.setupImageProcessing(config, SOURCE_NAME, MODEL_DIRECTORY, testAuthToken, testVantiqServer);
+        } catch (Exception e) {
+            fail("Should not fail with label file but no meta file.");
+        }
+        
+        // Label file included and anchors included
+        config.put("anchors", anchorList);
+        
+        try {
+            ypImageSaver.setupImageProcessing(config, SOURCE_NAME, MODEL_DIRECTORY, testAuthToken, testVantiqServer);
+        } catch (Exception e) {
+            fail("Should not fail with label file and anchors.");
+        }
+        
+        // Label and meta file included, anchors included
+        config.put("metaFile", META_FILE);
+        
+        try {
+            ypImageSaver.setupImageProcessing(config, SOURCE_NAME, MODEL_DIRECTORY, testAuthToken, testVantiqServer);
+        } catch (Exception e) {
+            fail("Should not fail with label and meta file, and anchors.");
+        }
+        
     }
 
     @Test
@@ -718,6 +825,7 @@ public class TestYoloProcessor extends NeuralNetTestBase {
             + "             \"anchors\":[0.57273, 0.677385, 1.87446, 2.06253, 3.33843, 5.47434, 7.88282, 3.52778, 9.77052, 9.16828], "
             + "             \"pbFile\": \"" + PB_FILE + "\", "
             + "             \"labelFile\": \"" + LABEL_FILE + "\", "
+            + "             \"metaFile\": \"" + META_FILE + "\", "            
             + "             \"type\": \"yolo\""
             + "         }"
             + "}";
