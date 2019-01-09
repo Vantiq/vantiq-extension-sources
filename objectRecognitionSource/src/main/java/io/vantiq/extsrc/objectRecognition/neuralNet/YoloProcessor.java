@@ -164,6 +164,9 @@ public class YoloProcessor implements NeuralNetInterface {
            log.warn("Anchor values were not set, or improperly set, in the config. Additionally, no meta file was provided. "
                    + "Anchors must be a list of " + YOLOClassifier.NUMBER_OF_BOUNDING_BOX * 2 + " numbers. "
                    + "Default anchor values will be used.");
+       } else {
+           log.warn("Anchor values were not set, or improperly set, in the config. Anchors must be a list of " 
+                   + YOLOClassifier.NUMBER_OF_BOUNDING_BOX * 2 + " numbers. " + "Anchors from the meta file will be used.");
        }
               
        // Setup the variables for saving images
