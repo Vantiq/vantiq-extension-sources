@@ -63,6 +63,7 @@ public class YoloProcessor implements NeuralNetInterface {
     Logger log = LoggerFactory.getLogger(this.getClass());
     String pbFile = null;
     String labelsFile = null;
+    String metaFile = null;
     String outputDir = null;
     String saveImage = null;
     double[] anchorArray = null;
@@ -81,7 +82,7 @@ public class YoloProcessor implements NeuralNetInterface {
     public void setupImageProcessing(Map<String, ?> neuralNetConfig, String sourceName, String modelDirectory, String authToken, String server) throws Exception {
         setup(neuralNetConfig, sourceName, modelDirectory, authToken, server);
         try {
-            objectDetector = new ObjectDetector(threshold, pbFile, labelsFile, anchorArray, imageUtil, outputDir, labelImage, saveRate, vantiq, sourceName);
+            objectDetector = new ObjectDetector(threshold, pbFile, labelsFile, metaFile, anchorArray, imageUtil, outputDir, labelImage, saveRate, vantiq, sourceName);
         } catch (Exception e) {
             throw new Exception(this.getClass().getCanonicalName() + ".yoloBackendSetupError: " 
                     + "Failed to create new ObjectDetector", e);
@@ -101,12 +102,21 @@ public class YoloProcessor implements NeuralNetInterface {
         this.authToken = authToken;
         this.sourceName = sourceName;
         // Obtain the files for the net
-       if (neuralNet.get("pbFile") instanceof String && neuralNet.get("labelFile") instanceof String) {
+       if (neuralNet.get("pbFile") instanceof String && 
+               (neuralNet.get("labelFile") instanceof String || neuralNet.get("metaFile") instanceof String)) {
            if (!modelDirectory.equals("") && !modelDirectory.endsWith("/") && !modelDirectory.endsWith("\\")) {
                modelDirectory += "/";
            }
+           if (neuralNet.get("labelFile") instanceof String) {
+               labelsFile = modelDirectory + (String) neuralNet.get("labelFile");
+               log.warn("A label file has been detected and will be used. Label files are deprecated, we encourage you "
+                       + "to use a meta file instead.");
+           }  
+           if (neuralNet.get("metaFile") instanceof String) {
+               metaFile = modelDirectory + (String) neuralNet.get("metaFile");
+           }
            pbFile = modelDirectory + (String) neuralNet.get("pbFile");
-           labelsFile = modelDirectory + (String) neuralNet.get("labelFile");
+           
        } else {
            throw new Exception(this.getClass().getCanonicalName() + ".missingConfig: " 
                    + "Could not find 'pbFile' and/or 'labelFile' in the neuralNet configuration");
@@ -150,9 +160,10 @@ public class YoloProcessor implements NeuralNetInterface {
                    }
                }
            }
-       } else {
-           log.warn("Anchor values were not set, or improperly set, in the config. Anchors must be a list of " 
-                   + YOLOClassifier.NUMBER_OF_BOUNDING_BOX * 2 + " numbers. Default anchor values will be used.");
+       } else if (!(neuralNet.get("metaFile") instanceof String)){
+           log.warn("Anchor values were not set, or improperly set, in the config. Additionally, no meta file was provided. "
+                   + "Anchors must be a list of " + YOLOClassifier.NUMBER_OF_BOUNDING_BOX * 2 + " numbers. "
+                   + "Default anchor values will be used.");
        }
               
        // Setup the variables for saving images
