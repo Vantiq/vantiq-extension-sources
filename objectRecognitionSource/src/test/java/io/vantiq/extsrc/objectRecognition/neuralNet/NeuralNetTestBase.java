@@ -18,7 +18,7 @@ import java.nio.file.Files;
 import io.vantiq.extsrc.objectRecognition.ObjRecTestBase;
 
 public class NeuralNetTestBase extends ObjRecTestBase {
-    public static final String MODEL_DIRECTORY = "src/test/resources/models";
+    public static final String MODEL_DIRECTORY = System.getProperty("buildDir") + "/models";
     public static final String SOURCE_NAME = "testSourceName";
 
     public static byte[] getTestImage() {
