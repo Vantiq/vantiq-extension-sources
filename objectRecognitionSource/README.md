@@ -195,8 +195,9 @@ are:
 ### <a name="neuralNetInterface" id="neuralNetInterface"></a>Options Available for Neural Net
 
 Most of the options required for neuralNet are dependent on the specific implementation of
-[NeuralNetInterface](#netInterface). The ones that are the same across all implementations are:
-
+[NeuralNetInterface](#netInterface). For an example of neural net specific configurations, please look at the [Yolo Processor 
+configuration options](#yoloNet). The ones that are the same across all implementations are:
+>>>>>>> Update README.md
 *   type: Optional. Can be one of three situations
     1.  The fully qualified class name of an implementation of NeuralNetInterface, e.g.
         "io.vantiq.extsrc.objectRecognition.neuralNet.YoloProcessor".
@@ -208,9 +209,6 @@ Most of the options required for neuralNet are dependent on the specific impleme
 *   threshold: Optional. Threshold is used to decide if the Neural Net's result is a valid one, by comparing the resulting confidence of the recognition against the threshold value. A high threshold will lead to fewer results, all with a higher confidence. A low threshold will lead to more results, some of which having a lower confidence. Threshold defaults to 0.5 if not specified, or if invalid. There are two ways to specify this value:
     1.  The value can be a number between 0 and 1 (i.e. 0.4, or 0.2, etc...)
     2.  The value can be a number between 0 and 100 (i.e. 40, or 20, etc...)
-*   anchors: Optional, but encouraged if a different model is used. This value is closely tied to the model (as specified in the `neuralNet.pbFile` and `neuralNet.labelFile` configuration parameters). The `anchors` are constructed from the training data, specifying the most likely rectangles that contain objects. These are, in turn, used to define the bounding boxes for objects discovered. If not specified, the default value will be used. The default value corresponds to the correct `anchors` value for the model that is used in the build. If you use a different model, you are encouraged to supply the appropriate `anchor` values. 
-    * (A future release will support (and encourage) supplying the `.meta` file instead of the `labelFile`. The `.meta` file will contain both the labels and the `anchors` value, as well as other data.) 
-    * Note that the anchors value for a particular model can be found in model's `.meta` file.
 *   saveImage: Optional. The value can be one of the following three options:
     1.  "local"     - This will save images to the disk (outputDir must be specified in order for this to work).
     2.  "vantiq"    - This will save images as documents in VANTIQ. No images will be saved locally even if outputDir is specified.
@@ -458,7 +456,11 @@ The options are as follows. Remember to prepend "NN" when using an option in a Q
 *   pbFile: Required. Config only. The .pb file for the model. The model can be trained using
     [darknet](https://pjreddie.com/darknet/install/) and then translated to tensorflow format using
     [darkflow](https://github.com/thtrieu/darkflow).
-*   labelFile: Required. Config only. The labels for the model.
+*   metaFile: Required unless labelFile was supplied. Config only. A .meta file generated alongside the .pb file, that contains both the anchors and labels associated with the .pb file.
+*   labelFile: **DEPRECATED**. Required if no metaFile was supplied. Config only. The labels for the model. If both a labelFile and metaFile have been supplied, the labels from the labelFile will be used.
+*   anchors: Optional, but encouraged if a different model is used and no metaFile was provided. This value is closely tied to the model (as specified in the `neuralNet.pbFile` and `neuralNet.labelFile` configuration parameters). The `anchors` are constructed from the training data, specifying the most likely rectangles that contain objects. These are, in turn, used to define the bounding boxes for objects discovered. If not specified, the default value will be used. The default value corresponds to the correct `anchors` value for the model that is used in the build. If you use a different model, you are encouraged to supply the appropriate `anchor` values. 
+    * Note that the anchors value for a particular model can be found in model's `.meta` file.
+    * These anchor values will override the anchors from a metaFile if one is provided.
 *   outputDir: Optional. Config and Query. The directory in which the images (object boxes included) will be placed.
     Images will be saved as "&lt;year&gt;-&lt;month&gt;-&lt;day&gt;--&lt;hour&gt;-&lt;minute&gt;-&lt;second&gt;.jpg"
     where each value will zero-filled if necessary, e.g. "2018-08-14--06-30-22.jpg". For non-Queries, no images will
