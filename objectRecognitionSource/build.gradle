@@ -16,7 +16,7 @@ repositories {
     }
 
     maven {
-        url "http://localhost:9090/maven"
+        url "http://vantiqmaven.s3-us-west-2.amazonaws.com/"
     }
 }
 
