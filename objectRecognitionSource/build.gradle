@@ -259,7 +259,16 @@ task copyModels(type: Copy, dependsOn: configurations.testRuntime) {
     into "$buildDir/models/"
 }
 
-task copyOldModels(type: Copy, dependsOn: [configurations.testRuntime, configurations.oldYoloNames]) {
+task copyOldCocoModels(type: Copy, dependsOn: [configurations.testRuntime, configurations.oldYoloNames]) {
+    from configurations.oldYoloNames.find { it.name == 'coco-1.0.pb' },
+        configurations.oldYoloNames.find { it.name == 'coco-1.0.names' }
+        
+
+    into "$buildDir/models/"
+}
+
+
+task copyOldYoloModels(type: Copy, dependsOn: [configurations.testRuntime, configurations.oldYoloNames]) {
     from configurations.oldYoloNames.find { it.name == 'yolo-1.0.pb' },
         configurations.oldYoloNames.find { it.name == 'coco-1.0.names' }
 
