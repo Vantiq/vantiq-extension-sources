@@ -16,7 +16,7 @@ repositories {
     }
 
     maven {
-        url "http://vantiqmaven.s3-us-west-2.amazonaws.com/"
+        url "http://vantiqmaven.s3.amazonaws.com/"
     }
 }
 
