@@ -499,6 +499,8 @@ These files are now fetched from an Amazon S3-based maven repository, and will b
 * ```./gradlew :objectRecognitionSource:copyOldCocoModels``` -- this will copy the COCO v1.0 models into ```build/models```
 * ```./gradlew :objectRecognitionSource:copyOldYoloModels``` -- this will copy the Yolo/coco.names files ```build/models```
 
+(Please replace `./gradlew` with `.\gradlew` as appropriate for your Operating System.)
+
 Previously, `yolo.pb` file was downloaded as part of the build, but the `coco.names` file was stored in Git.  That file is still in git (but likely to be removed soon).  We now obtain all the model files from the same place -- so none of this information will be in Git.  Keeping the information together is a safer way to go about things.
 
 

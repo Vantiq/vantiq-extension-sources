@@ -100,24 +100,6 @@ applicationDistribution.from("src/main/resources") {
     into "logConfig"
 }
 
-// Downloads the large (100 MB+) video and graph files used for Yolo tests
-//task addTestFiles {
-//    // Download 'sampleVideo.mov' if it doesn't already exist
-//    def sampleVideoUrl = new URL("https://www.dropbox.com/s/h5yd00qr8sfgdlt/sampleVideo.mov?dl=1")
-//    def sampleVideoFile = file('src/test/resources/sampleVideo.mov')
-//    if (!sampleVideoFile.exists()) {
-//        sampleVideoUrl.withInputStream{ i -> sampleVideoFile.withOutputStream{ it << i }}
-//    }
-//
-//    // Download 'yolo.pb' if it doesn't already exist
-//    def yoloGraphUrl = new URL("https://www.dropbox.com/s/lhnygcd6o6275jb/yolo.pb?dl=1")
-//    def yoloGraphFile = file('src/test/resources/models/yolo.pb')
-//    if (!yoloGraphFile.exists()) {
-//        yoloGraphUrl.withInputStream{ i -> yoloGraphFile.withOutputStream{ it << i }}
-//    }
-//
-//}
-
 tasks.withType(Test) {
     def os = org.gradle.internal.os.OperatingSystem.current()
     if (os.isWindows()) {
@@ -210,6 +192,15 @@ dependencies {
     // Used by FtpRetriever alone. Can be removed if FtpRetriever is removed
     compile "commons-net:commons-net:3.6"
     compile "com.jcraft:jsch:0.1.54"
+    
+    // The following dependencies are used to download neural net model information (and test artifacts) used in our
+    // tests and by some customer applications.  Formerly, some of these were downloaded from the following locations,
+    //    def sampleVideoUrl = new URL("https://www.dropbox.com/s/h5yd00qr8sfgdlt/sampleVideo.mov?dl=1")
+    //    def yoloGraphUrl = new URL("https://www.dropbox.com/s/lhnygcd6o6275jb/yolo.pb?dl=1")
+    // but we have now standardized on this mechanism.  The endpoints immediately above are left here for a short
+    // period of time in the event they prove useful to someone in the short term.  They are, however, temporary,
+    // the data there may not be available for an extended period of time.
+
 
     testRuntime "vantiq.testArtifacts:sampleVideo:1.0@mov"
     testRuntime "vantiq.models:coco:1.1@meta"
