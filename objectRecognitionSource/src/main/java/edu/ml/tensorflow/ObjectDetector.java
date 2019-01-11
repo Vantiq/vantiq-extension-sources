@@ -13,6 +13,9 @@ import org.tensorflow.Output;
 import org.tensorflow.Session;
 import org.tensorflow.Tensor;
 import io.vantiq.client.Vantiq;
+
+import com.fasterxml.jackson.core.JsonParseException;
+import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import java.awt.image.BufferedImage;
@@ -35,8 +38,8 @@ import static edu.ml.tensorflow.Config.SIZE;
  */
 public class ObjectDetector {
     private final static Logger LOGGER = LoggerFactory.getLogger(ObjectDetector.class);
-    private byte[] GRAPH_DEF;
-    private List<String> LABELS;
+    private byte[] graph_def;
+    private List<String> labels;
 
     // This will be used to create
     // "year-month-date-hour-minute-seconds"
@@ -84,16 +87,16 @@ public class ObjectDetector {
     public ObjectDetector(float thresh, String graphFile, String labelFile, String metaFile, double[] anchorArray, ImageUtil imageUtil, String outputDir, 
             Boolean labelImage, int saveRate, Vantiq vantiq, String sourceName) {
         try {
-            GRAPH_DEF = IOUtil.readAllBytesOrExit(graphFile);
-            // Parse meta file if it exists, and either the label file or anchor config options have not been set
-            if (metaFile != null && (labelFile == null || anchorArray == null)) {
+            graph_def = IOUtil.readAllBytesOrExit(graphFile);
+            // Parse meta file if it exists
+            if (metaFile != null) {
                 parseMetaFile(metaFile);
             }
             // If label file exists, use it. Otherwise, use the meta file's labels.
             if (labelFile != null) {
-                LABELS = IOUtil.readAllLinesOrExit(labelFile);
-            } else {
-                LABELS = (List<String>) metaFileMap.get("labels");
+                labels = IOUtil.readAllLinesOrExit(labelFile);
+            } else if (metaFile != null) {
+                labels = (List<String>) metaFileMap.get("labels");
             }
             // If anchor config option was used, override the anchors. Otherwise, use meta file anchors if they exist.
             // If neither exist, then default anchor values will be used.
@@ -101,12 +104,14 @@ public class ObjectDetector {
                 this.anchorArray = anchorArray;
             } else if (metaFile != null) {
                 ArrayList anchorList = (ArrayList) metaFileMap.get("anchors");
-                this.anchorArray = new double[anchorList.size()];
-                for (int i = 0; i < anchorList.size(); i++) {
-                    if (anchorList.get(i) instanceof Integer) {
-                        this.anchorArray[i] = (double) ((Integer) anchorList.get(i));
-                    } else {
-                        this.anchorArray[i] = (double) anchorList.get(i);
+                if (anchorList != null) {
+                    this.anchorArray = new double[anchorList.size()];
+                    for (int i = 0; i < anchorList.size(); i++) {
+                        if (anchorList.get(i) instanceof Integer) {
+                            this.anchorArray[i] = (double) ((Integer) anchorList.get(i));
+                        } else {
+                            this.anchorArray[i] = (double) anchorList.get(i);
+                        }
                     }
                 }
             }
@@ -119,7 +124,7 @@ public class ObjectDetector {
                 frameCount = saveRate;
             }
         } catch (ServiceException ex) {
-            throw new IllegalArgumentException("Problem reading files for the yolo graph.", ex);
+            throw new IllegalArgumentException(ex.getLocalizedMessage(), ex);
         } catch (IOException ex) {
             throw new IllegalArgumentException("Problem reading the meta file.", ex);
         }
@@ -145,7 +150,7 @@ public class ObjectDetector {
     public List<Map<String, ?>> detect(final byte[] image) {
         try (Tensor<Float> normalizedImage = normalizeImage(image)) {
             Date now = new Date(); // Saves the time before
-            List<Recognition> recognitions = YOLOClassifier.getInstance(threshold, anchorArray).classifyImage(executeYOLOGraph(normalizedImage), LABELS);
+            List<Recognition> recognitions = YOLOClassifier.getInstance(threshold, anchorArray).classifyImage(executeYOLOGraph(normalizedImage), labels);
             BufferedImage buffImage = imageUtil.createImageFromBytes(image);
             
             // Saves an image every saveRate frames
@@ -186,7 +191,7 @@ public class ObjectDetector {
     public List<Map<String, ?>> detect(final byte[] image, String outputDir, String fileName, Vantiq vantiq) {
         try (Tensor<Float> normalizedImage = normalizeImage(image)) {
             Date now = new Date(); // Saves the time before
-            List<Recognition> recognitions = YOLOClassifier.getInstance(threshold, anchorArray).classifyImage(executeYOLOGraph(normalizedImage), LABELS);
+            List<Recognition> recognitions = YOLOClassifier.getInstance(threshold, anchorArray).classifyImage(executeYOLOGraph(normalizedImage), labels);
             BufferedImage buffImage = imageUtil.createImageFromBytes(image);
             
             // Saves an image if requested
@@ -216,10 +221,12 @@ public class ObjectDetector {
      * Parses the provided meta file, and converts it into a map which can be used
      * to retrieve the anchors and/or labels if necessary.
      * @param   metaFile    The location of the meta file to parse.
+     * @throws JsonMappingException 
+     * @throws JsonParseException 
      * @throws  IOException 
      * 
      */
-    private void parseMetaFile(String metaFile) throws IOException {
+    private void parseMetaFile(String metaFile) throws JsonParseException, JsonMappingException, IOException {
         byte[] metaFileData = Files.readAllBytes(Paths.get(metaFile));
         this.metaFileMap = new HashMap<String,Object>();
         ObjectMapper objectMapper = new ObjectMapper();
@@ -248,7 +255,7 @@ public class ObjectDetector {
      */
     private Graph createYoloGraph() {
         Graph g = new Graph();
-        g.importGraphDef(GRAPH_DEF);
+        g.importGraphDef(graph_def);
         return g;
     }
     

@@ -118,8 +118,11 @@ public class YoloProcessor implements NeuralNetInterface {
            pbFile = modelDirectory + (String) neuralNet.get("pbFile");
            
        } else {
-           throw new Exception(this.getClass().getCanonicalName() + ".missingConfig: " 
-                   + "Could not find 'pbFile' and/or 'labelFile' in the neuralNet configuration");
+           throw new Exception(this.getClass().getCanonicalName() + ".missingConfig: Invalid Configuration: " 
+                   + "A YOLO NeuralNet configuration requires a pbFile and a metaFile and/or labelFile. " 
+                   + "pbFile: " + (neuralNet.get("pbFile") instanceof String ? (String) neuralNet.get("pbFile")  : " ") 
+                   + ", metaFile: " + (neuralNet.get("metaFile") instanceof String ? (String) neuralNet.get("metaFile")  : " ") 
+                   + ", labelFile: " + (neuralNet.get("labelFile") instanceof String ? (String) neuralNet.get("labelFile")  : " "));
        }
        
        if (neuralNet.get("threshold") instanceof Number) {
@@ -160,13 +163,15 @@ public class YoloProcessor implements NeuralNetInterface {
                    }
                }
            }
-       } else if (!(neuralNet.get("metaFile") instanceof String)){
-           log.warn("Anchor values were not set, or improperly set, in the config. Additionally, no meta file was provided. "
-                   + "Anchors must be a list of " + YOLOClassifier.NUMBER_OF_BOUNDING_BOX * 2 + " numbers. "
-                   + "Default anchor values will be used.");
-       } else {
-           log.warn("Anchor values were not set, or improperly set, in the config. Anchors must be a list of " 
-                   + YOLOClassifier.NUMBER_OF_BOUNDING_BOX * 2 + " numbers. " + "Anchors from the meta file will be used.");
+       } else if (neuralNet.get("anchors") != null){
+           if (!(neuralNet.get("metaFile") instanceof String)) {
+               log.warn("Anchor values were improperly set in the config. Additionally, no meta file was provided. "
+                       + "Anchors must be a list of " + YOLOClassifier.NUMBER_OF_BOUNDING_BOX * 2 + " numbers. "
+                       + "Default anchor values will be used.");
+           } else {
+               log.warn("Anchor values were not set, or improperly set, in the config. Anchors must be a list of " 
+                       + YOLOClassifier.NUMBER_OF_BOUNDING_BOX * 2 + " numbers. " + "Anchors from the meta file will be used.");
+           }
        }
               
        // Setup the variables for saving images

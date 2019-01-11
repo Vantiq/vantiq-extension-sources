@@ -232,9 +232,43 @@ public class TestYoloProcessor extends NeuralNetTestBase {
     @Test
     public void testRealJSONConfig() throws ImageProcessingException, JsonParseException, JsonMappingException, IOException {
         YoloProcessor ypImageSaver = new YoloProcessor();
-        ExtensionServiceMessage msg = createRealConfig();
+        ExtensionServiceMessage msg = createRealConfig(neuralNetJSON1);
         Map config = (Map) msg.getObject();
         Map neuralNetConfig = (Map) config.get("neuralNet");
+        
+        // Config with meta file, label file, pb file, and anchors
+        try {
+            ypImageSaver.setupImageProcessing(neuralNetConfig, SOURCE_NAME, MODEL_DIRECTORY, testAuthToken, testVantiqServer);
+        } catch (Exception e) {
+            fail("Should not fail with valid config.");
+        }
+        
+        // Config with meta file and pb file
+        msg = createRealConfig(neuralNetJSON2);
+        config = (Map) msg.getObject();
+        neuralNetConfig = (Map) config.get("neuralNet");
+        
+        try {
+            ypImageSaver.setupImageProcessing(neuralNetConfig, SOURCE_NAME, MODEL_DIRECTORY, testAuthToken, testVantiqServer);
+        } catch (Exception e) {
+            fail("Should not fail with valid config.");
+        }
+        
+        // Config with label file, pb file, and anchors
+        msg = createRealConfig(neuralNetJSON3);
+        config = (Map) msg.getObject();
+        neuralNetConfig = (Map) config.get("neuralNet");
+        
+        try {
+            ypImageSaver.setupImageProcessing(neuralNetConfig, SOURCE_NAME, MODEL_DIRECTORY, testAuthToken, testVantiqServer);
+        } catch (Exception e) {
+            fail("Should not fail with valid config.");
+        }
+        
+        // Config with label file and pb file
+        msg = createRealConfig(neuralNetJSON4);
+        config = (Map) msg.getObject();
+        neuralNetConfig = (Map) config.get("neuralNet");
         
         try {
             ypImageSaver.setupImageProcessing(neuralNetConfig, SOURCE_NAME, MODEL_DIRECTORY, testAuthToken, testVantiqServer);
@@ -818,7 +852,7 @@ public class TestYoloProcessor extends NeuralNetTestBase {
             + "\"right\":350.1204}, \"label\":\"keyboard\"}, {\"confidence\":0.7974271, \"location\":{\"top\":91.255974, \"left\":164.41359, "
             + "\"bottom\":275.69666, \"right\":350.50714}, \"label\":\"tvmonitor\"}]";
     
-    String neuralNetJSON = 
+    String neuralNetJSON1 = 
               "{"
             + "     \"neuralNet\":"
             + "         {"
@@ -829,6 +863,37 @@ public class TestYoloProcessor extends NeuralNetTestBase {
             + "             \"type\": \"yolo\""
             + "         }"
             + "}";
+    
+    String neuralNetJSON2 = 
+            "{"
+          + "     \"neuralNet\":"
+          + "         {"
+          + "             \"pbFile\": \"" + PB_FILE + "\", "
+          + "             \"metaFile\": \"" + META_FILE + "\", "            
+          + "             \"type\": \"yolo\""
+          + "         }"
+          + "}";
+    
+    String neuralNetJSON3 = 
+            "{"
+          + "     \"neuralNet\":"
+          + "         {"
+          + "             \"anchors\":[0.57273, 0.677385, 1.87446, 2.06253, 3.33843, 5.47434, 7.88282, 3.52778, 9.77052, 9.16828], "
+          + "             \"pbFile\": \"" + PB_FILE + "\", "
+          + "             \"labelFile\": \"" + LABEL_FILE + "\", "
+          + "             \"type\": \"yolo\""
+          + "         }"
+          + "}";
+    
+    String neuralNetJSON4 = 
+            "{"
+          + "     \"neuralNet\":"
+          + "         {"
+          + "             \"pbFile\": \"" + PB_FILE + "\", "
+          + "             \"labelFile\": \"" + LABEL_FILE + "\", "
+          + "             \"type\": \"yolo\""
+          + "         }"
+          + "}";
 
     List<Map> getExpectedResults() throws JsonParseException, JsonMappingException, IOException {
         ObjectMapper m = new ObjectMapper();
@@ -863,7 +928,7 @@ public class TestYoloProcessor extends NeuralNetTestBase {
         return actual.equals(expected);
     }
     
-    ExtensionServiceMessage createRealConfig() throws JsonParseException, JsonMappingException, IOException {
+    ExtensionServiceMessage createRealConfig(String neuralNetJSON) throws JsonParseException, JsonMappingException, IOException {
         Map msg = new LinkedHashMap();
         Map object = new LinkedHashMap();
         
