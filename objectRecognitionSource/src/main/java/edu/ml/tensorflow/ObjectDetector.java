@@ -125,8 +125,12 @@ public class ObjectDetector {
             }
         } catch (ServiceException ex) {
             throw new IllegalArgumentException(ex.getLocalizedMessage(), ex);
-        } catch (IOException ex) {
+        } catch (JsonParseException ex) {
             throw new IllegalArgumentException("Problem reading the meta file.", ex);
+        } catch (JsonMappingException ex) {
+            throw new IllegalArgumentException("Problem reading the meta file.", ex);
+        } catch (IOException ex) {
+            throw new IllegalArgumentException("Problem reading one of the model files.", ex);
         }
         
         threshold = thresh;
