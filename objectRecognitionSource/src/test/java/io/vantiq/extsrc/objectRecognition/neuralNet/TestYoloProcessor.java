@@ -46,9 +46,10 @@ import okhttp3.Response;
 
 public class TestYoloProcessor extends NeuralNetTestBase {
 
-    static final String LABEL_FILE = "coco.names";
-    static final String PB_FILE = "yolo.pb";
-    static final String OUTPUT_DIR = "src/test/resources/out";
+    static final String COCO_MODEL_VERSION = "1.1";
+    static final String LABEL_FILE = "coco-" + COCO_MODEL_VERSION + ".names";
+    static final String PB_FILE = "coco-"+ COCO_MODEL_VERSION  + ".pb";
+    static final String OUTPUT_DIR =  System.getProperty("buildDir") + "/resources/out";
     static final int SAVE_RATE = 2; // Saves every other so that we can know it counts correctly
     static final String NOT_FOUND_CODE = "io.vantiq.resource.not.found";
     static final String CONFIG_JSON_LOCATION = "src/test/resources/";
@@ -56,7 +57,7 @@ public class TestYoloProcessor extends NeuralNetTestBase {
     static YoloProcessor ypJson;
     static Vantiq vantiq;
     static VantiqResponse vantiqResponse;
-    
+
     static List<String> vantiqSavedFiles = new ArrayList<>();
 
     static final String timestampPattern = "\\d{4}-\\d{2}-\\d{2}--\\d{2}-\\d{2}-\\d{2}\\.jpg";
@@ -64,9 +65,6 @@ public class TestYoloProcessor extends NeuralNetTestBase {
     // A single processor is used for the entire class because it is very expensive to do initial setup
     @BeforeClass
     public static void classSetup() {
-        assumeTrue("No model file for test. Should be at " + new File(MODEL_DIRECTORY + "/" + PB_FILE).getAbsolutePath() + ""
-                , new File(MODEL_DIRECTORY + "/" + PB_FILE).exists());
-
         ypJson = new YoloProcessor();
 
         Map<String, Object> config = new LinkedHashMap<>();
@@ -77,9 +75,9 @@ public class TestYoloProcessor extends NeuralNetTestBase {
         } catch (Exception e) {
             fail("Could not setup the JSON YoloProcessor");
         }
-        
+
         vantiq = new io.vantiq.client.Vantiq(testVantiqServer);
-        vantiq.setAccessToken(testAuthToken); 
+        vantiq.setAccessToken(testAuthToken);
     }
     
     @AfterClass
@@ -101,8 +99,10 @@ public class TestYoloProcessor extends NeuralNetTestBase {
 
     @AfterClass
     public static void classTearDown() {
-        ypJson.close();
-        ypJson = null;
+        if (ypJson != null) {
+            ypJson.close();
+            ypJson = null;
+        }
 
         File d = new File(OUTPUT_DIR);
         if (d.exists()) {

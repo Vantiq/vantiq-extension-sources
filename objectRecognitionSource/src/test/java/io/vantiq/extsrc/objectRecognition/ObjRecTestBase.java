@@ -17,12 +17,14 @@ import java.io.InputStream;
 import java.net.URL;
 import java.nio.file.Files;
 
+import static org.junit.Assume.assumeTrue;
+
 public class ObjRecTestBase {
     public static final String UNUSED = "unused";
     
-    public static final String JPEG_IMAGE_LOCATION = "src/test/resources/sampleImage.jpg";
-    public static final String PNG_IMAGE_LOCATION = "src/test/resources/sampleImage.png";
-    public static final String VIDEO_LOCATION = "src/test/resources/sampleVideo.mov";
+    public static final String JPEG_IMAGE_LOCATION = System.getProperty("buildDir") + "/testResources/sampleImage.jpg";
+    public static final String PNG_IMAGE_LOCATION = System.getProperty("buildDir") + "/testResources/sampleImage.png";
+    public static final String VIDEO_LOCATION = System.getProperty("buildDir") + "/testResources/sampleVideo-1.0.mov";
     public static String testAuthToken = null;
     public static String testVantiqServer = null;
 
@@ -30,6 +32,8 @@ public class ObjRecTestBase {
     public static void getProps() {
         testAuthToken = System.getProperty("TestAuthToken", null);
         testVantiqServer = System.getProperty("TestVantiqServer", null);
+        assumeTrue("Tests require system property 'buildDir' to be set -- should be objectRecognitionSource/build",
+                System.getProperty("buildDir") != null);
     }
     
     public static void deleteFile(String fileName) {

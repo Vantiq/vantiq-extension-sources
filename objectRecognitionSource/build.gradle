@@ -14,6 +14,10 @@ repositories {
     maven {
     	url "https://dl.bintray.com/vantiq/maven"
     }
+
+    maven {
+        url "http://vantiqmaven.s3.amazonaws.com/"
+    }
 }
 
 mainClassName = 'io.vantiq.extsrc.objectRecognition.ObjectRecognitionMain'
@@ -96,24 +100,6 @@ applicationDistribution.from("src/main/resources") {
     into "logConfig"
 }
 
-// Downloads the large (100 MB+) video and graph files used for Yolo tests
-task addTestFiles {
-    // Download 'sampleVideo.mov' if it doesn't already exist
-    def sampleVideoUrl = new URL("https://www.dropbox.com/s/h5yd00qr8sfgdlt/sampleVideo.mov?dl=1")
-    def sampleVideoFile = file('src/test/resources/sampleVideo.mov')
-    if (!sampleVideoFile.exists()) {
-        sampleVideoUrl.withInputStream{ i -> sampleVideoFile.withOutputStream{ it << i }}
-    }
-            
-    // Download 'yolo.pb' if it doesn't already exist
-    def yoloGraphUrl = new URL("https://www.dropbox.com/s/lhnygcd6o6275jb/yolo.pb?dl=1")
-    def yoloGraphFile = file('src/test/resources/models/yolo.pb')
-    if (!yoloGraphFile.exists()) {
-        yoloGraphUrl.withInputStream{ i -> yoloGraphFile.withOutputStream{ it << i }}
-    }
-    
-}
-
 tasks.withType(Test) {
     def os = org.gradle.internal.os.OperatingSystem.current()
     if (os.isWindows()) {
@@ -127,6 +113,8 @@ tasks.withType(Test) {
     if (rootProject.hasProperty("TestVantiqServer")) {
         systemProperty "TestVantiqServer", rootProject.findProperty("TestVantiqServer") ?: "empty"
     }
+    // Use the build dir as a base to get our various test artifacts.
+    systemProperty "buildDir", "${buildDir}"
 }
 
 // Logs a warning if the .dll/.so/.dylib cannot be found for OpenCV when OpenCV is needed
@@ -169,7 +157,6 @@ ext.removeUnnecessaryTests = {
         testPattern -> 
             def testedFile = testPattern.substring(7) // Remove '**/Test' from the Pattern, leaving the tested file
             def testedFilePattern = '**/' + testedFile // Add '**/' to the tested file so it can be found in the source sets
-            
             // Get all files that match "**/<source file>" which should just be the source file or nothing if the
             // source file has been removed
             def standardFile = sourceSets.main.java.matching(
@@ -183,7 +170,10 @@ ext.removeUnnecessaryTests = {
     sourceSets.test.java.filter.exclude(standardImplementationTestPatterns)
 }
 
-processTestResources.dependsOn addTestFiles
+
+configurations {
+    oldYoloNames
+}
 
 dependencies {
     compile project(':extjsdk')
@@ -203,6 +193,25 @@ dependencies {
     compile "commons-net:commons-net:3.6"
     compile "com.jcraft:jsch:0.1.54"
     
+    // The following dependencies are used to download neural net model information (and test artifacts) used in our
+    // tests and by some customer applications.  Formerly, some of these were downloaded from the following locations,
+    //    def sampleVideoUrl = new URL("https://www.dropbox.com/s/h5yd00qr8sfgdlt/sampleVideo.mov?dl=1")
+    //    def yoloGraphUrl = new URL("https://www.dropbox.com/s/lhnygcd6o6275jb/yolo.pb?dl=1")
+    // but we have now standardized on this mechanism.  The endpoints immediately above are left here for a short
+    // period of time in the event they prove useful to someone in the short term.  They are, however, temporary,
+    // the data there may not be available for an extended period of time.
+
+
+    testRuntime "vantiq.testArtifacts:sampleVideo:1.0@mov"
+    testRuntime "vantiq.models:coco:1.1@meta"
+    testRuntime "vantiq.models:coco:1.1@names"
+    testRuntime "vantiq.models:coco:1.1@pb"
+
+    oldYoloNames "vantiq.models:coco:1.0@pb"
+    oldYoloNames "vantiq.models:coco:1.0@names"
+    oldYoloNames "vantiq.models:yolo:1.0@pb"
+
+
     // This imports OpenCV if it is needed, and throws an error if OpenCV is needed but not properly setup
     // The opencv
     if (!opencvDependentFiles.getFiles().isEmpty()) { // Only look for OpenCV if we need it
@@ -233,3 +242,43 @@ dependencies {
     testCompile project(path:":extjsdk", configuration:"testArtifacts")
 }
 
+task copyModels(type: Copy, dependsOn: configurations.testRuntime) {
+    from configurations.testRuntime.find { it.name == "coco-1.1.pb" },
+        configurations.testRuntime.find { it.name == "coco-1.1.names" },
+        configurations.testRuntime.find { it.name == "coco-1.1.meta" }
+
+    into "$buildDir/models/"
+}
+
+task copyOldCocoModels(type: Copy, dependsOn: [configurations.testRuntime, configurations.oldYoloNames]) {
+    from configurations.oldYoloNames.find { it.name == 'coco-1.0.pb' },
+        configurations.oldYoloNames.find { it.name == 'coco-1.0.names' }
+        
+
+    into "$buildDir/models/"
+}
+
+
+task copyOldYoloModels(type: Copy, dependsOn: [configurations.testRuntime, configurations.oldYoloNames]) {
+    from configurations.oldYoloNames.find { it.name == 'yolo-1.0.pb' },
+        configurations.oldYoloNames.find { it.name == 'coco-1.0.names' }
+
+    rename { filename ->
+        if (filename.contains("-1.0")) {
+            return filename - "-1.0" // Remove version number as it was not present in the older model
+        } else {
+            return null // no change
+        }
+    }
+
+    into "$buildDir/models/"
+}
+
+task copyTestResources(type: Copy, dependsOn: [configurations.testRuntime, configurations.oldYoloNames]) {
+    from configurations.testRuntime.find { it.name == 'sampleVideo-1.0.mov' },
+        sourceSets.test.resources.asList()
+
+    into "$buildDir/testResources/"
+}
+
+test.dependsOn copyModels, copyTestResources

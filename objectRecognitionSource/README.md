@@ -2,13 +2,16 @@
 
 The following documentation outlines how to incorporate an Object Recognition Source as part of your VANTIQ project. This allows a user to store and process data with VANTIQ, all of which is collected by analyzing images/videos using any Tensorflow-compatible Neural Network. 
 
-This implementation of the Object Recognition Source includes built-in functionality for the Yolo Processor, though any Tensorflow-compatible neural network can be used by implementing the NeuralNetInterface. Additionally, this implementation includes functionality to retrieve four different types of images:
+This implementation of the Object Recognition Source includes built-in functionality for the YOLO Processor, though any Tensorflow-compatible neural network can be used by implementing the NeuralNetInterface. Additionally, this implementation includes functionality to retrieve four different types of images:
+
 *   Camera Retriever - used to retrieve images from a serially-connected camera.
 *   Network Stream Retriever - used to retrieve images from a network-connected camera.
 *   File Retriever - used to retrieve images and videos from disk.
 *   FTP Retriever - used to retrieve images trhough FTP, FTPS, and SFTP.
 
 Again, other types of images and videos can be processed by implementing the ImageRetrieverInterface.
+
+**IMPORTANT:** Please see the [Model Files](#modelFiles) describing the way the model information is presented.
 
 ## Prerequisites
 
@@ -19,7 +22,9 @@ An understanding of the VANTIQ Extension Source SDK is assumed. Please read the 
 The user must define the Object Recognition Source implementation in VANTIQ. For an example of the definition, please see the *objRecImpl.json* file located in the *src/test/resources* directory.
 
 Additionally, an example VANTIQ project named *objRecExample.zip* can be found in the *src/test/resources* directory.
+
 *   It should be noted that this example uses the yolo.pb and coco.names files that are downloaded as part of running the tests associated with the project.
+*   Please see the [Model Files](#modelFiles) section for information about locating these files.
 
 ## Repository Contents
 
@@ -31,8 +36,9 @@ Additionally, an example VANTIQ project named *objRecExample.zip* can be found i
 *   [NeuralNetResults](#msgFormat) -- A class that holds the data passed back by neural net implementations.
 *   [NeuralNetInterface](#netInterface) -- An interface that allows other neural nets to be more easily integrated
     without changes to the rest of the code.
-    *   [YoloProcessor](#yoloNet) -- An implementation of the [You Only Look Once](https://pjreddie.com/darknet/yolo/)
+    *   [YOLO Processor](#yoloNet) -- An implementation of the [You Only Look Once](https://pjreddie.com/darknet/yolo/)
         (YOLO) object detection software using Java Tensorflow.
+    * [YOLO Models Available](#modelFiles)
 *   [ImageRetrieverResults](#msgFormat) -- A class that holds the data passed back by image retriever implementations.
 *   [ImageRetrieverInterface](#retrieveInterface) -- An interface that allows different image retrieval mechanisms to be
         more easily integrated without changes to the rest of the code.
@@ -74,6 +80,7 @@ to this will be included in future distributions produced through gradle.
 
 The server config file is written as `property=value`, with each property on its
 own line. The following is an example of a valid server.config file:
+
 ```
 authToken=vadfEarscQadfagdfjrKt7Fj1xjfjzBxliahO9adliiH-Dj--gNM=
 sources=Camera1
@@ -134,10 +141,11 @@ image and attempts to process it with the source's neural net then send the resu
 or an error occurs then no data is sent to the source, and if the neural net failed unrecoverably then the Core is
 stopped as well.
 
-## Source Configuration Document<a name="srcConfig" id="srcConfig"></a>
+## <a name="srcConfig" id="srcConfig"></a>Source Configuration Document
 
 The Configuration document may look similar to the following example:
 
+```
     {
        "objRecConfig": {
           "general": {
@@ -148,14 +156,15 @@ The Configuration document may look similar to the following example:
              "type": "network"
           },
           "neuralNet": {
-             "labelFile": "yolo.txt",
-             "pbFile": "yolo.pb",
+             "labelFile": "coco-1.1.names",
+             "pbFile": "coco-1.1.pb",
              "type": "yolo",
              "threshold": 0.2,
              "anchors": [0.57273, 0.677385, 1.87446, 2.06253, 3.33843, 5.47434, 7.88282, 3.52778, 9.77052, 9.16828]
           }
        }
     }
+```
 
 ### Options Available for General
 At least one of these options must be set for the source to function
@@ -173,6 +182,7 @@ the previous is sent.
 Most of the options required for dataSource are dependent on the specific implementation of
 [ImageRetrieverInterface](#retrieveInterface). The ones that are the same across all implementations
 are:
+
 *   type: Optional. Can be one of three situations
     1.  The fully qualified class name of an implementation of ImageRetrieverInterface, e.g.
         "io.vantiq.extsrc.objectRecognition.imageRetriever.CameraRetriever".
@@ -182,10 +192,11 @@ are:
         the `io.vantiq.objectRecognition.imageRetriever` package. This implementation is not provided, and must be
         written by the user.
 
-### Options Available for Neural Net
+### <a name="neuralNetInterface" id="neuralNetInterface"></a>Options Available for Neural Net
 
 Most of the options required for neuralNet are dependent on the specific implementation of
 [NeuralNetInterface](#netInterface). The ones that are the same across all implementations are:
+
 *   type: Optional. Can be one of three situations
     1.  The fully qualified class name of an implementation of NeuralNetInterface, e.g.
         "io.vantiq.extsrc.objectRecognition.neuralNet.YoloProcessor".
@@ -217,6 +228,7 @@ set at all, the images will be saved with no bounding boxes or labels.
 ## Messages from the Source<a name="msgFormat" id="msgFormat"></a>
 
 Messages from the source are JSON objects in the following format:
+
 ```
 {
     filename: <the name of the file matching the following pattern: objectRecognition/sourceName/timestamp.jpg>
@@ -231,6 +243,7 @@ Messages from the source are JSON objects in the following format:
     }
 }
 ```
+
 The contents and ordering of the objects in `results` are dependent on the implementation of the neural net, but they
 are guaranteed to be JSON objects. The contents of `dataSource` and `neuralNet` are dependent on the implementation of
 each. The timestamp is not required. Note that the timestamp is immediately usable as the VAIL DateTime type.
@@ -249,6 +262,7 @@ The SELECT statement that created the Query will only receive an array of JSON o
 identified, in the format used by the neural [net implementation](#netInterface).  
 
 Options available for all Queries (not prepended by anything) are:
+
 *   sendFullResponse: Optional. Specifies that this request should send back data in the same format as a notification
     instead of only the objects recognized. Note that the data will be the sole occupant of a 1-element array when
     received, instead of being immediately available as a JSON object. This is because Query results are mandated
@@ -289,8 +303,9 @@ whenever an image cannot be read successfully. Fatal errors are thrown only when
 mode.  
 
 The options are as follows. Remember to prepend "DS" when using an option in a Query.
-*   camera: Required for Config, optional for Query. The index of the camera to read images from. For queries, defaults
-    to the camera specified in the Config.
+
+*   camera: Required for Config, optional for Query. The index of the camera to read images from. 
+For queries, defaults to the camera specified in the Config.
 
 The timestamp is captured immediately before the image is grabbed from the camera. No other data is included.
     
@@ -302,10 +317,12 @@ was unable to be opened, or whenever the URL does not represent a video stream. 
 camera is inaccessible in non-Query mode, (i.e. if the video stream has ended).  
 
 The options are as follows. Remember to prepend "DS" when using an option in a Query.
+
 *   camera: Required for Config, optional for Query. The URL of the camera to read images from. For queries, defaults
     to the camera specified in the Config.
 
 The timestamp is captured immediately before the image is grabbed from the camera. The additional data is:
+
 *   camera: The URL of the camera that the image was read from.
 
 ### File Retriever<a name="fileRet" id="fileRet"></a>
@@ -319,6 +336,7 @@ option.
 Errors are thrown whenever an image or video frame cannot be read. Fatal errors are thrown only when a video finishes
 being read when the source is setup for constant polling.
 The options are as follows. Remember to prepend "DS" when using an option in a Query.
+
 *   fileLocation: Optional. Config and Query. The location of the file to be read. For Config where
     `fileExtension` is "mov", the file must exist at initialization. If this option is not set at Config and the source
     is configured for polling, then the source will open but the first attempt to retrieve will kill the source. For
@@ -342,6 +360,7 @@ No timestamp is captured. The additional data is:
 
 #### Example: Reading an Entire Video Through Queries
 If you want to read a video file from a source using Queries, this method will work.
+
 ```
 var frameResults = []
 var frameSkip = 72
@@ -387,6 +406,7 @@ Errors are thrown whenever an image or video frame cannot be read. Fatal errors 
 cannot be created.  
 
 The options are as follows. Remember to prepend "DS" when using an option in a Query.
+
 *   noDefault: Optional. Config only. When true, no default server is created and no default settings are saved. This
     means that when true all options without defaults are required for Queries. When false or unset, *all other
     Configuration settings without default values are required*.
@@ -422,7 +442,7 @@ running `./gradlew assemble` or by inserting the class as a jar into `<install l
 and adding it to the `CLASSPATH` in `<install location>/objectRecognitionSource/bin/objectRecognitionSource`
 and `<install location>/objectRecognitionSource/bin/objectRecognitionSource.bat`.
 
-### Yolo Processor<a name="yoloNet" id="yoloNet"></a>
+### <a name="yoloNet" id="yoloNet"></a>YOLO Processor
 
 This is a TensorFlow implementation of YOLO (You Only Look Once). The identified objects have a `label`
 stating the type of the object identified, a `confidence` specifying on a scale of 0-1 how confident the neural net is
@@ -434,6 +454,7 @@ dimensions. If different dimensions are required, then changing `edu.ml.tensorfl
 dimension will change the dimensions of the image sent to the neural net. The dimensions will still be a square.  
 
 The options are as follows. Remember to prepend "NN" when using an option in a Query.
+
 *   pbFile: Required. Config only. The .pb file for the model. The model can be trained using
     [darknet](https://pjreddie.com/darknet/install/) and then translated to tensorflow format using
     [darkflow](https://github.com/thtrieu/darkflow).
@@ -450,12 +471,47 @@ The options are as follows. Remember to prepend "NN" when using an option in a Q
 
 No additional data is sent.
 
+#### <a name="modelFiles" id="modelFiles"></a>YOLO Model File(s) used in the Tests 
+
+Generally speaking, the model files are large.  The protocol buffer ('.pb') file used in the tests is around 200 megabytes.  Consequently, we download these as part of the build, but they are not stored as part of the Git project.
+
+The files we use are as follows.
+
+* COCO -- COCO is a large dataset from Microsoft with 80 object categories.
+  * Version 1.1 -- the primary difference over version 1.1 is the providing of the `.meta` file. However, the file has been regenerated so we view it as a new version.
+     * `coco-1.1.pb` -- the protocol buffer file (see [YOLO Processor](#yoloNet))
+     * `coco-1.1.meta` -- the associated meta file
+     * `coco-1.1.names` -- the (soon to be deprecated) label file
+ * Version 1.0
+     * `coco-1.0.pb` -- Same purpose as above for version 1.0
+     * `coco-1.0.names`
+* YOLO (deprecated) -- this is the same as COCO version 1.0, with less-well-chosen names
+  * `yolo.pb` -- the protocol buffer file -- the same contents as `coco-1.0.pb`
+  * `coco.names` -- the label file -- same contents as `coco-1.0.names`
+
+We have moved to new names as they are clearer about what they do.  Operationally, things will remain the same.
+
+You are free to use other YOLO-based models (or other neural nets if you provide your [own neural net processor via the `NeuralNetInterface`](#neuralNetInterface). While we have not tested with them, anything that uses a 416x416 image (that is, downsized to that before neural net processing) is likely to work.  We cannot test with all models. In the future, we may relax the 416x416 restriction by using information from the `.meta` file.  See the [YOLO Processor](#yoloNet) section for information on producing your own models.
+
+These files are now fetched from an Amazon S3-based maven repository, and will be downloaded into your gradle cache. For use in the tests, they are copied to `objectRecognitionSource/build/models`. If you want to use them for a project, you are encouraged to copy them to a stable location (the build hierarchy is destroyed when tests are run as part of normal gradle processing). If those files are missing, you can replace them by running the following tasks in gradle.
+
+* ```./gradlew :objectRecognitionSource:copyModels``` -- this will copy the current models (COCO v1.1) into ```build/models```
+* ```./gradlew :objectRecognitionSource:copyOldCocoModels``` -- this will copy the COCO v1.0 models into ```build/models```
+* ```./gradlew :objectRecognitionSource:copyOldYoloModels``` -- this will copy the Yolo/coco.names files ```build/models```
+
+(Please replace `./gradlew` with `.\gradlew` as appropriate for your Operating System.)
+
+Previously, `yolo.pb` file was downloaded as part of the build, but the `coco.names` file was stored in Git.  That file is still in git (but likely to be removed soon).  We now obtain all the model files from the same place -- so none of this information will be in Git.  Keeping the information together is a safer way to go about things.
+
+
 ## Testing<a name="testing" id="testing"></a>
     
 In order to properly run the tests, you must first add the VANTIQ server you wish to connect to and corresponding auth token to your gradle.properties file in the ~/.gradle directory as follows:
-    
+
+``` 
     TestAuthToken=<yourAuthToken>
     TestVantiqServer=<desiredVantiqServer>
+```
 
 The test will download two large (~200 MB) files before running the test. If you do not want this to occur, do not run
 test or build.  
