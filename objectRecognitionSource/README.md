@@ -197,7 +197,6 @@ are:
 Most of the options required for neuralNet are dependent on the specific implementation of
 [NeuralNetInterface](#netInterface). For an example of neural net specific configurations, please look at the [Yolo Processor 
 configuration options](#yoloNet). The ones that are the same across all implementations are:
->>>>>>> Update README.md
 *   type: Optional. Can be one of three situations
     1.  The fully qualified class name of an implementation of NeuralNetInterface, e.g.
         "io.vantiq.extsrc.objectRecognition.neuralNet.YoloProcessor".
@@ -458,7 +457,7 @@ The options are as follows. Remember to prepend "NN" when using an option in a Q
     [darkflow](https://github.com/thtrieu/darkflow).
 *   metaFile: Required unless labelFile was supplied. Config only. A .meta file generated alongside the .pb file, that contains both the anchors and labels associated with the .pb file.
 *   labelFile: **DEPRECATED**. Required if no metaFile was supplied. Config only. The labels for the model. If both a labelFile and metaFile have been supplied, the labels from the labelFile will be used.
-*   anchors: Optional, but encouraged if a different model is used and no metaFile was provided. This value is closely tied to the model (as specified in the `neuralNet.pbFile` and `neuralNet.labelFile` configuration parameters). The `anchors` are constructed from the training data, specifying the most likely rectangles that contain objects. These are, in turn, used to define the bounding boxes for objects discovered. If not specified, the default value will be used. The default value corresponds to the correct `anchors` value for the model that is used in the build. If you use a different model, you are encouraged to supply the appropriate `anchor` values. 
+*   anchors: Optional, but encouraged if a different model is used and no metaFile was provided. This value is closely tied to the model (as specified in the `neuralNet.pbFile`, `neuralNet.metaFile` and `neuralNet.labelFile` configuration parameters). The `anchors` are constructed from the training data, specifying the most likely rectangles that contain objects. These are, in turn, used to define the bounding boxes for objects discovered. If not specified, the default value will be used. The default value corresponds to the correct `anchors` value for the model that is used in the build. If you use a different model, you are encouraged to supply the appropriate `anchor` values. 
     * Note that the anchors value for a particular model can be found in model's `.meta` file.
     * These anchor values will override the anchors from a metaFile if one is provided.
 *   outputDir: Optional. Config and Query. The directory in which the images (object boxes included) will be placed.
