@@ -219,14 +219,7 @@ public class TestYoloProcessor extends NeuralNetTestBase {
 
     @Test
     public void testResults() throws ImageProcessingException {
-        NeuralNetResults results = ypJson.processImage(getTestImage());
-        assert results != null;
-        assert results.getResults() != null;
-        try {
-            resultsEquals(results.getResults(), getExpectedResults()); // Will throw assert error with a message when not equivalent
-        } catch (IOException e) {
-            fail("Could not interpret json string" + e.getMessage());
-        }
+        verifyProcessing(ypJson);
     }
     
     @Test
@@ -905,7 +898,7 @@ public class TestYoloProcessor extends NeuralNetTestBase {
     }
     
     void verifyProcessing(YoloProcessor ypImageSaver) throws ImageProcessingException {
-        NeuralNetResults results = ypJson.processImage(getTestImage());
+        NeuralNetResults results = ypImageSaver.processImage(getTestImage());
         assert results != null;
         assert results.getResults() != null;
         try {
