@@ -239,6 +239,7 @@ public class TestYoloProcessor extends NeuralNetTestBase {
         // Config with meta file, label file, pb file, and anchors
         try {
             ypImageSaver.setupImageProcessing(neuralNetConfig, SOURCE_NAME, MODEL_DIRECTORY, testAuthToken, testVantiqServer);
+            verifyProcessing(ypImageSaver);
         } catch (Exception e) {
             fail("Should not fail with valid config.");
         }
@@ -250,6 +251,7 @@ public class TestYoloProcessor extends NeuralNetTestBase {
         
         try {
             ypImageSaver.setupImageProcessing(neuralNetConfig, SOURCE_NAME, MODEL_DIRECTORY, testAuthToken, testVantiqServer);
+            verifyProcessing(ypImageSaver);
         } catch (Exception e) {
             fail("Should not fail with valid config.");
         }
@@ -261,6 +263,7 @@ public class TestYoloProcessor extends NeuralNetTestBase {
         
         try {
             ypImageSaver.setupImageProcessing(neuralNetConfig, SOURCE_NAME, MODEL_DIRECTORY, testAuthToken, testVantiqServer);
+            verifyProcessing(ypImageSaver);
         } catch (Exception e) {
             fail("Should not fail with valid config.");
         }
@@ -272,6 +275,7 @@ public class TestYoloProcessor extends NeuralNetTestBase {
         
         try {
             ypImageSaver.setupImageProcessing(neuralNetConfig, SOURCE_NAME, MODEL_DIRECTORY, testAuthToken, testVantiqServer);
+            verifyProcessing(ypImageSaver);
         } catch (Exception e) {
             fail("Should not fail with valid config.");
         }
@@ -898,6 +902,17 @@ public class TestYoloProcessor extends NeuralNetTestBase {
     List<Map> getExpectedResults() throws JsonParseException, JsonMappingException, IOException {
         ObjectMapper m = new ObjectMapper();
         return m.readValue(imageResultsAsString, List.class);
+    }
+    
+    void verifyProcessing(YoloProcessor ypImageSaver) throws ImageProcessingException {
+        NeuralNetResults results = ypJson.processImage(getTestImage());
+        assert results != null;
+        assert results.getResults() != null;
+        try {
+            resultsEquals(results.getResults(), getExpectedResults()); // Will throw assert error with a message when not equivalent
+        } catch (IOException e) {
+            fail("Could not interpret json string" + e.getMessage());
+        }
     }
 
     void resultsEquals(List<Map<String, ?>> list, List<Map> expectedRes) {
