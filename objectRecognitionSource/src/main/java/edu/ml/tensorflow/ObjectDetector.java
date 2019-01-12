@@ -14,8 +14,15 @@ import org.tensorflow.Session;
 import org.tensorflow.Tensor;
 import io.vantiq.client.Vantiq;
 
+import com.fasterxml.jackson.core.JsonParseException;
+import com.fasterxml.jackson.databind.JsonMappingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
 import java.awt.image.BufferedImage;
+import java.io.IOException;
 import java.nio.FloatBuffer;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
@@ -31,8 +38,8 @@ import static edu.ml.tensorflow.Config.SIZE;
  */
 public class ObjectDetector {
     private final static Logger LOGGER = LoggerFactory.getLogger(ObjectDetector.class);
-    private byte[] GRAPH_DEF;
-    private List<String> LABELS;
+    private byte[] graph_def;
+    private List<String> labels;
 
     // This will be used to create
     // "year-month-date-hour-minute-seconds"
@@ -46,6 +53,8 @@ public class ObjectDetector {
     private Vantiq vantiq = null;
     private String sourceName = null;
     private double[] anchorArray;
+    private Map<String,Object> metaFileMap;
+    
     
     private Graph yoloGraph;
     private Session yoloSession;
@@ -63,7 +72,8 @@ public class ObjectDetector {
      * @param thresh        The threshold of confidence used by the Yolo Neural Network when deciding whether to save 
      *                      a recognition. 
      * @param graphFile     The location of a proto buffer file describing the YOLO net 
-     * @param labelFile     The location of the labels for the given net.
+     * @param labelFile     (DEPRECATED) The location of the labels for the given net.
+     * @param metaFile      The location of the meta file used to retrieve anchors and labels if a labelFile is not provided.
      * @param anchorArray   The list of anchor pairs used by the YOLOClassifier to label recognitions.
      * @param imageUtil     The instance of the ImageUtil class used to save images. Either initialized, or set to null.
      * @param outputDir     The directory to which images will be saved.
@@ -74,12 +84,37 @@ public class ObjectDetector {
      * @param vantiq        The Vantiq variable used to connect to the VANTIQ SDK. Either authenticated, or set to null.
      * @param sourceName    The name of the VANTIQ Source
      */
-    public ObjectDetector(float thresh, String graphFile, String labelFile, double[] anchorArray, ImageUtil imageUtil, String outputDir, 
+    public ObjectDetector(float thresh, String graphFile, String labelFile, String metaFile, double[] anchorArray, ImageUtil imageUtil, String outputDir, 
             Boolean labelImage, int saveRate, Vantiq vantiq, String sourceName) {
         try {
-            GRAPH_DEF = IOUtil.readAllBytesOrExit(graphFile);
-            LABELS = IOUtil.readAllLinesOrExit(labelFile);
-            this.anchorArray = anchorArray;
+            graph_def = IOUtil.readAllBytesOrExit(graphFile);
+            // Parse meta file if it exists
+            if (metaFile != null) {
+                parseMetaFile(metaFile);
+            }
+            // If label file exists, use it. Otherwise, use the meta file's labels.
+            if (labelFile != null) {
+                labels = IOUtil.readAllLinesOrExit(labelFile);
+            } else if (metaFile != null) {
+                labels = (List<String>) metaFileMap.get("labels");
+            }
+            // If anchor config option was used, override the anchors. Otherwise, use meta file anchors if they exist.
+            // If neither exist, then default anchor values will be used.
+            if (anchorArray != null) {
+                this.anchorArray = anchorArray;
+            } else if (metaFile != null) {
+                ArrayList anchorList = (ArrayList) metaFileMap.get("anchors");
+                if (anchorList != null) {
+                    this.anchorArray = new double[anchorList.size()];
+                    for (int i = 0; i < anchorList.size(); i++) {
+                        if (anchorList.get(i) instanceof Integer) {
+                            this.anchorArray[i] = (double) ((Integer) anchorList.get(i));
+                        } else {
+                            this.anchorArray[i] = (double) anchorList.get(i);
+                        }
+                    }
+                }
+            }
             this.imageUtil = imageUtil;
             this.vantiq = vantiq;
             this.labelImage = labelImage;
@@ -89,7 +124,13 @@ public class ObjectDetector {
                 frameCount = saveRate;
             }
         } catch (ServiceException ex) {
-            throw new IllegalArgumentException("Problem reading files for the yolo graph.", ex);
+            throw new IllegalArgumentException(ex.getLocalizedMessage(), ex);
+        } catch (JsonParseException ex) {
+            throw new IllegalArgumentException("Problem reading the meta file.", ex);
+        } catch (JsonMappingException ex) {
+            throw new IllegalArgumentException("Problem reading the meta file.", ex);
+        } catch (IOException ex) {
+            throw new IllegalArgumentException("Problem reading one of the model files.", ex);
         }
         
         threshold = thresh;
@@ -113,7 +154,7 @@ public class ObjectDetector {
     public List<Map<String, ?>> detect(final byte[] image) {
         try (Tensor<Float> normalizedImage = normalizeImage(image)) {
             Date now = new Date(); // Saves the time before
-            List<Recognition> recognitions = YOLOClassifier.getInstance(threshold, anchorArray).classifyImage(executeYOLOGraph(normalizedImage), LABELS);
+            List<Recognition> recognitions = YOLOClassifier.getInstance(threshold, anchorArray).classifyImage(executeYOLOGraph(normalizedImage), labels);
             BufferedImage buffImage = imageUtil.createImageFromBytes(image);
             
             // Saves an image every saveRate frames
@@ -154,7 +195,7 @@ public class ObjectDetector {
     public List<Map<String, ?>> detect(final byte[] image, String outputDir, String fileName, Vantiq vantiq) {
         try (Tensor<Float> normalizedImage = normalizeImage(image)) {
             Date now = new Date(); // Saves the time before
-            List<Recognition> recognitions = YOLOClassifier.getInstance(threshold, anchorArray).classifyImage(executeYOLOGraph(normalizedImage), LABELS);
+            List<Recognition> recognitions = YOLOClassifier.getInstance(threshold, anchorArray).classifyImage(executeYOLOGraph(normalizedImage), labels);
             BufferedImage buffImage = imageUtil.createImageFromBytes(image);
             
             // Saves an image if requested
@@ -179,6 +220,22 @@ public class ObjectDetector {
             return returnJSON(recognitions, buffImage);
         }
     }
+    
+    /**
+     * Parses the provided meta file, and converts it into a map which can be used
+     * to retrieve the anchors and/or labels if necessary.
+     * @param   metaFile    The location of the meta file to parse.
+     * @throws JsonMappingException 
+     * @throws JsonParseException 
+     * @throws  IOException 
+     * 
+     */
+    private void parseMetaFile(String metaFile) throws JsonParseException, JsonMappingException, IOException {
+        byte[] metaFileData = Files.readAllBytes(Paths.get(metaFile));
+        this.metaFileMap = new HashMap<String,Object>();
+        ObjectMapper objectMapper = new ObjectMapper();
+        this.metaFileMap = objectMapper.readValue(metaFileData, HashMap.class);
+    }
 
     /**
      * Pre-process input. It resize the image and normalize its pixels
@@ -202,7 +259,7 @@ public class ObjectDetector {
      */
     private Graph createYoloGraph() {
         Graph g = new Graph();
-        g.importGraphDef(GRAPH_DEF);
+        g.importGraphDef(graph_def);
         return g;
     }
     
