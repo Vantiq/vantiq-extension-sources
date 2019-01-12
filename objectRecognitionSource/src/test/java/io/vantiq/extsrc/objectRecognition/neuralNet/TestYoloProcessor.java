@@ -30,7 +30,9 @@ import javax.imageio.ImageIO;
 
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
+import org.junit.FixMethodOrder;
 import org.junit.Test;
+import org.junit.runners.MethodSorters;
 
 import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.databind.JsonMappingException;
@@ -44,13 +46,14 @@ import io.vantiq.extsrc.objectRecognition.exception.ImageProcessingException;
 import io.vantiq.extjsdk.ExtensionServiceMessage;
 import okhttp3.Response;
 
+@FixMethodOrder(MethodSorters.NAME_ASCENDING)
 public class TestYoloProcessor extends NeuralNetTestBase {
 
     static final String COCO_MODEL_VERSION = "1.1";
     static final String LABEL_FILE = "coco-" + COCO_MODEL_VERSION + ".names";
-    static final String PB_FILE = "coco-" + COCO_MODEL_VERSION  + ".pb";
+    static final String PB_FILE = "coco-" + COCO_MODEL_VERSION + ".pb";
     static final String META_FILE = "coco-" + COCO_MODEL_VERSION + ".meta";
-    static final String OUTPUT_DIR =  System.getProperty("buildDir") + "/resources/out";
+    static final String OUTPUT_DIR = System.getProperty("buildDir") + "/resources/out";
     static final int SAVE_RATE = 2; // Saves every other so that we can know it counts correctly
     static final String NOT_FOUND_CODE = "io.vantiq.resource.not.found";
     static final String CONFIG_JSON_LOCATION = "src/test/resources/";
@@ -80,17 +83,20 @@ public class TestYoloProcessor extends NeuralNetTestBase {
         vantiq = new io.vantiq.client.Vantiq(testVantiqServer);
         vantiq.setAccessToken(testAuthToken);
     }
-    
+
     @AfterClass
     public static void deleteFromVantiq() throws InterruptedException {
-        for(int i = 0; i < vantiqSavedFiles.size(); i++) {
+        for (int i = 0; i < vantiqSavedFiles.size(); i++) {
             Thread.sleep(1000);
             vantiq.deleteOne("system.documents", vantiqSavedFiles.get(i), new BaseResponseHandler() {
 
-                @Override public void onSuccess(Object body, Response response) {
+                @Override
+                public void onSuccess(Object body, Response response) {
                     super.onSuccess(body, response);
                 }
-                @Override public void onError(List<VantiqError> errors, Response response) {
+
+                @Override
+                public void onError(List<VantiqError> errors, Response response) {
                     super.onError(errors, response);
                 }
 
@@ -110,236 +116,252 @@ public class TestYoloProcessor extends NeuralNetTestBase {
             deleteDirectory(OUTPUT_DIR);
         }
     }
-    
+
     @Test
     public void testInvalidConfig() {
         Map config = new LinkedHashMap<>();
         YoloProcessor ypImageSaver = new YoloProcessor();
-        
+
         // Nothing included
         try {
             ypImageSaver.setupImageProcessing(config, SOURCE_NAME, MODEL_DIRECTORY, testAuthToken, testVantiqServer);
             fail("Should fail without anything in config.");
         } catch (Exception e) {
-            assertTrue("Failure should be caused by empty config. Error actually was: " + e.getMessage(), 
-                    e.getMessage().startsWith(YoloProcessor.class.getCanonicalName() + ".missingConfig:"));;
+            assertTrue("Failure should be caused by empty config. Error actually was: " + e.getMessage(),
+                    e.getMessage().startsWith(YoloProcessor.class.getCanonicalName() + ".missingConfig:"));
         }
-        
+
         // No meta file or label file
         config.put("pbFile", PB_FILE);
-        
+
         try {
             ypImageSaver.setupImageProcessing(config, SOURCE_NAME, MODEL_DIRECTORY, testAuthToken, testVantiqServer);
             fail("Should fail without either a label file or a meta file.");
         } catch (Exception e) {
-            assertTrue("Failure should be caused by lack of either label or meta file. Error actually was: " 
-                    + e.getMessage(), e.getMessage().startsWith(YoloProcessor.class.getCanonicalName() + ".missingConfig:"));;
+            assertTrue("Failure should be caused by lack of either label or meta file. Error actually was: "
+                    + e.getMessage(), e.getMessage().startsWith(YoloProcessor.class.getCanonicalName() + ".missingConfig:"));
         }
-        
+
         // No pb file included but label file included
         config.remove("pbFile");
         config.put("labelFile", LABEL_FILE);
-        
+
         try {
             ypImageSaver.setupImageProcessing(config, SOURCE_NAME, MODEL_DIRECTORY, testAuthToken, testVantiqServer);
             fail("Should fail when label file is included but pbFile is not.");
         } catch (Exception e) {
-            assertTrue("Failure should be caused by lack of pbFile even when label file is included. Error actually was: " 
-                    + e.getMessage(), e.getMessage().startsWith(YoloProcessor.class.getCanonicalName() + ".missingConfig:"));;
+            assertTrue("Failure should be caused by lack of pbFile even when label file is included. Error actually was: "
+                    + e.getMessage(), e.getMessage().startsWith(YoloProcessor.class.getCanonicalName() + ".missingConfig:"));
         }
-        
+
         // No pb file included but label file included
         config.remove("labelFile");
         config.put("metaFile", META_FILE);
-        
+
         try {
             ypImageSaver.setupImageProcessing(config, SOURCE_NAME, MODEL_DIRECTORY, testAuthToken, testVantiqServer);
             fail("Should fail when meta file is included but pbFile is not.");
         } catch (Exception e) {
-            assertTrue("Failure should be caused by lack of pbFile even when meta file is included. Error actually was: " 
-                    + e.getMessage(), e.getMessage().startsWith(YoloProcessor.class.getCanonicalName() + ".missingConfig:"));;
+            assertTrue("Failure should be caused by lack of pbFile even when meta file is included. Error actually was: "
+                    + e.getMessage(), e.getMessage().startsWith(YoloProcessor.class.getCanonicalName() + ".missingConfig:"));
         }
     }
-    
+
     @Test
     public void testValidConfig() {
         Map config = new LinkedHashMap<>();
         YoloProcessor ypImageSaver = new YoloProcessor();
-        List<Number> anchorList = Arrays.asList(1,1,1,1,1,1,1,1,1,1);
-        
+        List<Number> anchorList = Arrays.asList(1, 1, 1, 1, 1, 1, 1, 1, 1, 1);
+
         // Meta file included, no label file
         config.put("pbFile", PB_FILE);
         config.put("metaFile", META_FILE);
-        
+
         try {
             ypImageSaver.setupImageProcessing(config, SOURCE_NAME, MODEL_DIRECTORY, testAuthToken, testVantiqServer);
         } catch (Exception e) {
             fail("Should not fail with meta file but no label file.");
         }
-        
+
         // Meta file included and anchors included
         config.put("anchors", anchorList);
-        
+
         try {
             ypImageSaver.setupImageProcessing(config, SOURCE_NAME, MODEL_DIRECTORY, testAuthToken, testVantiqServer);
         } catch (Exception e) {
             fail("Should not fail with meta file and anchors.");
         }
-        
+
         // Label file included, no meta file
         config.remove("metaFile");
         config.remove("anchors");
         config.put("labelFile", LABEL_FILE);
-        
+
         try {
             ypImageSaver.setupImageProcessing(config, SOURCE_NAME, MODEL_DIRECTORY, testAuthToken, testVantiqServer);
         } catch (Exception e) {
             fail("Should not fail with label file but no meta file.");
         }
-        
+
         // Label file included and anchors included
         config.put("anchors", anchorList);
-        
+
         try {
             ypImageSaver.setupImageProcessing(config, SOURCE_NAME, MODEL_DIRECTORY, testAuthToken, testVantiqServer);
         } catch (Exception e) {
             fail("Should not fail with label file and anchors.");
         }
-        
+
         // Label and meta file included, anchors included
         config.put("metaFile", META_FILE);
-        
+
         try {
             ypImageSaver.setupImageProcessing(config, SOURCE_NAME, MODEL_DIRECTORY, testAuthToken, testVantiqServer);
         } catch (Exception e) {
             fail("Should not fail with label and meta file, and anchors.");
         }
-        
+
     }
 
     @Test
     public void testResults() throws ImageProcessingException {
         verifyProcessing(ypJson);
     }
-    
+
     @Test
     public void testRealJSONConfig() throws ImageProcessingException, JsonParseException, JsonMappingException, IOException {
         YoloProcessor ypImageSaver = new YoloProcessor();
         ExtensionServiceMessage msg = createRealConfig(neuralNetJSON1);
         Map config = (Map) msg.getObject();
         Map neuralNetConfig = (Map) config.get("neuralNet");
-        
+
         // Config with meta file, label file, pb file, and anchors
         try {
             ypImageSaver.setupImageProcessing(neuralNetConfig, SOURCE_NAME, MODEL_DIRECTORY, testAuthToken, testVantiqServer);
             verifyProcessing(ypImageSaver);
         } catch (Exception e) {
             fail("Should not fail with valid config.");
+        } finally {
+            if (ypImageSaver != null) {
+                ypImageSaver.close();
+            }
         }
-        
+
         // Config with meta file and pb file
         msg = createRealConfig(neuralNetJSON2);
         config = (Map) msg.getObject();
         neuralNetConfig = (Map) config.get("neuralNet");
-        
+
         try {
             ypImageSaver.setupImageProcessing(neuralNetConfig, SOURCE_NAME, MODEL_DIRECTORY, testAuthToken, testVantiqServer);
             verifyProcessing(ypImageSaver);
         } catch (Exception e) {
             fail("Should not fail with valid config.");
+        } finally {
+            if (ypImageSaver != null) {
+                ypImageSaver.close();
+            }
         }
-        
+
         // Config with label file, pb file, and anchors
         msg = createRealConfig(neuralNetJSON3);
         config = (Map) msg.getObject();
         neuralNetConfig = (Map) config.get("neuralNet");
-        
+
         try {
             ypImageSaver.setupImageProcessing(neuralNetConfig, SOURCE_NAME, MODEL_DIRECTORY, testAuthToken, testVantiqServer);
             verifyProcessing(ypImageSaver);
         } catch (Exception e) {
             fail("Should not fail with valid config.");
+        } finally {
+            if (ypImageSaver != null) {
+                ypImageSaver.close();
+            }
         }
-        
+
         // Config with label file and pb file
         msg = createRealConfig(neuralNetJSON4);
         config = (Map) msg.getObject();
         neuralNetConfig = (Map) config.get("neuralNet");
-        
+
         try {
             ypImageSaver.setupImageProcessing(neuralNetConfig, SOURCE_NAME, MODEL_DIRECTORY, testAuthToken, testVantiqServer);
             verifyProcessing(ypImageSaver);
         } catch (Exception e) {
             fail("Should not fail with valid config.");
+        } finally {
+            if (ypImageSaver != null) {
+                ypImageSaver.close();
+            }
         }
     }
-    
+
     @Test
     public void testValidAnchors() throws ImageProcessingException {
         Map config = new LinkedHashMap<>();
         YoloProcessor ypImageSaver = new YoloProcessor();
-        
-        List<Number> anchorList = Arrays.asList(1,1,1,1,1,1,1,1,1,1);
+
+        List<Number> anchorList = Arrays.asList(1, 1, 1, 1, 1, 1, 1, 1, 1, 1);
         config.put("pbFile", PB_FILE);
         config.put("labelFile", LABEL_FILE);
         config.put("anchors", anchorList);
-        
+
         try {
             ypImageSaver.setupImageProcessing(config, SOURCE_NAME, MODEL_DIRECTORY, testAuthToken, testVantiqServer);
         } catch (Exception e) {
             fail("Should not fail with valid anchors.");
         }
-        
+
         // Checking mix of integers and floating points
-        anchorList = Arrays.asList(1,1.0,0.01,1,1.0,0.01,1,1.0,0.01,1);
+        anchorList = Arrays.asList(1, 1.0, 0.01, 1, 1.0, 0.01, 1, 1.0, 0.01, 1);
         config.remove("anchors");
         config.put("anchors", anchorList);
-        
+
         try {
             ypImageSaver.setupImageProcessing(config, SOURCE_NAME, MODEL_DIRECTORY, testAuthToken, testVantiqServer);
         } catch (Exception e) {
             fail("Should not fail with invalid anchors");
-        } 
+        }
     }
-    
+
     @Test
     public void testInvalidAnchors() throws ImageProcessingException {
         Map config = new LinkedHashMap<>();
         YoloProcessor ypImageSaver = new YoloProcessor();
-        
+
         // anchorList is too short
         List anchorList = Arrays.asList(0.5);
         config.put("pbFile", PB_FILE);
         config.put("labelFile", LABEL_FILE);
         config.put("anchors", anchorList);
-        
+
         try {
             ypImageSaver.setupImageProcessing(config, SOURCE_NAME, MODEL_DIRECTORY, testAuthToken, testVantiqServer);
         } catch (Exception e) {
             fail("Should not fail with invalid anchors");
-        }   
-        
+        }
+
         // anchorList is too long
-        anchorList = Arrays.asList(1,3,6,4,4,5,7,4,9,0,9);
+        anchorList = Arrays.asList(1, 3, 6, 4, 4, 5, 7, 4, 9, 0, 9);
         config.remove("anchors");
         config.put("anchors", anchorList);
-        
+
         try {
             ypImageSaver.setupImageProcessing(config, SOURCE_NAME, MODEL_DIRECTORY, testAuthToken, testVantiqServer);
         } catch (Exception e) {
             fail("Should not fail with invalid anchors");
-        } 
-        
+        }
+
         // anchorList contains non-numbers
-        anchorList = Arrays.asList(1,3,6,"a",4,5,7,4,9,0);
+        anchorList = Arrays.asList(1, 3, 6, "a", 4, 5, 7, 4, 9, 0);
         config.remove("anchors");
         config.put("anchors", anchorList);
-        
+
         try {
             ypImageSaver.setupImageProcessing(config, SOURCE_NAME, MODEL_DIRECTORY, testAuthToken, testVantiqServer);
         } catch (Exception e) {
             fail("Should not fail with invalid anchors");
-        } 
+        }
     }
 
     @Test
@@ -360,25 +382,25 @@ public class TestYoloProcessor extends NeuralNetTestBase {
                     , e.getMessage().startsWith(YoloProcessor.class.getCanonicalName() + ".invalidImage"));
         }
     }
-    
+
     @Test
     public void testImageSavingWithoutLabels() throws ImageProcessingException {
-        
+
         // Only run test with intended vantiq availability
         assumeTrue(testAuthToken != null && testVantiqServer != null);
         labelTestHelper(false);
-        
+
     }
-    
+
     @Test
     public void testImageSavingWithLabels() throws ImageProcessingException {
-        
+
         // Only run test with intended vantiq availability
         assumeTrue(testAuthToken != null && testVantiqServer != null);
         labelTestHelper(true);
-        
+
     }
-    
+
     // Helper function to test the "labelImage" option
     public void labelTestHelper(Boolean labelOption) throws ImageProcessingException {
         Map config = new LinkedHashMap<>();
@@ -389,13 +411,13 @@ public class TestYoloProcessor extends NeuralNetTestBase {
         config.put("outputDir", OUTPUT_DIR);
         config.put("saveRate", SAVE_RATE);
         config.put("saveImage", "local");
-        
-        if(labelOption) {
+
+        if (labelOption) {
             config.put("labelImage", "true");
         } else {
             config.put("labelImage", "false");
         }
-        
+
         try {
             ypImageSaver.setupImageProcessing(config, SOURCE_NAME, MODEL_DIRECTORY, testAuthToken, testVantiqServer);
         } catch (Exception e) {
@@ -411,31 +433,31 @@ public class TestYoloProcessor extends NeuralNetTestBase {
             NeuralNetResults results = ypImageSaver.processImage(getTestImage());
             assert results != null;
             assert results.getResults() != null;
-            
+
             // Should save first image with timestamp
             assert d.exists();
             assert d.isDirectory();
             assert d.listFiles().length == 1;
             assert d.listFiles()[0].getName().matches(timestampPattern);
-            
+
             try {
                 // Converting original test image to buffered image, since this is how we save images
                 BufferedImage tempOriginal = ImageIO.read(new ByteArrayInputStream(getTestImage()));
                 ByteArrayOutputStream baos = new ByteArrayOutputStream();
                 ImageIO.write(tempOriginal, "jpg", baos);
                 baos.flush();
-                
+
                 // Getting both images as byte arrays and comparing them for equality
-                byte [] originalImg = baos.toByteArray();
-                byte [] savedImg = Files.readAllBytes(d.listFiles()[0].toPath());
-                
+                byte[] originalImg = baos.toByteArray();
+                byte[] savedImg = Files.readAllBytes(d.listFiles()[0].toPath());
+
                 // Based on labelOption, check if they are equal or not equal
                 if (labelOption) {
                     assertFalse("Images should not be identical", Arrays.equals(originalImg, savedImg));
                 } else {
                     assertTrue("Images should be identical", Arrays.equals(originalImg, savedImg));
                 }
-                
+
                 baos.close();
             } catch (IOException e) {
                 fail("Should not catch exception when checking saved image vs. original.");
@@ -452,10 +474,10 @@ public class TestYoloProcessor extends NeuralNetTestBase {
 
     @Test
     public void testImageSavingLocal() throws ImageProcessingException {
-        
+
         // Only run test with intended vantiq availability
         assumeTrue(testAuthToken != null && testVantiqServer != null);
-        
+
         Map config = new LinkedHashMap<>();
         YoloProcessor ypImageSaver = new YoloProcessor();
 
@@ -485,7 +507,7 @@ public class TestYoloProcessor extends NeuralNetTestBase {
             assert d.isDirectory();
             assert d.listFiles().length == 1;
             assert d.listFiles()[0].getName().matches(timestampPattern);
-            
+
             // Check it didn't save to VANTIQ
             vantiqResponse = vantiq.selectOne("system.documents", results.getLastFilename());
             if (vantiqResponse.isSuccess()) {
@@ -501,7 +523,7 @@ public class TestYoloProcessor extends NeuralNetTestBase {
             assert d.exists();
             assert d.isDirectory();
             assert d.listFiles().length == 1;
-            
+
             // Check lastFilename is null, meaning it couldn't have saved in VANTIQ
             assert results.getLastFilename() == null;
 
@@ -516,7 +538,7 @@ public class TestYoloProcessor extends NeuralNetTestBase {
             assert d.listFiles().length == 2;
             assert d.listFiles()[0].getName().matches(timestampPattern);
             assert d.listFiles()[1].getName().matches(timestampPattern);
-            
+
             // Check it didn't save to VANTIQ
             vantiqResponse = vantiq.selectOne("system.documents", results.getLastFilename());
             if (vantiqResponse.isSuccess()) {
@@ -570,7 +592,7 @@ public class TestYoloProcessor extends NeuralNetTestBase {
             assert d.isDirectory();
             assert d.listFiles().length == 1;
             assert d.listFiles()[0].getName().matches(timestampPattern);
-                    
+
             // Checking that image was saved to VANTIQ
             Thread.sleep(1000);
             vantiqResponse = vantiq.selectOne("system.documents", results.getLastFilename());
@@ -583,7 +605,7 @@ public class TestYoloProcessor extends NeuralNetTestBase {
                 }
             }
             vantiqSavedFiles.add(results.getLastFilename());
-            
+
             results = null;
             results = ypImageSaver.processImage(getTestImage());
             assert results != null;
@@ -605,7 +627,7 @@ public class TestYoloProcessor extends NeuralNetTestBase {
             assert d.listFiles().length == 2;
             assert d.listFiles()[0].getName().matches(timestampPattern);
             assert d.listFiles()[1].getName().matches(timestampPattern);
-            
+
             // Checking that image was saved to VANTIQ
             Thread.sleep(1000);
             vantiqResponse = vantiq.selectOne("system.documents", results.getLastFilename());
@@ -665,7 +687,7 @@ public class TestYoloProcessor extends NeuralNetTestBase {
 
             // Should not exist since images are not being saved locally.
             assert !d.exists();
-            
+
             // Checking that image was saved to VANTIQ
             Thread.sleep(1000);
             vantiqResponse = vantiq.selectOne("system.documents", results.getLastFilename());
@@ -678,7 +700,7 @@ public class TestYoloProcessor extends NeuralNetTestBase {
                 }
             }
             vantiqSavedFiles.add(results.getLastFilename());
-            
+
         } finally {
             // delete the directory even if the test fails
             if (d.exists()) {
@@ -693,7 +715,7 @@ public class TestYoloProcessor extends NeuralNetTestBase {
     public void testQuery() throws ImageProcessingException, InterruptedException {
         // Only run test with intended vantiq availability
         assumeTrue(testAuthToken != null && testVantiqServer != null);
-        
+
         Map config = new LinkedHashMap<>();
         YoloProcessor ypImageSaver = new YoloProcessor();
 
@@ -751,7 +773,7 @@ public class TestYoloProcessor extends NeuralNetTestBase {
 
             // Should not have saved the image locally
             assert !dNew.exists();
-            
+
             // Checking that image was saved in VANTIQ
             Thread.sleep(1000);
             vantiqResponse = vantiq.selectOne("system.documents", results.getLastFilename());
@@ -778,7 +800,7 @@ public class TestYoloProcessor extends NeuralNetTestBase {
             assert dNew.isDirectory();
             assert dNew.listFiles().length == 1;
             assert dNew.listFiles()[0].getName().equals(queryOutputFile + ".jpg");
-            
+
             // Checking that image was saved in VANTIQ
             Thread.sleep(1000);
             vantiqResponse = vantiq.selectOne("system.documents", results.getLastFilename());
@@ -790,7 +812,7 @@ public class TestYoloProcessor extends NeuralNetTestBase {
                     }
                 }
             }
-            vantiqSavedFiles.add(results.getLastFilename());            
+            vantiqSavedFiles.add(results.getLastFilename());
 
             // Save with "local" instead of "both", and remove fileName
             request.remove("NNfileName");
@@ -813,7 +835,7 @@ public class TestYoloProcessor extends NeuralNetTestBase {
             } else {
                 assert listOfFiles[0].getName().matches(timestampPattern);
             }
-            
+
             // Checking that image was not saved in VANTIQ
             Thread.sleep(1000);
             vantiqResponse = vantiq.selectOne("system.documents", results.getLastFilename());
@@ -848,55 +870,55 @@ public class TestYoloProcessor extends NeuralNetTestBase {
     String imageResultsAsString = "[{\"confidence\":0.8445639, \"location\":{\"top\":255.70024, \"left\":121.859344, \"bottom\":372.2343, "
             + "\"right\":350.1204}, \"label\":\"keyboard\"}, {\"confidence\":0.7974271, \"location\":{\"top\":91.255974, \"left\":164.41359, "
             + "\"bottom\":275.69666, \"right\":350.50714}, \"label\":\"tvmonitor\"}]";
-    
-    String neuralNetJSON1 = 
-              "{"
-            + "     \"neuralNet\":"
-            + "         {"
-            + "             \"anchors\":[0.57273, 0.677385, 1.87446, 2.06253, 3.33843, 5.47434, 7.88282, 3.52778, 9.77052, 9.16828], "
-            + "             \"pbFile\": \"" + PB_FILE + "\", "
-            + "             \"labelFile\": \"" + LABEL_FILE + "\", "
-            + "             \"metaFile\": \"" + META_FILE + "\", "            
-            + "             \"type\": \"yolo\""
-            + "         }"
-            + "}";
-    
-    String neuralNetJSON2 = 
+
+    String neuralNetJSON1 =
             "{"
-          + "     \"neuralNet\":"
-          + "         {"
-          + "             \"pbFile\": \"" + PB_FILE + "\", "
-          + "             \"metaFile\": \"" + META_FILE + "\", "            
-          + "             \"type\": \"yolo\""
-          + "         }"
-          + "}";
-    
-    String neuralNetJSON3 = 
+                    + "     \"neuralNet\":"
+                    + "         {"
+                    + "             \"anchors\":[0.57273, 0.677385, 1.87446, 2.06253, 3.33843, 5.47434, 7.88282, 3.52778, 9.77052, 9.16828], "
+                    + "             \"pbFile\": \"" + PB_FILE + "\", "
+                    + "             \"labelFile\": \"" + LABEL_FILE + "\", "
+                    + "             \"metaFile\": \"" + META_FILE + "\", "
+                    + "             \"type\": \"yolo\""
+                    + "         }"
+                    + "}";
+
+    String neuralNetJSON2 =
             "{"
-          + "     \"neuralNet\":"
-          + "         {"
-          + "             \"anchors\":[0.57273, 0.677385, 1.87446, 2.06253, 3.33843, 5.47434, 7.88282, 3.52778, 9.77052, 9.16828], "
-          + "             \"pbFile\": \"" + PB_FILE + "\", "
-          + "             \"labelFile\": \"" + LABEL_FILE + "\", "
-          + "             \"type\": \"yolo\""
-          + "         }"
-          + "}";
-    
-    String neuralNetJSON4 = 
+                    + "     \"neuralNet\":"
+                    + "         {"
+                    + "             \"pbFile\": \"" + PB_FILE + "\", "
+                    + "             \"metaFile\": \"" + META_FILE + "\", "
+                    + "             \"type\": \"yolo\""
+                    + "         }"
+                    + "}";
+
+    String neuralNetJSON3 =
             "{"
-          + "     \"neuralNet\":"
-          + "         {"
-          + "             \"pbFile\": \"" + PB_FILE + "\", "
-          + "             \"labelFile\": \"" + LABEL_FILE + "\", "
-          + "             \"type\": \"yolo\""
-          + "         }"
-          + "}";
+                    + "     \"neuralNet\":"
+                    + "         {"
+                    + "             \"anchors\":[0.57273, 0.677385, 1.87446, 2.06253, 3.33843, 5.47434, 7.88282, 3.52778, 9.77052, 9.16828], "
+                    + "             \"pbFile\": \"" + PB_FILE + "\", "
+                    + "             \"labelFile\": \"" + LABEL_FILE + "\", "
+                    + "             \"type\": \"yolo\""
+                    + "         }"
+                    + "}";
+
+    String neuralNetJSON4 =
+            "{"
+                    + "     \"neuralNet\":"
+                    + "         {"
+                    + "             \"pbFile\": \"" + PB_FILE + "\", "
+                    + "             \"labelFile\": \"" + LABEL_FILE + "\", "
+                    + "             \"type\": \"yolo\""
+                    + "         }"
+                    + "}";
 
     List<Map> getExpectedResults() throws JsonParseException, JsonMappingException, IOException {
         ObjectMapper m = new ObjectMapper();
         return m.readValue(imageResultsAsString, List.class);
     }
-    
+
     void verifyProcessing(YoloProcessor ypImageSaver) throws ImageProcessingException {
         NeuralNetResults results = ypImageSaver.processImage(getTestImage());
         assert results != null;
@@ -935,15 +957,15 @@ public class TestYoloProcessor extends NeuralNetTestBase {
 
         return actual.equals(expected);
     }
-    
+
     ExtensionServiceMessage createRealConfig(String neuralNetJSON) throws JsonParseException, JsonMappingException, IOException {
         Map msg = new LinkedHashMap();
         Map object = new LinkedHashMap();
-        
+
         ObjectMapper m = new ObjectMapper();
         object = m.readValue(neuralNetJSON, Map.class);
         msg.put("object", object);
-        
+
         ExtensionServiceMessage message = new ExtensionServiceMessage("").fromMap(msg);
         return message;
     }
