@@ -100,6 +100,12 @@ applicationDistribution.from("src/main/resources") {
     into "logConfig"
 }
 
+test {
+    // set heap size for the test JVM(s)
+    minHeapSize = "2048m"
+    maxHeapSize = "2048m"
+}
+
 tasks.withType(Test) {
     def os = org.gradle.internal.os.OperatingSystem.current()
     if (os.isWindows()) {
