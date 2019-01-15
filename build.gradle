@@ -9,12 +9,13 @@ buildscript {
 }
 
 plugins {
+    id 'io.franzbecker.gradle-lombok' version '1.14' apply false
     id 'pl.allegro.tech.build.axion-release' version '1.6.0'
     id 'jacoco'
 }
 
-task wrapper(type: Wrapper) {
-    gradleVersion = '3.5'
+wrapper {
+    gradleVersion = '5.0'
     distributionUrl = "https://services.gradle.org/distributions/gradle-$gradleVersion-all.zip"
 }
 
@@ -42,7 +43,7 @@ ext {
     eclipseMiloVersion = '0.2.1'
 }
 
-\
+
 // Add idea support in root project to get around bug in Scala plugin
 apply plugin: 'idea'
 
