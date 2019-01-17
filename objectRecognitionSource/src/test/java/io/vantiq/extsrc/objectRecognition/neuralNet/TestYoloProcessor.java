@@ -49,7 +49,7 @@ import okhttp3.Response;
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
 public class TestYoloProcessor extends NeuralNetTestBase {
 
-    static final String COCO_MODEL_VERSION = "1.1";
+    static final String COCO_MODEL_VERSION = "1.2";
     static final String LABEL_FILE = "coco-" + COCO_MODEL_VERSION + ".names";
     static final String PB_FILE = "coco-" + COCO_MODEL_VERSION + ".pb";
     static final String META_FILE = "coco-" + COCO_MODEL_VERSION + ".meta";
