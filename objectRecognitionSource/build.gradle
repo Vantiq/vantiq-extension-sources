@@ -181,6 +181,10 @@ configurations {
     oldYoloNames
 }
 
+ext {
+    currentCocoVersion = 1.2
+}
+
 dependencies {
     compile project(':extjsdk')
     
@@ -209,9 +213,9 @@ dependencies {
 
 
     testRuntime "vantiq.testArtifacts:sampleVideo:1.0@mov"
-    testRuntime "vantiq.models:coco:1.1@meta"
-    testRuntime "vantiq.models:coco:1.1@names"
-    testRuntime "vantiq.models:coco:1.1@pb"
+    testRuntime "vantiq.models:coco:${currentCocoVersion}@meta"
+    testRuntime "vantiq.models:coco:${currentCocoVersion}@names"
+    testRuntime "vantiq.models:coco:${currentCocoVersion}@pb"
 
     oldYoloNames "vantiq.models:coco:1.0@pb"
     oldYoloNames "vantiq.models:coco:1.0@names"
@@ -249,9 +253,9 @@ dependencies {
 }
 
 task copyModels(type: Copy, dependsOn: configurations.testRuntime) {
-    from configurations.testRuntime.find { it.name == "coco-1.1.pb" },
-        configurations.testRuntime.find { it.name == "coco-1.1.names" },
-        configurations.testRuntime.find { it.name == "coco-1.1.meta" }
+    from configurations.testRuntime.find { it.name == "coco-${currentCocoVersion}.pb" },
+        configurations.testRuntime.find { it.name == "coco-${currentCocoVersion}.names" },
+        configurations.testRuntime.find { it.name == "coco-${currentCocoVersion}.meta" }
 
     into "$buildDir/models/"
 }
