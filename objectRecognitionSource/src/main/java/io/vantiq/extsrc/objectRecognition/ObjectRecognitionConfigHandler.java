@@ -116,6 +116,7 @@ public class ObjectRecognitionConfigHandler extends Handler<ExtensionServiceMess
      * getCanonicalName() so that the classes can be removed without requiring code edits
      */
     final String YOLO_PROCESSOR_FQCN        = "io.vantiq.extsrc.objectRecognition.neuralNet.YoloProcessor";
+    final String NO_PROCESSOR_FQCN          = "io.vantiq.extsrc.objectRecognition.neuralNet.NoProcessor";
     final String DEFAULT_NEURAL_NET         = "io.vantiq.extsrc.objectRecognition.neuralNet.DefaultProcessor";
     
     /**
@@ -202,6 +203,8 @@ public class ObjectRecognitionConfigHandler extends Handler<ExtensionServiceMess
             neuralNetType = (String) neuralNetConfig.get("type");
             if (neuralNetType.equals("yolo")) {
                 neuralNetType = YOLO_PROCESSOR_FQCN;
+            } else if (neuralNetType.equals("none")) {
+                neuralNetType = NO_PROCESSOR_FQCN;
             } else if (neuralNetType.equals("default")) {
                 neuralNetType = DEFAULT_NEURAL_NET;
             }
