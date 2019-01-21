@@ -52,9 +52,6 @@ public class TestNoProcessor extends NeuralNetTestBase {
     @BeforeClass
     public static void classSetup() {
         noProcessor = new NoProcessor();
-        
-        testAuthToken = "-YyPeih6BkZoQoVa5tUT3cMZ4DXaWs7M6hg26WEdU88=";
-        testVantiqServer = "https://dev.vantiq.com";
 
         Map<String, Object> config = new LinkedHashMap<>();
         noProcessor.setupImageProcessing(config, SOURCE_NAME, MODEL_DIRECTORY, testAuthToken, testVantiqServer);
