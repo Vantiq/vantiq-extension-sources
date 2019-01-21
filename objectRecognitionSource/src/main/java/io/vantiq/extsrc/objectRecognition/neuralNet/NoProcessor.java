@@ -39,6 +39,7 @@ public class NoProcessor implements NeuralNetInterface {
     ImageUtil imageUtil;
     int saveRate = 1;
     int frameCount = 0;
+    int fileCount = 0; // Used for saving files with same name
 
     @Override
     public void setupImageProcessing(Map<String, ?> neuralNetConfig, String sourceName, String modelDirectory, String authToken, String server) {
@@ -88,12 +89,16 @@ public class NoProcessor implements NeuralNetInterface {
         if (imageUtil.saveImage && ++frameCount >= saveRate) {
             Date now = new Date(); // Saves the time before
             BufferedImage buffImage = imageUtil.createImageFromBytes(image);
-            String fileName = format.format(now) + ".jpg";
+            String fileName = format.format(now);
+            if (lastFilename != null && lastFilename.contains(fileName)) {
+                fileName = fileName + "(" + ++fileCount + ").jpg";
+            } else {
+                fileName = fileName + ".jpg";
+                fileCount = 0;
+            }
             lastFilename = fileName;
             imageUtil.saveImage(buffImage, fileName);
             frameCount = 0;
-        } else {
-            lastFilename = null;
         }
         return null;
     }
@@ -124,6 +129,9 @@ public class NoProcessor implements NeuralNetInterface {
                 }
                 if (request.get("NNfileName") instanceof String) {
                     fileName = (String) request.get("NNfileName");
+                    if (!fileName.endsWith(".jpg")) {
+                        fileName = fileName + ".jpg";
+                    }
                 }
                 queryImageUtil.outputDir = outputDir;
                 queryImageUtil.vantiq = vantiq;
@@ -141,7 +149,7 @@ public class NoProcessor implements NeuralNetInterface {
                 fileName = format.format(now) + ".jpg";
             }
             lastFilename = fileName;
-            imageUtil.saveImage(buffImage, fileName);
+            queryImageUtil.saveImage(buffImage, fileName);
         } else {
             lastFilename = null;
         }
