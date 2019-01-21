@@ -31,7 +31,7 @@ import java.util.List;
 import java.util.Map;
 
 import static edu.ml.tensorflow.Config.MEAN;
-import static edu.ml.tensorflow.Config.SIZE;
+import static edu.ml.tensorflow.Config.FRAME_SIZE;
 
 /**
  * ObjectDetector class to detect objects using pre-trained models with TensorFlow Java API.
@@ -282,7 +282,7 @@ public class ObjectDetector {
                                                     graphBuilder.constant("input", new byte[0]), 3),
                                             Float.class),
                                     graphBuilder.constant("make_batch", 0)),
-                            graphBuilder.constant("size", new int[]{SIZE, SIZE})),
+                            graphBuilder.constant("size", new int[]{FRAME_SIZE, FRAME_SIZE})),
                     graphBuilder.constant("scale", MEAN));
         normalizerInputName = "input";
         normalizerOutputName = output.op().name();
@@ -317,8 +317,8 @@ public class ObjectDetector {
         	map.put("label", recognition.getTitle());
         	map.put("confidence", recognition.getConfidence());
         	
-        	float scaleX = (float) buffImage.getWidth() / (float) SIZE;
-            float scaleY = (float) buffImage.getHeight() / (float) SIZE;
+        	float scaleX = (float) buffImage.getWidth() / (float) FRAME_SIZE;
+            float scaleY = (float) buffImage.getHeight() / (float) FRAME_SIZE;
         	
         	HashMap location = new HashMap();
         	location.put("left", recognition.getScaledLocation(scaleX, scaleY).getLeft());
