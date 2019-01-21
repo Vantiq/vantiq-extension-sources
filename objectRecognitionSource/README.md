@@ -39,6 +39,8 @@ Additionally, an example VANTIQ project named *objRecExample.zip* can be found i
     *   [YOLO Processor](#yoloNet) -- An implementation of the [You Only Look Once](https://pjreddie.com/darknet/yolo/)
         (YOLO) object detection software using Java Tensorflow.
     * [YOLO Models Available](#modelFiles)
+    * [No Processor](#noNet) -- An implementation of the interface used only to **save** images. This implementation does 
+    **no** image processing.
 *   [ImageRetrieverResults](#msgFormat) -- A class that holds the data passed back by image retriever implementations.
 *   [ImageRetrieverInterface](#retrieveInterface) -- An interface that allows different image retrieval mechanisms to be
         more easily integrated without changes to the rest of the code.
@@ -199,7 +201,7 @@ configuration options](#yoloNet). The ones that are the same across all implemen
 *   type: Optional. Can be one of three situations
     1.  The fully qualified class name of an implementation of NeuralNetInterface, e.g.
         "io.vantiq.extsrc.objectRecognition.neuralNet.YoloProcessor".
-    2.  The short name of one of the standard implementations, i.e. one of "[yolo](#yoloNet)" or
+    2.  The short name of one of the standard implementations, i.e. one of "[yolo](#yoloNet)", "[none](#noNet)" or
         "[default](#defaultNet)".
     3.  Empty, in which case the program will try to find an implementation with the name "DefaultProcessor" in
         the `io.vantiq.objectRecognition.neuralNet` package. This implementation is not provided, and must be written by
@@ -462,9 +464,7 @@ The options are as follows. Remember to prepend "NN" when using an option in a Q
     * Example: `"anchors": [0.57273, 0.677385, 1.87446, 2.06253, 3.33843, 5.47434, 7.88282, 3.52778, 9.77052, 9.16828]`
 *   outputDir: Optional. Config and Query. The directory in which the images (object boxes included) will be placed.
     Images will be saved as "&lt;year&gt;-&lt;month&gt;-&lt;day&gt;--&lt;hour&gt;-&lt;minute&gt;-&lt;second&gt;.jpg"
-    where each value will zero-filled if necessary, e.g. "2018-08-14--06-30-22.jpg". For non-Queries, no images will
-    be saved if not set. For Queries, either this must be set in the Query, or this must be set in the config and
-    fileName must be set in the Query for images to be saved.
+    where each value will zero-filled if necessary, e.g. "2018-08-14--06-30-22.jpg".
 *   fileName: Optional. Query only. The name of the file that will be saved. Defaults to
     "&lt;year&gt;-&lt;month&gt;-&lt;day&gt;--&lt;hour&gt;-&lt;minute&gt;-&lt;second&gt;.jpg" if not set.
 *   saveRate: Optional. Config only. The rate at which images will be saved, once every n frames captured. Default is
@@ -504,6 +504,24 @@ These files are now fetched from an Amazon S3-based maven repository, and will b
 
 Previously, `yolo.pb` file was downloaded as part of the build, but the `coco.names` file was stored in Git.  That file is still in git (but likely to be removed soon).  We now obtain all the model files from the same place -- so none of this information will be in Git.  Keeping the information together is a safer way to go about things.
 
+### <a name="noNet" id="noNet"></a>No Processor
+
+The purpose of this implementation of the Neural Net Interface is to save images without doing any processing. This allows a 
+user to capture frames from their video or image source, and save them with VANTIQ, locally, or both. There is absolutely **no 
+processing** done to the captured frames, they are saved as is.
+
+The Extension Source can be setup for polling, for queries, or for both.
+
+*   outputDir: Optional. Config and Query. The directory in which the images (object boxes included) will be placed.
+    Images will be saved as "&lt;year&gt;-&lt;month&gt;-&lt;day&gt;--&lt;hour&gt;-&lt;minute&gt;-&lt;second&gt;.jpg"
+    where each value will zero-filled if necessary, e.g. "2018-08-14--06-30-22.jpg". If pollTime is set under 1000 (1 
+    second), images with the same name will be followed by a count in parentheses, e.g. "2018-08-14--06-30-22(1).jpg", "2018-
+    08-14--06-30-22(2).jpg".
+*   fileName: Optional. Query only. The name of the file that will be saved. Defaults to
+    "&lt;year&gt;-&lt;month&gt;-&lt;day&gt;--&lt;hour&gt;-&lt;minute&gt;-&lt;second&gt;.jpg" if not set. As stated above, 
+    redundant filenames will be followed by a count in parentheses.
+*   saveRate: Optional. Config only. The rate at which images will be saved, once every n frames captured. Default is
+    every frame captured when unset or a non-positive number. Does nothing if outputDir is not set at config.
 
 ## Testing<a name="testing" id="testing"></a>
     
