@@ -90,6 +90,7 @@ public class NoProcessor implements NeuralNetInterface {
             Date now = new Date(); // Saves the time before
             BufferedImage buffImage = imageUtil.createImageFromBytes(image);
             String fileName = format.format(now);
+            // If filename is same as previous name, add parentheses containing the count
             if (lastFilename != null && lastFilename.contains(fileName)) {
                 fileName = fileName + "(" + ++fileCount + ").jpg";
             } else {
