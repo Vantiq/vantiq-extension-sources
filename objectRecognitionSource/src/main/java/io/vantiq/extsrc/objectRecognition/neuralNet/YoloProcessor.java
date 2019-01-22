@@ -30,7 +30,7 @@ import io.vantiq.client.Vantiq;
  * with the bounding boxes drawn.
  * <br>
  * The standard implementation expects a net trained on 416x416 images, and automatically resizes images to those
- * dimensions. If different dimensions are required, then changing {@code edu.ml.tensorflow.Config.SIZE} to the correct
+ * dimensions. If different dimensions are required, then changing {@code edu.ml.tensorflow.Config.FRAME_SIZE} to the correct
  * dimension will change the dimensions of the image sent to the neural net. The dimensions will still be a square.
  * <br>
  * Unique settings are: 

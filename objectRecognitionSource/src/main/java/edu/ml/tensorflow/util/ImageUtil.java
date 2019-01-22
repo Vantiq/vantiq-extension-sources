@@ -35,8 +35,8 @@ public class ImageUtil {
      * @param recognitions  list of recognized objects
      */
     public BufferedImage labelImage(BufferedImage bufferedImage, final List<Recognition> recognitions) {
-        float scaleX = (float) bufferedImage.getWidth() / (float) Config.SIZE;
-        float scaleY = (float) bufferedImage.getHeight() / (float) Config.SIZE;
+        float scaleX = (float) bufferedImage.getWidth() / (float) Config.FRAME_SIZE;
+        float scaleY = (float) bufferedImage.getHeight() / (float) Config.FRAME_SIZE;
         Graphics2D graphics = (Graphics2D) bufferedImage.getGraphics();
 
         for (Recognition recognition: recognitions) {
