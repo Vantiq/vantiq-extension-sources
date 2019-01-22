@@ -30,9 +30,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import static edu.ml.tensorflow.Config.MEAN;
-import static edu.ml.tensorflow.Config.FRAME_SIZE;
-
 /**
  * ObjectDetector class to detect objects using pre-trained models with TensorFlow Java API.
  */
@@ -45,6 +42,11 @@ public class ObjectDetector {
     // "year-month-date-hour-minute-seconds"
     private static SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd--HH-mm-ss");
     
+    // Getting meta config options for YOLO Processor
+    private MetaBasedConfig metaConfigOptions = new MetaBasedConfig();
+    private final float MEAN = metaConfigOptions.mean;
+    private int frameSize;
+    
     private ImageUtil imageUtil;
     private int saveRate = 0;
     private Boolean labelImage;
@@ -53,8 +55,7 @@ public class ObjectDetector {
     private Vantiq vantiq = null;
     private String sourceName = null;
     private double[] anchorArray;
-    private Map<String,Object> metaFileMap;
-    
+    private Map<String,Object> metaFileMap;    
     
     private Graph yoloGraph;
     private Session yoloSession;
@@ -88,10 +89,20 @@ public class ObjectDetector {
             Boolean labelImage, int saveRate, Vantiq vantiq, String sourceName) {
         try {
             graph_def = IOUtil.readAllBytesOrExit(graphFile);
-            // Parse meta file if it exists
+            // Parse meta file if it exists, and get all general information we need
             if (metaFile != null) {
                 parseMetaFile(metaFile);
+                int frameHeight = (int) ((Map<String,Object>) metaFileMap.get("net")).get("height");
+                int frameWidth = (int) ((Map<String,Object>) metaFileMap.get("net")).get("width");
+                // Check that meta file has appropriate frame size, and that user has not overwritten frame size in Config
+                if (frameHeight == frameWidth && frameHeight % 32 == 0 && metaConfigOptions.useMeta) {
+                    // Set config value to the .meta file's frame size
+                    metaConfigOptions.frameSize = frameHeight;
+                }
             }
+            // 
+            this.frameSize = metaConfigOptions.frameSize;
+
             // If label file exists, use it. Otherwise, use the meta file's labels.
             if (labelFile != null) {
                 labels = IOUtil.readAllLinesOrExit(labelFile);
@@ -154,7 +165,7 @@ public class ObjectDetector {
     public List<Map<String, ?>> detect(final byte[] image) {
         try (Tensor<Float> normalizedImage = normalizeImage(image)) {
             Date now = new Date(); // Saves the time before
-            List<Recognition> recognitions = YOLOClassifier.getInstance(threshold, anchorArray).classifyImage(executeYOLOGraph(normalizedImage), labels);
+            List<Recognition> recognitions = YOLOClassifier.getInstance(threshold, anchorArray, frameSize).classifyImage(executeYOLOGraph(normalizedImage), labels);
             BufferedImage buffImage = imageUtil.createImageFromBytes(image);
             
             // Saves an image every saveRate frames
@@ -195,7 +206,7 @@ public class ObjectDetector {
     public List<Map<String, ?>> detect(final byte[] image, String outputDir, String fileName, Vantiq vantiq) {
         try (Tensor<Float> normalizedImage = normalizeImage(image)) {
             Date now = new Date(); // Saves the time before
-            List<Recognition> recognitions = YOLOClassifier.getInstance(threshold, anchorArray).classifyImage(executeYOLOGraph(normalizedImage), labels);
+            List<Recognition> recognitions = YOLOClassifier.getInstance(threshold, anchorArray, frameSize).classifyImage(executeYOLOGraph(normalizedImage), labels);
             BufferedImage buffImage = imageUtil.createImageFromBytes(image);
             
             // Saves an image if requested
@@ -282,7 +293,7 @@ public class ObjectDetector {
                                                     graphBuilder.constant("input", new byte[0]), 3),
                                             Float.class),
                                     graphBuilder.constant("make_batch", 0)),
-                            graphBuilder.constant("size", new int[]{FRAME_SIZE, FRAME_SIZE})),
+                            graphBuilder.constant("size", new int[]{frameSize, frameSize})),
                     graphBuilder.constant("scale", MEAN));
         normalizerInputName = "input";
         normalizerOutputName = output.op().name();
@@ -299,7 +310,7 @@ public class ObjectDetector {
         // Reusing the same session reduces runtime significantly (by ~13x on the developer's computer)
         try(Tensor<Float> result =
                 yoloSession.runner().feed("input", 0, image).fetch("output").run().get(0).expect(Float.class)) {
-            float[] outputTensor = new float[YOLOClassifier.getInstance(threshold, anchorArray).getOutputSizeByShape(result)];
+            float[] outputTensor = new float[YOLOClassifier.getInstance(threshold, anchorArray, frameSize).getOutputSizeByShape(result)];
             FloatBuffer floatBuffer = FloatBuffer.wrap(outputTensor);
             result.writeTo(floatBuffer);
             return outputTensor;
@@ -317,8 +328,8 @@ public class ObjectDetector {
         	map.put("label", recognition.getTitle());
         	map.put("confidence", recognition.getConfidence());
         	
-        	float scaleX = (float) buffImage.getWidth() / (float) FRAME_SIZE;
-            float scaleY = (float) buffImage.getHeight() / (float) FRAME_SIZE;
+        	float scaleX = (float) buffImage.getWidth() / (float) frameSize;
+            float scaleY = (float) buffImage.getHeight() / (float) frameSize;
         	
         	HashMap location = new HashMap();
         	location.put("left", recognition.getScaledLocation(scaleX, scaleY).getLeft());
