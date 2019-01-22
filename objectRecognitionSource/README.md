@@ -39,7 +39,7 @@ Additionally, an example VANTIQ project named *objRecExample.zip* can be found i
     *   [YOLO Processor](#yoloNet) -- An implementation of the [You Only Look Once](https://pjreddie.com/darknet/yolo/)
         (YOLO) object detection software using Java Tensorflow.
     * [YOLO Models Available](#modelFiles)
-    * [No Processor](#noNet) -- An implementation of the interface used only to **save** images. This implementation does 
+    * [No Processor](#noNet) -- An implementation of the interface used just to **save** images. This implementation does 
     **no** image processing.
 *   [ImageRetrieverResults](#msgFormat) -- A class that holds the data passed back by image retriever implementations.
 *   [ImageRetrieverInterface](#retrieveInterface) -- An interface that allows different image retrieval mechanisms to be
@@ -506,17 +506,17 @@ Previously, `yolo.pb` file was downloaded as part of the build, but the `coco.na
 
 ### <a name="noNet" id="noNet"></a>No Processor
 
-The purpose of this implementation of the Neural Net Interface is to save images without doing any processing. This allows a 
-user to capture frames from their video or image source, and save them with VANTIQ, locally, or both. There is absolutely **no 
-processing** done to the captured frames, they are saved as is.
+The purpose of this implementation of the Neural Net Interface is to save images without doing any neural net processing. This allows a 
+user to capture frames from their video or image source, and save them with VANTIQ, locally, or both. There is **no 
+processing** done to the captured frames, they are saved as captured from the camera.
 
 The Extension Source can be setup for polling, for queries, or for both.
 
 *   outputDir: Optional. Config and Query. The directory in which the images (object boxes included) will be placed.
     Images will be saved as "&lt;year&gt;-&lt;month&gt;-&lt;day&gt;--&lt;hour&gt;-&lt;minute&gt;-&lt;second&gt;.jpg"
     where each value will zero-filled if necessary, e.g. "2018-08-14--06-30-22.jpg". If pollTime is set under 1000 (1 
-    second), images with the same name will be followed by a count in parentheses, e.g. "2018-08-14--06-30-22(1).jpg", "2018-
-    08-14--06-30-22(2).jpg".
+    second), images with the same name, (*i.e.* captured in the same second), will be followed by a count in parentheses, e.g. 
+    "2018-08-14--06-30-22(1).jpg", "2018-08-14--06-30-22(2).jpg".
 *   fileName: Optional. Query only. The name of the file that will be saved. Defaults to
     "&lt;year&gt;-&lt;month&gt;-&lt;day&gt;--&lt;hour&gt;-&lt;minute&gt;-&lt;second&gt;.jpg" if not set. As stated above, 
     redundant filenames will be followed by a count in parentheses.
