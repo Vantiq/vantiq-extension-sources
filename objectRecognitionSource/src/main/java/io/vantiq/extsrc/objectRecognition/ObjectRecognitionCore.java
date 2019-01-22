@@ -299,7 +299,7 @@ public class ObjectRecognitionCore {
                 if (neuralNet == null) { // Should only happen when close() runs just before sendDataFromImage()
                     return;
                 }
-                NeuralNetResults results = neuralNet.processImage(image);         
+                NeuralNetResults results = neuralNet.processImage(image);
                 
                 // Don't send any data if using NoProcessor
                 if (!neuralNet.getClass().toString().contains("NoProcessor")) {
