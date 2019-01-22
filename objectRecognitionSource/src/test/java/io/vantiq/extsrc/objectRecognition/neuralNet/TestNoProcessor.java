@@ -392,7 +392,7 @@ public class TestNoProcessor extends NeuralNetTestBase {
             request.put("NNoutputDir", queryOutputDir);
             results = null;
             results = npProcessor.processImage(getTestImage(), request);
-            assert results.getResults().isEmpty();assert results.getResults().isEmpty();assert results.getResults().isEmpty();
+            assert results.getResults().isEmpty();
 
             // Should not have saved the image
             assert !dNew.exists();
