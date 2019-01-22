@@ -46,7 +46,7 @@ public class TestNoProcessor extends NeuralNetTestBase {
     static List<String> vantiqSavedFiles = new ArrayList<>();
 
     static final String timestampPattern = "\\d{4}-\\d{2}-\\d{2}--\\d{2}-\\d{2}-\\d{2}\\.jpg";
-    static final String sameTimestampPattern = "\\d{4}-\\d{2}-\\d{2}--\\d{2}-\\d{2}-\\d{2}\\(\\d{1}\\)\\.jpg";
+    static final String sameTimestampPattern = "\\d{4}-\\d{2}-\\d{2}--\\d{2}-\\d{2}-\\d{2}\\(\\d+\\)\\.jpg";
 
     // A single processor is used for the entire class because it is very expensive to do initial setup
     @BeforeClass
@@ -190,7 +190,7 @@ public class TestNoProcessor extends NeuralNetTestBase {
             assert d.isDirectory();
             assert d.listFiles().length == 2;
             assert d.listFiles()[0].getName().matches(timestampPattern) || d.listFiles()[0].getName().matches(sameTimestampPattern);
-            assert d.listFiles()[1].getName().matches(timestampPattern) || d.listFiles()[0].getName().matches(sameTimestampPattern);
+            assert d.listFiles()[1].getName().matches(timestampPattern) || d.listFiles()[1].getName().matches(sameTimestampPattern);
 
             // Check it didn't save to VANTIQ
             lastFilename = "objectRecognition/" + SOURCE_NAME + '/' + npProcessor.lastFilename;

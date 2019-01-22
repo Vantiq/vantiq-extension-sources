@@ -10,7 +10,9 @@ package io.vantiq.extsrc.objectRecognition.neuralNet;
 
 import java.awt.image.BufferedImage;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
 import java.util.Map;
 
 import org.slf4j.Logger;
@@ -101,7 +103,8 @@ public class NoProcessor implements NeuralNetInterface {
             imageUtil.saveImage(buffImage, fileName);
             frameCount = 0;
         }
-        return null;
+        NeuralNetResults emptyResults = new NeuralNetResults();
+        return emptyResults;
     }
 
     // Does no processing, just saves images
@@ -155,8 +158,10 @@ public class NoProcessor implements NeuralNetInterface {
             lastFilename = null;
         }
         
-        
-        return null;
+        NeuralNetResults emptyResults = new NeuralNetResults();
+        List emptyList = new ArrayList();
+        emptyResults.setResults(emptyList);
+        return emptyResults;
     }
 
     @Override

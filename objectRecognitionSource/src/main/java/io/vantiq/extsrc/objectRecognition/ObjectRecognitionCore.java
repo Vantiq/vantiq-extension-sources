@@ -299,10 +299,10 @@ public class ObjectRecognitionCore {
                 if (neuralNet == null) { // Should only happen when close() runs just before sendDataFromImage()
                     return;
                 }
-                NeuralNetResults results = neuralNet.processImage(image);
+                NeuralNetResults results = neuralNet.processImage(image);         
                 
-                // Don't send any data if results are null (for NoProcessor)
-                if (results != null) {
+                // Don't send any data if using NoProcessor
+                if (!neuralNet.getClass().toString().contains("NoProcessor")) {
                     // Translate the results from the neural net and image into a message to send back 
                     Map message = createMapFromResults(imageResults, results);
                     client.sendNotification(message);
@@ -353,17 +353,14 @@ public class ObjectRecognitionCore {
                }
                NeuralNetResults results = neuralNet.processImage(image, request);
                
-               // Don't send any data if results are null (for NoProcessor)
-               if (results != null) {
-                   // Send the normal message as the response if requested, otherwise just send the data 
-                   if (request.get("sendFullResponse") instanceof Boolean && (Boolean) request.get("sendFullResponse")) {
-                       Map response = createMapFromResults(imageResults, results);
-                       client.sendQueryResponse(200, replyAddress, response);
-                   } else if (results.getResults().isEmpty()) {
-                       client.sendQueryResponse(204, replyAddress, new LinkedHashMap<>());
-                   } else {
-                       client.sendQueryResponse(200, replyAddress, results.getResults().toArray(new Map[0]));
-                   }
+               // Send the normal message as the response if requested, otherwise just send the data 
+               if (request.get("sendFullResponse") instanceof Boolean && (Boolean) request.get("sendFullResponse")) {
+                   Map response = createMapFromResults(imageResults, results);
+                   client.sendQueryResponse(200, replyAddress, response);
+               } else if (results.getResults().isEmpty()) {
+                   client.sendQueryResponse(204, replyAddress, new LinkedHashMap<>());
+               } else {
+                   client.sendQueryResponse(200, replyAddress, results.getResults().toArray(new Map[0]));
                }
            }
        } catch (ImageProcessingException e) {
