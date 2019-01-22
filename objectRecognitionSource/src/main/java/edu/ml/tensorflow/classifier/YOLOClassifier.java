@@ -75,7 +75,7 @@ public class YOLOClassifier {
         PriorityQueue<Recognition> priorityQueue = new PriorityQueue(MAX_RECOGNIZED_CLASSES, new RecognitionComparator());
 
         int offset = 0;
-        for (int cy=0; cy<GRID_SIZE; cy++) {        // SIZE * SIZE cells
+        for (int cy=0; cy<GRID_SIZE; cy++) {        // GRID_SIZE * GRID_SIZE cells
             for (int cx=0; cx<GRID_SIZE; cx++) {
                 for (int b=0; b<NUMBER_OF_BOUNDING_BOX; b++) {   // 5 bounding boxes per each cell
                     boundingBoxPerCell[cx][cy][b] = getModel(tensorFlowOutput, cx, cy, b, numClass, offset);
