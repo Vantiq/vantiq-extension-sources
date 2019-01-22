@@ -301,9 +301,12 @@ public class ObjectRecognitionCore {
                 }
                 NeuralNetResults results = neuralNet.processImage(image);
                 
-                // Translate the results from the neural net and image into a message to send back 
-                Map message = createMapFromResults(imageResults, results);
-                client.sendNotification(message);
+                // Don't send any data if using NoProcessor
+                if (!neuralNet.getClass().toString().contains("NoProcessor")) {
+                    // Translate the results from the neural net and image into a message to send back 
+                    Map message = createMapFromResults(imageResults, results);
+                    client.sendNotification(message);
+                }
             }
         } catch (ImageProcessingException e) {
             log.warn("Could not process image", e);
