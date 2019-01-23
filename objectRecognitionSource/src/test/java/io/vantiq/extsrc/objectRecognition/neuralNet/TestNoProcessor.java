@@ -156,7 +156,7 @@ public class TestNoProcessor extends NeuralNetTestBase {
 
             // Should not return any results, just saving image
             NeuralNetResults results = npProcessor.processImage(getTestImage());
-            assert results == null;
+            assert results.getResults() == null;
 
             // Should save first image with timestamp
             assert d.exists();
@@ -173,7 +173,7 @@ public class TestNoProcessor extends NeuralNetTestBase {
 
             results = null;
             results = npProcessor.processImage(getTestImage());
-            assert results == null;
+            assert results.getResults() == null;
 
             // Every other so second should not save
             assert d.exists();
@@ -183,7 +183,7 @@ public class TestNoProcessor extends NeuralNetTestBase {
             
             results = null;
             results = npProcessor.processImage(getTestImage());
-            assert results == null;
+            assert results.getResults() == null;
 
             // Every other so third and first should be saved
             assert d.exists();
@@ -233,7 +233,7 @@ public class TestNoProcessor extends NeuralNetTestBase {
             }
 
             NeuralNetResults results = npProcessor.processImage(getTestImage());
-            assert results == null;
+            assert results.getResults() == null;
 
             // Should save first image with timestamp
             assert d.exists();
@@ -257,7 +257,7 @@ public class TestNoProcessor extends NeuralNetTestBase {
 
             results = null;
             results = npProcessor.processImage(getTestImage());
-            assert results == null;
+            assert results.getResults() == null;
 
             // Every other so second should not save
             assert d.exists();
@@ -266,7 +266,7 @@ public class TestNoProcessor extends NeuralNetTestBase {
 
             results = null;
             results = npProcessor.processImage(getTestImage());
-            assert results == null;
+            assert results.getResults() == null;
 
             // Every other so third and first should be saved
             assert d.exists();
@@ -324,7 +324,7 @@ public class TestNoProcessor extends NeuralNetTestBase {
             }
 
             NeuralNetResults results = npProcessor.processImage(getTestImage());
-            assert results == null;
+            assert results.getResults() == null;
 
             // Should not exist since images are not being saved locally.
             assert !d.exists();
@@ -382,7 +382,7 @@ public class TestNoProcessor extends NeuralNetTestBase {
 
             Map request = new LinkedHashMap<>();
             NeuralNetResults results = npProcessor.processImage(getTestImage(), request);
-            assert results == null;
+            assert results.getResults().isEmpty();
 
             // Should not have saved image
             assert !d.exists();
@@ -392,7 +392,7 @@ public class TestNoProcessor extends NeuralNetTestBase {
             request.put("NNoutputDir", queryOutputDir);
             results = null;
             results = npProcessor.processImage(getTestImage(), request);
-            assert results == null;
+            assert results.getResults().isEmpty();
 
             // Should not have saved the image
             assert !dNew.exists();
@@ -403,7 +403,7 @@ public class TestNoProcessor extends NeuralNetTestBase {
             request.put("NNfileName", queryOutputFileVantiq);
             results = null;
             results = npProcessor.processImage(getTestImage(), request);
-            assert results == null;
+            assert results.getResults().isEmpty();
 
             // Should not have saved the image locally
             assert !dNew.exists();
@@ -427,7 +427,7 @@ public class TestNoProcessor extends NeuralNetTestBase {
             request.put("NNoutputDir", queryOutputDir);
             results = null;
             results = npProcessor.processImage(getTestImage(), request);
-            assert results == null;
+            assert results.getResults().isEmpty();
 
             // Should have saved the image at queryOutputFile + ".jpg"
             assert dNew.exists();
@@ -455,7 +455,7 @@ public class TestNoProcessor extends NeuralNetTestBase {
             request.put("NNsaveImage", "local");
             results = null;
             results = npProcessor.processImage(getTestImage(), request);
-            assert results == null;
+            assert results.getResults().isEmpty();
 
             // Should be saved with a timestamp
             assert dNew.exists();
@@ -482,7 +482,7 @@ public class TestNoProcessor extends NeuralNetTestBase {
             request.put("NNfileName", queryOutputFile);
             results = null;
             results = npProcessor.processImage(getTestImage(), request);
-            assert results == null;
+            assert results.getResults().isEmpty();
 
             assert dNew.listFiles().length == 3;
 
