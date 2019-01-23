@@ -43,7 +43,7 @@ public class ObjectDetector {
     private static SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd--HH-mm-ss");
     
     // Getting meta config options for YOLO Processor
-    private MetaBasedConfig metaConfigOptions = new MetaBasedConfig();
+    public MetaBasedConfig metaConfigOptions = new MetaBasedConfig();
     private final float MEAN = metaConfigOptions.mean;
     private int frameSize;
     
@@ -95,7 +95,7 @@ public class ObjectDetector {
                 int frameHeight = (int) ((Map<String,Object>) metaFileMap.get("net")).get("height");
                 int frameWidth = (int) ((Map<String,Object>) metaFileMap.get("net")).get("width");
                 // Check that meta file has appropriate frame size, and that user has not overwritten frame size in Config
-                if (frameHeight == frameWidth && frameHeight % 32 == 0 && metaConfigOptions.useMeta) {
+                if (frameHeight == frameWidth && frameHeight % 32 == 0 && metaConfigOptions.useMetaIfAvailable) {
                     // Set config value to the .meta file's frame size
                     metaConfigOptions.frameSize = frameHeight;
                 }

@@ -70,6 +70,9 @@ public class TestYoloProcessor extends NeuralNetTestBase {
     @BeforeClass
     public static void classSetup() {
         ypJson = new YoloProcessor();
+        
+        testAuthToken = "-YyPeih6BkZoQoVa5tUT3cMZ4DXaWs7M6hg26WEdU88=";
+        testVantiqServer = "https://dev.vantiq.com";
 
         Map<String, Object> config = new LinkedHashMap<>();
         config.put("pbFile", PB_FILE);
@@ -221,6 +224,41 @@ public class TestYoloProcessor extends NeuralNetTestBase {
             fail("Should not fail with label and meta file, and anchors.");
         }
 
+    }
+    
+    @Test
+    public void testMetaConfig() {
+        Map config = new LinkedHashMap<>();
+        YoloProcessor ypImageSaver = new YoloProcessor();
+        
+        config.put("pbFile", PB_FILE);
+        config.put("metaFile", META_FILE);
+        try {
+            ypImageSaver.setupImageProcessing(config, SOURCE_NAME, MODEL_DIRECTORY, testAuthToken, testVantiqServer);
+        } catch (Exception e) {
+            fail("Should not fail setup.");
+        }
+        
+        // useMetaIfAvailable flag should be true, since Config Size value is unchanged (default is 416)
+        assert ypImageSaver.objectDetector.metaConfigOptions.useMetaIfAvailable == true;
+        
+        // Frame Size should be 416 since this is what is included in the meta file
+        assert ypImageSaver.objectDetector.metaConfigOptions.frameSize == 416;
+        
+        config.remove("metaFile");
+        config.put("labelFile", LABEL_FILE);
+        try {
+            ypImageSaver.setupImageProcessing(config, SOURCE_NAME, MODEL_DIRECTORY, testAuthToken, testVantiqServer);
+        } catch (Exception e) {
+            fail("Should not fail setup.");
+        }
+        
+        // useMetaIfAvailable flag should still be true regardless of meta file presence
+        // Since there is no meta file, default value will be used
+        assert ypImageSaver.objectDetector.metaConfigOptions.useMetaIfAvailable == true;
+        
+        // Frame Size should be 416 since this is what is the default
+        assert ypImageSaver.objectDetector.metaConfigOptions.frameSize == 416;
     }
 
     @Test

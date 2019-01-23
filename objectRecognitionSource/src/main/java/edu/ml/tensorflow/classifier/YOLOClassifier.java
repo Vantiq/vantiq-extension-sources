@@ -13,8 +13,6 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.PriorityQueue;
 
-import static edu.ml.tensorflow.Config.FRAME_SIZE;
-
 /**
  * YOLOClassifier class implemented in Java by using the TensorFlow Java API
  * I also used this class in my android sample application here: https://github.com/szaza/android-yolo-v2
