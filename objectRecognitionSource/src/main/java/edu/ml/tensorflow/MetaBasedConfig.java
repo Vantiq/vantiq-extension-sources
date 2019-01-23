@@ -16,7 +16,7 @@ public class MetaBasedConfig {
     public int frameSize;
     public float mean;
     
-    // Flag to decide if we should use .meta frame size, or Config frame size
+    // Flag to decide if we should use .meta frame size, or default Config frame size
     public boolean useMetaIfAvailable;
     
     public MetaBasedConfig() {

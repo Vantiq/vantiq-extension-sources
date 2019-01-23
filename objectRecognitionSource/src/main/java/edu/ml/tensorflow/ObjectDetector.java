@@ -100,7 +100,6 @@ public class ObjectDetector {
                     metaConfigOptions.frameSize = frameHeight;
                 }
             }
-            // 
             this.frameSize = metaConfigOptions.frameSize;
 
             // If label file exists, use it. Otherwise, use the meta file's labels.

@@ -70,9 +70,6 @@ public class TestYoloProcessor extends NeuralNetTestBase {
     @BeforeClass
     public static void classSetup() {
         ypJson = new YoloProcessor();
-        
-        testAuthToken = "-YyPeih6BkZoQoVa5tUT3cMZ4DXaWs7M6hg26WEdU88=";
-        testVantiqServer = "https://dev.vantiq.com";
 
         Map<String, Object> config = new LinkedHashMap<>();
         config.put("pbFile", PB_FILE);
