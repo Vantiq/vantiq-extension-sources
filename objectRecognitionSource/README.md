@@ -448,8 +448,10 @@ that the identification is accurate, and a `location` containing the coordinates
 and `right` edges of the bounding box for the object. It can also save images with the bounding boxes drawn.  
 
 The standard implementation expects a net trained on 416x416 images, and automatically resizes images to those 
-dimensions. If different dimensions are required, then changing `edu.ml.tensorflow.Config.FRAME_SIZE` to the correct
-dimension will change the dimensions of the image sent to the neural net. The dimensions will still be a square.  
+dimensions. If a `.meta` file is provided, then the input frame size stored in that file, ("height"/"width" fields), will be 
+used. To override the default or `.meta` file frame size, the user can change `edu.ml.tensorflow.Config.FRAME_SIZE` to the 
+desired dimension. This will change the dimensions of the image sent to the neural net. The dimensions will still be a square, 
+as is required by this implementation of the YOLO Processor.
 
 The options are as follows. Remember to prepend "NN" when using an option in a Query.
 

@@ -13,15 +13,12 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.PriorityQueue;
 
-import static edu.ml.tensorflow.Config.FRAME_SIZE;
-
 /**
  * YOLOClassifier class implemented in Java by using the TensorFlow Java API
  * I also used this class in my android sample application here: https://github.com/szaza/android-yolo-v2
  */
 public class YOLOClassifier {
     private final static float OVERLAP_THRESHOLD = 0.5f;
-    private final static int GRID_SIZE = FRAME_SIZE/32;
     private final static int MAX_RECOGNIZED_CLASSES = 24;
     private final static int MAX_RESULTS = 24;
     public final static int NUMBER_OF_BOUNDING_BOX = 5;
@@ -36,18 +33,20 @@ public class YOLOClassifier {
     
     private static float threshold;
     private static YOLOClassifier classifier;
+    private static int gridSize;
 
     private YOLOClassifier() {}
 
-    public static YOLOClassifier getInstance(float thresh, double[] anchorArray) {
+    public static YOLOClassifier getInstance(float thresh, double[] anchorArray, int frameSize) {
         if (classifier == null) {
             classifier = new YOLOClassifier();
             threshold = thresh;
+            gridSize = frameSize / 32;
             if (anchorArray != null) {
                 anchors = anchorArray;
             }
         }
-
+        
         return  classifier;
     }
 
@@ -58,7 +57,7 @@ public class YOLOClassifier {
      * @return the number of classes
      */
     public int getOutputSizeByShape(Tensor<Float> result) {
-        return (int) (result.shape()[3] * Math.pow(GRID_SIZE,2));
+        return (int) (result.shape()[3] * Math.pow(gridSize,2));
     }
 
     /**
@@ -70,13 +69,13 @@ public class YOLOClassifier {
      * @return a list of recognition objects
      */
     public List<Recognition> classifyImage(final float[] tensorFlowOutput, final List<String> labels) {
-        int numClass = (int) (tensorFlowOutput.length / (Math.pow(GRID_SIZE,2) * NUMBER_OF_BOUNDING_BOX) - 5);
-        BoundingBox[][][] boundingBoxPerCell = new BoundingBox[GRID_SIZE][GRID_SIZE][NUMBER_OF_BOUNDING_BOX];
+        int numClass = (int) (tensorFlowOutput.length / (Math.pow(gridSize,2) * NUMBER_OF_BOUNDING_BOX) - 5);
+        BoundingBox[][][] boundingBoxPerCell = new BoundingBox[gridSize][gridSize][NUMBER_OF_BOUNDING_BOX];
         PriorityQueue<Recognition> priorityQueue = new PriorityQueue(MAX_RECOGNIZED_CLASSES, new RecognitionComparator());
 
         int offset = 0;
-        for (int cy=0; cy<GRID_SIZE; cy++) {        // GRID_SIZE * GRID_SIZE cells
-            for (int cx=0; cx<GRID_SIZE; cx++) {
+        for (int cy=0; cy<gridSize; cy++) {        // gridSize * gridSize cells
+            for (int cx=0; cx<gridSize; cx++) {
                 for (int b=0; b<NUMBER_OF_BOUNDING_BOX; b++) {   // 5 bounding boxes per each cell
                     boundingBoxPerCell[cx][cy][b] = getModel(tensorFlowOutput, cx, cy, b, numClass, offset);
                     calculateTopPredictions(boundingBoxPerCell[cx][cy][b], priorityQueue, labels);
@@ -171,6 +170,10 @@ public class YOLOClassifier {
         public int compare(final Recognition recognition1, final Recognition recognition2) {
             return Float.compare(recognition2.getConfidence(), recognition1.getConfidence());
         }
+    }
+    
+    public void close() {
+        classifier = null;
     }
 }
 
