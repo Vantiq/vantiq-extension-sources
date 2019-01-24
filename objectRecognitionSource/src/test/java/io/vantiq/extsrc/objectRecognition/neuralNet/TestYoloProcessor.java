@@ -267,7 +267,7 @@ public class TestYoloProcessor extends NeuralNetTestBase {
     }
 
     @Test
-    public void testRealJSONConfig() throws ImageProcessingException, JsonParseException, JsonMappingException, IOException, InterruptedException {
+    public void testRealJSONConfig() throws ImageProcessingException, JsonParseException, JsonMappingException, IOException {
         YoloProcessor ypImageSaver = new YoloProcessor();
         ExtensionServiceMessage msg = createRealConfig(neuralNetJSON1);
         Map config = (Map) msg.getObject();
