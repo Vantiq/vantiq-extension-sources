@@ -30,6 +30,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import static edu.ml.tensorflow.Config.MEAN;
+
 /**
  * ObjectDetector class to detect objects using pre-trained models with TensorFlow Java API.
  */
@@ -44,7 +46,6 @@ public class ObjectDetector {
     
     // Getting meta config options for YOLO Processor
     public MetaBasedConfig metaConfigOptions = new MetaBasedConfig();
-    private final float MEAN = metaConfigOptions.mean;
     private int frameSize;
     
     private ImageUtil imageUtil;
@@ -377,5 +378,6 @@ public class ObjectDetector {
     @Override
     protected void finalize() {
         close();
+        YOLOClassifier.getInstance(threshold, anchorArray, frameSize).close();
     }
 }

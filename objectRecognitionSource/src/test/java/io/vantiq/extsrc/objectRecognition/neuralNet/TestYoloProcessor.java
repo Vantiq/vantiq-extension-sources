@@ -53,6 +53,8 @@ public class TestYoloProcessor extends NeuralNetTestBase {
     static final String LABEL_FILE = "coco-" + COCO_MODEL_VERSION + ".names";
     static final String PB_FILE = "coco-" + COCO_MODEL_VERSION + ".pb";
     static final String META_FILE = "coco-" + COCO_MODEL_VERSION + ".meta";
+    static final String PB_FILE_608 = "coco-1.1.pb";
+    static final String META_FILE_608 = "coco-1.1.meta";
     static final String OUTPUT_DIR = System.getProperty("buildDir") + "/resources/out";
     static final int SAVE_RATE = 2; // Saves every other so that we can know it counts correctly
     static final String NOT_FOUND_CODE = "io.vantiq.resource.not.found";
@@ -227,9 +229,10 @@ public class TestYoloProcessor extends NeuralNetTestBase {
     public void testMetaConfig() {
         Map config = new LinkedHashMap<>();
         YoloProcessor ypImageSaver = new YoloProcessor();
+        YoloProcessor ypImageSaver2 = new YoloProcessor();
         
-        config.put("pbFile", PB_FILE);
-        config.put("metaFile", META_FILE);
+        config.put("pbFile", PB_FILE_608);
+        config.put("metaFile", META_FILE_608);
         try {
             ypImageSaver.setupImageProcessing(config, SOURCE_NAME, MODEL_DIRECTORY, testAuthToken, testVantiqServer);
         } catch (Exception e) {
@@ -240,31 +243,31 @@ public class TestYoloProcessor extends NeuralNetTestBase {
         assert ypImageSaver.objectDetector.metaConfigOptions.useMetaIfAvailable == true;
         
         // Frame Size should be 416 since this is what is included in the meta file
-        assert ypImageSaver.objectDetector.metaConfigOptions.frameSize == 416;
+        assert ypImageSaver.objectDetector.metaConfigOptions.frameSize == 608;
         
         config.remove("metaFile");
         config.put("labelFile", LABEL_FILE);
         try {
-            ypImageSaver.setupImageProcessing(config, SOURCE_NAME, MODEL_DIRECTORY, testAuthToken, testVantiqServer);
+            ypImageSaver2.setupImageProcessing(config, SOURCE_NAME, MODEL_DIRECTORY, testAuthToken, testVantiqServer);
         } catch (Exception e) {
             fail("Should not fail setup.");
         }
         
         // useMetaIfAvailable flag should still be true regardless of meta file presence
         // Since there is no meta file, default value will be used
-        assert ypImageSaver.objectDetector.metaConfigOptions.useMetaIfAvailable == true;
+        assert ypImageSaver2.objectDetector.metaConfigOptions.useMetaIfAvailable == true;
         
         // Frame Size should be 416 since this is what is the default
-        assert ypImageSaver.objectDetector.metaConfigOptions.frameSize == 416;
+        assert ypImageSaver2.objectDetector.metaConfigOptions.frameSize == 416;
     }
 
     @Test
     public void testResults() throws ImageProcessingException {
-        verifyProcessing(ypJson);
+        verifyProcessing(ypJson, true);
     }
 
     @Test
-    public void testRealJSONConfig() throws ImageProcessingException, JsonParseException, JsonMappingException, IOException {
+    public void testRealJSONConfig() throws ImageProcessingException, JsonParseException, JsonMappingException, IOException, InterruptedException {
         YoloProcessor ypImageSaver = new YoloProcessor();
         ExtensionServiceMessage msg = createRealConfig(neuralNetJSON1);
         Map config = (Map) msg.getObject();
@@ -273,7 +276,7 @@ public class TestYoloProcessor extends NeuralNetTestBase {
         // Config with meta file, label file, pb file, and anchors
         try {
             ypImageSaver.setupImageProcessing(neuralNetConfig, SOURCE_NAME, MODEL_DIRECTORY, testAuthToken, testVantiqServer);
-            verifyProcessing(ypImageSaver);
+            verifyProcessing(ypImageSaver, true);
         } catch (Exception e) {
             fail("Should not fail with valid config.");
         } finally {
@@ -289,7 +292,7 @@ public class TestYoloProcessor extends NeuralNetTestBase {
 
         try {
             ypImageSaver.setupImageProcessing(neuralNetConfig, SOURCE_NAME, MODEL_DIRECTORY, testAuthToken, testVantiqServer);
-            verifyProcessing(ypImageSaver);
+            verifyProcessing(ypImageSaver, true);
         } catch (Exception e) {
             fail("Should not fail with valid config.");
         } finally {
@@ -305,7 +308,7 @@ public class TestYoloProcessor extends NeuralNetTestBase {
 
         try {
             ypImageSaver.setupImageProcessing(neuralNetConfig, SOURCE_NAME, MODEL_DIRECTORY, testAuthToken, testVantiqServer);
-            verifyProcessing(ypImageSaver);
+            verifyProcessing(ypImageSaver, true);
         } catch (Exception e) {
             fail("Should not fail with valid config.");
         } finally {
@@ -321,7 +324,30 @@ public class TestYoloProcessor extends NeuralNetTestBase {
 
         try {
             ypImageSaver.setupImageProcessing(neuralNetConfig, SOURCE_NAME, MODEL_DIRECTORY, testAuthToken, testVantiqServer);
-            verifyProcessing(ypImageSaver);
+            verifyProcessing(ypImageSaver, true);
+        } catch (Exception e) {
+            fail("Should not fail with valid config.");
+        } finally {
+            if (ypImageSaver != null) {
+                ypImageSaver.close();
+            }
+        }
+    }
+    
+    @Test
+    public void testDifferentFrameSizeProcessing () throws JsonParseException, JsonMappingException, IOException {
+        YoloProcessor ypImageSaver = new YoloProcessor();
+        ExtensionServiceMessage msg = createRealConfig(neuralNetJSON5);
+        Map config = (Map) msg.getObject();
+        Map neuralNetConfig = (Map) config.get("neuralNet");
+      
+        // Config with meta file and pb file for 608 frame size
+        config = (Map) msg.getObject();
+        neuralNetConfig = (Map) config.get("neuralNet");
+
+        try {
+            ypImageSaver.setupImageProcessing(neuralNetConfig, SOURCE_NAME, MODEL_DIRECTORY, testAuthToken, testVantiqServer);
+            verifyProcessing(ypImageSaver, false);
         } catch (Exception e) {
             fail("Should not fail with valid config.");
         } finally {
@@ -905,6 +931,10 @@ public class TestYoloProcessor extends NeuralNetTestBase {
     String imageResultsAsString = "[{\"confidence\":0.8445639, \"location\":{\"top\":255.70024, \"left\":121.859344, \"bottom\":372.2343, "
             + "\"right\":350.1204}, \"label\":\"keyboard\"}, {\"confidence\":0.7974271, \"location\":{\"top\":91.255974, \"left\":164.41359, "
             + "\"bottom\":275.69666, \"right\":350.50714}, \"label\":\"tvmonitor\"}]";
+    
+    String imageResultsAsString608 = "[{\"confidence\":0.8672237, \"location\":{\"top\":93.55155, \"left\":157.38762, \"bottom\":280.36542, "
+            + "\"right\":345.06442}, \"label\":\"tvmonitor\"}, {\"confidence\":0.7927524, \"location\":{\"top\":263.62683, \"left\":123.48807, "
+            + "\"bottom\":371.69046, \"right\":331.86023}, \"label\":\"keyboard\"}]";
 
     String neuralNetJSON1 =
             "{"
@@ -948,18 +978,32 @@ public class TestYoloProcessor extends NeuralNetTestBase {
                     + "             \"type\": \"yolo\""
                     + "         }"
                     + "}";
+    
+    String neuralNetJSON5 =
+            "{"
+                    + "     \"neuralNet\":"
+                    + "         {"
+                    + "             \"pbFile\": \"" + PB_FILE_608 + "\", "
+                    + "             \"metaFile\": \"" + META_FILE_608 + "\", "
+                    + "             \"type\": \"yolo\""
+                    + "         }"
+                    + "}";
 
-    List<Map> getExpectedResults() throws JsonParseException, JsonMappingException, IOException {
+    List<Map> getExpectedResults(boolean useDefault) throws JsonParseException, JsonMappingException, IOException {
         ObjectMapper m = new ObjectMapper();
-        return m.readValue(imageResultsAsString, List.class);
+        if (useDefault) {
+            return m.readValue(imageResultsAsString, List.class);
+        } else {
+            return m.readValue(imageResultsAsString608, List.class);
+        }
     }
 
-    void verifyProcessing(YoloProcessor ypImageSaver) throws ImageProcessingException {
+    void verifyProcessing(YoloProcessor ypImageSaver, boolean useDefault) throws ImageProcessingException {
         NeuralNetResults results = ypImageSaver.processImage(getTestImage());
         assert results != null;
         assert results.getResults() != null;
         try {
-            resultsEquals(results.getResults(), getExpectedResults()); // Will throw assert error with a message when not equivalent
+            resultsEquals(results.getResults(), getExpectedResults(useDefault)); // Will throw assert error with a message when not equivalent
         } catch (IOException e) {
             fail("Could not interpret json string" + e.getMessage());
         }

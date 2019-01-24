@@ -9,12 +9,10 @@
 package edu.ml.tensorflow;
 
 import static edu.ml.tensorflow.Config.FRAME_SIZE;
-import static edu.ml.tensorflow.Config.MEAN;
 
 public class MetaBasedConfig {
     // General config values for YOLO Processor
     public int frameSize;
-    public float mean;
     
     // Flag to decide if we should use .meta frame size, or default Config frame size
     public boolean useMetaIfAvailable;
@@ -28,6 +26,5 @@ public class MetaBasedConfig {
         }
         
         frameSize = FRAME_SIZE;
-        mean = MEAN;
     }
 }

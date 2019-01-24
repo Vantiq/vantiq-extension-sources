@@ -179,6 +179,7 @@ ext.removeUnnecessaryTests = {
 
 configurations {
     oldYoloNames
+    metaTest
 }
 
 ext {
@@ -220,6 +221,9 @@ dependencies {
     oldYoloNames "vantiq.models:coco:1.0@pb"
     oldYoloNames "vantiq.models:coco:1.0@names"
     oldYoloNames "vantiq.models:yolo:1.0@pb"
+    
+    metaTest "vantiq.models:coco:1.1@meta"
+    metaTest "vantiq.models:coco:1.1@pb"
 
 
     // This imports OpenCV if it is needed, and throws an error if OpenCV is needed but not properly setup
@@ -252,10 +256,14 @@ dependencies {
     testCompile project(path:":extjsdk", configuration:"testArtifacts")
 }
 
-task copyModels(type: Copy, dependsOn: configurations.testRuntime) {
+task copyModels(type: Copy, dependsOn: [configurations.testRuntime, configurations.metaTest]) {
     from configurations.testRuntime.find { it.name == "coco-${currentCocoVersion}.pb" },
         configurations.testRuntime.find { it.name == "coco-${currentCocoVersion}.names" },
-        configurations.testRuntime.find { it.name == "coco-${currentCocoVersion}.meta" }
+        configurations.testRuntime.find { it.name == "coco-${currentCocoVersion}.meta" },
+        
+        // Used for testing different height/width from .meta file
+        configurations.metaTest.find { it.name == "coco-1.1.meta" },
+        configurations.metaTest.find { it.name == "coco-1.1.pb" }
 
     into "$buildDir/models/"
 }

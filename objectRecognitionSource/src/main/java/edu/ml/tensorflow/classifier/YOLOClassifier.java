@@ -46,7 +46,8 @@ public class YOLOClassifier {
                 anchors = anchorArray;
             }
         }
-
+        System.out.println("Grid Size: " + gridSize);
+        System.out.println("Frame Size: " + frameSize);
         return  classifier;
     }
 
@@ -170,6 +171,10 @@ public class YOLOClassifier {
         public int compare(final Recognition recognition1, final Recognition recognition2) {
             return Float.compare(recognition2.getConfidence(), recognition1.getConfidence());
         }
+    }
+    
+    public void close() {
+        classifier = null;
     }
 }
 
