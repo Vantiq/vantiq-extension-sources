@@ -329,7 +329,7 @@ public class ObjectDetector {
         	map.put("confidence", recognition.getConfidence());
         	
         	float scaleX = (float) buffImage.getWidth() / (float) frameSize;
-            float scaleY = (float) buffImage.getHeight() / (float) frameSize;
+        	float scaleY = (float) buffImage.getHeight() / (float) frameSize;
         	
         	HashMap location = new HashMap();
         	location.put("left", recognition.getScaledLocation(scaleX, scaleY).getLeft());

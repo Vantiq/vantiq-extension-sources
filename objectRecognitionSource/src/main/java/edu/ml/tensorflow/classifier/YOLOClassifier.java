@@ -46,8 +46,7 @@ public class YOLOClassifier {
                 anchors = anchorArray;
             }
         }
-        System.out.println("Grid Size: " + gridSize);
-        System.out.println("Frame Size: " + frameSize);
+        
         return  classifier;
     }
 
