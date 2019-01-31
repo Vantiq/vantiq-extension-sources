@@ -209,6 +209,9 @@ public class YoloProcessor implements NeuralNetInterface {
                    } else {
                        imageUtil.longEdge = longEdge;
                    }
+               } else {
+                   log.debug("The longEdge option was not set, or was improperly set. This option must be a non-negative integer. "
+                           + "Saved image resolution will not be changed.");
                }
            } else {
                log.debug("No savedResolution was specified, or savedResolution was invalid. The savedResolution option must be a map.");
