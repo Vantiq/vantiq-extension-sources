@@ -198,6 +198,24 @@ public class YoloProcessor implements NeuralNetInterface {
                vantiq = new io.vantiq.client.Vantiq(server);
                vantiq.setAccessToken(authToken);
            }
+           
+           // Check if any resolution configurations have been set
+           if (neuralNet.get("savedResolution") instanceof Map) {
+               Map savedResolution = (Map) neuralNet.get("savedResolution");
+               if (savedResolution.get("longEdge") instanceof Integer) {
+                   int longEdge = (Integer) savedResolution.get("longEdge");
+                   if (longEdge < 0) {
+                       log.error("The config value for longEdge must be a non-negative integer. Saved image resolution will not be changed.");
+                   } else {
+                       imageUtil.longEdge = longEdge;
+                   }
+               } else {
+                   log.debug("The longEdge option was not set, or was improperly set. This option must be a non-negative integer. "
+                           + "Saved image resolution will not be changed.");
+               }
+           } else {
+               log.debug("No savedResolution was specified, or savedResolution was invalid. The savedResolution option must be a map.");
+           }
            imageUtil.outputDir = outputDir;
            imageUtil.vantiq = vantiq;
            imageUtil.saveImage = true;
