@@ -65,29 +65,29 @@ public class ImageUtil {
             try {
                 IOUtil.createDirIfNotExists(new File(outputDir));
                 if (longEdge == 0) {
-                    ImageIO.write(image,"jpg", new File(outputDir + File.separator + target));
+                    ImageIO.write(image, "jpg", new File(outputDir + File.separator + target));
                 } else {
                     int width = image.getWidth();
                     int height = image.getHeight();
                     if (longEdge > Math.max(width, height)) {
                         LOGGER.error("The longEdge value is too large, resizing cannot enlarge the original image. "
                                 + "Original image resolution will not be changed");
-                        ImageIO.write(image,"jpg", new File(outputDir + File.separator + target));
+                        ImageIO.write(image, "jpg", new File(outputDir + File.separator + target));
                         longEdge = 0;
                     } else {
                         if (width > height) {
                             double ratio = (double) longEdge/width;
                             int newHeight = (int) (height * ratio);
                             BufferedImage resizedImage = resizeImage(longEdge, newHeight, image);
-                            ImageIO.write(resizedImage,"jpg", new File(outputDir + File.separator + target));
+                            ImageIO.write(resizedImage, "jpg", new File(outputDir + File.separator + target));
                         } else if (height > width) {
                             double ratio = (double) longEdge/height;
                             int newWidth = (int) (width * ratio);
                             BufferedImage resizedImage = resizeImage(newWidth, longEdge, image);
-                            ImageIO.write(resizedImage,"jpg", new File(outputDir + File.separator + target));
+                            ImageIO.write(resizedImage, "jpg", new File(outputDir + File.separator + target));
                         } else {
                             BufferedImage resizedImage = resizeImage(longEdge, longEdge, image);
-                            ImageIO.write(resizedImage,"jpg", new File(outputDir + File.separator + target));
+                            ImageIO.write(resizedImage, "jpg", new File(outputDir + File.separator + target));
                         }
                     }
                 }
@@ -124,22 +124,22 @@ public class ImageUtil {
                         if (longEdge > Math.max(width, height)) {
                             LOGGER.error("The longEdge value is too large, resizing cannot enlarge the original image. "
                                     + "Original image resolution will not be changed");
-                            ImageIO.write(image,"jpg", imgFile);
+                            ImageIO.write(image, "jpg", imgFile);
                             longEdge = 0;
                         } else {
                             if (width > height) {
                                 double ratio = (double) longEdge/width;
                                 int newHeight = (int) (height * ratio);
                                 BufferedImage resizedImage = resizeImage(longEdge, newHeight, image);
-                                ImageIO.write(resizedImage,"jpg", imgFile);
+                                ImageIO.write(resizedImage, "jpg", imgFile);
                             } else if (height > width) {
                                 double ratio = (double) longEdge/height;
                                 int newWidth = (int) (width * ratio);
                                 BufferedImage resizedImage = resizeImage(newWidth, longEdge, image);
-                                ImageIO.write(resizedImage,"jpg", imgFile);
+                                ImageIO.write(resizedImage, "jpg", imgFile);
                             } else {
                                 BufferedImage resizedImage = resizeImage(longEdge, longEdge, image);
-                                ImageIO.write(resizedImage,"jpg", imgFile);
+                                ImageIO.write(resizedImage, "jpg", imgFile);
                             }
                         }
                     }

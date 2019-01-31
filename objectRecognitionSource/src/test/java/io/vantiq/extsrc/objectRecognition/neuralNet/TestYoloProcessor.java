@@ -578,11 +578,6 @@ public class TestYoloProcessor extends NeuralNetTestBase {
         config.put("savedResolution", savedResolution);
         checkInvalidResizing(config);
         
-        // The longEdge is not a number which is not allowed, should not do any resizing
-        savedResolution.put("longEdge", "jibberish");
-        config.put("savedResolution", savedResolution);
-        checkInvalidResizing(config);
-        
         // The savedResolution is not a map which is not allowed, should not do any resizing
         config.put("savedResolution", "jibberish");
         checkInvalidResizing(config);
