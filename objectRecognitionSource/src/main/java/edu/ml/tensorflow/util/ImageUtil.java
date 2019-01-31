@@ -31,7 +31,7 @@ public class ImageUtil {
     public int longEdge = 0;
 
     /**
-     * Label image with classes and predictions given by the ThensorFLow
+     * Label image with classes and predictions given by the TensorFLow YOLO Implementation
      * @param image         buffered image to label
      * @param recognitions  list of recognized objects
      */
@@ -67,29 +67,8 @@ public class ImageUtil {
                 if (longEdge == 0) {
                     ImageIO.write(image, "jpg", new File(outputDir + File.separator + target));
                 } else {
-                    int width = image.getWidth();
-                    int height = image.getHeight();
-                    if (longEdge > Math.max(width, height)) {
-                        LOGGER.error("The longEdge value is too large, resizing cannot enlarge the original image. "
-                                + "Original image resolution will not be changed");
-                        ImageIO.write(image, "jpg", new File(outputDir + File.separator + target));
-                        longEdge = 0;
-                    } else {
-                        if (width > height) {
-                            double ratio = (double) longEdge/width;
-                            int newHeight = (int) (height * ratio);
-                            BufferedImage resizedImage = resizeImage(longEdge, newHeight, image);
-                            ImageIO.write(resizedImage, "jpg", new File(outputDir + File.separator + target));
-                        } else if (height > width) {
-                            double ratio = (double) longEdge/height;
-                            int newWidth = (int) (width * ratio);
-                            BufferedImage resizedImage = resizeImage(newWidth, longEdge, image);
-                            ImageIO.write(resizedImage, "jpg", new File(outputDir + File.separator + target));
-                        } else {
-                            BufferedImage resizedImage = resizeImage(longEdge, longEdge, image);
-                            ImageIO.write(resizedImage, "jpg", new File(outputDir + File.separator + target));
-                        }
-                    }
+                    BufferedImage resizedImage = resizeImage(image);
+                    ImageIO.write(resizedImage, "jpg", new File(outputDir + File.separator + target));
                 }
                 fileToUpload = new File(outputDir + File.separator + target);
             } catch (IOException e) {
@@ -119,29 +98,8 @@ public class ImageUtil {
                     if (longEdge == 0) {
                         ImageIO.write(image, "jpg", imgFile);
                     } else {
-                        int width = image.getWidth();
-                        int height = image.getHeight();
-                        if (longEdge > Math.max(width, height)) {
-                            LOGGER.error("The longEdge value is too large, resizing cannot enlarge the original image. "
-                                    + "Original image resolution will not be changed");
-                            ImageIO.write(image, "jpg", imgFile);
-                            longEdge = 0;
-                        } else {
-                            if (width > height) {
-                                double ratio = (double) longEdge/width;
-                                int newHeight = (int) (height * ratio);
-                                BufferedImage resizedImage = resizeImage(longEdge, newHeight, image);
-                                ImageIO.write(resizedImage, "jpg", imgFile);
-                            } else if (height > width) {
-                                double ratio = (double) longEdge/height;
-                                int newWidth = (int) (width * ratio);
-                                BufferedImage resizedImage = resizeImage(newWidth, longEdge, image);
-                                ImageIO.write(resizedImage, "jpg", imgFile);
-                            } else {
-                                BufferedImage resizedImage = resizeImage(longEdge, longEdge, image);
-                                ImageIO.write(resizedImage, "jpg", imgFile);
-                            }
-                        }
+                        BufferedImage resizedImage = resizeImage(image);
+                        ImageIO.write(resizedImage, "jpg", imgFile);
                     }
                     vantiq.upload(imgFile, 
                             "image/jpeg", 
@@ -171,12 +129,42 @@ public class ImageUtil {
     
     /**
      * A function used to resize the original captured image, if requested.
-     * @param width     The resized width of the image to be saved.
-     * @param height    The resized height of the image to be saved.
      * @param image     The original image to be resized.
      * @return          The resized image.
      */
-    public BufferedImage resizeImage(int width, int height, BufferedImage image) {
+    public BufferedImage resizeImage(BufferedImage image) {
+        BufferedImage resizedImage;
+        int width = image.getWidth();
+        int height = image.getHeight();
+        if (longEdge > Math.max(width, height)) {
+            LOGGER.trace("The longEdge value is too large, resizing cannot enlarge the original image. "
+                    + "Original image resolution will not be changed");
+            return image;
+        } else {
+            if (width > height) {
+                double ratio = (double) longEdge/width;
+                int newHeight = (int) (height * ratio);
+                resizedImage = resizeHelper(longEdge, newHeight, image);
+            } else if (height > width) {
+                double ratio = (double) longEdge/height;
+                int newWidth = (int) (width * ratio);
+                resizedImage = resizeHelper(newWidth, longEdge, image);
+            } else {
+                resizedImage = resizeHelper(longEdge, longEdge, image);
+            }
+        }
+        
+        return resizedImage;
+    }
+    
+    /**
+     * A helper function that resizes the image, called by resizeImage()
+     * @param width     The new width of the resized image.
+     * @param height    The new height of the resized image.
+     * @param image     The original image to be resized.
+     * @return          The resized image.
+     */
+    public BufferedImage resizeHelper(int width, int height, BufferedImage image) {
         BufferedImage resizedImage = new BufferedImage(width, height, image.getType());
         Graphics2D g2d = resizedImage.createGraphics();
         g2d.drawImage(image, 0, 0, width, height, null);
