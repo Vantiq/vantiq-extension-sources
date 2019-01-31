@@ -233,6 +233,8 @@ set at all, the images will be saved with no bounding boxes or labels.
     1. longEdge: Optional. Used to resize the saved images. Must be a non-negative integer that is smaller than the long edge 
     of the image to be saved. This value will become the new long edge dimension, and the short edge will be scaled down to 
     maintain the same dimension ratio as the original image.
+        *   **NOTE:** We do not support enlarging images. This feature can be used *only* to resize images to smaller 
+        dimensions.
 
 ## Messages from the Source<a name="msgFormat" id="msgFormat"></a>
 
