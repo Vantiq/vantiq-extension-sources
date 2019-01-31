@@ -19,6 +19,7 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -37,6 +38,8 @@ import org.junit.runners.MethodSorters;
 import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
 
 import io.vantiq.client.BaseResponseHandler;
 import io.vantiq.client.Vantiq;
@@ -45,6 +48,7 @@ import io.vantiq.client.VantiqResponse;
 import io.vantiq.extsrc.objectRecognition.exception.ImageProcessingException;
 import io.vantiq.extjsdk.ExtensionServiceMessage;
 import okhttp3.Response;
+import okio.BufferedSource;
 
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
 public class TestYoloProcessor extends NeuralNetTestBase {
@@ -59,6 +63,12 @@ public class TestYoloProcessor extends NeuralNetTestBase {
     static final int SAVE_RATE = 2; // Saves every other so that we can know it counts correctly
     static final String NOT_FOUND_CODE = "io.vantiq.resource.not.found";
     static final String CONFIG_JSON_LOCATION = "src/test/resources/";
+    
+    // For image resizing tests
+    static final int TEST_IMAGE_WIDTH = 500;
+    static final int TEST_IMAGE_HEIGHT = 375;
+    static final int RESIZED_IMAGE_WIDTH = 100;
+    static final int RESIZED_IMAGE_HEIGHT = 75;
 
     static YoloProcessor ypJson;
     static Vantiq vantiq;
@@ -468,7 +478,7 @@ public class TestYoloProcessor extends NeuralNetTestBase {
         YoloProcessor ypImageSaver = new YoloProcessor();
 
         config.put("pbFile", PB_FILE);
-        config.put("labelFile", LABEL_FILE);
+        config.put("metaFile", META_FILE);
         config.put("outputDir", OUTPUT_DIR);
         config.put("saveRate", SAVE_RATE);
         config.put("saveImage", "local");
@@ -532,6 +542,292 @@ public class TestYoloProcessor extends NeuralNetTestBase {
             ypImageSaver.close();
         }
     }
+    
+    @Test
+    public void testInvalidResizingSavedImage() throws ImageProcessingException, IOException {
+        // Only run test with intended vantiq availability
+        assumeTrue(testAuthToken != null && testVantiqServer != null);
+        
+        Map config = new LinkedHashMap<>();
+        Map savedResolution = new LinkedHashMap<>();
+        YoloProcessor ypImageSaver = new YoloProcessor();
+        
+        // The longEdge is larger than the original image, should not do any resizing
+        savedResolution.put("longEdge", 1000);
+
+        config.put("pbFile", PB_FILE);
+        config.put("metaFile", META_FILE);
+        config.put("outputDir", OUTPUT_DIR);
+        config.put("saveRate", SAVE_RATE);
+        config.put("saveImage", "local");
+        config.put("savedResolution", savedResolution);
+        checkInvalidResizing(config);
+        
+        // The longEdge is a negative number which is not allowed, should not do any resizing
+        savedResolution.put("longEdge", -100);
+        config.put("savedResolution", savedResolution); 
+        checkInvalidResizing(config);
+        
+        // The longEdge is not an integer which is not allowed, should not do any resizing
+        savedResolution.put("longEdge", 0.5);
+        config.put("savedResolution", savedResolution);
+        checkInvalidResizing(config);
+        
+        // The longEdge is not a number which is not allowed, should not do any resizing
+        savedResolution.put("longEdge", "jibberish");
+        config.put("savedResolution", savedResolution);
+        checkInvalidResizing(config);
+        
+        // The longEdge is not a number which is not allowed, should not do any resizing
+        savedResolution.put("longEdge", "jibberish");
+        config.put("savedResolution", savedResolution);
+        checkInvalidResizing(config);
+        
+        // The savedResolution is not a map which is not allowed, should not do any resizing
+        config.put("savedResolution", "jibberish");
+        checkInvalidResizing(config);
+        
+    }
+    
+    // Helper function to test invalid resizing
+    public void checkInvalidResizing(Map config) throws ImageProcessingException, IOException {
+        YoloProcessor ypImageSaver = new YoloProcessor();
+        try {
+            ypImageSaver.setupImageProcessing(config, SOURCE_NAME, MODEL_DIRECTORY, testAuthToken, testVantiqServer);
+        } catch (Exception e) {
+            fail("Could not setup the JSON YoloProcessor");
+        }
+        File d = new File(OUTPUT_DIR);
+        try {
+            // Ensure no results from previous tests
+            if (d.exists()) {
+                deleteDirectory(OUTPUT_DIR);
+            }
+
+            NeuralNetResults results = ypImageSaver.processImage(getTestImage());
+            assert results != null;
+            assert results.getResults() != null;
+
+            // Should saved image with timestamp
+            assert d.exists();
+            assert d.isDirectory();
+            assert d.listFiles().length == 1;
+            assert d.listFiles()[0].getName().matches(timestampPattern);
+            
+            File resizedImageFile = new File(OUTPUT_DIR + "/" + d.listFiles()[0].getName());
+            BufferedImage resizedImage = ImageIO.read(resizedImageFile);
+            
+            // Original dimensions
+            assert resizedImage.getWidth() == TEST_IMAGE_WIDTH;
+            assert resizedImage.getHeight() == TEST_IMAGE_HEIGHT;
+
+        } finally {
+            if (d.exists()) {
+                deleteDirectory(OUTPUT_DIR);
+            }
+
+            ypImageSaver.close();
+        }
+    }
+    
+    @Test
+    public void testResizingSavedImageLocal() throws ImageProcessingException, IOException {
+        // Only run test with intended vantiq availability
+        assumeTrue(testAuthToken != null && testVantiqServer != null);
+        
+        Map config = new LinkedHashMap<>();
+        Map savedResolution = new LinkedHashMap<>();
+        YoloProcessor ypImageSaver = new YoloProcessor();
+        
+        savedResolution.put("longEdge", RESIZED_IMAGE_WIDTH);
+
+        config.put("pbFile", PB_FILE);
+        config.put("metaFile", META_FILE);
+        config.put("outputDir", OUTPUT_DIR);
+        config.put("saveRate", SAVE_RATE);
+        config.put("saveImage", "local");
+        config.put("savedResolution", savedResolution);
+        try {
+            ypImageSaver.setupImageProcessing(config, SOURCE_NAME, MODEL_DIRECTORY, testAuthToken, testVantiqServer);
+        } catch (Exception e) {
+            fail("Could not setup the JSON YoloProcessor");
+        }
+        File d = new File(OUTPUT_DIR);
+        try {
+            // Ensure no results from previous tests
+            if (d.exists()) {
+                deleteDirectory(OUTPUT_DIR);
+            }
+
+            NeuralNetResults results = ypImageSaver.processImage(getTestImage());
+            assert results != null;
+            assert results.getResults() != null;
+
+            // Should saved image with timestamp
+            assert d.exists();
+            assert d.isDirectory();
+            assert d.listFiles().length == 1;
+            assert d.listFiles()[0].getName().matches(timestampPattern);
+            
+            File resizedImageFile = new File(OUTPUT_DIR + "/" + d.listFiles()[0].getName());
+            BufferedImage resizedImage = ImageIO.read(resizedImageFile);
+            
+            assert resizedImage.getWidth() == RESIZED_IMAGE_WIDTH;
+            assert resizedImage.getHeight() == RESIZED_IMAGE_HEIGHT;
+
+        } finally {
+            if (d.exists()) {
+                deleteDirectory(OUTPUT_DIR);
+            }
+
+            ypImageSaver.close();
+        }
+    }
+    
+    @Test
+    public void testResizingSavedImageVantiq() throws ImageProcessingException, IOException, InterruptedException {
+        // Only run test with intended vantiq availability
+        assumeTrue(testAuthToken != null && testVantiqServer != null);
+        
+        Map config = new LinkedHashMap<>();
+        Map savedResolution = new LinkedHashMap<>();
+        YoloProcessor ypImageSaver = new YoloProcessor();
+        
+        savedResolution.put("longEdge", RESIZED_IMAGE_WIDTH);
+
+        config.put("pbFile", PB_FILE);
+        config.put("metaFile", META_FILE);
+        config.put("outputDir", OUTPUT_DIR);
+        config.put("saveRate", SAVE_RATE);
+        config.put("saveImage", "vantiq");
+        config.put("savedResolution", savedResolution);
+        try {
+            ypImageSaver.setupImageProcessing(config, SOURCE_NAME, MODEL_DIRECTORY, testAuthToken, testVantiqServer);
+        } catch (Exception e) {
+            fail("Could not setup the JSON YoloProcessor");
+        }
+        try {
+
+            NeuralNetResults results = ypImageSaver.processImage(getTestImage());
+            assert results != null;
+            assert results.getResults() != null;
+            
+            // Checking that image was saved to VANTIQ
+            Thread.sleep(1000);
+            vantiqResponse = vantiq.selectOne("system.documents", results.getLastFilename());
+            if (vantiqResponse.hasErrors()) {
+                List<VantiqError> errors = vantiqResponse.getErrors();
+                for (int i = 0; i < errors.size(); i++) {
+                    if (errors.get(i).getCode().equals(NOT_FOUND_CODE)) {
+                        fail();
+                    }
+                }
+            }
+            vantiqSavedFiles.add(results.getLastFilename());
+            
+            // Get the path to the saved image in VANTIQ
+            JsonObject responseObj = (JsonObject) vantiqResponse.getBody();
+            JsonElement pathJSON = responseObj.get("content");
+            String imagePath = pathJSON.getAsString();
+            
+            // Download image so we can confirm dimensions
+            vantiqResponse = vantiq.download(imagePath);
+            BufferedSource source = (BufferedSource) vantiqResponse.getBody();
+            byte[] imageBytes = source.readByteArray();
+            InputStream imageStream = new ByteArrayInputStream(imageBytes);
+            BufferedImage resizedImage = ImageIO.read(imageStream);
+            
+            
+            assert resizedImage.getWidth() == RESIZED_IMAGE_WIDTH;
+            assert resizedImage.getHeight() == RESIZED_IMAGE_HEIGHT;
+
+        } finally {
+            ypImageSaver.close();
+        }
+    }
+    
+    @Test
+    public void testResizingSavedImageBoth() throws ImageProcessingException, IOException, InterruptedException {
+        // Only run test with intended vantiq availability
+        assumeTrue(testAuthToken != null && testVantiqServer != null);
+        
+        Map config = new LinkedHashMap<>();
+        Map savedResolution = new LinkedHashMap<>();
+        YoloProcessor ypImageSaver = new YoloProcessor();
+        
+        savedResolution.put("longEdge", RESIZED_IMAGE_WIDTH);
+
+        config.put("pbFile", PB_FILE);
+        config.put("metaFile", META_FILE);
+        config.put("outputDir", OUTPUT_DIR);
+        config.put("saveRate", SAVE_RATE);
+        config.put("saveImage", "both");
+        config.put("savedResolution", savedResolution);
+        try {
+            ypImageSaver.setupImageProcessing(config, SOURCE_NAME, MODEL_DIRECTORY, testAuthToken, testVantiqServer);
+        } catch (Exception e) {
+            fail("Could not setup the JSON YoloProcessor");
+        }
+        File d = new File(OUTPUT_DIR);
+        try {
+            // Ensure no results from previous tests
+            if (d.exists()) {
+                deleteDirectory(OUTPUT_DIR);
+            }
+
+            NeuralNetResults results = ypImageSaver.processImage(getTestImage());
+            assert results != null;
+            assert results.getResults() != null;
+
+            // Should saved image with timestamp
+            assert d.exists();
+            assert d.isDirectory();
+            assert d.listFiles().length == 1;
+            assert d.listFiles()[0].getName().matches(timestampPattern);
+            
+            File resizedImageFile = new File(OUTPUT_DIR + "/" + d.listFiles()[0].getName());
+            BufferedImage resizedImage = ImageIO.read(resizedImageFile);
+            
+            assert resizedImage.getWidth() == RESIZED_IMAGE_WIDTH;
+            assert resizedImage.getHeight() == RESIZED_IMAGE_HEIGHT;
+            
+            // Checking that image was saved to VANTIQ
+            Thread.sleep(2000);
+            vantiqResponse = vantiq.selectOne("system.documents", results.getLastFilename());
+            if (vantiqResponse.hasErrors()) {
+                List<VantiqError> errors = vantiqResponse.getErrors();
+                for (int i = 0; i < errors.size(); i++) {
+                    if (errors.get(i).getCode().equals(NOT_FOUND_CODE)) {
+                        fail();
+                    }
+                }
+            }
+            vantiqSavedFiles.add(results.getLastFilename());
+            
+            // Get the path to the saved image in VANTIQ
+            JsonObject responseObj = (JsonObject) vantiqResponse.getBody();
+            JsonElement pathJSON = responseObj.get("content");
+            String imagePath = pathJSON.getAsString();
+            
+            // Download image so we can confirm dimensions
+            vantiqResponse = vantiq.download(imagePath);
+            BufferedSource source = (BufferedSource) vantiqResponse.getBody();
+            byte[] imageBytes = source.readByteArray();
+            InputStream imageStream = new ByteArrayInputStream(imageBytes);
+            resizedImage = ImageIO.read(imageStream);
+            
+            
+            assert resizedImage.getWidth() == RESIZED_IMAGE_WIDTH;
+            assert resizedImage.getHeight() == RESIZED_IMAGE_HEIGHT;
+
+        } finally {
+            if (d.exists()) {
+                deleteDirectory(OUTPUT_DIR);
+            }
+
+            ypImageSaver.close();
+        }
+    }
 
     @Test
     public void testImageSavingLocal() throws ImageProcessingException {
@@ -543,7 +839,7 @@ public class TestYoloProcessor extends NeuralNetTestBase {
         YoloProcessor ypImageSaver = new YoloProcessor();
 
         config.put("pbFile", PB_FILE);
-        config.put("labelFile", LABEL_FILE);
+        config.put("metaFile", META_FILE);
         config.put("outputDir", OUTPUT_DIR);
         config.put("saveRate", SAVE_RATE);
         config.put("saveImage", "local");
@@ -627,7 +923,7 @@ public class TestYoloProcessor extends NeuralNetTestBase {
         YoloProcessor ypImageSaver = new YoloProcessor();
 
         config.put("pbFile", PB_FILE);
-        config.put("labelFile", LABEL_FILE);
+        config.put("metaFile", META_FILE);
         config.put("outputDir", OUTPUT_DIR);
         config.put("saveRate", SAVE_RATE);
         config.put("saveImage", "both");
@@ -725,7 +1021,7 @@ public class TestYoloProcessor extends NeuralNetTestBase {
         YoloProcessor ypImageSaver = new YoloProcessor();
 
         config.put("pbFile", PB_FILE);
-        config.put("labelFile", LABEL_FILE);
+        config.put("metaFile", META_FILE);
         config.put("outputDir", OUTPUT_DIR);
         config.put("saveRate", SAVE_RATE);
         config.put("saveImage", "vantiq");
@@ -781,7 +1077,7 @@ public class TestYoloProcessor extends NeuralNetTestBase {
         YoloProcessor ypImageSaver = new YoloProcessor();
 
         config.put("pbFile", PB_FILE);
-        config.put("labelFile", LABEL_FILE);
+        config.put("metaFile", META_FILE);
         config.put("outputDir", OUTPUT_DIR);
         config.put("saveRate", SAVE_RATE);
         try {

@@ -28,6 +28,7 @@ public class ImageUtil {
     public Vantiq vantiq = null; // Added to allow image saving with VANTIQ
     public String sourceName = null;
     public Boolean saveImage;
+    public int longEdge = 0;
 
     /**
      * Label image with classes and predictions given by the ThensorFLow
@@ -63,7 +64,33 @@ public class ImageUtil {
         if (outputDir != null) {
             try {
                 IOUtil.createDirIfNotExists(new File(outputDir));
-                ImageIO.write(image,"jpg", new File(outputDir + File.separator + target));
+                if (longEdge == 0) {
+                    ImageIO.write(image,"jpg", new File(outputDir + File.separator + target));
+                } else {
+                    int width = image.getWidth();
+                    int height = image.getHeight();
+                    if (longEdge > Math.max(width, height)) {
+                        LOGGER.error("The longEdge value is too large, resizing cannot enlarge the original image. "
+                                + "Original image resolution will not be changed");
+                        ImageIO.write(image,"jpg", new File(outputDir + File.separator + target));
+                        longEdge = 0;
+                    } else {
+                        if (width > height) {
+                            double ratio = (double) longEdge/width;
+                            int newHeight = (int) (height * ratio);
+                            BufferedImage resizedImage = resizeImage(longEdge, newHeight, image);
+                            ImageIO.write(resizedImage,"jpg", new File(outputDir + File.separator + target));
+                        } else if (height > width) {
+                            double ratio = (double) longEdge/height;
+                            int newWidth = (int) (width * ratio);
+                            BufferedImage resizedImage = resizeImage(newWidth, longEdge, image);
+                            ImageIO.write(resizedImage,"jpg", new File(outputDir + File.separator + target));
+                        } else {
+                            BufferedImage resizedImage = resizeImage(longEdge, longEdge, image);
+                            ImageIO.write(resizedImage,"jpg", new File(outputDir + File.separator + target));
+                        }
+                    }
+                }
                 fileToUpload = new File(outputDir + File.separator + target);
             } catch (IOException e) {
                 LOGGER.error("Unable to save image {}", target, e);
@@ -89,7 +116,33 @@ public class ImageUtil {
                 try {
                     File imgFile = File.createTempFile("tmp", ".jpg");
                     imgFile.deleteOnExit();
-                    ImageIO.write(image, "jpg", imgFile);
+                    if (longEdge == 0) {
+                        ImageIO.write(image, "jpg", imgFile);
+                    } else {
+                        int width = image.getWidth();
+                        int height = image.getHeight();
+                        if (longEdge > Math.max(width, height)) {
+                            LOGGER.error("The longEdge value is too large, resizing cannot enlarge the original image. "
+                                    + "Original image resolution will not be changed");
+                            ImageIO.write(image,"jpg", imgFile);
+                            longEdge = 0;
+                        } else {
+                            if (width > height) {
+                                double ratio = (double) longEdge/width;
+                                int newHeight = (int) (height * ratio);
+                                BufferedImage resizedImage = resizeImage(longEdge, newHeight, image);
+                                ImageIO.write(resizedImage,"jpg", imgFile);
+                            } else if (height > width) {
+                                double ratio = (double) longEdge/height;
+                                int newWidth = (int) (width * ratio);
+                                BufferedImage resizedImage = resizeImage(newWidth, longEdge, image);
+                                ImageIO.write(resizedImage,"jpg", imgFile);
+                            } else {
+                                BufferedImage resizedImage = resizeImage(longEdge, longEdge, image);
+                                ImageIO.write(resizedImage,"jpg", imgFile);
+                            }
+                        }
+                    }
                     vantiq.upload(imgFile, 
                             "image/jpeg", 
                             "objectRecognition/" + sourceName + '/'  + target,
@@ -114,6 +167,21 @@ public class ImageUtil {
                 }
             }
         }
+    }
+    
+    /**
+     * A function used to resize the original captured image, if requested.
+     * @param width     The resized width of the image to be saved.
+     * @param height    The resized height of the image to be saved.
+     * @param image     The original image to be resized.
+     * @return          The resized image.
+     */
+    public BufferedImage resizeImage(int width, int height, BufferedImage image) {
+        BufferedImage resizedImage = new BufferedImage(width, height, image.getType());
+        Graphics2D g2d = resizedImage.createGraphics();
+        g2d.drawImage(image, 0, 0, width, height, null);
+        g2d.dispose();
+        return resizedImage;
     }
 
     public BufferedImage createImageFromBytes(final byte[] imageData) {
