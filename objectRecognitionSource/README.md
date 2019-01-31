@@ -161,7 +161,13 @@ The Configuration document may look similar to the following example:
              "metaFile": "coco-1.1.meta",
              "pbFile": "coco-1.1.pb",
              "type": "yolo",
-             "threshold": 0.2
+             "threshold": 0.2,
+             "saveImage": "both",
+             "saveRate": 1,
+             "outputDir": "imageOut",
+             "savedResolution": {
+                "longEdge": 400
+             }
           }
        }
     }
@@ -222,6 +228,11 @@ is set to be either "local" or "both".
 captured). If not specified, the value will default to 1 which saves every captured image.
 *   labelImage: Optional. If set to "true", images will be saved with bounding boxes and labels. If set to "false", or if not 
 set at all, the images will be saved with no bounding boxes or labels.
+*   savedResolution: Optional. A map containing options for adjusting the resolution of the saved images.
+    * *Options for savedResolution:*
+    1. longEdge: Optional. Used to resize the saved images. Must be a non-negative integer that is smaller than the long edge 
+    of the image to be saved. This value will become the new long edge dimension, and the short edge will be scaled down to 
+    maintain the same dimension ratio as the original image.
 
 ## Messages from the Source<a name="msgFormat" id="msgFormat"></a>
 
