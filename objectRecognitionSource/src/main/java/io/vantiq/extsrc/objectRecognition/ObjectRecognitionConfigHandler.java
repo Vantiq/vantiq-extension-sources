@@ -9,6 +9,7 @@
 
 package io.vantiq.extsrc.objectRecognition;
 
+import java.io.IOException;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.util.Map;
@@ -92,10 +93,27 @@ public class ObjectRecognitionConfigHandler extends Handler<ExtensionServiceMess
                             "Request must be a map", null);
                 }
                 
-                // Read, process, and send the image
-                ImageRetrieverResults data = source.retrieveImage(message);
-                if (data != null) {
-                    source.sendDataFromImage(data, message);
+                Map<String, ?> request = (Map<String, ?>) message.getObject();
+                String replyAddress = ExtensionServiceMessage.extractReplyAddress(message);
+                if (request.get("operation") instanceof String) {
+                    String operation = (String) request.get("operation");
+                    if (operation.equalsIgnoreCase("upload")) {
+                        source.uploadLocalImages(request, replyAddress);
+                    } else if (operation.equalsIgnoreCase("delete")) {
+                        source.deleteLocalImages(request, replyAddress);
+                    } else {
+                        // Read, process, and send the image
+                        ImageRetrieverResults data = source.retrieveImage(message);
+                        if (data != null) {
+                            source.sendDataFromImage(data, message);
+                        }
+                    }
+                } else {
+                    // Read, process, and send the image
+                    ImageRetrieverResults data = source.retrieveImage(message);
+                    if (data != null) {
+                        source.sendDataFromImage(data, message);
+                    }
                 }
             }
         };
