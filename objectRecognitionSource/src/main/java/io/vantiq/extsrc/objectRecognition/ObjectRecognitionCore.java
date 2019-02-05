@@ -410,40 +410,18 @@ public class ObjectRecognitionCore {
            String imageDir = (String) request.get("imageDir");
            
            // Set up ImageUtil properties
-           ImageUtil imageUtil = new ImageUtil();
-           Vantiq vantiq = new io.vantiq.client.Vantiq(targetVantiqServer);
-           vantiq.setAccessToken(authToken);
-           imageUtil.vantiq = vantiq;
-           imageUtil.outputDir = imageDir;
-           imageUtil.sourceName = sourceName;
-           // Checking if additional image resizing has been requested
-           if (request.get("savedResolution") instanceof Map) {
-               Map savedResolution = (Map) request.get("savedResolution");
-               if (savedResolution.get("longEdge") instanceof Integer) {
-                   int longEdge = (Integer) savedResolution.get("longEdge");
-                   if (longEdge < 0) {
-                       log.error("The config value for longEdge must be a non-negative integer. Saved image resolution will not be changed.");
-                   } else {
-                       imageUtil.longEdge = longEdge;
-                       imageUtil.queryResize = true;
-                   }
-               }
-           }
+           ImageUtil imageUtil = setupQueryImageUtil(request);
            
            // Checking if "imageName" option was used to specify the file(s) to upload.
            if (request.get("imageName") instanceof String) {
                String imageName = (String) request.get("imageName");
                // If imageName is "all", then upload all images in the directory
                if (imageName.equals("all")) {
-                   uploadAll(imageDir, imageUtil);
-                   // Send nothing back as query response
-                   client.sendQueryResponse(204, replyAddress, new LinkedHashMap<>());
+                   uploadMany(imageDir, imageUtil, null);
                    
                // Otherwise, upload the one image matching the imageName.
                } else {
                    uploadOne(imageName, imageDir, imageUtil);
-                   // Send nothing back as query response
-                   client.sendQueryResponse(204, replyAddress, new LinkedHashMap<>());
                }
                
            // Checking if "imageDate" option was used to specify the file(s) to upload.
@@ -451,9 +429,7 @@ public class ObjectRecognitionCore {
                String imageDate = (String) request.get("imageDate");
                // If imageDate is "all", then upload all images in the directory
                if (imageDate.equals("all")) {
-                   uploadAll(imageDir, imageUtil);
-                   // Send nothing back as query response
-                   client.sendQueryResponse(204, replyAddress, new LinkedHashMap<>());
+                   uploadMany(imageDir, imageUtil, null);
                    
                // Otherwise, check if "dateRange" was specified
                } else {
@@ -463,7 +439,6 @@ public class ObjectRecognitionCore {
                        if (dateRange.equals("before")) {
                            try {
                                Date beforeDate = format.parse(imageDate);
-                               File imgDir = new File(imageDir);
                                // Create filter that returns files as long as they are before the imageDate (inclusive)
                                FilenameFilter filter = new FilenameFilter() {
                                    public boolean accept(File dir, String name) {
@@ -475,21 +450,14 @@ public class ObjectRecognitionCore {
                                        }
                                    }
                                };
-                               File[] dirListing = imgDir.listFiles(filter);
-                               if (dirListing != null) {
-                                   for (File fileToUpload : dirListing) {
-                                       imageUtil.uploadImage(fileToUpload, fileToUpload.getName());
-                                   }
-                               }
+                               uploadMany(imageDir, imageUtil, filter);
                            } catch (ParseException e) {
                                log.error("An error occurred while parsing the imageDate");
                            }
-                           client.sendQueryResponse(204, replyAddress, new LinkedHashMap<>());
                        // Upload all images after the given date
                        } else if (dateRange.equals("after")) {
                            try {
                                Date afterDate = format.parse(imageDate);
-                               File imgDir = new File(imageDir);
                                FilenameFilter filter = new FilenameFilter() {
                                    public boolean accept(File dir, String name) {
                                        try {
@@ -500,27 +468,17 @@ public class ObjectRecognitionCore {
                                        }
                                    }
                                };
-                               File[] dirListing = imgDir.listFiles(filter);
-                               if (dirListing != null) {
-                                   for (File fileToUpload : dirListing) {
-                                       imageUtil.uploadImage(fileToUpload, fileToUpload.getName());
-                                   }
-                               }
+                               uploadMany(imageDir, imageUtil, filter);
                            } catch (ParseException e) {
                                log.error("An error occurred while parsing the imageDate");
                            }
-                           client.sendQueryResponse(204, replyAddress, new LinkedHashMap<>());
                            
                        // Upload the single image matching the given date
                        } else {
                            uploadOne(imageDate, imageDir, imageUtil);
-                           // Send nothing back as query response
-                           client.sendQueryResponse(204, replyAddress, new LinkedHashMap<>());
                        }
                    } else {
                        uploadOne(imageDate, imageDir, imageUtil);
-                       // Send nothing back as query response
-                       client.sendQueryResponse(204, replyAddress, new LinkedHashMap<>());
                    }
                }
                
@@ -528,25 +486,76 @@ public class ObjectRecognitionCore {
            } else if (request.get("imageDate") instanceof List) {
                List<String> imageDate = (List<String>) request.get("imageDate");
                if (imageDate.size() == 2) {
-                   String firstDate = imageDate.get(0);
-                   String secondDate = imageDate.get(1);
-                   File imgDir = new File(imageDir);
+                   try {
+                       String firstDate = imageDate.get(0);
+                       String secondDate = imageDate.get(1);
+                       Date startDate = format.parse(firstDate);
+                       Date endDate = format.parse(secondDate);
+                       FilenameFilter filter = new FilenameFilter() {
+                           public boolean accept(File dir, String name) {
+                               try {
+                                   return !format.parse(name).before(startDate) && !format.parse(name).after(endDate);
+                               } catch (ParseException e) {
+                                   log.error("An error occurred while parsing the imageDate");
+                                   return false;
+                               }
+                           }
+                       };
+                       uploadMany(imageDir, imageUtil, filter);
+                   } catch (ParseException e) {
+                       log.error("An error occurred while parsing the imageDate");
+                   }
                    
                } else {
                    client.sendQueryError(replyAddress, "io.vantiq.extsrc.objectRecognition.invalidQueryRequest", 
                            "The imageDate value was a list with more than two elements. Must be a list containing only "
                            + "[<yourStartDate>, <yourEndDate>].", null);
+                   return;
                }
            } else {
                client.sendQueryError(replyAddress, "io.vantiq.extsrc.objectRecognition.invalidQueryRequest", 
                        "No imageName or imageDate was specified, or they were incorrectly specified. "
                        + "Cannot select image(s) to be uploaded.", null);
+               return;
            }
        } else {
            client.sendQueryError(replyAddress, "io.vantiq.extsrc.objectRecognition.invalidQueryRequest", 
                    "No imageDir was specified, or imageDir was incorrectly specified. "
                    + "Cannot select image(s) to be uploaded.", null);
+           return;
        }
+       // Send nothing back as query response
+       client.sendQueryResponse(204, replyAddress, new LinkedHashMap<>());
+   }
+   
+   /**
+    * A helper function called by uploadLocalImages, used to set up the ImageUtil class
+    * @param request    The parameters sent with the query.
+    * @return           The instantiated ImageUtil class, setup with properties based on the request
+    */
+   public ImageUtil setupQueryImageUtil(Map<String, ?> request) {   
+       String imageDir = (String) request.get("imageDir");
+       ImageUtil imageUtil = new ImageUtil();
+       Vantiq vantiq = new io.vantiq.client.Vantiq(targetVantiqServer);
+       vantiq.setAccessToken(authToken);
+       imageUtil.vantiq = vantiq;
+       imageUtil.outputDir = imageDir;
+       imageUtil.sourceName = sourceName;
+       // Checking if additional image resizing has been requested
+       if (request.get("savedResolution") instanceof Map) {
+           Map savedResolution = (Map) request.get("savedResolution");
+           if (savedResolution.get("longEdge") instanceof Integer) {
+               int longEdge = (Integer) savedResolution.get("longEdge");
+               if (longEdge < 0) {
+                   log.error("The config value for longEdge must be a non-negative integer. Saved image resolution will not be changed.");
+               } else {
+                   imageUtil.longEdge = longEdge;
+                   imageUtil.queryResize = true;
+               }
+           }
+       }
+       
+       return imageUtil;
    }
    
    /**
@@ -564,13 +573,20 @@ public class ObjectRecognitionCore {
    }
    
    /**
-    * A helper function called by uploadLocalImages, used if imageName or imageDate is set to "all"
+    * A helper function called by uploadLocalImages, used to upload multiple images to VANTIQ
     * @param imageDir    The name of the image directory
     * @param imageUtil   The instantiated ImageUtil class containing the method to upload
+    * @param filter      The filter used if a dateRange was selected, otherwise null
     */
-   public void uploadAll(String imageDir, ImageUtil imageUtil) {
+   public void uploadMany(String imageDir, ImageUtil imageUtil, FilenameFilter filter) {
        File imgDirectory = new File(imageDir);
-       File[] directoryListing = imgDirectory.listFiles();
+       File[] directoryListing;
+       if (filter == null) {
+           directoryListing = imgDirectory.listFiles();
+       } else {
+           directoryListing = imgDirectory.listFiles(filter);
+       }
+       
        if (directoryListing != null) {
            for (File fileToUpload : directoryListing) {
                imageUtil.uploadImage(fileToUpload, fileToUpload.getName());
@@ -594,16 +610,11 @@ public class ObjectRecognitionCore {
                String imageName = (String) request.get("imageName");
                // If imageName is "all", then delete all images in the directory
                if (imageName.equals("all")) {
-                   deleteAll(imageDir, imageUtil);
-                   // Send nothing back as query response
-                   client.sendQueryResponse(204, replyAddress, new LinkedHashMap<>());
+                   deleteMany(imageDir, imageUtil, null);
                    
                // Otherwise, delete the one image matching the imageName.
                } else {
-                   File imgFile = new File(imageDir + File.separator + imageName);
-                   imageUtil.deleteImage(imgFile);
-                   // Send nothing back as query response
-                   client.sendQueryResponse(204, replyAddress, new LinkedHashMap<>());
+                   deleteOne(imageName, imageDir, imageUtil);
                }
                
            // Checking if "imageDate" option was used to specify the file(s) to delete.
@@ -611,38 +622,132 @@ public class ObjectRecognitionCore {
                String imageDate = (String) request.get("imageDate");
                // If imageDate is "all", then delete all images in the directory
                if (imageDate.equals("all")) {
-                   deleteAll(imageDir, imageUtil);
-                   // Send nothing back as query response
-                   client.sendQueryResponse(204, replyAddress, new LinkedHashMap<>());
+                   deleteMany(imageDir, imageUtil, null);
                    
                // Otherwise, check if "dateRange" was specified
                } else {
-                   
+                   if (request.get("dateRange") instanceof String) {
+                       String dateRange = (String) request.get("dateRange");
+                       // Upload all images before the given date
+                       if (dateRange.equals("before")) {
+                           try {
+                               Date beforeDate = format.parse(imageDate);
+                               // Create filter that returns files as long as they are before the imageDate (inclusive)
+                               FilenameFilter filter = new FilenameFilter() {
+                                   public boolean accept(File dir, String name) {
+                                       try {
+                                           return !format.parse(name).after(beforeDate);
+                                       } catch (ParseException e) {
+                                           log.error("An error occurred while parsing the imageDate");
+                                           return false;
+                                       }
+                                   }
+                               };
+                               deleteMany(imageDir, imageUtil, filter);
+                           } catch (ParseException e) {
+                               log.error("An error occurred while parsing the imageDate");
+                           }
+                       // Delete all images after the given date
+                       } else if (dateRange.equals("after")) {
+                           try {
+                               Date afterDate = format.parse(imageDate);
+                               FilenameFilter filter = new FilenameFilter() {
+                                   public boolean accept(File dir, String name) {
+                                       try {
+                                           return !format.parse(name).before(afterDate);
+                                       } catch (ParseException e) {
+                                           log.error("An error occurred while parsing the imageDate");
+                                           return false;
+                                       }
+                                   }
+                               };
+                               deleteMany(imageDir, imageUtil, filter);
+                           } catch (ParseException e) {
+                               log.error("An error occurred while parsing the imageDate");
+                           }
+                           
+                       // Delete the single image matching the given date
+                       } else {
+                           deleteOne(imageDate, imageDir, imageUtil);
+                       }
+                   } else {
+                       deleteOne(imageDate, imageDir, imageUtil);
+                   }
                }
 
            // Checking if "imageDate" option was used as a list of two dates to specify the files to delete.
            } else if (request.get("imageDate") instanceof List) {
-               
+               List<String> imageDate = (List<String>) request.get("imageDate");
+               if (imageDate.size() == 2) {
+                   try {
+                       String firstDate = imageDate.get(0);
+                       String secondDate = imageDate.get(1);
+                       Date startDate = format.parse(firstDate);
+                       Date endDate = format.parse(secondDate);
+                       FilenameFilter filter = new FilenameFilter() {
+                           public boolean accept(File dir, String name) {
+                               try {
+                                   return !format.parse(name).before(startDate) && !format.parse(name).after(endDate);
+                               } catch (ParseException e) {
+                                   log.error("An error occurred while parsing the imageDate");
+                                   return false;
+                               }
+                           }
+                       };
+                       deleteMany(imageDir, imageUtil, filter);
+                   } catch (ParseException e) {
+                       log.error("An error occurred while parsing the imageDate");
+                   }
+                   
+               } else {
+                   client.sendQueryError(replyAddress, "io.vantiq.extsrc.objectRecognition.invalidQueryRequest", 
+                           "The imageDate value was a list with more than two elements. Must be a list containing only "
+                           + "[<yourStartDate>, <yourEndDate>].", null);
+                   return;
+               }
            } else {
                client.sendQueryError(replyAddress, "io.vantiq.extsrc.objectRecognition.invalidQueryRequest", 
                        "No imageName or imageDate was specified, or they were incorrectly specified. "
                        + "Cannot select image(s) to be deleted.", null);
+               return;
            }
        } else {
            client.sendQueryError(replyAddress, "io.vantiq.extsrc.objectRecognition.invalidQueryRequest", 
                    "No imageDir was specified, or imageDir was incorrectly specified. "
                    + "Cannot select image(s) to be deleted.", null);
+           return;
        }
+       client.sendQueryResponse(204, replyAddress, new LinkedHashMap<>());
    }
    
    /**
-    * A helper function called by deleteLocalImages(), used if imageName or imageDate is set to "all"
+    * A helper function called by deleteLocalImages, used to delete one specific image
+    * @param name       The name of the image to be uploaded
+    * @param imageDir   The name of the image directory
+    * @param imageUtil  The instantiated ImageUtil class containing the method to delete
+    */
+   public void deleteOne(String name, String imageDir, ImageUtil imageUtil) {
+       if (!name.endsWith(".jpg")) {
+           name = name + ".jpg";
+       }
+       File imgFile = new File(imageDir + File.separator + name);
+       imageUtil.deleteImage(imgFile);
+   }
+   
+   /**
+    * A helper function called by deleteLocalImages, used if imageName or imageDate is set to "all"
     * @param imageDir    The name of the image directory
     * @param imageUtil   The instantiated ImageUtil class containing the method to delete
+    * @param filter      The filter used if a dateRange was selected, otherwise null
     */
-   public void deleteAll(String imageDir, ImageUtil imageUtil) {
+   public void deleteMany(String imageDir, ImageUtil imageUtil, FilenameFilter filter) {
        File imgDirectory = new File(imageDir);
-       File[] directoryListing = imgDirectory.listFiles();
+       File[] directoryListing;
+       if (filter == null) {
+           directoryListing = imgDirectory.listFiles();
+       } else {
+           directoryListing = imgDirectory.listFiles(filter);
+       }
        if (directoryListing != null) {
            for (File fileToDelete : directoryListing) {
                imageUtil.deleteImage(fileToDelete);
