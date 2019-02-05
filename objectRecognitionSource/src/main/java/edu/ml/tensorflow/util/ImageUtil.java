@@ -60,7 +60,6 @@ public class ImageUtil {
      * and erroring out if it disappears in the interim 
      * @param image     The image to save
      * @param target    The name of the file to be written
-     * @throws IOException 
      */
     public void saveImage(final BufferedImage image, final String target) {
         File fileToUpload = null;
@@ -103,7 +102,6 @@ public class ImageUtil {
      * A method used to upload images to VANTIQ, using the VANTIQ SDK
      * @param imgFile   The file to be uploaded. If not specified to save locally, this file will be deleted.
      * @param target    The name of the file to be uploaded.
-     * @throws IOException 
      */
     public void uploadImage(File imgFile, String target) {
         if (queryResize) {
