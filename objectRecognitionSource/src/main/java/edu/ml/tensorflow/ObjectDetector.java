@@ -127,6 +127,7 @@ public class ObjectDetector {
                 }
             }
             this.imageUtil = imageUtil;
+            imageUtil.frameSize = this.frameSize;
             this.vantiq = vantiq;
             this.labelImage = labelImage;
             this.sourceName = sourceName;
