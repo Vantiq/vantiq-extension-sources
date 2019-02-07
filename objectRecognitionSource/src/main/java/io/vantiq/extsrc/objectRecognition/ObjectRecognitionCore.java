@@ -405,108 +405,40 @@ public class ObjectRecognitionCore {
     * @param replyAddress   The replyAddress used to send a query response.
     */
    public void uploadLocalImages(Map<String, ?> request, String replyAddress) {   
+       String imageDir = null;
+       String imageName = null;
+       String imageDate = null;
+       String dateRange = null;
+       List<String> imageDateList = null;
+       ImageUtil imageUtil;
+       
+       // ------------------------ GATHERING PARATMERS ---------------------------
+       
        // Checking to make sure there is an image directory specified. (Required)
        if (request.get("imageDir") instanceof String) {
-           String imageDir = (String) request.get("imageDir");
+           imageDir = (String) request.get("imageDir");
            
            // Set up ImageUtil properties
-           ImageUtil imageUtil = setupQueryImageUtil(request);
+           imageUtil = setupQueryImageUtil(request);
            
            // Checking if "imageName" option was used to specify the file(s) to upload.
            if (request.get("imageName") instanceof String) {
-               String imageName = (String) request.get("imageName");
-               // If imageName is "all", then upload all images in the directory
-               if (imageName.equals("all")) {
-                   uploadMany(imageDir, imageUtil, null);
-                   
-               // Otherwise, upload the one image matching the imageName.
-               } else {
-                   uploadOne(imageName, imageDir, imageUtil);
-               }
+               imageName = (String) request.get("imageName");
                
            // Checking if "imageDate" option was used to specify the file(s) to upload.
            } else if (request.get("imageDate") instanceof String) {
-               String imageDate = (String) request.get("imageDate");
-               // If imageDate is "all", then upload all images in the directory
-               if (imageDate.equals("all")) {
-                   uploadMany(imageDir, imageUtil, null);
-                   
-               // Otherwise, check if "dateRange" was specified
+               imageDate = (String) request.get("imageDate");
+               
+               if (request.get("dateRange") instanceof String) {
+                   dateRange = (String) request.get("dateRange");
                } else {
-                   if (request.get("dateRange") instanceof String) {
-                       String dateRange = (String) request.get("dateRange");
-                       // Upload all images before the given date
-                       if (dateRange.equals("before")) {
-                           try {
-                               Date beforeDate = format.parse(imageDate);
-                               // Create filter that returns files as long as they are before the imageDate (inclusive)
-                               FilenameFilter filter = new FilenameFilter() {
-                                   public boolean accept(File dir, String name) {
-                                       try {
-                                           return !format.parse(name).after(beforeDate);
-                                       } catch (ParseException e) {
-                                           log.error("An error occurred while parsing the imageDate");
-                                           return false;
-                                       }
-                                   }
-                               };
-                               uploadMany(imageDir, imageUtil, filter);
-                           } catch (ParseException e) {
-                               log.error("An error occurred while parsing the imageDate");
-                           }
-                       // Upload all images after the given date
-                       } else if (dateRange.equals("after")) {
-                           try {
-                               Date afterDate = format.parse(imageDate);
-                               FilenameFilter filter = new FilenameFilter() {
-                                   public boolean accept(File dir, String name) {
-                                       try {
-                                           return !format.parse(name).before(afterDate);
-                                       } catch (ParseException e) {
-                                           log.error("An error occurred while parsing the imageDate");
-                                           return false;
-                                       }
-                                   }
-                               };
-                               uploadMany(imageDir, imageUtil, filter);
-                           } catch (ParseException e) {
-                               log.error("An error occurred while parsing the imageDate");
-                           }
-                           
-                       // Upload the single image matching the given date
-                       } else {
-                           uploadOne(imageDate, imageDir, imageUtil);
-                       }
-                   } else {
-                       uploadOne(imageDate, imageDir, imageUtil);
-                   }
+                   dateRange = "none";
                }
                
            // Checking if "imageDate" option was used as a list of two dates to specify the files to upload.
            } else if (request.get("imageDate") instanceof List) {
-               List<String> imageDate = (List<String>) request.get("imageDate");
-               if (imageDate.size() == 2) {
-                   try {
-                       String firstDate = imageDate.get(0);
-                       String secondDate = imageDate.get(1);
-                       Date startDate = format.parse(firstDate);
-                       Date endDate = format.parse(secondDate);
-                       FilenameFilter filter = new FilenameFilter() {
-                           public boolean accept(File dir, String name) {
-                               try {
-                                   return !format.parse(name).before(startDate) && !format.parse(name).after(endDate);
-                               } catch (ParseException e) {
-                                   log.error("An error occurred while parsing the imageDate");
-                                   return false;
-                               }
-                           }
-                       };
-                       uploadMany(imageDir, imageUtil, filter);
-                   } catch (ParseException e) {
-                       log.error("An error occurred while parsing the imageDate");
-                   }
-                   
-               } else {
+               imageDateList = (List<String>) request.get("imageDate");
+               if (imageDateList.size() != 2) {
                    client.sendQueryError(replyAddress, "io.vantiq.extsrc.objectRecognition.invalidQueryRequest", 
                            "The imageDate value was a list with more than two elements. Must be a list containing only "
                            + "[<yourStartDate>, <yourEndDate>].", null);
@@ -524,6 +456,124 @@ public class ObjectRecognitionCore {
                    + "Cannot select image(s) to be uploaded.", null);
            return;
        }
+       
+       // Processing the query with all the extracted parameters
+       processImageQueryParameters(imageDir, imageName, imageDate, dateRange, imageDateList, imageUtil, replyAddress);
+   }
+   
+   /**
+    * A helper method called by uploadLocalImages, used to process parameters and call methods that upload images
+    * @param imageDir       Directory containing the local images
+    * @param imageName      The imageName query parameter if specified, otherwise null
+    * @param imageDate      The imageDate query parameter if specified, otherwise null
+    * @param dateRange      The dateRange query parameter if specified, otherwise null
+    * @param imageDateList  The imageDate query parameter if specified as list, otherwise null
+    * @param imageUtil      The instantiated ImageUtil class, setup with properties based on the request
+    * @param replyAddress   The replyAddress used to send a response to the query
+    */
+   public void processImageQueryParameters(String imageDir, String imageName, String imageDate, String dateRange, List<String> imageDateList, 
+           ImageUtil imageUtil, String replyAddress) {
+       
+       boolean uploadOne = true; // Used to decide which upload helper method to call
+       String name = null; // Name used if uploadOne is called
+       
+       // Default filter that selects all files
+       FilenameFilter filter = new FilenameFilter() {
+           public boolean accept(File dir, String name) {
+               return true;
+           }
+       };;
+       
+       // ----------------- PROCESSING PARAMETERS AND CREATING FILTERS ------------------
+       
+       if (imageName != null) {
+           // If imageName is "all", then upload all images in the directory
+           if (imageName.equals("all")) {
+               uploadOne = false;
+               
+           // Otherwise, upload the one image matching the imageName.
+           } else {
+               uploadOne = true;
+               name = imageName;
+           }
+       } else if (imageDate != null) {
+           if (imageDate.equals("all")) {
+               uploadOne = false;
+           } else if(dateRange.equals("none")) {
+               uploadOne = true;
+               name = imageDate;
+               
+           // Upload all images before the given date
+           } else if (dateRange.equals("before")) {
+               try {
+                   Date beforeDate = format.parse(imageDate);
+                   // Create filter that returns files as long as they are before the imageDate (inclusive)
+                   filter = new FilenameFilter() {
+                       public boolean accept(File dir, String name) {
+                           try {
+                               return !format.parse(name).after(beforeDate);
+                           } catch (ParseException e) {
+                               log.error("An error occurred while parsing the imageDate");
+                               return false;
+                           }
+                       }
+                   };
+                   uploadOne = false;
+               } catch (ParseException e) {
+                   log.error("An error occurred while parsing the imageDate");
+               }
+               
+           // Upload all images after the given date
+           } else if (dateRange.equals("after")) {
+               try {
+                   Date afterDate = format.parse(imageDate);
+                   // Create filter that returns files as long as they are after the imageDate (inclusive)
+                   filter = new FilenameFilter() {
+                       public boolean accept(File dir, String name) {
+                           try {
+                               return !format.parse(name).before(afterDate);
+                           } catch (ParseException e) {
+                               log.error("An error occurred while parsing the imageDate");
+                               return false;
+                           }
+                       }
+                   };
+                   uploadOne = false;
+               } catch (ParseException e) {
+                   log.error("An error occurred while parsing the imageDate");
+               }
+           }
+       } else if (imageDateList != null) {
+           try {
+               String firstDate = imageDateList.get(0);
+               String secondDate = imageDateList.get(1);
+               Date startDate = format.parse(firstDate);
+               Date endDate = format.parse(secondDate);
+               // Create filter that returns files as long as they are between the start and end dates (inclusive)
+               filter = new FilenameFilter() {
+                   public boolean accept(File dir, String name) {
+                       try {
+                           return !format.parse(name).before(startDate) && !format.parse(name).after(endDate);
+                       } catch (ParseException e) {
+                           log.error("An error occurred while parsing the imageDate");
+                           return false;
+                       }
+                   }
+               };
+               uploadOne = false;
+           } catch (ParseException e) {
+               log.error("An error occurred while parsing the imageDate");
+           }
+       }
+       
+       // --------------- CALLING HELPER FUNCTIONS TO UPLOAD IMAGES (USING FILTERS IF NEEDED) ----------------
+       
+       if (uploadOne) {
+           uploadOne(name, imageDir, imageUtil);
+       } else {
+           uploadMany(imageDir, imageUtil, filter);
+       }
+            
        // Send nothing back as query response
        client.sendQueryResponse(204, replyAddress, new LinkedHashMap<>());
    }
@@ -559,7 +609,7 @@ public class ObjectRecognitionCore {
    }
    
    /**
-    * A helper function called by uploadLocalImages, used to upload one specific image
+    * A helper function called by processImageQueryParameters, used to upload one specific image
     * @param name       The name of the image to be uploaded
     * @param imageDir   The name of the image directory
     * @param imageUtil  The instantiated ImageUtil class containing the method to upload
@@ -573,19 +623,15 @@ public class ObjectRecognitionCore {
    }
    
    /**
-    * A helper function called by uploadLocalImages, used to upload multiple images to VANTIQ
+    * A helper function called by processImageQueryParameters, used to upload multiple images to VANTIQ
     * @param imageDir    The name of the image directory
     * @param imageUtil   The instantiated ImageUtil class containing the method to upload
-    * @param filter      The filter used if a dateRange was selected, otherwise null
+    * @param filter      The filter used if a dateRange was selected
     */
    public void uploadMany(String imageDir, ImageUtil imageUtil, FilenameFilter filter) {
        File imgDirectory = new File(imageDir);
        File[] directoryListing;
-       if (filter == null) {
-           directoryListing = imgDirectory.listFiles();
-       } else {
-           directoryListing = imgDirectory.listFiles(filter);
-       }
+       directoryListing = imgDirectory.listFiles(filter);
        
        if (directoryListing != null) {
            for (File fileToUpload : directoryListing) {
