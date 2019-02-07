@@ -42,25 +42,30 @@ public class TestUploadAndDeleteQuery extends NeuralNetTestBase {
     static final String OUTPUT_DIR = System.getProperty("buildDir") + "/resources/out";
     static final String NOT_FOUND_CODE = "io.vantiq.resource.not.found";
     
+    static final String IMAGE_1_DATE = "2019-02-05--02-35-10";
     static final Map<String,String> IMAGE_1 = new LinkedHashMap<String,String>() {{
         put("filename", "objectRecognition/" + SOURCE_NAME + "/2019-02-05--02-35-10.jpg");
-        put("date", "2019-02-05--02-35-10");
+        put("date", IMAGE_1_DATE);
     }};
+    static final String IMAGE_2_DATE = "2019-02-05--02-35-13";
     static final Map<String,String> IMAGE_2 = new LinkedHashMap<String,String>() {{
         put("filename", "objectRecognition/" + SOURCE_NAME + "/2019-02-05--02-35-13.jpg");
-        put("date", "2019-02-05--02-35-13");
+        put("date", IMAGE_2_DATE);
     }};
+    static final String IMAGE_3_DATE = "2019-02-05--02-35-16";
     static final Map<String,String> IMAGE_3 = new LinkedHashMap<String,String>() {{
         put("filename", "objectRecognition/" + SOURCE_NAME + "/2019-02-05--02-35-16.jpg");
-        put("date", "2019-02-05--02-35-16");
+        put("date", IMAGE_3_DATE);
     }};
+    static final String IMAGE_4_DATE = "2019-02-05--02-35-19";
     static final Map<String,String> IMAGE_4 = new LinkedHashMap<String,String>() {{
         put("filename", "objectRecognition/" + SOURCE_NAME + "/2019-02-05--02-35-19.jpg");
-        put("date", "2019-02-05--02-35-19");
+        put("date", IMAGE_4_DATE);
     }};
+    static final String IMAGE_5_DATE = "2019-02-05--02-35-22";
     static final Map<String,String> IMAGE_5 = new LinkedHashMap<String,String>() {{
         put("filename", "objectRecognition/" + SOURCE_NAME + "/2019-02-05--02-35-22.jpg");
-        put("date", "2019-02-05--02-35-22");
+        put("date", IMAGE_5_DATE);
     }};
     
     static final String START_DATE = IMAGE_2.get("date");
@@ -158,7 +163,7 @@ public class TestUploadAndDeleteQuery extends NeuralNetTestBase {
         checkNotUploadToVantiq(IMAGE_2.get("filename"));
         checkNotUploadToVantiq(IMAGE_3.get("filename"));
         checkNotUploadToVantiq(IMAGE_4.get("filename"));
-        checkNotUploadToVantiq(IMAGE_5.get("filename"));  
+        checkNotUploadToVantiq(IMAGE_5.get("filename"));
         
         // Using wrong type for imageDir
         request.put("imageDir", 5);
@@ -170,7 +175,7 @@ public class TestUploadAndDeleteQuery extends NeuralNetTestBase {
         checkNotUploadToVantiq(IMAGE_2.get("filename"));
         checkNotUploadToVantiq(IMAGE_3.get("filename"));
         checkNotUploadToVantiq(IMAGE_4.get("filename"));
-        checkNotUploadToVantiq(IMAGE_5.get("filename")); 
+        checkNotUploadToVantiq(IMAGE_5.get("filename"));
         
         // Forgetting to include either imageName or imageDate
         request.put("imageDir", OUTPUT_DIR);
@@ -183,7 +188,7 @@ public class TestUploadAndDeleteQuery extends NeuralNetTestBase {
         checkNotUploadToVantiq(IMAGE_2.get("filename"));
         checkNotUploadToVantiq(IMAGE_3.get("filename"));
         checkNotUploadToVantiq(IMAGE_4.get("filename"));
-        checkNotUploadToVantiq(IMAGE_5.get("filename")); 
+        checkNotUploadToVantiq(IMAGE_5.get("filename"));
         
         // Using wrong type for imageName
         request.put("imageName", 5);
@@ -195,7 +200,7 @@ public class TestUploadAndDeleteQuery extends NeuralNetTestBase {
         checkNotUploadToVantiq(IMAGE_2.get("filename"));
         checkNotUploadToVantiq(IMAGE_3.get("filename"));
         checkNotUploadToVantiq(IMAGE_4.get("filename"));
-        checkNotUploadToVantiq(IMAGE_5.get("filename")); 
+        checkNotUploadToVantiq(IMAGE_5.get("filename"));
         
         // Using wrong type for imageDate
         request.remove("imageName");
@@ -208,7 +213,74 @@ public class TestUploadAndDeleteQuery extends NeuralNetTestBase {
         checkNotUploadToVantiq(IMAGE_2.get("filename"));
         checkNotUploadToVantiq(IMAGE_3.get("filename"));
         checkNotUploadToVantiq(IMAGE_4.get("filename"));
-        checkNotUploadToVantiq(IMAGE_5.get("filename")); 
+        checkNotUploadToVantiq(IMAGE_5.get("filename"));
+        
+        // Using an imageDate list that is null
+        List<String> invalidImageDates = null;
+        request.put("imageDate", invalidImageDates);
+        core.uploadLocalImages(request, null);
+        
+        // Checking that images were not uploaded to VANTIQ
+        Thread.sleep(1000);
+        checkNotUploadToVantiq(IMAGE_1.get("filename"));
+        checkNotUploadToVantiq(IMAGE_2.get("filename"));
+        checkNotUploadToVantiq(IMAGE_3.get("filename"));
+        checkNotUploadToVantiq(IMAGE_4.get("filename"));
+        checkNotUploadToVantiq(IMAGE_5.get("filename"));
+        
+        // Using an imageDate list that has no values
+        invalidImageDates = new ArrayList<String>();
+        core.uploadLocalImages(request, null);
+        
+        // Checking that images were not uploaded to VANTIQ
+        Thread.sleep(1000);
+        checkNotUploadToVantiq(IMAGE_1.get("filename"));
+        checkNotUploadToVantiq(IMAGE_2.get("filename"));
+        checkNotUploadToVantiq(IMAGE_3.get("filename"));
+        checkNotUploadToVantiq(IMAGE_4.get("filename"));
+        checkNotUploadToVantiq(IMAGE_5.get("filename"));
+        
+        // Using an imageDate list that contains non-dates
+        invalidImageDates.add("Not a date");
+        invalidImageDates.add("Also not a date");
+        request.put("imageDate", invalidImageDates);
+        core.uploadLocalImages(request, null);
+        
+        // Checking that images were not uploaded to VANTIQ
+        Thread.sleep(1000);
+        checkNotUploadToVantiq(IMAGE_1.get("filename"));
+        checkNotUploadToVantiq(IMAGE_2.get("filename"));
+        checkNotUploadToVantiq(IMAGE_3.get("filename"));
+        checkNotUploadToVantiq(IMAGE_4.get("filename"));
+        checkNotUploadToVantiq(IMAGE_5.get("filename"));
+        
+        // Using an imageDate list with only one date
+        invalidImageDates.clear();
+        invalidImageDates.add(IMAGE_1_DATE);
+        request.put("imageDate", invalidImageDates);
+        core.uploadLocalImages(request, null);
+        
+        // Checking that images were not uploaded to VANTIQ
+        Thread.sleep(1000);
+        checkNotUploadToVantiq(IMAGE_1.get("filename"));
+        checkNotUploadToVantiq(IMAGE_2.get("filename"));
+        checkNotUploadToVantiq(IMAGE_3.get("filename"));
+        checkNotUploadToVantiq(IMAGE_4.get("filename"));
+        checkNotUploadToVantiq(IMAGE_5.get("filename"));
+        
+        // Using an imageDate list with more than two dates
+        invalidImageDates.add(IMAGE_2_DATE);
+        invalidImageDates.add(IMAGE_3_DATE);
+        request.put("imageDate", invalidImageDates);
+        core.uploadLocalImages(request, null);
+        
+        // Checking that images were not uploaded to VANTIQ
+        Thread.sleep(1000);
+        checkNotUploadToVantiq(IMAGE_1.get("filename"));
+        checkNotUploadToVantiq(IMAGE_2.get("filename"));
+        checkNotUploadToVantiq(IMAGE_3.get("filename"));
+        checkNotUploadToVantiq(IMAGE_4.get("filename"));
+        checkNotUploadToVantiq(IMAGE_5.get("filename"));
     }
     
     @Test
@@ -255,6 +327,48 @@ public class TestUploadAndDeleteQuery extends NeuralNetTestBase {
         request.remove("imageName");
         request.put("imageDate", 5);
         core.deleteLocalImages(request, null);
+        
+        dList = d.listFiles();
+        assert dList.length == 5;
+        
+        // Using an imageDate list that is null
+        List<String> invalidImageDates = null;
+        request.put("imageDate", invalidImageDates);
+        core.uploadLocalImages(request, null);
+        
+        dList = d.listFiles();
+        assert dList.length == 5;
+        
+        // Using an imageDate list that has no values
+        invalidImageDates = new ArrayList<String>();
+        core.uploadLocalImages(request, null);
+        
+        dList = d.listFiles();
+        assert dList.length == 5;
+        
+        // Using an imageDate list that contains non-dates
+        invalidImageDates.add("Not a date");
+        invalidImageDates.add("Also not a date");
+        request.put("imageDate", invalidImageDates);
+        core.uploadLocalImages(request, null);
+        
+        dList = d.listFiles();
+        assert dList.length == 5;
+        
+        // Using an imageDate list with only one date
+        invalidImageDates.clear();
+        invalidImageDates.add(IMAGE_1_DATE);
+        request.put("imageDate", invalidImageDates);
+        core.uploadLocalImages(request, null);
+        
+        dList = d.listFiles();
+        assert dList.length == 5;
+        
+        // Using an imageDate list with more than two dates
+        invalidImageDates.add(IMAGE_2_DATE);
+        invalidImageDates.add(IMAGE_3_DATE);
+        request.put("imageDate", invalidImageDates);
+        core.uploadLocalImages(request, null);
         
         dList = d.listFiles();
         assert dList.length == 5;

@@ -406,18 +406,39 @@ public class ObjectRecognitionCore {
     * @param request        The parameters sent with the query.
     * @param replyAddress   The replyAddress used to send a query response.
     */
-   public void uploadLocalImages(Map<String, ?> request, String replyAddress) {   
+   public void uploadLocalImages(Map<String, ?> request, String replyAddress) {       
+       Map<String,Object> parsedParameterVals = handleQueryParameters(request, replyAddress, "upload");
+       if (parsedParameterVals == null) {
+           return;
+       }
+       
+       String imageDir = (String) parsedParameterVals.get("imageDir");
+       String imageName = (String) parsedParameterVals.get("imageName");
+       List<String> imageDate = (List) parsedParameterVals.get("imageDate");
+       ImageUtil imageUtil = (ImageUtil) parsedParameterVals.get("imageUtil");
+       
+       // Processing the query with all the extracted parameters
+       processUploadQuery(imageDir, imageName, imageDate, imageUtil, replyAddress);
+   }
+   
+   /**
+    * A helper method called by uploadLocalImages and deleteLocalImages, used to check the query parameters
+    * @param request        The parameters sent with the query.
+    * @param replyAddress   The replyAddress used to send a query response.
+    * @param operation      The operation calling this method, either "upload" or "delete"
+    * @return
+    */
+   public Map<String, Object> handleQueryParameters(Map<String, ?> request, String replyAddress, String operation) {
        String imageDir = null;
        String imageName = null;
        List<String> imageDate = null;
        ImageUtil imageUtil;
-              
        // Checking to make sure there is an image directory specified. (Required)
        if (!(request.get("imageDir") instanceof String)) {
            client.sendQueryError(replyAddress, "io.vantiq.extsrc.objectRecognition.invalidQueryRequest", 
                    "No imageDir was specified, or imageDir was incorrectly specified. "
-                   + "Cannot select image(s) to be uploaded.", null);
-           return;
+                   + "Cannot select image(s) to be "+ operation + " .", null);
+           return null;
        } else {
            imageDir = (String) request.get("imageDir");
            // Set up ImageUtil properties
@@ -435,17 +456,22 @@ public class ObjectRecognitionCore {
                client.sendQueryError(replyAddress, "io.vantiq.extsrc.objectRecognition.invalidQueryRequest", 
                        "The imageDate value did not contain exactly two elements. Must be a list containing only "
                        + "[<yourStartDate>, <yourEndDate>].", null);
-               return;
+               return null;
            }
        } else {
            client.sendQueryError(replyAddress, "io.vantiq.extsrc.objectRecognition.invalidQueryRequest", 
                    "No imageName or imageDate was specified, or they were incorrectly specified. "
-                   + "Cannot select image(s) to be uploaded.", null);
-           return;
-       }     
+                   + "Cannot select image(s) to be " + operation + " .", null);
+           return null;
+       }
        
-       // Processing the query with all the extracted parameters
-       processUploadQueryParameters(imageDir, imageName, imageDate, imageUtil, replyAddress);
+       Map<String, Object> parameterValues = new LinkedHashMap<String,Object>();
+       parameterValues.put("imageDir", imageDir);
+       parameterValues.put("imageName", imageName);
+       parameterValues.put("imageDate", imageDate);
+       parameterValues.put("imageUtil", imageUtil);
+       
+       return parameterValues;
    }
    
    /**
@@ -456,7 +482,7 @@ public class ObjectRecognitionCore {
     * @param imageUtil      The instantiated ImageUtil class, setup with properties based on the request
     * @param replyAddress   The replyAddress used to send a response to the query
     */
-   public void processUploadQueryParameters(String imageDir, String imageName, List<String> imageDate, ImageUtil imageUtil, String replyAddress) {
+   public void processUploadQuery(String imageDir, String imageName, List<String> imageDate, ImageUtil imageUtil, String replyAddress) {
        // Used to decide which upload helper method to call
        boolean uploadOne = true;
        List<Date> dateRange = new ArrayList<Date>();
@@ -481,7 +507,10 @@ public class ObjectRecognitionCore {
                        dateRange.add(format.parse(date));
                    } catch (ParseException e) {
                        log.error("An error occurred while parsing the imageDate");
-                       dateRange.add(null);
+                       client.sendQueryError(replyAddress, "io.vantiq.extsrc.objectRecognition.invalidQueryRequest", 
+                               "One of the dates in the imageDate list could not be parsed.Please be sure that both "
+                               + "dates are in the following format: yyyy-MM-dd--HH-mm-ss", null);
+                       return;
                    }
                }
            }
@@ -532,7 +561,7 @@ public class ObjectRecognitionCore {
    }
    
    /**
-    * A helper function called by processUploadQueryParameters, used to upload one specific image
+    * A helper function called by processUploadQuery, used to upload one specific image
     * @param name       The name of the image to be uploaded
     * @param imageDir   The name of the image directory
     * @param imageUtil  The instantiated ImageUtil class containing the method to upload
@@ -546,7 +575,7 @@ public class ObjectRecognitionCore {
    }
    
    /**
-    * A helper function called by processUploadQueryParameters, used to upload multiple images to VANTIQ
+    * A helper function called by processUploadQuery, used to upload multiple images to VANTIQ
     * @param imageDir    The name of the image directory
     * @param imageUtil   The instantiated ImageUtil class containing the method to upload
     * @param filter      The filter used if a dateRange was selected
@@ -567,44 +596,19 @@ public class ObjectRecognitionCore {
     * @param request        The parameters sent with the query.
     * @param replyAddress   The replyAddress used to send a query response.
     */
-   public void deleteLocalImages(Map<String, ?> request, String replyAddress) {
-       String imageDir = null;
-       String imageName = null;
-       List<String> imageDate = null;
-       ImageUtil imageUtil = new ImageUtil();
-              
-       // Checking to make sure there is an image directory specified. (Required)
-       if (!(request.get("imageDir") instanceof String)) {
-           client.sendQueryError(replyAddress, "io.vantiq.extsrc.objectRecognition.invalidQueryRequest", 
-                   "No imageDir was specified, or imageDir was incorrectly specified. "
-                   + "Cannot select image(s) to be deleted.", null);
+   public void deleteLocalImages(Map<String, ?> request, String replyAddress) {  
+       Map<String,Object> parsedParameterVals = handleQueryParameters(request, replyAddress, "delete");
+       if (parsedParameterVals == null) {
            return;
-       } else {
-           imageDir = (String) request.get("imageDir");
        }
-           
-       // Checking if "imageName" option was used to specify the file(s) to upload.
-       if (request.get("imageName") instanceof String) {
-           imageName = (String) request.get("imageName");
-           
-       // Checking if "imageDate" option was used as a list of two dates to specify the files to upload.
-       } else if (request.get("imageDate") instanceof List) {
-           imageDate = (List<String>) request.get("imageDate");
-           if (imageDate.size() != 2) {
-               client.sendQueryError(replyAddress, "io.vantiq.extsrc.objectRecognition.invalidQueryRequest", 
-                       "The imageDate value did not contain exactly two elements. Must be a list containing only "
-                       + "[<yourStartDate>, <yourEndDate>].", null);
-               return;
-           }
-       } else {
-           client.sendQueryError(replyAddress, "io.vantiq.extsrc.objectRecognition.invalidQueryRequest", 
-                   "No imageName or imageDate was specified, or they were incorrectly specified. "
-                   + "Cannot select image(s) to be deleted.", null);
-           return;
-       }     
+       
+       String imageDir = (String) parsedParameterVals.get("imageDir");
+       String imageName = (String) parsedParameterVals.get("imageName");
+       List<String> imageDate = (List) parsedParameterVals.get("imageDate");
+       ImageUtil imageUtil = (ImageUtil) parsedParameterVals.get("imageUtil");
        
        // Processing the query with all the extracted parameters
-       processDeleteQueryParameters(imageDir, imageName, imageDate, imageUtil, replyAddress);
+       processDeleteQuery(imageDir, imageName, imageDate, imageUtil, replyAddress);
    }
    
    /**
@@ -615,7 +619,7 @@ public class ObjectRecognitionCore {
     * @param imageUtil      The instantiated ImageUtil class
     * @param replyAddress   The replyAddress used to send a response to the query
     */
-   public void processDeleteQueryParameters(String imageDir, String imageName, List<String> imageDate, ImageUtil imageUtil, String replyAddress) {
+   public void processDeleteQuery(String imageDir, String imageName, List<String> imageDate, ImageUtil imageUtil, String replyAddress) {
     // Used to decide which delete helper method to call
        boolean deleteOne = true;
        List<Date> dateRange = new ArrayList<Date>();
@@ -639,8 +643,10 @@ public class ObjectRecognitionCore {
                    try {
                        dateRange.add(format.parse(date));
                    } catch (ParseException e) {
-                       log.error("An error occurred while parsing the imageDate");
-                       dateRange.add(null);
+                       client.sendQueryError(replyAddress, "io.vantiq.extsrc.objectRecognition.invalidQueryRequest", 
+                               "One of the dates in the imageDate list could not be parsed.Please be sure that both "
+                               + "dates are in the following format: yyyy-MM-dd--HH-mm-ss", null);
+                       return;
                    }
                }
            }
@@ -661,7 +667,7 @@ public class ObjectRecognitionCore {
    }
    
    /**
-    * A helper function called by processDeleteQueryParameters, used to delete one specific image
+    * A helper function called by processDeleteQuery, used to delete one specific image
     * @param name       The name of the image to be uploaded
     * @param imageDir   The name of the image directory
     * @param imageUtil  The instantiated ImageUtil class containing the method to delete
@@ -675,7 +681,7 @@ public class ObjectRecognitionCore {
    }
    
    /**
-    * A helper function called by processDeleteQueryParameters, used if imageName or imageDate is set to "all"
+    * A helper function called by processDeleteQuery, used if imageName or imageDate is set to "all"
     * @param imageDir    The name of the image directory
     * @param imageUtil   The instantiated ImageUtil class containing the method to delete
     * @param filter      The filter used if a dateRange was selected, otherwise null
