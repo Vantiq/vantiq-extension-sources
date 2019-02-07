@@ -13,6 +13,7 @@ import java.io.File;
 import java.io.FilenameFilter;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -39,6 +40,7 @@ import io.vantiq.extsrc.objectRecognition.imageRetriever.ImageRetrieverInterface
 import io.vantiq.extsrc.objectRecognition.imageRetriever.ImageRetrieverResults;
 import io.vantiq.extsrc.objectRecognition.neuralNet.NeuralNetInterface;
 import io.vantiq.extsrc.objectRecognition.neuralNet.NeuralNetResults;
+import io.vantiq.extsrc.objectRecognition.query.DateRangeFilter;
 
 /**
  * Controls the connection and interaction with the Vantiq server. Initialize it and call start() and it will run 
@@ -407,58 +409,45 @@ public class ObjectRecognitionCore {
    public void uploadLocalImages(Map<String, ?> request, String replyAddress) {   
        String imageDir = null;
        String imageName = null;
-       String imageDate = null;
-       String dateRange = null;
-       List<String> imageDateList = null;
+       List<String> imageDate = null;
        ImageUtil imageUtil;
        
        // ------------------------ GATHERING PARATMERS ---------------------------
        
        // Checking to make sure there is an image directory specified. (Required)
-       if (request.get("imageDir") instanceof String) {
-           imageDir = (String) request.get("imageDir");
-           
-           // Set up ImageUtil properties
-           imageUtil = setupQueryImageUtil(request);
-           
-           // Checking if "imageName" option was used to specify the file(s) to upload.
-           if (request.get("imageName") instanceof String) {
-               imageName = (String) request.get("imageName");
-               
-           // Checking if "imageDate" option was used to specify the file(s) to upload.
-           } else if (request.get("imageDate") instanceof String) {
-               imageDate = (String) request.get("imageDate");
-               
-               if (request.get("dateRange") instanceof String) {
-                   dateRange = (String) request.get("dateRange");
-               } else {
-                   dateRange = "none";
-               }
-               
-           // Checking if "imageDate" option was used as a list of two dates to specify the files to upload.
-           } else if (request.get("imageDate") instanceof List) {
-               imageDateList = (List<String>) request.get("imageDate");
-               if (imageDateList.size() != 2) {
-                   client.sendQueryError(replyAddress, "io.vantiq.extsrc.objectRecognition.invalidQueryRequest", 
-                           "The imageDate value was a list with more than two elements. Must be a list containing only "
-                           + "[<yourStartDate>, <yourEndDate>].", null);
-                   return;
-               }
-           } else {
-               client.sendQueryError(replyAddress, "io.vantiq.extsrc.objectRecognition.invalidQueryRequest", 
-                       "No imageName or imageDate was specified, or they were incorrectly specified. "
-                       + "Cannot select image(s) to be uploaded.", null);
-               return;
-           }
-       } else {
+       if (!(request.get("imageDir") instanceof String)) {
            client.sendQueryError(replyAddress, "io.vantiq.extsrc.objectRecognition.invalidQueryRequest", 
                    "No imageDir was specified, or imageDir was incorrectly specified. "
                    + "Cannot select image(s) to be uploaded.", null);
            return;
+       } else {
+           imageDir = (String) request.get("imageDir");
+           // Set up ImageUtil properties
+           imageUtil = setupQueryImageUtil(request);
        }
+           
+       // Checking if "imageName" option was used to specify the file(s) to upload.
+       if (request.get("imageName") instanceof String) {
+           imageName = (String) request.get("imageName");
+           
+       // Checking if "imageDate" option was used as a list of two dates to specify the files to upload.
+       } else if (request.get("imageDate") instanceof List) {
+           imageDate = (List<String>) request.get("imageDate");
+           if (imageDate.size() != 2) {
+               client.sendQueryError(replyAddress, "io.vantiq.extsrc.objectRecognition.invalidQueryRequest", 
+                       "The imageDate value was a list with more than two elements. Must be a list containing only "
+                       + "[<yourStartDate>, <yourEndDate>].", null);
+               return;
+           }
+       } else {
+           client.sendQueryError(replyAddress, "io.vantiq.extsrc.objectRecognition.invalidQueryRequest", 
+                   "No imageName or imageDate was specified, or they were incorrectly specified. "
+                   + "Cannot select image(s) to be uploaded.", null);
+           return;
+       }     
        
        // Processing the query with all the extracted parameters
-       processImageQueryParameters(imageDir, imageName, imageDate, dateRange, imageDateList, imageUtil, replyAddress);
+       processUploadQueryParameters(imageDir, imageName, imageDate, imageUtil, replyAddress);
    }
    
    /**
@@ -466,25 +455,15 @@ public class ObjectRecognitionCore {
     * @param imageDir       Directory containing the local images
     * @param imageName      The imageName query parameter if specified, otherwise null
     * @param imageDate      The imageDate query parameter if specified, otherwise null
-    * @param dateRange      The dateRange query parameter if specified, otherwise null
-    * @param imageDateList  The imageDate query parameter if specified as list, otherwise null
     * @param imageUtil      The instantiated ImageUtil class, setup with properties based on the request
     * @param replyAddress   The replyAddress used to send a response to the query
     */
-   public void processImageQueryParameters(String imageDir, String imageName, String imageDate, String dateRange, List<String> imageDateList, 
-           ImageUtil imageUtil, String replyAddress) {
+   public void processUploadQueryParameters(String imageDir, String imageName, List<String> imageDate, ImageUtil imageUtil, String replyAddress) {
+       // Used to decide which upload helper method to call
+       boolean uploadOne = true;
+       List<Date> dateRange = new ArrayList<Date>();
        
-       boolean uploadOne = true; // Used to decide which upload helper method to call
-       String name = null; // Name used if uploadOne is called
-       
-       // Default filter that selects all files
-       FilenameFilter filter = new FilenameFilter() {
-           public boolean accept(File dir, String name) {
-               return true;
-           }
-       };;
-       
-       // ----------------- PROCESSING PARAMETERS AND CREATING FILTERS ------------------
+       // -------------------------- PROCESSING PARAMETERS AND CREATING FILTERS ----------------------------
        
        if (imageName != null) {
            // If imageName is "all", then upload all images in the directory
@@ -494,82 +473,35 @@ public class ObjectRecognitionCore {
            // Otherwise, upload the one image matching the imageName.
            } else {
                uploadOne = true;
-               name = imageName;
            }
-       } else if (imageDate != null) {
-           if (imageDate.equals("all")) {
-               uploadOne = false;
-           } else if(dateRange.equals("none")) {
-               uploadOne = true;
-               name = imageDate;
-               
-           // Upload all images before the given date
-           } else if (dateRange.equals("before")) {
-               try {
-                   Date beforeDate = format.parse(imageDate);
-                   // Create filter that returns files as long as they are before the imageDate (inclusive)
-                   filter = new FilenameFilter() {
-                       public boolean accept(File dir, String name) {
-                           try {
-                               return !format.parse(name).after(beforeDate);
-                           } catch (ParseException e) {
-                               log.error("An error occurred while parsing the imageDate");
-                               return false;
-                           }
-                       }
-                   };
-                   uploadOne = false;
-               } catch (ParseException e) {
-                   log.error("An error occurred while parsing the imageDate");
-               }
-               
-           // Upload all images after the given date
-           } else if (dateRange.equals("after")) {
-               try {
-                   Date afterDate = format.parse(imageDate);
-                   // Create filter that returns files as long as they are after the imageDate (inclusive)
-                   filter = new FilenameFilter() {
-                       public boolean accept(File dir, String name) {
-                           try {
-                               return !format.parse(name).before(afterDate);
-                           } catch (ParseException e) {
-                               log.error("An error occurred while parsing the imageDate");
-                               return false;
-                           }
-                       }
-                   };
-                   uploadOne = false;
-               } catch (ParseException e) {
-                   log.error("An error occurred while parsing the imageDate");
-               }
-           }
-       } else if (imageDateList != null) {
-           try {
-               String firstDate = imageDateList.get(0);
-               String secondDate = imageDateList.get(1);
-               Date startDate = format.parse(firstDate);
-               Date endDate = format.parse(secondDate);
-               // Create filter that returns files as long as they are between the start and end dates (inclusive)
-               filter = new FilenameFilter() {
-                   public boolean accept(File dir, String name) {
+       } else {
+           if (imageDate != null) {
+               for (String date : imageDate) {
+                   if (date.equals("-")) {
+                       dateRange.add(null);
+                   } else {
                        try {
-                           return !format.parse(name).before(startDate) && !format.parse(name).after(endDate);
+                           dateRange.add(format.parse(date));
                        } catch (ParseException e) {
                            log.error("An error occurred while parsing the imageDate");
-                           return false;
+                           dateRange.add(null);
                        }
                    }
-               };
-               uploadOne = false;
-           } catch (ParseException e) {
-               log.error("An error occurred while parsing the imageDate");
+               }
+           } else {
+               dateRange.add(null);
+               dateRange.add(null);
            }
+           
+           uploadOne = false;
        }
        
-       // --------------- CALLING HELPER FUNCTIONS TO UPLOAD IMAGES (USING FILTERS IF NEEDED) ----------------
+       FilenameFilter filter = new DateRangeFilter(dateRange);
+       
+       // --------------- CALLING ELPER FUNCTIONS TO UPLOAD IMAGES (USING FILTERS IF NEEDED) ----------------
        
        if (uploadOne) {
-           uploadOne(name, imageDir, imageUtil);
+           uploadOne(imageName, imageDir, imageUtil);
        } else {
            uploadMany(imageDir, imageUtil, filter);
        }
@@ -609,7 +541,7 @@ public class ObjectRecognitionCore {
    }
    
    /**
-    * A helper function called by processImageQueryParameters, used to upload one specific image
+    * A helper function called by processUploadQueryParameters, used to upload one specific image
     * @param name       The name of the image to be uploaded
     * @param imageDir   The name of the image directory
     * @param imageUtil  The instantiated ImageUtil class containing the method to upload
@@ -623,7 +555,7 @@ public class ObjectRecognitionCore {
    }
    
    /**
-    * A helper function called by processImageQueryParameters, used to upload multiple images to VANTIQ
+    * A helper function called by processUploadQueryParameters, used to upload multiple images to VANTIQ
     * @param imageDir    The name of the image directory
     * @param imageUtil   The instantiated ImageUtil class containing the method to upload
     * @param filter      The filter used if a dateRange was selected

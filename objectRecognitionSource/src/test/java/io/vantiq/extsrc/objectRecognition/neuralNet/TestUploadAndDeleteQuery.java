@@ -71,7 +71,9 @@ public class TestUploadAndDeleteQuery extends NeuralNetTestBase {
     
     
     @BeforeClass
-    public static void setup() {        
+    public static void setup() {
+        testAuthToken="-YyPeih6BkZoQoVa5tUT3cMZ4DXaWs7M6hg26WEdU88=";
+        testVantiqServer="https://dev.vantiq.com";
         core = new NoSendORCore(SOURCE_NAME, testAuthToken, testVantiqServer, MODEL_DIRECTORY);
         core.start(10);
         
@@ -307,8 +309,12 @@ public class TestUploadAndDeleteQuery extends NeuralNetTestBase {
         assumeTrue(testAuthToken != null && testVantiqServer != null);
         
         Map<String, Object> request = new LinkedHashMap<>();
+        List<String> imageDate = new ArrayList<String>();
+        imageDate.add("-");
+        imageDate.add("-");
         request.put("imageDir", OUTPUT_DIR);
-        request.put("imageDate", "all");
+        request.put("imageDate", imageDate);
+        
         
         core.uploadLocalImages(request, null);
                 
@@ -327,28 +333,14 @@ public class TestUploadAndDeleteQuery extends NeuralNetTestBase {
         assumeTrue(testAuthToken != null && testVantiqServer != null);
         
         Map<String, Object> request = new LinkedHashMap<>();
-        // Specifying the dateRange as "none"
+        List<String> imageDate = new ArrayList<String>();
+        imageDate.add(START_DATE);
+        imageDate.add(START_DATE);
         request.put("imageDir", OUTPUT_DIR);
-        request.put("imageDate", START_DATE);
-        request.put("dateRange", "none");
+        request.put("imageDate", imageDate);
         
         core.uploadLocalImages(request, null);
                 
-        // Checking that all images were uploaded to VANTIQ
-        Thread.sleep(1000);
-        checkUploadToVantiq(IMAGE_2.get("filename"));
-        
-        // Checking that none of the other images were uploaded to VANTIQ
-        checkNotUploadToVantiq(IMAGE_1.get("filename"));
-        checkNotUploadToVantiq(IMAGE_3.get("filename"));
-        checkNotUploadToVantiq(IMAGE_4.get("filename"));
-        checkNotUploadToVantiq(IMAGE_5.get("filename"));
-        
-        // Removing the dateRange value, should default to the same behavior
-        request.remove("dateRange");
-        
-        core.uploadLocalImages(request, null);
-        
         // Checking that all images were uploaded to VANTIQ
         Thread.sleep(1000);
         checkUploadToVantiq(IMAGE_2.get("filename"));
@@ -366,9 +358,11 @@ public class TestUploadAndDeleteQuery extends NeuralNetTestBase {
         assumeTrue(testAuthToken != null && testVantiqServer != null);
         
         Map<String, Object> request = new LinkedHashMap<>();
+        List<String> imageDate = new ArrayList<String>();
+        imageDate.add("-");
+        imageDate.add(START_DATE);
         request.put("imageDir", OUTPUT_DIR);
-        request.put("imageDate", START_DATE);
-        request.put("dateRange", "before");
+        request.put("imageDate", imageDate);
         
         core.uploadLocalImages(request, null);
                 
@@ -389,9 +383,11 @@ public class TestUploadAndDeleteQuery extends NeuralNetTestBase {
         assumeTrue(testAuthToken != null && testVantiqServer != null);
         
         Map<String, Object> request = new LinkedHashMap<>();
+        List<String> imageDate = new ArrayList<String>();
+        imageDate.add(END_DATE);
+        imageDate.add("-");
         request.put("imageDir", OUTPUT_DIR);
-        request.put("imageDate", END_DATE);
-        request.put("dateRange", "after");
+        request.put("imageDate", imageDate);
         
         core.uploadLocalImages(request, null);
                 
@@ -412,11 +408,11 @@ public class TestUploadAndDeleteQuery extends NeuralNetTestBase {
         assumeTrue(testAuthToken != null && testVantiqServer != null);
         
         Map<String, Object> request = new LinkedHashMap<>();
-        List<String> dateRange = new ArrayList<String>();
-        dateRange.add(START_DATE);
-        dateRange.add(END_DATE);
+        List<String> imageDate = new ArrayList<String>();
+        imageDate.add(START_DATE);
+        imageDate.add(END_DATE);
         request.put("imageDir", OUTPUT_DIR);
-        request.put("imageDate", dateRange);
+        request.put("imageDate", imageDate);
         
         core.uploadLocalImages(request, null);
                 
