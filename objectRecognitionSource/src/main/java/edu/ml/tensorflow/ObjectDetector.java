@@ -216,6 +216,7 @@ public class ObjectDetector {
                 imageUtil.outputDir = outputDir;
                 imageUtil.vantiq = vantiq;
                 imageUtil.sourceName = sourceName;
+                imageUtil.frameSize = frameSize;
                 if (fileName == null) {
                     fileName = format.format(now) + ".jpg";
                 } else if (!fileName.endsWith(".jpg") && !fileName.endsWith(".jpeg")) {
