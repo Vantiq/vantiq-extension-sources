@@ -555,7 +555,6 @@ public class ObjectRecognitionCore {
        File imgDirectory = new File(imageDir);
        File[] directoryListing;
        directoryListing = imgDirectory.listFiles(filter);
-       
        if (directoryListing != null) {
            for (File fileToUpload : directoryListing) {
                imageUtil.uploadImage(fileToUpload, fileToUpload.getName());
