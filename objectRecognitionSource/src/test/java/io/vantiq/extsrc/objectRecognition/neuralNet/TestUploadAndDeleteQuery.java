@@ -44,23 +44,23 @@ public class TestUploadAndDeleteQuery extends NeuralNetTestBase {
     
     static final Map<String,String> IMAGE_1 = new LinkedHashMap<String,String>() {{
         put("filename", "objectRecognition/" + SOURCE_NAME + "/2019-02-05--02-35-10.jpg");
-        put("date", "2019-02-05--02-35-10.jpg");
+        put("date", "2019-02-05--02-35-10");
     }};
     static final Map<String,String> IMAGE_2 = new LinkedHashMap<String,String>() {{
         put("filename", "objectRecognition/" + SOURCE_NAME + "/2019-02-05--02-35-13.jpg");
-        put("date", "2019-02-05--02-35-13.jpg");
+        put("date", "2019-02-05--02-35-13");
     }};
     static final Map<String,String> IMAGE_3 = new LinkedHashMap<String,String>() {{
         put("filename", "objectRecognition/" + SOURCE_NAME + "/2019-02-05--02-35-16.jpg");
-        put("date", "2019-02-05--02-35-16.jpg");
+        put("date", "2019-02-05--02-35-16");
     }};
     static final Map<String,String> IMAGE_4 = new LinkedHashMap<String,String>() {{
         put("filename", "objectRecognition/" + SOURCE_NAME + "/2019-02-05--02-35-19.jpg");
-        put("date", "2019-02-05--02-35-19.jpg");
+        put("date", "2019-02-05--02-35-19");
     }};
     static final Map<String,String> IMAGE_5 = new LinkedHashMap<String,String>() {{
         put("filename", "objectRecognition/" + SOURCE_NAME + "/2019-02-05--02-35-22.jpg");
-        put("date", "2019-02-05--02-35-22.jpg");
+        put("date", "2019-02-05--02-35-22");
     }};
     
     static final String START_DATE = IMAGE_2.get("date");
@@ -96,19 +96,19 @@ public class TestUploadAndDeleteQuery extends NeuralNetTestBase {
         InputStream in = new ByteArrayInputStream(testImageBytes);
         BufferedImage testImageBuffer = ImageIO.read(in);
         
-        File testFile = new File(OUTPUT_DIR + File.separator + "2019-02-05--02-35-10.jpg");
+        File testFile = new File(OUTPUT_DIR + File.separator + IMAGE_1.get("date") + ".jpg");
         ImageIO.write(testImageBuffer, "jpg", testFile);
         
-        testFile = new File(OUTPUT_DIR + File.separator + "2019-02-05--02-35-13.jpg");
+        testFile = new File(OUTPUT_DIR + File.separator + IMAGE_2.get("date") + ".jpg");
         ImageIO.write(testImageBuffer, "jpg", testFile);
         
-        testFile = new File(OUTPUT_DIR + File.separator + "2019-02-05--02-35-16.jpg");
+        testFile = new File(OUTPUT_DIR + File.separator + IMAGE_3.get("date") + ".jpg");
         ImageIO.write(testImageBuffer, "jpg", testFile);
         
-        testFile = new File(OUTPUT_DIR + File.separator + "2019-02-05--02-35-19.jpg");
+        testFile = new File(OUTPUT_DIR + File.separator + IMAGE_4.get("date") + ".jpg");
         ImageIO.write(testImageBuffer, "jpg", testFile);
         
-        testFile = new File(OUTPUT_DIR + File.separator + "2019-02-05--02-35-22.jpg");
+        testFile = new File(OUTPUT_DIR + File.separator + IMAGE_5.get("date") + ".jpg");
         ImageIO.write(testImageBuffer, "jpg", testFile);
     }
     
@@ -500,7 +500,7 @@ public class TestUploadAndDeleteQuery extends NeuralNetTestBase {
         assert dList.length == 4;
         
         for (File imageFile: dList) {
-            if (imageFile.getName().equals(START_DATE + ".jpg")) {
+            if (imageFile.getName().equals(IMAGE_2.get("filename"))) {
                 fail("Image should have been deleted locally.");
             }
         }
@@ -509,8 +509,11 @@ public class TestUploadAndDeleteQuery extends NeuralNetTestBase {
     @Test
     public void testImageDateDeleteAll() {
         Map<String, Object> request = new LinkedHashMap<>();
+        List<String> imageDate = new ArrayList<String>();
+        imageDate.add("-");
+        imageDate.add("-");
         request.put("imageDir", OUTPUT_DIR);
-        request.put("imageDate", "all");
+        request.put("imageDate", imageDate);
         
         core.deleteLocalImages(request, null);
         
@@ -523,8 +526,11 @@ public class TestUploadAndDeleteQuery extends NeuralNetTestBase {
     @Test
     public void testImageDateDeleteOne() {
         Map<String, Object> request = new LinkedHashMap<>();
+        List<String> imageDate = new ArrayList<String>();
+        imageDate.add(START_DATE);
+        imageDate.add(START_DATE);
         request.put("imageDir", OUTPUT_DIR);
-        request.put("imageDate", START_DATE);
+        request.put("imageDate", imageDate);
         
         core.deleteLocalImages(request, null);
         
@@ -534,7 +540,7 @@ public class TestUploadAndDeleteQuery extends NeuralNetTestBase {
         assert dList.length == 4;
         
         for (File imageFile: dList) {
-            if (imageFile.getName().equals(START_DATE + ".jpg")) {
+            if (imageFile.getName().equals(IMAGE_2.get("filename"))) {
                 fail("Image should have been deleted locally.");
             }
         }
@@ -543,9 +549,11 @@ public class TestUploadAndDeleteQuery extends NeuralNetTestBase {
     @Test
     public void testImageDateDeleteBefore() {
         Map<String, Object> request = new LinkedHashMap<>();
+        List<String> imageDate = new ArrayList<String>();
+        imageDate.add("-");
+        imageDate.add(START_DATE);
         request.put("imageDir", OUTPUT_DIR);
-        request.put("imageDate", START_DATE);
-        request.put("dateRange", "before");
+        request.put("imageDate", imageDate);
         
         core.deleteLocalImages(request, null);
         
@@ -555,7 +563,7 @@ public class TestUploadAndDeleteQuery extends NeuralNetTestBase {
         assert dList.length == 3;
         
         for (File imageFile: dList) {
-            if (imageFile.getName().equals(START_DATE + ".jpg") || imageFile.getName().equals("2019-02-05--02-35-10.jpg")) {
+            if (imageFile.getName().equals(IMAGE_1.get("filename")) || imageFile.getName().equals(IMAGE_2.get("filename"))) {
                 fail("Image should have been deleted locally.");
             }
         }
@@ -564,9 +572,11 @@ public class TestUploadAndDeleteQuery extends NeuralNetTestBase {
     @Test
     public void testImageDateDeleteAfter() {
         Map<String, Object> request = new LinkedHashMap<>();
+        List<String> imageDate = new ArrayList<String>();
+        imageDate.add(START_DATE);
+        imageDate.add("-");
         request.put("imageDir", OUTPUT_DIR);
-        request.put("imageDate", START_DATE);
-        request.put("dateRange", "after");
+        request.put("imageDate", imageDate);
         
         core.deleteLocalImages(request, null);
         
@@ -574,7 +584,7 @@ public class TestUploadAndDeleteQuery extends NeuralNetTestBase {
         File[] dList = d.listFiles();
         
         assert dList.length == 1;
-        assert dList[0].getName().equals("2019-02-05--02-35-10.jpg");
+        assert dList[0].getName().equals(IMAGE_1.get("date") + ".jpg");
     }
     
     @Test
@@ -594,7 +604,7 @@ public class TestUploadAndDeleteQuery extends NeuralNetTestBase {
         assert dList.length == 2;
         
         for (File imageFile: dList) {
-            if (!imageFile.getName().equals("2019-02-05--02-35-10.jpg") && !imageFile.getName().equals("2019-02-05--02-35-22.jpg")) {
+            if (!imageFile.getName().equals(IMAGE_1.get("date") + ".jpg") && !imageFile.getName().equals(IMAGE_5.get("date") + ".jpg")) {
                 fail("Images should have been deleted locally.");
             }
         }
