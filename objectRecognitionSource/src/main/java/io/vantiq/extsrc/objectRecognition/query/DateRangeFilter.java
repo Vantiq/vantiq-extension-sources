@@ -21,17 +21,7 @@ public class DateRangeFilter implements FilenameFilter {
     public boolean accept(File dir, String name) {
         try {
             Date fName = format.parse(name);
-            System.out.print(name);
-            if (beforeDate == null) {
-                System.out.print("Before Date == null");
-            } else if (!fName.after(beforeDate)) {
-                System.out.print("Name is not after 'before date'");
-            } else if (afterDate == null) {
-                System.out.print("After Date == null");
-            } else if (!fName.before(afterDate)) {
-                System.out.print("Name is not before 'after date'");
-            }
-            return ((beforeDate == null) || !fName.after(beforeDate)) && ((afterDate == null) || !fName.before(afterDate));
+            return ((beforeDate == null) || !fName.before(beforeDate)) && ((afterDate == null) || !fName.after(afterDate));
         } catch (ParseException e) {
             return false;
         }

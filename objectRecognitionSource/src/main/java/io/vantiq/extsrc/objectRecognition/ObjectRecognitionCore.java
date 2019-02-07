@@ -411,9 +411,7 @@ public class ObjectRecognitionCore {
        String imageName = null;
        List<String> imageDate = null;
        ImageUtil imageUtil;
-       
-       // ------------------------ GATHERING PARATMERS ---------------------------
-       
+              
        // Checking to make sure there is an image directory specified. (Required)
        if (!(request.get("imageDir") instanceof String)) {
            client.sendQueryError(replyAddress, "io.vantiq.extsrc.objectRecognition.invalidQueryRequest", 
@@ -462,47 +460,40 @@ public class ObjectRecognitionCore {
        // Used to decide which upload helper method to call
        boolean uploadOne = true;
        List<Date> dateRange = new ArrayList<Date>();
-       
-       // -------------------------- PROCESSING PARAMETERS AND CREATING FILTERS ----------------------------
-       
+              
        if (imageName != null) {
            // If imageName is "all", then upload all images in the directory
            if (imageName.equals("all")) {
                uploadOne = false;
+               dateRange.add(null);
+               dateRange.add(null);
                
            // Otherwise, upload the one image matching the imageName.
            } else {
                uploadOne = true;
            }
-       } else {
-           if (imageDate != null) {
-               for (String date : imageDate) {
-                   if (date.equals("-")) {
+       } else if (imageDate != null) {
+           for (String date : imageDate) {
+               if (date.equals("-")) {
+                   dateRange.add(null);
+               } else {
+                   try {
+                       dateRange.add(format.parse(date));
+                   } catch (ParseException e) {
+                       log.error("An error occurred while parsing the imageDate");
                        dateRange.add(null);
-                   } else {
-                       try {
-                           dateRange.add(format.parse(date));
-                       } catch (ParseException e) {
-                           log.error("An error occurred while parsing the imageDate");
-                           dateRange.add(null);
-                       }
                    }
                }
-           } else {
-               dateRange.add(null);
-               dateRange.add(null);
            }
-           
            uploadOne = false;
        }
        
-       FilenameFilter filter = new DateRangeFilter(dateRange);
-       
-       // --------------- CALLING ELPER FUNCTIONS TO UPLOAD IMAGES (USING FILTERS IF NEEDED) ----------------
+       // Calling helper functions to upload images (using filters if needed)
        
        if (uploadOne) {
            uploadOne(imageName, imageDir, imageUtil);
        } else {
+           FilenameFilter filter = new DateRangeFilter(dateRange);
            uploadMany(imageDir, imageUtil, filter);
        }
             
@@ -578,128 +569,100 @@ public class ObjectRecognitionCore {
     * @param replyAddress   The replyAddress used to send a query response.
     */
    public void deleteLocalImages(Map<String, ?> request, String replyAddress) {
+       String imageDir = null;
+       String imageName = null;
+       List<String> imageDate = null;
+       ImageUtil imageUtil = new ImageUtil();
+              
        // Checking to make sure there is an image directory specified. (Required)
-       if (request.get("imageDir") instanceof String) {
-           String imageDir = (String) request.get("imageDir");
-           ImageUtil imageUtil = new ImageUtil();
-           
-           // Checking if "imageName" option was used to specify the file(s) to delete.
-           if (request.get("imageName") instanceof String) {
-               String imageName = (String) request.get("imageName");
-               // If imageName is "all", then delete all images in the directory
-               if (imageName.equals("all")) {
-                   deleteMany(imageDir, imageUtil, null);
-                   
-               // Otherwise, delete the one image matching the imageName.
-               } else {
-                   deleteOne(imageName, imageDir, imageUtil);
-               }
-               
-           // Checking if "imageDate" option was used to specify the file(s) to delete.
-           } else if (request.get("imageDate") instanceof String) {
-               String imageDate = (String) request.get("imageDate");
-               // If imageDate is "all", then delete all images in the directory
-               if (imageDate.equals("all")) {
-                   deleteMany(imageDir, imageUtil, null);
-                   
-               // Otherwise, check if "dateRange" was specified
-               } else {
-                   if (request.get("dateRange") instanceof String) {
-                       String dateRange = (String) request.get("dateRange");
-                       // Upload all images before the given date
-                       if (dateRange.equals("before")) {
-                           try {
-                               Date beforeDate = format.parse(imageDate);
-                               // Create filter that returns files as long as they are before the imageDate (inclusive)
-                               FilenameFilter filter = new FilenameFilter() {
-                                   public boolean accept(File dir, String name) {
-                                       try {
-                                           return !format.parse(name).after(beforeDate);
-                                       } catch (ParseException e) {
-                                           log.error("An error occurred while parsing the imageDate");
-                                           return false;
-                                       }
-                                   }
-                               };
-                               deleteMany(imageDir, imageUtil, filter);
-                           } catch (ParseException e) {
-                               log.error("An error occurred while parsing the imageDate");
-                           }
-                       // Delete all images after the given date
-                       } else if (dateRange.equals("after")) {
-                           try {
-                               Date afterDate = format.parse(imageDate);
-                               FilenameFilter filter = new FilenameFilter() {
-                                   public boolean accept(File dir, String name) {
-                                       try {
-                                           return !format.parse(name).before(afterDate);
-                                       } catch (ParseException e) {
-                                           log.error("An error occurred while parsing the imageDate");
-                                           return false;
-                                       }
-                                   }
-                               };
-                               deleteMany(imageDir, imageUtil, filter);
-                           } catch (ParseException e) {
-                               log.error("An error occurred while parsing the imageDate");
-                           }
-                           
-                       // Delete the single image matching the given date
-                       } else {
-                           deleteOne(imageDate, imageDir, imageUtil);
-                       }
-                   } else {
-                       deleteOne(imageDate, imageDir, imageUtil);
-                   }
-               }
-
-           // Checking if "imageDate" option was used as a list of two dates to specify the files to delete.
-           } else if (request.get("imageDate") instanceof List) {
-               List<String> imageDate = (List<String>) request.get("imageDate");
-               if (imageDate.size() == 2) {
-                   try {
-                       String firstDate = imageDate.get(0);
-                       String secondDate = imageDate.get(1);
-                       Date startDate = format.parse(firstDate);
-                       Date endDate = format.parse(secondDate);
-                       FilenameFilter filter = new FilenameFilter() {
-                           public boolean accept(File dir, String name) {
-                               try {
-                                   return !format.parse(name).before(startDate) && !format.parse(name).after(endDate);
-                               } catch (ParseException e) {
-                                   log.error("An error occurred while parsing the imageDate");
-                                   return false;
-                               }
-                           }
-                       };
-                       deleteMany(imageDir, imageUtil, filter);
-                   } catch (ParseException e) {
-                       log.error("An error occurred while parsing the imageDate");
-                   }
-                   
-               } else {
-                   client.sendQueryError(replyAddress, "io.vantiq.extsrc.objectRecognition.invalidQueryRequest", 
-                           "The imageDate value was a list with more than two elements. Must be a list containing only "
-                           + "[<yourStartDate>, <yourEndDate>].", null);
-                   return;
-               }
-           } else {
-               client.sendQueryError(replyAddress, "io.vantiq.extsrc.objectRecognition.invalidQueryRequest", 
-                       "No imageName or imageDate was specified, or they were incorrectly specified. "
-                       + "Cannot select image(s) to be deleted.", null);
-               return;
-           }
-       } else {
+       if (!(request.get("imageDir") instanceof String)) {
            client.sendQueryError(replyAddress, "io.vantiq.extsrc.objectRecognition.invalidQueryRequest", 
                    "No imageDir was specified, or imageDir was incorrectly specified. "
                    + "Cannot select image(s) to be deleted.", null);
            return;
+       } else {
+           imageDir = (String) request.get("imageDir");
        }
+           
+       // Checking if "imageName" option was used to specify the file(s) to upload.
+       if (request.get("imageName") instanceof String) {
+           imageName = (String) request.get("imageName");
+           
+       // Checking if "imageDate" option was used as a list of two dates to specify the files to upload.
+       } else if (request.get("imageDate") instanceof List) {
+           imageDate = (List<String>) request.get("imageDate");
+           if (imageDate.size() != 2) {
+               client.sendQueryError(replyAddress, "io.vantiq.extsrc.objectRecognition.invalidQueryRequest", 
+                       "The imageDate value was a list with more than two elements. Must be a list containing only "
+                       + "[<yourStartDate>, <yourEndDate>].", null);
+               return;
+           }
+       } else {
+           client.sendQueryError(replyAddress, "io.vantiq.extsrc.objectRecognition.invalidQueryRequest", 
+                   "No imageName or imageDate was specified, or they were incorrectly specified. "
+                   + "Cannot select image(s) to be deleted.", null);
+           return;
+       }     
+       
+       // Processing the query with all the extracted parameters
+       processDeleteQueryParameters(imageDir, imageName, imageDate, imageUtil, replyAddress);
+   }
+   
+   /**
+    * A helper method called by deleteLocalImages, used to process parameters and call methods that delete images
+    * @param imageDir       Directory containing the local images
+    * @param imageName      The imageName query parameter if specified, otherwise null
+    * @param imageDate      The imageDate query parameter if specified, otherwise null
+    * @param imageUtil      The instantiated ImageUtil class
+    * @param replyAddress   The replyAddress used to send a response to the query
+    */
+   public void processDeleteQueryParameters(String imageDir, String imageName, List<String> imageDate, ImageUtil imageUtil, String replyAddress) {
+    // Used to decide which delete helper method to call
+       boolean deleteOne = true;
+       List<Date> dateRange = new ArrayList<Date>();
+              
+       if (imageName != null) {
+           // If imageName is "all", then delete all images in the directory
+           if (imageName.equals("all")) {
+               deleteOne = false;
+               dateRange.add(null);
+               dateRange.add(null);
+               
+           // Otherwise, delete the one image matching the imageName.
+           } else {
+               deleteOne = true;
+           }
+       } else if (imageDate != null) {
+           for (String date : imageDate) {
+               if (date.equals("-")) {
+                   dateRange.add(null);
+               } else {
+                   try {
+                       dateRange.add(format.parse(date));
+                   } catch (ParseException e) {
+                       log.error("An error occurred while parsing the imageDate");
+                       dateRange.add(null);
+                   }
+               }
+           }
+           deleteOne = false;
+       }
+       
+       // Calling helper functions to delete images (using filters if needed)
+       
+       if (deleteOne) {
+           deleteOne(imageName, imageDir, imageUtil);
+       } else {
+           FilenameFilter filter = new DateRangeFilter(dateRange);
+           deleteMany(imageDir, imageUtil, filter);
+       }
+            
+       // Send nothing back as query response
        client.sendQueryResponse(204, replyAddress, new LinkedHashMap<>());
    }
    
    /**
-    * A helper function called by deleteLocalImages, used to delete one specific image
+    * A helper function called by processDeleteQueryParameters, used to delete one specific image
     * @param name       The name of the image to be uploaded
     * @param imageDir   The name of the image directory
     * @param imageUtil  The instantiated ImageUtil class containing the method to delete
@@ -713,7 +676,7 @@ public class ObjectRecognitionCore {
    }
    
    /**
-    * A helper function called by deleteLocalImages, used if imageName or imageDate is set to "all"
+    * A helper function called by processDeleteQueryParameters, used if imageName or imageDate is set to "all"
     * @param imageDir    The name of the image directory
     * @param imageUtil   The instantiated ImageUtil class containing the method to delete
     * @param filter      The filter used if a dateRange was selected, otherwise null
@@ -721,11 +684,7 @@ public class ObjectRecognitionCore {
    public void deleteMany(String imageDir, ImageUtil imageUtil, FilenameFilter filter) {
        File imgDirectory = new File(imageDir);
        File[] directoryListing;
-       if (filter == null) {
-           directoryListing = imgDirectory.listFiles();
-       } else {
-           directoryListing = imgDirectory.listFiles(filter);
-       }
+       directoryListing = imgDirectory.listFiles(filter);
        if (directoryListing != null) {
            for (File fileToDelete : directoryListing) {
                imageUtil.deleteImage(fileToDelete);
