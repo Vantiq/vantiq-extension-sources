@@ -433,7 +433,7 @@ public class ObjectRecognitionCore {
            imageDate = (List<String>) request.get("imageDate");
            if (imageDate.size() != 2) {
                client.sendQueryError(replyAddress, "io.vantiq.extsrc.objectRecognition.invalidQueryRequest", 
-                       "The imageDate value was a list with more than two elements. Must be a list containing only "
+                       "The imageDate value did not contain exactly two elements. Must be a list containing only "
                        + "[<yourStartDate>, <yourEndDate>].", null);
                return;
            }
@@ -592,7 +592,7 @@ public class ObjectRecognitionCore {
            imageDate = (List<String>) request.get("imageDate");
            if (imageDate.size() != 2) {
                client.sendQueryError(replyAddress, "io.vantiq.extsrc.objectRecognition.invalidQueryRequest", 
-                       "The imageDate value was a list with more than two elements. Must be a list containing only "
+                       "The imageDate value did not contain exactly two elements. Must be a list containing only "
                        + "[<yourStartDate>, <yourEndDate>].", null);
                return;
            }
