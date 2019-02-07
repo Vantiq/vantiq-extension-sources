@@ -104,53 +104,45 @@ public class ImageUtil {
      * @param target    The name of the file to be uploaded.
      */
     public void uploadImage(File imgFile, String target) {
+        File fileToUpload = imgFile;
         if (queryResize) {
             try {
                 BufferedImage resizedImage = resizeImage(ImageIO.read(imgFile));
                 File tmpFile = File.createTempFile("tmp", ".jpg");
                 tmpFile.deleteOnExit();
                 ImageIO.write(resizedImage, "jpg", tmpFile);
-                vantiq.upload(tmpFile, 
-                        "image/jpeg", 
-                        "objectRecognition/" + sourceName + '/'  + target,
-                        new BaseResponseHandler() {
-                            @Override public void onSuccess(Object body, Response response) {
-                                super.onSuccess(body, response);
-                                LOGGER.trace("Content Location = " + this.getBodyAsJsonObject().get("content"));
-                                
-                                if (outputDir == null) {
-                                    deleteImage(imgFile);
-                                }
-                            }
-                            
-                            @Override public void onError(List<VantiqError> errors, Response response) {
-                                super.onError(errors, response);
-                                LOGGER.error("Errors uploading image with VANTIQ SDK: " + errors);
-                            }
-                });
+                fileToUpload = tmpFile;
             } catch (IOException e) {
-                LOGGER.error("An error occured while reading the locally saved image file. " + e.getMessage());
+                LOGGER.error("An error occured while reading and/or resizing the locally saved image file. " + e.getMessage());
             }
-        } else {
-            vantiq.upload(imgFile, 
-                    "image/jpeg", 
-                    "objectRecognition/" + sourceName + '/'  + target,
-                    new BaseResponseHandler() {
-                        @Override public void onSuccess(Object body, Response response) {
-                            super.onSuccess(body, response);
-                            LOGGER.trace("Content Location = " + this.getBodyAsJsonObject().get("content"));
-                            
-                            if (outputDir == null) {
-                                deleteImage(imgFile);
-                            }
-                        }
-                        
-                        @Override public void onError(List<VantiqError> errors, Response response) {
-                            super.onError(errors, response);
-                            LOGGER.error("Errors uploading image with VANTIQ SDK: " + errors);
-                        }
-            });
         }
+        uploadToVantiq(fileToUpload, target);
+    }
+    
+    /**
+     * A helper method called by uploadImage that uses VANTIQ SDK to upload the image.
+     * @param fileToUpload  File to be uploaded.
+     * @param target        The name of the file to be uploaded.
+     */
+    public void uploadToVantiq(File fileToUpload, String target) {
+        vantiq.upload(fileToUpload, 
+                "image/jpeg", 
+                "objectRecognition/" + sourceName + '/'  + target,
+                new BaseResponseHandler() {
+                    @Override public void onSuccess(Object body, Response response) {
+                        super.onSuccess(body, response);
+                        LOGGER.trace("Content Location = " + this.getBodyAsJsonObject().get("content"));
+                        
+                        if (outputDir == null) {
+                            deleteImage(fileToUpload);
+                        }
+                    }
+                    
+                    @Override public void onError(List<VantiqError> errors, Response response) {
+                        super.onError(errors, response);
+                        LOGGER.error("Errors uploading image with VANTIQ SDK: " + errors);
+                    }
+        });
     }
     
     /**
