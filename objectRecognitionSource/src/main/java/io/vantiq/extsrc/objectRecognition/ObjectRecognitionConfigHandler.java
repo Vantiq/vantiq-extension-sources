@@ -98,17 +98,17 @@ public class ObjectRecognitionConfigHandler extends Handler<ExtensionServiceMess
                 // Get value of operation if it was set, otherwise set to default
                 String operation;
                 if (request.get("operation") instanceof String) {
-                    operation = (String) request.get("operation");
+                    operation = request.get("operation").toString().toLowerCase();
                 } else {
-                    operation = "processNextFrame";
+                    operation = "processnextframe";
                 }
                 
                 // Check value of operation, proceed accordingly
-                if (operation.equalsIgnoreCase("upload")) {
+                if (operation.equals("upload")) {
                     source.uploadLocalImages(request, replyAddress);
-                } else if (operation.equalsIgnoreCase("delete")) {
+                } else if (operation.equals("delete")) {
                     source.deleteLocalImages(request, replyAddress);
-                } else if (operation.equalsIgnoreCase("processNextFrame")) {
+                } else if (operation.equals("processnextframe")) {
                     // Read, process, and send the image
                     ImageRetrieverResults data = source.retrieveImage(message);
                     if (data != null) {
