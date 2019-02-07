@@ -94,25 +94,30 @@ public class ObjectRecognitionConfigHandler extends Handler<ExtensionServiceMess
                 
                 Map<String, ?> request = (Map<String, ?>) message.getObject();
                 String replyAddress = ExtensionServiceMessage.extractReplyAddress(message);
+                
+                // Get value of operation if it was set, otherwise set to default
+                String operation;
                 if (request.get("operation") instanceof String) {
-                    String operation = (String) request.get("operation");
-                    if (operation.equalsIgnoreCase("upload")) {
-                        source.uploadLocalImages(request, replyAddress);
-                    } else if (operation.equalsIgnoreCase("delete")) {
-                        source.deleteLocalImages(request, replyAddress);
-                    } else {
-                        // Read, process, and send the image
-                        ImageRetrieverResults data = source.retrieveImage(message);
-                        if (data != null) {
-                            source.sendDataFromImage(data, message);
-                        }
-                    }
+                    operation = (String) request.get("operation");
                 } else {
+                    operation = "processNextFrame";
+                }
+                
+                // Check value of operation, proceed accordingly
+                if (operation.equalsIgnoreCase("upload")) {
+                    source.uploadLocalImages(request, replyAddress);
+                } else if (operation.equalsIgnoreCase("delete")) {
+                    source.deleteLocalImages(request, replyAddress);
+                } else if (operation.equalsIgnoreCase("processNextFrame")) {
                     // Read, process, and send the image
                     ImageRetrieverResults data = source.retrieveImage(message);
                     if (data != null) {
                         source.sendDataFromImage(data, message);
                     }
+                } else {
+                    client.sendQueryError(replyAddress, "io.vantiq.extsrc.objectRecognition.invalidImageRequest", 
+                            "Request specified an invalid 'operation'. The 'operation' value can be set to 'upload', 'delete', "
+                            + "or 'proccessNextFrame'.", null);
                 }
             }
         };
