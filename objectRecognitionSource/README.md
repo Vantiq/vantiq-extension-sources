@@ -279,6 +279,112 @@ Options available for all Queries (not prepended by anything) are:
     instead of only the objects recognized. Note that the data will be the sole occupant of a 1-element array when
     received, instead of being immediately available as a JSON object. This is because Query results are mandated
     to be arrays. Default is false.
+    
+Unique query capabilities available for the YOLO Processor are as follows:
+
+*   **NOTE:** All YOLO Processor queries should have an "operation" parameter specified. If this parameter is not specified, 
+it will be set to the default value, "processNextFrame".
+
+*   **Upload images to VANTIQ:**
+    *   The user can specify an image or a set of images specified by their date & time to be uploaded to VANTIQ as a 
+    document. The images will be those that are saved in the output directory, which is defined in the source configuration.
+    *   Parameters:
+        *   "operation": Required. Must be set to "upload".
+        *   *You should specify exactly one of the following two values. If neither is specified, a query error will be 
+        returned. If both values are specified, the imageName value will be used.*
+            *   "imageName": A string value representing the name of the file to be uploaded.
+            *   "imageDate": A list containing two strings, a start date and an end date. All locally saved images falling 
+            between the start and end date, (inclusive), will be uploaded. Dates must be formatted in the following 
+            manner: "yyyy-MM-dd--HH-mm-ss".
+                *   To select all images *before* or *after* a certain date, the "-" value can be used as one of the date 
+                strings in the list. For example, the following would save all dates *before* the given date: 
+                    *   \["-", yourEndDate\]. 
+                *   To select *all files* in the output directory, one must use the following value for imageDate: 
+                    *   \["-", "-"\].
+        *   "savedResolution": Optional. This value can be set in the same way as it is set in the source configuration. If it 
+        is defined here as a query parameter, it will override the value set in the source configuration, otherwise the source 
+        configuration value will be used. The setting cannot be larger than that provided in the source configuration (since 
+        that defines how the images are saved).
+    
+*   **Delete locally saved images:**
+    *   The user can specify an image or a set of images specified by their date & time to be deleted. The images will be 
+    those that are saved in the output directory, which is defined in the source configuration.
+    *   Parameters:
+        *   "operation": Required. Must be set to "delete".
+        *   *You should specify exactly one of the following two values. If neither is specified, a query error will be 
+        returned. If both values are specified, the imageName value will be used.*
+            *   "imageName": A string value representing the name of the file to be deleted.
+            *   "imageDate": A list containing two strings, a start date and an end date. All locally saved images falling 
+            between the start and end date, (inclusive), will be deleted. Dates must be formatted in the following 
+            manner: "yyyy-MM-dd--HH-mm-ss".
+                *   To select all images *before* or *after* a certain date, the "-" value can be used as one of the date 
+                strings in the list. For example, the following would save all dates *before* the given date: 
+                    *   \["-", yourEndDate\]. 
+                *   To select *all files* in the output directory, one must use the following value for imageDate: 
+                    *   \["-", "-"\].
+
+*   **Process a single frame from the camera defined in the source configuration:**
+    *   Parameters:
+        *   "operation": Required. Must be set to "processNextFrame".
+        *   "NNsaveImage": Optional. This value can be set exactly like the "saveImage" value in the source configuration.
+        *   "NNoutputDir": Optional. This value can be set exactly like the "outputDir" value in the source configuration.
+        *   "NNfileName": Optional. A string representing the unique name used to save the file. If not specified, the file 
+        will be named using the standard <yyyy-MM-dd--HH-mm-ss.jpg> value.
+    
+**EXAMPLE QUERIES**:
+
+*   Upload Query using imageName:
+```
+SELECT * FROM SOURCE Camera1 AS results WITH
+    	operation:"upload",
+    	imageName:"2019-02-08--10-33-36.jpg",
+    	savedResolution: {longEdge:600}
+```
+
+*   Upload Query using imageDate:
+```
+SELECT * FROM SOURCE Camera1 AS results WITH
+    	operation:"upload",
+    	imageDate:["2019-02-08--10-33-36", "2019-02-08--12-45-18"]
+```
+
+*   Delete Query using imageName:
+```
+SELECT * FROM SOURCE Camera1 AS results WITH
+    	operation:"delete",
+    	imageName:"2019-02-08--10-33-36.jpg"
+```
+
+*   Delete Query using imageDate to delete everything after a certain date:
+```
+SELECT * FROM SOURCE Camera1 AS results WITH
+    	operation:"delete",
+    	imageDate:["2019-02-08--10-33-36", "-"]
+```
+
+*   Delete Query using imageDate to delete all images:
+```
+SELECT * FROM SOURCE Camera1 AS results WITH
+    	operation:"delete",
+    	imageDate:["-", "-"]
+```
+
+*   Process Next Frame Query:
+```
+SELECT * FROM SOURCE Camera1 AS results WITH
+        operation:"processNextFrame",
+    	NNsaveImage:"local",
+    	NNoutputDir:"testDir",
+    	NNfileName:"testFile"
+```
+
+*   Process Next Frame Query without specifying operation *(not recommended)*:
+```
+SELECT * FROM SOURCE Camera1 AS results WITH
+    	NNsaveImage:"local",
+    	NNoutputDir:"testDir",
+    	NNfileName:"testFile"
+```
 
 ### Error Messages
 

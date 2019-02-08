@@ -1,6 +1,5 @@
 package edu.ml.tensorflow.util;
 
-import edu.ml.tensorflow.Config;
 import edu.ml.tensorflow.model.BoxPosition;
 import edu.ml.tensorflow.model.Recognition;
 import io.vantiq.client.BaseResponseHandler;
@@ -29,6 +28,7 @@ public class ImageUtil {
     public String sourceName = null;
     public Boolean saveImage;
     public int frameSize;
+    public Boolean queryResize = false;
     public int longEdge = 0;
 
     /**
@@ -78,20 +78,7 @@ public class ImageUtil {
         }
         if (vantiq != null) {
             if (fileToUpload != null) {
-                vantiq.upload(fileToUpload, 
-                        "image/jpeg", 
-                        "objectRecognition/" + sourceName + '/' + target,
-                        new BaseResponseHandler() {
-                            @Override public void onSuccess(Object body, Response response) {
-                                super.onSuccess(body, response);
-                                LOGGER.trace("Content Location = " + this.getBodyAsJsonObject().get("content"));
-                            }
-                            
-                            @Override public void onError(List<VantiqError> errors, Response response) {
-                                super.onError(errors, response);
-                                LOGGER.error("Errors uploading image with VANTIQ SDK: " + errors);
-                            }
-                });
+                uploadImage(fileToUpload, target);
             } else {
                 try {
                     File imgFile = File.createTempFile("tmp", ".jpg");
@@ -102,29 +89,70 @@ public class ImageUtil {
                         BufferedImage resizedImage = resizeImage(image);
                         ImageIO.write(resizedImage, "jpg", imgFile);
                     }
-                    vantiq.upload(imgFile, 
-                            "image/jpeg", 
-                            "objectRecognition/" + sourceName + '/'  + target,
-                            new BaseResponseHandler() {
-                                @Override public void onSuccess(Object body, Response response) {
-                                    super.onSuccess(body, response);
-                                    LOGGER.trace("Content Location = " + this.getBodyAsJsonObject().get("content"));
-                                    if(imgFile.delete()) { 
-                                        LOGGER.trace("Temp file deleted successfully"); 
-                                    } else { 
-                                        LOGGER.warn("Failed to delete temp file"); 
-                                    } 
-                                }
-                                
-                                @Override public void onError(List<VantiqError> errors, Response response) {
-                                    super.onError(errors, response);
-                                    LOGGER.error("Errors uploading image with VANTIQ SDK: " + errors);
-                                }
-                    });
+                    uploadImage(imgFile, target);
                 } catch (IOException e) {
                     LOGGER.error("Unable to save image {}", target, e);
                 }
             }
+        }
+    }
+    
+    /**
+     * A method used to upload images to VANTIQ, using the VANTIQ SDK
+     * @param imgFile   The file to be uploaded. If not specified to save locally, this file will be deleted.
+     * @param target    The name of the file to be uploaded.
+     */
+    public void uploadImage(File imgFile, String target) {
+        File fileToUpload = imgFile;
+        if (queryResize) {
+            try {
+                BufferedImage resizedImage = resizeImage(ImageIO.read(imgFile));
+                File tmpFile = File.createTempFile("tmp", ".jpg");
+                tmpFile.deleteOnExit();
+                ImageIO.write(resizedImage, "jpg", tmpFile);
+                fileToUpload = tmpFile;
+            } catch (IOException e) {
+                LOGGER.error("An error occured while reading and/or resizing the locally saved image file. " + e.getMessage());
+            }
+        }
+        uploadToVantiq(fileToUpload, target);
+    }
+    
+    /**
+     * A helper method called by uploadImage that uses VANTIQ SDK to upload the image.
+     * @param fileToUpload  File to be uploaded.
+     * @param target        The name of the file to be uploaded.
+     */
+    public void uploadToVantiq(File fileToUpload, String target) {
+        vantiq.upload(fileToUpload, 
+                "image/jpeg", 
+                "objectRecognition/" + sourceName + '/'  + target,
+                new BaseResponseHandler() {
+                    @Override public void onSuccess(Object body, Response response) {
+                        super.onSuccess(body, response);
+                        LOGGER.trace("Content Location = " + this.getBodyAsJsonObject().get("content"));
+                        
+                        if (outputDir == null) {
+                            deleteImage(fileToUpload);
+                        }
+                    }
+                    
+                    @Override public void onError(List<VantiqError> errors, Response response) {
+                        super.onError(errors, response);
+                        LOGGER.error("Errors uploading image with VANTIQ SDK: " + errors);
+                    }
+        });
+    }
+    
+    /**
+     * A method used to delete locally saved images.
+     * @param imgFile  The file to be deleted.
+     */
+    public void deleteImage(File imgFile) {
+        if(imgFile.delete()) {
+            LOGGER.trace("File was successfully deleted.");
+        } else {
+            LOGGER.error("Failed to delete file");
         }
     }
     

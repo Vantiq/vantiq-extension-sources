@@ -9,7 +9,14 @@
 
 package io.vantiq.extsrc.objectRecognition;
 
+import java.io.File;
+import java.io.FilenameFilter;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Date;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Timer;
 import java.util.concurrent.CompletableFuture;
@@ -20,6 +27,8 @@ import java.util.concurrent.TimeoutException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import edu.ml.tensorflow.util.ImageUtil;
+import io.vantiq.client.Vantiq;
 import io.vantiq.extjsdk.ExtensionServiceMessage;
 import io.vantiq.extjsdk.ExtensionWebSocketClient;
 import io.vantiq.extjsdk.Handler;
@@ -31,6 +40,7 @@ import io.vantiq.extsrc.objectRecognition.imageRetriever.ImageRetrieverInterface
 import io.vantiq.extsrc.objectRecognition.imageRetriever.ImageRetrieverResults;
 import io.vantiq.extsrc.objectRecognition.neuralNet.NeuralNetInterface;
 import io.vantiq.extsrc.objectRecognition.neuralNet.NeuralNetResults;
+import io.vantiq.extsrc.objectRecognition.query.DateRangeFilter;
 
 /**
  * Controls the connection and interaction with the Vantiq server. Initialize it and call start() and it will run 
@@ -54,6 +64,9 @@ public class ObjectRecognitionCore {
     // vars for internal use
     ExtensionWebSocketClient    client      = null;
     NeuralNetInterface          neuralNet   = null;
+    SimpleDateFormat            format      = new SimpleDateFormat("yyyy-MM-dd--HH-mm-ss");
+    
+    public String outputDir;
     
     // final vars
     final Logger log;
@@ -387,6 +400,217 @@ public class ObjectRecognitionCore {
                    "Uncaught runtime exception when processing image for reason {0}. Exception was {1}. Request was {2}"
                    , new Object[] {e.getMessage(), e, request});
            stop();
+       }
+   }
+   
+   /**
+    * Uploads requested images to VANTIQ. Called when query parameter "operation" is set to "upload".
+    * @param request        The parameters sent with the query.
+    * @param replyAddress   The replyAddress used to send a query response.
+    */
+   public void uploadLocalImages(Map<String, ?> request, String replyAddress) {       
+       Map<String,Object> parsedParameterResult = handleQueryParameters(request, replyAddress, "upload");
+       if (parsedParameterResult == null) {
+           return;
+       }
+       
+       ImageUtil imageUtil = setupQueryImageUtil(request);
+       
+       if (parsedParameterResult.get("imageName") != null) {
+           String imageName = (String) parsedParameterResult.get("imageName");
+           uploadOne(imageName, outputDir, imageUtil);
+       } else {
+           FilenameFilter filter = (FilenameFilter) parsedParameterResult.get("filter");
+           uploadMany(outputDir, imageUtil, filter);
+       }
+       
+       // Send nothing back as query response
+       client.sendQueryResponse(204, replyAddress, new LinkedHashMap<>());
+   }
+   
+   /**
+    * A helper method called by uploadLocalImages and deleteLocalImages, used to check the query parameters
+    * @param request        The parameters sent with the query.
+    * @param replyAddress   The replyAddress used to send a query response.
+    * @param operation      The operation calling this method, either "upload" or "delete"
+    * @return
+    */
+   public Map<String, Object> handleQueryParameters(Map<String, ?> request, String replyAddress, String operation) {
+       String imageName = null;
+       List<String> imageDate = null;
+       List<Date> dateRange = new ArrayList<Date>();
+       boolean useFilter = false;
+           
+       // Checking if "imageName" option was used to specify the file(s) to upload.
+       if (request.get("imageName") instanceof String) {
+           imageName = (String) request.get("imageName");
+           
+       // Checking if "imageDate" option was used as a list of two dates to specify the files to upload.
+       } else if (request.get("imageDate") instanceof List) {
+           imageDate = (List<String>) request.get("imageDate");
+           if (imageDate.size() != 2) {
+               client.sendQueryError(replyAddress, "io.vantiq.extsrc.objectRecognition.invalidQueryRequest", 
+                       "The imageDate value did not contain exactly two elements. Must be a list containing only "
+                       + "[<yourStartDate>, <yourEndDate>].", null);
+               return null;
+           }
+       } else {
+           client.sendQueryError(replyAddress, "io.vantiq.extsrc.objectRecognition.invalidQueryRequest", 
+                   "No imageName or imageDate was specified, or they were incorrectly specified. "
+                   + "Cannot select image(s) to be " + operation + " .", null);
+           return null;
+       }
+       
+       
+       // Examining parameters, and creating filters if necessary
+       
+       if (imageName != null) {
+           useFilter = false;
+       } else if (imageDate != null) {
+           for (String date : imageDate) {
+               if (date.equals("-")) {
+                   dateRange.add(null);
+               } else {
+                   try {
+                       dateRange.add(format.parse(date));
+                   } catch (ParseException e) {
+                       log.error("An error occurred while parsing the imageDate");
+                       client.sendQueryError(replyAddress, "io.vantiq.extsrc.objectRecognition.invalidQueryRequest", 
+                               "One of the dates in the imageDate list could not be parsed. Please be sure that both "
+                               + "dates are in the following format: yyyy-MM-dd--HH-mm-ss", null);
+                       return null;
+                   }
+               }
+           }
+           useFilter = true;
+       }
+       
+       // Return map with filter if we are selecting multiple files, otherwise return map with imageName
+       Map<String, Object> parsedParameterResults = new LinkedHashMap<String,Object>();
+       if (useFilter) {
+           FilenameFilter filter = new DateRangeFilter(dateRange);
+           parsedParameterResults.put("filter", filter);
+       } else {
+           parsedParameterResults.put("imageName", imageName);
+       }
+       
+       return parsedParameterResults;
+   }
+   
+   /**
+    * A helper function called by uploadLocalImages, used to set up the ImageUtil class
+    * @param request    The parameters sent with the query.
+    * @return           The instantiated ImageUtil class, setup with properties based on the request
+    */
+   public ImageUtil setupQueryImageUtil(Map<String, ?> request) {   
+       String imageDir = (String) request.get("imageDir");
+       ImageUtil imageUtil = new ImageUtil();
+       Vantiq vantiq = new io.vantiq.client.Vantiq(targetVantiqServer);
+       vantiq.setAccessToken(authToken);
+       imageUtil.vantiq = vantiq;
+       imageUtil.outputDir = imageDir;
+       imageUtil.sourceName = sourceName;
+       // Checking if additional image resizing has been requested
+       if (request.get("savedResolution") instanceof Map) {
+           Map savedResolution = (Map) request.get("savedResolution");
+           if (savedResolution.get("longEdge") instanceof Integer) {
+               int longEdge = (Integer) savedResolution.get("longEdge");
+               if (longEdge < 0) {
+                   log.error("The config value for longEdge must be a non-negative integer. Saved image resolution will not be changed.");
+               } else {
+                   imageUtil.longEdge = longEdge;
+                   imageUtil.queryResize = true;
+               }
+           }
+       }
+       
+       return imageUtil;
+   }
+   
+   /**
+    * A helper function called by uploadLocalImages, used to upload one specific image
+    * @param name       The name of the image to be uploaded
+    * @param imageDir   The name of the image directory
+    * @param imageUtil  The instantiated ImageUtil class containing the method to upload
+    */
+   public void uploadOne(String name, String imageDir, ImageUtil imageUtil) {
+       if (!name.endsWith(".jpg")) {
+           name = name + ".jpg";
+       }
+       File imgFile = new File(imageDir + File.separator + name);
+       imageUtil.uploadImage(imgFile, imgFile.getName());
+   }
+   
+   /**
+    * A helper function called by uploadLocalImages, used to upload multiple images to VANTIQ
+    * @param imageDir    The name of the image directory
+    * @param imageUtil   The instantiated ImageUtil class containing the method to upload
+    * @param filter      The filter used if a dateRange was selected
+    */
+   public void uploadMany(String imageDir, ImageUtil imageUtil, FilenameFilter filter) {
+       File imgDirectory = new File(imageDir);
+       File[] directoryListing;
+       directoryListing = imgDirectory.listFiles(filter);
+       if (directoryListing != null) {
+           for (File fileToUpload : directoryListing) {
+               imageUtil.uploadImage(fileToUpload, fileToUpload.getName());
+           }
+       }
+   }
+   
+   /**
+    * Deletes requested locally-saved images. Called when query parameter "operation" is set to "delete".
+    * @param request        The parameters sent with the query.
+    * @param replyAddress   The replyAddress used to send a query response.
+    */
+   public void deleteLocalImages(Map<String, ?> request, String replyAddress) {  
+       Map<String,Object> parsedParameterResult = handleQueryParameters(request, replyAddress, "delete");
+       if (parsedParameterResult == null) {
+           return;
+       }
+       
+       ImageUtil imageUtil = new ImageUtil();
+       
+       if (parsedParameterResult.get("imageName") != null) {
+           String imageName = (String) parsedParameterResult.get("imageName");
+           deleteOne(imageName, outputDir, imageUtil);
+       } else {
+           FilenameFilter filter = (FilenameFilter) parsedParameterResult.get("filter");
+           deleteMany(outputDir, imageUtil, filter);
+       }
+       
+       // Send nothing back as query response
+       client.sendQueryResponse(204, replyAddress, new LinkedHashMap<>());
+   }
+   
+   /**
+    * A helper function called by deleteLocalImages, used to delete one specific image
+    * @param name       The name of the image to be uploaded
+    * @param imageDir   The name of the image directory
+    * @param imageUtil  The instantiated ImageUtil class containing the method to delete
+    */
+   public void deleteOne(String name, String imageDir, ImageUtil imageUtil) {
+       if (!name.endsWith(".jpg")) {
+           name = name + ".jpg";
+       }
+       File imgFile = new File(imageDir + File.separator + name);
+       imageUtil.deleteImage(imgFile);
+   }
+   
+   /**
+    * A helper function called by deleteLocalImages, used when multiple files need to be deleted
+    * @param imageDir    The name of the image directory
+    * @param imageUtil   The instantiated ImageUtil class containing the method to delete
+    * @param filter      The filter used if a dateRange was selected, otherwise null
+    */
+   public void deleteMany(String imageDir, ImageUtil imageUtil, FilenameFilter filter) {
+       File imgDirectory = new File(imageDir);
+       File[] directoryListing;
+       directoryListing = imgDirectory.listFiles(filter);
+       if (directoryListing != null) {
+           for (File fileToDelete : directoryListing) {
+               imageUtil.deleteImage(fileToDelete);
+           }
        }
    }
    

@@ -92,10 +92,32 @@ public class ObjectRecognitionConfigHandler extends Handler<ExtensionServiceMess
                             "Request must be a map", null);
                 }
                 
-                // Read, process, and send the image
-                ImageRetrieverResults data = source.retrieveImage(message);
-                if (data != null) {
-                    source.sendDataFromImage(data, message);
+                Map<String, ?> request = (Map<String, ?>) message.getObject();
+                String replyAddress = ExtensionServiceMessage.extractReplyAddress(message);
+                
+                // Get value of operation if it was set, otherwise set to default
+                String operation;
+                if (request.get("operation") instanceof String) {
+                    operation = request.get("operation").toString().toLowerCase();
+                } else {
+                    operation = "processnextframe";
+                }
+                
+                // Check value of operation, proceed accordingly
+                if (operation.equals("upload")) {
+                    source.uploadLocalImages(request, replyAddress);
+                } else if (operation.equals("delete")) {
+                    source.deleteLocalImages(request, replyAddress);
+                } else if (operation.equals("processnextframe")) {
+                    // Read, process, and send the image
+                    ImageRetrieverResults data = source.retrieveImage(message);
+                    if (data != null) {
+                        source.sendDataFromImage(data, message);
+                    }
+                } else {
+                    client.sendQueryError(replyAddress, "io.vantiq.extsrc.objectRecognition.invalidImageRequest", 
+                            "Request specified an invalid 'operation'. The 'operation' value can be set to 'upload', 'delete', "
+                            + "or 'proccessNextFrame'.", null);
                 }
             }
         };
@@ -199,7 +221,7 @@ public class ObjectRecognitionConfigHandler extends Handler<ExtensionServiceMess
         
         // Identify the type of neural net
         String neuralNetType = DEFAULT_NEURAL_NET;
-        if (neuralNetConfig.get("type") instanceof String) {
+        if (neuralNetConfig.get(NeuralNetInterface.TYPE_ENTRY) instanceof String) {
             neuralNetType = (String) neuralNetConfig.get("type");
             if (neuralNetType.equals("yolo")) {
                 neuralNetType = YOLO_PROCESSOR_FQCN;
@@ -211,6 +233,9 @@ public class ObjectRecognitionConfigHandler extends Handler<ExtensionServiceMess
         } else {
             log.debug("No neural net type specified. Trying for default of '{}'", DEFAULT_NEURAL_NET);
         }
+        
+        // Setting the outputDir value for the core, (null if it does not exist)
+        source.outputDir = (String) neuralNetConfig.get(NeuralNetInterface.OUTPUT_DIRECTORY_ENTRY);
         
         // Create the neural net
         NeuralNetInterface neuralNet = getNeuralNet(neuralNetType);

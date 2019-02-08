@@ -18,6 +18,8 @@ import io.vantiq.extsrc.objectRecognition.exception.ImageProcessingException;
  * An interface for the neural net that will process the image and return a List of data representing the objects found.
  */
 public interface NeuralNetInterface {
+    static final String OUTPUT_DIRECTORY_ENTRY = "outputDir";
+    static final String TYPE_ENTRY = "type";
     
     /**
      * Setup the neural net for image processing.
