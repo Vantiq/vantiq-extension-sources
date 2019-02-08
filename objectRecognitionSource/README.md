@@ -286,8 +286,8 @@ Unique query capabilities available for the YOLO Processor are as follows:
 it will be set to the default value, "processNextFrame".
 
 *   **Upload images to VANTIQ:**
-    *   The user can specify an image, or multiple images to be uploaded to VANTIQ as a document. The images will be those 
-    that are saved in the output directory, which is defined in the source configuration.
+    *   The user can specify an image or a set of images specified by their date & time to be uploaded to VANTIQ as a 
+    document. The images will be those that are saved in the output directory, which is defined in the source configuration.
     *   Parameters:
         *   "operation": Required. Must be set to "upload".
         *   *You should specify exactly one of the following two values. If neither is specified, a query error will be 
@@ -299,14 +299,16 @@ it will be set to the default value, "processNextFrame".
                 *   To select all images *before* or *after* a certain date, the "-" value can be used as one of the date 
                 strings in the list. For example, the following would save all dates *before* the given date: 
                     *   \["-", yourEndDate\]. 
-                *   To select *all files* in the output directory, one could use the following value for imageDate: 
+                *   To select *all files* in the output directory, one must use the following value for imageDate: 
                     *   \["-", "-"\].
-        *   "savedResolution": Optional. This value can be set in the exact same way as it is set in the source configuration. 
-        If it is defined here as a query parameter, it will override the value set in the source configuration.
+        *   "savedResolution": Optional. This value can be set in the same way as it is set in the source configuration. If it 
+        is defined here as a query parameter, it will override the value set in the source configuration, otherwise the source 
+        configuration value will be used. The setting cannot be larger than that provided in the source configuration (since 
+        that defines how the images are saved).
     
 *   **Delete locally saved images:**
-    *   The user can specify one, or multiple locally saved images to be deleted. The images will be those 
-    that are saved in the output directory, which is defined in the source configuration.
+    *   The user can specify an image or a set of images specified by their date & time to be deleted. The images will be 
+    those that are saved in the output directory, which is defined in the source configuration.
     *   Parameters:
         *   "operation": Required. Must be set to "delete".
         *   *You should specify exactly one of the following two values. If neither is specified, a query error will be 
@@ -318,7 +320,7 @@ it will be set to the default value, "processNextFrame".
                 *   To select all images *before* or *after* a certain date, the "-" value can be used as one of the date 
                 strings in the list. For example, the following would save all dates *before* the given date: 
                     *   \["-", yourEndDate\]. 
-                *   To select *all files* in the output directory, one could use the following value for imageDate: 
+                *   To select *all files* in the output directory, one must use the following value for imageDate: 
                     *   \["-", "-"\].
 
 *   **Process a single frame from the camera defined in the source configuration:**
@@ -358,6 +360,13 @@ SELECT * FROM SOURCE Camera1 AS results WITH
 SELECT * FROM SOURCE Camera1 AS results WITH
     	operation:"delete",
     	imageDate:["2019-02-08--10-33-36", "-"]
+```
+
+*   Delete Query using imageDate to delete all images:
+```
+SELECT * FROM SOURCE Camera1 AS results WITH
+    	operation:"delete",
+    	imageDate:["-", "-"]
 ```
 
 *   Process Next Frame Query:
