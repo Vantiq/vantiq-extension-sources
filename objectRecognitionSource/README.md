@@ -280,23 +280,27 @@ Options available for all Queries (not prepended by anything) are:
     received, instead of being immediately available as a JSON object. This is because Query results are mandated
     to be arrays. Default is false.
     
-Unique query capabilities available for the YOLO Processor are:
+Unique query capabilities available for the YOLO Processor are as follows:
 
-*   **NOTE:** All YOLO Processor queries must have an "operation" parameter specified. If this parameter is not specified, it 
-will be set to the default value, "processNextFrame".
+*   **NOTE:** All YOLO Processor queries should have an "operation" parameter specified. If this parameter is not specified, 
+it will be set to the default value, "processNextFrame".
 
 *   **Upload images to VANTIQ:**
     *   The user can specify an image, or multiple images to be uploaded to VANTIQ as a document. The images will be those 
     that are saved in the output directory, which is defined in the source configuration.
     *   Parameters:
         *   "operation": Required. Must be set to "upload".
-        *   *Only one of the following two values *MUST* be specified, or a query error will be returned. If both values are 
-        specified, the imageName value will be used. (For optimal use, only set one of these values.)*
-            *   "imageName": A string value representing the name of the file to be uploaded. If set to "all", then all images 
-            in the output directory will be uploaded.
+        *   *You should specify exactly one of the following two values. If neither is specified, a query error will be 
+        returned. If both values are specified, the imageName value will be used.*
+            *   "imageName": A string value representing the name of the file to be uploaded.
             *   "imageDate": A list containing two strings, a start date and an end date. All locally saved images falling 
             between the start and end date, (inclusive), will be uploaded. Dates must be formatted in the following 
             manner: "yyyy-MM-dd--HH-mm-ss".
+                *   To select all images *before* or *after* a certain date, the "-" value can be used as one of the date 
+                strings in the list. For example, the following would save all dates *before* the given date: 
+                    *   \["-", yourEndDate\]. 
+                *   To select *all files* in the output directory, one could use the following value for imageDate: 
+                    *   \["-", "-"\].
         *   "savedResolution": Optional. This value can be set in the exact same way as it is set in the source configuration. 
         If it is defined here as a query parameter, it will override the value set in the source configuration.
     
@@ -305,13 +309,17 @@ will be set to the default value, "processNextFrame".
     that are saved in the output directory, which is defined in the source configuration.
     *   Parameters:
         *   "operation": Required. Must be set to "delete".
-        *   *Only one of the following two values *MUST* be specified, or a query error will be returned. If both values are 
-        specified, the imageName value will be used. (For optimal use, only set one of these values.)*
-            *   "imageName": A string value representing the name of the file to be deleted. If set to "all", then all images 
-            in the output directory will be deleted.
+        *   *You should specify exactly one of the following two values. If neither is specified, a query error will be 
+        returned. If both values are specified, the imageName value will be used.*
+            *   "imageName": A string value representing the name of the file to be deleted.
             *   "imageDate": A list containing two strings, a start date and an end date. All locally saved images falling 
             between the start and end date, (inclusive), will be deleted. Dates must be formatted in the following 
             manner: "yyyy-MM-dd--HH-mm-ss".
+                *   To select all images *before* or *after* a certain date, the "-" value can be used as one of the date 
+                strings in the list. For example, the following would save all dates *before* the given date: 
+                    *   \["-", yourEndDate\]. 
+                *   To select *all files* in the output directory, one could use the following value for imageDate: 
+                    *   \["-", "-"\].
 
 *   **Process a single frame from the camera defined in the source configuration:**
     *   Parameters:
@@ -328,28 +336,28 @@ will be set to the default value, "processNextFrame".
 SELECT * FROM SOURCE Camera1 AS results WITH
     	operation:"upload",
     	imageName:"2019-02-08--10-33-36.jpg",
-    	savedResolution: {longEdge=600}
+    	savedResolution: {longEdge:600}
 ```
 
 *   Upload Query using imageDate:
 ```
 SELECT * FROM SOURCE Camera1 AS results WITH
     	operation:"upload",
-    	imageDate:["2019-02-08--10-33-36", "2019-02-08--10-34-06"]
+    	imageDate:["2019-02-08--10-33-36", "2019-02-08--12-45-18"]
 ```
 
 *   Delete Query using imageName:
 ```
 SELECT * FROM SOURCE Camera1 AS results WITH
     	operation:"delete",
-    	imageName:"all"
+    	imageName:"2019-02-08--10-33-36.jpg"
 ```
 
-*   Delete Query using imageDate:
+*   Delete Query using imageDate to save everything after a certain date:
 ```
 SELECT * FROM SOURCE Camera1 AS results WITH
     	operation:"delete",
-    	imageDate:["2019-02-08--10-33-36", "2019-02-08--10-34-06"]
+    	imageDate:["2019-02-08--10-33-36", "-"]
 ```
 
 *   Process Next Frame Query:
