@@ -28,6 +28,7 @@ public class ImageUtil {
     public Vantiq vantiq = null; // Added to allow image saving with VANTIQ
     public String sourceName = null;
     public Boolean saveImage;
+    public int frameSize;
     public int longEdge = 0;
 
     /**
@@ -36,8 +37,8 @@ public class ImageUtil {
      * @param recognitions  list of recognized objects
      */
     public BufferedImage labelImage(BufferedImage bufferedImage, final List<Recognition> recognitions) {
-        float scaleX = (float) bufferedImage.getWidth() / (float) Config.FRAME_SIZE;
-        float scaleY = (float) bufferedImage.getHeight() / (float) Config.FRAME_SIZE;
+        float scaleX = (float) bufferedImage.getWidth() / (float) frameSize;
+        float scaleY = (float) bufferedImage.getHeight() / (float) frameSize;
         Graphics2D graphics = (Graphics2D) bufferedImage.getGraphics();
 
         for (Recognition recognition: recognitions) {
