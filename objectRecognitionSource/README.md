@@ -279,6 +279,95 @@ Options available for all Queries (not prepended by anything) are:
     instead of only the objects recognized. Note that the data will be the sole occupant of a 1-element array when
     received, instead of being immediately available as a JSON object. This is because Query results are mandated
     to be arrays. Default is false.
+    
+Unique query capabilities available for the YOLO Processor are:
+
+*   **NOTE:** All YOLO Processor queries must have an "operation" parameter specified. If this parameter is not specified, it 
+will be set to the default value, "processNextFrame".
+
+*   **Upload images to VANTIQ:**
+    *   The user can specify an image, or multiple images to be uploaded to VANTIQ as a document. The images will be those 
+    that are saved in the output directory, which is defined in the source configuration.
+    *   Parameters:
+        *   "operation": Required. Must be set to "upload".
+        *   *Only one of the following two values *MUST* be specified, or a query error will be returned. If both values are 
+        specified, the imageName value will be used. (For optimal use, only set one of these values.)*
+            *   "imageName": A string value representing the name of the file to be uploaded. If set to "all", then all images 
+            in the output directory will be uploaded.
+            *   "imageDate": A list containing two strings, a start date and an end date. All locally saved images falling 
+            between the start and end date, (inclusive), will be uploaded. Dates must be formatted in the following 
+            manner: "yyyy-MM-dd--HH-mm-ss".
+        *   "savedResolution": Optional. This value can be set in the exact same way as it is set in the source configuration. 
+        If it is defined here as a query parameter, it will override the value set in the source configuration.
+    
+*   **Delete locally saved images:**
+    *   The user can specify one, or multiple locally saved images to be deleted. The images will be those 
+    that are saved in the output directory, which is defined in the source configuration.
+    *   Parameters:
+        *   "operation": Required. Must be set to "delete".
+        *   *Only one of the following two values *MUST* be specified, or a query error will be returned. If both values are 
+        specified, the imageName value will be used. (For optimal use, only set one of these values.)*
+            *   "imageName": A string value representing the name of the file to be deleted. If set to "all", then all images 
+            in the output directory will be deleted.
+            *   "imageDate": A list containing two strings, a start date and an end date. All locally saved images falling 
+            between the start and end date, (inclusive), will be deleted. Dates must be formatted in the following 
+            manner: "yyyy-MM-dd--HH-mm-ss".
+
+*   **Process a single frame from the camera defined in the source configuration:**
+    *   Parameters:
+        *   "operation": Required. Must be set to "processNextFrame".
+        *   "NNsaveImage": Optional. This value can be set exactly like the "saveImage" value in the source configuration.
+        *   "NNoutputDir": Optional. This value can be set exactly like the "outputDir" value in the source configuration.
+        *   "NNfileName": Optional. A string representing the unique name used to save the file. If not specified, the file 
+        will be named using the standard <yyyy-MM-dd--HH-mm-ss.jpg> value.
+    
+**EXAMPLE QUERIES**:
+
+*   Upload Query using imageName:
+```
+SELECT * FROM SOURCE Camera1 AS results WITH
+    	operation:"upload",
+    	imageName:"2019-02-08--10-33-36.jpg",
+    	savedResolution: {longEdge=600}
+```
+
+*   Upload Query using imageDate:
+```
+SELECT * FROM SOURCE Camera1 AS results WITH
+    	operation:"upload",
+    	imageDate:["2019-02-08--10-33-36", "2019-02-08--10-34-06"]
+```
+
+*   Delete Query using imageName:
+```
+SELECT * FROM SOURCE Camera1 AS results WITH
+    	operation:"delete",
+    	imageName:"all"
+```
+
+*   Delete Query using imageDate:
+```
+SELECT * FROM SOURCE Camera1 AS results WITH
+    	operation:"delete",
+    	imageDate:["2019-02-08--10-33-36", "2019-02-08--10-34-06"]
+```
+
+*   Process Next Frame Query:
+```
+SELECT * FROM SOURCE Camera1 AS results WITH
+        operation:"processNextFrame",
+    	NNsaveImage:"local",
+    	NNoutputDir:"testDir",
+    	NNfileName:"testFile"
+```
+
+*   Process Next Frame Query without specifying operation *(not recommended)*:
+```
+SELECT * FROM SOURCE Camera1 AS results WITH
+    	NNsaveImage:"local",
+    	NNoutputDir:"testDir",
+    	NNfileName:"testFile"
+```
 
 ### Error Messages
 
