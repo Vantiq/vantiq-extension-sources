@@ -353,7 +353,7 @@ SELECT * FROM SOURCE Camera1 AS results WITH
     	imageName:"2019-02-08--10-33-36.jpg"
 ```
 
-*   Delete Query using imageDate to save everything after a certain date:
+*   Delete Query using imageDate to delete everything after a certain date:
 ```
 SELECT * FROM SOURCE Camera1 AS results WITH
     	operation:"delete",
