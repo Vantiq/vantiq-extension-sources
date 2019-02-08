@@ -59,7 +59,7 @@ public class ObjectRecognitionCore {
     Timer                   pollTimer       = null;
     ImageRetrieverInterface imageRetriever  = null;
     
-    ObjectRecognitionConfigHandler  objRecConfigHandler;
+    ObjectRecognitionConfigHandler objRecConfigHandler;
     
     // vars for internal use
     ExtensionWebSocketClient    client      = null;
