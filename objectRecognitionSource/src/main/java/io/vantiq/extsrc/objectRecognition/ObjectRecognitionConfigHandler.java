@@ -221,7 +221,7 @@ public class ObjectRecognitionConfigHandler extends Handler<ExtensionServiceMess
         
         // Identify the type of neural net
         String neuralNetType = DEFAULT_NEURAL_NET;
-        if (neuralNetConfig.get("type") instanceof String) {
+        if (neuralNetConfig.get(NeuralNetInterface.TYPE_ENTRY) instanceof String) {
             neuralNetType = (String) neuralNetConfig.get("type");
             if (neuralNetType.equals("yolo")) {
                 neuralNetType = YOLO_PROCESSOR_FQCN;

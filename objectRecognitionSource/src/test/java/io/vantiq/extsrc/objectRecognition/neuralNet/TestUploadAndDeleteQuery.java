@@ -365,27 +365,6 @@ public class TestUploadAndDeleteQuery extends NeuralNetTestBase {
     }
     
     @Test
-    public void testImageNameUploadAll() throws InterruptedException {
-        // Only run test with intended vantiq availability
-        assumeTrue(testAuthToken != null && testVantiqServer != null);
-        
-        Map<String, Object> request = new LinkedHashMap<>();
-        request.put("imageName", "all");
-        
-        core.uploadLocalImages(request, null);
-                
-        // Checking that all images were uploaded to VANTIQ
-        Thread.sleep(1000);
-        checkUploadToVantiq(IMAGE_1.get("filename"));
-        checkUploadToVantiq(IMAGE_2.get("filename"));
-        checkUploadToVantiq(IMAGE_3.get("filename"));
-        checkUploadToVantiq(IMAGE_4.get("filename"));
-        checkUploadToVantiq(IMAGE_5.get("filename")); 
-        checkUploadToVantiq(IMAGE_6.get("filename"));
-        checkUploadToVantiq(IMAGE_7.get("filename"));
-    }
-    
-    @Test
     public void testImageNameUploadOne() throws InterruptedException {
         // Only run test with intended vantiq availability
         assumeTrue(testAuthToken != null && testVantiqServer != null);
@@ -581,19 +560,6 @@ public class TestUploadAndDeleteQuery extends NeuralNetTestBase {
         assert resizedImage.getWidth() == RESIZED_IMAGE_WIDTH;
         assert resizedImage.getHeight() == RESIZED_IMAGE_HEIGHT;
     }
-    
-    @Test
-    public void testImageNameDeleteAll() {
-        Map<String, Object> request = new LinkedHashMap<>();
-        request.put("imageName", "all");
-        
-        core.deleteLocalImages(request, null);
-        
-        File d = new File(OUTPUT_DIR);
-        File[] dList = d.listFiles();
-        
-        assert dList.length == 0;
-    }   
     
     @Test
     public void testImageNameDeleteOne() {
