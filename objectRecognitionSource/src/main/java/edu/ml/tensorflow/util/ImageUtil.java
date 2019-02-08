@@ -1,6 +1,5 @@
 package edu.ml.tensorflow.util;
 
-import edu.ml.tensorflow.Config;
 import edu.ml.tensorflow.model.BoxPosition;
 import edu.ml.tensorflow.model.Recognition;
 import io.vantiq.client.BaseResponseHandler;
