@@ -19,6 +19,7 @@ import io.vantiq.extsrc.objectRecognition.exception.ImageProcessingException;
  */
 public interface NeuralNetInterface {
     static final String OUTPUT_DIRECTORY_ENTRY = "outputDir";
+    static final String TYPE_ENTRY = "type";
     
     /**
      * Setup the neural net for image processing.

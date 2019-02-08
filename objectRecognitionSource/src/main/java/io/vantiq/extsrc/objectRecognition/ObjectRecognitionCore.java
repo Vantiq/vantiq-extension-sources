@@ -465,16 +465,7 @@ public class ObjectRecognitionCore {
        // Examining parameters, and creating filters if necessary
        
        if (imageName != null) {
-           // If imageName is "all", then upload all images in the directory
-           if (imageName.equals("all")) {
-               dateRange.add(null);
-               dateRange.add(null);
-               useFilter = true;
-               
-           // Otherwise, upload the one image matching the imageName.
-           } else {
-               useFilter = false;
-           }
+           useFilter = false;
        } else if (imageDate != null) {
            for (String date : imageDate) {
                if (date.equals("-")) {
@@ -607,7 +598,7 @@ public class ObjectRecognitionCore {
    }
    
    /**
-    * A helper function called by deleteLocalImages, used if imageName or imageDate is set to "all"
+    * A helper function called by deleteLocalImages, used when multiple files need to be deleted
     * @param imageDir    The name of the image directory
     * @param imageUtil   The instantiated ImageUtil class containing the method to delete
     * @param filter      The filter used if a dateRange was selected, otherwise null
