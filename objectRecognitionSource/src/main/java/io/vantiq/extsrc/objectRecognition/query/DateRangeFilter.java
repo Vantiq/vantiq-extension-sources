@@ -20,6 +20,7 @@ public class DateRangeFilter implements FilenameFilter {
     @Override
     public boolean accept(File dir, String name) {
         try {
+            name = name.replaceAll("\\s*\\([^\\)]*\\)\\s*", " ");
             Date fName = format.parse(name);
             return ((beforeDate == null) || !fName.before(beforeDate)) && ((afterDate == null) || !fName.after(afterDate));
         } catch (ParseException e) {

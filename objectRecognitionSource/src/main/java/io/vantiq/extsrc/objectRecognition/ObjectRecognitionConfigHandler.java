@@ -234,6 +234,9 @@ public class ObjectRecognitionConfigHandler extends Handler<ExtensionServiceMess
             log.debug("No neural net type specified. Trying for default of '{}'", DEFAULT_NEURAL_NET);
         }
         
+        // Setting the outputDir value for the core, (null if it does not exist)
+        source.outputDir = (String) neuralNetConfig.get(NeuralNetInterface.OUTPUT_DIRECTORY_ENTRY);
+        
         // Create the neural net
         NeuralNetInterface neuralNet = getNeuralNet(neuralNetType);
         if (neuralNet == null) {

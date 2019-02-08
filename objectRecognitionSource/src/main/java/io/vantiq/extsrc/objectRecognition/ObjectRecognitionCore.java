@@ -59,12 +59,14 @@ public class ObjectRecognitionCore {
     Timer                   pollTimer       = null;
     ImageRetrieverInterface imageRetriever  = null;
     
-    ObjectRecognitionConfigHandler objRecConfigHandler;
+    ObjectRecognitionConfigHandler  objRecConfigHandler;
     
     // vars for internal use
     ExtensionWebSocketClient    client      = null;
     NeuralNetInterface          neuralNet   = null;
     SimpleDateFormat            format      = new SimpleDateFormat("yyyy-MM-dd--HH-mm-ss");
+    
+    public String outputDir;
     
     // final vars
     final Logger log;
@@ -402,23 +404,28 @@ public class ObjectRecognitionCore {
    }
    
    /**
-    * Uploads requested images to VANTIQ. Called when query parameter "operation" is set to "save".
+    * Uploads requested images to VANTIQ. Called when query parameter "operation" is set to "upload".
     * @param request        The parameters sent with the query.
     * @param replyAddress   The replyAddress used to send a query response.
     */
    public void uploadLocalImages(Map<String, ?> request, String replyAddress) {       
-       Map<String,Object> parsedParameterVals = handleQueryParameters(request, replyAddress, "upload");
-       if (parsedParameterVals == null) {
+       Map<String,Object> parsedParameterResult = handleQueryParameters(request, replyAddress, "upload");
+       if (parsedParameterResult == null) {
            return;
        }
        
-       String imageDir = (String) parsedParameterVals.get("imageDir");
-       String imageName = (String) parsedParameterVals.get("imageName");
-       List<String> imageDate = (List) parsedParameterVals.get("imageDate");
-       ImageUtil imageUtil = (ImageUtil) parsedParameterVals.get("imageUtil");
+       ImageUtil imageUtil = setupQueryImageUtil(request);
        
-       // Processing the query with all the extracted parameters
-       processUploadQuery(imageDir, imageName, imageDate, imageUtil, replyAddress);
+       if (parsedParameterResult.get("imageName") != null) {
+           String imageName = (String) parsedParameterResult.get("imageName");
+           uploadOne(imageName, outputDir, imageUtil);
+       } else {
+           FilenameFilter filter = (FilenameFilter) parsedParameterResult.get("filter");
+           uploadMany(outputDir, imageUtil, filter);
+       }
+       
+       // Send nothing back as query response
+       client.sendQueryResponse(204, replyAddress, new LinkedHashMap<>());
    }
    
    /**
@@ -429,21 +436,10 @@ public class ObjectRecognitionCore {
     * @return
     */
    public Map<String, Object> handleQueryParameters(Map<String, ?> request, String replyAddress, String operation) {
-       String imageDir = null;
        String imageName = null;
        List<String> imageDate = null;
-       ImageUtil imageUtil;
-       // Checking to make sure there is an image directory specified. (Required)
-       if (!(request.get("imageDir") instanceof String)) {
-           client.sendQueryError(replyAddress, "io.vantiq.extsrc.objectRecognition.invalidQueryRequest", 
-                   "No imageDir was specified, or imageDir was incorrectly specified. "
-                   + "Cannot select image(s) to be "+ operation + " .", null);
-           return null;
-       } else {
-           imageDir = (String) request.get("imageDir");
-           // Set up ImageUtil properties
-           imageUtil = setupQueryImageUtil(request);
-       }
+       List<Date> dateRange = new ArrayList<Date>();
+       boolean useFilter = false;
            
        // Checking if "imageName" option was used to specify the file(s) to upload.
        if (request.get("imageName") instanceof String) {
@@ -465,38 +461,19 @@ public class ObjectRecognitionCore {
            return null;
        }
        
-       Map<String, Object> parameterValues = new LinkedHashMap<String,Object>();
-       parameterValues.put("imageDir", imageDir);
-       parameterValues.put("imageName", imageName);
-       parameterValues.put("imageDate", imageDate);
-       parameterValues.put("imageUtil", imageUtil);
        
-       return parameterValues;
-   }
-   
-   /**
-    * A helper method called by uploadLocalImages, used to process parameters and call methods that upload images
-    * @param imageDir       Directory containing the local images
-    * @param imageName      The imageName query parameter if specified, otherwise null
-    * @param imageDate      The imageDate query parameter if specified, otherwise null
-    * @param imageUtil      The instantiated ImageUtil class, setup with properties based on the request
-    * @param replyAddress   The replyAddress used to send a response to the query
-    */
-   public void processUploadQuery(String imageDir, String imageName, List<String> imageDate, ImageUtil imageUtil, String replyAddress) {
-       // Used to decide which upload helper method to call
-       boolean uploadOne = true;
-       List<Date> dateRange = new ArrayList<Date>();
-              
+       // Examining parameters, and creating filters if necessary
+       
        if (imageName != null) {
            // If imageName is "all", then upload all images in the directory
            if (imageName.equals("all")) {
-               uploadOne = false;
                dateRange.add(null);
                dateRange.add(null);
+               useFilter = true;
                
            // Otherwise, upload the one image matching the imageName.
            } else {
-               uploadOne = true;
+               useFilter = false;
            }
        } else if (imageDate != null) {
            for (String date : imageDate) {
@@ -508,26 +485,25 @@ public class ObjectRecognitionCore {
                    } catch (ParseException e) {
                        log.error("An error occurred while parsing the imageDate");
                        client.sendQueryError(replyAddress, "io.vantiq.extsrc.objectRecognition.invalidQueryRequest", 
-                               "One of the dates in the imageDate list could not be parsed.Please be sure that both "
+                               "One of the dates in the imageDate list could not be parsed. Please be sure that both "
                                + "dates are in the following format: yyyy-MM-dd--HH-mm-ss", null);
-                       return;
+                       return null;
                    }
                }
            }
-           uploadOne = false;
+           useFilter = true;
        }
        
-       // Calling helper functions to upload images (using filters if needed)
-       
-       if (uploadOne) {
-           uploadOne(imageName, imageDir, imageUtil);
-       } else {
+       // Return map with filter if we are selecting multiple files, otherwise return map with imageName
+       Map<String, Object> parsedParameterResults = new LinkedHashMap<String,Object>();
+       if (useFilter) {
            FilenameFilter filter = new DateRangeFilter(dateRange);
-           uploadMany(imageDir, imageUtil, filter);
+           parsedParameterResults.put("filter", filter);
+       } else {
+           parsedParameterResults.put("imageName", imageName);
        }
-            
-       // Send nothing back as query response
-       client.sendQueryResponse(204, replyAddress, new LinkedHashMap<>());
+       
+       return parsedParameterResults;
    }
    
    /**
@@ -561,7 +537,7 @@ public class ObjectRecognitionCore {
    }
    
    /**
-    * A helper function called by processUploadQuery, used to upload one specific image
+    * A helper function called by uploadLocalImages, used to upload one specific image
     * @param name       The name of the image to be uploaded
     * @param imageDir   The name of the image directory
     * @param imageUtil  The instantiated ImageUtil class containing the method to upload
@@ -575,7 +551,7 @@ public class ObjectRecognitionCore {
    }
    
    /**
-    * A helper function called by processUploadQuery, used to upload multiple images to VANTIQ
+    * A helper function called by uploadLocalImages, used to upload multiple images to VANTIQ
     * @param imageDir    The name of the image directory
     * @param imageUtil   The instantiated ImageUtil class containing the method to upload
     * @param filter      The filter used if a dateRange was selected
@@ -597,77 +573,27 @@ public class ObjectRecognitionCore {
     * @param replyAddress   The replyAddress used to send a query response.
     */
    public void deleteLocalImages(Map<String, ?> request, String replyAddress) {  
-       Map<String,Object> parsedParameterVals = handleQueryParameters(request, replyAddress, "delete");
-       if (parsedParameterVals == null) {
+       Map<String,Object> parsedParameterResult = handleQueryParameters(request, replyAddress, "delete");
+       if (parsedParameterResult == null) {
            return;
        }
        
-       String imageDir = (String) parsedParameterVals.get("imageDir");
-       String imageName = (String) parsedParameterVals.get("imageName");
-       List<String> imageDate = (List) parsedParameterVals.get("imageDate");
-       ImageUtil imageUtil = (ImageUtil) parsedParameterVals.get("imageUtil");
+       ImageUtil imageUtil = new ImageUtil();
        
-       // Processing the query with all the extracted parameters
-       processDeleteQuery(imageDir, imageName, imageDate, imageUtil, replyAddress);
-   }
-   
-   /**
-    * A helper method called by deleteLocalImages, used to process parameters and call methods that delete images
-    * @param imageDir       Directory containing the local images
-    * @param imageName      The imageName query parameter if specified, otherwise null
-    * @param imageDate      The imageDate query parameter if specified, otherwise null
-    * @param imageUtil      The instantiated ImageUtil class
-    * @param replyAddress   The replyAddress used to send a response to the query
-    */
-   public void processDeleteQuery(String imageDir, String imageName, List<String> imageDate, ImageUtil imageUtil, String replyAddress) {
-    // Used to decide which delete helper method to call
-       boolean deleteOne = true;
-       List<Date> dateRange = new ArrayList<Date>();
-              
-       if (imageName != null) {
-           // If imageName is "all", then delete all images in the directory
-           if (imageName.equals("all")) {
-               deleteOne = false;
-               dateRange.add(null);
-               dateRange.add(null);
-               
-           // Otherwise, delete the one image matching the imageName.
-           } else {
-               deleteOne = true;
-           }
-       } else if (imageDate != null) {
-           for (String date : imageDate) {
-               if (date.equals("-")) {
-                   dateRange.add(null);
-               } else {
-                   try {
-                       dateRange.add(format.parse(date));
-                   } catch (ParseException e) {
-                       client.sendQueryError(replyAddress, "io.vantiq.extsrc.objectRecognition.invalidQueryRequest", 
-                               "One of the dates in the imageDate list could not be parsed.Please be sure that both "
-                               + "dates are in the following format: yyyy-MM-dd--HH-mm-ss", null);
-                       return;
-                   }
-               }
-           }
-           deleteOne = false;
-       }
-       
-       // Calling helper functions to delete images (using filters if needed)
-       
-       if (deleteOne) {
-           deleteOne(imageName, imageDir, imageUtil);
+       if (parsedParameterResult.get("imageName") != null) {
+           String imageName = (String) parsedParameterResult.get("imageName");
+           deleteOne(imageName, outputDir, imageUtil);
        } else {
-           FilenameFilter filter = new DateRangeFilter(dateRange);
-           deleteMany(imageDir, imageUtil, filter);
+           FilenameFilter filter = (FilenameFilter) parsedParameterResult.get("filter");
+           deleteMany(outputDir, imageUtil, filter);
        }
-            
+       
        // Send nothing back as query response
        client.sendQueryResponse(204, replyAddress, new LinkedHashMap<>());
    }
    
    /**
-    * A helper function called by processDeleteQuery, used to delete one specific image
+    * A helper function called by deleteLocalImages, used to delete one specific image
     * @param name       The name of the image to be uploaded
     * @param imageDir   The name of the image directory
     * @param imageUtil  The instantiated ImageUtil class containing the method to delete
@@ -681,7 +607,7 @@ public class ObjectRecognitionCore {
    }
    
    /**
-    * A helper function called by processDeleteQuery, used if imageName or imageDate is set to "all"
+    * A helper function called by deleteLocalImages, used if imageName or imageDate is set to "all"
     * @param imageDir    The name of the image directory
     * @param imageUtil   The instantiated ImageUtil class containing the method to delete
     * @param filter      The filter used if a dateRange was selected, otherwise null
