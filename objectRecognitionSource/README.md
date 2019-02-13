@@ -301,6 +301,9 @@ it will be set to the default value, "processNextFrame".
                     *   \["-", yourEndDate\]. 
                 *   To select *all files* in the output directory, one must use the following value for imageDate: 
                     *   \["-", "-"\].
+                    *   **NOTE:** This will only select all of the files that are named according to the default naming 
+                    pattern, ("yyyy-MM-dd--HH-mm-ss"). The user is responsible for uploading any files with unique names, and 
+                    can accomplish this using the imageName option.
         *   "savedResolution": Optional. This value can be set in the same way as it is set in the source configuration. If it 
         is defined here as a query parameter, it will override the value set in the source configuration, otherwise the source 
         configuration value will be used. The setting cannot be larger than that provided in the source configuration (since 
@@ -322,6 +325,9 @@ it will be set to the default value, "processNextFrame".
                     *   \["-", yourEndDate\]. 
                 *   To select *all files* in the output directory, one must use the following value for imageDate: 
                     *   \["-", "-"\].
+                    *   **NOTE:** This will only select all of the files that are named according to the default naming 
+                    pattern, ("yyyy-MM-dd--HH-mm-ss"). The user is responsible for deleting any files with unique names, and 
+                    can accomplish this using the imageName option.
 
 *   **Process a single frame from the camera defined in the source configuration:**
     *   Parameters:
@@ -672,6 +678,9 @@ OpenCV will also display errors that look like `warning: Error opening file
 (/build/opencv/modules/videoio/src/cap_ffmpeg_impl.hpp:856)` and `warning: invalidLocation
 (/build/opencv/modules/videoio/src/cap_ffmpeg_impl.hpp:857)`. These are expected, as the tests need to ensure correct
 behavior when the file cannot be found.
+
+Some sets of tests will create a Source named "TestObjectRecognitionSource" in the VANTIQ Namespace associated with the 
+provided "TestAuthToken". Please make sure that there is no other VANTIQ Source with the same name in that Namespace.
 
 ## Licensing
 The source code uses the [MIT License](https://opensource.org/licenses/MIT).  
