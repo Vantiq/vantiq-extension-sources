@@ -26,7 +26,7 @@ public class TestNoProcessorQueries extends NeuralNetTestBase {
     
     static final int CORE_START_TIMEOUT = 10;
     static final String OUTPUT_DIR = System.getProperty("buildDir") + "/resources/out";
-    static final String SOURCE_NAME = "TestObjectRecognitionSource";
+    static final String SOURCE_NAME = "UnlikelyToExistTestObjectRecognitionSource";
     static final String IP_CAMERA_ADDRESS = "http://207.192.232.2:8000/mjpg/video.mjpg";
     static final String NOT_FOUND_CODE = "io.vantiq.resource.not.found";
     static final String QUERY_FILENAME = "testFile";
