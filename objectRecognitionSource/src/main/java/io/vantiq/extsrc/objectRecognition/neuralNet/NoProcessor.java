@@ -161,6 +161,7 @@ public class NoProcessor implements NeuralNetInterface {
         NeuralNetResults emptyResults = new NeuralNetResults();
         List emptyList = new ArrayList();
         emptyResults.setResults(emptyList);
+        emptyResults.setLastFilename("objectRecognition/" + sourceName + "/" + lastFilename);
         return emptyResults;
     }
 

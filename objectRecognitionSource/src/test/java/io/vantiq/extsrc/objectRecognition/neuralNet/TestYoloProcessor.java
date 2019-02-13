@@ -85,7 +85,7 @@ public class TestYoloProcessor extends NeuralNetTestBase {
 
         Map<String, Object> config = new LinkedHashMap<>();
         config.put("pbFile", PB_FILE);
-        config.put("labelFile", LABEL_FILE);
+        config.put("metaFile", META_FILE);
         try {
             ypJson.setupImageProcessing(config, SOURCE_NAME, MODEL_DIRECTORY, testAuthToken, testVantiqServer);
         } catch (Exception e) {
