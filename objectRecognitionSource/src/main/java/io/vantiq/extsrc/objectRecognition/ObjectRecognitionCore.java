@@ -67,6 +67,7 @@ public class ObjectRecognitionCore {
     SimpleDateFormat            format      = new SimpleDateFormat("yyyy-MM-dd--HH-mm-ss");
     
     public String outputDir;
+    public String lastQueryFilename;
     
     // final vars
     final Logger log;
@@ -365,6 +366,7 @@ public class ObjectRecognitionCore {
                    return;
                }
                NeuralNetResults results = neuralNet.processImage(image, request);
+               lastQueryFilename = results.getLastFilename();
                
                // Send the normal message as the response if requested, otherwise just send the data 
                if (request.get("sendFullResponse") instanceof Boolean && (Boolean) request.get("sendFullResponse")) {
@@ -457,7 +459,7 @@ public class ObjectRecognitionCore {
        } else {
            client.sendQueryError(replyAddress, "io.vantiq.extsrc.objectRecognition.invalidQueryRequest", 
                    "No imageName or imageDate was specified, or they were incorrectly specified. "
-                   + "Cannot select image(s) to be " + operation + " .", null);
+                   + "Cannot select image(s) to " + operation + ".", null);
            return null;
        }
        

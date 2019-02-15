@@ -298,9 +298,10 @@ it will be set to the default value, "processNextFrame".
             manner: "yyyy-MM-dd--HH-mm-ss".
                 *   To select all images *before* or *after* a certain date, the "-" value can be used as one of the date 
                 strings in the list. For example, the following would save all dates *before* the given date: 
-                    *   \["-", yourEndDate\]. 
-                *   To select *all files* in the output directory, one must use the following value for imageDate: 
-                    *   \["-", "-"\].
+                    *   \["-", yourEndDate\]
+                *   To select *all files named with the date-naming convention* in the output directory, one must use the 
+                following value for imageDate: 
+                    *   \["-", "-"\]
         *   "savedResolution": Optional. This value can be set in the same way as it is set in the source configuration. If it 
         is defined here as a query parameter, it will override the value set in the source configuration, otherwise the source 
         configuration value will be used. The setting cannot be larger than that provided in the source configuration (since 
@@ -319,9 +320,10 @@ it will be set to the default value, "processNextFrame".
             manner: "yyyy-MM-dd--HH-mm-ss".
                 *   To select all images *before* or *after* a certain date, the "-" value can be used as one of the date 
                 strings in the list. For example, the following would save all dates *before* the given date: 
-                    *   \["-", yourEndDate\]. 
-                *   To select *all files* in the output directory, one must use the following value for imageDate: 
-                    *   \["-", "-"\].
+                    *   \["-", yourEndDate\] 
+                *   To select *all files named with the date-naming convention* in the output directory, one must use the 
+                following value for imageDate: 
+                    *   \["-", "-"\]
 
 *   **Process a single frame from the camera defined in the source configuration:**
     *   Parameters:
@@ -672,6 +674,9 @@ OpenCV will also display errors that look like `warning: Error opening file
 (/build/opencv/modules/videoio/src/cap_ffmpeg_impl.hpp:856)` and `warning: invalidLocation
 (/build/opencv/modules/videoio/src/cap_ffmpeg_impl.hpp:857)`. These are expected, as the tests need to ensure correct
 behavior when the file cannot be found.
+
+Some sets of tests will create a Source named "UnlikelyToExistTestObjectRecognitionSource" in the VANTIQ Namespace associated 
+with the provided "TestAuthToken". Please make sure that there is no other VANTIQ Source with the same name in that Namespace.
 
 ## Licensing
 The source code uses the [MIT License](https://opensource.org/licenses/MIT).  
