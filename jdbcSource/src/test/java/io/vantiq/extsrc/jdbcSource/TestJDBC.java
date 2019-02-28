@@ -49,9 +49,6 @@ public class TestJDBC extends TestJDBCBase {
     static final String INSERT_NO_FIELD = "INSERT INTO Test VALUES (1, 25, 'Santa', 'Claus', 'jibberish')";
     static final String INSERT_WRONG_TYPE = "INSERT INTO Test VALUES ('string', 'string', 3, 4)";
     
-    DateFormat dfTimestamp  = new SimpleDateFormat("yyyy-dd-mm'T'HH:mm:ss.SSSZ");
-    DateFormat dfDate       = new SimpleDateFormat("yyyy-dd-mm");
-    DateFormat dfTime       = new SimpleDateFormat("HH:mm:ss.SSSZ");
     static final String timestampPattern = "\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}.\\d{3}-\\d{4}";
     static final String datePattern = "\\d{4}-\\d{2}-\\d{2}";
     static final String timePattern = "\\d{2}:\\d{2}:\\d{2}.\\d{3}-\\d{4}";
