@@ -33,8 +33,8 @@ public class JDBC {
     private Statement   stmt = null;
     private ResultSet   rs   = null;    
     
-    DateFormat dfTimestamp  = new SimpleDateFormat("yyyy-dd-mm'T'HH:mm:ss.SSSZ");
-    DateFormat dfDate       = new SimpleDateFormat("yyyy-dd-mm");
+    DateFormat dfTimestamp  = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSZ");
+    DateFormat dfDate       = new SimpleDateFormat("yyyy-MM-dd");
     DateFormat dfTime       = new SimpleDateFormat("HH:mm:ss.SSSZ");
     
     /**
