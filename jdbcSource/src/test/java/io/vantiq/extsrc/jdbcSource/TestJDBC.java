@@ -33,11 +33,18 @@ public class TestJDBC extends TestJDBCBase {
     static final String DELETE_ROW = "DELETE FROM Test WHERE first='Santa';";
     static final String DELETE_TABLE = "DROP TABLE Test;";
     
+    // Date values used to test oddball types
+    static final String TIMESTAMP = "2018-08-15 9:24:18";
+    static final String DATE = "2018-08-15";
+    static final String TIME = "9:24:18";
+    static final String FORMATTED_TIMESTAMP = "2018-08-15T09:24:18.000-0700";
+    static final String FORMATTED_TIME = "09:24:18.000-0800";
+    
     // Queries to test oddball types
-    static final String CREATE_TABLE_EXTENDED_TYPES = "create table TestTypes(id int, ts TIMESTAMP DEFAULT CURRENT_TIMESTAMP,"
-            + " testDate DATE, testTime TIME, testDec decimal(5,2));";
-    static final String PUBLISH_QUERY_EXTENDED_TYPES = "INSERT INTO TestTypes VALUES (1, CURRENT_TIMESTAMP, '2018-08-15',"
-            + " '9:24:18', 145.86);";
+    static final String CREATE_TABLE_EXTENDED_TYPES = "create table TestTypes(id int, ts TIMESTAMP, testDate DATE, "
+            + "testTime TIME, testDec decimal(5,2));";
+    static final String PUBLISH_QUERY_EXTENDED_TYPES = "INSERT INTO TestTypes VALUES (1, '" + TIMESTAMP + "', '" + DATE + "',"
+            + " '" + TIME + "', 145.86);";
     static final String SELECT_QUERY_EXTENDED_TYPES = "SELECT * FROM TestTypes;";
     static final String DELETE_ROW_EXTENDED_TYPES = "DELETE FROM TestTypes;";
     static final String DELETE_TABLE_EXTENDED_TYPES = "DROP TABLE TestTypes;";
@@ -197,10 +204,13 @@ public class TestJDBC extends TestJDBCBase {
             queryResult = jdbc.processQuery(SELECT_QUERY_EXTENDED_TYPES);
             String timestampTest = (String) queryResult[0].get("ts");
             assert timestampTest.matches(timestampPattern);
+            assert timestampTest.equals(FORMATTED_TIMESTAMP);
             String dateTest = (String) queryResult[0].get("testDate");
             assert dateTest.matches(datePattern);
+            assert dateTest.equals(DATE);
             String timeTest = (String) queryResult[0].get("testTime");
             assert timeTest.matches(timePattern);
+            assert timeTest.equals(FORMATTED_TIME);
             assert ((BigDecimal) queryResult[0].get("testDec")).compareTo(new BigDecimal("145.86")) == 0;
         } catch (VantiqSQLException e) {
             fail("Should not have thrown exception.");
