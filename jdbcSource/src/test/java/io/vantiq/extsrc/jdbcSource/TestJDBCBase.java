@@ -14,6 +14,8 @@ public class TestJDBCBase {
     static String testDBUsername;
     static String testDBPassword;
     static String testDBURL;
+    static String testAuthToken;
+    static String testVantiqServer;
     static String jdbcDriverLoc;
     
     @BeforeClass
@@ -21,6 +23,8 @@ public class TestJDBCBase {
         testDBUsername = System.getProperty("EntConJDBCUsername", null);
         testDBPassword = System.getProperty("EntConJDBCPassword", null);
         testDBURL = System.getProperty("EntConJDBCURL", null);
+        testAuthToken = System.getProperty("TestAuthToken", null);
+        testVantiqServer = System.getProperty("TestVantiqServer", null);
         jdbcDriverLoc = System.getenv("JDBC_DRIVER_LOC");
     }
 }
