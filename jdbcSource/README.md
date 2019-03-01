@@ -248,12 +248,15 @@ SQLException, and contains the Error Message, SQL State, and Error Code from the
 
 In order to properly run the tests, you must create an environment variable named JDBC\_DRIVER\_LOC which points to the 
 appropriate JDBC Driver .jar file. Additionally, you must first add the SQL Database username, password, and URL to your 
-gradle.properties file in the ~/.gradle directory as follows:
+gradle.properties file in the ~/.gradle directory. You must also add the Target VANTIQ Server, as well as the corresponding 
+Authentication Token to the same file. The following shows what the gradle.properties file should look like:
 
 ```
     EntConJDBCUsername=<yourUsername>
     EntConJDBCPassword=<yourPassword>
     EntConJDBCURL=<yourURL>
+    TestVantiqServer=<yourVantiqServer>
+    TestAuthToken=<yourAuthToken>
 ```
 
 ## Licensing
