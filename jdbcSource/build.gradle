@@ -9,6 +9,11 @@ sourceCompatibility = 1.8
 repositories {
     mavenCentral()
     jcenter()
+    
+    // Used for checking VANTIQ date format behavior with VANTIQ SDK
+    maven {
+    	url "https://dl.bintray.com/vantiq/maven"
+    }
 }
 
 mainClassName = 'io.vantiq.extsrc.jdbcSource.JDBCMain'
@@ -43,6 +48,18 @@ tasks.withType(Test) {
     if (rootProject.hasProperty("EntConJDBCURL")) {
         systemProperty "EntConJDBCURL", rootProject.findProperty("EntConJDBCURL") ?: "empty"
     }
+    if (rootProject.hasProperty("EntConTestSourceName")) {
+        systemProperty "EntConTestSourceName", rootProject.findProperty("EntConTestSourceName")
+    }
+    if (rootProject.hasProperty("EntConTestTypeName")) {
+        systemProperty "EntConTestTypeName", rootProject.findProperty("EntConTestTypeName")
+    }
+    if (rootProject.hasProperty("TestAuthToken")) {
+        systemProperty "TestAuthToken", rootProject.findProperty("TestAuthToken") ?: "empty"
+    }
+    if (rootProject.hasProperty("TestVantiqServer")) {
+        systemProperty "TestVantiqServer", rootProject.findProperty("TestVantiqServer") ?: "empty"
+    }
 }
 
 dependencies {
@@ -56,6 +73,9 @@ dependencies {
     
     //  Compiling relevant JDBC Driver .jar file
     runtime files("${System.env.JDBC_DRIVER_LOC}")
+    
+    // Used for checking VANTIQ date format behavior with VANTIQ SDK
+    compile 'io.vantiq:vantiq-sdk:1.0.17'
     
     // Use JUnit test framework
     testCompile 'junit:junit:4.12'

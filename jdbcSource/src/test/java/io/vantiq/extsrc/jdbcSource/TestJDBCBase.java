@@ -14,13 +14,21 @@ public class TestJDBCBase {
     static String testDBUsername;
     static String testDBPassword;
     static String testDBURL;
+    static String testAuthToken;
+    static String testVantiqServer;
     static String jdbcDriverLoc;
+    static String testSourceName;
+    static String testTypeName;
     
     @BeforeClass
     public static void getProps() {
         testDBUsername = System.getProperty("EntConJDBCUsername", null);
         testDBPassword = System.getProperty("EntConJDBCPassword", null);
         testDBURL = System.getProperty("EntConJDBCURL", null);
+        testAuthToken = System.getProperty("TestAuthToken", null);
+        testVantiqServer = System.getProperty("TestVantiqServer", null);
         jdbcDriverLoc = System.getenv("JDBC_DRIVER_LOC");
+        testSourceName = System.getProperty("EntConTestSourceName", "testSourceName");
+        testTypeName = System.getProperty("EntConTestTypeName", "testTypeName");
     }
 }
