@@ -64,9 +64,10 @@ public class TestJDBC extends TestJDBCBase {
     static final String INSERT_WRONG_TYPE = "INSERT INTO Test VALUES ('string', 'string', 3, 4)";
     
     // Queries to test DateTime format in VANTIQ
-    static final String CREATE_TABLE_DATETIME = "CREATE TABLE Test(ts TIMESTAMP);";
-    static final String INSERT_VALUE_DATETIME = "INSERT INTO Test VALUES ('" + TIMESTAMP + "');";
-    static final String QUERY_TABLE_DATETIME = "SELECT * FROM Test";
+    static final String CREATE_TABLE_DATETIME = "CREATE TABLE TestDates(ts TIMESTAMP);";
+    static final String INSERT_VALUE_DATETIME = "INSERT INTO TestDates VALUES ('" + TIMESTAMP + "');";
+    static final String QUERY_TABLE_DATETIME = "SELECT * FROM TestDates";
+    static final String DROP_TABLE_DATETIME = "DROP TABLE TestDates";
     
     static final String timestampPattern = "\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}.\\d{3}-\\d{4}";
     static final String datePattern = "\\d{4}-\\d{2}-\\d{2}";
@@ -111,6 +112,13 @@ public class TestJDBC extends TestJDBCBase {
                 jdbc.processPublish(DELETE_TABLE_EXTENDED_TYPES);
             } catch (VantiqSQLException e) {
                 // Shoudn't throw Exception
+            }
+            
+            // Delete third table
+            try {
+                jdbc.processPublish(DROP_TABLE_DATETIME);
+            } catch (VantiqSQLException e) {
+                // Shouldn't throw Exception
             }
         }
         if (core != null) {
