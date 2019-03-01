@@ -49,10 +49,10 @@ tasks.withType(Test) {
         systemProperty "EntConJDBCURL", rootProject.findProperty("EntConJDBCURL") ?: "empty"
     }
     if (rootProject.hasProperty("EntConTestSourceName")) {
-        systemProperty "EntConTestSourceName", rootProject.findProperty("EntConTestSourceName") ?: "empty"
+        systemProperty "EntConTestSourceName", rootProject.findProperty("EntConTestSourceName")
     }
     if (rootProject.hasProperty("EntConTestTypeName")) {
-        systemProperty "EntConTestTypeName", rootProject.findProperty("EntConTestTypeName") ?: "empty"
+        systemProperty "EntConTestTypeName", rootProject.findProperty("EntConTestTypeName")
     }
     if (rootProject.hasProperty("TestAuthToken")) {
         systemProperty "TestAuthToken", rootProject.findProperty("TestAuthToken") ?: "empty"
