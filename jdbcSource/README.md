@@ -246,22 +246,26 @@ SQLException, and contains the Error Message, SQL State, and Error Code from the
 
 ## Testing <a name="testing" id="testing"></a>
 
-In order to properly run the tests, you must create an environment variable named JDBC\_DRIVER\_LOC which points to the 
-appropriate JDBC Driver .jar file. Additionally, you must first add the SQL Database username, password, and URL to your 
-gradle.properties file in the ~/.gradle directory. You must also add the Target VANTIQ Server, as well as the corresponding 
-Authentication Token to the same file. The Target VANTIQ Server and Auth Token will be used to create a temporary VANTIQ 
-Source and Type, named testSourceName and testTypeName respectively. These names can optionally be configured by adding 
-EntConTestSourceName and EntConTestTypeName to the gradle.properties file. The following shows what the gradle.properties file 
+In order to properly run the tests, you must create an environment variable named **JDBC\_DRIVER\_LOC** which points to the 
+appropriate JDBC Driver .jar file.
+
+ Additionally, you must add properties to your _gradle.properties_ file 
+in the _~/.gradle_ directory. 
+These properties include the JDBC Database username, password, and URL.
+You must also add the Target VANTIQ Server URL, as well as an 
+Authentication Token for that server. The Target VANTIQ Server and Auth Token will be used to create a temporary VANTIQ 
+Source and Type, named _testSourceName_ and _testTypeName_ respectively. These names can optionally be configured by adding 
+`EntConTestSourceName` and `EntConTestTypeName` to the gradle.properties file. The following shows what the gradle.properties file 
 should look like:
 
 ```
     EntConJDBCUsername=<yourUsername>
     EntConJDBCPassword=<yourPassword>
     EntConJDBCURL=<yourURL>
-    EntConTestSourceName=<yourDesiredSourceName>
-    EntConTestTypeName=<yourDesiredTypeName>
     TestVantiqServer=<yourVantiqServer>
     TestAuthToken=<yourAuthToken>
+    EntConTestSourceName=<yourDesiredSourceName>
+    EntConTestTypeName=<yourDesiredTypeName>
 ```
 
 * **NOTE:** We strongly encourage users to create a unique VANTIQ Namespace in order to ensure that tests do not accidentally 
