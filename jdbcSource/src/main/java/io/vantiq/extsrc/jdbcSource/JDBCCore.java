@@ -207,6 +207,12 @@ public class JDBCCore {
             client.sendQueryError(replyAddress, VantiqSQLException.class.getCanonicalName(), 
                     "Failed to execute query for reason: " + e.getMessage() + 
                     ". Exception was: " + e.getClass().getName() + ". Request was: " + request.get("query"), null);
+        } catch (Exception e) {
+            log.warn("An unexpected error occured when executing the requested query.");
+            log.debug("Request was: {}", request);
+            client.sendQueryError(replyAddress, Exception.class.getCanonicalName(), 
+                    "Failed to execute query for reason: " + e.getMessage() + 
+                    ". Exception was: " + e.getClass().getName() + ". Request was: " + request.get("query"), null);
         }
     }
     
@@ -234,6 +240,9 @@ public class JDBCCore {
         } catch (VantiqSQLException e) {
             log.error("Could not execute requested query.", e);
             log.debug("Request was: {}", request);
+        } catch (Exception e) {
+            log.error("An unexpected error occured when executing the requested query.");
+            log.debug("Request was: {}", request);
         }
     }
     
@@ -253,6 +262,8 @@ public class JDBCCore {
             }
         } catch (VantiqSQLException e) {
             log.error("Could not execute polling query.", e);
+        } catch (Exception e) {
+            log.error("An unexpected error occured when executing the polling query.");
         }
     }
     
