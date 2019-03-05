@@ -123,15 +123,27 @@ public class JDBC {
                                 break;
                             case java.sql.Types.DATE:
                                 Date rowDate = queryResults.getDate(i);
-                                row.put(md.getColumnName(i), dfDate.format(rowDate));
+                                if (rowDate != null) {
+                                    row.put(md.getColumnName(i), dfDate.format(rowDate));
+                                } else {
+                                    row.put(md.getColumnName(i), null);
+                                }
                                 break;
                             case java.sql.Types.TIME:
                                 Time rowTime = queryResults.getTime(i);
-                                row.put(md.getColumnName(i), dfTime.format(rowTime));
+                                if (rowTime != null) {
+                                    row.put(md.getColumnName(i), dfTime.format(rowTime));
+                                } else {
+                                    row.put(md.getColumnName(i), null);
+                                }
                                 break;
                             case java.sql.Types.TIMESTAMP:
                                 Timestamp rowTimestamp = queryResults.getTimestamp(i);
-                                row.put(md.getColumnName(i), dfTimestamp.format(rowTimestamp));
+                                if (rowTimestamp != null) {
+                                    row.put(md.getColumnName(i), dfTimestamp.format(rowTimestamp));
+                                } else {
+                                    row.put(md.getColumnName(i), null);
+                                }
                                 break;
                             default:
                                 // If none of the initial cases are met, the data will be converted to a String via getObject()

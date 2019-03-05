@@ -70,6 +70,12 @@ public class TestJDBC extends TestJDBCBase {
     static final String QUERY_TABLE_DATETIME = "SELECT * FROM TestDates";
     static final String DROP_TABLE_DATETIME = "DROP TABLE TestDates";
     
+    // Queries to test null DateTime values
+    static final String CREATE_TABLE_NULL_DATES = "CREATE TABLE TestNullDates(ts TIMESTAMP, testDate DATE, testTime TIME);";
+    static final String INSERT_NULL_DATES = "INSERT INTO TestNullDates VALUES (null, null, null)";
+    static final String QUERY_NULL_DATES = "SELECT * FROM TestNullDates";
+    static final String DROP_TABLE_NULL_DATES = "DROP TABLE TestNullDates";
+    
     static final String timestampPattern = "\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}.\\d{3}-\\d{4}";
     static final String datePattern = "\\d{4}-\\d{2}-\\d{2}";
     static final String timePattern = "\\d{2}:\\d{2}:\\d{2}.\\d{3}-\\d{4}";
@@ -120,6 +126,13 @@ public class TestJDBC extends TestJDBCBase {
             // Delete third table
             try {
                 dropTablesJDBC.processPublish(DROP_TABLE_DATETIME);
+            } catch (VantiqSQLException e) {
+                // Shouldn't throw Exception
+            }
+            
+            // Delete fourth table
+            try {
+                dropTablesJDBC.processPublish(DROP_TABLE_NULL_DATES);
             } catch (VantiqSQLException e) {
                 // Shouldn't throw Exception
             }
@@ -324,6 +337,43 @@ public class TestJDBC extends TestJDBCBase {
         
         // Delete the Source from VANTIQ
         deleteSource();
+    }
+    
+    @Test
+    public void testNullDates() throws VantiqSQLException {
+        assumeTrue(testDBUsername != null && testDBPassword != null && testDBURL != null && jdbcDriverLoc != null);
+        jdbc.setupJDBC(testDBURL, testDBUsername, testDBPassword);
+        
+        int publishResult;
+        HashMap[] queryResult;
+        
+        // Create table with date values
+        try {
+            publishResult = jdbc.processPublish(CREATE_TABLE_NULL_DATES);
+            assert publishResult == 0;
+        } catch (VantiqSQLException e) {
+            fail("Should not throw an exception: " + e.getMessage());
+        }
+        
+        // Insert a row of data into the table
+        try {
+            publishResult = jdbc.processPublish(INSERT_NULL_DATES);
+            assert publishResult > 0;
+        } catch (VantiqSQLException e) {
+            fail("Should not throw an exception: " + e.getMessage());
+        }
+        
+        // Select the dates back and make sure they are null, and no error was thrown
+        try {
+            queryResult = jdbc.processQuery(QUERY_NULL_DATES);
+            assert queryResult[0].get("ts") == null;
+            assert queryResult[0].get("testDate") == null;
+            assert queryResult[0].get("testTime") == null;
+        } catch (VantiqSQLException e) {
+            fail("Should not throw an exception: " + e.getMessage());
+        }
+        
+        jdbc.close();
     }
     
     @Test
