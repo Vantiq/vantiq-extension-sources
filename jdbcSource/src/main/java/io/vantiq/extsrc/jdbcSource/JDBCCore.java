@@ -202,14 +202,14 @@ public class JDBCCore {
                         + "not a string.", null);
             }
         } catch (VantiqSQLException e) {
-            log.warn("Could not execute requested query.", e);
-            log.debug("Request was: {}", request);
+            log.error("Could not execute requested query.", e);
+            log.error("Request was: {}", request);
             client.sendQueryError(replyAddress, VantiqSQLException.class.getCanonicalName(), 
                     "Failed to execute query for reason: " + e.getMessage() + 
                     ". Exception was: " + e.getClass().getName() + ". Request was: " + request.get("query"), null);
         } catch (Exception e) {
-            log.warn("An unexpected error occured when executing the requested query.", e);
-            log.debug("Request was: {}", request);
+            log.error("An unexpected error occurred when executing the requested query.", e);
+            log.error("Request was: {}", request);
             client.sendQueryError(replyAddress, Exception.class.getCanonicalName(), 
                     "Failed to execute query for reason: " + e.getMessage() + 
                     ". Exception was: " + e.getClass().getName() + ". Request was: " + request.get("query"), null);
@@ -239,10 +239,10 @@ public class JDBCCore {
             }
         } catch (VantiqSQLException e) {
             log.error("Could not execute requested query.", e);
-            log.debug("Request was: {}", request);
+            log.error("Request was: {}", request);
         } catch (Exception e) {
-            log.error("An unexpected error occured when executing the requested query.", e);
-            log.debug("Request was: {}", request);
+            log.error("An unexpected error occurred when executing the requested query.", e);
+            log.error("Request was: {}", request);
         }
     }
     
@@ -262,9 +262,10 @@ public class JDBCCore {
             }
         } catch (VantiqSQLException e) {
             log.error("Could not execute polling query.", e);
+            log.error("The pollQuery was: " + pollQuery);
         } catch (Exception e) {
-            log.error("An unexpected error occured when executing the polling query.", e);
-            log.debug("The pollQuery was: " + pollQuery);
+            log.error("An unexpected error occurred when executing the polling query.", e);
+            log.error("The pollQuery was: " + pollQuery);
         }
     }
     
