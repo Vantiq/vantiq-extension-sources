@@ -70,16 +70,22 @@ public class TestJDBC extends TestJDBCBase {
     static final String QUERY_TABLE_DATETIME = "SELECT * FROM TestDates";
     static final String DROP_TABLE_DATETIME = "DROP TABLE TestDates";
     
-    // Queries to test null DateTime values
-    static final String CREATE_TABLE_NULL_DATES = "CREATE TABLE TestNullDates(ts TIMESTAMP, testDate DATE, testTime TIME);";
-    static final String INSERT_NULL_DATES = "INSERT INTO TestNullDates VALUES (null, null, null)";
-    static final String QUERY_NULL_DATES = "SELECT * FROM TestNullDates";
-    static final String DROP_TABLE_NULL_DATES = "DROP TABLE TestNullDates";
+    // Queries to test null values
+    static final String CREATE_TABLE_NULL_VALUES = "CREATE TABLE TestNullValues(ts TIMESTAMP, testDate DATE, testTime TIME, "
+            + "testInt int, testString varchar (255), testDec decimal(5,2));";
+    static final String INSERT_ALL_NULL_VALUES = "INSERT INTO TestNullValues VALUES (null, null, null, null, null, null)";
+    static final String QUERY_NULL_VALUES = "SELECT * FROM TestNullValues";
+    static final String DELETE_ROW_NULL_VALUES = "DELETE FROM TestNullValues";
+    static final String DROP_TABLE_NULL_VALUES = "DROP TABLE TestNullValues";
     
     static final String timestampPattern = "\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}.\\d{3}-\\d{4}";
     static final String datePattern = "\\d{4}-\\d{2}-\\d{2}";
     static final String timePattern = "\\d{2}:\\d{2}:\\d{2}.\\d{3}-\\d{4}";
     
+    static final String TEST_INT = "10";
+    static final String TEST_STRING = "test";
+    static final String TEST_DEC = "123.45";
+            
     static final int CORE_START_TIMEOUT = 10;
     
     static JDBCCore core;
@@ -96,7 +102,7 @@ public class TestJDBC extends TestJDBCBase {
     /* Uncomment this BeforeClass when debugging to ensure tables have been properly deleted.
     
     @BeforeClass
-    public void debugSetup() {
+    public static void debugSetup() throws VantiqSQLException {
         tearDown();
     }
     
@@ -132,7 +138,7 @@ public class TestJDBC extends TestJDBCBase {
             
             // Delete fourth table
             try {
-                dropTablesJDBC.processPublish(DROP_TABLE_NULL_DATES);
+                dropTablesJDBC.processPublish(DROP_TABLE_NULL_VALUES);
             } catch (VantiqSQLException e) {
                 // Shouldn't throw Exception
             }
@@ -340,37 +346,100 @@ public class TestJDBC extends TestJDBCBase {
     }
     
     @Test
-    public void testNullDates() throws VantiqSQLException {
+    public void testNullValues() throws VantiqSQLException {
         assumeTrue(testDBUsername != null && testDBPassword != null && testDBURL != null && jdbcDriverLoc != null);
         jdbc.setupJDBC(testDBURL, testDBUsername, testDBPassword);
         
         int publishResult;
         HashMap[] queryResult;
         
-        // Create table with date values
+        // Create table with all supported data type values
         try {
-            publishResult = jdbc.processPublish(CREATE_TABLE_NULL_DATES);
+            publishResult = jdbc.processPublish(CREATE_TABLE_NULL_VALUES);
             assert publishResult == 0;
         } catch (VantiqSQLException e) {
             fail("Should not throw an exception: " + e.getMessage());
         }
         
-        // Insert a row of data into the table
+        // Insert a row of data into the table containing all null values
         try {
-            publishResult = jdbc.processPublish(INSERT_NULL_DATES);
+            publishResult = jdbc.processPublish(INSERT_ALL_NULL_VALUES);
             assert publishResult > 0;
         } catch (VantiqSQLException e) {
             fail("Should not throw an exception: " + e.getMessage());
         }
         
-        // Select the dates back and make sure they are null, and no error was thrown
+        // Select all the values and make sure they are null, and that no error was thrown
         try {
-            queryResult = jdbc.processQuery(QUERY_NULL_DATES);
+            queryResult = jdbc.processQuery(QUERY_NULL_VALUES);
             assert queryResult[0].get("ts") == null;
             assert queryResult[0].get("testDate") == null;
             assert queryResult[0].get("testTime") == null;
+            assert queryResult[0].get("testInt") == null;
+            assert queryResult[0].get("testString") == null;
+            assert queryResult[0].get("testDec") == null;
         } catch (VantiqSQLException e) {
             fail("Should not throw an exception: " + e.getMessage());
+        }
+        
+        // Alternate making one value null
+        for (int i = 0; i < 6; i++) {
+            // First delete the existing row in the table
+            try {
+                publishResult = jdbc.processPublish(DELETE_ROW_NULL_VALUES);
+                assert publishResult > 0;
+            } catch (VantiqSQLException  e) {
+                fail("Should not fail when deleting the row: " + e.getMessage());
+            }
+            
+            // Create array of the values to be input
+            ArrayList<Object> nullValuesList = new ArrayList<Object>();
+            nullValuesList.add("'" + TIMESTAMP + "'");
+            nullValuesList.add("'" + DATE + "'");
+            nullValuesList.add("'" + TIME + "'");
+            nullValuesList.add(TEST_INT);
+            nullValuesList.add("'" + TEST_STRING + "'");
+            nullValuesList.add(TEST_DEC);
+            Object[] nullValues = nullValuesList.toArray(new Object[nullValuesList.size()]);
+            
+            // Make one value null
+            nullValues[i] = null;
+            
+            String queryString = "INSERT INTO TestNullValues VALUE (" + nullValues[0] + ", " + nullValues[1] + ", "
+                    + nullValues[2] + ", " + nullValues[3] + ", " + nullValues[4] + ", " + nullValues[5] + ")";
+            
+            // Insert data into database
+            try {
+                publishResult = jdbc.processPublish(queryString);
+            } catch (Exception e) {
+                fail("No exception should be thrown when inserting null values: " + e.getMessage());
+            }
+            
+            // Make sure collected data is identical to input data, and fail if any type of exception is caught
+            try {
+                queryResult = jdbc.processQuery(QUERY_NULL_VALUES);
+                assert queryResult[0].size() == 5;
+                if (i != 0) {
+                    assert queryResult[0].get("ts").equals(FORMATTED_TIMESTAMP);
+                }
+                if (i != 1) {
+                    assert queryResult[0].get("testDate").equals(DATE);
+                }
+                if (i != 2) {
+                    assert queryResult[0].get("testTime").equals(FORMATTED_TIME);
+                }
+                if (i != 3) {
+                    assert queryResult[0].get("testInt").toString().equals(TEST_INT);
+                }
+                if (i != 4) {
+                    assert queryResult[0].get("testString").equals(TEST_STRING);
+                }
+                if (i != 5) {
+                    assert queryResult[0].get("testDec").toString().equals(TEST_DEC);
+                }
+            } catch (Exception e) {
+                fail("No exception should be thrown when querying: " + e.getMessage());
+            }
         }
         
         jdbc.close();

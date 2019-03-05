@@ -119,35 +119,33 @@ public class JDBC {
                         int columnType = md.getColumnType(i);
                         switch (columnType) {
                             case java.sql.Types.DECIMAL:
-                                row.put(md.getColumnName(i), queryResults.getBigDecimal(i));
+                                if (queryResults.getBigDecimal(i) != null) {
+                                    row.put(md.getColumnName(i), queryResults.getBigDecimal(i));
+                                }
                                 break;
                             case java.sql.Types.DATE:
                                 Date rowDate = queryResults.getDate(i);
                                 if (rowDate != null) {
                                     row.put(md.getColumnName(i), dfDate.format(rowDate));
-                                } else {
-                                    row.put(md.getColumnName(i), null);
                                 }
                                 break;
                             case java.sql.Types.TIME:
                                 Time rowTime = queryResults.getTime(i);
                                 if (rowTime != null) {
                                     row.put(md.getColumnName(i), dfTime.format(rowTime));
-                                } else {
-                                    row.put(md.getColumnName(i), null);
                                 }
                                 break;
                             case java.sql.Types.TIMESTAMP:
                                 Timestamp rowTimestamp = queryResults.getTimestamp(i);
                                 if (rowTimestamp != null) {
                                     row.put(md.getColumnName(i), dfTimestamp.format(rowTimestamp));
-                                } else {
-                                    row.put(md.getColumnName(i), null);
                                 }
                                 break;
                             default:
                                 // If none of the initial cases are met, the data will be converted to a String via getObject()
-                                row.put(md.getColumnName(i), queryResults.getObject(i));
+                                if(queryResults.getObject(i) != null) {
+                                    row.put(md.getColumnName(i), queryResults.getObject(i));
+                                }
                                 break;
                         }
                     }
