@@ -279,7 +279,7 @@ public class JDBCCore {
        
        // Send the results of the query
        if (queryArray.length == 0) {
-           // If data is empty send empty list with 204 code
+           // If data is empty send empty map with 204 code
            client.sendQueryResponse(204, replyAddress, new LinkedHashMap<>());
        } else {
            client.sendQueryResponse(200, replyAddress, queryArray);
