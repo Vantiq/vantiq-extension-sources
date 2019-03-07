@@ -256,8 +256,10 @@ public class JDBCCore {
         try {
             synchronized (this) {
                 HashMap[] queryMap = jdbc.processQuery(pollQuery);
-                for (HashMap h : queryMap) {
-                    client.sendNotification(h);
+                if (queryMap != null) {
+                    for (HashMap h : queryMap) {
+                        client.sendNotification(h);
+                    }
                 }
             }
         } catch (VantiqSQLException e) {
