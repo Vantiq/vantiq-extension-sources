@@ -278,7 +278,7 @@ public class JDBCCore {
        String replyAddress = ExtensionServiceMessage.extractReplyAddress(message);
        
        // Send the results of the query
-       if (queryArray == null) {
+       if (queryArray.length == 0) {
            // If data is empty send empty list with 204 code
            client.sendQueryResponse(204, replyAddress, new LinkedHashMap<>());
        } else {

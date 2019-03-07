@@ -227,10 +227,10 @@ public class TestJDBC extends TestJDBCBase {
             fail("Should not throw an exception: " + e.getMessage());
         }
         
-        // Try selecting again, should return null since row was deleted
+        // Try selecting again, should return empty HashMap Array since row was deleted
         try {
             queryResult = jdbc.processQuery(SELECT_QUERY);
-            assert queryResult == null;
+            assert queryResult.length == 0;
         } catch (VantiqSQLException e) {
             fail("Should not throw an exception: " + e.getMessage());
         }
