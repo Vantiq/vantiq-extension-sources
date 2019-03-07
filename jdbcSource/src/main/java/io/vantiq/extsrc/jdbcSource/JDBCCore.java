@@ -256,8 +256,10 @@ public class JDBCCore {
         try {
             synchronized (this) {
                 HashMap[] queryMap = jdbc.processQuery(pollQuery);
-                for (HashMap h : queryMap) {
-                    client.sendNotification(h);
+                if (queryMap != null) {
+                    for (HashMap h : queryMap) {
+                        client.sendNotification(h);
+                    }
                 }
             }
         } catch (VantiqSQLException e) {
@@ -278,8 +280,8 @@ public class JDBCCore {
        String replyAddress = ExtensionServiceMessage.extractReplyAddress(message);
        
        // Send the results of the query
-       if (queryArray == null) {
-           // If data is empty send empty list with 204 code
+       if (queryArray.length == 0) {
+           // If data is empty send empty map with 204 code
            client.sendQueryResponse(204, replyAddress, new LinkedHashMap<>());
        } else {
            client.sendQueryResponse(200, replyAddress, queryArray);

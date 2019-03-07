@@ -58,8 +58,8 @@ public class JDBC {
     /**
      * The method used to execute the provided query, triggered by a SELECT on the respective source from VANTIQ.
      * @param sqlQuery          A String representation of the query, retrieved from the WITH clause from VANTIQ.
-     * @return                  A HashMap Array containing all of the data retrieved by the query, (null if 
-     *                          nothing was returned)
+     * @return                  A HashMap Array containing all of the data retrieved by the query, (empty HashMap 
+     *                          Array if nothing was returned)
      * @throws VantiqSQLException
      */
     public HashMap[] processQuery(String sqlQuery) throws VantiqSQLException {
@@ -99,14 +99,14 @@ public class JDBC {
      * Method used to create a map out of the output ResultSet. Map is needed in order to send the data back to VANTIQ
      * @param queryResults   A ResultSet containing return value from executeQuery()
      * @return               A HashMap Array containing all of the rows from the ResultSet, each converted to a HashMap,
-     *                       (or null if the ResultSet was empty).
+     *                       (or an empty HashMap Array if the ResultSet was empty).
      * @throws VantiqSQLException
      */
     HashMap[] createMapFromResults(ResultSet queryResults) throws VantiqSQLException {
         ArrayList<HashMap> rows = new ArrayList<HashMap>();
         try {
             if (!queryResults.next()) { 
-                return null;
+                return rows.toArray(new HashMap[rows.size()]);
             } else {
                 ResultSetMetaData md = queryResults.getMetaData(); 
                 int columns = md.getColumnCount();
