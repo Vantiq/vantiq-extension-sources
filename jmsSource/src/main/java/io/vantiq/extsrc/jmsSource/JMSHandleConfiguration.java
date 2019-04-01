@@ -193,7 +193,7 @@ public class JMSHandleConfiguration extends Handler<ExtensionServiceMessage> {
         if (generalConfig.get("connectionFactory") instanceof String) {
             connectionFactory = (String) generalConfig.get("connectionFactory");
         } else {
-            log.error("Configuration failed. No connectionFActory was specified");
+            log.error("Configuration failed. No connectionFactory was specified");
             return false;
         }
 

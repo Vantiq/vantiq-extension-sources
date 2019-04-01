@@ -92,39 +92,49 @@ public class JMS {
         
         
         // Iterating through topic/queue lists and creating message producers/consumers/listeners
-        for (int i = 0; i < senderQueues.size(); i++) {
-            String queue = (String) senderQueues.get(i);
-            JMSMessageProducer msgProducer = new JMSMessageProducer(context);
-            msgProducer.setupMessageProducer(connectionFactory, queue, true);
-            queueMessageProducers.put(queue, msgProducer);
+        if (senderQueues != null) {
+            for (int i = 0; i < senderQueues.size(); i++) {
+                String queue = (String) senderQueues.get(i);
+                JMSMessageProducer msgProducer = new JMSMessageProducer(context);
+                msgProducer.setupMessageProducer(connectionFactory, queue, true);
+                queueMessageProducers.put(queue, msgProducer);
+            }
         }
         
-        for (int i = 0; i < senderTopics.size(); i++) {
-            String topic = (String) senderTopics.get(i);
-            JMSMessageProducer msgProducer = new JMSMessageProducer(context);
-            msgProducer.setupMessageProducer(connectionFactory, topic, false);
-            topicMessageProducers.put(topic, msgProducer);
+        if (senderTopics != null) {
+            for (int i = 0; i < senderTopics.size(); i++) {
+                String topic = (String) senderTopics.get(i);
+                JMSMessageProducer msgProducer = new JMSMessageProducer(context);
+                msgProducer.setupMessageProducer(connectionFactory, topic, false);
+                topicMessageProducers.put(topic, msgProducer);
+            }
         }
         
-        for (int i = 0; i < receiverQueues.size(); i++) {
-            String queue = (String) receiverQueues.get(i);
-            JMSQueueMessageConsumer msgConsumer = new JMSQueueMessageConsumer(context);
-            msgConsumer.setupQueueConsumer(connectionFactory, queue);
-            queueMessageConsumers.put(queue, msgConsumer);
+        if (receiverQueues != null) {
+            for (int i = 0; i < receiverQueues.size(); i++) {
+                String queue = (String) receiverQueues.get(i);
+                JMSQueueMessageConsumer msgConsumer = new JMSQueueMessageConsumer(context);
+                msgConsumer.setupQueueConsumer(connectionFactory, queue);
+                queueMessageConsumers.put(queue, msgConsumer);
+            }
         }
         
-        for (int i = 0; i < receiverQueueListeners.size(); i++) {
-            String queue = (String) receiverQueueListeners.get(i);
-            JMSMessageListener msgListener = new JMSMessageListener(context, client);
-            msgListener.setupMessageListener(connectionFactory, queue, true);
-            queueMessageListener.put(queue, msgListener);
+        if (receiverQueueListeners != null) {
+            for (int i = 0; i < receiverQueueListeners.size(); i++) {
+                String queue = (String) receiverQueueListeners.get(i);
+                JMSMessageListener msgListener = new JMSMessageListener(context, client);
+                msgListener.setupMessageListener(connectionFactory, queue, true);
+                queueMessageListener.put(queue, msgListener);
+            }
         }
         
-        for (int i = 0; i < receiverTopics.size(); i++) {
-            String topic = (String) receiverTopics.get(i);
-            JMSMessageListener msgListener = new JMSMessageListener(context, client);
-            msgListener.setupMessageListener(connectionFactory, topic, false);
-            topicMessageConsumers.put(topic, msgListener);
+        if (receiverTopics != null) {
+            for (int i = 0; i < receiverTopics.size(); i++) {
+                String topic = (String) receiverTopics.get(i);
+                JMSMessageListener msgListener = new JMSMessageListener(context, client);
+                msgListener.setupMessageListener(connectionFactory, topic, false);
+                topicMessageConsumers.put(topic, msgListener);
+            }
         }
     }
     
