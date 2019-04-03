@@ -26,9 +26,6 @@ import javax.jms.TextMessage;
 import javax.naming.Context;
 import javax.naming.NamingException;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 public class JMSQueueMessageConsumer {
     
     public String destName;

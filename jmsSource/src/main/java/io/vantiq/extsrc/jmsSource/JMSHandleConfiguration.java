@@ -182,6 +182,8 @@ public class JMSHandleConfiguration extends Handler<ExtensionServiceMessage> {
         String providerURL;
         String connectionFactory;
         String initialContext;
+        String username;
+        String password;
         
         if (generalConfig.get("providerURL") instanceof String) {
             providerURL = (String) generalConfig.get("providerURL");
@@ -202,6 +204,14 @@ public class JMSHandleConfiguration extends Handler<ExtensionServiceMessage> {
         } else {
             log.error("Configuration failed. No initialContext was specified");
             return false;
+        }
+        
+        if (generalConfig.get("username") instanceof String) {
+            username = (String) generalConfig.get("username");
+        }
+        
+        if (generalConfig.get("password") instanceof String) {
+            password = (String) generalConfig.get("password");
         }
 
         // Initialize JMS Source InitialContext with config values

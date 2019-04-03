@@ -8,8 +8,6 @@
 
 package io.vantiq.extsrc.jmsSource;
 
-import java.util.HashMap;
-import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
@@ -213,7 +211,13 @@ public class JMSCore {
         try {
             jms.produceMessage(msg, dest, msgFormat, isQueue);
         } catch (JMSException e) {
-            log.error("An error occured when attempting to send the message: " + e.getMessage());
+            log.error("An error occured when attempting to send the given message. Error message was: " + e.getMessage());
+        } catch (NullPointerException e) {
+            log.error("An error occured when attempting to send the given message. This was most likely because "
+                    + "the source was not configured to send messages to this destination. Error message was: " + e.getMessage());
+        } catch (Exception e) {
+            log.error("An unexpected error occured when attempting to send the given message. Error message was: " 
+                    + e.getMessage());
         }
     }
     
@@ -241,6 +245,14 @@ public class JMSCore {
           } catch (JMSException e) {
               client.sendQueryError(replyAddress, JMSException.class.getCanonicalName(), 
                       "Failed to read message from the queue: " + queue + ". Error message was: " + e.getMessage(), null);
+          } catch (NullPointerException e) {
+              client.sendQueryError(replyAddress, JMSException.class.getCanonicalName(), 
+                      "Failed to read message from the queue: " + queue + ". This is most likely because source was not "
+                      + "configured to read from this queue. Error message was: " + e.getMessage(), null);
+          } catch (Exception e) {
+              client.sendQueryError(replyAddress, JMSException.class.getCanonicalName(), 
+                      "An unexpected error occured when reading message from queue: " + queue + ". Error message was: " 
+                      + e.getMessage(), null);
           }
       } else {
           client.sendQueryError(replyAddress, this.getClass().getName() + ".noQueue", 
