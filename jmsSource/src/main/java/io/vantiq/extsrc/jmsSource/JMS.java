@@ -61,10 +61,12 @@ public class JMS {
      * in the source configuration
      * @param sender            The "sender" portion of the source configuration
      * @param receiver          The "receiver" portion of the source configuration
+     * @param username          The username used to create the JMS Connection, (or null if JMS Server does not require auth)
+     * @param password          The oassword used to create the JMS Connection, (or null if JMS Server does not require auth)
      * @throws NamingException
      * @throws JMSException
      */
-    public void createProducersAndConsumers(Map<String, ?> sender, Map<String, ?> receiver) throws NamingException, JMSException {
+    public void createProducersAndConsumers(Map<String, ?> sender, Map<String, ?> receiver, String username, String password) throws NamingException, JMSException {
         List<?> senderQueues = null;
         List<?> senderTopics = null;
         List<?> receiverQueues = null;
@@ -96,7 +98,7 @@ public class JMS {
             for (int i = 0; i < senderQueues.size(); i++) {
                 String queue = (String) senderQueues.get(i);
                 JMSMessageProducer msgProducer = new JMSMessageProducer(context);
-                msgProducer.setupMessageProducer(connectionFactory, queue, true);
+                msgProducer.setupMessageProducer(connectionFactory, queue, true, username, password);
                 queueMessageProducers.put(queue, msgProducer);
             }
         }
@@ -105,7 +107,7 @@ public class JMS {
             for (int i = 0; i < senderTopics.size(); i++) {
                 String topic = (String) senderTopics.get(i);
                 JMSMessageProducer msgProducer = new JMSMessageProducer(context);
-                msgProducer.setupMessageProducer(connectionFactory, topic, false);
+                msgProducer.setupMessageProducer(connectionFactory, topic, false, username, password);
                 topicMessageProducers.put(topic, msgProducer);
             }
         }
@@ -114,7 +116,7 @@ public class JMS {
             for (int i = 0; i < receiverQueues.size(); i++) {
                 String queue = (String) receiverQueues.get(i);
                 JMSQueueMessageConsumer msgConsumer = new JMSQueueMessageConsumer(context);
-                msgConsumer.setupQueueConsumer(connectionFactory, queue);
+                msgConsumer.setupQueueConsumer(connectionFactory, queue, username, password);
                 queueMessageConsumers.put(queue, msgConsumer);
             }
         }
@@ -123,7 +125,7 @@ public class JMS {
             for (int i = 0; i < receiverQueueListeners.size(); i++) {
                 String queue = (String) receiverQueueListeners.get(i);
                 JMSMessageListener msgListener = new JMSMessageListener(context, client);
-                msgListener.setupMessageListener(connectionFactory, queue, true);
+                msgListener.setupMessageListener(connectionFactory, queue, true, username, password);
                 queueMessageListener.put(queue, msgListener);
             }
         }
@@ -132,7 +134,7 @@ public class JMS {
             for (int i = 0; i < receiverTopics.size(); i++) {
                 String topic = (String) receiverTopics.get(i);
                 JMSMessageListener msgListener = new JMSMessageListener(context, client);
-                msgListener.setupMessageListener(connectionFactory, topic, false);
+                msgListener.setupMessageListener(connectionFactory, topic, false, username, password);
                 topicMessageConsumers.put(topic, msgListener);
             }
         }

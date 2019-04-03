@@ -44,10 +44,6 @@ public class TestJMSConfig extends TestJMSBase {
         targetVantiqServer = "dev.vantiq.com";
         nCore = new NoSendJMSCore(sourceName, authToken, targetVantiqServer);
         handler = new JMSHandleConfiguration(nCore);
-        
-        testJMSURL = "t3://localhost:7001";
-        testJMSConnectionFactory = "com.namir.weblogic.base.cf";
-        testJMSInitialContext = "weblogic.jndi.WLInitialContextFactory";
     }
     
     @After
@@ -126,6 +122,20 @@ public class TestJMSConfig extends TestJMSBase {
     }
     
     @Test
+    public void testMissingUsernameAndPassword() {
+        assumeTrue(testJMSURL != null && testJMSConnectionFactory != null && testJMSInitialContext != null && jmsDriverLoc != null);
+        nCore.start(5); // Need a client to avoid NPEs on setting query/publish handler
+        
+        Map conf = partialGeneralConfig("username");
+        sendConfig(conf);
+        assertFalse("Should not fail if missing the username", configIsFailed());
+        
+        conf = partialGeneralConfig("password");
+        sendConfig(conf);
+        assertFalse("Should not fail if missing the password", configIsFailed());
+    }
+    
+    @Test
     public void testPartialSender() {
         assumeTrue(testJMSURL != null && testJMSConnectionFactory != null && testJMSInitialContext != null && jmsDriverLoc != null);
         nCore.start(5); // Need a client to avoid NPEs on setting query/publish handler
@@ -148,11 +158,11 @@ public class TestJMSConfig extends TestJMSBase {
         sendConfig(conf);
         assertFalse("Should not fail if receiver is missing queues", configIsFailed());
         
-        conf = partialSenderConfig("queueListeners");
+        conf = partialReceiverConfig("queueListeners");
         sendConfig(conf);
         assertFalse("Should not fail if receiver is missing queueListeners", configIsFailed());
         
-        conf = partialSenderConfig("topics");
+        conf = partialReceiverConfig("topics");
         sendConfig(conf);
         assertFalse("Should not fail if receiver is missing topics", configIsFailed());
     }
@@ -185,6 +195,7 @@ public class TestJMSConfig extends TestJMSBase {
         createMinimalGeneral();
         createMinimalSender();
         createMinimalReceiver();
+        
         Map<String, Object> ret = new LinkedHashMap<>();
         ret.put("general", general);
         ret.put("sender", sender);
@@ -243,6 +254,8 @@ public class TestJMSConfig extends TestJMSBase {
         general.put("providerURL", testJMSURL);
         general.put("connectionFactory", testJMSConnectionFactory);
         general.put("initialContext", testJMSInitialContext);
+        general.put("username", testJMSUsername);
+        general.put("password", testJMSPassword);
     }
     
     public void createMinimalSender() {

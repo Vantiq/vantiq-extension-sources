@@ -39,12 +39,6 @@ public class TestJMS extends TestJMSBase {
     public void setup() {
         vantiq = new Vantiq(testVantiqServer);
         vantiq.setAccessToken(testAuthToken);
-        
-        jmsDriverLoc = "";
-        testJMSURL = "t3://localhost:7001";
-        testJMSConnectionFactory = "com.namir.weblogic.base.cf";
-        testJMSInitialContext = "weblogic.jndi.WLInitialContextFactory";
-        testJMSQueue = "NamirJMSServer-0/NamirSystemModule-0!NamirJMSServer-0@/com/namir/weblogic/base/dq";
     }
     
     @Test
@@ -67,11 +61,11 @@ public class TestJMS extends TestJMSBase {
         try {
             jms.setupInitialContext(testJMSInitialContext, testJMSURL);
         } catch (NamingException e) {
-            fail("Should not throw a NamingException when setting up JMS Context.");
+            fail("Should not throw a NamingException when setting up JMS Context. " + e.getMessage());
         }
         
         try {
-            jms.createProducersAndConsumers(sender, receiver);
+            jms.createProducersAndConsumers(sender, receiver, null, null);
         } catch (NamingException e) {
             fail("Should not throw a NamingException when creating message producers/consumers/listeners.");
         } catch (JMSException e) {
@@ -98,8 +92,8 @@ public class TestJMS extends TestJMSBase {
         jms.close();
     }
     
-    @Test
-    public void testMessageListener() {
-        
-    }
+//    @Test
+//    public void testMessageListener() {
+//        
+//    }
 }

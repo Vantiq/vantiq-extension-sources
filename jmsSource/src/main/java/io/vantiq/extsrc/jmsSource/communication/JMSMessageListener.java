@@ -63,13 +63,15 @@ public class JMSMessageListener implements MessageListener {
      * @param connectionFactoryName     The name of the connection factory used to connect to the JMS Server
      * @param dest                      The name of the destination to connect to (topic or queue)
      * @param isQueue                   A boolean flag used to create the appropriate type of destination (queue or topic)
+     * @param username                  The username used to create the JMS Connection, (or null if JMS Server does not require auth)
+     * @param password                  The password used to create the JMS Connection, (or null if JMS Server does not require auth)
      * @throws NamingException
      * @throws JMSException
      */
-    public void setupMessageListener(String connectionFactoryName, String dest, boolean isQueue) throws NamingException, JMSException {
+    public void setupMessageListener(String connectionFactoryName, String dest, boolean isQueue, String username, String password) throws NamingException, JMSException {
         this.destName = dest;
         connectionFactory = (ConnectionFactory) context.lookup(connectionFactoryName);
-        connection = connectionFactory.createConnection();
+        connection = connectionFactory.createConnection(username, password);
         session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
         if (isQueue) {
             destination = session.createQueue(dest);

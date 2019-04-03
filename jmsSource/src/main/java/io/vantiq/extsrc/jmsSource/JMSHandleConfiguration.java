@@ -208,10 +208,14 @@ public class JMSHandleConfiguration extends Handler<ExtensionServiceMessage> {
         
         if (generalConfig.get("username") instanceof String) {
             username = (String) generalConfig.get("username");
+        } else {
+            username = null;
         }
         
         if (generalConfig.get("password") instanceof String) {
             password = (String) generalConfig.get("password");
+        } else {
+            password = null;
         }
 
         // Initialize JMS Source InitialContext with config values
@@ -225,7 +229,7 @@ public class JMSHandleConfiguration extends Handler<ExtensionServiceMessage> {
             jms.setupInitialContext(initialContext, providerURL);
             
             // Create Message Producers and Consumers
-            jms.createProducersAndConsumers(sender, receiver);
+            jms.createProducersAndConsumers(sender, receiver, username, password);
             source.jms = jms;
         } catch (NamingException e) {
             log.error("Configuration failed. Exception occurred while setting up JMS Source InitialContext, or while "

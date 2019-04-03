@@ -52,13 +52,15 @@ public class JMSQueueMessageConsumer {
      * A method used to setup the MessageConsumer for the given queue
      * @param connectionFactoryName     The name of the connection factory used to connect to the JMS Server
      * @param queue                     The name of the queue to connect to
+     * @param username                  The username used to create the JMS Connection, (or null if JMS Server does not require auth)
+     * @param password                  The password used to create the JMS Connection, (or null if JMS Server does not require auth)
      * @throws NamingException
      * @throws JMSException
      */
-    public void setupQueueConsumer(String connectionFactoryName, String queue) throws NamingException, JMSException {
+    public void setupQueueConsumer(String connectionFactoryName, String queue, String username, String password) throws NamingException, JMSException {
         this.destName = queue;
         connectionFactory = (ConnectionFactory) context.lookup(connectionFactoryName);
-        connection = connectionFactory.createConnection();
+        connection = connectionFactory.createConnection(username, password);
         session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
         destination = session.createQueue(queue);
         consumer = session.createConsumer(destination);
