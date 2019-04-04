@@ -35,37 +35,30 @@ applicationDistribution.from("src/main/resources") {
 }
 
 tasks.withType(Test) {
-	if (System.env.JMS_DRIVER_LOC == null) {
+    if (System.env.JMS_DRIVER_LOC == null) {
     	logger.warn("Some tests may have been skipped. Environment variable 'JMS_DRIVER_LOC' is not set. " +
     			"Please set it to a location containing the appropriate JMS Driver .jar file.")
     }
     if (rootProject.hasProperty("EntConJMSUsername")) {
         systemProperty "EntConJMSUsername", rootProject.findProperty("EntConJMSUsername")
-        logger.warn("This is the username: " + rootProject.findProperty("EntConJMSUsername"))
     }
     if (rootProject.hasProperty("EntConJMSPassword")) {
         systemProperty "EntConJMSPassword", rootProject.findProperty("EntConJMSPassword")
-        logger.warn("This is the password: " + rootProject.findProperty("EntConJMSPassword"))
     }
     if (rootProject.hasProperty("EntConJMSURL")) {
         systemProperty "EntConJMSURL", rootProject.findProperty("EntConJMSURL")
-        logger.warn("This is the url: " + rootProject.findProperty("EntConJMSURL"))
     }
     if (rootProject.hasProperty("EntConJMSConnectionFactory")) {
         systemProperty "EntConJMSConnectionFactory", rootProject.findProperty("EntConJMSConnectionFactory")
-        logger.warn("This is the connection factory: " + rootProject.findProperty("EntConJMSConnectionFactory"))
     }
     if (rootProject.hasProperty("EntConJMSInitialContext")) {
         systemProperty "EntConJMSInitialContext", rootProject.findProperty("EntConJMSInitialContext")
-        logger.warn("This is the initial context: " + rootProject.findProperty("EntConJMSInitialContext"))
     }
     if (rootProject.hasProperty("EntConJMSTopic")) {
         systemProperty "EntConJMSTopic", rootProject.findProperty("EntConJMSTopic")
-        logger.warn("This is the topic: " + rootProject.findProperty("EntConJMSTopic"))
     }
     if (rootProject.hasProperty("EntConJMSQueue")) {
         systemProperty "EntConJMSQueue", rootProject.findProperty("EntConJMSQueue")
-        logger.warn("This is the queue: " + rootProject.findProperty("EntConJMSQueue"))
     }
     if (rootProject.hasProperty("EntConTestSourceName")) {
         systemProperty "EntConTestSourceName", rootProject.findProperty("EntConTestSourceName")
