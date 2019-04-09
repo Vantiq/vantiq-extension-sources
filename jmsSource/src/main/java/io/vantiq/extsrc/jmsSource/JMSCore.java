@@ -22,7 +22,6 @@ import org.slf4j.LoggerFactory;
 import io.vantiq.extjsdk.ExtensionServiceMessage;
 import io.vantiq.extjsdk.ExtensionWebSocketClient;
 import io.vantiq.extjsdk.Handler;
-import io.vantiq.extjsdk.Response;
 
 /**
  * Controls the connection and interaction with the Vantiq server. Initialize it and call start() and it will run
@@ -31,30 +30,25 @@ import io.vantiq.extjsdk.Response;
  */
 public class JMSCore {
 
-    // vars for server configuration
+    // Variables for server configuration
     String sourceName;
     String authToken;
     String targetVantiqServer;
 
+    // Set as the client's config handler
     JMSHandleConfiguration jmsConfigHandler;
 
-    // vars for internal use
-    ExtensionWebSocketClient    client  = null;
-    JMS                         jms    = null;
+    // Used to connect to/communicate with VANTIQ
+    ExtensionWebSocketClient client = null;
+    
+    // Used to coordinate communication with the JMS Server
+    JMS jms = null;
 
-    // final vars
     final Logger log;
-    final static int    RECONNECT_INTERVAL = 5000;
-
-    /**
-     * Logs http messages at the debug level
-     */
-    public final Handler<Response> httpHandler = new Handler<Response>() {
-        @Override
-        public void handleMessage(Response message) {
-            log.debug(message.toString());
-        }
-    };
+    final static int RECONNECT_INTERVAL = 5000;
+    final static int CONNECTION_TIMEOUT = 10;
+    
+    private static final String SYNCH_KEY = "synchKey";
 
     /**
      * Stops sending messages to the source and tries to reconnect, closing on a failure
@@ -69,7 +63,7 @@ public class JMSCore {
             CompletableFuture<Boolean> success = client.connectToSource();
 
             try {
-                if ( !success.get(10, TimeUnit.SECONDS) ) {
+                if ( !success.get(CONNECTION_TIMEOUT, TimeUnit.SECONDS) ) {
                     if (!client.isOpen()) {
                         log.error("Failed to connect to server url '" + targetVantiqServer + "'.");
                     } else if (!client.isAuthed()) {
@@ -99,7 +93,7 @@ public class JMSCore {
             boolean sourcesSucceeded = false;
             while (!sourcesSucceeded) {
                 client.initiateFullConnection(targetVantiqServer, authToken);
-                sourcesSucceeded = exitIfConnectionFails(client, 10);
+                sourcesSucceeded = exitIfConnectionFails(client, CONNECTION_TIMEOUT);
                 if (!sourcesSucceeded) {
                     try {
                         Thread.sleep(RECONNECT_INTERVAL);
@@ -162,68 +156,69 @@ public class JMSCore {
     
     /**
      * Called by the publishHandler. Used to send a message to the JMS Destination (topic or queue). Message is sent
-     * using whatever format was specified in the JMSFormat query parameter, and defaults to ObjectMessage if none was
-     * specified.
+     * using whatever format was specified in the JMSFormat parameter (as part of the publish message), and defaults 
+     * to ObjectMessage if none was specified.
      * @param message   The Publish message
      */
-    public void sendMessage(ExtensionServiceMessage message) {
+    public void sendJMSMessage(ExtensionServiceMessage message) {
         Map<String, ?> request = (Map<String, ?>) message.getObject();
         if (jms == null) {
             log.error("JMS connection closed before operation could complete");
-        }
-        
-        String msg;
-        String dest;
-        String msgFormat;
-        boolean isQueue;
-        
-        // Getting the contents of the message if specified, or defaulting to an empty string
-        if (request.get("message") instanceof String) {
-            msg = (String) request.get("message");
         } else {
-            msg = "";
-            log.debug("No message was specified in the publish request, or the message was not a String. "
-                    + "The message was set to its default value, an empty String.");
-        }
+            String msg;
+            String dest;
+            String msgFormat;
+            boolean isQueue;
             
-        // Getting the destination of the message
-        if (request.get("queue") instanceof String) {
-            dest = (String) request.get("queue");
-            isQueue = true;
-        } else if (request.get("topic") instanceof String) {
-            dest = (String) request.get("topic");
-            isQueue = false;
-        } else {
-            log.error("No destination was specified, or destination was not a String. Either a topic "
-                    + "or a queue must be included as a String in the publish request.");
-            return;
-        }
-        
-        // Getting the message format if it was specified, or defaulting to ObjectMessage
-        if (request.get("JMSFormat") instanceof String) {
-            msgFormat = (String) request.get("JMSFormat");
-        } else {
-            log.debug("No JMSFormat was specified, the default ObjectMessage message type will be used.");
-            msgFormat = "object";
-        }
-        
-        // Sending the message to the appropriate destination
-        try {
-            jms.produceMessage(msg, dest, msgFormat, isQueue);
-        } catch (JMSException e) {
-            log.error("An error occured when attempting to send the given message. Error message was: " + e.getMessage());
-        } catch (NullPointerException e) {
-            log.error("An error occured when attempting to send the given message. This was most likely because "
-                    + "the source was not configured to send messages to this destination. Error message was: " + e.getMessage());
-        } catch (Exception e) {
-            log.error("An unexpected error occured when attempting to send the given message. Error message was: " 
-                    + e.getMessage());
+            // Getting the contents of the message if specified, or defaulting to an empty string
+            if (request.get("message") instanceof String) {
+                msg = (String) request.get("message");
+            } else {
+                msg = "";
+                log.debug("No message was specified in the publish request, or the message was not a String. "
+                        + "The message was set to its default value, an empty String.");
+            }
+                
+            // Getting the destination of the message
+            if (request.get("queue") instanceof String) {
+                dest = (String) request.get("queue");
+                isQueue = true;
+            } else if (request.get("topic") instanceof String) {
+                dest = (String) request.get("topic");
+                isQueue = false;
+            } else {
+                log.error("No destination was specified, or destination was not a String. Either a topic "
+                        + "or a queue must be included as a String in the publish request.");
+                return;
+            }
+            
+            // Getting the message format if it was specified, or defaulting to ObjectMessage
+            if (request.get("JMSFormat") instanceof String) {
+                msgFormat = (String) request.get("JMSFormat");
+            } else {
+                log.debug("No JMSFormat was specified, the default ObjectMessage message type will be used.");
+                msgFormat = "object";
+            }
+            
+            // Sending the message to the appropriate destination
+            try {
+                synchronized (SYNCH_KEY) {
+                    jms.produceMessage(msg, dest, msgFormat, isQueue);
+                }
+            } catch (JMSException e) {
+                log.error("An error occured when attempting to send the given message.", e);
+            } catch (NullPointerException e) {
+                log.error("An error occured when attempting to send the given message. This was most likely because "
+                        + "the source was not configured to send messages to this destination.", e);
+            } catch (Exception e) {
+                log.error("An unexpected error occured when attempting to send the given message.", e);
+            }
         }
     }
     
     /**
-     * Called by the queryHandler. Used to read the most recent message from the specified JMS Queue. The message is
-     * converted to JSON, and send back to VANTIQ as a queryResponse.
+     * Called by the queryHandler. Used to read the next available message from the specified JMS Queue. The message is
+     * converted to JSON, and sent back to VANTIQ as a queryResponse.
      * @param message   The Query message
      */
     public void readQueueMessage(ExtensionServiceMessage message) {
@@ -233,30 +228,34 @@ public class JMSCore {
           if (client != null) {
               client.sendQueryError(replyAddress, this.getClass().getName() + ".closed",
                       "JMS connection closed before operation could complete.", null);
-          }
-      }
-      
-      // Retrieve most recent message from specified queue. If no queue name is specified, or if exception is thrown, return query error.
-      if (request.get("queue") instanceof String) {
-          String queue = (String) request.get("queue");
-          try {
-              Map<String, Object> messageMap = jms.consumeMessage(queue);
-              client.sendQueryResponse(200, replyAddress, messageMap);
-          } catch (JMSException e) {
-              client.sendQueryError(replyAddress, JMSException.class.getCanonicalName(), 
-                      "Failed to read message from the queue: " + queue + ". Error message was: " + e.getMessage(), null);
-          } catch (NullPointerException e) {
-              client.sendQueryError(replyAddress, JMSException.class.getCanonicalName(), 
-                      "Failed to read message from the queue: " + queue + ". This is most likely because source was not "
-                      + "configured to read from this queue. Error message was: " + e.getMessage(), null);
-          } catch (Exception e) {
-              client.sendQueryError(replyAddress, JMSException.class.getCanonicalName(), 
-                      "An unexpected error occured when reading message from queue: " + queue + ". Error message was: " 
-                      + e.getMessage(), null);
+          } else {
+              log.error("JMS connection closed before operation could complete.");
           }
       } else {
-          client.sendQueryError(replyAddress, this.getClass().getName() + ".noQueue", 
-                  "No queue was specified as a query parameter. Query cannot be completed.", null);
+          // Retrieve most recent message from specified queue. If no queue name is specified, or if exception is thrown, return query error.
+          if (request.get("queue") instanceof String) {
+              String queue = (String) request.get("queue");
+              try {
+                  synchronized (SYNCH_KEY) {
+                      Map<String, Object> messageMap = jms.consumeMessage(queue);
+                      client.sendQueryResponse(200, replyAddress, messageMap);
+                  }
+              } catch (JMSException e) {
+                  client.sendQueryError(replyAddress, JMSException.class.getCanonicalName(), 
+                          "Failed to read message from the queue: " + queue + ". Error message was: " + e.getMessage(), null);
+              } catch (NullPointerException e) {
+                  client.sendQueryError(replyAddress, JMSException.class.getCanonicalName(), 
+                          "Failed to read message from the queue: " + queue + ". This is most likely because source was not "
+                          + "configured to read from this queue. Error message was: " + e.getMessage(), null);
+              } catch (Exception e) {
+                  client.sendQueryError(replyAddress, JMSException.class.getCanonicalName(), 
+                          "An unexpected error occured when reading message from queue: " + queue + ". Error message was: " 
+                          + e.getMessage(), null);
+              }
+          } else {
+              client.sendQueryError(replyAddress, this.getClass().getName() + ".noQueue", 
+                      "No queue was specified as a query parameter. Query cannot be completed.", null);
+          }
       }
     }
 
@@ -264,7 +263,7 @@ public class JMSCore {
      * Closes all resources held by this program except for the {@link ExtensionWebSocketClient}.
      */
     public void close() {
-        synchronized (this) {
+        synchronized (SYNCH_KEY) {
             if (jms != null) {
                 jms.close();
                 jms = null;

@@ -21,7 +21,7 @@ import io.vantiq.extjsdk.ExtensionWebSocketClient;
 import io.vantiq.extjsdk.Handler;
 
 /**
- * Sets up the source using the configuration document, which looks as below.
+ * Sets up the source using the configuration document, which looks like the following.
  *<pre> {
  *      jmsConfig: {
  *          general: {
@@ -66,6 +66,8 @@ public class JMSHandleConfiguration extends Handler<ExtensionServiceMessage> {
     String                  sourceName;
     JMSCore                 source;
     boolean                 configComplete = false; // Not currently used
+    
+    private static final String READ_OPERATION = "read";
 
     Handler<ExtensionServiceMessage> queryHandler;
     Handler<ExtensionServiceMessage> publishHandler;
@@ -79,30 +81,41 @@ public class JMSHandleConfiguration extends Handler<ExtensionServiceMessage> {
 
             @Override
             public void handleMessage(ExtensionServiceMessage message) {
+                String replyAddress = ExtensionServiceMessage.extractReplyAddress(message);
+                
                 // Should never happen, but just in case something changes in the backend
                 if ( !(message.getObject() instanceof Map) ) {
-                    String replyAddress = ExtensionServiceMessage.extractReplyAddress(message);
                     client.sendQueryError(replyAddress, "io.vantiq.extsrc.JMSHandleConfiguration.invalidQueryRequest",
                             "Request must be a map", null);
+                } else {
+                    Map<String, ?> request = (Map<String, ?>) message.getObject();
+                    if (request.get("operation") instanceof String) {
+                        String operation = (String) request.get("operation");
+                        switch (operation) {
+                            case READ_OPERATION:
+                                // Process query and return the most recent message from queue
+                                source.readQueueMessage(message);
+                                break;
+                            default:
+                                client.sendQueryError(replyAddress, "io.vantiq.extsrc.JMSHandleConfiguration.invalidQueryOperation",
+                                        "The requested operation does not exist, or is not yet supported.", null);
+                        }
+                    } else {
+                        client.sendQueryError(replyAddress, "io.vantiq.extsrc.JMSHandleConfiguration.invalidQueryRequest",
+                                "No query operation was specified. A supported operation must be specified as a String.", null);
+                    }
                 }
-
-                // Process query and return the most recent message from queue
-                source.readQueueMessage(message);
             }
         };
         publishHandler = new Handler<ExtensionServiceMessage>() {
-            ExtensionWebSocketClient client = source.client;
-
             @Override
             public void handleMessage(ExtensionServiceMessage message) {
                 // Should never happen, but just in case something changes in the backend
                 if ( !(message.getObject() instanceof Map) ) {
-                    String replyAddress = ExtensionServiceMessage.extractReplyAddress(message);
-                    client.sendQueryError(replyAddress, "io.vantiq.extsrc.JMSConfigHandler.invalidPublishRequest",
-                            "Request must be a map", null);
+                    log.error("Invalid Publish Request: Request must be a map.");
                 }
                 // Process publish and send message to the destination (queue or topic)
-                source.sendMessage(message);
+                source.sendJMSMessage(message);
             }
         };
     }
@@ -159,8 +172,7 @@ public class JMSHandleConfiguration extends Handler<ExtensionServiceMessage> {
         }
         receiver = (Map) jmsConfig.get("receiver");
 
-        //boolean success = createDBConnection(general, vantiq);
-        boolean success = createJMSConnections(general, sender, receiver);
+        boolean success = createJMSConnection(general, sender, receiver);
         if (!success) {
             failConfig();
             return;
@@ -171,13 +183,13 @@ public class JMSHandleConfiguration extends Handler<ExtensionServiceMessage> {
     }
 
     /**
-     * Attempts to create the JMS Connections based on the configuration document.
+     * Attempts to create the JMS Connection based on the configuration document.
      * @param generalConfig     The general configuration for the JMS Source
      * @param sender            The sender configuration for the JMS Source
      * @param receiver          The receiver configuration for the JMS Source
      * @return                  true if the JMS connections could be created, false otherwise
      */
-    boolean createJMSConnections(Map<String, ?> generalConfig, Map<String, ?> sender, Map<String, ?> receiver) {
+    boolean createJMSConnection(Map<String, ?> generalConfig, Map<String, ?> sender, Map<String, ?> receiver) {
         // Get Provider URL, Connection Factory, and Initial Context from general config
         String providerURL;
         String connectionFactory;

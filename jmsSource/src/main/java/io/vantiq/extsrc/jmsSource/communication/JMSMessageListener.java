@@ -14,6 +14,7 @@ import java.util.Map;
 import javax.jms.BytesMessage;
 import javax.jms.Connection;
 import javax.jms.ConnectionFactory;
+import javax.jms.DeliveryMode;
 import javax.jms.Destination;
 import javax.jms.JMSException;
 import javax.jms.Message;
@@ -46,6 +47,8 @@ public class JMSMessageListener implements MessageListener {
     private Destination destination;
     private MessageConsumer consumer;
     
+    private static final String SYNCH_KEY = "synchKey";
+    
     public static final String MESSAGE = "Message";
     public static final String BYTES = "BytesMessage";
     public static final String TEXT = "TextMessage";
@@ -68,19 +71,42 @@ public class JMSMessageListener implements MessageListener {
      * @throws NamingException
      * @throws JMSException
      */
-    public void setupMessageListener(String connectionFactoryName, String dest, boolean isQueue, String username, String password) throws NamingException, JMSException {
-        this.destName = dest;
-        connectionFactory = (ConnectionFactory) context.lookup(connectionFactoryName);
-        connection = connectionFactory.createConnection(username, password);
-        session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
-        if (isQueue) {
-            destination = session.createQueue(dest);
-        } else {
-            destination = session.createTopic(dest);
+    public void open(String connectionFactoryName, String dest, boolean isQueue, String username, String password) throws NamingException, JMSException, Exception {
+        synchronized (SYNCH_KEY) {
+            this.destName = dest;
+            
+            connectionFactory = (ConnectionFactory) context.lookup(connectionFactoryName);
+            if (connectionFactory == null) {
+                throw new Exception("The Connection Factory named " + connectionFactoryName + " was unable to be found.");
+            }
+            
+            connection = connectionFactory.createConnection(username, password);
+            if (connection == null) {
+                throw new Exception("A Connection was unable to be created using the Connection Factory named " + connectionFactoryName + ".");
+            }
+            
+            session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
+            if (session == null) {
+                throw new Exception("A Session was unable to be created.");
+            }
+            
+            if (isQueue) {
+                destination = session.createQueue(dest);
+            } else {
+                destination = session.createTopic(dest);
+            }
+            if (destination == null) {
+                throw new Exception("A Destination with name " + dest + " was unable to be created.");
+            }
+            
+            consumer = session.createConsumer(destination);
+            if (consumer == null) {
+                throw new Exception("A Message Producer for the Destination with name " + dest + " was unable to be created.");
+            }
+            
+            consumer.setMessageListener(this);
+            connection.start();
         }
-        consumer = session.createConsumer(destination);
-        consumer.setMessageListener(this);
-        connection.start();
     }
     
     /**
@@ -113,13 +139,13 @@ public class JMSMessageListener implements MessageListener {
                 msgMap.put("JMSFormat", OBJECT);
                 msgMap.put("destination", this.destName);
             } else if (message instanceof MapMessage) {
-                
+                // FIXME
             } else if (message instanceof StreamMessage) {
-                
+                // FIXME
             } else if (message instanceof BytesMessage) {
-                
+                // FIXME
             } else {
-                
+                // FIXME
             }
         } catch (JMSException e) {
             log.error("An error occured while parsing the received message. No message will be sent back to VANTIQ.");
@@ -133,8 +159,10 @@ public class JMSMessageListener implements MessageListener {
      * @throws JMSException
      */
     public void close() throws JMSException {
-        // Closing the session and connection
-        session.close();
-        connection.close();
+        synchronized (SYNCH_KEY) {
+            // Closing the session and connection
+            session.close();
+            connection.close();
+        }
     }
 }

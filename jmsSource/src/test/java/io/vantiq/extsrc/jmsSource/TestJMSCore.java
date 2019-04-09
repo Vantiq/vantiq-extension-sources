@@ -60,14 +60,14 @@ public class TestJMSCore extends TestJMSBase {
         // Sending an empty publish request
         request = new LinkedHashMap<>();
         msg.object = request;
-        core.sendMessage(msg);
+        core.sendJMSMessage(msg);
         assertFalse("Core should not be closed", core.isClosed());
         
         // Sending jibberish as publish request
         request = new LinkedHashMap<>();
         request.put("publish", "jibberish");
         msg.object = request;
-        core.sendMessage(msg);
+        core.sendJMSMessage(msg);
         assertFalse("Core should not be closed", core.isClosed());
     }
     

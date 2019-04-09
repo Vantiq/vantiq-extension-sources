@@ -44,19 +44,22 @@ public class JMSMain {
     static final int NO_AUTH_EXIT = 1;
     static final int NO_SOURCE_EXIT = 2;
     static final int NO_SERVER_EXIT = 3;
-
-
+    static final int NO_CONFIG_EXIT = 4;
 
     /**
      * Connects to the Vantiq source and starts polling for data. Exits when all sources are done running.
      * @param args  Should be either null or the first argument as a config file
      */
     public static void main(String[] args) {
-        Properties config;
-        if (args != null && args.length > 0) {
+        Properties config = null;
+        if (args == null) {
+            config = obtainServerConfig("server.config");
+        } else if (args != null && args.length == 1) {
             config = obtainServerConfig(args[0]);
         } else {
-            config = obtainServerConfig("server.config");
+            log.error("An incorrect number of command line arguments were specified. There can only be exactly 1 command line"
+                    + " argument, or exactly 0 command line arguments.");
+            exit(NO_CONFIG_EXIT);
         }
 
         sources = createSources(config);

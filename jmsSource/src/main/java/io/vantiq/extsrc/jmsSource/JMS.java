@@ -25,7 +25,14 @@ import io.vantiq.extjsdk.ExtensionWebSocketClient;
 
 import io.vantiq.extsrc.jmsSource.communication.*;
 
+/**
+ * Handles all of the interactions between the Extension Source and the JMS Server. Used to create and manage all of the
+ * JMS Message Producers/Consumers/Listeners. Initialized and setup according to the source configuration, which specifies
+ * the queues and/or topics to connect to, as well as the connection factory to use when connecting.
+ */
 public class JMS {
+    
+    private static final String SYNCH_KEY = "synchKey";
     
     Logger log  = LoggerFactory.getLogger(this.getClass().getCanonicalName());
     ExtensionWebSocketClient client;
@@ -66,7 +73,7 @@ public class JMS {
      * @throws NamingException
      * @throws JMSException
      */
-    public void createProducersAndConsumers(Map<String, ?> sender, Map<String, ?> receiver, String username, String password) throws NamingException, JMSException {
+    public void createProducersAndConsumers(Map<String, ?> sender, Map<String, ?> receiver, String username, String password) throws NamingException, JMSException, Exception {
         List<?> senderQueues = null;
         List<?> senderTopics = null;
         List<?> receiverQueues = null;
@@ -94,48 +101,50 @@ public class JMS {
         
         
         // Iterating through topic/queue lists and creating message producers/consumers/listeners
-        if (senderQueues != null) {
-            for (int i = 0; i < senderQueues.size(); i++) {
-                String queue = (String) senderQueues.get(i);
-                JMSMessageProducer msgProducer = new JMSMessageProducer(context);
-                msgProducer.setupMessageProducer(connectionFactory, queue, true, username, password);
-                queueMessageProducers.put(queue, msgProducer);
+        synchronized(SYNCH_KEY) {
+            if (senderQueues != null) {
+                for (int i = 0; i < senderQueues.size(); i++) {
+                    String queue = (String) senderQueues.get(i);
+                    JMSMessageProducer msgProducer = new JMSMessageProducer(context);
+                    msgProducer.open(connectionFactory, queue, true, username, password);
+                    queueMessageProducers.put(queue, msgProducer);
+                }
             }
-        }
-        
-        if (senderTopics != null) {
-            for (int i = 0; i < senderTopics.size(); i++) {
-                String topic = (String) senderTopics.get(i);
-                JMSMessageProducer msgProducer = new JMSMessageProducer(context);
-                msgProducer.setupMessageProducer(connectionFactory, topic, false, username, password);
-                topicMessageProducers.put(topic, msgProducer);
+            
+            if (senderTopics != null) {
+                for (int i = 0; i < senderTopics.size(); i++) {
+                    String topic = (String) senderTopics.get(i);
+                    JMSMessageProducer msgProducer = new JMSMessageProducer(context);
+                    msgProducer.open(connectionFactory, topic, false, username, password);
+                    topicMessageProducers.put(topic, msgProducer);
+                }
             }
-        }
-        
-        if (receiverQueues != null) {
-            for (int i = 0; i < receiverQueues.size(); i++) {
-                String queue = (String) receiverQueues.get(i);
-                JMSQueueMessageConsumer msgConsumer = new JMSQueueMessageConsumer(context);
-                msgConsumer.setupQueueConsumer(connectionFactory, queue, username, password);
-                queueMessageConsumers.put(queue, msgConsumer);
+            
+            if (receiverQueues != null) {
+                for (int i = 0; i < receiverQueues.size(); i++) {
+                    String queue = (String) receiverQueues.get(i);
+                    JMSQueueMessageConsumer msgConsumer = new JMSQueueMessageConsumer(context);
+                    msgConsumer.open(connectionFactory, queue, username, password);
+                    queueMessageConsumers.put(queue, msgConsumer);
+                }
             }
-        }
-        
-        if (receiverQueueListeners != null) {
-            for (int i = 0; i < receiverQueueListeners.size(); i++) {
-                String queue = (String) receiverQueueListeners.get(i);
-                JMSMessageListener msgListener = new JMSMessageListener(context, client);
-                msgListener.setupMessageListener(connectionFactory, queue, true, username, password);
-                queueMessageListener.put(queue, msgListener);
+            
+            if (receiverQueueListeners != null) {
+                for (int i = 0; i < receiverQueueListeners.size(); i++) {
+                    String queue = (String) receiverQueueListeners.get(i);
+                    JMSMessageListener msgListener = new JMSMessageListener(context, client);
+                    msgListener.open(connectionFactory, queue, true, username, password);
+                    queueMessageListener.put(queue, msgListener);
+                }
             }
-        }
-        
-        if (receiverTopics != null) {
-            for (int i = 0; i < receiverTopics.size(); i++) {
-                String topic = (String) receiverTopics.get(i);
-                JMSMessageListener msgListener = new JMSMessageListener(context, client);
-                msgListener.setupMessageListener(connectionFactory, topic, false, username, password);
-                topicMessageConsumers.put(topic, msgListener);
+            
+            if (receiverTopics != null) {
+                for (int i = 0; i < receiverTopics.size(); i++) {
+                    String topic = (String) receiverTopics.get(i);
+                    JMSMessageListener msgListener = new JMSMessageListener(context, client);
+                    msgListener.open(connectionFactory, topic, false, username, password);
+                    topicMessageConsumers.put(topic, msgListener);
+                }
             }
         }
     }
@@ -147,8 +156,10 @@ public class JMS {
      * @throws JMSException
      */
     public Map<String, Object> consumeMessage(String queue) throws JMSException {
-        JMSQueueMessageConsumer msgConsumer = queueMessageConsumers.get(queue);
-        return msgConsumer.consumeMessage();
+        synchronized(SYNCH_KEY) {
+            JMSQueueMessageConsumer msgConsumer = queueMessageConsumers.get(queue);
+            return msgConsumer.consumeMessage();
+        }
     }
     
     /**
@@ -160,62 +171,66 @@ public class JMS {
      * @throws JMSException
      */
     public void produceMessage(String message, String destination, String messageFormat, boolean isQueue) throws JMSException {
-        JMSMessageProducer msgProducer;
-        if (isQueue) {
-            msgProducer = queueMessageProducers.get(destination);
-        } else {
-            msgProducer = topicMessageProducers.get(destination);
+        synchronized(SYNCH_KEY) {
+            JMSMessageProducer msgProducer;
+            if (isQueue) {
+                msgProducer = queueMessageProducers.get(destination);
+            } else {
+                msgProducer = topicMessageProducers.get(destination);
+            }
+            
+            msgProducer.produceMessage(message, messageFormat);
         }
-        
-        msgProducer.produceMessage(message, messageFormat);
     }
     
     /**
      * A method used to close all of the resources being used by the message producers/consumers/listeners
      */
     public void close() {
-        for (JMSMessageProducer producer : queueMessageProducers.values()) {
-            try {
-                producer.close();
-            } catch (JMSException e) {
-                log.error("An error occured while attempting to close the JMS Session or Connection associated with the "
-                        + "MessageProducer for queue: " + producer.destName + ". ", e);
+        synchronized(SYNCH_KEY) {
+            for (JMSMessageProducer producer : queueMessageProducers.values()) {
+                try {
+                    producer.close();
+                } catch (JMSException e) {
+                    log.error("An error occured while attempting to close the JMS Session or Connection associated with the "
+                            + "MessageProducer for queue: " + producer.destName + ". ", e);
+                }
             }
-        }
-        
-        for (JMSQueueMessageConsumer consumer : queueMessageConsumers.values()) {
-            try {
-                consumer.close();
-            } catch (JMSException e) {
-                log.error("An error occured while attempting to close the JMS Session or Connection associated with the "
-                        + "MessageConsumer for queue: " + consumer.destName + ". ", e);
+            
+            for (JMSQueueMessageConsumer consumer : queueMessageConsumers.values()) {
+                try {
+                    consumer.close();
+                } catch (JMSException e) {
+                    log.error("An error occured while attempting to close the JMS Session or Connection associated with the "
+                            + "MessageConsumer for queue: " + consumer.destName + ". ", e);
+                }
             }
-        }
-        
-        for (JMSMessageListener listener : queueMessageListener.values()) {
-            try {
-                listener.close();
-            } catch (JMSException e) {
-                log.error("An error occured while attempting to close the JMS Session or Connection associated with the "
-                        + "MessageListener for queue: " + listener.destName + ". ", e);
+            
+            for (JMSMessageListener listener : queueMessageListener.values()) {
+                try {
+                    listener.close();
+                } catch (JMSException e) {
+                    log.error("An error occured while attempting to close the JMS Session or Connection associated with the "
+                            + "MessageListener for queue: " + listener.destName + ". ", e);
+                }
             }
-        }
-        
-        for (JMSMessageProducer producer : topicMessageProducers.values()) {
-            try {
-                producer.close();
-            } catch (JMSException e) {
-                log.error("An error occured while attempting to close the JMS Session or Connection associated with the "
-                        + "MessageProducer for topic: " + producer.destName + ". ", e);
+            
+            for (JMSMessageProducer producer : topicMessageProducers.values()) {
+                try {
+                    producer.close();
+                } catch (JMSException e) {
+                    log.error("An error occured while attempting to close the JMS Session or Connection associated with the "
+                            + "MessageProducer for topic: " + producer.destName + ". ", e);
+                }
             }
-        }
-        
-        for (JMSMessageListener listener : topicMessageConsumers.values()) {
-            try {
-                listener.close();
-            } catch (JMSException e) {
-                log.error("An error occured while attempting to close the JMS Session or Connection associated with the "
-                        + "MessageListener for topic: " + listener.destName + ". ", e);
+            
+            for (JMSMessageListener listener : topicMessageConsumers.values()) {
+                try {
+                    listener.close();
+                } catch (JMSException e) {
+                    log.error("An error occured while attempting to close the JMS Session or Connection associated with the "
+                            + "MessageListener for topic: " + listener.destName + ". ", e);
+                }
             }
         }
     }

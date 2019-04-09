@@ -68,7 +68,7 @@ public class TestJMSConfig extends TestJMSBase {
     
     @Test
     public void testMissingSender() {
-        assumeTrue(testJMSURL != null && testJMSConnectionFactory != null && testJMSInitialContext != null && jmsDriverLoc != null);
+        checkMinimalJMSProperties();
         
         Map conf = minimalConfig();
         conf.remove("sender");
@@ -78,7 +78,7 @@ public class TestJMSConfig extends TestJMSBase {
     
     @Test
     public void testMissingReceiver() {
-        assumeTrue(testJMSURL != null && testJMSConnectionFactory != null && testJMSInitialContext != null && jmsDriverLoc != null);
+        checkMinimalJMSProperties();
         
         Map conf = minimalConfig();
         conf.remove("receiver");
@@ -96,7 +96,7 @@ public class TestJMSConfig extends TestJMSBase {
 
     @Test
     public void testMissingURL() {
-        assumeTrue(testJMSURL != null && testJMSConnectionFactory != null && testJMSInitialContext != null && jmsDriverLoc != null);
+        checkMinimalJMSProperties();
         
         Map conf = partialGeneralConfig("providerURL");
         sendConfig(conf);
@@ -105,7 +105,7 @@ public class TestJMSConfig extends TestJMSBase {
     
     @Test
     public void testMissingConnectionFactory() {
-        assumeTrue(testJMSURL != null && testJMSConnectionFactory != null && testJMSInitialContext != null && jmsDriverLoc != null);
+        checkMinimalJMSProperties();
         
         Map conf = partialGeneralConfig("connectionFactory");
         sendConfig(conf);
@@ -114,7 +114,7 @@ public class TestJMSConfig extends TestJMSBase {
     
     @Test
     public void testMissingInitialContext() {
-        assumeTrue(testJMSURL != null && testJMSConnectionFactory != null && testJMSInitialContext != null && jmsDriverLoc != null);
+        checkMinimalJMSProperties();
         
         Map conf = partialGeneralConfig("initialContext");
         sendConfig(conf);
@@ -123,7 +123,7 @@ public class TestJMSConfig extends TestJMSBase {
     
     @Test
     public void testMissingUsernameAndPassword() {
-        assumeTrue(testJMSURL != null && testJMSConnectionFactory != null && testJMSInitialContext != null && jmsDriverLoc != null);
+        checkMinimalJMSProperties();
         nCore.start(5); // Need a client to avoid NPEs on setting query/publish handler
         
         Map conf = partialGeneralConfig("username");
@@ -137,7 +137,7 @@ public class TestJMSConfig extends TestJMSBase {
     
     @Test
     public void testPartialSender() {
-        assumeTrue(testJMSURL != null && testJMSConnectionFactory != null && testJMSInitialContext != null && jmsDriverLoc != null);
+        checkMinimalJMSProperties();
         nCore.start(5); // Need a client to avoid NPEs on setting query/publish handler
         
         Map conf = partialSenderConfig("queues");
@@ -151,7 +151,7 @@ public class TestJMSConfig extends TestJMSBase {
     
     @Test
     public void testPartialReceiver() {
-        assumeTrue(testJMSURL != null && testJMSConnectionFactory != null && testJMSInitialContext != null && jmsDriverLoc != null);
+        checkMinimalJMSProperties();
         nCore.start(5); // Need a client to avoid NPEs on setting query/publish handler
         
         Map conf = partialReceiverConfig("queues");
@@ -169,7 +169,7 @@ public class TestJMSConfig extends TestJMSBase {
       
     @Test
     public void testMinimalConfig() {
-        assumeTrue(testJMSURL != null && testJMSConnectionFactory != null && testJMSInitialContext != null && jmsDriverLoc != null);
+        checkMinimalJMSProperties();
         nCore.start(5); // Need a client to avoid NPEs on setting query/publish handler
         
         Map conf = minimalConfig();
@@ -178,6 +178,11 @@ public class TestJMSConfig extends TestJMSBase {
     }
     
 // ================================================= Helper functions =================================================
+    
+    public static void checkMinimalJMSProperties() {
+        assumeTrue(testJMSURL != null && testJMSConnectionFactory != null && testJMSInitialContext != null && jmsDriverLoc != null);
+
+    }
     
     public void sendConfig(Map<String, ?> jmsConfig) {
         ExtensionServiceMessage m = new ExtensionServiceMessage("");

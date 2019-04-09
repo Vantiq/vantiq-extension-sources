@@ -37,6 +37,8 @@ public class JMSQueueMessageConsumer {
     private Destination destination;
     private MessageConsumer consumer;
     
+    private static final String SYNCH_KEY = "synchKey";
+    
     public static final String MESSAGE = "Message";
     public static final String BYTES = "BytesMessage";
     public static final String TEXT = "TextMessage";
@@ -57,24 +59,49 @@ public class JMSQueueMessageConsumer {
      * @throws NamingException
      * @throws JMSException
      */
-    public void setupQueueConsumer(String connectionFactoryName, String queue, String username, String password) throws NamingException, JMSException {
-        this.destName = queue;
-        connectionFactory = (ConnectionFactory) context.lookup(connectionFactoryName);
-        connection = connectionFactory.createConnection(username, password);
-        session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
-        destination = session.createQueue(queue);
-        consumer = session.createConsumer(destination);
-        connection.start();
+    public void open(String connectionFactoryName, String queue, String username, String password) throws NamingException, JMSException, Exception {
+        synchronized (SYNCH_KEY) {
+            this.destName = queue;
+            
+            connectionFactory = (ConnectionFactory) context.lookup(connectionFactoryName);
+            if (connectionFactory == null) {
+                throw new Exception("The Connection Factory named " + connectionFactoryName + " was unable to be found.");
+            }
+            
+            connection = connectionFactory.createConnection(username, password);
+            if (connection == null) {
+                throw new Exception("A Connection was unable to be created using the Connection Factory named " + connectionFactoryName + ".");
+            }
+            
+            session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
+            if (session == null) {
+                throw new Exception("A Session was unable to be created.");
+            }
+            
+            destination = session.createQueue(queue);
+            if (destination == null) {
+                throw new Exception("A Destination with name " + queue + " was unable to be created.");
+            }
+            
+            consumer = session.createConsumer(destination);
+            if (consumer == null) {
+                throw new Exception("A Message Producer for the Destination with name " + queue + " was unable to be created.");
+            }
+            
+            connection.start();
+        }
     }
     
     /**
-     * Called by the JMS Class, and used to read the most recent JMS Message from the associated queue
+     * Called by the JMS Class, and used to read the next available JMS Message from the associated queue
      * @return A map containing the message, as well as the queue name and the JMS Message Type
      * @throws JMSException
      */
     public Map<String, Object> consumeMessage() throws JMSException {
-        Message message = consumer.receive(1000);
-        return formatMessage(message);
+        synchronized (SYNCH_KEY) {
+            Message message = consumer.receive(1000);
+            return formatMessage(message);
+        }
     }
     
     /**
@@ -97,13 +124,13 @@ public class JMSQueueMessageConsumer {
             msgMap.put("JMSFormat", OBJECT);
             msgMap.put("destination", this.destName);
         } else if (message instanceof MapMessage) {
-            
+            // FIXME
         } else if (message instanceof StreamMessage) {
-            
+            // FIXME
         } else if (message instanceof BytesMessage) {
-            
+            // FIXME
         } else {
-            
+            // FIXME
         }
                 
         return msgMap;
@@ -114,8 +141,10 @@ public class JMSQueueMessageConsumer {
      * @throws JMSException
      */
     public void close() throws JMSException {
-        // Closing the session and connection
-        session.close();
-        connection.close();
+        synchronized (SYNCH_KEY) {
+            // Closing the session and connection
+            session.close();
+            connection.close();
+        }
     }
 }

@@ -102,10 +102,8 @@ public class TestJMS extends TestJMSBase {
         
         try {
             jms.createProducersAndConsumers(sender, receiver, null, null);
-        } catch (NamingException e) {
-            fail("Should not throw a NamingException when creating message producers/consumers/listeners.");
-        } catch (JMSException e) {
-            fail("Should not throw a JMSException when creating message producers/consumers/listeners.");
+        } catch (Exception e) {
+            fail("Should not throw an Exception when creating message producers/consumers/listeners.");
         }
         
         // Sending message to the queue
@@ -130,17 +128,13 @@ public class TestJMS extends TestJMSBase {
     
     @Test
     public void testTopicMessageListener() throws InterruptedException {
-        assumeTrue(jmsDriverLoc != null && testJMSURL != null && testJMSConnectionFactory != null && testJMSInitialContext != null
-                && testJMSQueue != null && testJMSTopic != null && testAuthToken != null && testVantiqServer != null);
-        
+        checkAllJMSProperties();
         testMessageListenerHelper("topic", testJMSTopic);
     }
     
     @Test
     public void testQueueMessageListener() throws InterruptedException {
-        assumeTrue(jmsDriverLoc != null && testJMSURL != null && testJMSConnectionFactory != null && testJMSInitialContext != null
-                && testJMSQueue != null && testJMSTopic != null && testAuthToken != null && testVantiqServer != null);
-        
+        checkAllJMSProperties();
         testMessageListenerHelper("queue", testJMSQueue);
     }
     
@@ -174,7 +168,12 @@ public class TestJMS extends TestJMSBase {
     }
     
     // ================================================= Helper functions =================================================
-
+    
+    public static void checkAllJMSProperties() {
+        assumeTrue(jmsDriverLoc != null && testJMSURL != null && testJMSConnectionFactory != null && testJMSInitialContext != null
+                && testJMSQueue != null && testJMSTopic != null && testAuthToken != null && testVantiqServer != null);
+    }
+    
     public static boolean checkSourceExists() {
         Map<String,String> where = new LinkedHashMap<String,String>();
         where.put("name", testSourceName);

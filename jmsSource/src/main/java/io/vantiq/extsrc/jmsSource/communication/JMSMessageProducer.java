@@ -35,6 +35,8 @@ public class JMSMessageProducer {
     private Destination destination;
     private MessageProducer producer;
     
+    private static final String SYNCH_KEY = "synchKey";
+    
     public static final String MESSAGE = "message";
     public static final String BYTES = "bytes";
     public static final String TEXT = "text";
@@ -56,19 +58,42 @@ public class JMSMessageProducer {
      * @throws NamingException
      * @throws JMSException
      */
-    public void setupMessageProducer(String connectionFactoryName, String dest, boolean isQueue, String username, String password) throws NamingException, JMSException {
-        this.destName = dest;
-        connectionFactory = (ConnectionFactory) context.lookup(connectionFactoryName);
-        connection = connectionFactory.createConnection(username, password);
-        session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
-        if (isQueue) {
-            destination = session.createQueue(dest);
-        } else {
-            destination = session.createTopic(dest);
+    public void open(String connectionFactoryName, String dest, boolean isQueue, String username, String password) throws NamingException, JMSException, Exception {
+        synchronized (SYNCH_KEY) {
+            this.destName = dest;
+            
+            connectionFactory = (ConnectionFactory) context.lookup(connectionFactoryName);
+            if (connectionFactory == null) {
+                throw new Exception("The Connection Factory named " + connectionFactoryName + " was unable to be found.");
+            }
+            
+            connection = connectionFactory.createConnection(username, password);
+            if (connection == null) {
+                throw new Exception("A Connection was unable to be created using the Connection Factory named " + connectionFactoryName + ".");
+            }
+            
+            session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
+            if (session == null) {
+                throw new Exception("A Session was unable to be created.");
+            }
+            
+            if (isQueue) {
+                destination = session.createQueue(dest);
+            } else {
+                destination = session.createTopic(dest);
+            }
+            if (destination == null) {
+                throw new Exception("A Destination with name " + dest + " was unable to be created.");
+            }
+            
+            producer = session.createProducer(destination);
+            if (producer == null) {
+                throw new Exception("A Message Producer for the Destination with name " + dest + " was unable to be created.");
+            }
+            
+            producer.setDeliveryMode(DeliveryMode.NON_PERSISTENT);
+            connection.start();
         }
-        producer = session.createProducer(destination);
-        producer.setDeliveryMode(DeliveryMode.NON_PERSISTENT);
-        connection.start();
     }
     
     /**
@@ -85,7 +110,7 @@ public class JMSMessageProducer {
                 producer.send(baseMessage);
                 break;
             case BYTES:
-                // Handle it
+                // FIXME
                 BytesMessage byteMessage = session.createBytesMessage();
                 break;
             case TEXT:
@@ -94,17 +119,19 @@ public class JMSMessageProducer {
                 producer.send(textMessage);
                 break;
             case STREAM:
-                // Handle it
+                // FIXME
                 StreamMessage streamMessage = session.createStreamMessage();
                 break;
             case MAP:
-                // Handle it
+                // FIXME
                 MapMessage mapMessage = session.createMapMessage();
                 break;
             case OBJECT:
-                // Handle it
+                // FIXME
                 ObjectMessage objectMessage = session.createObjectMessage();
                 break;
+            default:
+                // FIXME
         }
     }
     
@@ -113,8 +140,10 @@ public class JMSMessageProducer {
      * @throws JMSException
      */
     public void close() throws JMSException {
-        // Closing the session and connection
-        session.close();
-        connection.close();
+        synchronized (SYNCH_KEY) {
+            // Closing the session and connection
+            session.close();
+            connection.close();
+        }
     }
 }

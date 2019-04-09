@@ -37,6 +37,5 @@ public class TestJMSBase {
         testAuthToken = System.getProperty("TestAuthToken", null);
         testVantiqServer = System.getProperty("TestVantiqServer", null);
         testSourceName = System.getProperty("EntConTestSourceName", "testSourceName");
-        testTypeName = System.getProperty("EntConTestTypeName", "testTypeName");
     }
 }
