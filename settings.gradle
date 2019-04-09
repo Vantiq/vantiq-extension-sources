@@ -2,6 +2,12 @@ rootProject.name = 'vantiq-extension-source'
 include 'opcuaSource'
 include 'extjsdk'
 include 'udpSource'
-include 'objectRecognitionSource'
-include 'jdbcSource'
-include 'jmsSource'
+if (System.env.OPENCV_LOC) {
+    include 'objectRecognitionSource'
+}
+if (System.env.JDBC_DRIVER_LOC) {
+    include 'jdbcSource'
+}
+if (System.env.JMS_DRIVER_LOC) {
+    include 'jmsSource'
+}
