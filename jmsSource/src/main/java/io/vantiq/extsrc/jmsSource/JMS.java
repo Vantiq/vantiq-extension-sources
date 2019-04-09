@@ -72,6 +72,7 @@ public class JMS {
      * @param password          The oassword used to create the JMS Connection, (or null if JMS Server does not require auth)
      * @throws NamingException
      * @throws JMSException
+     * @throws Exception
      */
     public void createProducersAndConsumers(Map<String, ?> sender, Map<String, ?> receiver, String username, String password) throws NamingException, JMSException, Exception {
         List<?> senderQueues = null;

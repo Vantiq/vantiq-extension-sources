@@ -14,7 +14,6 @@ import java.util.Map;
 import javax.jms.BytesMessage;
 import javax.jms.Connection;
 import javax.jms.ConnectionFactory;
-import javax.jms.DeliveryMode;
 import javax.jms.Destination;
 import javax.jms.JMSException;
 import javax.jms.Message;
@@ -70,6 +69,7 @@ public class JMSMessageListener implements MessageListener {
      * @param password                  The password used to create the JMS Connection, (or null if JMS Server does not require auth)
      * @throws NamingException
      * @throws JMSException
+     * @throws Exception
      */
     public void open(String connectionFactoryName, String dest, boolean isQueue, String username, String password) throws NamingException, JMSException, Exception {
         synchronized (SYNCH_KEY) {

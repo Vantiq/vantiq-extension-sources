@@ -58,6 +58,7 @@ public class JMSQueueMessageConsumer {
      * @param password                  The password used to create the JMS Connection, (or null if JMS Server does not require auth)
      * @throws NamingException
      * @throws JMSException
+     * @throws Exception
      */
     public void open(String connectionFactoryName, String queue, String username, String password) throws NamingException, JMSException, Exception {
         synchronized (SYNCH_KEY) {
