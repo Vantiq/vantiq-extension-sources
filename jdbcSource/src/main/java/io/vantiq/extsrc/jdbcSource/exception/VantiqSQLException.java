@@ -9,7 +9,7 @@
 package io.vantiq.extsrc.jdbcSource.exception;
 
 /**
- * An exception that signifies an image could not be found for an {@link ImageRetrieverInterface}
+ * A custom exception used to extract the useful information from a SQLException
  */
 public class VantiqSQLException extends Exception {
     

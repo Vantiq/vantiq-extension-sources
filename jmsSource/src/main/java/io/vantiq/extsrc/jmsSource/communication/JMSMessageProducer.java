@@ -8,23 +8,31 @@
 
 package io.vantiq.extsrc.jmsSource.communication;
 
-import javax.jms.BytesMessage;
+import java.lang.reflect.Constructor;
+import java.lang.reflect.InvocationTargetException;
+
 import javax.jms.Connection;
 import javax.jms.ConnectionFactory;
 import javax.jms.DeliveryMode;
 import javax.jms.Destination;
 import javax.jms.JMSException;
-import javax.jms.MapMessage;
 import javax.jms.Message;
 import javax.jms.MessageProducer;
-import javax.jms.ObjectMessage;
 import javax.jms.Session;
-import javax.jms.StreamMessage;
-import javax.jms.TextMessage;
 import javax.naming.Context;
 import javax.naming.NamingException;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import io.vantiq.extsrc.jmsSource.communication.messageHandler.MessageHandlerInterface;
+import io.vantiq.extsrc.jmsSource.exceptions.FailedInterfaceSetupException;
+import io.vantiq.extsrc.jmsSource.exceptions.FailedJMSSetupException;
+import io.vantiq.extsrc.jmsSource.exceptions.UnsupportedJMSMessageTypeException;
+
 public class JMSMessageProducer {
+    
+    Logger log  = LoggerFactory.getLogger(this.getClass().getCanonicalName());
     
     public String destName;
     
@@ -35,17 +43,54 @@ public class JMSMessageProducer {
     private Destination destination;
     private MessageProducer producer;
     
+    private MessageHandlerInterface messageHandler;
+    
     private static final String SYNCH_KEY = "synchKey";
     
-    public static final String MESSAGE = "message";
-    public static final String BYTES = "bytes";
-    public static final String TEXT = "text";
-    public static final String STREAM = "stream";
-    public static final String MAP = "map";
-    public static final String OBJECT = "object";
+    public static final String MESSAGE = "Message";
+    public static final String TEXT = "TextMessage";
+    public static final String MAP = "MapMessage";
     
-    public JMSMessageProducer(Context context) {
+    public JMSMessageProducer(Context context, String messageHandlerName) throws FailedInterfaceSetupException {
         this.context = context;
+        Class<?> clazz = null;
+        Constructor<?> constructor = null;
+        Object object = null;
+        
+        // Try to find the intended class, fail if it can't be found
+        try {
+            clazz = Class.forName(messageHandlerName);
+        } catch (ClassNotFoundException e) {
+            log.error("Could not find requested class '" + messageHandlerName + "'", e);
+            throw new FailedInterfaceSetupException();
+        }
+        
+        // Try to find a public no-argument constructor for the class, fail if none exists
+        try {
+            constructor = clazz.getConstructor();
+        } catch (NoSuchMethodException | SecurityException e) {
+            log.error("Could not find public no argument constructor for '" + messageHandlerName + "'", e);
+            throw new FailedInterfaceSetupException();
+        }
+
+        // Try to create an instance of the class, fail if it can't
+        try {
+            object = constructor.newInstance();
+        } catch (InstantiationException | IllegalAccessException | IllegalArgumentException
+                | InvocationTargetException e) {
+            log.error("Error occurred trying to instantiate class '" + messageHandlerName + "'", e);
+            throw new FailedInterfaceSetupException();
+        }
+        
+        // Fail if the created object is not a MessageHandlerInterface
+        if ( !(object instanceof MessageHandlerInterface) )
+        {
+            log.error("Class '" + messageHandlerName + "' is not an implementation of MessageHandlerInterface");
+            throw new FailedInterfaceSetupException();
+        }
+        
+        // Interface was successfully instantiated and can be used to handle messages
+        messageHandler = (MessageHandlerInterface) object;
     }
     
     /**
@@ -57,25 +102,25 @@ public class JMSMessageProducer {
      * @param password                  The password used to create the JMS Connection, (or null if JMS Server does not require auth)
      * @throws NamingException
      * @throws JMSException
-     * @throws Exception
+     * @throws FailedJMSSetupException
      */
-    public void open(String connectionFactoryName, String dest, boolean isQueue, String username, String password) throws NamingException, JMSException, Exception {
+    public void open(String connectionFactoryName, String dest, boolean isQueue, String username, String password) throws NamingException, JMSException, FailedJMSSetupException {
         synchronized (SYNCH_KEY) {
             this.destName = dest;
             
             connectionFactory = (ConnectionFactory) context.lookup(connectionFactoryName);
             if (connectionFactory == null) {
-                throw new Exception("The Connection Factory named " + connectionFactoryName + " was unable to be found.");
+                throw new FailedJMSSetupException("The Connection Factory named " + connectionFactoryName + " was unable to be found.");
             }
             
             connection = connectionFactory.createConnection(username, password);
             if (connection == null) {
-                throw new Exception("A Connection was unable to be created using the Connection Factory named " + connectionFactoryName + ".");
+                throw new FailedJMSSetupException("A Connection was unable to be created using the Connection Factory named " + connectionFactoryName + ".");
             }
             
             session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
             if (session == null) {
-                throw new Exception("A Session was unable to be created.");
+                throw new FailedJMSSetupException("A Session was unable to be created.");
             }
             
             if (isQueue) {
@@ -84,12 +129,12 @@ public class JMSMessageProducer {
                 destination = session.createTopic(dest);
             }
             if (destination == null) {
-                throw new Exception("A Destination with name " + dest + " was unable to be created.");
+                throw new FailedJMSSetupException("A Destination with name " + dest + " was unable to be created.");
             }
             
             producer = session.createProducer(destination);
             if (producer == null) {
-                throw new Exception("A Message Producer for the Destination with name " + dest + " was unable to be created.");
+                throw new FailedJMSSetupException("A Message Producer for the Destination with name " + dest + " was unable to be created.");
             }
             
             producer.setDeliveryMode(DeliveryMode.NON_PERSISTENT);
@@ -100,40 +145,14 @@ public class JMSMessageProducer {
     /**
      * Called by the JMS Class, and used to send the provided message to the associated destination, (topic or queue),
      * using whatever format was specified
-     * @param message           The message to be sent
+     * @param message           The message to be sent, either a string or a map
      * @param messageFormat     The format (JMS Message Type) of the message to be sent
      * @throws JMSException
+     * @throws UnsupportedJMSMessageTypeException
      */
-    public void produceMessage(String message, String messageFormat) throws JMSException {
-        switch(messageFormat) {
-            case MESSAGE:
-                Message baseMessage = session.createMessage();
-                producer.send(baseMessage);
-                break;
-            case BYTES:
-                // FIXME
-                BytesMessage byteMessage = session.createBytesMessage();
-                break;
-            case TEXT:
-                TextMessage textMessage = session.createTextMessage();
-                textMessage.setText(message);
-                producer.send(textMessage);
-                break;
-            case STREAM:
-                // FIXME
-                StreamMessage streamMessage = session.createStreamMessage();
-                break;
-            case MAP:
-                // FIXME
-                MapMessage mapMessage = session.createMapMessage();
-                break;
-            case OBJECT:
-                // FIXME
-                ObjectMessage objectMessage = session.createObjectMessage();
-                break;
-            default:
-                // FIXME
-        }
+    public void produceMessage(Object message, String messageFormat) throws Exception {
+        Message jmsMessage = messageHandler.formatOutgoingMessage(message, messageFormat, session);
+        producer.send(jmsMessage);
     }
     
     /**

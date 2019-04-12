@@ -8,6 +8,7 @@
 
 package io.vantiq.extsrc.jmsSource;
 
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeTrue;
@@ -20,13 +21,15 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-import javax.jms.JMSException;
 import javax.naming.NamingException;
 
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.Test;
+
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
 
 import io.vantiq.client.SubscriptionCallback;
 import io.vantiq.client.SubscriptionMessage;
@@ -110,17 +113,17 @@ public class TestJMS extends TestJMSBase {
         Date date = new Date();
         String message = "A message sent at time: " + dateFormat.format(date);
         try {
-            jms.produceMessage(message, testJMSQueue, "text", true);
-        } catch (JMSException e) {
-            fail("Should not throw a JMSException when sending message to queue.");
+            jms.produceMessage(message, testJMSQueue, "TextMessage", true);
+        } catch (Exception e) {
+            fail("Should not throw a Exception when sending message to queue.");
         }
         
         // Reading message from the queue, and checking that it is equal to the message that was sent
         try {
             Map<String, Object> queueMessage = jms.consumeMessage(testJMSQueue);
             assert ((String) queueMessage.get("message")).equals(message);
-        } catch (JMSException e) {
-            fail("Should not throw a JMSException when consuming message from queue.");
+        } catch (Exception e) {
+            fail("Should not throw an Exception when consuming message from queue.");
         }
         
         jms.close();
@@ -143,7 +146,7 @@ public class TestJMS extends TestJMSBase {
         assumeFalse(checkSourceExists());
         
         // Setup a VANTIQ JMS Source, and start running the core
-        setupSource(createSourceDef());
+        setupSource(createSourceDef(true));
         
         // Create message to send
         Date date = new Date();
@@ -153,7 +156,7 @@ public class TestJMS extends TestJMSBase {
         Map<String,Object> sendToTopicParams = new LinkedHashMap<String,Object>();
         sendToTopicParams.put("message", message);
         sendToTopicParams.put(dest, destName);
-        sendToTopicParams.put("JMSFormat", "text");
+        sendToTopicParams.put("JMSFormat", "TextMessage");
         vantiq.publish("sources", testSourceName, sendToTopicParams);
         
         // Wait to make sure message has been parsed by subscription callback
@@ -167,6 +170,177 @@ public class TestJMS extends TestJMSBase {
         core.stop();       
     }
     
+    @Test
+    public void testVantiqQuery() {
+        checkAllJMSProperties();
+        
+        // Check that Source and Type do not already exist in namespace, and skip test if they do
+        assumeFalse(checkSourceExists());
+        
+        // Setup a VANTIQ JMS Source, and start running the core
+        setupSource(createSourceDef(false));
+        
+        // Create message to send
+        Date date = new Date();
+        String message = "A message sent at time: " + dateFormat.format(date);
+        
+        // Publish message to the source (send to queue)
+        Map<String,Object> sendToQueueParams = new LinkedHashMap<String,Object>();
+        sendToQueueParams.put("message", message);
+        sendToQueueParams.put("queue", testJMSQueue);
+        sendToQueueParams.put("JMSFormat", "TextMessage");
+        vantiq.publish("sources", testSourceName, sendToQueueParams);
+        
+        // Query with no operation set
+        Map<String,Object> queryParams = new LinkedHashMap<String,Object>();
+        queryParams.put("queue", testJMSQueue);
+        VantiqResponse queryResponse = vantiq.query(testSourceName, queryParams);
+        
+        // Should not query successfully
+        assert queryResponse.hasErrors();
+        
+        // Query with a jibberish operation set
+        queryParams.put("operation", "jibberish");
+        queryResponse = vantiq.query(testSourceName, queryParams);
+        
+        // Should not query successfully
+        assert queryResponse.hasErrors();
+        
+        // Query with a valid operation set
+        queryParams.put("operation", "read");
+        queryResponse = vantiq.query(testSourceName, queryParams);
+        
+        // Should query successfully
+        assert !queryResponse.hasErrors();
+        JsonObject responseBody = (JsonObject) queryResponse.getBody();
+        String responseMessage = (String) responseBody.get("message").getAsString();
+        assert responseMessage.equals(message);
+        
+        // Delete the Source from VANTIQ
+        deleteSource();
+        core.stop();  
+    }
+    
+    @Test
+    public void testOddballJMSMessageTypes() {
+        checkAllJMSProperties();
+        
+        // Check that Source and Type do not already exist in namespace, and skip test if they do
+        assumeFalse(checkSourceExists());
+        
+        // Setup a VANTIQ JMS Source, and start running the core
+        setupSource(createSourceDef(false));
+        
+        // Create message to send (MapMessage)
+        Date date = new Date();
+        String message = dateFormat.format(date);
+        Map<String, String> messageMap = new LinkedHashMap<String,String>();
+        messageMap.put("date", message);
+        
+        // Publish message to the source, (send to queue), as a MapMessage
+        Map<String,Object> sendToQueueParams = new LinkedHashMap<String,Object>();
+        sendToQueueParams.put("message", messageMap);
+        sendToQueueParams.put("queue", testJMSQueue);
+        sendToQueueParams.put("JMSFormat", "MapMessage");
+        vantiq.publish("sources", testSourceName, sendToQueueParams);
+        
+        // Query the source
+        Map<String,Object> queryParams = new LinkedHashMap<String,Object>();
+        queryParams.put("queue", testJMSQueue);
+        queryParams.put("operation", "read");
+        VantiqResponse queryResponse = vantiq.query(testSourceName, queryParams);
+        
+        // Should query successfully
+        assert !queryResponse.hasErrors();
+        JsonObject responseBody = (JsonObject) queryResponse.getBody();
+        JsonObject responseMessage = responseBody.get("message").getAsJsonObject();
+        assert responseMessage.get("date").getAsString().equals(message);
+        
+        // Create message to send (Message)
+        sendToQueueParams.put("message", "jibberish");
+        sendToQueueParams.put("JMSFormat", "Message");
+        vantiq.publish("sources", testSourceName, sendToQueueParams);
+        
+        // Query the source
+        queryResponse = vantiq.query(testSourceName, queryParams);
+        
+        // Should query successfully
+        assert !queryResponse.hasErrors();
+        responseBody = (JsonObject) queryResponse.getBody();
+        JsonElement responseMessageElement = responseBody.get("message");
+        assertTrue(responseMessageElement.isJsonNull());
+        
+        // Delete the Source from VANTIQ
+        deleteSource();
+        core.stop();  
+    }
+    
+    @Test
+    public void testIncorrectOddballJMSTypes() {
+        // Check that Source and Type do not already exist in namespace, and skip test if they do
+        assumeFalse(checkSourceExists());
+        
+        // Setup a VANTIQ JMS Source, and start running the core
+        setupSource(createSourceDef(false));
+        
+        // Create message to send
+        Date date = new Date();
+        String message = dateFormat.format(date);
+        Map<String, String> messageMap = new LinkedHashMap<String,String>();
+        messageMap.put("date", message);
+        
+        // Publish message to the source, (send to queue), as a TextMessage (wrong type)
+        Map<String,Object> sendToQueueParams = new LinkedHashMap<String,Object>();
+        sendToQueueParams.put("message", messageMap);
+        sendToQueueParams.put("queue", testJMSQueue);
+        sendToQueueParams.put("JMSFormat", "TextMessage");
+        vantiq.publish("sources", testSourceName, sendToQueueParams);
+        
+        // Query the source
+        Map<String,Object> queryParams = new LinkedHashMap<String,Object>();
+        queryParams.put("queue", testJMSQueue);
+        queryParams.put("operation", "read");
+        VantiqResponse queryResponse = vantiq.query(testSourceName, queryParams);
+        
+        // Should query successfully, but message should be null since it was unable to send
+        assert !queryResponse.hasErrors();
+        JsonObject responseBody = (JsonObject) queryResponse.getBody();
+        JsonElement responseMessageElement = responseBody.get("message");
+        assertTrue(responseMessageElement.isJsonNull());
+        
+        // Create message to send (MapMessage, when it should be a TextMessage)
+        sendToQueueParams.put("message", "some text");
+        sendToQueueParams.put("JMSFormat", "MapMessage");
+        vantiq.publish("sources", testSourceName, sendToQueueParams);
+        
+        // Query the source
+        queryResponse = vantiq.query(testSourceName, queryParams);
+        
+        // Should query successfully, but message should be null since it was unable to send
+        assert !queryResponse.hasErrors();
+        responseBody = (JsonObject) queryResponse.getBody();
+        responseMessageElement = responseBody.get("message");
+        assertTrue(responseMessageElement.isJsonNull());
+        
+        // Create message to send (unsupported JMSFormat)
+        sendToQueueParams.put("message", "jibberish");
+        sendToQueueParams.put("JMSFormat", "BytesMessage");
+        vantiq.publish("sources", testSourceName, sendToQueueParams);
+        
+        // Query the source
+        queryResponse = vantiq.query(testSourceName, queryParams);
+        
+        // Should query successfully, but message should be null since it was unable to send
+        assert !queryResponse.hasErrors();
+        responseBody = (JsonObject) queryResponse.getBody();
+        responseMessageElement = responseBody.get("message");
+        assertTrue(responseMessageElement.isJsonNull());
+        
+        // Delete the Source from VANTIQ
+        deleteSource();
+        core.stop();  
+    }
+     
     // ================================================= Helper functions =================================================
     
     public static void checkAllJMSProperties() {
@@ -194,7 +368,7 @@ public class TestJMS extends TestJMSBase {
         }
     }
     
-    public static Map<String,Object> createSourceDef() {
+    public static Map<String,Object> createSourceDef(boolean queueListener) {
         Map<String,Object> sourceDef = new LinkedHashMap<String,Object>();
         Map<String,Object> sourceConfig = new LinkedHashMap<String,Object>();
         Map<String,Object> jmsConfig = new LinkedHashMap<String,Object>();
@@ -220,7 +394,11 @@ public class TestJMS extends TestJMSBase {
         sender.put("topics", topics);
         
         // Setting up receiver config options
-        receiver.put("queueListeners", queues);
+        if (queueListener) {
+            receiver.put("queueListeners", queues);
+        } else {
+            receiver.put("queues", queues);
+        }
         receiver.put("topics", topics);
         
         // Placing general config options in "jmsConfig"

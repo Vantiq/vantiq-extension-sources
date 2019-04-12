@@ -19,6 +19,7 @@ import org.slf4j.LoggerFactory;
 import io.vantiq.extjsdk.ExtensionServiceMessage;
 import io.vantiq.extjsdk.ExtensionWebSocketClient;
 import io.vantiq.extjsdk.Handler;
+import io.vantiq.extsrc.jmsSource.exceptions.FailedJMSSetupException;
 
 /**
  * Sets up the source using the configuration document, which looks like the following.
@@ -249,7 +250,9 @@ public class JMSHandleConfiguration extends Handler<ExtensionServiceMessage> {
             return false;
         } catch (JMSException e) {
             log.error("Configuration failed. Exception occured while creating JMS Message Consumer or Producer: ", e);
-        } catch (Exception e) {
+        } catch (FailedJMSSetupException e) {
+            log.error("Configuration failed. Excpetion occured while creating JMS Message Consumer or Producer: ", e);
+        }catch (Exception e) {
             log.error("Configuration failed. Unexpected exception occured while setting up JMS Source: ", e);
             return false;
         }

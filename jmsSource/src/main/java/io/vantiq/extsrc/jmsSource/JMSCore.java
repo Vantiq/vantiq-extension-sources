@@ -22,6 +22,8 @@ import org.slf4j.LoggerFactory;
 import io.vantiq.extjsdk.ExtensionServiceMessage;
 import io.vantiq.extjsdk.ExtensionWebSocketClient;
 import io.vantiq.extjsdk.Handler;
+import io.vantiq.extsrc.jmsSource.exceptions.DestinationNotConfiguredException;
+import io.vantiq.extsrc.jmsSource.exceptions.UnsupportedJMSMessageTypeException;
 
 /**
  * Controls the connection and interaction with the Vantiq server. Initialize it and call start() and it will run
@@ -165,7 +167,7 @@ public class JMSCore {
         if (jms == null) {
             log.error("JMS connection closed before operation could complete");
         } else {
-            String msg;
+            Object msg;
             String dest;
             String msgFormat;
             boolean isQueue;
@@ -173,10 +175,12 @@ public class JMSCore {
             // Getting the contents of the message if specified, or defaulting to an empty string
             if (request.get("message") instanceof String) {
                 msg = (String) request.get("message");
+            } else if (request.get("message") instanceof Map) {
+                msg = (Map) request.get("message");
             } else {
-                msg = "";
-                log.debug("No message was specified in the publish request, or the message was not a String. "
-                        + "The message was set to its default value, an empty String.");
+                msg = null;
+                log.debug("No message was specified in the publish request, or the message was not a String/Map. "
+                        + "The message was set to its default value, null.");
             }
                 
             // Getting the destination of the message
@@ -192,12 +196,12 @@ public class JMSCore {
                 return;
             }
             
-            // Getting the message format if it was specified, or defaulting to ObjectMessage
+            // Getting the message format if it was specified, or defaulting to Message
             if (request.get("JMSFormat") instanceof String) {
                 msgFormat = (String) request.get("JMSFormat");
             } else {
-                log.debug("No JMSFormat was specified, the default ObjectMessage message type will be used.");
-                msgFormat = "object";
+                log.debug("No JMSFormat was specified, the default Message message type will be used.");
+                msgFormat = "Message";
             }
             
             // Sending the message to the appropriate destination
@@ -207,9 +211,12 @@ public class JMSCore {
                 }
             } catch (JMSException e) {
                 log.error("An error occured when attempting to send the given message.", e);
-            } catch (NullPointerException e) {
-                log.error("An error occured when attempting to send the given message. This was most likely because "
-                        + "the source was not configured to send messages to this destination.", e);
+            } catch (DestinationNotConfiguredException e) {
+                log.error("An error occured when attempting to send the given message. The source was not configured "
+                        + "to send messages to the following destination: " + dest + ".", e);
+            } catch(UnsupportedJMSMessageTypeException e) {
+                log.error("An error occured when attempting to send the given message. The provided JMS Message Type: "
+                        + e.getMessage() + " is either invalid or not currently supported.");
             } catch (Exception e) {
                 log.error("An unexpected error occured when attempting to send the given message.", e);
             }
@@ -243,12 +250,16 @@ public class JMSCore {
               } catch (JMSException e) {
                   client.sendQueryError(replyAddress, JMSException.class.getCanonicalName(), 
                           "Failed to read message from the queue: " + queue + ". Error message was: " + e.getMessage(), null);
-              } catch (NullPointerException e) {
-                  client.sendQueryError(replyAddress, JMSException.class.getCanonicalName(), 
-                          "Failed to read message from the queue: " + queue + ". This is most likely because source was not "
-                          + "configured to read from this queue. Error message was: " + e.getMessage(), null);
+              } catch (DestinationNotConfiguredException e) {
+                  client.sendQueryError(replyAddress, DestinationNotConfiguredException.class.getCanonicalName(), 
+                          "Failed to read message from the queue: " + queue + ". The source was not configured to read from "
+                                  + "this queue.", null);
+              } catch(UnsupportedJMSMessageTypeException e) {
+                  client.sendQueryError(replyAddress, UnsupportedJMSMessageTypeException.class.getCanonicalName(), 
+                          "Failed to read message from the queue: " + queue + ". The incoming JMS Message Type was: " + e.getMessage()
+                                  + ", which is not currently supported.", null);
               } catch (Exception e) {
-                  client.sendQueryError(replyAddress, JMSException.class.getCanonicalName(), 
+                  client.sendQueryError(replyAddress, Exception.class.getCanonicalName(), 
                           "An unexpected error occured when reading message from queue: " + queue + ". Error message was: " 
                           + e.getMessage(), null);
               }

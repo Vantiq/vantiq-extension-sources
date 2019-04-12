@@ -8,6 +8,9 @@
 
 package io.vantiq.extsrc.jmsSource.communication;
 
+import java.lang.reflect.Constructor;
+import java.lang.reflect.InvocationTargetException;
+import java.util.Enumeration;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
@@ -26,7 +29,17 @@ import javax.jms.TextMessage;
 import javax.naming.Context;
 import javax.naming.NamingException;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import io.vantiq.extsrc.jmsSource.communication.messageHandler.MessageHandlerInterface;
+import io.vantiq.extsrc.jmsSource.exceptions.FailedInterfaceSetupException;
+import io.vantiq.extsrc.jmsSource.exceptions.FailedJMSSetupException;
+import io.vantiq.extsrc.jmsSource.exceptions.UnsupportedJMSMessageTypeException;
+
 public class JMSQueueMessageConsumer {
+    
+    Logger log  = LoggerFactory.getLogger(this.getClass().getCanonicalName());
     
     public String destName;
     
@@ -37,17 +50,54 @@ public class JMSQueueMessageConsumer {
     private Destination destination;
     private MessageConsumer consumer;
     
+    private MessageHandlerInterface messageHandler;
+    
     private static final String SYNCH_KEY = "synchKey";
     
     public static final String MESSAGE = "Message";
-    public static final String BYTES = "BytesMessage";
     public static final String TEXT = "TextMessage";
-    public static final String STREAM = "StreamMessage";
     public static final String MAP = "MapMessage";
-    public static final String OBJECT = "ObjectMessage";
     
-    public JMSQueueMessageConsumer(Context context) {
+    public JMSQueueMessageConsumer(Context context, String messageHandlerName) throws FailedInterfaceSetupException {
         this.context = context;
+        Class<?> clazz = null;
+        Constructor<?> constructor = null;
+        Object object = null;
+        
+        // Try to find the intended class, fail if it can't be found
+        try {
+            clazz = Class.forName(messageHandlerName);
+        } catch (ClassNotFoundException e) {
+            log.error("Could not find requested class '" + messageHandlerName + "'", e);
+            throw new FailedInterfaceSetupException();
+        }
+        
+        // Try to find a public no-argument constructor for the class, fail if none exists
+        try {
+            constructor = clazz.getConstructor();
+        } catch (NoSuchMethodException | SecurityException e) {
+            log.error("Could not find public no argument constructor for '" + messageHandlerName + "'", e);
+            throw new FailedInterfaceSetupException();
+        }
+
+        // Try to create an instance of the class, fail if it can't
+        try {
+            object = constructor.newInstance();
+        } catch (InstantiationException | IllegalAccessException | IllegalArgumentException
+                | InvocationTargetException e) {
+            log.error("Error occurred trying to instantiate class '" + messageHandlerName + "'", e);
+            throw new FailedInterfaceSetupException();
+        }
+        
+        // Fail if the created object is not a MessageHandlerInterface
+        if ( !(object instanceof MessageHandlerInterface) )
+        {
+            log.error("Class '" + messageHandlerName + "' is not an implementation of MessageHandlerInterface");
+            throw new FailedInterfaceSetupException();
+        }
+        
+        // Interface was successfully instantiated and can be used to handle messages
+        messageHandler = (MessageHandlerInterface) object;
     }
     
     /**
@@ -58,35 +108,35 @@ public class JMSQueueMessageConsumer {
      * @param password                  The password used to create the JMS Connection, (or null if JMS Server does not require auth)
      * @throws NamingException
      * @throws JMSException
-     * @throws Exception
+     * @throws FailedJMSSetupException
      */
-    public void open(String connectionFactoryName, String queue, String username, String password) throws NamingException, JMSException, Exception {
+    public void open(String connectionFactoryName, String queue, String username, String password) throws NamingException, JMSException, FailedJMSSetupException {
         synchronized (SYNCH_KEY) {
             this.destName = queue;
             
             connectionFactory = (ConnectionFactory) context.lookup(connectionFactoryName);
             if (connectionFactory == null) {
-                throw new Exception("The Connection Factory named " + connectionFactoryName + " was unable to be found.");
+                throw new FailedJMSSetupException("The Connection Factory named " + connectionFactoryName + " was unable to be found.");
             }
             
             connection = connectionFactory.createConnection(username, password);
             if (connection == null) {
-                throw new Exception("A Connection was unable to be created using the Connection Factory named " + connectionFactoryName + ".");
+                throw new FailedJMSSetupException("A Connection was unable to be created using the Connection Factory named " + connectionFactoryName + ".");
             }
             
             session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
             if (session == null) {
-                throw new Exception("A Session was unable to be created.");
+                throw new FailedJMSSetupException("A Session was unable to be created.");
             }
             
             destination = session.createQueue(queue);
             if (destination == null) {
-                throw new Exception("A Destination with name " + queue + " was unable to be created.");
+                throw new FailedJMSSetupException("A Destination with name " + queue + " was unable to be created.");
             }
             
             consumer = session.createConsumer(destination);
             if (consumer == null) {
-                throw new Exception("A Message Producer for the Destination with name " + queue + " was unable to be created.");
+                throw new FailedJMSSetupException("A Message Producer for the Destination with name " + queue + " was unable to be created.");
             }
             
             connection.start();
@@ -97,44 +147,13 @@ public class JMSQueueMessageConsumer {
      * Called by the JMS Class, and used to read the next available JMS Message from the associated queue
      * @return A map containing the message, as well as the queue name and the JMS Message Type
      * @throws JMSException
+     * @throws UnsupportedJMSMessageTypeException
      */
-    public Map<String, Object> consumeMessage() throws JMSException {
+    public Map<String, Object> consumeMessage() throws Exception {
         synchronized (SYNCH_KEY) {
             Message message = consumer.receive(1000);
-            return formatMessage(message);
+            return messageHandler.parseIncomingMessage(message, destName);
         }
-    }
-    
-    /**
-     * A helper function to consumeMessage(), used to parse the incoming message and format it according to its message type
-     * @param message           The retrieved message from the queue
-     * @return                  A map containing the message, as well as the queue name and the JMS Message Type
-     * @throws JMSException
-     */
-    public Map<String, Object> formatMessage(Message message) throws JMSException {
-        Map<String, Object> msgMap = new LinkedHashMap<String, Object>();
-        
-        if (message instanceof TextMessage) {
-            String msgText = ((TextMessage) message).getText();
-            msgMap.put("message", msgText);
-            msgMap.put("JMSFormat", TEXT);
-            msgMap.put("destination", this.destName);
-        } else if (message instanceof ObjectMessage) {
-            Object msgObject = ((ObjectMessage) message).getObject();
-            msgMap.put("message", msgObject);
-            msgMap.put("JMSFormat", OBJECT);
-            msgMap.put("destination", this.destName);
-        } else if (message instanceof MapMessage) {
-            // FIXME
-        } else if (message instanceof StreamMessage) {
-            // FIXME
-        } else if (message instanceof BytesMessage) {
-            // FIXME
-        } else {
-            // FIXME
-        }
-                
-        return msgMap;
     }
     
     /**

@@ -52,7 +52,7 @@ public class JMSMain {
      */
     public static void main(String[] args) {
         Properties config = null;
-        if (args == null) {
+        if (args == null || args.length < 1) {
             config = obtainServerConfig("server.config");
         } else if (args != null && args.length == 1) {
             config = obtainServerConfig(args[0]);

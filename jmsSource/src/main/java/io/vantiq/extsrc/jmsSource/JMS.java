@@ -24,6 +24,10 @@ import org.slf4j.LoggerFactory;
 import io.vantiq.extjsdk.ExtensionWebSocketClient;
 
 import io.vantiq.extsrc.jmsSource.communication.*;
+import io.vantiq.extsrc.jmsSource.exceptions.DestinationNotConfiguredException;
+import io.vantiq.extsrc.jmsSource.exceptions.FailedInterfaceSetupException;
+import io.vantiq.extsrc.jmsSource.exceptions.FailedJMSSetupException;
+import io.vantiq.extsrc.jmsSource.exceptions.UnsupportedJMSMessageTypeException;
 
 /**
  * Handles all of the interactions between the Extension Source and the JMS Server. Used to create and manage all of the
@@ -32,6 +36,7 @@ import io.vantiq.extsrc.jmsSource.communication.*;
  */
 public class JMS {
     
+    private static final String MESSAGE_HANDLER_FQCN = "io.vantiq.extsrc.jmsSource.communication.messageHandler.DefaultMessageHandler";
     private static final String SYNCH_KEY = "synchKey";
     
     Logger log  = LoggerFactory.getLogger(this.getClass().getCanonicalName());
@@ -72,9 +77,9 @@ public class JMS {
      * @param password          The oassword used to create the JMS Connection, (or null if JMS Server does not require auth)
      * @throws NamingException
      * @throws JMSException
-     * @throws Exception
+     * @throws FailedJMSSetupException
      */
-    public void createProducersAndConsumers(Map<String, ?> sender, Map<String, ?> receiver, String username, String password) throws NamingException, JMSException, Exception {
+    public void createProducersAndConsumers(Map<String, ?> sender, Map<String, ?> receiver, String username, String password) throws Exception {
         List<?> senderQueues = null;
         List<?> senderTopics = null;
         List<?> receiverQueues = null;
@@ -106,45 +111,65 @@ public class JMS {
             if (senderQueues != null) {
                 for (int i = 0; i < senderQueues.size(); i++) {
                     String queue = (String) senderQueues.get(i);
-                    JMSMessageProducer msgProducer = new JMSMessageProducer(context);
-                    msgProducer.open(connectionFactory, queue, true, username, password);
-                    queueMessageProducers.put(queue, msgProducer);
+                    try {
+                        JMSMessageProducer msgProducer = new JMSMessageProducer(context, MESSAGE_HANDLER_FQCN);
+                        msgProducer.open(connectionFactory, queue, true, username, password);
+                        queueMessageProducers.put(queue, msgProducer);
+                    } catch (FailedInterfaceSetupException e) {
+                        log.error("Unable to create a message producer for queue: " + queue);
+                    }
                 }
             }
             
             if (senderTopics != null) {
                 for (int i = 0; i < senderTopics.size(); i++) {
                     String topic = (String) senderTopics.get(i);
-                    JMSMessageProducer msgProducer = new JMSMessageProducer(context);
-                    msgProducer.open(connectionFactory, topic, false, username, password);
-                    topicMessageProducers.put(topic, msgProducer);
+                    try {
+                        JMSMessageProducer msgProducer = new JMSMessageProducer(context, MESSAGE_HANDLER_FQCN);
+                        msgProducer.open(connectionFactory, topic, false, username, password);
+                        topicMessageProducers.put(topic, msgProducer);
+                    } catch (FailedInterfaceSetupException e) {
+                        log.error("Unable to create a message producer for topic: " + topic);
+                    }
                 }
             }
             
             if (receiverQueues != null) {
                 for (int i = 0; i < receiverQueues.size(); i++) {
                     String queue = (String) receiverQueues.get(i);
-                    JMSQueueMessageConsumer msgConsumer = new JMSQueueMessageConsumer(context);
-                    msgConsumer.open(connectionFactory, queue, username, password);
-                    queueMessageConsumers.put(queue, msgConsumer);
+                    try {
+                        JMSQueueMessageConsumer msgConsumer = new JMSQueueMessageConsumer(context, MESSAGE_HANDLER_FQCN);
+                        msgConsumer.open(connectionFactory, queue, username, password);
+                        queueMessageConsumers.put(queue, msgConsumer);
+                    } catch (FailedInterfaceSetupException e) {
+                        log.error("Unable to create a message consumer for queue: " + queue);
+                    }
                 }
             }
             
             if (receiverQueueListeners != null) {
                 for (int i = 0; i < receiverQueueListeners.size(); i++) {
                     String queue = (String) receiverQueueListeners.get(i);
-                    JMSMessageListener msgListener = new JMSMessageListener(context, client);
-                    msgListener.open(connectionFactory, queue, true, username, password);
-                    queueMessageListener.put(queue, msgListener);
+                    try {
+                        JMSMessageListener msgListener = new JMSMessageListener(context, client, MESSAGE_HANDLER_FQCN);
+                        msgListener.open(connectionFactory, queue, true, username, password);
+                        queueMessageListener.put(queue, msgListener);
+                    } catch (FailedInterfaceSetupException e) {
+                        log.error("Unable to create a message listener for queue: " + queue);
+                    }
                 }
             }
             
             if (receiverTopics != null) {
                 for (int i = 0; i < receiverTopics.size(); i++) {
                     String topic = (String) receiverTopics.get(i);
-                    JMSMessageListener msgListener = new JMSMessageListener(context, client);
-                    msgListener.open(connectionFactory, topic, false, username, password);
-                    topicMessageConsumers.put(topic, msgListener);
+                    try {
+                        JMSMessageListener msgListener = new JMSMessageListener(context, client, MESSAGE_HANDLER_FQCN);
+                        msgListener.open(connectionFactory, topic, false, username, password);
+                        topicMessageConsumers.put(topic, msgListener);
+                    } catch (FailedInterfaceSetupException e) {
+                        log.error("Unable to create a message listener for topic: " + topic);
+                    }
                 }
             }
         }
@@ -155,29 +180,43 @@ public class JMS {
      * @param queue         Name of the queue from which to read.
      * @return              A map containing the message, as well as the queue name and the JMS Message Type
      * @throws JMSException
+     * @throws DestinationNotConfiguredException
+     * @throws UnsupportedJMSMessageTypeException
      */
-    public Map<String, Object> consumeMessage(String queue) throws JMSException {
+    public Map<String, Object> consumeMessage(String queue) throws Exception {
         synchronized(SYNCH_KEY) {
             JMSQueueMessageConsumer msgConsumer = queueMessageConsumers.get(queue);
+            
+            // To avoid getting a NullPointerException
+            if (msgConsumer == null) {
+                throw new DestinationNotConfiguredException();
+            }
+            
             return msgConsumer.consumeMessage();
         }
     }
     
     /**
      * Called  by the JMSCore, and used to send a message to the given destination
-     * @param message       The message to be sent
+     * @param message       The message to be sent, either a string or a map
      * @param destination   The destination to which the message will be sent, (topic or queue)
      * @param messageFormat The format of the message to be sent
      * @param isQueue       A boolean flag used to get the correct message producer
-     * @throws JMSException
+     * @throws DestinationNotConfiguredException
+     * @throws UnsupportedJMSMessageTypeException
      */
-    public void produceMessage(String message, String destination, String messageFormat, boolean isQueue) throws JMSException {
+    public void produceMessage(Object message, String destination, String messageFormat, boolean isQueue) throws Exception {
         synchronized(SYNCH_KEY) {
             JMSMessageProducer msgProducer;
             if (isQueue) {
                 msgProducer = queueMessageProducers.get(destination);
             } else {
                 msgProducer = topicMessageProducers.get(destination);
+            }
+            
+            // To avoid getting a NullPointerException
+            if (msgProducer == null) {
+                throw new DestinationNotConfiguredException();
             }
             
             msgProducer.produceMessage(message, messageFormat);
