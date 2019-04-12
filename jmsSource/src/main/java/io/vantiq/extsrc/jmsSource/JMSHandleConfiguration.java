@@ -252,7 +252,7 @@ public class JMSHandleConfiguration extends Handler<ExtensionServiceMessage> {
             log.error("Configuration failed. Exception occured while creating JMS Message Consumer or Producer: ", e);
         } catch (FailedJMSSetupException e) {
             log.error("Configuration failed. Excpetion occured while creating JMS Message Consumer or Producer: ", e);
-        }catch (Exception e) {
+        } catch (Exception e) {
             log.error("Configuration failed. Unexpected exception occured while setting up JMS Source: ", e);
             return false;
         }

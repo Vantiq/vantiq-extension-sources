@@ -79,7 +79,7 @@ public class JMS {
      * @throws JMSException
      * @throws FailedJMSSetupException
      */
-    public void createProducersAndConsumers(Map<String, ?> sender, Map<String, ?> receiver, String username, String password) throws Exception {
+    public void createProducersAndConsumers(Map<String, ?> sender, Map<String, ?> receiver, String username, String password) throws NamingException, JMSException, FailedJMSSetupException {
         List<?> senderQueues = null;
         List<?> senderTopics = null;
         List<?> receiverQueues = null;
