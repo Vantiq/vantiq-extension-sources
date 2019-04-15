@@ -21,6 +21,7 @@ import java.util.Map;
 import java.util.Timer;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
@@ -54,14 +55,12 @@ public class ObjectRecognitionCore {
     String targetVantiqServer;
     String modelDirectory;
     
-    
     // vars for source configuration
     Timer                   pollTimer       = null;
+    ExecutorService         pool            = null;
     ImageRetrieverInterface imageRetriever  = null;
     
     ObjectRecognitionConfigHandler objRecConfigHandler;
-    
-    // vars for internal use
     ExtensionWebSocketClient    client      = null;
     NeuralNetInterface          neuralNet   = null;
     SimpleDateFormat            format      = new SimpleDateFormat("yyyy-MM-dd--HH-mm-ss");
@@ -69,19 +68,9 @@ public class ObjectRecognitionCore {
     public String outputDir;
     public String lastQueryFilename;
     
-    // final vars
     final Logger log;
     final static int    RECONNECT_INTERVAL = 5000;
-    
-    /**
-     * Logs http messages at the debug level 
-     */
-    public final Handler<Response> httpHandler = new Handler<Response>() {
-        @Override
-        public void handleMessage(Response message) {
-            log.debug(message.toString());
-        }
-    };
+    final static String SYNCH_KEY = "synchKey";
     
     /**
      * Stops sending messages to the source and tries to reconnect, closing on a failure
@@ -308,24 +297,26 @@ public class ObjectRecognitionCore {
         }
         
         // Send the results of the neural net if it doesn't error out
+        NeuralNetInterface localNeuralNet = null;
         try {
-            synchronized (this) {
+            synchronized (SYNCH_KEY) {
                 if (neuralNet == null) { // Should only happen when close() runs just before sendDataFromImage()
                     return;
                 }
-                NeuralNetResults results = neuralNet.processImage(image);
-                
-                // Don't send any data if using NoProcessor
-                if (!neuralNet.getClass().toString().contains("NoProcessor")) {
-                    // Translate the results from the neural net and image into a message to send back 
-                    Map message = createMapFromResults(imageResults, results);
-                    client.sendNotification(message);
-                }
+                localNeuralNet = neuralNet;
+            }
+            NeuralNetResults results = localNeuralNet.processImage(image);
+            
+            // Don't send any data if using NoProcessor
+            if (!localNeuralNet.getClass().toString().contains("NoProcessor")) {
+                // Translate the results from the neural net and image into a message to send back 
+                Map message = createMapFromResults(imageResults, results);
+                client.sendNotification(message);
             }
         } catch (ImageProcessingException e) {
             log.warn("Could not process image", e);
         } catch (FatalImageException e) {
-            log.error("Image processor of type '" + neuralNet.getClass().getCanonicalName() + "' failed unrecoverably"
+            log.error("Image processor of type '" + localNeuralNet.getClass().getCanonicalName() + "' failed unrecoverably"
                     , e);
             log.error("Stopping");
             stop();
@@ -356,8 +347,9 @@ public class ObjectRecognitionCore {
        }
        
        // Send the results of the neural net, or send a Query error if an exception occurs
+       NeuralNetInterface localNeuralNet = null;
        try {
-           synchronized (this) {
+           synchronized (SYNCH_KEY) {
                if (neuralNet == null) { // Should only happen when close() runs just before sendDataFromImage()
                    if (client != null) {
                        client.sendQueryError(replyAddress, this.getClass().getPackage().getName() + ".closed",
@@ -365,18 +357,19 @@ public class ObjectRecognitionCore {
                    }
                    return;
                }
-               NeuralNetResults results = neuralNet.processImage(image, request);
-               lastQueryFilename = results.getLastFilename();
-               
-               // Send the normal message as the response if requested, otherwise just send the data 
-               if (request.get("sendFullResponse") instanceof Boolean && (Boolean) request.get("sendFullResponse")) {
-                   Map response = createMapFromResults(imageResults, results);
-                   client.sendQueryResponse(200, replyAddress, response);
-               } else if (results.getResults().isEmpty()) {
-                   client.sendQueryResponse(204, replyAddress, new LinkedHashMap<>());
-               } else {
-                   client.sendQueryResponse(200, replyAddress, results.getResults().toArray(new Map[0]));
-               }
+               localNeuralNet = neuralNet;
+           }
+           NeuralNetResults results = localNeuralNet.processImage(image, request);
+           lastQueryFilename = results.getLastFilename();
+           
+           // Send the normal message as the response if requested, otherwise just send the data 
+           if (request.get("sendFullResponse") instanceof Boolean && (Boolean) request.get("sendFullResponse")) {
+               Map response = createMapFromResults(imageResults, results);
+               client.sendQueryResponse(200, replyAddress, response);
+           } else if (results.getResults().isEmpty()) {
+               client.sendQueryResponse(204, replyAddress, new LinkedHashMap<>());
+           } else {
+               client.sendQueryResponse(200, replyAddress, results.getResults().toArray(new Map[0]));
            }
        } catch (ImageProcessingException e) {
            log.warn("Could not process image", e);
@@ -385,7 +378,7 @@ public class ObjectRecognitionCore {
                    "Failed to process the image obtained for reason '{0}'. Exception was {1}. Request was {2}"
                    , new Object[] {e.getMessage(), e, request});
        } catch (FatalImageException e) {
-           log.error("Image processor of type '" + neuralNet.getClass().getCanonicalName() + "' failed unrecoverably"
+           log.error("Image processor of type '" + localNeuralNet.getClass().getCanonicalName() + "' failed unrecoverably"
                    , e);
            log.debug("Request was: " + request);
            client.sendQueryError(replyAddress, FatalImageException.class.getCanonicalName() + ".processing", 
@@ -651,6 +644,10 @@ public class ObjectRecognitionCore {
         if (pollTimer != null) {
             pollTimer.cancel();
             pollTimer = null;
+        }
+        if (pool != null) {
+            pool.shutdownNow();
+            pool = null;
         }
         synchronized (this) {
             if (imageRetriever != null) {
