@@ -9,6 +9,10 @@ import io.vantiq.extsrc.objectRecognition.exception.ImageProcessingException;
  * An interface for the neural net that will process the image and return a List of data representing the objects found.
  */
 public interface NeuralNetInterface2 extends NeuralNetInterface {
+    
+    // Used to access the image timestamp when naming the saved image
+    public static final String IMAGE_TIMESTAMP = "imageTimestamp";
+    
     /**
      * Process the image and return a List of Maps describing the objects identified, and any other data the 
      * implementation deems relevant.

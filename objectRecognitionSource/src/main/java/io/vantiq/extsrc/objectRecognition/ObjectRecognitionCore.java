@@ -309,7 +309,7 @@ public class ObjectRecognitionCore {
         }
         
         Map<String, Object> processingParams = new LinkedHashMap<>();
-        processingParams.put("timestamp", imageResults.getTimestamp());
+        processingParams.put("imageTimestamp", imageResults.getTimestamp());
         
         // Send the results of the neural net if it doesn't error out
         NeuralNetInterface localNeuralNet = null;
@@ -322,8 +322,7 @@ public class ObjectRecognitionCore {
             }
             NeuralNetResults results;
             if (localNeuralNet instanceof NeuralNetInterface2) {
-                NeuralNetInterface2 localNeuralNet2 = (NeuralNetInterface2) localNeuralNet;
-                results = localNeuralNet2.processImage(processingParams, image);
+                results = ((NeuralNetInterface2) localNeuralNet).processImage(processingParams, image);
             } else {
                 results = localNeuralNet.processImage(image);
             }
@@ -368,26 +367,25 @@ public class ObjectRecognitionCore {
        }
        
        Map<String, Object> processingParams = new LinkedHashMap<>();
-       processingParams.put("timestamp", imageResults.getTimestamp());
+       processingParams.put("imageTimestamp", imageResults.getTimestamp());
        
        // Send the results of the neural net, or send a Query error if an exception occurs
        NeuralNetInterface localNeuralNet = null;
        try {
            synchronized (SYNCH_KEY) {
-               if (neuralNet == null) { // Should only happen when close() runs just before sendDataFromImage()
-                   if (client != null) {
-                       client.sendQueryError(replyAddress, this.getClass().getPackage().getName() + ".closed",
-                               "The source closed mid message", null);
-                   }
-                   return;
-               }
                localNeuralNet = neuralNet;
+           }
+           if (localNeuralNet == null) { // Should only happen when close() runs just before sendDataFromImage()
+               if (client != null) {
+                   client.sendQueryError(replyAddress, this.getClass().getPackage().getName() + ".closed",
+                           "The source closed mid message", null);
+               }
+               return;
            }
            
            NeuralNetResults results;
            if (localNeuralNet instanceof NeuralNetInterface2) {
-               NeuralNetInterface2 localNeuralNet2 = (NeuralNetInterface2) localNeuralNet;
-               results = localNeuralNet2.processImage(processingParams, image, request);
+               results = ((NeuralNetInterface2) localNeuralNet).processImage(processingParams, image, request);
            } else {
                results = localNeuralNet.processImage(image, request);
            }
