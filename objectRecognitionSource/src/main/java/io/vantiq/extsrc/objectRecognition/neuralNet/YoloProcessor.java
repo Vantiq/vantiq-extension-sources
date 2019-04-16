@@ -9,6 +9,8 @@
 
 package io.vantiq.extsrc.objectRecognition.neuralNet;
 
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
 
@@ -58,7 +60,7 @@ import io.vantiq.client.Vantiq;
  * 
  * No additional data is given.
  */
-public class YoloProcessor implements NeuralNetInterface {
+public class YoloProcessor implements NeuralNetInterface2 {
     
     Logger log = LoggerFactory.getLogger(this.getClass());
     String pbFile = null;
@@ -77,6 +79,8 @@ public class YoloProcessor implements NeuralNetInterface {
     int saveRate = 1;
     
     ObjectDetector objectDetector = null;
+    
+    private static SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd--HH-mm-ss");
     
     @Override
     public void setupImageProcessing(Map<String, ?> neuralNetConfig, String sourceName, String modelDirectory, String authToken, String server) throws Exception {
@@ -230,17 +234,41 @@ public class YoloProcessor implements NeuralNetInterface {
    }
 
     /**
-     * Run the image through a YOLO net. May save the resulting image depending on the settings.
+     * Deprecated method, should not be used anymore.
      */
     @Override
     public NeuralNetResults processImage(byte[] image) throws ImageProcessingException {
+        log.debug("Deprecated method, should no longer be used.");
+        return processImage(null, image);
+    }
+    
+    /**
+     * Deprecated method, should not be used anymore.
+     */
+    @Override
+    public NeuralNetResults processImage(byte[] image,  Map<String, ?> request) throws ImageProcessingException {
+        log.debug("Deprecated method, should no longer be used.");
+        return processImage(null, image, request);
+    }
+    
+    /**
+     * Run the image through a YOLO net. May save the resulting image depending on the settings.
+     */
+    @Override
+    public NeuralNetResults processImage(Map<String, ?> processingParams, byte[] image) throws ImageProcessingException {
+        Date timestamp;
+        if (processingParams != null) {
+            timestamp = (Date) processingParams.get("timestamp");
+        } else {
+            timestamp = new Date();
+        }
         List<Map<String, ?>> foundObjects;
         NeuralNetResults results = new NeuralNetResults();
         long after;
         long before = System.currentTimeMillis();
 
         try {
-            foundObjects = objectDetector.detect(image);
+            foundObjects = objectDetector.detect(image, timestamp);
         } catch (IllegalArgumentException e) {
             throw new ImageProcessingException(this.getClass().getCanonicalName() + ".invalidImage: " 
                     + "Data to be processed was invalid. Most likely it was not correctly encoded as a jpg.", e);
@@ -264,13 +292,21 @@ public class YoloProcessor implements NeuralNetInterface {
      * Run the image through a YOLO net. May save the resulting image depending on the request.
      */
     @Override
-    public NeuralNetResults processImage(byte[] image, Map<String, ?> request) throws ImageProcessingException {
+    public NeuralNetResults processImage(Map<String, ?> processingParams, byte[] image, Map<String, ?> request) throws ImageProcessingException {
         List<Map<String, ?>> foundObjects;
         NeuralNetResults results = new NeuralNetResults();
         String saveImage = null;
         String outputDir = null;
         String fileName = null;
         Vantiq vantiq = null;
+        
+        Date timestamp;
+        if (processingParams != null) {
+            timestamp = (Date) processingParams.get("timestamp");
+        } else {
+            timestamp = new Date();
+        }
+        fileName = format.format(timestamp);
         
         if (request.get("NNsaveImage") instanceof String) {
             saveImage = (String) request.get("NNsaveImage");
@@ -290,6 +326,10 @@ public class YoloProcessor implements NeuralNetInterface {
                     fileName = (String) request.get("NNfileName");
                 }
             }
+        }
+        
+        if (!fileName.endsWith(".jpg")) {
+            fileName = fileName + ".jpg";
         }
         
         long after;
