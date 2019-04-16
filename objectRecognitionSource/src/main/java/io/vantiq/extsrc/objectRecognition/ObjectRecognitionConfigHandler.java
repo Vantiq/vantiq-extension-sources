@@ -240,7 +240,7 @@ public class ObjectRecognitionConfigHandler extends Handler<ExtensionServiceMess
      * @param neuralNetConfig   The configuration for the neural net
      * @return                  true if the neural net could be created, false otherwise
      */
-    boolean createNeuralNet(Map<String, ?> neuralNetConfig ) {
+    boolean createNeuralNet(Map<String, ?> neuralNetConfig) {
         // Null the last config so if it fails it will know the last failed
         lastNeuralNet = null;
         

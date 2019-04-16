@@ -40,6 +40,7 @@ import io.vantiq.extsrc.objectRecognition.exception.ImageProcessingException;
 import io.vantiq.extsrc.objectRecognition.imageRetriever.ImageRetrieverInterface;
 import io.vantiq.extsrc.objectRecognition.imageRetriever.ImageRetrieverResults;
 import io.vantiq.extsrc.objectRecognition.neuralNet.NeuralNetInterface;
+import io.vantiq.extsrc.objectRecognition.neuralNet.NeuralNetInterface2;
 import io.vantiq.extsrc.objectRecognition.neuralNet.NeuralNetResults;
 import io.vantiq.extsrc.objectRecognition.query.DateRangeFilter;
 
@@ -306,6 +307,9 @@ public class ObjectRecognitionCore {
             return;
         }
         
+        Map<String, Object> processingParams = new LinkedHashMap<>();
+        processingParams.put("timestamp", imageResults.getTimestamp());
+        
         // Send the results of the neural net if it doesn't error out
         NeuralNetInterface localNeuralNet = null;
         try {
@@ -315,7 +319,13 @@ public class ObjectRecognitionCore {
                 }
                 localNeuralNet = neuralNet;
             }
-            NeuralNetResults results = localNeuralNet.processImage(image);
+            NeuralNetResults results;
+            if (localNeuralNet instanceof NeuralNetInterface2) {
+                NeuralNetInterface2 localNeuralNet2 = (NeuralNetInterface2) localNeuralNet;
+                results = localNeuralNet2.processImage(processingParams, image);
+            } else {
+                results = localNeuralNet.processImage(image);
+            }
             
             // Don't send any data if using NoProcessor
             if (!localNeuralNet.getClass().toString().contains("NoProcessor")) {
@@ -356,6 +366,9 @@ public class ObjectRecognitionCore {
            return;
        }
        
+       Map<String, Object> processingParams = new LinkedHashMap<>();
+       processingParams.put("timestamp", imageResults.getTimestamp());
+       
        // Send the results of the neural net, or send a Query error if an exception occurs
        NeuralNetInterface localNeuralNet = null;
        try {
@@ -369,7 +382,14 @@ public class ObjectRecognitionCore {
                }
                localNeuralNet = neuralNet;
            }
-           NeuralNetResults results = localNeuralNet.processImage(image, request);
+           
+           NeuralNetResults results;
+           if (localNeuralNet instanceof NeuralNetInterface2) {
+               NeuralNetInterface2 localNeuralNet2 = (NeuralNetInterface2) localNeuralNet;
+               results = localNeuralNet2.processImage(processingParams, image, request);
+           } else {
+               results = localNeuralNet.processImage(image, request);
+           }
            lastQueryFilename = results.getLastFilename();
            
            // Send the normal message as the response if requested, otherwise just send the data 
