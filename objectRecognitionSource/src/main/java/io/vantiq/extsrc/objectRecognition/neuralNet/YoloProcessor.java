@@ -257,8 +257,8 @@ public class YoloProcessor implements NeuralNetInterface2 {
     @Override
     public NeuralNetResults processImage(Map<String, ?> processingParams, byte[] image) throws ImageProcessingException {
         Date timestamp;
-        if (processingParams != null) {
-            timestamp = (Date) processingParams.get("timestamp");
+        if (processingParams != null && processingParams.get(IMAGE_TIMESTAMP) instanceof Date) {
+            timestamp = (Date) processingParams.get(IMAGE_TIMESTAMP);
         } else {
             timestamp = new Date();
         }
@@ -301,8 +301,8 @@ public class YoloProcessor implements NeuralNetInterface2 {
         Vantiq vantiq = null;
         
         Date timestamp;
-        if (processingParams != null) {
-            timestamp = (Date) processingParams.get("timestamp");
+        if (processingParams != null && processingParams.get(IMAGE_TIMESTAMP) instanceof Date) {
+            timestamp = (Date) processingParams.get(IMAGE_TIMESTAMP);
         } else {
             timestamp = new Date();
         }
