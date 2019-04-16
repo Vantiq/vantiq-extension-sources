@@ -52,6 +52,7 @@ public class ObjectDetector {
     private int saveRate = 0;
     private Boolean labelImage;
     private int frameCount = 0;
+    int fileCount = 0; // Used for saving files with same name
     private float threshold;
     private Vantiq vantiq = null;
     private String sourceName = null;
@@ -163,15 +164,20 @@ public class ObjectDetector {
      *              identification is accurate, and a {@code location} containing the coordinates for the
      *              {@code top},{@code left}, {@code bottom}, and {@code right} edges of the bounding box for the object.
      */
-    public List<Map<String, ?>> detect(final byte[] image) {
+    public List<Map<String, ?>> detect(final byte[] image, Date timestamp) {
         try (Tensor<Float> normalizedImage = normalizeImage(image)) {
-            Date now = new Date(); // Saves the time before
             List<Recognition> recognitions = YOLOClassifier.getInstance(threshold, anchorArray, frameSize).classifyImage(executeYOLOGraph(normalizedImage), labels);
             BufferedImage buffImage = imageUtil.createImageFromBytes(image);
             
             // Saves an image every saveRate frames
             if (imageUtil.saveImage && ++frameCount >= saveRate) {
-                String fileName = format.format(now) + ".jpg";
+                String fileName = format.format(timestamp);
+                if (lastFilename != null && lastFilename.contains(fileName)) {
+                    fileName = fileName + "(" + ++fileCount + ").jpg";
+                } else {
+                    fileName = fileName + ".jpg";
+                    fileCount = 0;
+                }
                 lastFilename = fileName;
                 if (labelImage) {
                     buffImage = imageUtil.labelImage(buffImage, recognitions);
@@ -211,17 +217,12 @@ public class ObjectDetector {
             BufferedImage buffImage = imageUtil.createImageFromBytes(image);
             
             // Saves an image if requested
-            if (outputDir != null || vantiq != null || (fileName != null && this.imageUtil.saveImage)) {
+            if (outputDir != null || vantiq != null || this.imageUtil.saveImage) {
                 ImageUtil imageUtil = new ImageUtil();
                 imageUtil.outputDir = outputDir;
                 imageUtil.vantiq = vantiq;
                 imageUtil.sourceName = sourceName;
                 imageUtil.frameSize = frameSize;
-                if (fileName == null) {
-                    fileName = format.format(now) + ".jpg";
-                } else if (!fileName.endsWith(".jpg") && !fileName.endsWith(".jpeg")) {
-                    fileName += ".jpg";
-                }
                 lastFilename = fileName;
                 if (labelImage) {
                     buffImage = imageUtil.labelImage(buffImage, recognitions);
