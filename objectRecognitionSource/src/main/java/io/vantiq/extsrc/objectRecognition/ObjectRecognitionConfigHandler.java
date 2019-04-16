@@ -14,8 +14,9 @@ import java.lang.reflect.InvocationTargetException;
 import java.util.Map;
 import java.util.Timer;
 import java.util.TimerTask;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -325,7 +326,7 @@ public class ObjectRecognitionConfigHandler extends Handler<ExtensionServiceMess
     private boolean prepareCommunication(Map<String, ?> general) {
         int polling = -1; // initializing to an invalid input
         boolean queryable = false;
-        source.pool = Executors.newFixedThreadPool(5);
+        source.pool = new ThreadPoolExecutor(5, 5, 0l, TimeUnit.MILLISECONDS, new LinkedBlockingQueue<Runnable>(10));
         TimerTask task = new TimerTask() {
             @Override
             public void run() {
