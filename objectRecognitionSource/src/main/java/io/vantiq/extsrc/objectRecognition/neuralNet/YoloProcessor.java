@@ -328,8 +328,8 @@ public class YoloProcessor implements NeuralNetInterface2 {
             }
         }
         
-        if (!fileName.endsWith(".jpg")) {
-            fileName = fileName + ".jpg";
+        if (!fileName.endsWith(".jpg") && !fileName.endsWith(".jpeg")) {
+            fileName += ".jpg";
         }
         
         long after;
