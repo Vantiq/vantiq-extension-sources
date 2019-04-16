@@ -422,8 +422,8 @@ public class YoloProcessor extends NeuralNetUtils implements NeuralNetInterface2
             image = cropImage(image, this.x, this.y, this.w, this.h);
         }
         
-        if (!fileName.endsWith(".jpg")) {
-            fileName = fileName + ".jpg";
+        if (!fileName.endsWith(".jpg") && !fileName.endsWith(".jpeg")) {
+            fileName += ".jpg";
         }
         
         long after;
