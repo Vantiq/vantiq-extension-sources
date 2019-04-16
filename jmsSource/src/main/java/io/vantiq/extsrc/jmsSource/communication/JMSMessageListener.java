@@ -8,13 +8,8 @@
 
 package io.vantiq.extsrc.jmsSource.communication;
 
-import java.lang.reflect.Constructor;
-import java.lang.reflect.InvocationTargetException;
-import java.util.Enumeration;
-import java.util.LinkedHashMap;
 import java.util.Map;
 
-import javax.jms.BytesMessage;
 import javax.jms.Connection;
 import javax.jms.ConnectionFactory;
 import javax.jms.Destination;
@@ -22,11 +17,7 @@ import javax.jms.JMSException;
 import javax.jms.Message;
 import javax.jms.MessageConsumer;
 import javax.jms.MessageListener;
-import javax.jms.MapMessage;
-import javax.jms.ObjectMessage;
-import javax.jms.StreamMessage;
 import javax.jms.Session;
-import javax.jms.TextMessage;
 import javax.naming.Context;
 import javax.naming.NamingException;
 
@@ -35,7 +26,6 @@ import org.slf4j.LoggerFactory;
 
 import io.vantiq.extjsdk.ExtensionWebSocketClient;
 import io.vantiq.extsrc.jmsSource.communication.messageHandler.MessageHandlerInterface;
-import io.vantiq.extsrc.jmsSource.exceptions.FailedInterfaceSetupException;
 import io.vantiq.extsrc.jmsSource.exceptions.FailedJMSSetupException;
 import io.vantiq.extsrc.jmsSource.exceptions.UnsupportedJMSMessageTypeException;
 
@@ -61,47 +51,10 @@ public class JMSMessageListener implements MessageListener {
     public static final String TEXT = "TextMessage";
     public static final String MAP = "MapMessage";
     
-    public JMSMessageListener(Context context, ExtensionWebSocketClient client, String messageHandlerName) throws FailedInterfaceSetupException {
+    public JMSMessageListener(Context context, ExtensionWebSocketClient client, MessageHandlerInterface messageHandler) {
         this.context = context;
         this.client = client;
-        Class<?> clazz = null;
-        Constructor<?> constructor = null;
-        Object object = null;
-        
-        // Try to find the intended class, fail if it can't be found
-        try {
-            clazz = Class.forName(messageHandlerName);
-        } catch (ClassNotFoundException e) {
-            log.error("Could not find requested class '" + messageHandlerName + "'", e);
-            throw new FailedInterfaceSetupException();
-        }
-        
-        // Try to find a public no-argument constructor for the class, fail if none exists
-        try {
-            constructor = clazz.getConstructor();
-        } catch (NoSuchMethodException | SecurityException e) {
-            log.error("Could not find public no argument constructor for '" + messageHandlerName + "'", e);
-            throw new FailedInterfaceSetupException();
-        }
-
-        // Try to create an instance of the class, fail if it can't
-        try {
-            object = constructor.newInstance();
-        } catch (InstantiationException | IllegalAccessException | IllegalArgumentException
-                | InvocationTargetException e) {
-            log.error("Error occurred trying to instantiate class '" + messageHandlerName + "'", e);
-            throw new FailedInterfaceSetupException();
-        }
-        
-        // Fail if the created object is not a MessageHandlerInterface
-        if ( !(object instanceof MessageHandlerInterface) )
-        {
-            log.error("Class '" + messageHandlerName + "' is not an implementation of MessageHandlerInterface");
-            throw new FailedInterfaceSetupException();
-        }
-        
-        // Interface was successfully instantiated and can be used to handle messages
-        messageHandler = (MessageHandlerInterface) object;
+        this.messageHandler = messageHandler;
     }
     
     /**

@@ -8,6 +8,8 @@
 
 package io.vantiq.extsrc.jmsSource;
 
+import java.lang.reflect.Constructor;
+import java.lang.reflect.InvocationTargetException;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -24,6 +26,7 @@ import org.slf4j.LoggerFactory;
 import io.vantiq.extjsdk.ExtensionWebSocketClient;
 
 import io.vantiq.extsrc.jmsSource.communication.*;
+import io.vantiq.extsrc.jmsSource.communication.messageHandler.MessageHandlerInterface;
 import io.vantiq.extsrc.jmsSource.exceptions.DestinationNotConfiguredException;
 import io.vantiq.extsrc.jmsSource.exceptions.FailedInterfaceSetupException;
 import io.vantiq.extsrc.jmsSource.exceptions.FailedJMSSetupException;
@@ -36,7 +39,7 @@ import io.vantiq.extsrc.jmsSource.exceptions.UnsupportedJMSMessageTypeException;
  */
 public class JMS {
     
-    private static final String MESSAGE_HANDLER_FQCN = "io.vantiq.extsrc.jmsSource.communication.messageHandler.DefaultMessageHandler";
+    private static final String MESSAGE_HANDLER_FQCN = "io.vantiq.extsrc.jmsSource.communication.messageHandler.BaseMessageHandler";
     private static final String SYNCH_KEY = "synchKey";
     
     Logger log  = LoggerFactory.getLogger(this.getClass().getCanonicalName());
@@ -49,6 +52,8 @@ public class JMS {
     Map<String, JMSMessageListener>         queueMessageListener    = new LinkedHashMap<String, JMSMessageListener>();
     Map<String, JMSMessageProducer>         topicMessageProducers   = new LinkedHashMap<String, JMSMessageProducer>();
     Map<String, JMSMessageListener>         topicMessageConsumers   = new LinkedHashMap<String, JMSMessageListener>();
+    
+    Map<String, MessageHandlerInterface>    messageHandlers         = new LinkedHashMap<String, MessageHandlerInterface>();
     
     public JMS(ExtensionWebSocketClient client, String connectionFactory) {
         this.client = client;
@@ -68,6 +73,48 @@ public class JMS {
         context = new InitialContext(properties);
     }
     
+    public void acquireMessageHandler(String messageHandlerName) throws FailedInterfaceSetupException {
+        Class<?> clazz = null;
+        Constructor<?> constructor = null;
+        Object object = null;
+        
+        // Try to find the intended class, fail if it can't be found
+        try {
+            clazz = Class.forName(messageHandlerName);
+        } catch (ClassNotFoundException e) {
+            log.error("Could not find requested class '" + messageHandlerName + "'", e);
+            throw new FailedInterfaceSetupException();
+        }
+        
+        // Try to find a public no-argument constructor for the class, fail if none exists
+        try {
+            constructor = clazz.getConstructor();
+        } catch (NoSuchMethodException | SecurityException e) {
+            log.error("Could not find public no argument constructor for '" + messageHandlerName + "'", e);
+            throw new FailedInterfaceSetupException();
+        }
+
+        // Try to create an instance of the class, fail if it can't
+        try {
+            object = constructor.newInstance();
+        } catch (InstantiationException | IllegalAccessException | IllegalArgumentException
+                | InvocationTargetException e) {
+            log.error("Error occurred trying to instantiate class '" + messageHandlerName + "'", e);
+            throw new FailedInterfaceSetupException();
+        }
+        
+        // Fail if the created object is not a MessageHandlerInterface
+        if ( !(object instanceof MessageHandlerInterface) )
+        {
+            log.error("Class '" + messageHandlerName + "' is not an implementation of MessageHandlerInterface");
+            throw new FailedInterfaceSetupException();
+        }
+        
+        // Interface was successfully instantiated and can be used to handle messages
+        MessageHandlerInterface messageHandler = (MessageHandlerInterface) object;
+        messageHandlers.put("base", messageHandler);
+    }
+    
     /**
      * Method used to create all the Message Consumers/Producers/Listeners for the queues and topics specified 
      * in the source configuration
@@ -85,6 +132,14 @@ public class JMS {
         List<?> receiverQueues = null;
         List<?> receiverQueueListeners = null;
         List<?> receiverTopics = null;
+        
+        
+        // Temporary way to initialize message handler. Will change once we allow for user-created message handlers.
+        try {
+            acquireMessageHandler(MESSAGE_HANDLER_FQCN);
+        } catch (FailedInterfaceSetupException e) {
+            log.error("Unable to create a Message Handler with name: " + MESSAGE_HANDLER_FQCN);
+        }
         
         // Get the queues and topics from the sender configuration
         if (sender.get("queues") instanceof List) {
@@ -111,65 +166,45 @@ public class JMS {
             if (senderQueues != null) {
                 for (int i = 0; i < senderQueues.size(); i++) {
                     String queue = (String) senderQueues.get(i);
-                    try {
-                        JMSMessageProducer msgProducer = new JMSMessageProducer(context, MESSAGE_HANDLER_FQCN);
-                        msgProducer.open(connectionFactory, queue, true, username, password);
-                        queueMessageProducers.put(queue, msgProducer);
-                    } catch (FailedInterfaceSetupException e) {
-                        log.error("Unable to create a message producer for queue: " + queue);
-                    }
+                    JMSMessageProducer msgProducer = new JMSMessageProducer(context, messageHandlers.get("base"));
+                    msgProducer.open(connectionFactory, queue, true, username, password);
+                    queueMessageProducers.put(queue, msgProducer);
                 }
             }
             
             if (senderTopics != null) {
                 for (int i = 0; i < senderTopics.size(); i++) {
                     String topic = (String) senderTopics.get(i);
-                    try {
-                        JMSMessageProducer msgProducer = new JMSMessageProducer(context, MESSAGE_HANDLER_FQCN);
-                        msgProducer.open(connectionFactory, topic, false, username, password);
-                        topicMessageProducers.put(topic, msgProducer);
-                    } catch (FailedInterfaceSetupException e) {
-                        log.error("Unable to create a message producer for topic: " + topic);
-                    }
+                    JMSMessageProducer msgProducer = new JMSMessageProducer(context, messageHandlers.get("base"));
+                    msgProducer.open(connectionFactory, topic, false, username, password);
+                    topicMessageProducers.put(topic, msgProducer);
                 }
             }
             
             if (receiverQueues != null) {
                 for (int i = 0; i < receiverQueues.size(); i++) {
                     String queue = (String) receiverQueues.get(i);
-                    try {
-                        JMSQueueMessageConsumer msgConsumer = new JMSQueueMessageConsumer(context, MESSAGE_HANDLER_FQCN);
-                        msgConsumer.open(connectionFactory, queue, username, password);
-                        queueMessageConsumers.put(queue, msgConsumer);
-                    } catch (FailedInterfaceSetupException e) {
-                        log.error("Unable to create a message consumer for queue: " + queue);
-                    }
+                    JMSQueueMessageConsumer msgConsumer = new JMSQueueMessageConsumer(context, messageHandlers.get("base"));
+                    msgConsumer.open(connectionFactory, queue, username, password);
+                    queueMessageConsumers.put(queue, msgConsumer);
                 }
             }
             
             if (receiverQueueListeners != null) {
                 for (int i = 0; i < receiverQueueListeners.size(); i++) {
                     String queue = (String) receiverQueueListeners.get(i);
-                    try {
-                        JMSMessageListener msgListener = new JMSMessageListener(context, client, MESSAGE_HANDLER_FQCN);
-                        msgListener.open(connectionFactory, queue, true, username, password);
-                        queueMessageListener.put(queue, msgListener);
-                    } catch (FailedInterfaceSetupException e) {
-                        log.error("Unable to create a message listener for queue: " + queue);
-                    }
+                    JMSMessageListener msgListener = new JMSMessageListener(context, client, messageHandlers.get("base"));
+                    msgListener.open(connectionFactory, queue, true, username, password);
+                    queueMessageListener.put(queue, msgListener);
                 }
             }
             
             if (receiverTopics != null) {
                 for (int i = 0; i < receiverTopics.size(); i++) {
                     String topic = (String) receiverTopics.get(i);
-                    try {
-                        JMSMessageListener msgListener = new JMSMessageListener(context, client, MESSAGE_HANDLER_FQCN);
-                        msgListener.open(connectionFactory, topic, false, username, password);
-                        topicMessageConsumers.put(topic, msgListener);
-                    } catch (FailedInterfaceSetupException e) {
-                        log.error("Unable to create a message listener for topic: " + topic);
-                    }
+                    JMSMessageListener msgListener = new JMSMessageListener(context, client, messageHandlers.get("base"));
+                    msgListener.open(connectionFactory, topic, false, username, password);
+                    topicMessageConsumers.put(topic, msgListener);
                 }
             }
         }

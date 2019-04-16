@@ -19,7 +19,7 @@ import io.vantiq.extsrc.jmsSource.exceptions.UnsupportedJMSMessageTypeException;
  * The default implementation of the MessageHandlerInterface. Setup to handle 3 JMS Message Types: Message, TextMessage, 
  * and MapMessage. All other message types will throw exceptions which are handled accordingly.
  */
-public class DefaultMessageHandler implements MessageHandlerInterface {
+public class BaseMessageHandler implements MessageHandlerInterface {
     
     public static final String MESSAGE = "Message";
     public static final String TEXT = "TextMessage";
