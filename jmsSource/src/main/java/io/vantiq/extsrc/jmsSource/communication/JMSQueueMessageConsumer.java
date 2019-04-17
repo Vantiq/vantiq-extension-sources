@@ -41,13 +41,7 @@ public class JMSQueueMessageConsumer {
     private MessageConsumer consumer;
     
     private MessageHandlerInterface messageHandler;
-    
-    private static final String SYNCH_KEY = "synchKey";
-    
-    public static final String MESSAGE = "Message";
-    public static final String TEXT = "TextMessage";
-    public static final String MAP = "MapMessage";
-    
+        
     public JMSQueueMessageConsumer(Context context, MessageHandlerInterface messageHandler) {
         this.context = context;
         this.messageHandler = messageHandler;
@@ -63,37 +57,35 @@ public class JMSQueueMessageConsumer {
      * @throws JMSException
      * @throws FailedJMSSetupException
      */
-    public void open(String connectionFactoryName, String queue, String username, String password) throws NamingException, JMSException, FailedJMSSetupException {
-        synchronized (SYNCH_KEY) {
-            this.destName = queue;
-            
-            connectionFactory = (ConnectionFactory) context.lookup(connectionFactoryName);
-            if (connectionFactory == null) {
-                throw new FailedJMSSetupException("The Connection Factory named " + connectionFactoryName + " was unable to be found.");
-            }
-            
-            connection = connectionFactory.createConnection(username, password);
-            if (connection == null) {
-                throw new FailedJMSSetupException("A Connection was unable to be created using the Connection Factory named " + connectionFactoryName + ".");
-            }
-            
-            session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
-            if (session == null) {
-                throw new FailedJMSSetupException("A Session was unable to be created.");
-            }
-            
-            destination = session.createQueue(queue);
-            if (destination == null) {
-                throw new FailedJMSSetupException("A Destination with name " + queue + " was unable to be created.");
-            }
-            
-            consumer = session.createConsumer(destination);
-            if (consumer == null) {
-                throw new FailedJMSSetupException("A Message Producer for the Destination with name " + queue + " was unable to be created.");
-            }
-            
-            connection.start();
+    public synchronized void open(String connectionFactoryName, String queue, String username, String password) throws NamingException, JMSException, FailedJMSSetupException {
+        this.destName = queue;
+        
+        connectionFactory = (ConnectionFactory) context.lookup(connectionFactoryName);
+        if (connectionFactory == null) {
+            throw new FailedJMSSetupException("The Connection Factory named " + connectionFactoryName + " was unable to be found.");
         }
+        
+        connection = connectionFactory.createConnection(username, password);
+        if (connection == null) {
+            throw new FailedJMSSetupException("A Connection was unable to be created using the Connection Factory named " + connectionFactoryName + ".");
+        }
+        
+        session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
+        if (session == null) {
+            throw new FailedJMSSetupException("A Session was unable to be created.");
+        }
+        
+        destination = session.createQueue(queue);
+        if (destination == null) {
+            throw new FailedJMSSetupException("A Destination with name " + queue + " was unable to be created.");
+        }
+        
+        consumer = session.createConsumer(destination);
+        if (consumer == null) {
+            throw new FailedJMSSetupException("A Message Producer for the Destination with name " + queue + " was unable to be created.");
+        }
+        
+        connection.start();
     }
     
     /**
@@ -103,21 +95,17 @@ public class JMSQueueMessageConsumer {
      * @throws UnsupportedJMSMessageTypeException
      */
     public Map<String, Object> consumeMessage() throws Exception {
-        synchronized (SYNCH_KEY) {
-            Message message = consumer.receive(1000);
-            return messageHandler.parseIncomingMessage(message, destName);
-        }
+        Message message = consumer.receive(1000);
+        return messageHandler.parseIncomingMessage(message, destName);
     }
     
     /**
      * A method used to close the JMS Session and Connection
      * @throws JMSException
      */
-    public void close() throws JMSException {
-        synchronized (SYNCH_KEY) {
-            // Closing the session and connection
-            session.close();
-            connection.close();
-        }
+    public synchronized void close() throws JMSException {
+        // Closing the session and connection
+        session.close();
+        connection.close();
     }
 }

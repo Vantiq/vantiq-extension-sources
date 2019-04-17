@@ -10,6 +10,7 @@ package io.vantiq.extsrc.jmsSource;
 
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -32,6 +33,9 @@ import io.vantiq.extsrc.jmsSource.exceptions.UnsupportedJMSMessageTypeException;
  */
 public class JMSCore {
 
+    // Map used to make sure only one InitialContextFactory is being used
+    Map<String, String> initialContextMap = new ConcurrentHashMap<String, String>();
+    
     // Variables for server configuration
     String sourceName;
     String authToken;
@@ -50,7 +54,7 @@ public class JMSCore {
     final static int RECONNECT_INTERVAL = 5000;
     final static int CONNECTION_TIMEOUT = 10;
     
-    private static final String SYNCH_KEY = "synchKey";
+    private static final String SYNCH_LOCK = "synchLock";
 
     /**
      * Stops sending messages to the source and tries to reconnect, closing on a failure
@@ -164,7 +168,15 @@ public class JMSCore {
      */
     public void sendJMSMessage(ExtensionServiceMessage message) {
         Map<String, ?> request = (Map<String, ?>) message.getObject();
-        if (jms == null) {
+        
+        // Get local copy of JMS
+        JMS localJMS;
+        synchronized (SYNCH_LOCK) {
+            localJMS = jms;
+        }
+        
+        // Make sure JMS is safe to use (has not been closed)
+        if (localJMS == null) {
             log.error("JMS connection closed before operation could complete");
         } else {
             Object msg;
@@ -206,9 +218,7 @@ public class JMSCore {
             
             // Sending the message to the appropriate destination
             try {
-                synchronized (SYNCH_KEY) {
-                    jms.produceMessage(msg, dest, msgFormat, isQueue);
-                }
+                localJMS.produceMessage(msg, dest, msgFormat, isQueue);
             } catch (JMSException e) {
                 log.error("An error occured when attempting to send the given message.", e);
             } catch (DestinationNotConfiguredException e) {
@@ -231,7 +241,15 @@ public class JMSCore {
     public void readQueueMessage(ExtensionServiceMessage message) {
       Map<String, ?> request = (Map<String, ?>) message.getObject();
       String replyAddress = ExtensionServiceMessage.extractReplyAddress(message);
-      if (jms == null) {
+      
+      // Get local copy of JMS
+      JMS localJMS;
+      synchronized (SYNCH_LOCK) {
+          localJMS = jms;
+      }
+      
+      // Make sure JMS is safe to use (has not been closed)
+      if (localJMS == null) {
           if (client != null) {
               client.sendQueryError(replyAddress, this.getClass().getName() + ".closed",
                       "JMS connection closed before operation could complete.", null);
@@ -243,10 +261,8 @@ public class JMSCore {
           if (request.get("queue") instanceof String) {
               String queue = (String) request.get("queue");
               try {
-                  synchronized (SYNCH_KEY) {
-                      Map<String, Object> messageMap = jms.consumeMessage(queue);
-                      client.sendQueryResponse(200, replyAddress, messageMap);
-                  }
+                  Map<String, Object> messageMap = localJMS.consumeMessage(queue);
+                  client.sendQueryResponse(200, replyAddress, messageMap);
               } catch (JMSException e) {
                   client.sendQueryError(replyAddress, JMSException.class.getCanonicalName(), 
                           "Failed to read message from the queue: " + queue + ". Error message was: " + e.getMessage(), null);
@@ -274,7 +290,7 @@ public class JMSCore {
      * Closes all resources held by this program except for the {@link ExtensionWebSocketClient}.
      */
     public void close() {
-        synchronized (SYNCH_KEY) {
+        synchronized (SYNCH_LOCK) {
             if (jms != null) {
                 jms.close();
                 jms = null;

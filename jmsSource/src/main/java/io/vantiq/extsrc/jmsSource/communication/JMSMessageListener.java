@@ -41,16 +41,9 @@ public class JMSMessageListener implements MessageListener {
     private Connection connection;
     private Session session;
     private Destination destination;
-    private MessageConsumer consumer;
     
     private MessageHandlerInterface messageHandler;
-    
-    private static final String SYNCH_KEY = "synchKey";
-    
-    public static final String MESSAGE = "Message";
-    public static final String TEXT = "TextMessage";
-    public static final String MAP = "MapMessage";
-    
+        
     public JMSMessageListener(Context context, ExtensionWebSocketClient client, MessageHandlerInterface messageHandler) {
         this.context = context;
         this.client = client;
@@ -68,42 +61,40 @@ public class JMSMessageListener implements MessageListener {
      * @throws JMSException
      * @throws FailedJMSSetupException
      */
-    public void open(String connectionFactoryName, String dest, boolean isQueue, String username, String password) throws NamingException, JMSException, FailedJMSSetupException {
-        synchronized (SYNCH_KEY) {
-            this.destName = dest;
-            
-            connectionFactory = (ConnectionFactory) context.lookup(connectionFactoryName);
-            if (connectionFactory == null) {
-                throw new FailedJMSSetupException("The Connection Factory named " + connectionFactoryName + " was unable to be found.");
-            }
-            
-            connection = connectionFactory.createConnection(username, password);
-            if (connection == null) {
-                throw new FailedJMSSetupException("A Connection was unable to be created using the Connection Factory named " + connectionFactoryName + ".");
-            }
-            
-            session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
-            if (session == null) {
-                throw new FailedJMSSetupException("A Session was unable to be created.");
-            }
-            
-            if (isQueue) {
-                destination = session.createQueue(dest);
-            } else {
-                destination = session.createTopic(dest);
-            }
-            if (destination == null) {
-                throw new FailedJMSSetupException("A Destination with name " + dest + " was unable to be created.");
-            }
-            
-            consumer = session.createConsumer(destination);
-            if (consumer == null) {
-                throw new FailedJMSSetupException("A Message Producer for the Destination with name " + dest + " was unable to be created.");
-            }
-            
-            consumer.setMessageListener(this);
-            connection.start();
+    public synchronized void open(String connectionFactoryName, String dest, boolean isQueue, String username, String password) throws NamingException, JMSException, FailedJMSSetupException {
+        this.destName = dest;
+        
+        connectionFactory = (ConnectionFactory) context.lookup(connectionFactoryName);
+        if (connectionFactory == null) {
+            throw new FailedJMSSetupException("The Connection Factory named " + connectionFactoryName + " was unable to be found.");
         }
+        
+        connection = connectionFactory.createConnection(username, password);
+        if (connection == null) {
+            throw new FailedJMSSetupException("A Connection was unable to be created using the Connection Factory named " + connectionFactoryName + ".");
+        }
+        
+        session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
+        if (session == null) {
+            throw new FailedJMSSetupException("A Session was unable to be created.");
+        }
+        
+        if (isQueue) {
+            destination = session.createQueue(dest);
+        } else {
+            destination = session.createTopic(dest);
+        }
+        if (destination == null) {
+            throw new FailedJMSSetupException("A Destination with name " + dest + " was unable to be created.");
+        }
+        
+        MessageConsumer consumer = session.createConsumer(destination);
+        if (consumer == null) {
+            throw new FailedJMSSetupException("A Message Producer for the Destination with name " + dest + " was unable to be created.");
+        }
+        
+        consumer.setMessageListener(this);
+        connection.start();
     }
     
     /**
@@ -128,11 +119,9 @@ public class JMSMessageListener implements MessageListener {
      * A method used to close the JMS Session and Connection
      * @throws JMSException
      */
-    public void close() throws JMSException {
-        synchronized (SYNCH_KEY) {
-            // Closing the session and connection
-            session.close();
-            connection.close();
-        }
+    public synchronized void close() throws JMSException {
+        // Closing the session and connection
+        session.close();
+        connection.close();
     }
 }

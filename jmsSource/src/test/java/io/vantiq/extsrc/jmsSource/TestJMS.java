@@ -82,8 +82,7 @@ public class TestJMS extends TestJMSBase {
     
     @Test
     public void testProduceAndConsumeQueueMessage() {
-        assumeTrue(jmsDriverLoc != null && testJMSURL != null && testJMSConnectionFactory != null && testJMSInitialContext != null
-                && testJMSQueue != null);
+        checkAllJMSProperties(true);
         
         // Setting up sender configuration to initialize the JMS Class
         Map<String, List> sender = new LinkedHashMap<>();
@@ -131,13 +130,13 @@ public class TestJMS extends TestJMSBase {
     
     @Test
     public void testTopicMessageListener() throws InterruptedException {
-        checkAllJMSProperties();
+        checkAllJMSProperties(false);
         testMessageListenerHelper("topic", testJMSTopic);
     }
     
     @Test
     public void testQueueMessageListener() throws InterruptedException {
-        checkAllJMSProperties();
+        checkAllJMSProperties(false);
         testMessageListenerHelper("queue", testJMSQueue);
     }
     
@@ -172,7 +171,7 @@ public class TestJMS extends TestJMSBase {
     
     @Test
     public void testVantiqQuery() {
-        checkAllJMSProperties();
+        checkAllJMSProperties(false);
         
         // Check that Source and Type do not already exist in namespace, and skip test if they do
         assumeFalse(checkSourceExists());
@@ -223,7 +222,7 @@ public class TestJMS extends TestJMSBase {
     
     @Test
     public void testOddballJMSMessageTypes() {
-        checkAllJMSProperties();
+        checkAllJMSProperties(false);
         
         // Check that Source and Type do not already exist in namespace, and skip test if they do
         assumeFalse(checkSourceExists());
@@ -343,9 +342,14 @@ public class TestJMS extends TestJMSBase {
      
     // ================================================= Helper functions =================================================
     
-    public static void checkAllJMSProperties() {
-        assumeTrue(jmsDriverLoc != null && testJMSURL != null && testJMSConnectionFactory != null && testJMSInitialContext != null
-                && testJMSQueue != null && testJMSTopic != null && testAuthToken != null && testVantiqServer != null);
+    public static void checkAllJMSProperties(boolean onlyQueue) {
+        if (onlyQueue) {
+            assumeTrue(jmsDriverLoc != null && testJMSURL != null && testJMSConnectionFactory != null && testJMSInitialContext != null
+                    && testJMSQueue != null);
+        } else {
+            assumeTrue(jmsDriverLoc != null && testJMSURL != null && testJMSConnectionFactory != null && testJMSInitialContext != null
+                    && testJMSQueue != null && testJMSTopic != null && testAuthToken != null && testVantiqServer != null);
+        }
     }
     
     public static boolean checkSourceExists() {

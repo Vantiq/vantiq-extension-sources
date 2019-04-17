@@ -57,8 +57,7 @@ public class JMSMain {
         } else if (args != null && args.length == 1) {
             config = obtainServerConfig(args[0]);
         } else {
-            log.error("An incorrect number of command line arguments were specified. There can only be exactly 1 command line"
-                    + " argument, or exactly 0 command line arguments.");
+            log.error("Wrong number of arguments\n" + "Usage: <yourProgramInvocation> [localConfigFile]");
             exit(NO_CONFIG_EXIT);
         }
 

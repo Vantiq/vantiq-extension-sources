@@ -10,10 +10,10 @@ package io.vantiq.extsrc.jmsSource;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
+import java.util.concurrent.ConcurrentHashMap;
 
 import javax.jms.JMSException;
 import javax.naming.Context;
@@ -39,22 +39,19 @@ import io.vantiq.extsrc.jmsSource.exceptions.UnsupportedJMSMessageTypeException;
  */
 public class JMS {
     
-    private static final String MESSAGE_HANDLER_FQCN = "io.vantiq.extsrc.jmsSource.communication.messageHandler.BaseMessageHandler";
-    private static final String SYNCH_KEY = "synchKey";
-    
+    private static final String BASE_MESSAGE_HANDLER_FQCN = "io.vantiq.extsrc.jmsSource.communication.messageHandler.BaseMessageHandler";
+
     Logger log  = LoggerFactory.getLogger(this.getClass().getCanonicalName());
     ExtensionWebSocketClient client;
     InitialContext context;
     String connectionFactory;
     
-    Map<String, JMSMessageProducer>         queueMessageProducers   = new LinkedHashMap<String, JMSMessageProducer>();
-    Map<String, JMSQueueMessageConsumer>    queueMessageConsumers   = new LinkedHashMap<String, JMSQueueMessageConsumer>();
-    Map<String, JMSMessageListener>         queueMessageListener    = new LinkedHashMap<String, JMSMessageListener>();
-    Map<String, JMSMessageProducer>         topicMessageProducers   = new LinkedHashMap<String, JMSMessageProducer>();
-    Map<String, JMSMessageListener>         topicMessageConsumers   = new LinkedHashMap<String, JMSMessageListener>();
-    
-    Map<String, MessageHandlerInterface>    messageHandlers         = new LinkedHashMap<String, MessageHandlerInterface>();
-    
+    Map<String, JMSMessageProducer>         queueMessageProducers   = new ConcurrentHashMap<String, JMSMessageProducer>();
+    Map<String, JMSQueueMessageConsumer>    queueMessageConsumers   = new ConcurrentHashMap<String, JMSQueueMessageConsumer>();
+    Map<String, JMSMessageListener>         queueMessageListener    = new ConcurrentHashMap<String, JMSMessageListener>();
+    Map<String, JMSMessageProducer>         topicMessageProducers   = new ConcurrentHashMap<String, JMSMessageProducer>();
+    Map<String, JMSMessageListener>         topicMessageConsumers   = new ConcurrentHashMap<String, JMSMessageListener>();
+        
     public JMS(ExtensionWebSocketClient client, String connectionFactory) {
         this.client = client;
         this.connectionFactory = connectionFactory;
@@ -73,7 +70,12 @@ public class JMS {
         context = new InitialContext(properties);
     }
     
-    public void acquireMessageHandler(String messageHandlerName) throws FailedInterfaceSetupException {
+    /**
+     * Method used to initialize the given implementation of the MessageHandlerInterface, and store it in the messageHandlers Map
+     * @param messageHandlerName    The fully qualified class name of the MessageHandlerInterface implementation
+     * @throws FailedInterfaceSetupException
+     */
+    public MessageHandlerInterface acquireMessageHandler(String messageHandlerName) throws FailedInterfaceSetupException {
         Class<?> clazz = null;
         Constructor<?> constructor = null;
         Object object = null;
@@ -111,8 +113,7 @@ public class JMS {
         }
         
         // Interface was successfully instantiated and can be used to handle messages
-        MessageHandlerInterface messageHandler = (MessageHandlerInterface) object;
-        messageHandlers.put("base", messageHandler);
+        return (MessageHandlerInterface) object;
     }
     
     /**
@@ -121,7 +122,7 @@ public class JMS {
      * @param sender            The "sender" portion of the source configuration
      * @param receiver          The "receiver" portion of the source configuration
      * @param username          The username used to create the JMS Connection, (or null if JMS Server does not require auth)
-     * @param password          The oassword used to create the JMS Connection, (or null if JMS Server does not require auth)
+     * @param password          The password used to create the JMS Connection, (or null if JMS Server does not require auth)
      * @throws NamingException
      * @throws JMSException
      * @throws FailedJMSSetupException
@@ -133,13 +134,11 @@ public class JMS {
         List<?> receiverQueueListeners = null;
         List<?> receiverTopics = null;
         
-        
-        // Temporary way to initialize message handler. Will change once we allow for user-created message handlers.
-        try {
-            acquireMessageHandler(MESSAGE_HANDLER_FQCN);
-        } catch (FailedInterfaceSetupException e) {
-            log.error("Unable to create a Message Handler with name: " + MESSAGE_HANDLER_FQCN);
-        }
+        Map senderQueueMessageHandlers = null;
+        Map senderTopicMessageHandlers = null;
+        Map receiverQueueMessageHandlers = null;
+        Map receiverQueueListenerMessageHandlers = null;
+        Map receiverTopicMessageHandlers = null;
         
         // Get the queues and topics from the sender configuration
         if (sender.get("queues") instanceof List) {
@@ -147,6 +146,18 @@ public class JMS {
         }
         if (sender.get("topics") instanceof List) {
             senderTopics = (List<?>) sender.get("topics");
+        }
+        
+        // Get message handlers from sender configuration
+        if (sender.get("messageHandler") instanceof Map) {
+            Map senderMessageHandlers = (Map) sender.get("messageHandler");
+            
+            if (senderMessageHandlers.get("queues") instanceof Map) {
+                senderQueueMessageHandlers = (Map) senderMessageHandlers.get("queues");
+            }
+            if (senderMessageHandlers.get("topics") instanceof Map) {
+                senderTopicMessageHandlers = (Map) senderMessageHandlers.get("topics");
+            }
         }
         
         // Get the queues, queueListeners and topics from the receiver configuration
@@ -160,52 +171,144 @@ public class JMS {
             receiverTopics = (List<?>) receiver.get("topics");
         }
         
+        // Get message handlers from receiver configuration
+        if (receiver.get("messageHandler") instanceof Map) {
+            Map receiverMessageHandlers = (Map) receiver.get("messageHandler");
+            
+            if (receiverMessageHandlers.get("queues") instanceof Map) {
+                receiverQueueMessageHandlers = (Map) receiverMessageHandlers.get("queues");
+            }
+            if (receiverMessageHandlers.get("queues") instanceof Map) {
+                receiverQueueListenerMessageHandlers = (Map) receiverMessageHandlers.get("queueListeners");
+            }
+            if (receiverMessageHandlers.get("topics") instanceof Map) {
+                receiverTopicMessageHandlers = (Map) receiverMessageHandlers.get("topics");
+            }
+        }
         
         // Iterating through topic/queue lists and creating message producers/consumers/listeners
-        synchronized(SYNCH_KEY) {
-            if (senderQueues != null) {
-                for (int i = 0; i < senderQueues.size(); i++) {
-                    String queue = (String) senderQueues.get(i);
-                    JMSMessageProducer msgProducer = new JMSMessageProducer(context, messageHandlers.get("base"));
-                    msgProducer.open(connectionFactory, queue, true, username, password);
-                    queueMessageProducers.put(queue, msgProducer);
+        if (senderQueues != null) {
+            for (int i = 0; i < senderQueues.size(); i++) {
+                String queue = (String) senderQueues.get(i);
+                
+                // Get the Message Handler, or use base if no custom Message Handler was specified
+                String messageHandlerFQCN = BASE_MESSAGE_HANDLER_FQCN;
+                MessageHandlerInterface messageHandler;
+                if (senderQueueMessageHandlers != null &&  senderQueueMessageHandlers.get(queue) instanceof String) {
+                    messageHandlerFQCN = (String) senderQueueMessageHandlers.get(queue);
                 }
+                
+                try {
+                    messageHandler = acquireMessageHandler(messageHandlerFQCN);
+                } catch (FailedInterfaceSetupException e) {
+                    log.error("An error occured while trying to initialize the custom MessageHandlerInterface implementation"
+                            + " named: " + messageHandlerFQCN + ". No Message Producer will be made for queue: " + queue);
+                    continue;
+                }
+                
+                JMSMessageProducer msgProducer = new JMSMessageProducer(context, messageHandler);
+                msgProducer.open(connectionFactory, queue, true, username, password);
+                queueMessageProducers.put(queue, msgProducer);
             }
+        }
             
-            if (senderTopics != null) {
-                for (int i = 0; i < senderTopics.size(); i++) {
-                    String topic = (String) senderTopics.get(i);
-                    JMSMessageProducer msgProducer = new JMSMessageProducer(context, messageHandlers.get("base"));
-                    msgProducer.open(connectionFactory, topic, false, username, password);
-                    topicMessageProducers.put(topic, msgProducer);
+        if (senderTopics != null) {
+            for (int i = 0; i < senderTopics.size(); i++) {
+                String topic = (String) senderTopics.get(i);
+                
+                // Get the Message Handler, or use base if no custom Message Handler was specified
+                String messageHandlerFQCN = BASE_MESSAGE_HANDLER_FQCN;
+                MessageHandlerInterface messageHandler;
+                if (senderTopicMessageHandlers != null && senderTopicMessageHandlers.get(topic) instanceof String) {
+                    messageHandlerFQCN = (String) senderTopicMessageHandlers.get(topic);
                 }
+                
+                try {
+                    messageHandler = acquireMessageHandler(messageHandlerFQCN);
+                } catch (FailedInterfaceSetupException e) {
+                    log.error("An error occured while trying to initialize the custom MessageHandlerInterface implementation"
+                            + " named: " + messageHandlerFQCN + ". No Message Producer will be made for topic: " + topic);
+                    continue;
+                }
+                
+                JMSMessageProducer msgProducer = new JMSMessageProducer(context, messageHandler);
+                msgProducer.open(connectionFactory, topic, false, username, password);
+                topicMessageProducers.put(topic, msgProducer);
             }
+        }
             
-            if (receiverQueues != null) {
-                for (int i = 0; i < receiverQueues.size(); i++) {
-                    String queue = (String) receiverQueues.get(i);
-                    JMSQueueMessageConsumer msgConsumer = new JMSQueueMessageConsumer(context, messageHandlers.get("base"));
-                    msgConsumer.open(connectionFactory, queue, username, password);
-                    queueMessageConsumers.put(queue, msgConsumer);
+        if (receiverQueues != null) {
+            for (int i = 0; i < receiverQueues.size(); i++) {
+                String queue = (String) receiverQueues.get(i);
+                
+                // Get the Message Handler, or use base if no custom Message Handler was specified
+                String messageHandlerFQCN = BASE_MESSAGE_HANDLER_FQCN;
+                MessageHandlerInterface messageHandler;
+                if (receiverQueueMessageHandlers != null &&  receiverQueueMessageHandlers.get(queue) instanceof String) {
+                    messageHandlerFQCN = (String) receiverQueueMessageHandlers.get(queue);
                 }
+                
+                try {
+                    messageHandler = acquireMessageHandler(messageHandlerFQCN);
+                } catch (FailedInterfaceSetupException e) {
+                    log.error("An error occured while trying to initialize the custom MessageHandlerInterface implementation"
+                            + " named: " + messageHandlerFQCN + ". No Message Consumer will be made for queue: " + queue);
+                    continue;
+                }
+                
+                JMSQueueMessageConsumer msgConsumer = new JMSQueueMessageConsumer(context, messageHandler);
+                msgConsumer.open(connectionFactory, queue, username, password);
+                queueMessageConsumers.put(queue, msgConsumer);
             }
+        }
             
-            if (receiverQueueListeners != null) {
-                for (int i = 0; i < receiverQueueListeners.size(); i++) {
-                    String queue = (String) receiverQueueListeners.get(i);
-                    JMSMessageListener msgListener = new JMSMessageListener(context, client, messageHandlers.get("base"));
-                    msgListener.open(connectionFactory, queue, true, username, password);
-                    queueMessageListener.put(queue, msgListener);
+        if (receiverQueueListeners != null) {
+            for (int i = 0; i < receiverQueueListeners.size(); i++) {
+                String queue = (String) receiverQueueListeners.get(i);
+                
+                // Get the Message Handler, or use base if no custom Message Handler was specified
+                String messageHandlerFQCN = BASE_MESSAGE_HANDLER_FQCN;
+                MessageHandlerInterface messageHandler;
+                if (receiverQueueListenerMessageHandlers != null &&  receiverQueueListenerMessageHandlers.get(queue) instanceof String) {
+                    messageHandlerFQCN = (String) receiverQueueListenerMessageHandlers.get(queue);
                 }
+                
+                try {
+                    messageHandler = acquireMessageHandler(messageHandlerFQCN);
+                } catch (FailedInterfaceSetupException e) {
+                    log.error("An error occured while trying to initialize the custom MessageHandlerInterface implementation"
+                            + " named: " + messageHandlerFQCN + ". No Message Listener will be made for queue: " + queue);
+                    continue;
+                }
+                
+                JMSMessageListener msgListener = new JMSMessageListener(context, client, messageHandler);
+                msgListener.open(connectionFactory, queue, true, username, password);
+                queueMessageListener.put(queue, msgListener);
             }
-            
-            if (receiverTopics != null) {
-                for (int i = 0; i < receiverTopics.size(); i++) {
-                    String topic = (String) receiverTopics.get(i);
-                    JMSMessageListener msgListener = new JMSMessageListener(context, client, messageHandlers.get("base"));
-                    msgListener.open(connectionFactory, topic, false, username, password);
-                    topicMessageConsumers.put(topic, msgListener);
+        }
+        
+        if (receiverTopics != null) {
+            for (int i = 0; i < receiverTopics.size(); i++) {
+                String topic = (String) receiverTopics.get(i);
+                
+                // Get the Message Handler, or use base if no custom Message Handler was specified
+                String messageHandlerFQCN = BASE_MESSAGE_HANDLER_FQCN;
+                MessageHandlerInterface messageHandler;
+                if (receiverTopicMessageHandlers != null &&  receiverTopicMessageHandlers.get(topic) instanceof String) {
+                    messageHandlerFQCN = (String) receiverTopicMessageHandlers.get(topic);
                 }
+                
+                try {
+                    messageHandler = acquireMessageHandler(messageHandlerFQCN);
+                } catch (FailedInterfaceSetupException e) {
+                    log.error("An error occured while trying to initialize the custom MessageHandlerInterface implementation"
+                            + " named: " + messageHandlerFQCN + ". No Message Listener will be made for topic: " + topic);
+                    continue;
+                }
+                
+                JMSMessageListener msgListener = new JMSMessageListener(context, client, messageHandler);
+                msgListener.open(connectionFactory, topic, false, username, password);
+                topicMessageConsumers.put(topic, msgListener);
             }
         }
     }
@@ -219,16 +322,14 @@ public class JMS {
      * @throws UnsupportedJMSMessageTypeException
      */
     public Map<String, Object> consumeMessage(String queue) throws Exception {
-        synchronized(SYNCH_KEY) {
-            JMSQueueMessageConsumer msgConsumer = queueMessageConsumers.get(queue);
-            
-            // To avoid getting a NullPointerException
-            if (msgConsumer == null) {
-                throw new DestinationNotConfiguredException();
-            }
-            
-            return msgConsumer.consumeMessage();
+        JMSQueueMessageConsumer msgConsumer = queueMessageConsumers.get(queue);
+        
+        // To avoid getting a NullPointerException
+        if (msgConsumer == null) {
+            throw new DestinationNotConfiguredException();
         }
+        
+        return msgConsumer.consumeMessage();
     }
     
     /**
@@ -241,71 +342,67 @@ public class JMS {
      * @throws UnsupportedJMSMessageTypeException
      */
     public void produceMessage(Object message, String destination, String messageFormat, boolean isQueue) throws Exception {
-        synchronized(SYNCH_KEY) {
-            JMSMessageProducer msgProducer;
-            if (isQueue) {
-                msgProducer = queueMessageProducers.get(destination);
-            } else {
-                msgProducer = topicMessageProducers.get(destination);
-            }
-            
-            // To avoid getting a NullPointerException
-            if (msgProducer == null) {
-                throw new DestinationNotConfiguredException();
-            }
-            
-            msgProducer.produceMessage(message, messageFormat);
+        JMSMessageProducer msgProducer;
+        if (isQueue) {
+            msgProducer = queueMessageProducers.get(destination);
+        } else {
+            msgProducer = topicMessageProducers.get(destination);
         }
+            
+        // To avoid getting a NullPointerException
+        if (msgProducer == null) {
+            throw new DestinationNotConfiguredException();
+        }
+        
+        msgProducer.produceMessage(message, messageFormat);
     }
     
     /**
      * A method used to close all of the resources being used by the message producers/consumers/listeners
      */
     public void close() {
-        synchronized(SYNCH_KEY) {
-            for (JMSMessageProducer producer : queueMessageProducers.values()) {
-                try {
-                    producer.close();
-                } catch (JMSException e) {
-                    log.error("An error occured while attempting to close the JMS Session or Connection associated with the "
-                            + "MessageProducer for queue: " + producer.destName + ". ", e);
-                }
+        for (JMSMessageProducer producer : queueMessageProducers.values()) {
+            try {
+                producer.close();
+            } catch (JMSException e) {
+                log.error("An error occured while attempting to close the JMS Session or Connection associated with the "
+                        + "MessageProducer for queue: " + producer.destName + ". ", e);
             }
-            
-            for (JMSQueueMessageConsumer consumer : queueMessageConsumers.values()) {
-                try {
-                    consumer.close();
-                } catch (JMSException e) {
-                    log.error("An error occured while attempting to close the JMS Session or Connection associated with the "
-                            + "MessageConsumer for queue: " + consumer.destName + ". ", e);
-                }
+        }
+        
+        for (JMSMessageProducer producer : topicMessageProducers.values()) {
+            try {
+                producer.close();
+            } catch (JMSException e) {
+                log.error("An error occured while attempting to close the JMS Session or Connection associated with the "
+                        + "MessageProducer for topic: " + producer.destName + ". ", e);
             }
+        }
             
-            for (JMSMessageListener listener : queueMessageListener.values()) {
-                try {
-                    listener.close();
-                } catch (JMSException e) {
-                    log.error("An error occured while attempting to close the JMS Session or Connection associated with the "
-                            + "MessageListener for queue: " + listener.destName + ". ", e);
-                }
+        for (JMSQueueMessageConsumer consumer : queueMessageConsumers.values()) {
+            try {
+                consumer.close();
+            } catch (JMSException e) {
+                log.error("An error occured while attempting to close the JMS Session or Connection associated with the "
+                        + "MessageConsumer for queue: " + consumer.destName + ". ", e);
             }
-            
-            for (JMSMessageProducer producer : topicMessageProducers.values()) {
-                try {
-                    producer.close();
-                } catch (JMSException e) {
-                    log.error("An error occured while attempting to close the JMS Session or Connection associated with the "
-                            + "MessageProducer for topic: " + producer.destName + ". ", e);
-                }
+        }
+         
+        for (JMSMessageListener listener : queueMessageListener.values()) {
+            try {
+                listener.close();
+            } catch (JMSException e) {
+                log.error("An error occured while attempting to close the JMS Session or Connection associated with the "
+                        + "MessageListener for queue: " + listener.destName + ". ", e);
             }
-            
-            for (JMSMessageListener listener : topicMessageConsumers.values()) {
-                try {
-                    listener.close();
-                } catch (JMSException e) {
-                    log.error("An error occured while attempting to close the JMS Session or Connection associated with the "
-                            + "MessageListener for topic: " + listener.destName + ". ", e);
-                }
+        }
+         
+        for (JMSMessageListener listener : topicMessageConsumers.values()) {
+            try {
+                listener.close();
+            } catch (JMSException e) {
+                log.error("An error occured while attempting to close the JMS Session or Connection associated with the "
+                        + "MessageListener for topic: " + listener.destName + ". ", e);
             }
         }
     }

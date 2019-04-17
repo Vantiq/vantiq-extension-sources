@@ -166,7 +166,17 @@ public class TestJMSConfig extends TestJMSBase {
         sendConfig(conf);
         assertFalse("Should not fail if receiver is missing topics", configIsFailed());
     }
-      
+    
+    @Test
+    public void testInvalidMessageHandlers() {
+        checkMinimalJMSProperties();
+        nCore.start(5); // Need a client to avoid NPEs on setting query/publish handler
+        
+        Map conf = configWithFakeMessageHandlers();
+        sendConfig(conf);
+        assertFalse("Should not fail with jibberish message handlers", configIsFailed());
+    }
+       
     @Test
     public void testMinimalConfig() {
         checkMinimalJMSProperties();
@@ -180,7 +190,8 @@ public class TestJMSConfig extends TestJMSBase {
 // ================================================= Helper functions =================================================
     
     public static void checkMinimalJMSProperties() {
-        assumeTrue(testJMSURL != null && testJMSConnectionFactory != null && testJMSInitialContext != null && jmsDriverLoc != null);
+        assumeTrue(testJMSURL != null && testJMSConnectionFactory != null && testJMSInitialContext != null && jmsDriverLoc != null
+                && testJMSQueue != null && testJMSTopic != null);
 
     }
     
@@ -194,6 +205,40 @@ public class TestJMSConfig extends TestJMSBase {
         m.object = obj;
         
         handler.handleMessage(m);
+    }
+    
+    public Map<String, Object> configWithFakeMessageHandlers() {
+        createMinimalGeneral();
+        createMinimalSender();
+        createMinimalReceiver();
+        
+        Map<String, Object> senderMessageHandlers = new LinkedHashMap<>();
+        Map<String, Object> receiverMessageHandlers = new LinkedHashMap<>();
+        
+        Map<String, String> queueMessageHandlers = new LinkedHashMap<>();
+        Map<String, String> queueListenerMessageHandlers = new LinkedHashMap<>();
+        Map<String, String> topicMessageHandlers = new LinkedHashMap<>();
+        
+        queueMessageHandlers.put(testJMSQueue, "invalidHandlerName1");
+        queueListenerMessageHandlers.put(testJMSQueue, "invalidHandlerName2");
+        topicMessageHandlers.put(testJMSTopic, "invalidHandlerName3");
+        
+        senderMessageHandlers.put("queues", queueMessageHandlers);
+        senderMessageHandlers.put("topics", topicMessageHandlers);
+        
+        receiverMessageHandlers.put("queues", queueMessageHandlers);
+        receiverMessageHandlers.put("queueListeners", queueListenerMessageHandlers);
+        receiverMessageHandlers.put("topics", topicMessageHandlers);
+        
+        sender.put("messageHandler", senderMessageHandlers);
+        receiver.put("messageHandler", receiverMessageHandlers);
+        
+        Map<String, Object> ret = new LinkedHashMap<>();
+        ret.put("general", general);
+        ret.put("sender", sender);
+        ret.put("receiver", receiver);
+        
+        return ret;
     }
     
     public Map<String, Object> minimalConfig() {
@@ -269,6 +314,9 @@ public class TestJMSConfig extends TestJMSBase {
         List queues = new ArrayList();
         List topics = new ArrayList();
         
+        queues.add(testJMSQueue);
+        topics.add(testJMSTopic);
+        
         sender.put("queues", queues);
         sender.put("topics", topics);
     }
@@ -279,6 +327,10 @@ public class TestJMSConfig extends TestJMSBase {
         List queues = new ArrayList();
         List queueListeners = new ArrayList();
         List topics = new ArrayList();
+        
+        queues.add(testJMSQueue);
+        queueListeners.add(testJMSQueue);
+        topics.add(testJMSTopic);
         
         receiver.put("queues", queues);
         receiver.put("queueListeners", queueListeners);
