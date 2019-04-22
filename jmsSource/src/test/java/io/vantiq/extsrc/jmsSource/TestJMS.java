@@ -118,7 +118,7 @@ public class TestJMS extends TestJMSBase {
             fail("Should not throw a Exception when sending message to queue.");
         }
         
-        // Reading message from the queue, and checking that it is null, and that no errors were thrown
+        // Reading message from the queue, and checking that it is equal to the message that was sent
         try {
             Map<String, Object> queueMessage = jms.consumeMessage(testJMSQueue);
             assert ((String) queueMessage.get("message")).equals(message);
@@ -165,7 +165,7 @@ public class TestJMS extends TestJMSBase {
             fail("Should not throw an Exception when creating message producers/consumers/listeners.");
         }
         
-        // Sending message to the queue
+        // Sending message to the queue, and checking that no errors were thrown
         Date date = new Date();
         String message = "A message sent at time: " + dateFormat.format(date);
         try {
@@ -174,7 +174,7 @@ public class TestJMS extends TestJMSBase {
             fail("Should not throw a Exception when sending message to queue.");
         }
         
-        // Reading message from the queue, and checking that it is equal to the message that was sent
+        // Reading message from the queue, and checking that it is null, and that no errors were thrown
         try {
             Map<String, Object> queueMessage = jms.consumeMessage(testJMSQueue);
             assert queueMessage == null;
