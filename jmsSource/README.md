@@ -4,15 +4,16 @@ The following documentation outlines how to incorporate a JMS Source as part of 
 applications that interact with a JMS Server. These interactions include the ability to produce messages to and consume 
 messages from JMS Topics and Queues.
 
-In order to incorporate this Extension Source, you will need to set up your local machine with a JMS Server Driver that can be
-used to connect to your JMS Server. Once you have done this, you will need to create the Source in the VANTIQ Modelo IDE. 
-The documentation has been split into two parts, [Setting Up Your Machine](#machine) and [Setting Up Your VANTIQ Modelo IDE](#vantiq).
+In order to incorporate this Enterprise Connector, you will need to set up your local machine with all JMS Server dependencies 
+needed to connect to your JMS Server. Once you have done this, you will need to create the Source in the VANTIQ Modelo IDE. 
+The documentation has been split into two parts, [Setting Up Your Machine](#machine) and [Setting Up Your VANTIQ Source](#vantiq). The third section, [Developer Notes](#developer), adds details for customizing the JMS Source and handling 
+all dependencies.
 
 # Prerequisites <a name="pre" id="pre"></a>
 
 **IMPORTANT:** Read the [Testing](#testing) section before building this project.
 
-An understanding of the VANTIQ Extension Source SDK is assumed. Please read the [Extension Source README.md](../README.md) 
+An understanding of the VANTIQ Extension Source is assumed. Please read the [Extension Source README.md](../README.md) 
 for more information.
 
 The user must [define the JMS Source implementation](../README.md#-defining-a-typeimplementation) in the VANTIQ Modelo IDE. 
@@ -28,7 +29,7 @@ Additionally, an example project named *jmsExample.zip* can be found in the *src
 ## Repository Contents
 
 *   **JMSMain** -- The main function for the program. Connects to sources as specified in a configuration file.
-*   **JMSCore** -- Coordinates the communincation between the VANTIQ IDE and the JMS Server.
+*   **JMSCore** -- Coordinates the communincation between the VANTIQ Source and the JMS Server.
 *   **JMSHandleConfiguration** -- Sets up the JMS Server connection based on the source's configuration document, and
     initializes the queryHandler and publishHandler.
 *   **JMS** -- The class that directly interacts with the JMS Server, executing the query and publish requests as sent
@@ -37,8 +38,7 @@ Additionally, an example project named *jmsExample.zip* can be found in the *src
 
 ## How to Run the Program
 
-1.  In order to effectively use the JMS Source, you will need to download the appropriate JMS Driver with respect to the
-    JMS Server that you are using. Once you have installed this, you will need to create an environment variable named
+1.  In order to effectively use the JMS Source, you will need to download the appropriate JMS Driver for the JMS Server that you are using. Once you have installed this, you will need to create an environment variable named
     `JMS_DRIVER_LOC` that contains the location of the jar file (*i.e.* `/Users/yourName/somePath/wlthint3client.jar`)
 2.  Clone this repository (vantiq-extension-sources) and navigate into `<repo location>/vantiq-extension-sources`.
 3.  Run `./gradlew jmsSource:assemble`.
@@ -67,11 +67,26 @@ targetServer=https://dev.vantiq.com/
 
 ### Vantiq Options
 *   **authToken**: Required. The authentication token to connect with. These can be obtained from the namespace admin.
-*   **sources**: Required. A comma separated list of the sources to which you wish to connect. Any whitespace will be
-    removed when read.
+*   **sources**: Required. A comma separated list of the sources implemented by this connector. Sources must not have any 
+spaces in the names. Any surrounding whitespace will be removed when read.
+    *	**NOTE**: All of these VANTIQ Sources must use the *same* JMS Driver.
 *   **targetServer**: Required. The Vantiq server hosting the sources.
 
-# Setting Up Your VANTIQ Modelo IDE <a name="vantiq" id="vantiq"></a>
+# Setting Up Your VANTIQ Source <a name="vantiq" id="vantiq"></a>
+
+## JMS Source Functionality
+
+The JMS Enterprise Connector allows a user to send and receive JMS Queue/Topic messages to and from a VANTIQ Source. All 
+messages are sent to queues/topics using a PUBLISH statement, which is explained in detail later in this document. There are 
+two ways to receive messages: by querying the source using a SELECT statement, or as a VANTIQ Notification to the source. All 
+topic messages are sent to the source as a VANTIQ Notifications. Queue messages can be received either by querying the source, 
+or as VANTIQ Notifications. The Source Configuration, described below, shows how to choose which message consumption method 
+will be used for the JMS Queues.
+
+Additionally, since there are multiple JMS Message Types that we do not support, custom JMS Message Handlers can be added to 
+the source. This is completely optional, and a message handler that can handle the generic JMS Message Types will be used if 
+no custom handlers are specified. Creating a Custom Message Handler, as well as specifying the custom message handlers for 
+queues and topics, are explained later in this document.
 
 ## Source Configuration
 
@@ -87,8 +102,8 @@ The Configuration document may look similar to the following example:
         "general": {
            "username": "myUsername",
            "password": "myPassword",
-           "providerURL": "t3://localhost:7001",
-           "connectionFactory": "com.namir.weblogic.base.cf",
+           "providerURL": "https://my.jms.server",
+           "connectionFactory": "myConnectionFactory",
            "initialContext": "weblogic.jndi.WLInitialContextFactory"
         },
         "sender": {
@@ -141,37 +156,39 @@ protected, then do not include username or password.
 *   **providerURL**: Required. The URL corresponding to the JMS Server that you will connect to.
 *   **connectionFactory**: Required. The name of the JMS Connection Factory used to create JMS Sessions, which in turn create 
 JMS Message Producers/Consumers/Listeners.
-*   **initialContext**: Required. The fully-qualified class name (FQCN) of the ```InitialContextFactory``` used to lookup the
-```ConnectionFactory``` in the JNDI.
+*   **initialContext**: Required. The fully-qualified class name (FQCN) of the `InitialContextFactory` used to lookup the
+`ConnectionFactory` in the JNDI.
 
 ### Options Available for sender
 **NOTE**: sender map is REQUIRED, but the following values are optional.
 
-*   **queues**: Optional. A list of the queues that will be configured to send messages to.
-*   **topics**: Optional. A list of the topics that will be configured to send messages to.
-*   **messageHandler**: Optional. A map containing two sub-maps: *queues* and *topics*. These sub-maps should contain the name 
-of a given queue or topic as a key, and the fully qualified class name of a custom Message Handler as the value. Creating a 
-custom Message Handler is explained later in this document. This is completely optional, and if no custom message handlers are
-specified, then the BaseMessageHandler will be used.
+*   **queues**: Optional. A list of queues for which the connector will be configured to send messages.
+*   **topics**: Optional. A list of topics for which the connector will be configured to send messages.
+*   **messageHandler**: Optional. See [Adding Message Handlers](#msgHandlers). A map containing two sub-maps: *queues* and 
+*topics*. These sub-maps should contain the name of a given queue or topic as a key, and the fully qualified class name of a 
+custom Message Handler as the value. Creating a custom Message Handler is explained later in this document. This is completely 
+optional, and if no custom message handlers are specified, a message handler that can handle the generic JMS messages will be 
+used.
 
 ### Options Available for receiver
 **NOTE**: receiver map is REQUIRED, but the following values are optional.
 
 *   **queues**: Optional. A list of the queues that will be configured to receive messages. Messages from this list of
-queues will only be read by querying the source from the VANTIQ IDE, which is explained later in this document.
+queues will only be read by querying the source using a SELECT statement, which is explained [later in this document](#select).
 *   **queueListeners**: Optional. A list of the queues that will be configured to receive messages. Messages from this 
-list of queues will be read using a Message Listener, which will send the messages back to the source as a notification.
+list of queues will be read using a Message Listener, which will send the messages back to the source as a notification. Messages from these queues will *not* be available for query from SELECT statements.
 *   **topics**: Optional. A list of the topics that will be configured to receive messages. Messages from topics will be read 
 using a Message Listener, which will send the messages back to the source as a notification.
-*   **messageHandler**: Optional. A map containing three sub-maps: *queues*, *queueListeners*, and *topics*. These sub-maps 
-should contain the name of a given queue or topic as a key, and the fully qualified class name of a custom Message Handler as 
-the value. Creating a custom Message Handler is explained later in this document. This is completely optional, and if no custom message handlers are
-specified, then the BaseMessageHandler will be used.
+*   **messageHandler**: Optional. [See Adding Message Handlers](#msgHandlers). A map containing three sub-maps: *queues*, 
+*queueListeners* and *topics*. These sub-maps should contain the name of a given queue or topic as a key, and the fully 
+qualified class name of a custom Message Handler as the value. Creating a custom Message Handler is explained later in this 
+document. This is completely optional, and if no custom message handlers are specified, a message handler that can handle the 
+generic JMS messages will be used.
 
 ## Messages from the Source
 
-Messages that are sent to the source as Notifications from either a queueListener or a topic are JSON objects in the following 
-format:
+Messages that are sent from the JMS Server to a source as VANTIQ Notifications, (from either a queueListener or a topic) are 
+JSON objects in the following format:
 ```
 {
     JMSMessage:<theReceivedMessage>, 
@@ -180,7 +197,7 @@ format:
 }
 ```
 
-The following example shows a rule that could be used to process incoming notifications to a JMS Source:
+The following example shows a rule that could be used to process incoming notifications to a JMS Source named JMS1:
 
 ```
 RULE jmsMessageListener
@@ -193,11 +210,11 @@ myObj.JMSDestination = msg.destination
 INSERT JMSMessageType(myObj)
 ```
 
-## Select Statements
+## Select Statements <a name="select" id="select"></a>
 
-In order to read messages from a queue, (**NOT** a queueListener), a VAIL Select statement must be used. The Select statement 
+In order to read messages from a queue, (**NOT** a queueListener), a VAIL SELECT statement must be used. The SELECT statement 
 must have two query parameters: *operation* and *queue*. Currently there is only one *operation* that is supported, which is 
-the "read" operation. In the future, there may be different Select Operations. The *queue* parameter is the name of the queue
+the "read" operation. In the future, there may be different SELECT Operations. The *queue* parameter is the name of the queue
 from which to read. The following is an example of a Procedure created in VANTIQ Modelo querying against a JMS Source:
 
 ```
@@ -220,13 +237,13 @@ SELECT * FROM SOURCE JMS1 AS msg WITH
 
 ## Publish Statements
 
-In order to send messages to either a queue or a topic, a VAIL Publish statement must be used. The Publish statement will have
+In order to send messages to either a queue or a topic, a VAIL PUBLISH statement must be used. The PUBLISH statement will have
 three parameters: *message*, *queue/topic*, *JMSFormat*. The *message* parameter is simply the message to be sent. The next
-parameter is either *queue* or *topic*, depending on which type of destination you are sending the message to. The value of this
-parameter is the name of the given queue/topic. Finally, the last parameter is the *JMSFormat*, which specifies the JMS Message
-Type that will be used to send the message. If no custom Message Handler was implemented, the three values that we currently
-support are "TextMessage", "MapMessage", and "Message". The "Message" type does not have any message body, so no message parameter
-is needed. The following two examples show how to send all three supported message types.
+parameter is either *queue* or *topic*, depending on which type of destination you are sending the message to. The value of 
+this parameter is the name of the given queue/topic. Finally, the last parameter is the *JMSFormat*, which specifies the JMS 
+Message Type that will be used to send the message. If no custom Message Handler was implemented, the three values that we 
+support are "TextMessage", "MapMessage", and "Message". The "Message" type does not have any message body, so no message 
+parameter is needed. The following three examples show how to send all three supported message types.
 
 ### Sending Text Message ###
 
@@ -255,7 +272,7 @@ PUBLISH {message: msg, queue: dest, JMSFormat: msgFormat} to SOURCE JMS1
 
 ### Sending Message ###
 ```
-PROCEDURE sendMapMessage()
+PROCEDURE sendMessage()
 
 var dest = "NamirJMSServer-0/NamirSystemModule-0!NamirJMSServer-0@/com/namir/weblogic/base/dq"
 var msgFormat = "Message"
@@ -263,25 +280,30 @@ var msgFormat = "Message"
 PUBLISH {queue: dest, JMSFormat: msgFormat} to SOURCE JMS1 
 ```
 
-## Custom Message Handlers ##
-
-To create custom Message Handler, you must implement the 
-```io.vantiq.extsrc.jmsSource.communication.messageHandler.MessageHandlerInterface.java``` interface. We recommend creating a
-subclass of the BaseMessageHandler class, and adding extra message formatting for the JMS Message Types that we do not 
-currently support. Once you have implemented the MessageHandlerInterface, you must add the class to the java classpath. If we 
-cannot find the class in the java classpath, or if it is not a correct implementation of the interface, then we will not be
-able to create a message producer/consumer/listener for the given queue or topic.
-
 ## Error Messages
 
 Query errors originating from the source will always have the code be the fully-qualified class name with a small descriptor 
 attached, and the message will include the exception causing it and the request that spawned it.
 
+# Developer Notes <a name="developer" id="developer"></a>
+
+This section is for users who intend to build or customize the JMS Enterprise Connector.
+
+## Custom Message Handlers <a name="msgHandlers" id="msgHandlers"></a>
+
+To create custom Message Handler, you must implement the 
+`io.vantiq.extsrc.jmsSource.communication.messageHandler.MessageHandlerInterface.java` interface. We recommend creating a
+subclass of the BaseMessageHandler class, and adding extra message formatting for the JMS Message Types that we do not 
+currently support. Once you have implemented the MessageHandlerInterface, you must add the class to the java classpath, as 
+well as any other helper classes used by the implementation. If we cannot find the class in the java classpath, or if it is 
+not a correct implementation of the interface, then we will not be able to create a message producer/consumer/listener for the 
+given queue or topic.
+
 ## Testing <a name="testing" id="testing"></a>
 
 In order to properly run the tests, you must create an environment variable named JMS\_DRIVER\_LOC which points to the 
-appropriate JMS Driver .jar file. Additionally, you must have a JMS Server configured and running. You will need to specify the
-following values in the gradle.properties file in the ~/.gradle directory:
+appropriate JMS Driver .jar file. Additionally, you must have a JMS Server configured and running. You will need to specify 
+the following values in the gradle.properties file in the ~/.gradle directory:
 
 * username (Optional)
 * password (Optional)
@@ -293,8 +315,8 @@ following values in the gradle.properties file in the ~/.gradle directory:
 * VantiqAuthToken
 * VantiqTargetServer
 
-The Target VANTIQ Server and Auth Token will be used to create a temporary VANTIQ Source, named testSourceName. These names can
-optionally be configured by adding EntConTestSourceName to the gradle.properties file. The following shows what the 
+The Target VANTIQ Server and Auth Token will be used to create a temporary VANTIQ Source, named testSourceName. These names 
+can optionally be configured by adding EntConTestSourceName to the gradle.properties file. The following shows what the 
 gradle.properties file should look like:
 
 ```
@@ -312,7 +334,7 @@ gradle.properties file should look like:
 * **NOTE:** We strongly encourage users to create a unique VANTIQ Namespace in order to ensure that tests do not accidentally 
 override any existing Sources.
 
-## Licensing
+# Licensing
 The source code uses the [MIT License](https://opensource.org/licenses/MIT).  
 
 okhttp3, log4j, and jackson-databind are licensed under
