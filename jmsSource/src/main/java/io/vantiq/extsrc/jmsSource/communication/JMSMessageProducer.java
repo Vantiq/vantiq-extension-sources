@@ -33,6 +33,8 @@ public class JMSMessageProducer {
     
     public String destName;
     
+    private boolean closing = false;
+    
     private Context context;
     private ConnectionFactory connectionFactory;
     private Connection connection;
@@ -103,13 +105,19 @@ public class JMSMessageProducer {
      * @throws UnsupportedJMSMessageTypeException
      */
     public void produceMessage(Object message, String messageFormat) throws Exception {
-        Message jmsMessage = messageHandler.formatOutgoingMessage(message, messageFormat, session);
-        if (jmsMessage == null) {
-            log.error("The JMS Message Handler incorrectly formatted the JMS Message as 'null'. This is invalid, "
-                    + "and no message will be sent.");
-            return;
+        try {
+            Message jmsMessage = messageHandler.formatOutgoingMessage(message, messageFormat, session);
+            if (jmsMessage == null) {
+                log.error("The JMS Message Handler incorrectly formatted the JMS Message as 'null'. This is invalid, "
+                        + "and no message will be sent.");
+                return;
+            }
+            producer.send(jmsMessage);
+        } catch (Exception e) {
+            if (!closing) {
+                throw e;
+            }
         }
-        producer.send(jmsMessage);
     }
     
     /**
@@ -118,6 +126,7 @@ public class JMSMessageProducer {
      */
     public synchronized void close() throws JMSException {
         // Closing the session and connection
+        closing = true;
         session.close();
         connection.close();
     }

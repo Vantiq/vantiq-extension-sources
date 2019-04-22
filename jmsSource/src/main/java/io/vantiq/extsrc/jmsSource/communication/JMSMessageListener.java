@@ -35,6 +35,8 @@ public class JMSMessageListener implements MessageListener {
     
     public String destName;
     
+    private boolean closing = false;
+    
     private ExtensionWebSocketClient client;
     private Context context;
     private ConnectionFactory connectionFactory;
@@ -106,12 +108,18 @@ public class JMSMessageListener implements MessageListener {
             Map<String, Object> msgMap = messageHandler.parseIncomingMessage(msg, destName);
             client.sendNotification(msgMap);
         } catch (JMSException e) {
-            log.error("An error occured while parsing the received message. No message will be sent back to VANTIQ.", e);
+            if (!closing) {
+                log.error("An error occured while parsing the received message. No message will be sent back to VANTIQ.", e);
+            }
         } catch (UnsupportedJMSMessageTypeException e) {
-            log.error("The incoming JMS Message Type was: " + e.getMessage() + ". This type is not currently supported. "
-                    + "No message will be sent back to VANTIQ.", e);
+            if (!closing) {
+                log.error("The incoming JMS Message Type was: " + e.getMessage() + ". This type is not currently supported. "
+                        + "No message will be sent back to VANTIQ.", e);
+            }
         } catch (Exception e) {
-            log.error("An unexpected error occured while parsing the received message. No message will be sent back to VANTIQ.", e);
+            if (!closing) {
+                log.error("An unexpected error occured while parsing the received message. No message will be sent back to VANTIQ.", e);
+            }
         }
     }
     
@@ -121,6 +129,7 @@ public class JMSMessageListener implements MessageListener {
      */
     public synchronized void close() throws JMSException {
         // Closing the session and connection
+        closing = true;
         session.close();
         connection.close();
     }

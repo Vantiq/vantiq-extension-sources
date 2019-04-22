@@ -33,6 +33,8 @@ public class JMSQueueMessageConsumer {
     
     public String destName;
     
+    private boolean closing = false;
+    
     private Context context;
     private ConnectionFactory connectionFactory;
     private Connection connection;
@@ -95,8 +97,15 @@ public class JMSQueueMessageConsumer {
      * @throws UnsupportedJMSMessageTypeException
      */
     public Map<String, Object> consumeMessage() throws Exception {
-        Message message = consumer.receive(1000);
-        return messageHandler.parseIncomingMessage(message, destName);
+        try {
+            Message message = consumer.receive(1000);
+            return messageHandler.parseIncomingMessage(message, destName);
+        } catch (Exception e) {
+            if (!closing) {
+                throw e;
+            }
+            return null;
+        }
     }
     
     /**
@@ -105,6 +114,7 @@ public class JMSQueueMessageConsumer {
      */
     public synchronized void close() throws JMSException {
         // Closing the session and connection
+        closing = true;
         session.close();
         connection.close();
     }
