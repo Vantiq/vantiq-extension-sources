@@ -216,14 +216,11 @@ public class JMSHandleConfiguration extends Handler<ExtensionServiceMessage> {
             initialContext = (String) generalConfig.get("initialContext");
             
             // Check to make sure we only have one InitialContextFactory
-            String initialContextCheck = source.initialContextMap.get(initialContext);
-            if (initialContextCheck == null) {
-                if (source.initialContextMap.size() > 1) {
-                    log.error("Configuration failed. Cannot use multiple InitialContextFactories with one running JMS Extension Source.");
-                    return false;
-                } else {
-                    source.initialContextMap.put(initialContext, initialContext);
-                }
+            if (source.initialContextCheck == null) {
+                source.initialContextCheck = initialContext;
+            } else if (!source.initialContextCheck.equals(initialContext)) {
+                log.error("Configuration failed. Cannot use multiple InitialContextFactories with one running JMS Extension Source.");
+                return false;
             }
         } else {
             log.error("Configuration failed. No initialContext was specified");

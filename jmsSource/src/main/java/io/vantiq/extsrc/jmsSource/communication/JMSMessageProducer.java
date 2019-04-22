@@ -104,6 +104,11 @@ public class JMSMessageProducer {
      */
     public void produceMessage(Object message, String messageFormat) throws Exception {
         Message jmsMessage = messageHandler.formatOutgoingMessage(message, messageFormat, session);
+        if (jmsMessage == null) {
+            log.error("The JMS Message Handler incorrectly formatted the JMS Message as 'null'. This is invalid, "
+                    + "and no message will be sent.");
+            return;
+        }
         producer.send(jmsMessage);
     }
     

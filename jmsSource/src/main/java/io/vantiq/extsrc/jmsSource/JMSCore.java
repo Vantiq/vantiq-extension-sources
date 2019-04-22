@@ -10,7 +10,6 @@ package io.vantiq.extsrc.jmsSource;
 
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -33,8 +32,8 @@ import io.vantiq.extsrc.jmsSource.exceptions.UnsupportedJMSMessageTypeException;
  */
 public class JMSCore {
 
-    // Map used to make sure only one InitialContextFactory is being used
-    Map<String, String> initialContextMap = new ConcurrentHashMap<String, String>();
+    // String used to make sure only one InitialContextFactory is being used
+    String initialContextCheck = null;
     
     // Variables for server configuration
     String sourceName;
@@ -262,7 +261,11 @@ public class JMSCore {
               String queue = (String) request.get("queue");
               try {
                   Map<String, Object> messageMap = localJMS.consumeMessage(queue);
-                  client.sendQueryResponse(200, replyAddress, messageMap);
+                  if (messageMap == null) {
+                      client.sendQueryResponse(204, replyAddress, messageMap);
+                  } else {
+                      client.sendQueryResponse(200, replyAddress, messageMap);
+                  }
               } catch (JMSException e) {
                   client.sendQueryError(replyAddress, JMSException.class.getCanonicalName(), 
                           "Failed to read message from the queue: " + queue + ". Error message was: " + e.getMessage(), null);

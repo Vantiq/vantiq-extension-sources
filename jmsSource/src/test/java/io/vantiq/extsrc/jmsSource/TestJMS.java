@@ -39,6 +39,7 @@ import io.vantiq.client.VantiqResponse;
 public class TestJMS extends TestJMSBase {
     
     static final int CORE_START_TIMEOUT = 10;
+    static final String NULL_MESSAGE_HANDLER_FQCN = "io.vantiq.extsrc.jmsSource.NullMessageHandler";
     
     static JMSCore core;
     static JMS jms;
@@ -108,6 +109,62 @@ public class TestJMS extends TestJMSBase {
             fail("Should not throw an Exception when creating message producers/consumers/listeners.");
         }
         
+        // Sending message to the queue, and checking that no errors were thrown
+        Date date = new Date();
+        String message = "A message sent at time: " + dateFormat.format(date);
+        try {
+            jms.produceMessage(message, testJMSQueue, "TextMessage", true);
+        } catch (Exception e) {
+            fail("Should not throw a Exception when sending message to queue.");
+        }
+        
+        // Reading message from the queue, and checking that it is null, and that no errors were thrown
+        try {
+            Map<String, Object> queueMessage = jms.consumeMessage(testJMSQueue);
+            assert ((String) queueMessage.get("message")).equals(message);
+        } catch (Exception e) {
+            fail("Should not throw an Exception when consuming message from queue.");
+        }
+        
+        jms.close();
+    }
+    
+    @Test
+    public void testMessageHandler() {
+        checkAllJMSProperties(true);
+        
+        // Setting up sender configuration to initialize the JMS Class
+        Map<String, Object> sender = new LinkedHashMap<>();
+        Map<String, Object> receiver = new LinkedHashMap<>();
+        Map<String, Map> messageHandler = new LinkedHashMap<>();
+        Map<String, String> queueMessageHandler = new LinkedHashMap<>();
+        List<String> queues = new ArrayList<>();
+        
+        queues.add(testJMSQueue);
+        
+        // Adding our custom message handler
+        queueMessageHandler.put(testJMSQueue, NULL_MESSAGE_HANDLER_FQCN);
+        messageHandler.put("queues", queueMessageHandler);
+        
+        sender.put("queues", queues);
+        sender.put("messageHandler", messageHandler);
+        receiver.put("queues", queues);
+        receiver.put("messageHandler", messageHandler);
+        
+        // Construction the JMS Class
+        jms = new JMS(null, testJMSConnectionFactory);
+        try {
+            jms.setupInitialContext(testJMSInitialContext, testJMSURL);
+        } catch (NamingException e) {
+            fail("Should not throw a NamingException when setting up JMS Context. " + e.getMessage());
+        }
+        
+        try {
+            jms.createProducersAndConsumers(sender, receiver, null, null);
+        } catch (Exception e) {
+            fail("Should not throw an Exception when creating message producers/consumers/listeners.");
+        }
+        
         // Sending message to the queue
         Date date = new Date();
         String message = "A message sent at time: " + dateFormat.format(date);
@@ -120,7 +177,7 @@ public class TestJMS extends TestJMSBase {
         // Reading message from the queue, and checking that it is equal to the message that was sent
         try {
             Map<String, Object> queueMessage = jms.consumeMessage(testJMSQueue);
-            assert ((String) queueMessage.get("message")).equals(message);
+            assert queueMessage == null;
         } catch (Exception e) {
             fail("Should not throw an Exception when consuming message from queue.");
         }
