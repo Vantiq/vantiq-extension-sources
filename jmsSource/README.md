@@ -160,18 +160,18 @@ JMS Message Producers/Consumers/Listeners.
 `ConnectionFactory` in the JNDI.
 
 ### Options Available for sender
-**NOTE**: sender map is REQUIRED, but the following values are optional.
+**NOTE**: sender section is REQUIRED, but the following values are optional.
 
 *   **queues**: Optional. A list of queues for which the connector will be configured to send messages.
 *   **topics**: Optional. A list of topics for which the connector will be configured to send messages.
-*   **messageHandler**: Optional. See [Adding Message Handlers](#msgHandlers). A map containing two sub-maps: *queues* and 
-*topics*. These sub-maps should contain the name of a given queue or topic as a key, and the fully qualified class name of a 
-custom Message Handler as the value. Creating a custom Message Handler is explained later in this document. This is completely 
-optional, and if no custom message handlers are specified, a message handler that can handle the generic JMS messages will be 
-used.
+*   **messageHandler**: Optional. See [Adding Message Handlers](#msgHandlers). A section containing two sub-sections: *queues* 
+and *topics*. These sub-sections should contain the name of a given queue or topic as a field, and the fully qualified class 
+name of a custom Message Handler as the value. Creating a custom Message Handler is explained later in this document. This is 
+completely optional, and if no custom message handlers are specified, a message handler that can handle the generic JMS 
+messages will be used.
 
 ### Options Available for receiver
-**NOTE**: receiver map is REQUIRED, but the following values are optional.
+**NOTE**: receiver section is REQUIRED, but the following values are optional.
 
 *   **queues**: Optional. A list of the queues that will be configured to receive messages. Messages from this list of
 queues will only be read by querying the source using a SELECT statement, which is explained [later in this document](#select).
@@ -179,11 +179,11 @@ queues will only be read by querying the source using a SELECT statement, which 
 list of queues will be read using a Message Listener, which will send the messages back to the source as a notification. Messages from these queues will *not* be available for query from SELECT statements.
 *   **topics**: Optional. A list of the topics that will be configured to receive messages. Messages from topics will be read 
 using a Message Listener, which will send the messages back to the source as a notification.
-*   **messageHandler**: Optional. [See Adding Message Handlers](#msgHandlers). A map containing three sub-maps: *queues*, 
-*queueListeners* and *topics*. These sub-maps should contain the name of a given queue or topic as a key, and the fully 
-qualified class name of a custom Message Handler as the value. Creating a custom Message Handler is explained later in this 
-document. This is completely optional, and if no custom message handlers are specified, a message handler that can handle the 
-generic JMS messages will be used.
+*   **messageHandler**: Optional. [See Adding Message Handlers](#msgHandlers). A section containing three sub-sections: 
+*queues*, *queueListeners* and *topics*. These sub-sections should contain the name of a given queue or topic as a field, and 
+the fully qualified class name of a custom Message Handler as the value. Creating a custom Message Handler is explained later 
+in this document. This is completely optional, and if no custom message handlers are specified, a message handler that can 
+handle the generic JMS messages will be used.
 
 ## Messages from the Source
 
