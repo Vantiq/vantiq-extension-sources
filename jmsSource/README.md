@@ -137,7 +137,7 @@ The Configuration document may look similar to the following example:
                   "queue3": "my.custom.message.handler"
               },
               "queueListeners": {
-                  "queue1": "different.custom.message.handler"
+                  "queue1": "different.custom.message.handler",
                   "queue2": "another.custom.message.handler"
               }
               "topics": {
