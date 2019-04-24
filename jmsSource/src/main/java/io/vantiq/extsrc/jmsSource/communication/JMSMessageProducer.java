@@ -9,6 +9,8 @@
 package io.vantiq.extsrc.jmsSource.communication;
 
 
+import java.util.Map;
+
 import javax.jms.Connection;
 import javax.jms.ConnectionFactory;
 import javax.jms.DeliveryMode;
@@ -99,17 +101,16 @@ public class JMSMessageProducer {
     /**
      * Called by the JMS Class, and used to send the provided message to the associated destination, (topic or queue),
      * using whatever format was specified
-     * @param message           The message to be sent, either a string or a map
-     * @param messageFormat     The format (JMS Message Type) of the message to be sent
+     * @param message           A map containing the message headers, properties, and body
      * @throws JMSException
      * @throws UnsupportedJMSMessageTypeException
      */
-    public void produceMessage(Object message, String messageFormat) throws Exception {
+    public void produceMessage(Map<String, Object> messageMap) throws Exception {
         try {
-            Message jmsMessage = messageHandler.formatOutgoingMessage(message, messageFormat, session);
+            Message jmsMessage = messageHandler.formatOutgoingMessage(messageMap, session);
             if (jmsMessage == null) {
-                log.error("The JMS Message Handler incorrectly formatted the JMS Message as 'null'. This is invalid, "
-                        + "and no message will be sent.");
+                log.error("The JMS Message Handler {} incorrectly formatted the JMS Message as 'null'. This is invalid, "
+                        + "and no message will be sent.", messageHandler.getClass().getName());
                 return;
             }
             producer.send(jmsMessage);

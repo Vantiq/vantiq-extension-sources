@@ -8,6 +8,7 @@
 
 package io.vantiq.extsrc.jmsSource;
 
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
@@ -161,12 +162,13 @@ public class JMSCore {
     
     /**
      * Called by the publishHandler. Used to send a message to the JMS Destination (topic or queue). Message is sent
-     * using whatever format was specified in the JMSFormat parameter (as part of the publish message), and defaults 
-     * to ObjectMessage if none was specified.
+     * using whatever format was specified in the 'properties.JMSType' parameter (as part of the publish message), and
+     * defaults to Message if none was specified.
      * @param message   The Publish message
      */
     public void sendJMSMessage(ExtensionServiceMessage message) {
         Map<String, ?> request = (Map<String, ?>) message.getObject();
+        Map<String, Object> messageMap = new LinkedHashMap<String, Object>();
         
         // Get local copy of JMS
         JMS localJMS;
@@ -178,9 +180,10 @@ public class JMSCore {
         if (localJMS == null) {
             log.error("JMS connection closed before operation could complete");
         } else {
-            Object msg;
+            Map headers = null;
+            Map properties = null;
+            Object msg = null;
             String dest;
-            String msgFormat;
             boolean isQueue;
             
             // Getting the contents of the message if specified, or defaulting to an empty string
@@ -189,7 +192,6 @@ public class JMSCore {
             } else if (request.get("message") instanceof Map) {
                 msg = (Map) request.get("message");
             } else {
-                msg = null;
                 log.debug("No message was specified in the publish request, or the message was not a String/Map. "
                         + "The message was set to its default value, null.");
             }
@@ -206,18 +208,24 @@ public class JMSCore {
                         + "or a queue must be included as a String in the publish request.");
                 return;
             }
-            
-            // Getting the message format if it was specified, or defaulting to Message
-            if (request.get("JMSFormat") instanceof String) {
-                msgFormat = (String) request.get("JMSFormat");
-            } else {
-                log.debug("No JMSFormat was specified, the default Message message type will be used.");
-                msgFormat = "Message";
+                        
+            // Getting the message headers if specified
+            if (request.get("headers") instanceof Map) {
+                headers = (Map) request.get("headers");
             }
+            
+            // Getting the message properties if specified
+            if (request.get("properties") instanceof Map) {
+                properties = (Map) request.get("properties");
+            }
+            
+            messageMap.put("message", msg);
+            messageMap.put("headers", headers);
+            messageMap.put("properties", properties);
             
             // Sending the message to the appropriate destination
             try {
-                localJMS.produceMessage(msg, dest, msgFormat, isQueue);
+                localJMS.produceMessage(messageMap, dest, isQueue);
             } catch (JMSException e) {
                 log.error("An error occured when attempting to send the given message.", e);
             } catch (DestinationNotConfiguredException e) {
@@ -262,7 +270,9 @@ public class JMSCore {
               try {
                   Map<String, Object> messageMap = localJMS.consumeMessage(queue);
                   if (messageMap == null) {
-                      client.sendQueryResponse(204, replyAddress, messageMap);
+                      client.sendQueryError(replyAddress, this.getClass().getName() + ".invalidMessage", 
+                              "The returned message was invalid. This is most likely because the MessageHandler did not format "
+                              + "the returned message, headers, properties, and queue name correctly.", null);
                   } else {
                       client.sendQueryResponse(200, replyAddress, messageMap);
                   }

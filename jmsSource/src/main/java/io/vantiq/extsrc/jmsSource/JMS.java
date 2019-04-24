@@ -316,7 +316,7 @@ public class JMS {
     /**
      * Called by the JMSCore, and used to read the most recent message from a given queue.
      * @param queue         Name of the queue from which to read.
-     * @return              A map containing the message, as well as the queue name and the JMS Message Type
+     * @return              A map containing the message, queue name, message headers and properties
      * @throws JMSException
      * @throws DestinationNotConfiguredException
      * @throws UnsupportedJMSMessageTypeException
@@ -334,14 +334,13 @@ public class JMS {
     
     /**
      * Called  by the JMSCore, and used to send a message to the given destination
-     * @param message       The message to be sent, either a string or a map
+     * @param messageMap    A map containing the message headers, properties, and body
      * @param destination   The destination to which the message will be sent, (topic or queue)
-     * @param messageFormat The format of the message to be sent
      * @param isQueue       A boolean flag used to get the correct message producer
      * @throws DestinationNotConfiguredException
      * @throws UnsupportedJMSMessageTypeException
      */
-    public void produceMessage(Object message, String destination, String messageFormat, boolean isQueue) throws Exception {
+    public void produceMessage(Map<String, Object> messageMap, String destination, boolean isQueue) throws Exception {
         JMSMessageProducer msgProducer;
         if (isQueue) {
             msgProducer = queueMessageProducers.get(destination);
@@ -354,7 +353,7 @@ public class JMS {
             throw new DestinationNotConfiguredException();
         }
         
-        msgProducer.produceMessage(message, messageFormat);
+        msgProducer.produceMessage(messageMap);
     }
     
     /**

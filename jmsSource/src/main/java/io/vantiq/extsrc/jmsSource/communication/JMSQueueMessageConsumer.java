@@ -35,6 +35,8 @@ public class JMSQueueMessageConsumer {
     
     private boolean closing = false;
     
+    private static final int CONSUME_TIMEOUT = 1000;
+    
     private Context context;
     private ConnectionFactory connectionFactory;
     private Connection connection;
@@ -98,8 +100,16 @@ public class JMSQueueMessageConsumer {
      */
     public Map<String, Object> consumeMessage() throws Exception {
         try {
-            Message message = consumer.receive(1000);
-            return messageHandler.parseIncomingMessage(message, destName);
+            Message message = consumer.receive(CONSUME_TIMEOUT);
+            Map<String, Object> msgMap = messageHandler.parseIncomingMessage(message, destName, true);
+            // Making sure msgMap has the appropriate data
+            if (msgMap != null && msgMap.get("headers") instanceof Map && msgMap.get("queue") instanceof String) {
+                return msgMap;
+            } else {
+                log.error("The JMS Message Handler {} incorrectly formatted the incoming message. No Message will be sent "
+                        + "back to VANTIQ.", messageHandler.getClass().getName());
+                return null;
+            }
         } catch (Exception e) {
             if (!closing) {
                 throw e;

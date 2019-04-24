@@ -34,6 +34,7 @@ public class JMSMessageListener implements MessageListener {
     Logger log  = LoggerFactory.getLogger(this.getClass().getCanonicalName());
     
     public String destName;
+    private boolean isQueue;
     
     private boolean closing = false;
     
@@ -65,6 +66,7 @@ public class JMSMessageListener implements MessageListener {
      */
     public synchronized void open(String connectionFactoryName, String dest, boolean isQueue, String username, String password) throws NamingException, JMSException, FailedJMSSetupException {
         this.destName = dest;
+        this.isQueue = isQueue;
         
         connectionFactory = (ConnectionFactory) context.lookup(connectionFactoryName);
         if (connectionFactory == null) {
@@ -105,8 +107,16 @@ public class JMSMessageListener implements MessageListener {
     @Override
     public void onMessage(Message msg) {
         try {
-            Map<String, Object> msgMap = messageHandler.parseIncomingMessage(msg, destName);
-            client.sendNotification(msgMap);
+            Map<String, Object> msgMap = messageHandler.parseIncomingMessage(msg, destName, isQueue);
+            
+            // Making sure msgMap has the appropriate data
+            if (msgMap != null && msgMap.get("headers") instanceof Map && 
+                    (msgMap.get("queue") instanceof String || msgMap.get("topic") instanceof String)) {
+                client.sendNotification(msgMap);
+            } else {
+                log.error("The JMS Message Handler {} incorrectly formatted the incoming message. No Message will be sent "
+                        + "back to VANTIQ.", messageHandler.getClass().getName());
+            }
         } catch (JMSException e) {
             if (!closing) {
                 log.error("An error occured while parsing the received message. No message will be sent back to VANTIQ.", e);
