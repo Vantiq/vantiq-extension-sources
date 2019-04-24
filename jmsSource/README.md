@@ -97,6 +97,12 @@ To set up the VANTIQ Source, you will need to add a Source to your project. Plea
 sure you have properly added a VANTIQ Source Implementation. Once this is complete, you can select JMS (or whatever you named 
 your Source Implementation) as the Source Type. You will then need to fill out the Source Configuration Document.
 
+The Source Configuration has three major sections: `general`, `sender`, and `receiver`. These all fall under the global 
+`jmsConfig` section. The `general` section contains configuration options to help setup the connection to the JMS Server. The 
+`sender` and `receiver` sections contain configuration options to specify which queues or topics to communicate with, and how 
+to communicate with them. The `sender` section contains options for sending messages, and the `receiver` section contains 
+options for receiving messages.
+
 The Configuration document may look similar to the following example:
 ```
   {
@@ -150,7 +156,7 @@ The Configuration document may look similar to the following example:
      }
   }
 ```
-### Options Available for jmsConfig
+### Options Available for general
 *   **username**: Optional. The username that will be used to connect to the JMS Server. If JMS Server is not password 
 protected, then do not include username or password.
 *   **password**: Optional. The password that will be used to connect to the JMS Server. If JMS Server is not password 
