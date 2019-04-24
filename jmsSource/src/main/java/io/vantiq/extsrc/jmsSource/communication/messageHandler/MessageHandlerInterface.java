@@ -32,8 +32,8 @@ public interface MessageHandlerInterface {
     
     /**
      * A helper function used to parse the incoming message and format it according to its message type.
-     * This method MUST return a map with a "destination" and "headers" field. If possible, the map should also have
-     * a "properties" and "message" field, (unless these values are null).
+     * This method MUST return a map with a "queue" or "topic" field, and a "headers" field. If possible, the map 
+     * should also have a "properties" and "message" field, (unless these values are null).
      * @param message           The retrieved message from the queue
      * @param destName          The destination, (queue or topic), from which the message arrived
      * @param isQueue           A boolean flag specifying if the message arrived from a queue or a topic
