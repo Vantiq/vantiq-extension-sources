@@ -316,12 +316,13 @@ public class JMS {
     /**
      * Called by the JMSCore, and used to read the most recent message from a given queue.
      * @param queue         Name of the queue from which to read.
+     * @param timeout       The timeout value for consuming a queue message, (-1 if not specified in query parameters)
      * @return              A map containing the message, queue name, message headers and properties
      * @throws JMSException
      * @throws DestinationNotConfiguredException
      * @throws UnsupportedJMSMessageTypeException
      */
-    public Map<String, Object> consumeMessage(String queue) throws Exception {
+    public Map<String, Object> consumeMessage(String queue, int timeout) throws Exception {
         JMSQueueMessageConsumer msgConsumer = queueMessageConsumers.get(queue);
         
         // To avoid getting a NullPointerException
@@ -329,7 +330,7 @@ public class JMS {
             throw new DestinationNotConfiguredException();
         }
         
-        return msgConsumer.consumeMessage();
+        return msgConsumer.consumeMessage(timeout);
     }
     
     /**
