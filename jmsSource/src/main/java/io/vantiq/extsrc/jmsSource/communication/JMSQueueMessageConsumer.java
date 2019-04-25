@@ -35,9 +35,6 @@ public class JMSQueueMessageConsumer {
     
     private boolean closing = false;
     
-    // The timeout for receiving a message, set to 1 second
-    private static final int CONSUME_TIMEOUT = 1000;
-    
     private Context context;
     private ConnectionFactory connectionFactory;
     private Connection connection;
@@ -95,13 +92,20 @@ public class JMSQueueMessageConsumer {
     
     /**
      * Called by the JMS Class, and used to read the next available JMS Message from the associated queue
-     * @return A map containing the message, as well as the queue name and the JMS Message Type
-     * @throws JMSException
-     * @throws UnsupportedJMSMessageTypeException
+     * @param  timeout  The timeout value for consuming a queue message, (-1 if not specified in query parameters)
+     * @return          A map containing the message, as well as the queue name and the JMS Message Type
+     * @throws          JMSException
+     * @throws          UnsupportedJMSMessageTypeException
      */
-    public Map<String, Object> consumeMessage() throws Exception {
+    public Map<String, Object> consumeMessage(int timeout) throws Exception {
         try {
-            Message message = consumer.receive(CONSUME_TIMEOUT);
+            Message message;
+            if (timeout < 0) {
+                message = consumer.receiveNoWait();
+            } else {
+                message = consumer.receive(timeout);
+            }
+            
             Map<String, Object> msgMap = messageHandler.parseIncomingMessage(message, destName, true);
             // Making sure msgMap has the appropriate data
             if (msgMap != null && msgMap.get("headers") instanceof Map && msgMap.get("queue") instanceof String) {

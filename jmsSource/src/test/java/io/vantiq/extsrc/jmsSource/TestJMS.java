@@ -133,7 +133,7 @@ public class TestJMS extends TestJMSBase {
         
         // Reading message from the queue, and checking that it is equal to the message that was sent
         try {
-            Map<String, Object> queueMessage = jms.consumeMessage(testJMSQueue);
+            Map<String, Object> queueMessage = jms.consumeMessage(testJMSQueue, -1);
             assert ((String) queueMessage.get("message")).equals(message);
         } catch (Exception e) {
             fail("Should not throw an Exception when consuming message from queue.");
@@ -174,7 +174,7 @@ public class TestJMS extends TestJMSBase {
         sendToQueueParams.put("queue", testJMSQueue);
         vantiq.publish("sources", testSourceName, sendToQueueParams);
         
-        // Query with no operation set
+        // Query the source
         Map<String,Object> queryParams = new LinkedHashMap<String,Object>();
         queryParams.put("queue", testJMSQueue);
         queryParams.put("operation", "read");
@@ -282,6 +282,95 @@ public class TestJMS extends TestJMSBase {
         String responseMessage = (String) responseBody.get("message").getAsString();
         assert responseMessage.equals(message);
         
+        // Delete the Source from VANTIQ
+        deleteSource();
+        core.stop();  
+    }
+    
+    @Test
+    public void testQueryTimeout() {
+        checkAllJMSProperties(false);
+        
+        // Check that Source and Type do not already exist in namespace, and skip test if they do
+        assumeFalse(checkSourceExists());
+        
+        // Setup a VANTIQ JMS Source, and start running the core
+        setupSource(createSourceDef(false));
+        
+        // Create message to send
+        Date date = new Date();
+        String message = "A message sent at time: " + dateFormat.format(date);
+        
+        // Publish message to the source (send to queue)
+        Map<String,Object> sendToQueueParams = new LinkedHashMap<String,Object>();
+        Map<String, Object> headers = new LinkedHashMap<String, Object>();
+        headers.put("JMSType", "TextMessage");
+        sendToQueueParams.put("headers", headers);
+        sendToQueueParams.put("message", message);
+        sendToQueueParams.put("queue", testJMSQueue);
+        vantiq.publish("sources", testSourceName, sendToQueueParams);
+        
+        // Querying the source with no timeout
+        Map<String,Object> queryParams = new LinkedHashMap<String,Object>();
+        queryParams.put("queue", testJMSQueue);
+        queryParams.put("operation", "read");
+        VantiqResponse queryResponse = vantiq.query(testSourceName, queryParams);
+        
+        // Should query successfully
+        assert !queryResponse.hasErrors();
+        JsonObject responseBody = (JsonObject) queryResponse.getBody();
+        String responseMessage = (String) responseBody.get("message").getAsString();
+        assert responseMessage.equals(message);
+        
+        // Publish a message again
+        vantiq.publish("sources", testSourceName, sendToQueueParams);
+        
+        // Querying the source with non-integer timeout
+        queryParams.put("timeout", "jibberish");
+        queryResponse = vantiq.query(testSourceName, queryParams);
+        
+        // Should query successfully
+        assert !queryResponse.hasErrors();
+        responseBody = (JsonObject) queryResponse.getBody();
+        responseMessage = (String) responseBody.get("message").getAsString();
+        assert responseMessage.equals(message);
+        
+        // Publish a message again
+        vantiq.publish("sources", testSourceName, sendToQueueParams);
+        
+        // Querying the source with a negative timeout value
+        queryParams.put("timeout", -1000);
+        queryResponse = vantiq.query(testSourceName, queryParams);
+        
+        // Should query successfully
+        assert !queryResponse.hasErrors();
+        responseBody = (JsonObject) queryResponse.getBody();
+        responseMessage = (String) responseBody.get("message").getAsString();
+        assert responseMessage.equals(message);
+        
+        // Publish a message again
+        vantiq.publish("sources", testSourceName, sendToQueueParams);
+        
+        // Querying the source with a valid timeout
+        queryParams.put("timeout", 1000);
+        queryResponse = vantiq.query(testSourceName, queryParams);
+        
+        // Should query successfully
+        assert !queryResponse.hasErrors();
+        responseBody = (JsonObject) queryResponse.getBody();
+        responseMessage = (String) responseBody.get("message").getAsString();
+        assert responseMessage.equals(message);
+        
+        // Querying the source without publishing again, and with a timeout of 0
+        queryParams.put("timeout", 0);
+        queryResponse = vantiq.query(testSourceName, queryParams);
+        
+        // Should query successfully, without waiting indefinitely
+        assert !queryResponse.hasErrors();
+        responseBody = (JsonObject) queryResponse.getBody();
+        JsonElement responseMessageElement = responseBody.get("message");
+        assertTrue(responseMessageElement.isJsonNull());
+
         // Delete the Source from VANTIQ
         deleteSource();
         core.stop();  

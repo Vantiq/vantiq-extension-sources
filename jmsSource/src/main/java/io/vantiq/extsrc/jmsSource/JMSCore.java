@@ -267,8 +267,12 @@ public class JMSCore {
           // Retrieve most recent message from specified queue. If no queue name is specified, or if exception is thrown, return query error.
           if (request.get("queue") instanceof String) {
               String queue = (String) request.get("queue");
+              int timeout = -1;
+              if (request.get("timeout") instanceof Integer && (Integer) request.get("timeout") > 0) {
+                  timeout = (Integer) request.get("timeout");
+              }
               try {
-                  Map<String, Object> messageMap = localJMS.consumeMessage(queue);
+                  Map<String, Object> messageMap = localJMS.consumeMessage(queue, timeout);
                   if (messageMap == null) {
                       client.sendQueryError(replyAddress, this.getClass().getName() + ".invalidMessage", 
                               "The returned message was invalid. This is most likely because the MessageHandler did not format "
