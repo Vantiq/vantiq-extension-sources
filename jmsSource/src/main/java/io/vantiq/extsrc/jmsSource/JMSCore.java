@@ -268,7 +268,7 @@ public class JMSCore {
           if (request.get("queue") instanceof String) {
               String queue = (String) request.get("queue");
               int timeout = -1;
-              if (request.get("timeout") instanceof Integer) {
+              if (request.get("timeout") instanceof Integer && (Integer) request.get("timeout") > 0) {
                   timeout = (Integer) request.get("timeout");
               }
               try {
