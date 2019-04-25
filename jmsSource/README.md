@@ -196,12 +196,23 @@ handle the generic JMS messages will be used.
 
 ## Messages from JMS
 
-Messages that are sent from the JMS Server to a source as VANTIQ Notifications, (from either a queueListener or a topic) are 
-JSON objects in the following format:
+Messages that are sent from the JMS Server to a source as VANTIQ Notifications, (from a `queueListener`), are JSON objects in 
+the following format:
 ```
 {
     message:<theReceivedMessage>, 
-    queue/topic:<queueName/topicName>, 
+    queue:<queueName>, 
+    headers:<theHeaderValues>,
+    properties:<thePropertyValues>
+}
+```
+
+Messages that are sent from the JMS Server to a source as VANTIQ Notifications, (from a `topic`), are JSON objects in the 
+following format:
+```
+{
+    message:<theReceivedMessage>, 
+    topic:<topicName>, 
     headers:<theHeaderValues>,
     properties:<thePropertyValues>
 }
@@ -227,7 +238,7 @@ if (msg.queue != null) {
 INSERT JMSMessageType(myObj)
 ```
 
-## Select Statements <a name="select" id="select"></a>
+### Select Statements <a name="select" id="select"></a>
 
 In order to read messages from a queue, (**NOT** a queueListener), a VAIL SELECT statement must be used. The SELECT statement 
 must have two query parameters: `operation` and `queue`. Currently there is only one `operation` that is supported, which is 
@@ -255,7 +266,7 @@ SELECT * FROM SOURCE JMS1 AS msg WITH
 
 ## Messages to JMS
 
-## Publish Statements
+### Publish Statements
 
 In order to send messages to either a queue or a topic, a VAIL PUBLISH statement must be used. The PUBLISH statement will have
 four parameters: `message`, *destination* (expressed as `queue` or `topic`), `headers`, and `properties`. The `message` 
@@ -267,9 +278,9 @@ Message Headers: `JMSCorrelationID`, `JMSReplyTo`, and `JMSType`. The only one o
 was implemented, the three values that we support are `TextMessage`, `MapMessage`, and `Message`. The `Message` type does not 
 have any message body, so no `message` parameter is needed. Finally, the last parameter is the `properties` section, which 
 allows the user to specify any JMS Message Properties they wish to include. The following three examples show how to send all 
-three supported message types.
+three generic message types.
 
-### Sending Text Message ###
+### Sending Text Message
 
 ```
 PROCEDURE sendTextMessage()
@@ -287,7 +298,7 @@ myProperties.textMessageProp = "textIsCool"
 PUBLISH {message: msg, topic: dest, headers: myHeaders, properties: myProperties} to SOURCE JMS1 
 ```
 
-### Sending Map Message ###
+### Sending Map Message
 ```
 PROCEDURE sendMapMessage()
 
@@ -307,7 +318,7 @@ myProperties.mapMessageProp = "mapsAreCooler"
 PUBLISH {message: msg, queue: dest, headers: myHeaders, properties: myProperties} to SOURCE JMS1 
 ```
 
-### Sending Message ###
+### Sending Message
 ```
 PROCEDURE sendMessage()
 
