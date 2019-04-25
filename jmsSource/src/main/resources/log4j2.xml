@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Configuration status="WARN">
+    <Appenders>
+        <Console name="Console" target="SYSTEM_OUT">
+            <PatternLayout pattern="%d{HH:mm:ss.SSS} [%t] %-5level %logger{36} - %msg%n"/>
+        </Console>
+        <!-- To save the log to a file, uncomment lines 8-10 and line 17. -->
+        <!--<File name = "OutputFile" filename="output.log" append="false">
+        	<PatternLayout pattern="%d{HH:mm:ss.SSS} [%t] %-5level %logger{36} - %msg%n"/>
+        </File>-->
+    </Appenders>
+    <Loggers>
+        <Logger name="io.vantiq.extsrc.jmsSource" level="debug"/>
+        <Logger name="io.vantiq.extjsdk" level="debug"/>
+        <Root level="error">
+            <AppenderRef ref="Console"/>
+            <!--<AppenderRef ref="OutputFile"/>-->
+        </Root>
+    </Loggers>
+</Configuration>

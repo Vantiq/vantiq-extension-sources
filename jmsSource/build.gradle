@@ -1,0 +1,73 @@
+group 'io.vantiq'
+version 'unspecified'
+
+apply plugin: 'java'
+apply plugin: 'application'
+
+sourceCompatibility = 1.8
+
+repositories {
+    mavenCentral()
+    jcenter()
+
+    // Used for testing extension source in VANTIQ
+    maven {
+        url "https://dl.bintray.com/vantiq/maven"
+    }
+}
+
+mainClassName = 'io.vantiq.extsrc.jmsSource.JMSMain'
+
+startScripts{
+    doLast{
+        def windowsScriptFile = file getWindowsScript()
+        def unixScriptFile = file getUnixScript()
+        // Add the log Config to the top of the classpath
+        windowsScriptFile.text = windowsScriptFile.text.replace("CLASSPATH=", "CLASSPATH=%APP_HOME%\\logConfig;")
+        unixScriptFile.text = unixScriptFile.text.replace('CLASSPATH=', 'CLASSPATH=$APP_HOME/logConfig:')
+    }
+}
+
+// Copies the logger setup into logConfig in the distribution
+applicationDistribution.from("src/main/resources") {
+    include "log4j2.xml"
+    into "logConfig"
+}
+
+def configProps = ["EntConJMSUsername", "EntConJMSPassword", "EntConJMSURL", "EntConJMSConnectionFactory", "EntConJMSInitialContext",
+				"EntConJMSTopic", "EntConJMSQueue", "EntConTestSourceName", "EntConTestTypeName", "TestAuthToken", "TestVantiqServer"]
+
+tasks.withType(Test) {
+    if (System.env.JMS_DRIVER_LOC == null) {
+    	logger.warn("Some tests may have been skipped. Environment variable 'JMS_DRIVER_LOC' is not set. " +
+    			"Please set it to a location containing the appropriate JMS Driver .jar file.")
+    }
+    configProps.each { aConfigProp ->
+	    if (rootProject.hasProperty(aConfigProp)) {
+	        systemProperty aConfigProp, rootProject.findProperty(aConfigProp)
+	    }
+    }
+}
+
+dependencies {
+    // This dependency is used internally, and not exposed to consumers on their own compile classpath.
+    implementation 'com.google.guava:guava:23.0'
+
+    compile project(':extjsdk')
+
+    compile "org.slf4j:slf4j-api:1.7.25"
+    compile "org.apache.logging.log4j:log4j-slf4j-impl:2.11.0"
+    
+    // Used for for standard JMS utility
+    compile group: 'javax.jms', name: 'javax.jms-api', version: '2.0.1'
+
+    // Compiling relevant JMS Driver .jar file
+    compile files("${System.env.JMS_DRIVER_LOC}")
+
+    // Used for testing extension source in VANTIQ
+    testCompile 'io.vantiq:vantiq-sdk:1.0.17'
+
+    // Use JUnit test framework
+    testCompile 'junit:junit:4.12'
+    testCompile project(path:":extjsdk", configuration:"testArtifacts")
+}
