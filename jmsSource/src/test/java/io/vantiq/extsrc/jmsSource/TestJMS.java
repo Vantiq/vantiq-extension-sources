@@ -361,6 +361,16 @@ public class TestJMS extends TestJMSBase {
         responseMessage = (String) responseBody.get("message").getAsString();
         assert responseMessage.equals(message);
         
+        // Querying the source without publishing again, and with a timeout of 0
+        queryParams.put("timeout", 0);
+        queryResponse = vantiq.query(testSourceName, queryParams);
+        
+        // Should query successfully, without waiting indefinitely
+        assert !queryResponse.hasErrors();
+        responseBody = (JsonObject) queryResponse.getBody();
+        JsonElement responseMessageElement = responseBody.get("message");
+        assertTrue(responseMessageElement.isJsonNull());
+
         // Delete the Source from VANTIQ
         deleteSource();
         core.stop();  
