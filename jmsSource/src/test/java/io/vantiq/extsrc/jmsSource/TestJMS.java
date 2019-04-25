@@ -460,7 +460,7 @@ public class TestJMS extends TestJMSBase {
         assert responseMessage.equals(message);
         assert responseBody.get("headers") instanceof JsonObject;
         JsonObject headersObject = responseBody.get("headers").getAsJsonObject();
-        assert headersObject.get("JMSReplyTo").getAsString() instanceof String;
+        assert testJMSQueue.contains(headersObject.get("JMSReplyTo").getAsString());
         assert headersObject.get("JMSType").getAsString().equals("TextMessage");
         assert headersObject.get("JMSCorrelationID").getAsString().equals("someID");
         assert responseBody.get("properties") instanceof JsonObject;
