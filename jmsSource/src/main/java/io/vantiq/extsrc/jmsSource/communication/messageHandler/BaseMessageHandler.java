@@ -23,23 +23,43 @@ import io.vantiq.extsrc.jmsSource.exceptions.UnsupportedJMSMessageTypeException;
  */
 public class BaseMessageHandler implements MessageHandlerInterface {
     
+    // JMS Message Types
     public static final String MESSAGE = "Message";
     public static final String TEXT = "TextMessage";
     public static final String MAP = "MapMessage";
     
+    // Message Formatting Fields
+    public static final String MESSAGE_FIELD = "message";
+    public static final String HEADERS = "headers";
+    public static final String PROPERTIES = "properties";
+    public static final String QUEUE = "queue";
+    public static final String TOPIC = "topic";
+    
+    // JMS Message Headers
+    public static final String JMS_DESTINATION = "JMSDestination";
+    public static final String JMS_REPLY_TO = "JMSReplyTo";
+    public static final String JMS_DELIVERY_MODE = "JMSDeliveryMode";
+    public static final String JMS_EXPIRATION = "JMSExpiration";
+    public static final String JMS_PRIORITY = "JMSPriority";
+    public static final String JMS_MESSAGE_ID = "JMSMessageID";
+    public static final String JMS_TIMESTAMP = "JMSTimestamp";
+    public static final String JMS_CORRELATION_ID = "JMSCorrelationID";
+    public static final String JMS_TYPE = "JMSType";
+    public static final String JMS_REDELIVERED = "JMSRedelivered";
+    
     @Override
     public Message formatOutgoingMessage(Map<String, Object> messageMap, Session session) throws Exception {
-        Map<String, Object> headers = (Map) messageMap.get("headers");
-        Map<String, Object> properties = (Map) messageMap.get("properties");
+        Map<String, Object> headers = (Map) messageMap.get(HEADERS);
+        Map<String, Object> properties = (Map) messageMap.get(PROPERTIES);
         String messageFormat;
         
         // If JMSType was not specified, try to guess the message type based on the message itself
-        if (headers != null && headers.get("JMSType") instanceof String) {
-            messageFormat = (String) headers.get("JMSType");
+        if (headers != null && headers.get(JMS_TYPE) instanceof String) {
+            messageFormat = (String) headers.get(JMS_TYPE);
         } else {
-            if (messageMap.get("message") instanceof String) {
+            if (messageMap.get(MESSAGE_FIELD) instanceof String) {
                 messageFormat = TEXT;
-            } else if (messageMap.get("message") instanceof Map) {
+            } else if (messageMap.get(MESSAGE_FIELD) instanceof Map) {
                 messageFormat = MAP;
             } else {
                 messageFormat = MESSAGE;
@@ -52,12 +72,12 @@ public class BaseMessageHandler implements MessageHandlerInterface {
                 return setHeadersAndProperties(session, baseMessage, headers, properties);
             case TEXT:
                 TextMessage textMessage = session.createTextMessage();
-                String msg = (String) messageMap.get("message");
+                String msg = (String) messageMap.get(MESSAGE_FIELD);
                 textMessage.setText(msg);
                 return setHeadersAndProperties(session, textMessage, headers, properties);
             case MAP:
                 MapMessage mapMessage = session.createMapMessage();
-                Map msgMap = (Map) messageMap.get("message");;
+                Map msgMap = (Map) messageMap.get(MESSAGE_FIELD);;
                 Iterator it = msgMap.entrySet().iterator();
                 while (it.hasNext()) {
                     Map.Entry pair = (Map.Entry)it.next();
@@ -82,21 +102,21 @@ public class BaseMessageHandler implements MessageHandlerInterface {
     protected Message setHeadersAndProperties(Session session, Message message, Map<String, Object> headers, Map<String, Object> properties) throws JMSException {
         // Set the JMS Message Headers if they were specified
         if (headers != null) {
-            if (headers.get("JMSCorrelationID") instanceof String) {
-                message.setJMSCorrelationID((String) headers.get("JMSCorrelationID"));
+            if (headers.get(JMS_CORRELATION_ID) instanceof String) {
+                message.setJMSCorrelationID((String) headers.get(JMS_CORRELATION_ID));
             }
-            if (headers.get("JMSReplyTo") instanceof Map) {
-                Map jmsReply = (Map) headers.get("JMSReplyTo");
-                if (jmsReply.get("queue") instanceof String) {
-                    Destination destination = session.createQueue((String) jmsReply.get("queue"));
+            if (headers.get(JMS_REPLY_TO) instanceof Map) {
+                Map jmsReply = (Map) headers.get(JMS_REPLY_TO);
+                if (jmsReply.get(QUEUE) instanceof String) {
+                    Destination destination = session.createQueue((String) jmsReply.get(QUEUE));
                     message.setJMSReplyTo(destination);
-                } else if (jmsReply.get("topic") instanceof String) {
-                    Destination destination = session.createTopic((String) jmsReply.get("queue"));
+                } else if (jmsReply.get(TOPIC) instanceof String) {
+                    Destination destination = session.createTopic((String) jmsReply.get(TOPIC));
                     message.setJMSReplyTo(destination);
                 }
             }
-            if (headers.get("JMSType") instanceof String) {
-                message.setJMSType((String) headers.get("JMSType"));
+            if (headers.get(JMS_TYPE) instanceof String) {
+                message.setJMSType((String) headers.get(JMS_TYPE));
             }
         }
         
@@ -120,7 +140,7 @@ public class BaseMessageHandler implements MessageHandlerInterface {
         if (message instanceof TextMessage) {
             // Extract the string message
             String msgText = ((TextMessage) message).getText();
-            msgMap.put("message", msgText);
+            msgMap.put(MESSAGE_FIELD, msgText);
         } else if (message instanceof MapMessage) {
             // Get the map names, and then extract the data accordingly
             Map<String, Object> map = new LinkedHashMap<String, Object>();
@@ -129,13 +149,13 @@ public class BaseMessageHandler implements MessageHandlerInterface {
               String key = (String) en.nextElement();
               map.put(key, ((MapMessage) message).getObject(key));
             }
-            msgMap.put("message", map);
+            msgMap.put(MESSAGE_FIELD, map);
         } else if (message instanceof BytesMessage || message instanceof StreamMessage || message instanceof ObjectMessage) {
             // Throw exception for unsupported message types
             throw new UnsupportedJMSMessageTypeException(message.getJMSType());
         } else {
             // Send null as message since the message has no payload
-            msgMap.put("message", null);
+            msgMap.put(MESSAGE_FIELD, null);
         }
         
         // Iterating through JMS Message Properties
@@ -148,29 +168,29 @@ public class BaseMessageHandler implements MessageHandlerInterface {
             
             // Getting the JMS Message Headers
             if (message.getJMSDestination() != null) {
-                headers.put("JMSDestination", message.getJMSDestination().toString());
+                headers.put(JMS_DESTINATION, message.getJMSDestination().toString());
             }
             if (message.getJMSReplyTo() != null) {
-                headers.put("JMSReplyTo", message.getJMSReplyTo().toString());
+                headers.put(JMS_REPLY_TO, message.getJMSReplyTo().toString());
             }
-            headers.put("JMSDeliveryMode", message.getJMSDeliveryMode());
-            headers.put("JMSExpiration", message.getJMSExpiration());
-            headers.put("JMSPriority", message.getJMSPriority());
-            headers.put("JMSMessageID", message.getJMSMessageID());
-            headers.put("JMSTimestamp", message.getJMSTimestamp());
-            headers.put("JMSCorrelationID", message.getJMSCorrelationID());
-            headers.put("JMSType", message.getJMSType());
-            headers.put("JMSRedelivered", message.getJMSRedelivered());
+            headers.put(JMS_DELIVERY_MODE, message.getJMSDeliveryMode());
+            headers.put(JMS_EXPIRATION, message.getJMSExpiration());
+            headers.put(JMS_PRIORITY, message.getJMSPriority());
+            headers.put(JMS_MESSAGE_ID, message.getJMSMessageID());
+            headers.put(JMS_TIMESTAMP, message.getJMSTimestamp());
+            headers.put(JMS_CORRELATION_ID, message.getJMSCorrelationID());
+            headers.put(JMS_TYPE, message.getJMSType());
+            headers.put(JMS_REDELIVERED, message.getJMSRedelivered());
         }
             
         if (isQueue) {
-            msgMap.put("queue", destName);
+            msgMap.put(QUEUE, destName);
         } else {
-            msgMap.put("topic", destName);
+            msgMap.put(TOPIC, destName);
         }
         
-        msgMap.put("headers", headers);
-        msgMap.put("properties", properties);
+        msgMap.put(HEADERS, headers);
+        msgMap.put(PROPERTIES, properties);
         
         return msgMap;
     }

@@ -35,6 +35,7 @@ public class JMSQueueMessageConsumer {
     
     private boolean closing = false;
     
+    // The timeout for receiving a message, set to 1 second
     private static final int CONSUME_TIMEOUT = 1000;
     
     private Context context;
