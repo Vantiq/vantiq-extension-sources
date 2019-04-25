@@ -245,9 +245,9 @@ must have two query parameters: `operation` and `queue`. A third optional parame
 Currently there is only one `operation` that is supported, which is the "read" `operation`. In the future, there may be 
 different SELECT Operations. The `queue` parameter is the name of the queue from which to read. The `timeout` parameter can be 
 used to force the queue message consumer to wait up to `timeout` milliseconds for a queue message to arrive. The `timeout` 
-parameter must be a **non-negative integer**. If the `timeout` value is set to 0, this will make the queue message consumer 
-wait *indefinitely* for a queue message to arrive. The following two examples demonstrate a Procedure created in VANTIQ Modelo 
-querying against a JMS Source, (with and without `timeout`):
+parameter must be a **non-negative integer**, otherwise it will be ignored. If the `timeout` value is set to 0, this will make 
+the queue message consumer wait *indefinitely* for a queue message to arrive. The following two examples demonstrate a 
+Procedure created in VANTIQ Modelo querying against a JMS Source, (with and without `timeout`):
 
 ```
 PROCEDURE readMessageFromQueue()
