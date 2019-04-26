@@ -338,8 +338,8 @@ Specifically, this JSON document is the configuration document delivered as part
 To develop or build within this environment, we use `gradle` to build.
 
 Some of the connectors require other software to build.
-Generally, these are things that are not available a maven downloads,
-or are things that vary with each build.
+Generally, these are things that are not available as downloads via `gradle` dependencies,
+or are things that are specific to each use.
 For example,
 building the JDBC connector requires that the developer building the connector provide
 the appropriate JDBC driver to make the database connection.
@@ -351,7 +351,4 @@ all possible options,
 we have parameterized the top-level `settings.gradle` file.
 The `settings.gradle` file determines the scope of the build.
 Connectors requiring a driver are included in the overall build *only if* the associated driver location environment variable is present.
-Otherwise, the connector is ignored.
-
-
-
+Otherwise, the connector is ignored for the build.
