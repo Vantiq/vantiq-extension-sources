@@ -15,6 +15,7 @@ import java.util.Map;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
@@ -349,7 +350,8 @@ public class ObjectRecognitionConfigHandler extends Handler<ExtensionServiceMess
     private boolean prepareCommunication(Map<String, ?> general) {
         int polling = -1; // initializing to an invalid input
         boolean queryable = false;
-        source.pool = new ThreadPoolExecutor(5, 5, 0l, TimeUnit.MILLISECONDS, new LinkedBlockingQueue<Runnable>(10));
+        source.pool = new ThreadPoolExecutor(10, 10, 0l, TimeUnit.MILLISECONDS, new LinkedBlockingQueue<Runnable>(20), 
+                new ThreadPoolExecutor.DiscardOldestPolicy());
         TimerTask task = new TimerTask() {
             @Override
             public void run() {
