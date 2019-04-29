@@ -1217,7 +1217,17 @@ public class TestYoloProcessor extends NeuralNetTestBase {
         }
 
     }
-
+    
+    @Test
+    public void testInvalidPreCropping() {
+        
+    }
+    
+    @Test
+    public void testPreCropping() {
+        
+    }
+ 
     // ================================================= Helper functions =================================================
     String imageResultsAsString = "[{\"confidence\":0.8445639, \"location\":{\"top\":255.70024, \"left\":121.859344, \"bottom\":372.2343, "
             + "\"right\":350.1204}, \"label\":\"keyboard\"}, {\"confidence\":0.7974271, \"location\":{\"top\":91.255974, \"left\":164.41359, "

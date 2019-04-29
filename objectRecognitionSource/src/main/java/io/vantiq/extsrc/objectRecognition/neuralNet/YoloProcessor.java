@@ -9,8 +9,15 @@
 
 package io.vantiq.extsrc.objectRecognition.neuralNet;
 
+import java.awt.image.BufferedImage;
+import java.awt.image.RasterFormatException;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.util.List;
 import java.util.Map;
+
+import javax.imageio.ImageIO;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -75,6 +82,13 @@ public class YoloProcessor implements NeuralNetInterface {
     ImageUtil imageUtil;
     float threshold = 0.5f;
     int saveRate = 1;
+    
+    // Variables for pre crop
+    int x = -1;
+    int y = -1; 
+    int w = -1;
+    int h = -1;
+    boolean preCropping = false;
     
     ObjectDetector objectDetector = null;
     
@@ -227,6 +241,29 @@ public class YoloProcessor implements NeuralNetInterface {
            // Flag to mark that we should not save images
            imageUtil.saveImage = false;
        }
+       
+       // Checking if pre cropping was specified in config
+       if (neuralNet.get("preCrop") instanceof Map) {
+           Map preCrop = (Map) neuralNet.get("preCrop");
+           if (preCrop.get("x") instanceof Integer && (Integer) preCrop.get("x") >= 0) {
+               x = (Integer) preCrop.get("x");
+           }
+           if (preCrop.get("y") instanceof Integer && (Integer) preCrop.get("y") >= 0) {
+               y = (Integer) preCrop.get("y");
+           }
+           if (preCrop.get("w") instanceof Integer && (Integer) preCrop.get("w") >= 0) {
+               w = (Integer) preCrop.get("w");
+           }
+           if (preCrop.get("h") instanceof Integer && (Integer) preCrop.get("h") >= 0) {
+               h = (Integer) preCrop.get("h");
+           }
+           if (x >= 0 && y >= 0 && w >= 0 && h >= 0) {
+               preCropping = true;
+           } else {
+               log.error("The values specified by the preCrop config option were invalid. Each value must be a non-negative "
+                       + "integer.");
+           }
+       }
    }
 
     /**
@@ -238,6 +275,11 @@ public class YoloProcessor implements NeuralNetInterface {
         NeuralNetResults results = new NeuralNetResults();
         long after;
         long before = System.currentTimeMillis();
+        
+        // Pre crop the image if vals were specified
+        if (preCropping) {
+            image = cropImage(image, x, y, w, h);
+        }
 
         try {
             foundObjects = objectDetector.detect(image);
@@ -291,6 +333,38 @@ public class YoloProcessor implements NeuralNetInterface {
                 }
             }
         }
+                
+        // Checking if pre cropping was specified in query parameters
+        boolean queryCrop = false;
+        int x, y, w, h;
+        x = y = w = h = -1;
+        if (request.get("preCrop") instanceof Map) {
+            Map preCrop = (Map) request.get("preCrop");
+            if (preCrop.get("x") instanceof Integer && (Integer) preCrop.get("x") >= 0) {
+                x = (Integer) preCrop.get("x");
+            }
+            if (preCrop.get("y") instanceof Integer && (Integer) preCrop.get("y") >= 0) {
+                y = (Integer) preCrop.get("y");
+            }
+            if (preCrop.get("w") instanceof Integer && (Integer) preCrop.get("w") >= 0) {
+                w = (Integer) preCrop.get("w");
+            }
+            if (preCrop.get("h") instanceof Integer && (Integer) preCrop.get("h") >= 0) {
+                h = (Integer) preCrop.get("h");
+            }
+            if (x >= 0 && y >= 0 && w >= 0 && h >= 0) {
+                queryCrop = true;
+            } else {
+                log.error("The values specified by the preCrop query parameter were invalid. Each value must be a "
+                        + "non-negative integer.");
+            }
+        }
+        
+        if (queryCrop) {
+            image = cropImage(image, x, y, w, h);
+        } else if (preCropping) {
+            image = cropImage(image, this.x, this.y, this.w, this.h);
+        }
         
         long after;
         long before = System.currentTimeMillis();
@@ -314,6 +388,45 @@ public class YoloProcessor implements NeuralNetInterface {
         }
         results.setResults(foundObjects);
         return results;
+    }
+    
+    /**
+     * A helper method used to crop images before they are run through the YOLO Processor, if specified in the
+     * source configuration or as query parameters. Returns the original image if an exception was caught while
+     * cropping.
+     * @param image     The byte array representation of the captured image
+     * @param x         The top left x coordinate
+     * @param y         The top left y coordinate
+     * @param w         The width of the "sub image"
+     * @param h         The height of the "sub image"
+     * @return          The cropped image resulting from the parameters above
+     */
+    public byte[] cropImage(byte[] image, int x, int y, int w, int h) {
+        try {
+            // Convert byte[] to BufferedImage and crop
+            ByteArrayInputStream bais = new ByteArrayInputStream(image);
+            BufferedImage buffImage = ImageIO.read(bais);
+            BufferedImage croppedImage = buffImage.getSubimage(x, y, w, h);
+            
+            // Convert BufferedImage to byte[] and save it
+            ByteArrayOutputStream baos = new ByteArrayOutputStream();
+            ImageIO.write(croppedImage, "jpg", baos);
+            baos.flush();
+            image = baos.toByteArray();
+            
+            // Close input/output streams
+            baos.close();
+            bais.close();
+        } catch (IOException e) {
+            log.error("An error occured when trying to crop the captured image. Image will not be cropped.");
+        } catch (RasterFormatException e) {
+            log.error("An error occured when trying to crop the captured image. This most likely occured because "
+                    + "the values given for cropping resulted in coordinates outside of the image. Image will not be cropped");
+        } catch (Exception e) {
+            log.error("An unexpected error occured while trying to crop the captured image. Image will not be cropped");
+        }
+        
+        return image;
     }
 
     @Override
