@@ -99,6 +99,9 @@ public class ObjectRecognitionConfigHandler extends Handler<ExtensionServiceMess
     
     Handler<ExtensionServiceMessage> queryHandler;
     
+    private static final int MAX_RUNNING_THREADS = 10;
+    private static final int MAX_QUEUED_THREADS = 20;
+    
     /**
      * Initializes the Handler for a source. The source name will be used in the logger's name.
      * @param source    The source that this handler is attached to
@@ -350,8 +353,19 @@ public class ObjectRecognitionConfigHandler extends Handler<ExtensionServiceMess
     private boolean prepareCommunication(Map<String, ?> general) {
         int polling = -1; // initializing to an invalid input
         boolean queryable = false;
-        source.pool = new ThreadPoolExecutor(10, 10, 0l, TimeUnit.MILLISECONDS, new LinkedBlockingQueue<Runnable>(20), 
-                new ThreadPoolExecutor.DiscardOldestPolicy());
+        int maxRunningThreads = MAX_RUNNING_THREADS;
+        int maxQueuedThreads = MAX_QUEUED_THREADS;
+        
+        if (general.get("maxRunningThreads") instanceof Integer && (Integer) general.get("maxRunningThreads") > 0) {
+            maxRunningThreads = (Integer) general.get("maxRunningThreads");
+        }
+        
+        if (general.get("maxQueuedThreads") instanceof Integer && (Integer) general.get("maxQueuedThreads") > 0) {
+            maxQueuedThreads = (Integer) general.get("maxQueuedThreads");
+        }
+                
+        source.pool = new ThreadPoolExecutor(maxRunningThreads, maxRunningThreads, 0l, TimeUnit.MILLISECONDS, 
+                new LinkedBlockingQueue<Runnable>(maxQueuedThreads), new ThreadPoolExecutor.DiscardOldestPolicy());
         TimerTask task = new TimerTask() {
             @Override
             public void run() {

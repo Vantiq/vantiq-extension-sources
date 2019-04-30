@@ -182,6 +182,34 @@ public class TestObjRecConfig {
     }
     
     @Test
+    public void testInvalidThreadConfigs() {
+        Map conf = minimalConfig();
+        general.put("maxRunningThreads", "jibberish");
+        general.put("maxQueuedThreads", "moreJibberish");
+        sendConfig(conf);
+        assertFalse("Should not fail when thread config options are strings.", configIsFailed());
+        
+        general.put("maxRunningThreads", -1);
+        general.put("maxQueuedThreads", -10);
+        sendConfig(conf);
+        assertFalse("Should not fail when thread config options are negative.", configIsFailed());
+    }
+    
+    @Test
+    public void testValidThreadConfigs() {
+        Map conf = minimalConfig();
+        general.put("maxRunningThreads", 5);
+        general.put("maxQueuedThreads", 10);
+        sendConfig(conf);
+        assertFalse("Should not fail when maxRunningThreads < maxQueuedThreads.", configIsFailed());
+        
+        general.put("maxRunningThreads", 10);
+        general.put("maxQueuedThreads", 5);
+        sendConfig(conf);
+        assertFalse("Should not fail when maxRunningThreads > maxQueuedThreads.", configIsFailed());
+    }
+    
+    @Test
     public void testMinimalConfig() {
         nCore.start(5); // Need a client to avoid NPEs on sends
         
