@@ -185,12 +185,12 @@ public class TestObjRecConfig {
     public void testInvalidThreadConfigs() {
         Map conf = minimalConfig();
         general.put("maxRunningThreads", "jibberish");
-        general.put("maxQueuedThreads", "moreJibberish");
+        general.put("maxQueuedTasks", "moreJibberish");
         sendConfig(conf);
         assertFalse("Should not fail when thread config options are strings.", configIsFailed());
         
         general.put("maxRunningThreads", -1);
-        general.put("maxQueuedThreads", -10);
+        general.put("maxQueuedTasks", -10);
         sendConfig(conf);
         assertFalse("Should not fail when thread config options are negative.", configIsFailed());
     }
@@ -199,12 +199,12 @@ public class TestObjRecConfig {
     public void testValidThreadConfigs() {
         Map conf = minimalConfig();
         general.put("maxRunningThreads", 5);
-        general.put("maxQueuedThreads", 10);
+        general.put("maxQueuedTasks", 10);
         sendConfig(conf);
         assertFalse("Should not fail when maxRunningThreads < maxQueuedThreads.", configIsFailed());
         
         general.put("maxRunningThreads", 10);
-        general.put("maxQueuedThreads", 5);
+        general.put("maxQueuedTasks", 5);
         sendConfig(conf);
         assertFalse("Should not fail when maxRunningThreads > maxQueuedThreads.", configIsFailed());
     }
