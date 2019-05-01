@@ -201,12 +201,12 @@ public class TestObjRecConfig {
         general.put("maxRunningThreads", 5);
         general.put("maxQueuedTasks", 10);
         sendConfig(conf);
-        assertFalse("Should not fail when maxRunningThreads < maxQueuedThreads.", configIsFailed());
+        assertFalse("Should not fail when maxRunningThreads < maxQueuedTasks.", configIsFailed());
         
         general.put("maxRunningThreads", 10);
         general.put("maxQueuedTasks", 5);
         sendConfig(conf);
-        assertFalse("Should not fail when maxRunningThreads > maxQueuedThreads.", configIsFailed());
+        assertFalse("Should not fail when maxRunningThreads > maxQueuedTasks.", configIsFailed());
     }
     
     @Test
