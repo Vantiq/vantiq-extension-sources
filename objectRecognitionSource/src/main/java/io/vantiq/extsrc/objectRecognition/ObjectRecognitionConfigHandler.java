@@ -84,6 +84,7 @@ public class ObjectRecognitionConfigHandler extends Handler<ExtensionServiceMess
     private static final String YOLO = "yolo";
     private static final String NONE = "none";
     private static final String DEFAULT = "default";
+    private static final String TEST = "test";
     private static final String POLL_TIME = "pollTime";
     private static final String POLL_RATE = "pollRate";
     private static final String ALLOW_QUERIES = "allowQueries";
@@ -170,6 +171,7 @@ public class ObjectRecognitionConfigHandler extends Handler<ExtensionServiceMess
     final String YOLO_PROCESSOR_FQCN        = "io.vantiq.extsrc.objectRecognition.neuralNet.YoloProcessor";
     final String NO_PROCESSOR_FQCN          = "io.vantiq.extsrc.objectRecognition.neuralNet.NoProcessor";
     final String DEFAULT_NEURAL_NET         = "io.vantiq.extsrc.objectRecognition.neuralNet.DefaultProcessor";
+    final String TEST_PROCESSOR_FQCN        = "io.vantiq.extsrc.objectRecognition.neuralNet.TestProcessor";
     
     /**
      * Interprets the configuration message sent by the Vantiq server and sets up the neural network and data retriever.
@@ -257,6 +259,8 @@ public class ObjectRecognitionConfigHandler extends Handler<ExtensionServiceMess
                 neuralNetType = YOLO_PROCESSOR_FQCN;
             } else if (neuralNetType.equals(NONE)) {
                 neuralNetType = NO_PROCESSOR_FQCN;
+            } else if (neuralNetType.equals(TEST)) {
+                neuralNetType = TEST_PROCESSOR_FQCN;
             } else if (neuralNetType.equals(DEFAULT)) {
                 neuralNetType = DEFAULT_NEURAL_NET;
             }
@@ -395,7 +399,7 @@ public class ObjectRecognitionConfigHandler extends Handler<ExtensionServiceMess
             source.pollTimer.schedule(task, 0, pollRate);
         } else if (polling == 0) {
             source.pollTimer = new Timer("dataCapture");
-            source.pollTimer.scheduleAtFixedRate(task, 0, 1);
+            source.pollTimer.schedule(task, 0, 1);
             // 1 ms will be fast enough unless image gathering, image processing, and data sending combined are
             // sub millisecond
         }
