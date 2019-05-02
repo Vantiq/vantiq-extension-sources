@@ -275,7 +275,7 @@ public class YoloProcessor implements NeuralNetInterface2 {
         }
 
         after = System.currentTimeMillis();
-        log.debug("Image processing time: {}.{} seconds"
+        log.debug("Image processing time for source " + sourceName + ": {}.{} seconds"
                 , (after - before) / 1000, String.format("%03d", (after - before) % 1000));
         
         // Save filename, or mark it as null if images are not saved
