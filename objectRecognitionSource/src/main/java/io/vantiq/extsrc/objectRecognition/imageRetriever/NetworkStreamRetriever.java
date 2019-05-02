@@ -92,6 +92,10 @@ public class NetworkStreamRetriever implements ImageRetrieverInterface {
      */
     @Override
     public ImageRetrieverResults getImage() throws ImageAcquisitionException {
+        // Used to check how long image retrieving takes
+        long after;
+        long before = System.currentTimeMillis();
+        
         // Reading the next video frame from the camera
         Mat matrix = new Mat();
         ImageRetrieverResults results = new ImageRetrieverResults();
@@ -136,6 +140,10 @@ public class NetworkStreamRetriever implements ImageRetrieverInterface {
         
         results.setImage(imageByte);
         results.setTimestamp(captureTime);
+        
+        after = System.currentTimeMillis();
+        log.debug("Image retrieving time: {}.{} seconds"
+                , (after - before) / 1000, String.format("%03d", (after - before) % 1000));
         
         return results;
     }
