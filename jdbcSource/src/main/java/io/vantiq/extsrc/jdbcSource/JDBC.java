@@ -33,6 +33,14 @@ public class JDBC {
     private Statement   stmt = null;
     private ResultSet   rs   = null;    
     
+    // Used to reconnect if necessary
+    private String dbURL;
+    private String username;
+    private String password;
+    
+    // Timeout (in seconds) used to check if connection is still valid
+    private static final int CHECK_CONNECTION_TIMEOUT = 5;
+    
     DateFormat dfTimestamp  = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSZ");
     DateFormat dfDate       = new SimpleDateFormat("yyyy-MM-dd");
     DateFormat dfTime       = new SimpleDateFormat("HH:mm:ss.SSSZ");
@@ -49,6 +57,10 @@ public class JDBC {
             // Open a connection
             conn = DriverManager.getConnection(dbURL,username,password);
             
+            // Save login credentials for reconnection if necessary
+            this.dbURL = dbURL;
+            this.username = username;
+            this.password = password;
         } catch (SQLException e) {
             // Handle errors for JDBC
             reportSQLError(e);
@@ -63,6 +75,9 @@ public class JDBC {
      * @throws VantiqSQLException
      */
     public HashMap[] processQuery(String sqlQuery) throws VantiqSQLException {
+        // Check that connection hasn't closed
+        diagnoseConnection();
+        
         HashMap[] rsArray = null;
         try (Statement stmt = conn.createStatement();
             ResultSet rs = stmt.executeQuery(sqlQuery)) {
@@ -83,11 +98,13 @@ public class JDBC {
      * @throws VantiqSQLException
      */
     public int processPublish(String sqlQuery) throws VantiqSQLException {
+        // Check that connection hasn't closed
+        diagnoseConnection();
+        
         int publishSuccess = -1;
         try (Statement stmt = conn.createStatement()) {
             this.stmt = stmt;
             publishSuccess = stmt.executeUpdate(sqlQuery);
-            
         } catch (SQLException e) {
             // Handle errors for JDBC
             reportSQLError(e);
@@ -158,6 +175,21 @@ public class JDBC {
         }
         HashMap[] rowsArray = rows.toArray(new HashMap[rows.size()]);
         return rowsArray;
+    }
+    
+    /**
+     * Method used to try and reconnect if database connection was lost.
+     * @throws VantiqSQLException
+     */
+    public void diagnoseConnection() throws VantiqSQLException {
+        try {
+            if (!conn.isValid(CHECK_CONNECTION_TIMEOUT)) {
+                conn = DriverManager.getConnection(dbURL,username,password);
+            }
+        } catch (SQLException e) {
+            // Handle errors for JDBC
+            reportSQLError(e);
+        }
     }
     
     /**
