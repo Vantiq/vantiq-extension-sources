@@ -48,12 +48,15 @@ public class NetworkStreamRetriever implements ImageRetrieverInterface {
     String         camera;
     Logger         log = LoggerFactory.getLogger(this.getClass().getCanonicalName());
     Boolean        isPushProtocol = false;
+    
+    private String sourceName;
 
     // Constants for source configuration
     private static final String CAMERA = "camera";
     
     @Override
     public void setupDataRetrieval(Map<String, ?> dataSourceConfig, ObjectRecognitionCore source) throws Exception {
+        sourceName = source.getSourceName();
         try {
             System.loadLibrary(Core.NATIVE_LIBRARY_NAME);
         } catch (Throwable t) {
@@ -148,7 +151,7 @@ public class NetworkStreamRetriever implements ImageRetrieverInterface {
         results.setTimestamp(captureTime);
         
         after = System.currentTimeMillis();
-        log.debug("Image retrieving time: {}.{} seconds"
+        log.debug("Image retrieving time for source " + sourceName + ": {}.{} seconds"
                 , (after - before) / 1000, String.format("%03d", (after - before) % 1000));
         
         return results;
