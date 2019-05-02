@@ -93,7 +93,7 @@ public class TestJDBC extends TestJDBCBase {
     static Vantiq vantiq;
     
     @Before
-    public void setup() { 
+    public void setup() {
         jdbc = new JDBC();
         vantiq = new io.vantiq.client.Vantiq(testVantiqServer);
         vantiq.setAccessToken(testAuthToken);

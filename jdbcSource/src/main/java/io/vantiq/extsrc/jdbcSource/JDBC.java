@@ -30,8 +30,6 @@ import io.vantiq.extsrc.jdbcSource.exception.VantiqSQLException;
 public class JDBC {
     Logger              log  = LoggerFactory.getLogger(this.getClass().getCanonicalName());
     private Connection  conn = null;
-    private Statement   stmt = null;
-    private ResultSet   rs   = null;    
     
     // Used to reconnect if necessary
     private String dbURL;
@@ -81,8 +79,6 @@ public class JDBC {
         HashMap[] rsArray = null;
         try (Statement stmt = conn.createStatement();
             ResultSet rs = stmt.executeQuery(sqlQuery)) {
-            this.stmt = stmt;
-            this.rs = rs;
             rsArray = createMapFromResults(rs);           
         } catch (SQLException e) {
             // Handle errors for JDBC
@@ -103,7 +99,6 @@ public class JDBC {
         
         int publishSuccess = -1;
         try (Statement stmt = conn.createStatement()) {
-            this.stmt = stmt;
             publishSuccess = stmt.executeUpdate(sqlQuery);
         } catch (SQLException e) {
             // Handle errors for JDBC
@@ -204,44 +199,9 @@ public class JDBC {
     }
     
     /**
-     * Calls the close functions for the SQL ResultSet, Statement, and Connection.
-     */
-    public void close() {
-        closeResultSet();
-        closeStatement();
-        closeConnection();
-    }
-    
-    /**
-     * Closes the SQL ResultSet.
-     */
-    public void closeResultSet() {
-        try {
-            if (rs!=null) {
-                rs.close();
-            }
-        } catch(SQLException e) {
-            log.error("A error occurred when closing the ResultSet: ", e);
-        }
-    }
-    
-    /**
-     * Closes the SQL Statement.
-     */
-    public void closeStatement() {
-        try {
-            if (stmt!=null) {
-                stmt.close();
-            }
-        } catch(SQLException e) {
-            log.error("A error occurred when closing the Statement: ", e);
-        }
-    }
-    
-    /**
      * Closes the SQL Connection.
      */
-    public void closeConnection() {
+    public void close() {
         try {
             if (conn!=null) {
                 conn.close();
