@@ -123,8 +123,12 @@ public class NetworkStreamRetriever implements ImageRetrieverInterface {
                 throw new FatalImageException(this.getClass().getCanonicalName() + ".mainCameraClosed: " 
                         + "Camera '" + camera + "' has closed");
             } else {
-                throw new ImageAcquisitionException(this.getClass().getCanonicalName() + ".mainCameraReadError: " 
-                        + "Could not obtain frame from camera '" + camera + "'");
+                capture.read(matrix);
+                if (matrix.empty()) {
+                    matrix.release();
+                    throw new ImageAcquisitionException(this.getClass().getCanonicalName() + ".mainCameraReadError2: " 
+                            + "Could not obtain frame from camera '" + camera + "'");
+                }
             }
         }
       
