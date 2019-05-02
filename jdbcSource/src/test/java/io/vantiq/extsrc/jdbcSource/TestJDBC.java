@@ -78,6 +78,10 @@ public class TestJDBC extends TestJDBCBase {
     static final String DELETE_ROW_NULL_VALUES = "DELETE FROM TestNullValues";
     static final String DROP_TABLE_NULL_VALUES = "DROP TABLE TestNullValues";
     
+    // Queries for checking dropped connection
+    static final String CREATE_TABLE_AFTER_LOST_CONNECTION = "CREATE TABLE NoConnection(id int);";
+    static final String DROP_TABLE_AFTER_LOST_CONNECTION = "DROP TABLE NoConnection;";
+    
     static final String timestampPattern = "\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}.\\d{3}-\\d{4}";
     static final String datePattern = "\\d{4}-\\d{2}-\\d{2}";
     static final String timePattern = "\\d{2}:\\d{2}:\\d{2}.\\d{3}-\\d{4}";
@@ -93,7 +97,7 @@ public class TestJDBC extends TestJDBCBase {
     static Vantiq vantiq;
     
     @Before
-    public void setup() { 
+    public void setup() {
         jdbc = new JDBC();
         vantiq = new io.vantiq.client.Vantiq(testVantiqServer);
         vantiq.setAccessToken(testAuthToken);
@@ -139,6 +143,13 @@ public class TestJDBC extends TestJDBCBase {
             // Delete fourth table
             try {
                 dropTablesJDBC.processPublish(DROP_TABLE_NULL_VALUES);
+            } catch (VantiqSQLException e) {
+                // Shouldn't throw Exception
+            }
+            
+            // Delete fifth table
+            try {
+                dropTablesJDBC.processPublish(DROP_TABLE_AFTER_LOST_CONNECTION);
             } catch (VantiqSQLException e) {
                 // Shouldn't throw Exception
             }
@@ -507,6 +518,26 @@ public class TestJDBC extends TestJDBCBase {
             assert message.contains("1366");
         }
         
+    }
+    
+    @Test
+    public void testDBReconnect() throws VantiqSQLException {
+        assumeTrue(testDBUsername != null && testDBPassword != null && testDBURL != null && jdbcDriverLoc != null);
+        jdbc.setupJDBC(testDBURL, testDBUsername, testDBPassword);
+        
+        // Close the connection, and then try to query
+        jdbc.close();
+        
+        // Query should still work, because reconnect will be triggered
+        int publishResult;
+        try {
+            publishResult = jdbc.processPublish(CREATE_TABLE_AFTER_LOST_CONNECTION);
+            assert publishResult == 0;
+        } catch (VantiqSQLException e) {
+            fail("Should not throw an exception");
+        }
+        
+        jdbc.close();
     }
     
     // ================================================= Helper functions =================================================

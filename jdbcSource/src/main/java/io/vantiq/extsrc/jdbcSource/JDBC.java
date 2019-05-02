@@ -30,8 +30,14 @@ import io.vantiq.extsrc.jdbcSource.exception.VantiqSQLException;
 public class JDBC {
     Logger              log  = LoggerFactory.getLogger(this.getClass().getCanonicalName());
     private Connection  conn = null;
-    private Statement   stmt = null;
-    private ResultSet   rs   = null;    
+    
+    // Used to reconnect if necessary
+    private String dbURL;
+    private String username;
+    private String password;
+    
+    // Timeout (in seconds) used to check if connection is still valid
+    private static final int CHECK_CONNECTION_TIMEOUT = 5;
     
     DateFormat dfTimestamp  = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSZ");
     DateFormat dfDate       = new SimpleDateFormat("yyyy-MM-dd");
@@ -49,6 +55,10 @@ public class JDBC {
             // Open a connection
             conn = DriverManager.getConnection(dbURL,username,password);
             
+            // Save login credentials for reconnection if necessary
+            this.dbURL = dbURL;
+            this.username = username;
+            this.password = password;
         } catch (SQLException e) {
             // Handle errors for JDBC
             reportSQLError(e);
@@ -63,11 +73,12 @@ public class JDBC {
      * @throws VantiqSQLException
      */
     public HashMap[] processQuery(String sqlQuery) throws VantiqSQLException {
+        // Check that connection hasn't closed
+        diagnoseConnection();
+        
         HashMap[] rsArray = null;
         try (Statement stmt = conn.createStatement();
             ResultSet rs = stmt.executeQuery(sqlQuery)) {
-            this.stmt = stmt;
-            this.rs = rs;
             rsArray = createMapFromResults(rs);           
         } catch (SQLException e) {
             // Handle errors for JDBC
@@ -83,11 +94,12 @@ public class JDBC {
      * @throws VantiqSQLException
      */
     public int processPublish(String sqlQuery) throws VantiqSQLException {
+        // Check that connection hasn't closed
+        diagnoseConnection();
+        
         int publishSuccess = -1;
         try (Statement stmt = conn.createStatement()) {
-            this.stmt = stmt;
             publishSuccess = stmt.executeUpdate(sqlQuery);
-            
         } catch (SQLException e) {
             // Handle errors for JDBC
             reportSQLError(e);
@@ -161,6 +173,21 @@ public class JDBC {
     }
     
     /**
+     * Method used to try and reconnect if database connection was lost.
+     * @throws VantiqSQLException
+     */
+    public void diagnoseConnection() throws VantiqSQLException {
+        try {
+            if (!conn.isValid(CHECK_CONNECTION_TIMEOUT)) {
+                conn = DriverManager.getConnection(dbURL,username,password);
+            }
+        } catch (SQLException e) {
+            // Handle errors for JDBC
+            reportSQLError(e);
+        }
+    }
+    
+    /**
      * Method used to throw the VantiqSQLException whenever is necessary
      * @param e The SQLException caught by the calling method
      * @throws VantiqSQLException
@@ -172,44 +199,9 @@ public class JDBC {
     }
     
     /**
-     * Calls the close functions for the SQL ResultSet, Statement, and Connection.
-     */
-    public void close() {
-        closeResultSet();
-        closeStatement();
-        closeConnection();
-    }
-    
-    /**
-     * Closes the SQL ResultSet.
-     */
-    public void closeResultSet() {
-        try {
-            if (rs!=null) {
-                rs.close();
-            }
-        } catch(SQLException e) {
-            log.error("A error occurred when closing the ResultSet: ", e);
-        }
-    }
-    
-    /**
-     * Closes the SQL Statement.
-     */
-    public void closeStatement() {
-        try {
-            if (stmt!=null) {
-                stmt.close();
-            }
-        } catch(SQLException e) {
-            log.error("A error occurred when closing the Statement: ", e);
-        }
-    }
-    
-    /**
      * Closes the SQL Connection.
      */
-    public void closeConnection() {
+    public void close() {
         try {
             if (conn!=null) {
                 conn.close();
