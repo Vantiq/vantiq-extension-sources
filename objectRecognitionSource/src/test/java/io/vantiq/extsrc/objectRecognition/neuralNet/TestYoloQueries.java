@@ -92,8 +92,17 @@ public class TestYoloQueries extends NeuralNetTestBase {
     static final String START_DATE = IMAGE_2.get("date");
     static final String END_DATE = IMAGE_4.get("date");
     
+    // For image resizing tests
     static final int RESIZED_IMAGE_WIDTH = 100;
     static final int RESIZED_IMAGE_HEIGHT = 75;
+    
+    // For pre cropping tests
+    static final int TOP_LEFT_X_COORDINATE = 50;
+    static final int TOP_LEFT_Y_COORDINATE = 50;
+    static final int CROPPED_WIDTH = 200;
+    static final int CROPPED_HEIGHT = 150;
+    static final int IP_CAMERA_WIDTH = 800;
+    static final int IP_CAMERA_HEIGHT = 450;
 
     
     @BeforeClass
@@ -712,6 +721,85 @@ public class TestYoloQueries extends NeuralNetTestBase {
                 fail("Images should have been deleted locally.");
             }
         }
+    }
+    
+    @Test
+    public void testInvalidPreCroppingQuery() throws IOException {
+        // Only run test with intended vantiq availability
+        assumeTrue(testAuthToken != null && testVantiqServer != null);
+        
+        // Make sure that output directory has not yet been created
+        File outputDir = new File(OUTPUT_DIR);
+        assert !outputDir.exists();
+                
+        Map<String,Object> params = new LinkedHashMap<String,Object>();
+        
+        // Invalid preCrop, it isn't a map
+        params.put("preCrop", "jibberish");
+        
+        // Run query without setting "operation":"processNextFrame"
+        params.put("NNsaveImage", "local");
+        params.put("NNoutputDir", OUTPUT_DIR);
+        params.put("NNfileName", "testInvalidPreCrop");
+                
+        querySource(params);
+        
+        // Check we saved a file in the output directory
+        outputDir = new File(OUTPUT_DIR);
+        assert outputDir.exists();
+        
+        // Check there is only one file, and it's name is equivalent to QUERY_FILENAME
+        File[] outputDirFiles = outputDir.listFiles();
+        assert outputDirFiles.length == 1;
+        assert outputDirFiles[0].getName().equals("testInvalidPreCrop.jpg");
+        
+        File resizedImageFile = new File(OUTPUT_DIR + "/" + outputDirFiles[0].getName());
+        BufferedImage resizedImage = ImageIO.read(resizedImageFile);
+        
+        assert resizedImage.getWidth() == IP_CAMERA_WIDTH;
+        assert resizedImage.getHeight() == IP_CAMERA_HEIGHT;
+    }
+    
+    @Test
+    public void testPreCroppingQuery() throws IOException {
+        // Only run test with intended vantiq availability
+        assumeTrue(testAuthToken != null && testVantiqServer != null);
+        
+        // Make sure that output directory has not yet been created
+        File outputDir = new File(OUTPUT_DIR);
+        assert !outputDir.exists();
+                
+        Map<String,Object> params = new LinkedHashMap<String,Object>();
+        Map<String, Object> preCrop = new LinkedHashMap<>();
+        
+        preCrop.put("x", TOP_LEFT_X_COORDINATE);
+        preCrop.put("y", TOP_LEFT_Y_COORDINATE);
+        preCrop.put("w", CROPPED_WIDTH);
+        preCrop.put("h", CROPPED_HEIGHT);
+        
+        params.put("preCrop", preCrop);
+        
+        // Run query without setting "operation":"processNextFrame"
+        params.put("NNsaveImage", "local");
+        params.put("NNoutputDir", OUTPUT_DIR);
+        params.put("NNfileName", "testPreCrop");
+                
+        querySource(params);
+        
+        // Check we saved a file in the output directory
+        outputDir = new File(OUTPUT_DIR);
+        assert outputDir.exists();
+        
+        // Check there is only one file, and it's name is equivalent to QUERY_FILENAME
+        File[] outputDirFiles = outputDir.listFiles();
+        assert outputDirFiles.length == 1;
+        assert outputDirFiles[0].getName().equals("testPreCrop.jpg");
+        
+        File resizedImageFile = new File(OUTPUT_DIR + "/" + outputDirFiles[0].getName());
+        BufferedImage resizedImage = ImageIO.read(resizedImageFile);
+        
+        assert resizedImage.getWidth() == CROPPED_WIDTH;
+        assert resizedImage.getHeight() == CROPPED_HEIGHT;
     }
     
     // ================================================= Helper functions =================================================
