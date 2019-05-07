@@ -9,8 +9,15 @@
 
 package io.vantiq.extsrc.objectRecognition.neuralNet;
 
+import java.awt.image.BufferedImage;
+import java.awt.image.RasterFormatException;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.util.List;
 import java.util.Map;
+
+import javax.imageio.ImageIO;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -58,7 +65,7 @@ import io.vantiq.client.Vantiq;
  * 
  * No additional data is given.
  */
-public class YoloProcessor implements NeuralNetInterface {
+public class YoloProcessor extends NeuralNetUtils implements NeuralNetInterface {
     
     Logger log = LoggerFactory.getLogger(this.getClass());
     String pbFile = null;
@@ -76,7 +83,16 @@ public class YoloProcessor implements NeuralNetInterface {
     float threshold = 0.5f;
     int saveRate = 1;
     
+    // Variables for pre crop
+    int x = -1;
+    int y = -1; 
+    int w = -1;
+    int h = -1;
+    boolean preCropping = false;
+    
     ObjectDetector objectDetector = null;
+    
+    private static final String CROP_BEFORE = "cropBeforeAnalysis";
     
     @Override
     public void setupImageProcessing(Map<String, ?> neuralNetConfig, String sourceName, String modelDirectory, String authToken, String server) throws Exception {
@@ -227,6 +243,29 @@ public class YoloProcessor implements NeuralNetInterface {
            // Flag to mark that we should not save images
            imageUtil.saveImage = false;
        }
+       
+       // Checking if pre cropping was specified in config
+       if (neuralNet.get(CROP_BEFORE) instanceof Map) {
+           Map preCrop = (Map) neuralNet.get(CROP_BEFORE);
+           if (preCrop.get("x") instanceof Integer && (Integer) preCrop.get("x") >= 0) {
+               x = (Integer) preCrop.get("x");
+           }
+           if (preCrop.get("y") instanceof Integer && (Integer) preCrop.get("y") >= 0) {
+               y = (Integer) preCrop.get("y");
+           }
+           if (preCrop.get("width") instanceof Integer && (Integer) preCrop.get("width") >= 0) {
+               w = (Integer) preCrop.get("width");
+           }
+           if (preCrop.get("height") instanceof Integer && (Integer) preCrop.get("height") >= 0) {
+               h = (Integer) preCrop.get("height");
+           }
+           if (x >= 0 && y >= 0 && w >= 1 && h >= 1) {
+               preCropping = true;
+           } else {
+               log.error("The values specified by the cropBeforeAnalysis config option were invalid. Each value must be a non-negative "
+                       + "integer.");
+           }
+       }
    }
 
     /**
@@ -238,6 +277,11 @@ public class YoloProcessor implements NeuralNetInterface {
         NeuralNetResults results = new NeuralNetResults();
         long after;
         long before = System.currentTimeMillis();
+        
+        // Pre crop the image if vals were specified
+        if (preCropping) {
+            image = cropImage(image, x, y, w, h);
+        }
 
         try {
             foundObjects = objectDetector.detect(image);
@@ -290,6 +334,38 @@ public class YoloProcessor implements NeuralNetInterface {
                     fileName = (String) request.get("NNfileName");
                 }
             }
+        }
+                
+        // Checking if pre cropping was specified in query parameters
+        boolean queryCrop = false;
+        int x, y, w, h;
+        x = y = w = h = -1;
+        if (request.get(CROP_BEFORE) instanceof Map) {
+            Map preCrop = (Map) request.get(CROP_BEFORE);
+            if (preCrop.get("x") instanceof Integer && (Integer) preCrop.get("x") >= 0) {
+                x = (Integer) preCrop.get("x");
+            }
+            if (preCrop.get("y") instanceof Integer && (Integer) preCrop.get("y") >= 0) {
+                y = (Integer) preCrop.get("y");
+            }
+            if (preCrop.get("width") instanceof Integer && (Integer) preCrop.get("width") >= 0) {
+                w = (Integer) preCrop.get("width");
+            }
+            if (preCrop.get("height") instanceof Integer && (Integer) preCrop.get("height") >= 0) {
+                h = (Integer) preCrop.get("height");
+            }
+            if (x >= 0 && y >= 0 && w >= 1 && h >= 1) {
+                queryCrop = true;
+            } else {
+                log.error("The values specified by the cropBeforeAnalysis query parameter were invalid. Each value must be a "
+                        + "non-negative integer.");
+            }
+        }
+        
+        if (queryCrop) {
+            image = cropImage(image, x, y, w, h);
+        } else if (preCropping) {
+            image = cropImage(image, this.x, this.y, this.w, this.h);
         }
         
         long after;
