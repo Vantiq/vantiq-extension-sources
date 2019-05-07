@@ -71,10 +71,16 @@ public class TestYoloProcessor extends NeuralNetTestBase {
     static final int RESIZED_IMAGE_HEIGHT = 75;
     
     // For pre cropping tests
-    static final int TOP_LEFT_X_COORDINATE = 50;
-    static final int TOP_LEFT_Y_COORDINATE = 50;
+    static final int PRECROP_TOP_LEFT_X_COORDINATE = 50;
+    static final int PRECROP_TOP_LEFT_Y_COORDINATE = 50;
     static final int CROPPED_WIDTH = 200;
     static final int CROPPED_HEIGHT = 150;
+    
+    // For pre cropping results test
+    static final int KEYBOARD_TOP_LEFT_X_COORDINATE = 120;
+    static final int KEYBOARD_TOP_LEFT_Y_COORDINATE = 250;
+    static final int KEYBOARD_CROPPED_WIDTH = 230;
+    static final int KEYBOARD_CROPPED_HEIGHT = 125;
 
     static YoloProcessor ypJson;
     static Vantiq vantiq;
@@ -1231,46 +1237,106 @@ public class TestYoloProcessor extends NeuralNetTestBase {
         Map config = new LinkedHashMap<>();
         Map preCrop = new LinkedHashMap<>();
         
-        // The width and height are larger than the original image, should not do any resizing
-        preCrop.put("x", TOP_LEFT_X_COORDINATE);
-        preCrop.put("y", TOP_LEFT_Y_COORDINATE);
-        preCrop.put("w", 1000);
-        preCrop.put("h", 1000);
-
+        // Uninitialized preCrop
         config.put("pbFile", PB_FILE);
         config.put("metaFile", META_FILE);
         config.put("outputDir", OUTPUT_DIR);
         config.put("saveRate", SAVE_RATE);
         config.put("saveImage", "local");
-        config.put("preCrop", preCrop);
+        config.put("cropBeforeAnalysis", preCrop);
+        checkInvalidPreCropping(config);
+        
+        // Only the "x" value
+        preCrop.put("x", PRECROP_TOP_LEFT_X_COORDINATE);
+        config.put("cropBeforeAnalysis", preCrop);
+        checkInvalidPreCropping(config);
+        
+        // Only the "y" value
+        preCrop.remove("x");
+        preCrop.put("y", PRECROP_TOP_LEFT_Y_COORDINATE);
+        config.put("cropBeforeAnalysis", preCrop);
+        checkInvalidPreCropping(config);
+        
+        // Only the "width" value
+        preCrop.remove("y");
+        preCrop.put("width", CROPPED_WIDTH);
+        config.put("cropBeforeAnalysis", preCrop);
+        checkInvalidPreCropping(config);
+        
+        // Only the "height" value
+        preCrop.remove("width");
+        preCrop.put("height", CROPPED_HEIGHT);
+        config.put("cropBeforeAnalysis", preCrop);
+        checkInvalidPreCropping(config);
+        
+        // Only "x" and "y"
+        preCrop.remove("height");
+        preCrop.put("x", PRECROP_TOP_LEFT_X_COORDINATE);
+        preCrop.put("y", PRECROP_TOP_LEFT_Y_COORDINATE);
+        config.put("cropBeforeAnalysis", preCrop);
+        checkInvalidPreCropping(config);
+        
+        // Only "x", "y", and "width"
+        preCrop.put("width", CROPPED_WIDTH);
+        config.put("cropBeforeAnalysis", preCrop);
+        checkInvalidPreCropping(config);
+        
+        // The width and height are larger than the original image, should not do any resizing
+        preCrop.put("x", PRECROP_TOP_LEFT_X_COORDINATE);
+        preCrop.put("y", PRECROP_TOP_LEFT_Y_COORDINATE);
+        preCrop.put("width", 1000);
+        preCrop.put("height", 1000);
+        config.put("cropBeforeAnalysis", preCrop);
+        checkInvalidPreCropping(config);
+        
+        // The width and height are 0, should not do any resizing
+        preCrop.put("width", 0);
+        preCrop.put("height", 0);
+        config.put("cropBeforeAnalysis", preCrop);
         checkInvalidPreCropping(config);
         
         // The coordinates are negative, should not do any resizing
         preCrop.put("x", -1);
         preCrop.put("y", -1);
-        preCrop.put("w", CROPPED_WIDTH);
-        preCrop.put("h", CROPPED_HEIGHT);
-        config.put("preCrop", preCrop); 
+        preCrop.put("width", CROPPED_WIDTH);
+        preCrop.put("height", CROPPED_HEIGHT);
+        config.put("cropBeforeAnalysis", preCrop); 
+        checkInvalidPreCropping(config);
+        
+        // Just x coordinate is negative, should not do any resizing
+        preCrop.put("x", -1);
+        preCrop.put("y", PRECROP_TOP_LEFT_Y_COORDINATE);
+        preCrop.put("width", CROPPED_WIDTH);
+        preCrop.put("height", CROPPED_HEIGHT);
+        config.put("cropBeforeAnalysis", preCrop); 
+        checkInvalidPreCropping(config);
+        
+        // Just y coordinate is negative, should not do any resizing
+        preCrop.put("x", PRECROP_TOP_LEFT_X_COORDINATE);
+        preCrop.put("y", -1);
+        preCrop.put("width", CROPPED_WIDTH);
+        preCrop.put("height", CROPPED_HEIGHT);
+        config.put("cropBeforeAnalysis", preCrop); 
         checkInvalidPreCropping(config);
         
         // Two values are not integers, should not do any resizing
-        preCrop.put("x", TOP_LEFT_X_COORDINATE);
-        preCrop.put("y", TOP_LEFT_Y_COORDINATE);
-        preCrop.put("w", 0.5);
-        preCrop.put("h", 0.5);
-        config.put("preCrop", preCrop);
+        preCrop.put("x", PRECROP_TOP_LEFT_X_COORDINATE);
+        preCrop.put("y", PRECROP_TOP_LEFT_Y_COORDINATE);
+        preCrop.put("width", 0.5);
+        preCrop.put("height", 0.5);
+        config.put("cropBeforeAnalysis", preCrop);
         checkInvalidPreCropping(config);
         
         // A value is not a number, should not do any resizing
-        preCrop.put("x", TOP_LEFT_X_COORDINATE);
-        preCrop.put("y", TOP_LEFT_Y_COORDINATE);
-        preCrop.put("w", "jibberish");
-        preCrop.put("h", CROPPED_HEIGHT);
-        config.put("preCrop", preCrop);
+        preCrop.put("x", PRECROP_TOP_LEFT_X_COORDINATE);
+        preCrop.put("y", PRECROP_TOP_LEFT_Y_COORDINATE);
+        preCrop.put("width", "jibberish");
+        preCrop.put("height", CROPPED_HEIGHT);
+        config.put("cropBeforeAnalysis", preCrop);
         checkInvalidPreCropping(config);
         
-        // The preCrop is not a map which is not allowed, should not do any resizing
-        config.put("preCrop", "jibberish");
+        // The cropBeforeAnalysis is not a map which is not allowed, should not do any resizing
+        config.put("cropBeforeAnalysis", "jibberish");
         checkInvalidPreCropping(config);
     }
     
@@ -1324,17 +1390,17 @@ public class TestYoloProcessor extends NeuralNetTestBase {
         Map preCrop = new LinkedHashMap<>();
         YoloProcessor ypImageSaver = new YoloProcessor();
         
-        preCrop.put("x", TOP_LEFT_X_COORDINATE);
-        preCrop.put("y", TOP_LEFT_Y_COORDINATE);
-        preCrop.put("w", CROPPED_WIDTH);
-        preCrop.put("h", CROPPED_HEIGHT);
+        preCrop.put("x", PRECROP_TOP_LEFT_X_COORDINATE);
+        preCrop.put("y", PRECROP_TOP_LEFT_Y_COORDINATE);
+        preCrop.put("width", CROPPED_WIDTH);
+        preCrop.put("height", CROPPED_HEIGHT);
         
         config.put("pbFile", PB_FILE);
         config.put("metaFile", META_FILE);
         config.put("outputDir", OUTPUT_DIR);
         config.put("saveRate", SAVE_RATE);
         config.put("saveImage", "local");
-        config.put("preCrop", preCrop);
+        config.put("cropBeforeAnalysis", preCrop);
         try {
             ypImageSaver.setupImageProcessing(config, SOURCE_NAME, MODEL_DIRECTORY, testAuthToken, testVantiqServer);
         } catch (Exception e) {
@@ -1381,17 +1447,17 @@ public class TestYoloProcessor extends NeuralNetTestBase {
         Map preCrop = new LinkedHashMap<>();
         YoloProcessor ypImageSaver = new YoloProcessor();
         
-        preCrop.put("x", TOP_LEFT_X_COORDINATE);
-        preCrop.put("y", TOP_LEFT_Y_COORDINATE);
-        preCrop.put("w", CROPPED_WIDTH);
-        preCrop.put("h", CROPPED_HEIGHT);
+        preCrop.put("x", PRECROP_TOP_LEFT_X_COORDINATE);
+        preCrop.put("y", PRECROP_TOP_LEFT_Y_COORDINATE);
+        preCrop.put("width", CROPPED_WIDTH);
+        preCrop.put("height", CROPPED_HEIGHT);
 
         config.put("pbFile", PB_FILE);
         config.put("metaFile", META_FILE);
         config.put("outputDir", OUTPUT_DIR);
         config.put("saveRate", SAVE_RATE);
         config.put("saveImage", "vantiq");
-        config.put("preCrop", preCrop);
+        config.put("cropBeforeAnalysis", preCrop);
         try {
             ypImageSaver.setupImageProcessing(config, SOURCE_NAME, MODEL_DIRECTORY, testAuthToken, testVantiqServer);
         } catch (Exception e) {
@@ -1446,17 +1512,17 @@ public class TestYoloProcessor extends NeuralNetTestBase {
         Map preCrop = new LinkedHashMap<>();
         YoloProcessor ypImageSaver = new YoloProcessor();
         
-        preCrop.put("x", TOP_LEFT_X_COORDINATE);
-        preCrop.put("y", TOP_LEFT_Y_COORDINATE);
-        preCrop.put("w", CROPPED_WIDTH);
-        preCrop.put("h", CROPPED_HEIGHT);
+        preCrop.put("x", PRECROP_TOP_LEFT_X_COORDINATE);
+        preCrop.put("y", PRECROP_TOP_LEFT_Y_COORDINATE);
+        preCrop.put("width", CROPPED_WIDTH);
+        preCrop.put("height", CROPPED_HEIGHT);
 
         config.put("pbFile", PB_FILE);
         config.put("metaFile", META_FILE);
         config.put("outputDir", OUTPUT_DIR);
         config.put("saveRate", SAVE_RATE);
         config.put("saveImage", "both");
-        config.put("preCrop", preCrop);
+        config.put("cropBeforeAnalysis", preCrop);
         try {
             ypImageSaver.setupImageProcessing(config, SOURCE_NAME, MODEL_DIRECTORY, testAuthToken, testVantiqServer);
         } catch (Exception e) {
@@ -1533,10 +1599,10 @@ public class TestYoloProcessor extends NeuralNetTestBase {
         Map savedResolution = new LinkedHashMap<>();
         YoloProcessor ypImageSaver = new YoloProcessor();
         
-        preCrop.put("x", TOP_LEFT_X_COORDINATE);
-        preCrop.put("y", TOP_LEFT_Y_COORDINATE);
-        preCrop.put("w", CROPPED_WIDTH);
-        preCrop.put("h", CROPPED_HEIGHT);
+        preCrop.put("x", PRECROP_TOP_LEFT_X_COORDINATE);
+        preCrop.put("y", PRECROP_TOP_LEFT_Y_COORDINATE);
+        preCrop.put("width", CROPPED_WIDTH);
+        preCrop.put("height", CROPPED_HEIGHT);
         
         savedResolution.put("longEdge", RESIZED_IMAGE_WIDTH);
         
@@ -1545,7 +1611,7 @@ public class TestYoloProcessor extends NeuralNetTestBase {
         config.put("outputDir", OUTPUT_DIR);
         config.put("saveRate", SAVE_RATE);
         config.put("saveImage", "local");
-        config.put("preCrop", preCrop);
+        config.put("cropBeforeAnalysis", preCrop);
         config.put("savedResolution", savedResolution);
         try {
             ypImageSaver.setupImageProcessing(config, SOURCE_NAME, MODEL_DIRECTORY, testAuthToken, testVantiqServer);
@@ -1595,10 +1661,10 @@ public class TestYoloProcessor extends NeuralNetTestBase {
         Map savedResolution = new LinkedHashMap<>();
         YoloProcessor ypImageSaver = new YoloProcessor();
         
-        preCrop.put("x", TOP_LEFT_X_COORDINATE);
-        preCrop.put("y", TOP_LEFT_Y_COORDINATE);
-        preCrop.put("w", CROPPED_WIDTH);
-        preCrop.put("h", CROPPED_HEIGHT);
+        preCrop.put("x", PRECROP_TOP_LEFT_X_COORDINATE);
+        preCrop.put("y", PRECROP_TOP_LEFT_Y_COORDINATE);
+        preCrop.put("width", CROPPED_WIDTH);
+        preCrop.put("height", CROPPED_HEIGHT);
         
         // This value is larger than the pre-cropped image size
         savedResolution.put("longEdge", 400);
@@ -1608,7 +1674,7 @@ public class TestYoloProcessor extends NeuralNetTestBase {
         config.put("outputDir", OUTPUT_DIR);
         config.put("saveRate", SAVE_RATE);
         config.put("saveImage", "local");
-        config.put("preCrop", preCrop);
+        config.put("cropBeforeAnalysis", preCrop);
         config.put("savedResolution", savedResolution);
         try {
             ypImageSaver.setupImageProcessing(config, SOURCE_NAME, MODEL_DIRECTORY, testAuthToken, testVantiqServer);
@@ -1647,7 +1713,37 @@ public class TestYoloProcessor extends NeuralNetTestBase {
             ypImageSaver.close();
         }
     }
- 
+    
+    @Test
+    public void testPreCroppingResults() {
+        // Only run test with intended vantiq availability
+        assumeTrue(testAuthToken != null && testVantiqServer != null);
+
+        Map config = new LinkedHashMap<>();
+        Map preCrop = new LinkedHashMap<>();
+        YoloProcessor ypImageSaver = new YoloProcessor();
+        
+        preCrop.put("x", KEYBOARD_TOP_LEFT_X_COORDINATE);
+        preCrop.put("y", KEYBOARD_TOP_LEFT_Y_COORDINATE);
+        preCrop.put("width", KEYBOARD_CROPPED_WIDTH);
+        preCrop.put("height", KEYBOARD_CROPPED_HEIGHT);
+
+        config.put("pbFile", PB_FILE);
+        config.put("metaFile", META_FILE);
+        config.put("cropBeforeAnalysis", preCrop);
+
+        // Config with meta file, label file, pb file, and anchors
+        try {
+            ypImageSaver.setupImageProcessing(config, SOURCE_NAME, MODEL_DIRECTORY, testAuthToken, testVantiqServer);
+            verifyProcessing(ypImageSaver, croppedImageResultsAsString);
+        } catch (Exception e) {
+            fail("Should not fail with valid config.");
+        } finally {
+            if (ypImageSaver != null) {
+                ypImageSaver.close();
+            }
+        }
+    }
     // ================================================= Helper functions =================================================
     String imageResultsAsString = "[{\"confidence\":0.8445639, \"location\":{\"top\":255.70024, \"left\":121.859344, \"bottom\":372.2343, "
             + "\"right\":350.1204}, \"label\":\"keyboard\"}, {\"confidence\":0.7974271, \"location\":{\"top\":91.255974, \"left\":164.41359, "
@@ -1656,7 +1752,10 @@ public class TestYoloProcessor extends NeuralNetTestBase {
     String imageResultsAsString608 = "[{\"confidence\":0.8672237, \"location\":{\"top\":93.55155, \"left\":157.38762, \"bottom\":280.36542, "
             + "\"right\":345.06442}, \"label\":\"tvmonitor\"}, {\"confidence\":0.7927524, \"location\":{\"top\":263.62683, \"left\":123.48807, "
             + "\"bottom\":371.69046, \"right\":331.86023}, \"label\":\"keyboard\"}]";
-
+    
+    String croppedImageResultsAsString = "[{\"confidence\":0.91599655, \"location\":{\"top\":8.16388, \"left\":1.0525968, \"bottom\":118.984344, " 
+            +"\"right\":217.2165}, \"label\":\"keyboard\"}]";
+    
     String neuralNetJSON1 =
             "{"
                     + "     \"neuralNet\":"

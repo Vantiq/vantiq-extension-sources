@@ -65,7 +65,7 @@ import io.vantiq.client.Vantiq;
  * 
  * No additional data is given.
  */
-public class YoloProcessor implements NeuralNetInterface {
+public class YoloProcessor extends ImageCropper implements NeuralNetInterface {
     
     Logger log = LoggerFactory.getLogger(this.getClass());
     String pbFile = null;
@@ -243,24 +243,24 @@ public class YoloProcessor implements NeuralNetInterface {
        }
        
        // Checking if pre cropping was specified in config
-       if (neuralNet.get("preCrop") instanceof Map) {
-           Map preCrop = (Map) neuralNet.get("preCrop");
+       if (neuralNet.get("cropBeforeAnalysis") instanceof Map) {
+           Map preCrop = (Map) neuralNet.get("cropBeforeAnalysis");
            if (preCrop.get("x") instanceof Integer && (Integer) preCrop.get("x") >= 0) {
                x = (Integer) preCrop.get("x");
            }
            if (preCrop.get("y") instanceof Integer && (Integer) preCrop.get("y") >= 0) {
                y = (Integer) preCrop.get("y");
            }
-           if (preCrop.get("w") instanceof Integer && (Integer) preCrop.get("w") >= 0) {
-               w = (Integer) preCrop.get("w");
+           if (preCrop.get("width") instanceof Integer && (Integer) preCrop.get("width") >= 0) {
+               w = (Integer) preCrop.get("width");
            }
-           if (preCrop.get("h") instanceof Integer && (Integer) preCrop.get("h") >= 0) {
-               h = (Integer) preCrop.get("h");
+           if (preCrop.get("height") instanceof Integer && (Integer) preCrop.get("height") >= 0) {
+               h = (Integer) preCrop.get("height");
            }
-           if (x >= 0 && y >= 0 && w >= 0 && h >= 0) {
+           if (x >= 0 && y >= 0 && w >= 1 && h >= 1) {
                preCropping = true;
            } else {
-               log.error("The values specified by the preCrop config option were invalid. Each value must be a non-negative "
+               log.error("The values specified by the cropBeforeAnalysis config option were invalid. Each value must be a non-negative "
                        + "integer.");
            }
        }
@@ -338,24 +338,24 @@ public class YoloProcessor implements NeuralNetInterface {
         boolean queryCrop = false;
         int x, y, w, h;
         x = y = w = h = -1;
-        if (request.get("preCrop") instanceof Map) {
-            Map preCrop = (Map) request.get("preCrop");
+        if (request.get("cropBeforeAnalysis") instanceof Map) {
+            Map preCrop = (Map) request.get("cropBeforeAnalysis");
             if (preCrop.get("x") instanceof Integer && (Integer) preCrop.get("x") >= 0) {
                 x = (Integer) preCrop.get("x");
             }
             if (preCrop.get("y") instanceof Integer && (Integer) preCrop.get("y") >= 0) {
                 y = (Integer) preCrop.get("y");
             }
-            if (preCrop.get("w") instanceof Integer && (Integer) preCrop.get("w") >= 0) {
-                w = (Integer) preCrop.get("w");
+            if (preCrop.get("width") instanceof Integer && (Integer) preCrop.get("width") >= 0) {
+                w = (Integer) preCrop.get("width");
             }
-            if (preCrop.get("h") instanceof Integer && (Integer) preCrop.get("h") >= 0) {
-                h = (Integer) preCrop.get("h");
+            if (preCrop.get("height") instanceof Integer && (Integer) preCrop.get("height") >= 0) {
+                h = (Integer) preCrop.get("height");
             }
-            if (x >= 0 && y >= 0 && w >= 0 && h >= 0) {
+            if (x >= 0 && y >= 0 && w >= 1 && h >= 1) {
                 queryCrop = true;
             } else {
-                log.error("The values specified by the preCrop query parameter were invalid. Each value must be a "
+                log.error("The values specified by the cropBeforeAnalysis query parameter were invalid. Each value must be a "
                         + "non-negative integer.");
             }
         }
@@ -388,45 +388,6 @@ public class YoloProcessor implements NeuralNetInterface {
         }
         results.setResults(foundObjects);
         return results;
-    }
-    
-    /**
-     * A helper method used to crop images before they are run through the YOLO Processor, if specified in the
-     * source configuration or as query parameters. Returns the original image if an exception was caught while
-     * cropping.
-     * @param image     The byte array representation of the captured image
-     * @param x         The top left x coordinate
-     * @param y         The top left y coordinate
-     * @param w         The width of the "sub image"
-     * @param h         The height of the "sub image"
-     * @return          The cropped image resulting from the parameters above
-     */
-    public byte[] cropImage(byte[] image, int x, int y, int w, int h) {
-        try {
-            // Convert byte[] to BufferedImage and crop
-            ByteArrayInputStream bais = new ByteArrayInputStream(image);
-            BufferedImage buffImage = ImageIO.read(bais);
-            BufferedImage croppedImage = buffImage.getSubimage(x, y, w, h);
-            
-            // Convert BufferedImage to byte[] and save it
-            ByteArrayOutputStream baos = new ByteArrayOutputStream();
-            ImageIO.write(croppedImage, "jpg", baos);
-            baos.flush();
-            image = baos.toByteArray();
-            
-            // Close input/output streams
-            baos.close();
-            bais.close();
-        } catch (IOException e) {
-            log.error("An error occured when trying to crop the captured image. Image will not be cropped.");
-        } catch (RasterFormatException e) {
-            log.error("An error occured when trying to crop the captured image. This most likely occured because "
-                    + "the values given for cropping resulted in coordinates outside of the image. Image will not be cropped");
-        } catch (Exception e) {
-            log.error("An unexpected error occured while trying to crop the captured image. Image will not be cropped");
-        }
-        
-        return image;
     }
 
     @Override

@@ -735,7 +735,7 @@ public class TestYoloQueries extends NeuralNetTestBase {
         Map<String,Object> params = new LinkedHashMap<String,Object>();
         
         // Invalid preCrop, it isn't a map
-        params.put("preCrop", "jibberish");
+        params.put("cropBeforeAnalysis", "jibberish");
         
         // Run query without setting "operation":"processNextFrame"
         params.put("NNsaveImage", "local");
@@ -774,10 +774,10 @@ public class TestYoloQueries extends NeuralNetTestBase {
         
         preCrop.put("x", TOP_LEFT_X_COORDINATE);
         preCrop.put("y", TOP_LEFT_Y_COORDINATE);
-        preCrop.put("w", CROPPED_WIDTH);
-        preCrop.put("h", CROPPED_HEIGHT);
+        preCrop.put("width", CROPPED_WIDTH);
+        preCrop.put("height", CROPPED_HEIGHT);
         
-        params.put("preCrop", preCrop);
+        params.put("cropBeforeAnalysis", preCrop);
         
         // Run query without setting "operation":"processNextFrame"
         params.put("NNsaveImage", "local");
