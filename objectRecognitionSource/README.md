@@ -168,11 +168,11 @@ The Configuration document may look similar to the following example:
              "savedResolution": {
                 "longEdge": 400
              },
-             "preCrop": {
+             "cropBeforeAnalysis": {
                 "x": 50,
                 "y": 100,
-                "w": 600,
-                "h": 400
+                "width": 600,
+                "height": 400
              }
           }
        }
@@ -221,12 +221,12 @@ configuration options](#yoloNet). The ones that are the same across all implemen
 *   threshold: Optional. Threshold is used to decide if the Neural Net's result is a valid one, by comparing the resulting confidence of the recognition against the threshold value. A high threshold will lead to fewer results, all with a higher confidence. A low threshold will lead to more results, some of which having a lower confidence. Threshold defaults to 0.5 if not specified, or if invalid. There are two ways to specify this value:
     1.  The value can be a number between 0 and 1 (i.e. 0.4, or 0.2, etc...)
     2.  The value can be a number between 0 and 100 (i.e. 40, or 20, etc...)
-*   preCrop: Optional. Used to crop the retrieved images before they are processed by the Neural Net. This option *must* 
-contain the following values:
+*   cropBeforeAnalysis: Optional. Used to crop the retrieved images before they are processed by the Neural Net. This option 
+*must* contain the following values:
     *   **x**: The top left x-coordinate used to crop the image.
     *   **y**: The top left y-coordinate used to crop the image.
-    *   **w**: The width of the cropped image, (starting at the x-coordinate specified above).
-    *   **h**: The height of the cropped image, (starting at the y-coordinate specified above).
+    *   **width**: The width of the cropped image, (starting at the x-coordinate specified above).
+    *   **height**: The height of the cropped image, (starting at the y-coordinate specified above).
 *   saveImage: Optional. The value can be one of the following three options:
     1.  "local"     - This will save images to the disk (outputDir must be specified in order for this to work).
     2.  "vantiq"    - This will save images as documents in VANTIQ. No images will be saved locally even if outputDir is specified.
@@ -344,8 +344,9 @@ it will be set to the default value, "processNextFrame".
         *   "NNoutputDir": Optional. This value can be set exactly like the "outputDir" value in the source configuration.
         *   "NNfileName": Optional. A string representing the unique name used to save the file. If not specified, the file 
         will be named using the standard <yyyy-MM-dd--HH-mm-ss.jpg> value.
-        *   "preCrop": Optional. This value can be set exactly like the "preCrop" value in the source configuration. If no 
-        preCrop value is set as a query parameter, the source configuration's preCrop value will be used.
+        *   "cropBeforeAnalysis": Optional. This value can be set exactly like the "cropBeforeAnalysis" value in the source 
+        configuration. If no cropBeforeAnalysis value is set as a query parameter, the source configuration's 
+        cropBeforeAnalysis value will be used.
     
 **EXAMPLE QUERIES**:
 
@@ -401,11 +402,11 @@ SELECT * FROM SOURCE Camera1 AS results WITH
     	NNsaveImage:"local",
     	NNoutputDir:"testDir",
     	NNfileName:"testFile",
-        preCrop: {
+        cropBeforeAnalysis: {
             x: 50,
             y: 100,
-            w: 600,
-            h: 400
+            width: 600,
+            height: 400
         }
 ```
 
