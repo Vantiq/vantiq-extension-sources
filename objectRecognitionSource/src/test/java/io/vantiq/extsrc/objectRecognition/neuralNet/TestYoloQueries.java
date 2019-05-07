@@ -97,8 +97,8 @@ public class TestYoloQueries extends NeuralNetTestBase {
     static final int RESIZED_IMAGE_HEIGHT = 75;
     
     // For pre cropping tests
-    static final int TOP_LEFT_X_COORDINATE = 50;
-    static final int TOP_LEFT_Y_COORDINATE = 50;
+    static final int PRECROP_TOP_LEFT_X_COORDINATE = 50;
+    static final int PRECROP_TOP_LEFT_Y_COORDINATE = 50;
     static final int CROPPED_WIDTH = 200;
     static final int CROPPED_HEIGHT = 150;
     static final int IP_CAMERA_WIDTH = 800;
@@ -772,8 +772,8 @@ public class TestYoloQueries extends NeuralNetTestBase {
         Map<String,Object> params = new LinkedHashMap<String,Object>();
         Map<String, Object> preCrop = new LinkedHashMap<>();
         
-        preCrop.put("x", TOP_LEFT_X_COORDINATE);
-        preCrop.put("y", TOP_LEFT_Y_COORDINATE);
+        preCrop.put("x", PRECROP_TOP_LEFT_X_COORDINATE);
+        preCrop.put("y", PRECROP_TOP_LEFT_Y_COORDINATE);
         preCrop.put("width", CROPPED_WIDTH);
         preCrop.put("height", CROPPED_HEIGHT);
         

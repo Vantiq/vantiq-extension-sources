@@ -77,8 +77,8 @@ public class TestYoloProcessor extends NeuralNetTestBase {
     static final int CROPPED_HEIGHT = 150;
     
     // For pre cropping results test
-    static final int KEYBOARD_TOP_LEFT_X_COORDINATE = 120;
-    static final int KEYBOARD_TOP_LEFT_Y_COORDINATE = 250;
+    static final int PRECROP_KEYBOARD_TOP_LEFT_X_COORDINATE = 120;
+    static final int PRECROP_KEYBOARD_TOP_LEFT_Y_COORDINATE = 250;
     static final int KEYBOARD_CROPPED_WIDTH = 230;
     static final int KEYBOARD_CROPPED_HEIGHT = 125;
 
@@ -1723,8 +1723,8 @@ public class TestYoloProcessor extends NeuralNetTestBase {
         Map preCrop = new LinkedHashMap<>();
         YoloProcessor ypImageSaver = new YoloProcessor();
         
-        preCrop.put("x", KEYBOARD_TOP_LEFT_X_COORDINATE);
-        preCrop.put("y", KEYBOARD_TOP_LEFT_Y_COORDINATE);
+        preCrop.put("x", PRECROP_KEYBOARD_TOP_LEFT_X_COORDINATE);
+        preCrop.put("y", PRECROP_KEYBOARD_TOP_LEFT_Y_COORDINATE);
         preCrop.put("width", KEYBOARD_CROPPED_WIDTH);
         preCrop.put("height", KEYBOARD_CROPPED_HEIGHT);
 
