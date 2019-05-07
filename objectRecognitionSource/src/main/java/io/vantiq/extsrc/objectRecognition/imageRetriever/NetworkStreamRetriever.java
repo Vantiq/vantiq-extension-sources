@@ -49,6 +49,8 @@ public class NetworkStreamRetriever implements ImageRetrieverInterface {
     Logger         log = LoggerFactory.getLogger(this.getClass().getCanonicalName());
     Boolean        isPushProtocol = false;
 
+    // Constants for source configuration
+    private static final String CAMERA = "camera";
     
     @Override
     public void setupDataRetrieval(Map<String, ?> dataSourceConfig, ObjectRecognitionCore source) throws Exception {
@@ -61,8 +63,8 @@ public class NetworkStreamRetriever implements ImageRetrieverInterface {
                     + "variable 'OPENCV_LOC' is set to the directory containing '" + Core.NATIVE_LIBRARY_NAME
                     + "' and any other library requested by the attached error", t);
         }
-        if (dataSourceConfig.get("camera") instanceof String){
-            camera = (String) dataSourceConfig.get("camera");
+        if (dataSourceConfig.get(CAMERA) instanceof String){
+            camera = (String) dataSourceConfig.get(CAMERA);
             try {
                 URI pushCheck = new URI(camera);
                 if ((!(pushCheck.getScheme().equalsIgnoreCase("http")) && !(pushCheck.getScheme().equalsIgnoreCase("https"))) ||

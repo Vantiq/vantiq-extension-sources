@@ -36,6 +36,9 @@ public class CameraRetriever implements ImageRetrieverInterface {
     VideoCapture   capture;
     int         camera;
     
+    // Constants for source configuration
+    private static final String CAMERA = "camera";
+    
     @Override
     public void setupDataRetrieval(Map<String, ?> dataSourceConfig, ObjectRecognitionCore source) throws Exception {
         // Try to load OpenCV
@@ -50,8 +53,8 @@ public class CameraRetriever implements ImageRetrieverInterface {
         }
         
         // Specify which camera to read
-        if (dataSourceConfig.get("camera") instanceof Integer) {
-            camera = (Integer) dataSourceConfig.get("camera");
+        if (dataSourceConfig.get(CAMERA) instanceof Integer) {
+            camera = (Integer) dataSourceConfig.get(CAMERA);
 
             capture = new VideoCapture(camera);
         } else {

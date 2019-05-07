@@ -88,6 +88,15 @@ public class FtpRetriever implements ImageRetrieverInterface {
     FTPClient ftpClient = null;
     Session   session = null;
     
+    // Constants for source configuration
+    private static final String NO_DEFAULT = "noDefault";
+    private static final String SERVER = "server";
+    private static final String CON_TYPE = "conType";
+    private static final String IMPLICIT = "implicit";
+    private static final String PROTOCOL = "protocol";
+    private static final String USERNAME = "username";
+    private static final String PASSWORD = "password";
+    
     // TODO more options for FTPS secure protocols, 
     
     @Override
@@ -95,46 +104,46 @@ public class FtpRetriever implements ImageRetrieverInterface {
         log = LoggerFactory.getLogger(this.getClass().getCanonicalName() + "#" + source.getSourceName());
         
         // Return and don't save values if the config doesn't want a default
-        if (dataSourceConfig.get("noDefault") instanceof Boolean && (Boolean) dataSourceConfig.get("noDefault")) {
+        if (dataSourceConfig.get(NO_DEFAULT) instanceof Boolean && (Boolean) dataSourceConfig.get(NO_DEFAULT)) {
             noDefault = true;
             return;
         }
         
         // Get the domain name to connect to
-        if (dataSourceConfig.get("server") instanceof String) {
-            server = obtainDomainName((String) dataSourceConfig.get("server"));
+        if (dataSourceConfig.get(SERVER) instanceof String) {
+            server = obtainDomainName((String) dataSourceConfig.get(SERVER));
         } else {
             throw new Exception(this.getClass().getCanonicalName() + ".noServerSpecified: "
                     + "No server was specified in the configuration setup." );
         }
         
         // Setup for FTP/FTPS/SFTP based on the config. Default to FTP
-        if (dataSourceConfig.get("conType") instanceof String) {
-            String type = (String) dataSourceConfig.get("conType");
-            if (type.equalsIgnoreCase("ftps")) {
+        if (dataSourceConfig.get(CON_TYPE) instanceof String) {
+            String type = (String) dataSourceConfig.get(CON_TYPE);
+            if (type.equalsIgnoreCase(FTPS)) {
                 conType = FTPS;
                 // FTPS has a few more options available
-                if (dataSourceConfig.get("implicit") instanceof Boolean && (Boolean) dataSourceConfig.get("implicit")) {
+                if (dataSourceConfig.get(IMPLICIT) instanceof Boolean && (Boolean) dataSourceConfig.get(IMPLICIT)) {
                     isImplicit = true;
                 }
-                if (dataSourceConfig.get("protocol") instanceof String) {
-                    protocol = (String) dataSourceConfig.get("protocol");
+                if (dataSourceConfig.get(PROTOCOL) instanceof String) {
+                    protocol = (String) dataSourceConfig.get(PROTOCOL);
                 }
-            } else if (type.equalsIgnoreCase("sftp")) {
+            } else if (type.equalsIgnoreCase(SFTP)) {
                 conType = SFTP;
-            } else if (!type.equalsIgnoreCase("ftp")) {
+            } else if (!type.equalsIgnoreCase(FTP)) {
                 log.warn("Unexpected value of 'conType'. Should be 'ftps', 'sftp', or 'ftp'. Defaulting to 'ftp'");
             }
         }
         
         // Obtain the username and password
-        if (dataSourceConfig.get("username") instanceof String) {
-            username = (String) dataSourceConfig.get("username");
+        if (dataSourceConfig.get(USERNAME) instanceof String) {
+            username = (String) dataSourceConfig.get(USERNAME);
         } else {
             throw new Exception(this.getClass().getCanonicalName() + ".noUsername: "
                     + "No username was given in the configuration setup");
         }
-        if (dataSourceConfig.get("password") instanceof String) {
+        if (dataSourceConfig.get(PASSWORD) instanceof String) {
             password = (String) dataSourceConfig.get("password");
         } else {
             throw new Exception(this.getClass().getCanonicalName() + ".noPassword: "
