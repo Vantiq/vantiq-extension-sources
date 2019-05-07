@@ -16,7 +16,7 @@ public abstract class ImageCropper {
     Logger log = LoggerFactory.getLogger(this.getClass());
     
     /**
-     * A helper method used to crop images before they are run through the YOLO Processor, if specified in the
+     * A helper method used to crop images before they are run through the Neural Net, if specified in the
      * source configuration or as query parameters. Returns the original image if an exception was caught while
      * cropping.
      * @param image     The byte array representation of the captured image
