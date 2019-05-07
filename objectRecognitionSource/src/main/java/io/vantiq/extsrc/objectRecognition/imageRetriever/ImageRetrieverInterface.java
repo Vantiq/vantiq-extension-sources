@@ -16,6 +16,7 @@ import io.vantiq.extsrc.objectRecognition.exception.FatalImageException;
 import io.vantiq.extsrc.objectRecognition.exception.ImageAcquisitionException;
 
 public interface ImageRetrieverInterface {
+    static final String TYPE_ENTRY = "type";
     
     /**
      * Configures the data retriever.
