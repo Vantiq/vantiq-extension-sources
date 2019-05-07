@@ -65,7 +65,7 @@ import io.vantiq.client.Vantiq;
  * 
  * No additional data is given.
  */
-public class YoloProcessor extends ImageCropper implements NeuralNetInterface {
+public class YoloProcessor extends NeuralNetUtils implements NeuralNetInterface {
     
     Logger log = LoggerFactory.getLogger(this.getClass());
     String pbFile = null;
@@ -91,6 +91,8 @@ public class YoloProcessor extends ImageCropper implements NeuralNetInterface {
     boolean preCropping = false;
     
     ObjectDetector objectDetector = null;
+    
+    private static final String CROP_BEFORE = "cropBeforeAnalysis";
     
     @Override
     public void setupImageProcessing(Map<String, ?> neuralNetConfig, String sourceName, String modelDirectory, String authToken, String server) throws Exception {
@@ -243,8 +245,8 @@ public class YoloProcessor extends ImageCropper implements NeuralNetInterface {
        }
        
        // Checking if pre cropping was specified in config
-       if (neuralNet.get("cropBeforeAnalysis") instanceof Map) {
-           Map preCrop = (Map) neuralNet.get("cropBeforeAnalysis");
+       if (neuralNet.get(CROP_BEFORE) instanceof Map) {
+           Map preCrop = (Map) neuralNet.get(CROP_BEFORE);
            if (preCrop.get("x") instanceof Integer && (Integer) preCrop.get("x") >= 0) {
                x = (Integer) preCrop.get("x");
            }
@@ -338,8 +340,8 @@ public class YoloProcessor extends ImageCropper implements NeuralNetInterface {
         boolean queryCrop = false;
         int x, y, w, h;
         x = y = w = h = -1;
-        if (request.get("cropBeforeAnalysis") instanceof Map) {
-            Map preCrop = (Map) request.get("cropBeforeAnalysis");
+        if (request.get(CROP_BEFORE) instanceof Map) {
+            Map preCrop = (Map) request.get(CROP_BEFORE);
             if (preCrop.get("x") instanceof Integer && (Integer) preCrop.get("x") >= 0) {
                 x = (Integer) preCrop.get("x");
             }
