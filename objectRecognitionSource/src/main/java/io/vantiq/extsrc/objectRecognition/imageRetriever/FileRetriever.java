@@ -68,12 +68,17 @@ public class FileRetriever implements ImageRetrieverInterface {
     VideoCapture capture;
     Boolean isMov = false;
     int frameInterval;
+    
+    // Constants for source configuration
+    private static final String FILE_EXTENSION = "fileExtension";
+    private static final String FILE_LOCATION = "fileLocation";
+    private static final String FPS = "fps";
 
     @Override
     public void setupDataRetrieval(Map<String, ?> dataSourceConfig, ObjectRecognitionCore source) throws Exception {
         // Check if the file is a video
-        if (dataSourceConfig.get("fileExtension") instanceof String) {
-            String ext = (String) dataSourceConfig.get("fileExtension");
+        if (dataSourceConfig.get(FILE_EXTENSION) instanceof String) {
+            String ext = (String) dataSourceConfig.get(FILE_EXTENSION);
             if (ext.equals("mov") || ext.equals("mp4")) {
                 isMov = true;
             }
@@ -91,8 +96,8 @@ public class FileRetriever implements ImageRetrieverInterface {
         }
         
         // Save the initial file location
-        if (dataSourceConfig.get("fileLocation") instanceof String) {
-            defaultImageLocation = (String) dataSourceConfig.get("fileLocation");
+        if (dataSourceConfig.get(FILE_LOCATION) instanceof String) {
+            defaultImageLocation = (String) dataSourceConfig.get(FILE_LOCATION);
             // Setup OpenCV to read the video if the file is a video
             if (isMov) {
                 // Open the requested file
@@ -118,8 +123,8 @@ public class FileRetriever implements ImageRetrieverInterface {
                 
                 // Calculate the number of frames to move each capture
                 double fps = 0;
-                if (dataSourceConfig.get("fps") instanceof Number) {
-                    fps = ((Number) dataSourceConfig.get("fps")).doubleValue();
+                if (dataSourceConfig.get(FPS) instanceof Number) {
+                    fps = ((Number) dataSourceConfig.get(FPS)).doubleValue();
                 }
                 if (fps <= 0) {
                     frameInterval = 1;

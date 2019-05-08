@@ -61,7 +61,6 @@ public class ObjectRecognitionCore {
     
     ObjectRecognitionConfigHandler objRecConfigHandler;
     
-    // vars for internal use
     ExtensionWebSocketClient    client      = null;
     NeuralNetInterface          neuralNet   = null;
     SimpleDateFormat            format      = new SimpleDateFormat("yyyy-MM-dd--HH-mm-ss");
@@ -69,19 +68,17 @@ public class ObjectRecognitionCore {
     public String outputDir;
     public String lastQueryFilename;
     
-    // final vars
     final Logger log;
     final static int    RECONNECT_INTERVAL = 5000;
     
-    /**
-     * Logs http messages at the debug level 
-     */
-    public final Handler<Response> httpHandler = new Handler<Response>() {
-        @Override
-        public void handleMessage(Response message) {
-            log.debug(message.toString());
-        }
-    };
+    // Constants for Query Parameters
+    private static final String IMAGE_NAME = "imageName";
+    private static final String IMAGE_DATE = "imageDate";
+    private static final String SAVED_RESOLUTION = "savedResolution";
+    private static final String LONG_EDGE = "longEdge";
+    private static final String UPLOAD = "upload";
+    private static final String DELETE = "delete";
+    private static final String FILTER = "filter";
     
     /**
      * Stops sending messages to the source and tries to reconnect, closing on a failure
@@ -411,18 +408,18 @@ public class ObjectRecognitionCore {
     * @param replyAddress   The replyAddress used to send a query response.
     */
    public void uploadLocalImages(Map<String, ?> request, String replyAddress) {       
-       Map<String,Object> parsedParameterResult = handleQueryParameters(request, replyAddress, "upload");
+       Map<String,Object> parsedParameterResult = handleQueryParameters(request, replyAddress, UPLOAD);
        if (parsedParameterResult == null) {
            return;
        }
        
        ImageUtil imageUtil = setupQueryImageUtil(request);
        
-       if (parsedParameterResult.get("imageName") != null) {
-           String imageName = (String) parsedParameterResult.get("imageName");
+       if (parsedParameterResult.get(IMAGE_NAME) != null) {
+           String imageName = (String) parsedParameterResult.get(IMAGE_NAME);
            uploadOne(imageName, outputDir, imageUtil);
        } else {
-           FilenameFilter filter = (FilenameFilter) parsedParameterResult.get("filter");
+           FilenameFilter filter = (FilenameFilter) parsedParameterResult.get(FILTER);
            uploadMany(outputDir, imageUtil, filter);
        }
        
@@ -444,12 +441,12 @@ public class ObjectRecognitionCore {
        boolean useFilter = false;
            
        // Checking if "imageName" option was used to specify the file(s) to upload.
-       if (request.get("imageName") instanceof String) {
-           imageName = (String) request.get("imageName");
+       if (request.get(IMAGE_NAME) instanceof String) {
+           imageName = (String) request.get(IMAGE_NAME);
            
        // Checking if "imageDate" option was used as a list of two dates to specify the files to upload.
-       } else if (request.get("imageDate") instanceof List) {
-           imageDate = (List<String>) request.get("imageDate");
+       } else if (request.get(IMAGE_DATE) instanceof List) {
+           imageDate = (List<String>) request.get(IMAGE_DATE);
            if (imageDate.size() != 2) {
                client.sendQueryError(replyAddress, "io.vantiq.extsrc.objectRecognition.invalidQueryRequest", 
                        "The imageDate value did not contain exactly two elements. Must be a list containing only "
@@ -493,7 +490,7 @@ public class ObjectRecognitionCore {
            FilenameFilter filter = new DateRangeFilter(dateRange);
            parsedParameterResults.put("filter", filter);
        } else {
-           parsedParameterResults.put("imageName", imageName);
+           parsedParameterResults.put(IMAGE_NAME, imageName);
        }
        
        return parsedParameterResults;
@@ -505,18 +502,16 @@ public class ObjectRecognitionCore {
     * @return           The instantiated ImageUtil class, setup with properties based on the request
     */
    public ImageUtil setupQueryImageUtil(Map<String, ?> request) {   
-       String imageDir = (String) request.get("imageDir");
        ImageUtil imageUtil = new ImageUtil();
        Vantiq vantiq = new io.vantiq.client.Vantiq(targetVantiqServer);
        vantiq.setAccessToken(authToken);
        imageUtil.vantiq = vantiq;
-       imageUtil.outputDir = imageDir;
        imageUtil.sourceName = sourceName;
        // Checking if additional image resizing has been requested
-       if (request.get("savedResolution") instanceof Map) {
-           Map savedResolution = (Map) request.get("savedResolution");
-           if (savedResolution.get("longEdge") instanceof Integer) {
-               int longEdge = (Integer) savedResolution.get("longEdge");
+       if (request.get(SAVED_RESOLUTION) instanceof Map) {
+           Map savedResolution = (Map) request.get(SAVED_RESOLUTION);
+           if (savedResolution.get(LONG_EDGE) instanceof Integer) {
+               int longEdge = (Integer) savedResolution.get(LONG_EDGE);
                if (longEdge < 0) {
                    log.error("The config value for longEdge must be a non-negative integer. Saved image resolution will not be changed.");
                } else {
@@ -566,18 +561,18 @@ public class ObjectRecognitionCore {
     * @param replyAddress   The replyAddress used to send a query response.
     */
    public void deleteLocalImages(Map<String, ?> request, String replyAddress) {  
-       Map<String,Object> parsedParameterResult = handleQueryParameters(request, replyAddress, "delete");
+       Map<String,Object> parsedParameterResult = handleQueryParameters(request, replyAddress, DELETE);
        if (parsedParameterResult == null) {
            return;
        }
        
        ImageUtil imageUtil = new ImageUtil();
        
-       if (parsedParameterResult.get("imageName") != null) {
-           String imageName = (String) parsedParameterResult.get("imageName");
+       if (parsedParameterResult.get(IMAGE_NAME) != null) {
+           String imageName = (String) parsedParameterResult.get(IMAGE_NAME);
            deleteOne(imageName, outputDir, imageUtil);
        } else {
-           FilenameFilter filter = (FilenameFilter) parsedParameterResult.get("filter");
+           FilenameFilter filter = (FilenameFilter) parsedParameterResult.get(FILTER);
            deleteMany(outputDir, imageUtil, filter);
        }
        

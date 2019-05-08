@@ -67,6 +67,29 @@ public class ObjectRecognitionConfigHandler extends Handler<ExtensionServiceMess
     ObjectRecognitionCore   source;
     boolean                 configComplete = false;
     
+    // Constants for Source Configuration
+    private static final String CONFIG = "config";
+    private static final String OBJ_REC_CONFIG = "objRecConfig";
+    private static final String GENERAL = "general";
+    private static final String DATA_SOURCE = "dataSource";
+    private static final String FILE = "file";
+    private static final String CAMERA = "camera";
+    private static final String NETWORK = "network";
+    private static final String FTP = "ftp";
+    private static final String NEURAL_NET = "neuralNet";
+    private static final String YOLO = "yolo";
+    private static final String NONE = "none";
+    private static final String DEFAULT = "default";
+    private static final String POLL_TIME = "pollTime";
+    private static final String POLL_RATE = "pollRate";
+    private static final String ALLOW_QUERIES = "allowQueries";
+    
+    // Constants for Query Parameters
+    private static final String OPERATION = "operation";
+    private static final String PROCESS_NEXT_FRAME = "processnextframe";
+    private static final String UPLOAD = "upload";
+    private static final String DELETE = "delete";
+    
     Map<String, ?> lastDataSource = null;
     Map<String, ?> lastNeuralNet = null;
     
@@ -97,18 +120,18 @@ public class ObjectRecognitionConfigHandler extends Handler<ExtensionServiceMess
                 
                 // Get value of operation if it was set, otherwise set to default
                 String operation;
-                if (request.get("operation") instanceof String) {
-                    operation = request.get("operation").toString().toLowerCase();
+                if (request.get(OPERATION) instanceof String) {
+                    operation = request.get(OPERATION).toString().toLowerCase();
                 } else {
-                    operation = "processnextframe";
+                    operation = PROCESS_NEXT_FRAME;
                 }
                 
                 // Check value of operation, proceed accordingly
-                if (operation.equals("upload")) {
+                if (operation.equals(UPLOAD)) {
                     source.uploadLocalImages(request, replyAddress);
-                } else if (operation.equals("delete")) {
+                } else if (operation.equals(DELETE)) {
                     source.deleteLocalImages(request, replyAddress);
-                } else if (operation.equals("processnextframe")) {
+                } else if (operation.equals(PROCESS_NEXT_FRAME)) {
                     // Read, process, and send the image
                     ImageRetrieverResults data = source.retrieveImage(message);
                     if (data != null) {
@@ -152,31 +175,31 @@ public class ObjectRecognitionConfigHandler extends Handler<ExtensionServiceMess
         Map<String, Object> neuralNetConfig;
         
         // Obtain the Maps for each object
-        if ( !(config.get("config") instanceof Map && ((Map)config.get("config")).get("objRecConfig") instanceof Map) ) {
+        if ( !(config.get(CONFIG) instanceof Map && ((Map)config.get(CONFIG)).get(OBJ_REC_CONFIG) instanceof Map) ) {
             log.error("No configuration suitable for an objectRecognition. Waiting for valid config...");
             failConfig();
             return;
         }
-        config = (Map) ((Map) config.get("config")).get("objRecConfig");
+        config = (Map) ((Map) config.get(CONFIG)).get(OBJ_REC_CONFIG);
         
-        if ( !(config.get("general") instanceof Map)) {
+        if ( !(config.get(GENERAL) instanceof Map)) {
             log.error("No general options specified. Waiting for valid config...");
             failConfig();
             return;
         }
-        general = (Map) config.get("general");
-        if ( !(config.get("dataSource") instanceof Map)) {
+        general = (Map) config.get(GENERAL);
+        if ( !(config.get(DATA_SOURCE) instanceof Map)) {
             log.error("No data source specified. Waiting for valid config...");
             failConfig();
             return;
         }
-        dataSource = (Map) config.get("dataSource");
-        if ( !(config.get("neuralNet") instanceof Map)) {
+        dataSource = (Map) config.get(DATA_SOURCE);
+        if ( !(config.get(NEURAL_NET) instanceof Map)) {
             log.error("No neural net specified. Waiting for valid config...");
             failConfig();
             return;
         }
-        neuralNetConfig = (Map) config.get("neuralNet");
+        neuralNetConfig = (Map) config.get(NEURAL_NET);
         
         
         // Only create a new data source if the config changed, to save time and state
@@ -222,12 +245,12 @@ public class ObjectRecognitionConfigHandler extends Handler<ExtensionServiceMess
         // Identify the type of neural net
         String neuralNetType = DEFAULT_NEURAL_NET;
         if (neuralNetConfig.get(NeuralNetInterface.TYPE_ENTRY) instanceof String) {
-            neuralNetType = (String) neuralNetConfig.get("type");
-            if (neuralNetType.equals("yolo")) {
+            neuralNetType = (String) neuralNetConfig.get(NeuralNetInterface.TYPE_ENTRY);
+            if (neuralNetType.equals(YOLO)) {
                 neuralNetType = YOLO_PROCESSOR_FQCN;
-            } else if (neuralNetType.equals("none")) {
+            } else if (neuralNetType.equals(NONE)) {
                 neuralNetType = NO_PROCESSOR_FQCN;
-            } else if (neuralNetType.equals("default")) {
+            } else if (neuralNetType.equals(DEFAULT)) {
                 neuralNetType = DEFAULT_NEURAL_NET;
             }
         } else {
@@ -273,18 +296,18 @@ public class ObjectRecognitionConfigHandler extends Handler<ExtensionServiceMess
         // Figure out where to receive the data from
         // Initialize to default in case no type was given
         String retrieverType = DEFAULT_IMAGE_RETRIEVER; 
-        if (dataSourceConfig.get("type") instanceof String) {
-            retrieverType = (String) dataSourceConfig.get("type");
+        if (dataSourceConfig.get(ImageRetrieverInterface.TYPE_ENTRY) instanceof String) {
+            retrieverType = (String) dataSourceConfig.get(ImageRetrieverInterface.TYPE_ENTRY);
             // Translate simple types into FQCN
-            if (retrieverType.equals("file")) {
+            if (retrieverType.equals(FILE)) {
                 retrieverType = FILE_RETRIEVER_FQCN;
-            } else if (retrieverType.equals("camera")) {
+            } else if (retrieverType.equals(CAMERA)) {
                 retrieverType = CAMERA_RETRIEVER_FQCN;
-            } else if (retrieverType.equals("network")) {
+            } else if (retrieverType.equals(NETWORK)) {
                 retrieverType = NETWORK_RETRIEVER_FQCN;
-            } else if (retrieverType.equals("ftp")) {
+            } else if (retrieverType.equals(FTP)) {
                 retrieverType = FTP_RETRIEVER_FQCN;
-            } else if (retrieverType.equals("default")) {
+            } else if (retrieverType.equals(DEFAULT)) {
                 retrieverType = DEFAULT_IMAGE_RETRIEVER;
             }
         } else {
@@ -332,12 +355,12 @@ public class ObjectRecognitionConfigHandler extends Handler<ExtensionServiceMess
         };
         
         // Start polling if pollTime is non-negative
-        if (general.get("pollTime") instanceof Integer) {
-            polling = (Integer) general.get("pollTime");  
-        } else if (general.get("pollRate") instanceof Integer) {
+        if (general.get(POLL_TIME) instanceof Integer) {
+            polling = (Integer) general.get(POLL_TIME);  
+        } else if (general.get(POLL_RATE) instanceof Integer) {
             // Old, deprecated setting. Use "pollTime" instead of "pollRate".
             log.warn("Deprecated config option, please use \"pollTime\" instead of \"pollRate\".");
-            polling = (Integer) general.get("pollRate");
+            polling = (Integer) general.get(POLL_RATE);
         }
         
         if (polling > 0) {
@@ -352,7 +375,7 @@ public class ObjectRecognitionConfigHandler extends Handler<ExtensionServiceMess
         }
         
         // Setup queries if requested
-        if (general.get("allowQueries") instanceof Boolean && (Boolean) general.get("allowQueries")) {
+        if (general.get(ALLOW_QUERIES) instanceof Boolean && (Boolean) general.get(ALLOW_QUERIES)) {
             queryable = true;
             source.client.setQueryHandler(queryHandler);
         }
