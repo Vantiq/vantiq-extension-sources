@@ -278,13 +278,21 @@ public class JDBCCore {
     */
    public void sendDataFromQuery(HashMap[] queryArray, ExtensionServiceMessage message) {
        String replyAddress = ExtensionServiceMessage.extractReplyAddress(message);
-       
+              
        // Send the results of the query
        if (queryArray.length == 0) {
            // If data is empty send empty map with 204 code
            client.sendQueryResponse(204, replyAddress, new LinkedHashMap<>());
        } else {
-           client.sendQueryResponse(200, replyAddress, queryArray);
+           for (int i = 0; i < queryArray.length; i++) {
+               // If last row, send a 200 code
+               if (i == queryArray.length - 1) {
+                   client.sendQueryResponse(200, replyAddress, queryArray[i]);
+               } else {
+                   // Otherwise, send row with 100 code signifying more data to come
+                   client.sendQueryResponse(100, replyAddress, queryArray[i]);
+               }
+           }
        }
    }
    
