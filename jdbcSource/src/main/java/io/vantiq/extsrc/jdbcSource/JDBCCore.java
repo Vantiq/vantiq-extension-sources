@@ -278,7 +278,7 @@ public class JDBCCore {
     */
    public void sendDataFromQuery(HashMap[] queryArray, ExtensionServiceMessage message) {
        String replyAddress = ExtensionServiceMessage.extractReplyAddress(message);
-              
+       
        // Send the results of the query
        if (queryArray.length == 0) {
            // If data is empty send empty map with 204 code
