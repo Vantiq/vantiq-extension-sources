@@ -299,23 +299,16 @@ public class JDBCCore {
        } else {
            // Otherwise, send messages containing 'bundleFactor' number of rows
            int len = queryArray.length;
-           
-           for (int i = 0; i < len - bundleFactor + 1; i += bundleFactor) {
-               HashMap[] rowBundle = Arrays.copyOfRange(queryArray, i, i + bundleFactor);
-               // If we have bundled the last rows, then send with code 200
-               if (i == len - bundleFactor) {
+           for (int i = 0; i < len; i += bundleFactor) {
+               HashMap[] rowBundle = Arrays.copyOfRange(queryArray, i, Math.min(queryArray.length, i+bundleFactor));
+               
+               // If we reached the last row, send with 200 code
+               if  (i + bundleFactor >= len) {
                    client.sendQueryResponse(200, replyAddress, rowBundle);
-               // Otherwise, send with code 100 signifying more data to come    
                } else {
+                   // Otherwise, send row with 100 code signifying more data to come 
                    client.sendQueryResponse(100, replyAddress, rowBundle);
                }
-               lastRowBundle = rowBundle;
-           }
-           
-           // Check for remainder and send if necessary
-           if (len % bundleFactor != 0) {
-               HashMap[] rowBundle = Arrays.copyOfRange(queryArray, len - len % bundleFactor, len);
-               client.sendQueryResponse(200, replyAddress, rowBundle);
                lastRowBundle = rowBundle;
            }
        }

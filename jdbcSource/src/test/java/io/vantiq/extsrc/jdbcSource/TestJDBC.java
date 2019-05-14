@@ -569,6 +569,9 @@ public class TestJDBC extends TestJDBCBase {
         // Setup a VANTIQ JDBC Source, and start running the core
         setupSource(createSourceDef());
         
+        // Number of rows to insert in table;
+        int numRows = 2000;
+        
         // Publish to the source in order to create a table
         Map<String,Object> create_params = new LinkedHashMap<String,Object>();
         create_params.put("query", CREATE_TABLE_MAX_MESSAGE_SIZE);
@@ -577,7 +580,7 @@ public class TestJDBC extends TestJDBCBase {
         // Insert 2000 rows into the the table
         Map<String,Object> insert_params = new LinkedHashMap<String,Object>();
         insert_params.put("query", INSERT_ROW_MAX_MESSAGE_SIZE);
-        for (int i = 0; i < 2000; i ++) {
+        for (int i = 0; i < numRows; i ++) {
             vantiq.publish("sources", testSourceName, insert_params);
         }
         
@@ -586,36 +589,38 @@ public class TestJDBC extends TestJDBCBase {
         params.put("query", QUERY_TABLE_MAX_MESSAGE_SIZE);
         VantiqResponse response = vantiq.query(testSourceName, params);
         JsonArray responseBody = (JsonArray) response.getBody();
-        assert responseBody.size() == 2000;
+        assert responseBody.size() == numRows;
         assert core.lastRowBundle.length == JDBCCore.DEFAULT_BUNDLE_SIZE;
         
         // Query with an invalid bundleFactor
         params.put("bundleFactor", "jibberish");
         response = vantiq.query(testSourceName, params);
         responseBody = (JsonArray) response.getBody();
-        assert responseBody.size() == 2000;
+        assert responseBody.size() == numRows;
         assert core.lastRowBundle.length == JDBCCore.DEFAULT_BUNDLE_SIZE;
         
         // Query with an invalid bundleFactor
         params.put("bundleFactor", -1);
         response = vantiq.query(testSourceName, params);
         responseBody = (JsonArray) response.getBody();
-        assert responseBody.size() == 2000;
+        assert responseBody.size() == numRows;
         assert core.lastRowBundle.length == JDBCCore.DEFAULT_BUNDLE_SIZE;
         
         // Query with bundleFactor that divides evenly into 2000 rows
-        params.put("bundleFactor", 500);
+        int bundleFactor = 200;
+        params.put("bundleFactor", bundleFactor);
         response = vantiq.query(testSourceName, params);
         responseBody = (JsonArray) response.getBody();
-        assert responseBody.size() == 2000;
-        assert core.lastRowBundle.length == 500;
+        assert responseBody.size() == numRows;
+        assert core.lastRowBundle.length == bundleFactor;
         
         // Query with bundleFactor that doesn't divide evenly into 2000 rows
-        params.put("bundleFactor", 600);
+        bundleFactor = 600;
+        params.put("bundleFactor", bundleFactor);
         response = vantiq.query(testSourceName, params);
         responseBody = (JsonArray) response.getBody();
-        assert responseBody.size() == 2000;
-        assert core.lastRowBundle.length == 200;
+        assert responseBody.size() == numRows;
+        assert core.lastRowBundle.length == numRows % bundleFactor;
         
         // Drop table and then create it again
         Map<String,Object> drop_params = new LinkedHashMap<String,Object>();
@@ -631,14 +636,15 @@ public class TestJDBC extends TestJDBCBase {
         assert core.lastRowBundle == null;
         
         // Insert fewer rows, and make sure that using bundleFactor of 0 works
-        for (int i = 0; i < 100; i ++) {
+        numRows = 100;
+        for (int i = 0; i < numRows; i ++) {
             vantiq.publish("sources", testSourceName, insert_params);
         }
         params.put("bundleFactor", 0);
         response = vantiq.query(testSourceName, params);
         responseBody = (JsonArray) response.getBody();
-        assert responseBody.size() == 100;
-        assert core.lastRowBundle.length == 100;
+        assert responseBody.size() == numRows;
+        assert core.lastRowBundle.length == numRows;
 
         // Delete the Source from VANTIQ
         deleteSource();
