@@ -149,14 +149,19 @@ will be sent as a unique Notification.
 
 In order to interact with the JDBC Source, one option is to use VAIL to select from the source. To do this, you will need 
 to specify the SQL Query you wish to execute against your database as part of the WITH clause. The SQL Queries used here must 
-only be **SELECT STATEMENTS**. The data will be returned as an array of the resulting rows. A query parameter named 
-`bundleFactor` can be used to specify how many rows of data a given message will contain. This parameter is useful when 
-querying a very large number of rows, where the data is likely to exceed the maximum message size allowed by the VANTIQ 
-System. Specifying this parameter as part of the WITH clause allows the connector to stream the data using multiple messages, 
-each containing `bundleFactor` number of rows. If no `bundleFactor` is specified, then the default value of 1000 will be used. 
-If a `bundleFactor` of 0 is specified, then the connector will attempt to send all of the queried rows in a single message, 
-(**NOTE**: this can likely cause errors if the combined data exceeds the maximum message size). The following is an example of 
-a Procedure created in VANTIQ Modelo querying against a JDBC Source.
+only be **SELECT STATEMENTS**. The data will be returned to VANTIQ as a set of messages, where each message contains some 
+number of rows.
+
+A query parameter named `bundleFactor` determines how many rows are bundled into each message. Generally, the default value of 
+500 will be fine. However, in cases where rows may be very large, a smaller value may be required.
+
+The `bundleFactor` parameter is specified in the `WITH` clause, allowing each query to adjust as appropriate. If the parameter 
+is not specified, the default value (500) is used -- that will be fine for most cases. If a value of `0` is provided, then all 
+rows will be placed into a single message (the use of this is discouraged as it may cause problems). If the value is positive 
+(and non-zero), then that many rows will be sent at a time.
+
+From the perspective of consuming the rows, there is no visible difference here. The `bundleFactor` parameter is present to 
+allow control when returning very large rows.
 
 ```
 PROCEDURE queryJDBC()
