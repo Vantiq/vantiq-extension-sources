@@ -576,17 +576,69 @@ public class TestJDBC extends TestJDBCBase {
         
         // Insert 2000 rows into the the table
         Map<String,Object> insert_params = new LinkedHashMap<String,Object>();
+        insert_params.put("query", INSERT_ROW_MAX_MESSAGE_SIZE);
         for (int i = 0; i < 2000; i ++) {
-            insert_params.put("query", INSERT_ROW_MAX_MESSAGE_SIZE);
             vantiq.publish("sources", testSourceName, insert_params);
         }
         
-        // Query the Source and make sure there were no errors
+        // Query the Source without bundleFactor and make sure there were no errors
         Map<String,Object> params = new LinkedHashMap<String,Object>();
         params.put("query", QUERY_TABLE_MAX_MESSAGE_SIZE);
         VantiqResponse response = vantiq.query(testSourceName, params);
         JsonArray responseBody = (JsonArray) response.getBody();
         assert responseBody.size() == 2000;
+        assert core.lastRowBundle.length == JDBCCore.DEFAULT_BUNDLE_SIZE;
+        
+        // Query with an invalid bundleFactor
+        params.put("bundleFactor", "jibberish");
+        response = vantiq.query(testSourceName, params);
+        responseBody = (JsonArray) response.getBody();
+        assert responseBody.size() == 2000;
+        assert core.lastRowBundle.length == JDBCCore.DEFAULT_BUNDLE_SIZE;
+        
+        // Query with an invalid bundleFactor
+        params.put("bundleFactor", -1);
+        response = vantiq.query(testSourceName, params);
+        responseBody = (JsonArray) response.getBody();
+        assert responseBody.size() == 2000;
+        assert core.lastRowBundle.length == JDBCCore.DEFAULT_BUNDLE_SIZE;
+        
+        // Query with bundleFactor that divides evenly into 2000 rows
+        params.put("bundleFactor", 500);
+        response = vantiq.query(testSourceName, params);
+        responseBody = (JsonArray) response.getBody();
+        assert responseBody.size() == 2000;
+        assert core.lastRowBundle.length == 500;
+        
+        // Query with bundleFactor that doesn't divide evenly into 2000 rows
+        params.put("bundleFactor", 600);
+        response = vantiq.query(testSourceName, params);
+        responseBody = (JsonArray) response.getBody();
+        assert responseBody.size() == 2000;
+        assert core.lastRowBundle.length == 200;
+        
+        // Drop table and then create it again
+        Map<String,Object> drop_params = new LinkedHashMap<String,Object>();
+        drop_params.put("query", DROP_TABLE_MAX_MESSAGE_SIZE);
+        vantiq.publish("sources", testSourceName, drop_params);
+        vantiq.publish("sources", testSourceName, create_params);
+        
+        // Check that lastRowBundle is null when the query returns no data
+        params.remove("bundleFactor");
+        response = vantiq.query(testSourceName, params);
+        responseBody = (JsonArray) response.getBody();
+        assert responseBody.size() == 0;
+        assert core.lastRowBundle == null;
+        
+        // Insert fewer rows, and make sure that using bundleFactor of 0 works
+        for (int i = 0; i < 100; i ++) {
+            vantiq.publish("sources", testSourceName, insert_params);
+        }
+        params.put("bundleFactor", 0);
+        response = vantiq.query(testSourceName, params);
+        responseBody = (JsonArray) response.getBody();
+        assert responseBody.size() == 100;
+        assert core.lastRowBundle.length == 100;
 
         // Delete the Source from VANTIQ
         deleteSource();

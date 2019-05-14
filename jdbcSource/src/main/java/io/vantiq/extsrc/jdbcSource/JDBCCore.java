@@ -8,6 +8,7 @@
 
 package io.vantiq.extsrc.jdbcSource;
 
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -33,21 +34,22 @@ import io.vantiq.extsrc.jdbcSource.exception.VantiqSQLException;
  */
 public class JDBCCore {
 
-    // vars for server configuration
     String sourceName;
     String authToken;
     String targetVantiqServer;    
     
     JDBCHandleConfiguration jdbcConfigHandler;
     
-    // vars for internal use
     Timer                       pollTimer = null;
     ExtensionWebSocketClient    client  = null;
     JDBC                        jdbc    = null;
     
-    // final vars
     final Logger log;
-    final static int    RECONNECT_INTERVAL = 5000;
+    final static int RECONNECT_INTERVAL = 5000;
+    final static int DEFAULT_BUNDLE_SIZE = 500;
+    
+    // Used to check row bundling in tests
+    public HashMap[] lastRowBundle = null;
     
     /**
      * Logs http messages at the debug level 
@@ -277,21 +279,44 @@ public class JDBCCore {
     * @param message        The Query message
     */
    public void sendDataFromQuery(HashMap[] queryArray, ExtensionServiceMessage message) {
+       Map<String, ?> request = (Map<String, ?>) message.getObject();
        String replyAddress = ExtensionServiceMessage.extractReplyAddress(message);
+       
+       int bundleFactor = DEFAULT_BUNDLE_SIZE;
+       if (request.get("bundleFactor") instanceof Integer && (Integer) request.get("bundleFactor") > -1) {
+           bundleFactor = (Integer) request.get("bundleFactor");
+       }
        
        // Send the results of the query
        if (queryArray.length == 0) {
            // If data is empty send empty map with 204 code
            client.sendQueryResponse(204, replyAddress, new LinkedHashMap<>());
+           lastRowBundle = null;
+       } else if (bundleFactor == 0) {
+           // If the bundleFactor was specified to be 0, then we sent the entire array
+           client.sendQueryResponse(200, replyAddress, queryArray);
+           lastRowBundle = queryArray;
        } else {
-           for (int i = 0; i < queryArray.length; i++) {
-               // If last row, send a 200 code
-               if (i == queryArray.length - 1) {
-                   client.sendQueryResponse(200, replyAddress, queryArray[i]);
+           // Otherwise, send messages containing 'bundleFactor' number of rows
+           int len = queryArray.length;
+           
+           for (int i = 0; i < len - bundleFactor + 1; i += bundleFactor) {
+               HashMap[] rowBundle = Arrays.copyOfRange(queryArray, i, i + bundleFactor);
+               // If we have bundled the last rows, then send with code 200
+               if (i == len - bundleFactor) {
+                   client.sendQueryResponse(200, replyAddress, rowBundle);
+               // Otherwise, send with code 100 signifying more data to come    
                } else {
-                   // Otherwise, send row with 100 code signifying more data to come
-                   client.sendQueryResponse(100, replyAddress, queryArray[i]);
+                   client.sendQueryResponse(100, replyAddress, rowBundle);
                }
+               lastRowBundle = rowBundle;
+           }
+           
+           // Check for remainder and send if necessary
+           if (len % bundleFactor != 0) {
+               HashMap[] rowBundle = Arrays.copyOfRange(queryArray, len - len % bundleFactor, len);
+               client.sendQueryResponse(200, replyAddress, rowBundle);
+               lastRowBundle = rowBundle;
            }
        }
    }
