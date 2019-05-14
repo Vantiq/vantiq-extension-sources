@@ -82,6 +82,14 @@ public class TestJDBC extends TestJDBCBase {
     static final String CREATE_TABLE_AFTER_LOST_CONNECTION = "CREATE TABLE NoConnection(id int);";
     static final String DROP_TABLE_AFTER_LOST_CONNECTION = "DROP TABLE NoConnection;";
     
+    // Queries for max message size test
+    static final String CREATE_TABLE_MAX_MESSAGE_SIZE = "CREATE TABLE TestMessageSize(id int, first varchar (255), last varchar (255), "
+            + "age int, title varchar (255), is_active varchar (255), department varchar (255), salary int);";
+    static final String INSERT_ROW_MAX_MESSAGE_SIZE = "INSERT INTO TestMessageSize VALUES(1, 'First', 'Last', 30, 'Title', 'Active',"
+            + " 'Department', 1000000);";
+    static final String QUERY_TABLE_MAX_MESSAGE_SIZE = "SELECT * FROM TestMessageSize;";
+    static final String DROP_TABLE_MAX_MESSAGE_SIZE = "DROP TABLE TestMessageSize";
+    
     static final String timestampPattern = "\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}.\\d{3}-\\d{4}";
     static final String datePattern = "\\d{4}-\\d{2}-\\d{2}";
     static final String timePattern = "\\d{2}:\\d{2}:\\d{2}.\\d{3}-\\d{4}";
@@ -150,6 +158,13 @@ public class TestJDBC extends TestJDBCBase {
             // Delete fifth table
             try {
                 dropTablesJDBC.processPublish(DROP_TABLE_AFTER_LOST_CONNECTION);
+            } catch (VantiqSQLException e) {
+                // Shouldn't throw Exception
+            }
+            
+            // Delete sixth table
+            try {
+                dropTablesJDBC.processPublish(DROP_TABLE_MAX_MESSAGE_SIZE);
             } catch (VantiqSQLException e) {
                 // Shouldn't throw Exception
             }
@@ -538,6 +553,101 @@ public class TestJDBC extends TestJDBCBase {
         }
         
         jdbc.close();
+    }
+    
+    @Test
+    public void testMaxMessageSize() throws VantiqSQLException {
+        // Only run test with intended vantiq availability
+        assumeTrue(testAuthToken != null && testVantiqServer != null);
+        assumeTrue(testDBUsername != null && testDBPassword != null && testDBURL != null && jdbcDriverLoc != null);
+        
+        // Check that Source does not already exist in namespace, and skip test if it does
+        assumeFalse(checkSourceExists());
+        
+        jdbc.setupJDBC(testDBURL, testDBUsername, testDBPassword);
+        
+        // Setup a VANTIQ JDBC Source, and start running the core
+        setupSource(createSourceDef());
+        
+        // Number of rows to insert in table;
+        int numRows = 2000;
+        
+        // Publish to the source in order to create a table
+        Map<String,Object> create_params = new LinkedHashMap<String,Object>();
+        create_params.put("query", CREATE_TABLE_MAX_MESSAGE_SIZE);
+        vantiq.publish("sources", testSourceName, create_params);
+        
+        // Insert 2000 rows into the the table
+        Map<String,Object> insert_params = new LinkedHashMap<String,Object>();
+        insert_params.put("query", INSERT_ROW_MAX_MESSAGE_SIZE);
+        for (int i = 0; i < numRows; i ++) {
+            vantiq.publish("sources", testSourceName, insert_params);
+        }
+        
+        // Query the Source without bundleFactor and make sure there were no errors
+        Map<String,Object> params = new LinkedHashMap<String,Object>();
+        params.put("query", QUERY_TABLE_MAX_MESSAGE_SIZE);
+        VantiqResponse response = vantiq.query(testSourceName, params);
+        JsonArray responseBody = (JsonArray) response.getBody();
+        assert responseBody.size() == numRows;
+        assert core.lastRowBundle.length == JDBCCore.DEFAULT_BUNDLE_SIZE;
+        
+        // Query with an invalid bundleFactor
+        params.put("bundleFactor", "jibberish");
+        response = vantiq.query(testSourceName, params);
+        responseBody = (JsonArray) response.getBody();
+        assert responseBody.size() == numRows;
+        assert core.lastRowBundle.length == JDBCCore.DEFAULT_BUNDLE_SIZE;
+        
+        // Query with an invalid bundleFactor
+        params.put("bundleFactor", -1);
+        response = vantiq.query(testSourceName, params);
+        responseBody = (JsonArray) response.getBody();
+        assert responseBody.size() == numRows;
+        assert core.lastRowBundle.length == JDBCCore.DEFAULT_BUNDLE_SIZE;
+        
+        // Query with bundleFactor that divides evenly into 2000 rows
+        int bundleFactor = 200;
+        params.put("bundleFactor", bundleFactor);
+        response = vantiq.query(testSourceName, params);
+        responseBody = (JsonArray) response.getBody();
+        assert responseBody.size() == numRows;
+        assert core.lastRowBundle.length == bundleFactor;
+        
+        // Query with bundleFactor that doesn't divide evenly into 2000 rows
+        bundleFactor = 600;
+        params.put("bundleFactor", bundleFactor);
+        response = vantiq.query(testSourceName, params);
+        responseBody = (JsonArray) response.getBody();
+        assert responseBody.size() == numRows;
+        assert core.lastRowBundle.length == numRows % bundleFactor;
+        
+        // Drop table and then create it again
+        Map<String,Object> drop_params = new LinkedHashMap<String,Object>();
+        drop_params.put("query", DROP_TABLE_MAX_MESSAGE_SIZE);
+        vantiq.publish("sources", testSourceName, drop_params);
+        vantiq.publish("sources", testSourceName, create_params);
+        
+        // Check that lastRowBundle is null when the query returns no data
+        params.remove("bundleFactor");
+        response = vantiq.query(testSourceName, params);
+        responseBody = (JsonArray) response.getBody();
+        assert responseBody.size() == 0;
+        assert core.lastRowBundle == null;
+        
+        // Insert fewer rows, and make sure that using bundleFactor of 0 works
+        numRows = 100;
+        for (int i = 0; i < numRows; i ++) {
+            vantiq.publish("sources", testSourceName, insert_params);
+        }
+        params.put("bundleFactor", 0);
+        response = vantiq.query(testSourceName, params);
+        responseBody = (JsonArray) response.getBody();
+        assert responseBody.size() == numRows;
+        assert core.lastRowBundle.length == numRows;
+
+        // Delete the Source from VANTIQ
+        deleteSource();
     }
     
     // ================================================= Helper functions =================================================

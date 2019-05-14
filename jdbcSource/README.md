@@ -149,8 +149,19 @@ will be sent as a unique Notification.
 
 In order to interact with the JDBC Source, one option is to use VAIL to select from the source. To do this, you will need 
 to specify the SQL Query you wish to execute against your database as part of the WITH clause. The SQL Queries used here must 
-only be **SELECT STATEMENTS**. The data will be returned as an array of the resulting rows. The following is an 
-example of a Procedure created in VANTIQ Modelo querying against a JDBC Source.
+only be **SELECT STATEMENTS**. The data will be returned to VANTIQ as a set of messages, where each message contains some 
+number of rows.
+
+A query parameter named `bundleFactor` determines how many rows are bundled into each message. Generally, the default value of 
+500 will be fine. However, in cases where rows may be very large, a smaller value may be required.
+
+The `bundleFactor` parameter is specified in the `WITH` clause, allowing each query to adjust as appropriate. If the parameter 
+is not specified, the default value (500) is used -- that will be fine for most cases. If a value of `0` is provided, then all 
+rows will be placed into a single message (the use of this is discouraged as it may cause problems). If the value is positive 
+(and non-zero), then that many rows will be sent at a time.
+
+From the perspective of consuming the rows, there is no visible difference here. The `bundleFactor` parameter is present to 
+allow control when returning very large rows.
 
 ```
 PROCEDURE queryJDBC()
@@ -160,7 +171,8 @@ try {
     SELECT * FROM SOURCE JDBC1 AS results WITH
     // WITH Clause specifies the query, whose value is the SQL Query.
     // This parameter must be named 'query'.
-    query: "SELECT id, first, last, age FROM Test" 
+    query: "SELECT id, first, last, age FROM Test",
+    bundleFactor: 500
 
     {
         // Iterating over each row of data in 'results'
