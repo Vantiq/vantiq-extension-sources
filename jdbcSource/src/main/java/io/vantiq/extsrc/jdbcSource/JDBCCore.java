@@ -337,7 +337,7 @@ public class JDBCCore {
             pollTimer.cancel();
             pollTimer = null;
         }
-        synchronized (this) {
+        synchronized (SYNCH_LOCK) {
             if (jdbc != null) {
                 jdbc.close();
                 jdbc = null;
