@@ -17,6 +17,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.ExecutorService;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -24,7 +25,6 @@ import org.slf4j.LoggerFactory;
 import io.vantiq.extjsdk.ExtensionServiceMessage;
 import io.vantiq.extjsdk.ExtensionWebSocketClient;
 import io.vantiq.extjsdk.Handler;
-import io.vantiq.extjsdk.Response;
 import io.vantiq.extsrc.jdbcSource.exception.VantiqSQLException;
 
 /**
@@ -50,17 +50,12 @@ public class JDBCCore {
     
     // Used to check row bundling in tests
     public HashMap[] lastRowBundle = null;
-    
-    /**
-     * Logs http messages at the debug level 
-     */
-    public final Handler<Response> httpHandler = new Handler<Response>() {
-        @Override
-        public void handleMessage(Response message) {
-            log.debug(message.toString());
-        }
-    };
-    
+
+    ExecutorService queryPool = null;
+    ExecutorService publishPool = null;
+
+    private static final String SYNCH_LOCK = "synchLock";
+
     /**
      * Stops sending messages to the source and tries to reconnect, closing on a failure
      */
@@ -184,7 +179,13 @@ public class JDBCCore {
     public void executeQuery(ExtensionServiceMessage message) {
         Map<String, ?> request = (Map<String, ?>) message.getObject();
         String replyAddress = ExtensionServiceMessage.extractReplyAddress(message);
-        if (jdbc == null) {
+
+        // Getting local copy of JDBC class
+        JDBC localJDBC = null;
+        synchronized (SYNCH_LOCK) {
+            localJDBC = jdbc;
+        }
+        if (localJDBC == null) {
             if (client != null) {
                 client.sendQueryError(replyAddress, this.getClass().getName() + ".closed",
                         "JDBC connection closed before operation could complete.", null);
@@ -195,7 +196,7 @@ public class JDBCCore {
         try {
             if (request.get("query") instanceof String) {
                 String queryString = (String) request.get("query");
-                HashMap[] queryArray = jdbc.processQuery(queryString);
+                HashMap[] queryArray = localJDBC.processQuery(queryString);
                 sendDataFromQuery(queryArray, message);
             } else {
                 log.error("Query could not be executed because query was not a String.");
@@ -225,8 +226,14 @@ public class JDBCCore {
      */
     public void executePublish(ExtensionServiceMessage message) {
         Map<String, ?> request = (Map<String, ?>) message.getObject();
-        String replyAddress = ExtensionServiceMessage.extractReplyAddress(message);
-        if (jdbc == null) {
+
+        // Getting local copy of JDBC class
+        JDBC localJDBC = null;
+        synchronized (SYNCH_LOCK) {
+            localJDBC = jdbc;
+        }
+
+        if (localJDBC == null) {
             log.error("JDBC connection closed before operation could complete");
         }
         
@@ -234,7 +241,7 @@ public class JDBCCore {
         try {
             if (request.get("query") instanceof String) {
                 String queryString = (String) request.get("query");
-                int data = jdbc.processPublish(queryString);
+                int data = localJDBC.processPublish(queryString);
                 log.trace("The returned integer value from Publish Query is the following: ", data);
             } else {
                 log.error("Query could not be executed because query was not a String");
@@ -254,14 +261,21 @@ public class JDBCCore {
      * then each row is sent as a separate notification.
      * @param pollQuery     The query string
      */
-    public synchronized void executePolling(String pollQuery) {
+    public void executePolling(String pollQuery) {
+        // Getting local copy of JDBC class
+        JDBC localJDBC = null;
+        synchronized (SYNCH_LOCK) {
+            localJDBC = jdbc;
+        }
+
+        if (localJDBC == null) {
+            return;
+        }
         try {
-            synchronized (this) {
-                HashMap[] queryMap = jdbc.processQuery(pollQuery);
-                if (queryMap != null) {
-                    for (HashMap h : queryMap) {
-                        client.sendNotification(h);
-                    }
+            HashMap[] queryMap = localJDBC.processQuery(pollQuery);
+            if (queryMap != null) {
+                for (HashMap h : queryMap) {
+                    client.sendNotification(h);
                 }
             }
         } catch (VantiqSQLException e) {
@@ -328,6 +342,14 @@ public class JDBCCore {
                 jdbc.close();
                 jdbc = null;
             }
+        }
+        if (queryPool != null) {
+            queryPool.shutdownNow();
+            queryPool = null;
+        }
+        if (publishPool != null) {
+            publishPool.shutdownNow();
+            publishPool = null;
         }
     }
     
