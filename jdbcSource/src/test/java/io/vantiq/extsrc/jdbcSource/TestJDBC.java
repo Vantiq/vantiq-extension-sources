@@ -125,7 +125,7 @@ public class TestJDBC extends TestJDBCBase {
         if (testDBUsername != null && testDBPassword != null && testDBURL != null && jdbcDriverLoc != null) {
             // Create new instance of JDBC to drop tables, in case the global JDBC instance was closed
             JDBC dropTablesJDBC = new JDBC();
-            dropTablesJDBC.setupJDBC(testDBURL, testDBUsername, testDBPassword);
+            dropTablesJDBC.setupJDBC(testDBURL, testDBUsername, testDBPassword, false);
             
             // Delete first table
             try {
@@ -187,7 +187,7 @@ public class TestJDBC extends TestJDBCBase {
     @Test
     public void testProcessPublish() throws VantiqSQLException {
         assumeTrue(testDBUsername != null && testDBPassword != null && testDBURL != null && jdbcDriverLoc != null);
-        jdbc.setupJDBC(testDBURL, testDBUsername, testDBPassword);
+        jdbc.setupJDBC(testDBURL, testDBUsername, testDBPassword, false);
         
         int queryResult;
         
@@ -221,7 +221,7 @@ public class TestJDBC extends TestJDBCBase {
     @Test
     public void testProcessQuery() throws VantiqSQLException {
         assumeTrue(testDBUsername != null && testDBPassword != null && testDBURL != null && jdbcDriverLoc != null);
-        jdbc.setupJDBC(testDBURL, testDBUsername, testDBPassword);
+        jdbc.setupJDBC(testDBURL, testDBUsername, testDBPassword, false);
         
         HashMap[] queryResult;
         int deleteResult;
@@ -267,7 +267,7 @@ public class TestJDBC extends TestJDBCBase {
     @Test
     public void testExtendedTypes() throws VantiqSQLException {
         assumeTrue(testDBUsername != null && testDBPassword != null && testDBURL != null && jdbcDriverLoc != null);
-        jdbc.setupJDBC(testDBURL, testDBUsername, testDBPassword);
+        jdbc.setupJDBC(testDBURL, testDBUsername, testDBPassword, false);
         HashMap[] queryResult;
         int publishResult;
         
@@ -323,7 +323,7 @@ public class TestJDBC extends TestJDBCBase {
         assumeFalse(checkSourceExists());
         assumeFalse(checkTypeExists());
                 
-        jdbc.setupJDBC(testDBURL, testDBUsername, testDBPassword);
+        jdbc.setupJDBC(testDBURL, testDBUsername, testDBPassword, false);
         
         // Setup a VANTIQ JDBC Source, and start running the core
         setupSource(createSourceDef());
@@ -374,7 +374,7 @@ public class TestJDBC extends TestJDBCBase {
     @Test
     public void testNullValues() throws VantiqSQLException {
         assumeTrue(testDBUsername != null && testDBPassword != null && testDBURL != null && jdbcDriverLoc != null);
-        jdbc.setupJDBC(testDBURL, testDBUsername, testDBPassword);
+        jdbc.setupJDBC(testDBURL, testDBUsername, testDBPassword, false);
         
         int publishResult;
         HashMap[] queryResult;
@@ -475,7 +475,7 @@ public class TestJDBC extends TestJDBCBase {
     public void testCorrectErrors() throws VantiqSQLException {
         assumeTrue(testDBUsername != null && testDBPassword != null && testDBURL != null && jdbcDriverLoc != null);
         assumeTrue(testDBURL.contains("mysql"));
-        jdbc.setupJDBC(testDBURL, testDBUsername, testDBPassword);
+        jdbc.setupJDBC(testDBURL, testDBUsername, testDBPassword, false);
         HashMap[] queryResult;
         int publishResult;
         
@@ -538,7 +538,7 @@ public class TestJDBC extends TestJDBCBase {
     @Test
     public void testDBReconnect() throws VantiqSQLException {
         assumeTrue(testDBUsername != null && testDBPassword != null && testDBURL != null && jdbcDriverLoc != null);
-        jdbc.setupJDBC(testDBURL, testDBUsername, testDBPassword);
+        jdbc.setupJDBC(testDBURL, testDBUsername, testDBPassword, false);
         
         // Close the connection, and then try to query
         jdbc.close();
@@ -564,7 +564,7 @@ public class TestJDBC extends TestJDBCBase {
         // Check that Source does not already exist in namespace, and skip test if it does
         assumeFalse(checkSourceExists());
         
-        jdbc.setupJDBC(testDBURL, testDBUsername, testDBPassword);
+        jdbc.setupJDBC(testDBURL, testDBUsername, testDBPassword, false);
         
         // Setup a VANTIQ JDBC Source, and start running the core
         setupSource(createSourceDef());

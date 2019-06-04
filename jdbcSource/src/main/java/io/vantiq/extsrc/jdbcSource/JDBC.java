@@ -259,7 +259,6 @@ public class JDBC {
         try {
             if (conn!=null) {
                 conn.close();
-                conn = null;
             }
         } catch(SQLException e) {
             log.error("A error occurred when closing the Connection: ", e);
@@ -267,7 +266,6 @@ public class JDBC {
         // Close connection pool if open
         if (ds != null) {
             ds.close();
-            ds = null;
         }
     }
 }
