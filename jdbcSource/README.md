@@ -110,9 +110,9 @@ The Configuration document may look similar to the following example:
 *   **asynchronousProcessing**: Optional. If set to `true`, query and publish requests will be handled asynchronously, as 
 opposed to the default behavior which is synchronous.
 *   **maxRunningThreads**: Optional. Only used if `asynchronousProcessing` is set to `true`. The maximum number of threads 
-running at any given point for query or publish requests, respectively. Must be a non-zero integer.
+running at any given point for query or publish requests, respectively. Must be a non-zero integer. Default value is 5.
 *   **maxQueuedTasks**: Optional. Only used if `asynchronousProcessing` is set to `true`. The maximum number of queued 
-tasks at any given point for query or publish requests, respectively. Must be a non-zero integer.
+tasks at any given point for query or publish requests, respectively. Must be a non-zero integer. Default value is 10.
 *   **pollTime**: Optional. If specified, you must specify the pollQuery as well. This option allows you to specify a polling 
     rate indicating the frequency (in milliseconds) at which the pollQuery will be executed. The value must be a positive
     number greater than 0, (*i.e.* 3000 --> executing every 3 seconds).
