@@ -89,8 +89,11 @@ The Configuration document may look similar to the following example:
           "general": {
              "username": "sqlUsername",
              "password": "sqlPassword",
-             "dbURL": "jdbc:mysql://localhost/myDB?useSSL=false&serverTimezone=UTC"
-             "pollTime": 3000
+             "dbURL": "jdbc:mysql://localhost/myDB?useSSL=false&serverTimezone=UTC",
+             "asynchronousProcessing": true,
+             "maxRunningThreads": 10,
+             "maxQueuedTasks" 20,
+             "pollTime": 3000,
              "pollQuery": "SELECT * FROM myTable"
           }
        }
@@ -104,6 +107,12 @@ The Configuration document may look similar to the following example:
 *   **username**: Required. This is the username that will be used to connect to the SQL Database.
 *   **password**: Required. This is the password that will be used to connect to the SQL Database.
 *   **dbURL**: Required. This is the URL corresponding to the SQL Database that you will connect to.
+*   **asynchronousProcessing**: Optional. If set to `true`, query and publish requests will be handled asynchronously, as 
+opposed to the default behavior which is synchronous.
+*   **maxRunningThreads**: Optional. Only used if `asynchronousProcessing` is set to `true`. The maximum number of threads 
+running at any given point for query or publish requests, respectively. Must be a non-zero integer.
+*   **maxQueuedTasks**: Optional. Only used if `asynchronousProcessing` is set to `true`. The maximum number of queued 
+tasks at any given point for query or publish requests, respectively. Must be a non-zero integer.
 *   **pollTime**: Optional. If specified, you must specify the pollQuery as well. This option allows you to specify a polling 
     rate indicating the frequency (in milliseconds) at which the pollQuery will be executed. The value must be a positive
     number greater than 0, (*i.e.* 3000 --> executing every 3 seconds).
@@ -261,14 +270,13 @@ SQLException, and contains the Error Message, SQL State, and Error Code from the
 In order to properly run the tests, you must create an environment variable named **JDBC\_DRIVER\_LOC** which points to the 
 appropriate JDBC Driver .jar file.
 
- Additionally, you must add properties to your _gradle.properties_ file 
-in the _~/.gradle_ directory. 
-These properties include the JDBC Database username, password, and URL.
-You must also add the Target VANTIQ Server URL, as well as an 
-Authentication Token for that server. The Target VANTIQ Server and Auth Token will be used to create a temporary VANTIQ 
-Source and Type, named _testSourceName_ and _testTypeName_ respectively. These names can optionally be configured by adding 
-`EntConTestSourceName` and `EntConTestTypeName` to the gradle.properties file. The following shows what the gradle.properties file 
-should look like:
+Additionally, you must add properties to your _gradle.properties_ file in the _~/.gradle_ directory. These properties include 
+the JDBC Database username, password, and URL. You must also add the Target VANTIQ Server URL, as well as an Authentication 
+Token for that server. The Target VANTIQ Server and Auth Token will be used to create a temporary VANTIQ Source, VANTIQ Type, 
+VANTIQ Topic, VANTIQ Procedure and VANTIQ Rule. They will be named _testSourceName_, _testTypeName_, _testTopicName_, 
+_testProcedureName_ and _testRuleName_ respectively. These names can optionally be configured by adding 
+`EntConTestSourceName`, `EntConTestTypeName`, `EntConTestTopicName`, `EntConTestProcedureName` and `EntConTestRuleName` to the 
+gradle.properties file. The following shows what the gradle.properties file should look like:
 
 ```
     EntConJDBCUsername=<yourUsername>
@@ -278,6 +286,9 @@ should look like:
     TestAuthToken=<yourAuthToken>
     EntConTestSourceName=<yourDesiredSourceName>
     EntConTestTypeName=<yourDesiredTypeName>
+    EntConTestTopicName=<yourDesiredTopicName>
+    EntConTestProcedureName=<yourDesiredProcedureName>
+    EntConTestRuleName=<yourDesiredRuleName>
 ```
 
 * **NOTE:** We strongly encourage users to create a unique VANTIQ Namespace in order to ensure that tests do not accidentally 
