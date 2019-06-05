@@ -69,7 +69,7 @@ public class TestJDBCConfig extends TestJDBCBase {
         Map conf = minimalConfig();
         Map vantiqConf = new LinkedHashMap<>();
         sendConfig(conf, vantiqConf);
-        assertTrue("Should fail when missing 'general' configuration", configIsFailed());
+        assertTrue("Should fail when missing 'vantiq' configuration", configIsFailed());
     }
     
     @Test 
@@ -78,7 +78,7 @@ public class TestJDBCConfig extends TestJDBCBase {
         Map vantiqConf = createMinimalVantiq();
         vantiqConf.remove("packageRows");
         sendConfig(conf, vantiqConf);
-        assertTrue("Should fail when missing 'general' configuration", configIsFailed());
+        assertTrue("Should fail when missing 'packageRows' configuration", configIsFailed());
     }
     
     @Test
@@ -87,7 +87,7 @@ public class TestJDBCConfig extends TestJDBCBase {
         Map vantiqConf = createMinimalVantiq();
         vantiqConf.put("packageRows","false");
         sendConfig(conf, vantiqConf);
-        assertTrue("Should fail when missing 'general' configuration", configIsFailed());
+        assertTrue("Should fail when 'packageRows' is set to 'false'", configIsFailed());
     }
     
     @Test
@@ -121,6 +121,41 @@ public class TestJDBCConfig extends TestJDBCBase {
         conf.put("pollQuery", "SELECT * FROM Test");
         sendConfig(conf, vantiqConf);
         assertFalse("Should not fail with missing pollTime configuration", configIsFailed());
+    }
+
+    @Test
+    public void testAsynchronousProcessing() {
+        assumeTrue(testDBUsername != null && testDBPassword != null && testDBURL != null && jdbcDriverLoc != null);
+        nCore.start(5);
+
+        // Setting asynchronousProcessing incorrectly
+        Map conf = minimalConfig();
+        conf.put("asynchronousProcessing", "jibberish");
+        Map vantiqConf = createMinimalVantiq();
+        sendConfig(conf, vantiqConf);
+        assertFalse("Should not fail with invalid asynchronousProcessing value", configIsFailed());
+
+        // Setting asynchronousProcessing to false (same as not including it)
+        conf.put("asynchronousProcessing", false);
+        sendConfig(conf, vantiqConf);
+        assertFalse("Should not fail with asynchronousProcessing set to false", configIsFailed());
+
+        // Setting asynchronousProcessing to true
+        conf.put("asynchronousProcessing", true);
+        sendConfig(conf, vantiqConf);
+        assertFalse("Should not fail with asynchronousProcessing set to true", configIsFailed());
+
+        // Setting maxRunningThreads and maxQueuedTasks incorrectly
+        conf.put("maxRunningThreads", "jibberish");
+        conf.put("maxQueuedTasks", "moreJibberish");
+        sendConfig(conf, vantiqConf);
+        assertFalse("Should not fail when maxRunningThreads and maxQueuedTasks are set incorrectly", configIsFailed());
+
+        // Setting maxRunningThreads and maxQueuedTasks correctly
+        conf.put("maxRunningThreads", 10);
+        conf.put("maxQueuedTasks", 20);
+        sendConfig(conf, vantiqConf);
+        assertFalse("Should not fail when maxRunningThreads and maxQueuedTasks are set correctly", configIsFailed());
     }
     
 // ================================================= Helper functions =================================================
