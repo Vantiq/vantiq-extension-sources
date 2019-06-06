@@ -52,7 +52,7 @@ public class JDBCHandleConfiguration extends Handler<ExtensionServiceMessage> {
     Handler<ExtensionServiceMessage> queryHandler;
     Handler<ExtensionServiceMessage> publishHandler;
 
-    private static final int MAX_RUNNING_THREADS = 5;
+    private static final int MAX_ACTIVE_TASKS = 5;
     private static final int MAX_QUEUED_TASKS = 10;
 
     // Constants for getting config options
@@ -67,7 +67,7 @@ public class JDBCHandleConfiguration extends Handler<ExtensionServiceMessage> {
     private static final String POLL_TIME = "pollTime";
     private static final String POLL_QUERY = "pollQuery";
     private static final String ASYNCH_PROCESSING = "asynchronousProcessing";
-    private static final String MAX_RUNNING = "maxRunningThreads";
+    private static final String MAX_ACTIVE = "maxActiveTasks";
     private static final String MAX_QUEUED = "maxQueuedTasks";
 
     public JDBCHandleConfiguration(JDBCCore source) {
@@ -162,7 +162,7 @@ public class JDBCHandleConfiguration extends Handler<ExtensionServiceMessage> {
         }
 
         // Creating the publish and query handlers
-        createQueryAndPublishHandlers(generalConfig);
+        int maxPoolSize = createQueryAndPublishHandlers(generalConfig);
         
         // Initialize JDBC Source with config values
         try {
@@ -170,7 +170,7 @@ public class JDBCHandleConfiguration extends Handler<ExtensionServiceMessage> {
                 source.jdbc.close();
             }
             JDBC jdbc = new JDBC();
-            jdbc.setupJDBC(dbURL, username, password, asynchronousProcessing);
+            jdbc.setupJDBC(dbURL, username, password, asynchronousProcessing, maxPoolSize);
             source.jdbc = jdbc; 
         } catch (VantiqSQLException e) {
             log.error("Configuration failed. Exception occurred while setting up JDBC Source: ", e);
@@ -212,26 +212,33 @@ public class JDBCHandleConfiguration extends Handler<ExtensionServiceMessage> {
     /**
      * Method used to create the query and publish handlers
      * @param generalConfig     The general configuration of the JDBC Source
+     * @return                  Returns the maximum pool size, equal to twice the number of active tasks.
+     *                          If default active tasks is used, then returns 0.
      */
-    private void createQueryAndPublishHandlers(Map<String, ?> generalConfig) {
+    private int createQueryAndPublishHandlers(Map<String, ?> generalConfig) {
+        int maxPoolSize = 0;
+
         // Checking if asynchronous processing was specified in the general configuration
         if (generalConfig.get(ASYNCH_PROCESSING) instanceof Boolean && (Boolean) generalConfig.get(ASYNCH_PROCESSING)) {
             asynchronousProcessing = true;
-            int maxRunningThreads = MAX_RUNNING_THREADS;
+            int maxActiveTasks = MAX_ACTIVE_TASKS;
             int maxQueuedTasks = MAX_QUEUED_TASKS;
 
-            if (generalConfig.get(MAX_RUNNING) instanceof Integer && (Integer) generalConfig.get(MAX_RUNNING) > 0) {
-                maxRunningThreads = (Integer) generalConfig.get(MAX_RUNNING);
+            if (generalConfig.get(MAX_ACTIVE) instanceof Integer && (Integer) generalConfig.get(MAX_ACTIVE) > 0) {
+                maxActiveTasks = (Integer) generalConfig.get(MAX_ACTIVE);
+
+                // Used to set the max pool size for connection pool
+                maxPoolSize = 2*maxActiveTasks;
             }
 
             if (generalConfig.get(MAX_QUEUED) instanceof Integer && (Integer) generalConfig.get(MAX_QUEUED) > 0) {
                 maxQueuedTasks = (Integer) generalConfig.get(MAX_QUEUED);
             }
 
-            // Creating the thread pool executors
-            source.queryPool = new ThreadPoolExecutor(maxRunningThreads, maxRunningThreads, 0l, TimeUnit.MILLISECONDS,
+            // Creating the thread pool executors with Queue
+            source.queryPool = new ThreadPoolExecutor(maxActiveTasks, maxActiveTasks, 0l, TimeUnit.MILLISECONDS,
                     new LinkedBlockingQueue<Runnable>(maxQueuedTasks));
-            source.publishPool = new ThreadPoolExecutor(maxRunningThreads, maxRunningThreads, 0l, TimeUnit.MILLISECONDS,
+            source.publishPool = new ThreadPoolExecutor(maxActiveTasks, maxActiveTasks, 0l, TimeUnit.MILLISECONDS,
                     new LinkedBlockingQueue<Runnable>(maxQueuedTasks));
 
             // Creating query/publish handlers with asynchronous processing
@@ -283,6 +290,8 @@ public class JDBCHandleConfiguration extends Handler<ExtensionServiceMessage> {
                 }
             };
         }
+
+        return maxPoolSize;
     }
 
     /**

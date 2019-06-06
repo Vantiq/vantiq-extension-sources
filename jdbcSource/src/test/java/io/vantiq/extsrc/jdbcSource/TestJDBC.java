@@ -129,7 +129,7 @@ public class TestJDBC extends TestJDBCBase {
         if (testDBUsername != null && testDBPassword != null && testDBURL != null && jdbcDriverLoc != null) {
             // Create new instance of JDBC to drop tables, in case the global JDBC instance was closed
             JDBC dropTablesJDBC = new JDBC();
-            dropTablesJDBC.setupJDBC(testDBURL, testDBUsername, testDBPassword, false);
+            dropTablesJDBC.setupJDBC(testDBURL, testDBUsername, testDBPassword, false, 0);
             
             // Delete first table
             try {
@@ -205,7 +205,7 @@ public class TestJDBC extends TestJDBCBase {
     @Test
     public void testProcessPublish() throws VantiqSQLException {
         assumeTrue(testDBUsername != null && testDBPassword != null && testDBURL != null && jdbcDriverLoc != null);
-        jdbc.setupJDBC(testDBURL, testDBUsername, testDBPassword, false);
+        jdbc.setupJDBC(testDBURL, testDBUsername, testDBPassword, false, 0);
         
         int queryResult;
         
@@ -239,7 +239,7 @@ public class TestJDBC extends TestJDBCBase {
     @Test
     public void testProcessQuery() throws VantiqSQLException {
         assumeTrue(testDBUsername != null && testDBPassword != null && testDBURL != null && jdbcDriverLoc != null);
-        jdbc.setupJDBC(testDBURL, testDBUsername, testDBPassword, false);
+        jdbc.setupJDBC(testDBURL, testDBUsername, testDBPassword, false, 0);
         
         HashMap[] queryResult;
         int deleteResult;
@@ -285,7 +285,7 @@ public class TestJDBC extends TestJDBCBase {
     @Test
     public void testExtendedTypes() throws VantiqSQLException {
         assumeTrue(testDBUsername != null && testDBPassword != null && testDBURL != null && jdbcDriverLoc != null);
-        jdbc.setupJDBC(testDBURL, testDBUsername, testDBPassword, false);
+        jdbc.setupJDBC(testDBURL, testDBUsername, testDBPassword, false, 0);
         HashMap[] queryResult;
         int publishResult;
         
@@ -341,7 +341,7 @@ public class TestJDBC extends TestJDBCBase {
         assumeFalse(checkSourceExists());
         assumeFalse(checkTypeExists());
                 
-        jdbc.setupJDBC(testDBURL, testDBUsername, testDBPassword, false);
+        jdbc.setupJDBC(testDBURL, testDBUsername, testDBPassword, false, 0);
         
         // Setup a VANTIQ JDBC Source, and start running the core
         setupSource(createSourceDef(false));
@@ -392,7 +392,7 @@ public class TestJDBC extends TestJDBCBase {
     @Test
     public void testNullValues() throws VantiqSQLException {
         assumeTrue(testDBUsername != null && testDBPassword != null && testDBURL != null && jdbcDriverLoc != null);
-        jdbc.setupJDBC(testDBURL, testDBUsername, testDBPassword, false);
+        jdbc.setupJDBC(testDBURL, testDBUsername, testDBPassword, false, 0);
         
         int publishResult;
         HashMap[] queryResult;
@@ -493,7 +493,7 @@ public class TestJDBC extends TestJDBCBase {
     public void testCorrectErrors() throws VantiqSQLException {
         assumeTrue(testDBUsername != null && testDBPassword != null && testDBURL != null && jdbcDriverLoc != null);
         assumeTrue(testDBURL.contains("mysql"));
-        jdbc.setupJDBC(testDBURL, testDBUsername, testDBPassword, false);
+        jdbc.setupJDBC(testDBURL, testDBUsername, testDBPassword, false, 0);
         HashMap[] queryResult;
         int publishResult;
         
@@ -556,7 +556,7 @@ public class TestJDBC extends TestJDBCBase {
     @Test
     public void testDBReconnect() throws VantiqSQLException {
         assumeTrue(testDBUsername != null && testDBPassword != null && testDBURL != null && jdbcDriverLoc != null);
-        jdbc.setupJDBC(testDBURL, testDBUsername, testDBPassword, false);
+        jdbc.setupJDBC(testDBURL, testDBUsername, testDBPassword, false, 0);
         
         // Close the connection, and then try to query
         jdbc.close();
@@ -709,9 +709,10 @@ public class TestJDBC extends TestJDBCBase {
         // Select from the type and make sure all of our results are there as expected
         response = vantiq.select(testTypeName, null, null, null);
         ArrayList responseBody = (ArrayList) response.getBody();
+        System.out.println("The size is: " +  responseBody.size());
         assert responseBody.size() == 500;
 
-        // Delete the Source/Type/Procedure/Rule from VANTIQ
+        // Delete the Source/Type/Topic/Procedure/Rule from VANTIQ
         deleteSource();
         deleteType();
         deleteTopic();
@@ -757,7 +758,7 @@ public class TestJDBC extends TestJDBCBase {
         general.put("dbURL", testDBURL);
         if (isAsynch) {
             general.put("asynchronousProcessing", true);
-            general.put("maxRunningThreads", 10);
+            general.put("maxActiveTasks", 10);
             general.put("maxQueuedTasks", 20);
         }
         

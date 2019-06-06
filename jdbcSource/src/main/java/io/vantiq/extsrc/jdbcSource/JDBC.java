@@ -49,7 +49,6 @@ public class JDBC {
     private static final int CONNECTION_POOL_TIMEOUT = 5000;
 
     // Used if asynchronous publish/query handling has been specified
-    private HikariConfig config = new HikariConfig();
     private HikariDataSource ds = null;
 
     DateFormat dfTimestamp  = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSZ");
@@ -62,21 +61,28 @@ public class JDBC {
      * @param username          The username to be used to connect to the SQL Database.
      * @param password          The password to be used to connect to the SQL Database.
      * @param asyncProcessing   A boolean flag specifying if publish/query requests are handled synchronously, or asynchronously.
+     * @param maxPoolSize       An integer representing the maxPoolSize for the Connection Pool. If value is < 1, then use default.
      * @throws VantiqSQLException 
      */
-    public void setupJDBC(String dbURL, String username, String password, boolean asyncProcessing) throws VantiqSQLException {
+    public void setupJDBC(String dbURL, String username, String password, boolean asyncProcessing, int maxPoolSize) throws VantiqSQLException {
         try {
             if (asyncProcessing) {
                 // Create a connection pool
-                config.setJdbcUrl(dbURL);
+                HikariConfig connectionPoolConfig = new HikariConfig();
+                connectionPoolConfig.setJdbcUrl(dbURL);
                 if (username != null) {
-                    config.setUsername(username);
+                    connectionPoolConfig.setUsername(username);
                 }
                 if (password != null) {
-                    config.setPassword(password);
+                    connectionPoolConfig.setPassword(password);
                 }
-                ds = new HikariDataSource(config);
+                ds = new HikariDataSource(connectionPoolConfig);
                 ds.setConnectionTimeout(CONNECTION_POOL_TIMEOUT);
+
+                // Setting max pool size if specified
+                if (maxPoolSize > 0) {
+                    ds.setMaximumPoolSize(maxPoolSize);
+                }
             } else {
                 // Open a single connection
                 conn = DriverManager.getConnection(dbURL,username,password);
@@ -226,7 +232,7 @@ public class JDBC {
     }
     
     /**
-     * Method used to try and reconnect if database connection was lost. Used for synchronous processing.
+     * Method used to try and reconnect if database connection was lost. Used for synchronous processing (connection pool handles this internally).
      * @throws VantiqSQLException
      */
     public void diagnoseConnection() throws VantiqSQLException {
