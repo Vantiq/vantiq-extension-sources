@@ -61,7 +61,7 @@ public class JDBC {
      * @param username          The username to be used to connect to the SQL Database.
      * @param password          The password to be used to connect to the SQL Database.
      * @param asyncProcessing   A boolean flag specifying if publish/query requests are handled synchronously, or asynchronously.
-     * @param maxPoolSize       An integer representing the maxPoolSize for the Connection Pool. If value is < 1, then use default.
+     * @param maxPoolSize       An integer representing the maxPoolSize for the Connection Pool.
      * @throws VantiqSQLException 
      */
     public void setupJDBC(String dbURL, String username, String password, boolean asyncProcessing, int maxPoolSize) throws VantiqSQLException {
@@ -79,10 +79,8 @@ public class JDBC {
                 ds = new HikariDataSource(connectionPoolConfig);
                 ds.setConnectionTimeout(CONNECTION_POOL_TIMEOUT);
 
-                // Setting max pool size if specified
-                if (maxPoolSize > 0) {
-                    ds.setMaximumPoolSize(maxPoolSize);
-                }
+                // Setting max pool size (should always match number of active threads for publish and query)
+                ds.setMaximumPoolSize(maxPoolSize);
             } else {
                 // Open a single connection
                 conn = DriverManager.getConnection(dbURL,username,password);

@@ -226,14 +226,14 @@ public class JDBCHandleConfiguration extends Handler<ExtensionServiceMessage> {
 
             if (generalConfig.get(MAX_ACTIVE) instanceof Integer && (Integer) generalConfig.get(MAX_ACTIVE) > 0) {
                 maxActiveTasks = (Integer) generalConfig.get(MAX_ACTIVE);
-
-                // Used to set the max pool size for connection pool
-                maxPoolSize = 2*maxActiveTasks;
             }
 
             if (generalConfig.get(MAX_QUEUED) instanceof Integer && (Integer) generalConfig.get(MAX_QUEUED) > 0) {
                 maxQueuedTasks = (Integer) generalConfig.get(MAX_QUEUED);
             }
+
+            // Used to set the max pool size for connection pool
+            maxPoolSize = 2*maxActiveTasks;
 
             // Creating the thread pool executors with Queue
             source.queryPool = new ThreadPoolExecutor(maxActiveTasks, maxActiveTasks, 0l, TimeUnit.MILLISECONDS,

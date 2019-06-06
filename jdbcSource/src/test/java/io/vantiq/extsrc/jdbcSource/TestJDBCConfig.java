@@ -149,13 +149,13 @@ public class TestJDBCConfig extends TestJDBCBase {
         conf.put("maxActiveTasks", "jibberish");
         conf.put("maxQueuedTasks", "moreJibberish");
         sendConfig(conf, vantiqConf);
-        assertFalse("Should not fail when maxRunningThreads and maxQueuedTasks are set incorrectly", configIsFailed());
+        assertFalse("Should not fail when maxActiveTasks and maxQueuedTasks are set incorrectly", configIsFailed());
 
         // Setting maxRunningThreads and maxQueuedTasks correctly
         conf.put("maxActiveTasks", 10);
         conf.put("maxQueuedTasks", 20);
         sendConfig(conf, vantiqConf);
-        assertFalse("Should not fail when maxRunningThreads and maxQueuedTasks are set correctly", configIsFailed());
+        assertFalse("Should not fail when maxActiveTasks and maxQueuedTasks are set correctly", configIsFailed());
     }
     
 // ================================================= Helper functions =================================================
