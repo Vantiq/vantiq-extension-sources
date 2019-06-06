@@ -709,7 +709,6 @@ public class TestJDBC extends TestJDBCBase {
         // Select from the type and make sure all of our results are there as expected
         response = vantiq.select(testTypeName, null, null, null);
         ArrayList responseBody = (ArrayList) response.getBody();
-        System.out.println("The size is: " +  responseBody.size());
         assert responseBody.size() == 500;
 
         // Delete the Source/Type/Topic/Procedure/Rule from VANTIQ
