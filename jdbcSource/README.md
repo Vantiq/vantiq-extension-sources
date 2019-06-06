@@ -91,7 +91,7 @@ The Configuration document may look similar to the following example:
              "password": "sqlPassword",
              "dbURL": "jdbc:mysql://localhost/myDB?useSSL=false&serverTimezone=UTC",
              "asynchronousProcessing": true,
-             "maxRunningThreads": 10,
+             "maxActiveTasks": 10,
              "maxQueuedTasks" 20,
              "pollTime": 3000,
              "pollQuery": "SELECT * FROM myTable"
@@ -109,10 +109,10 @@ The Configuration document may look similar to the following example:
 *   **dbURL**: Required. This is the URL corresponding to the SQL Database that you will connect to.
 *   **asynchronousProcessing**: Optional. If set to `true`, query and publish requests will be handled asynchronously, as 
 opposed to the default behavior which is synchronous.
-*   **maxRunningThreads**: Optional. Only used if `asynchronousProcessing` is set to `true`. The maximum number of threads 
-running at any given point for query or publish requests, respectively. Must be a non-zero integer. Default value is 5.
+*   **maxActiveTasks**: Optional. Only used if `asynchronousProcessing` is set to `true`. The maximum number of threads 
+running at any given point for query or publish requests, respectively. Must be a positive integer. Default value is 5.
 *   **maxQueuedTasks**: Optional. Only used if `asynchronousProcessing` is set to `true`. The maximum number of queued 
-tasks at any given point for query or publish requests, respectively. Must be a non-zero integer. Default value is 10.
+tasks at any given point for query or publish requests, respectively. Must be a positive integer. Default value is 10.
 *   **pollTime**: Optional. If specified, you must specify the pollQuery as well. This option allows you to specify a polling 
     rate indicating the frequency (in milliseconds) at which the pollQuery will be executed. The value must be a positive
     number greater than 0, (*i.e.* 3000 --> executing every 3 seconds).
@@ -297,7 +297,7 @@ override any existing Sources or Types.
 ## Licensing
 The source code uses the [MIT License](https://opensource.org/licenses/MIT).  
 
-okhttp3, log4j, and jackson-databind are licensed under
+HikariCP, okhttp3, log4j, and jackson-databind are licensed under
 [Apache Version 2.0 License](http://www.apache.org/licenses/LICENSE-2.0).  
 
 slf4j is licensed under the [MIT License](https://opensource.org/licenses/MIT).  
