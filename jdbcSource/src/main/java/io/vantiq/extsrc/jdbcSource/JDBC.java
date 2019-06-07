@@ -25,11 +25,17 @@ import java.util.HashMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.zaxxer.hikari.HikariConfig;
+import com.zaxxer.hikari.HikariDataSource;
+
 import io.vantiq.extsrc.jdbcSource.exception.VantiqSQLException;
 
 public class JDBC {
     Logger              log  = LoggerFactory.getLogger(this.getClass().getCanonicalName());
     private Connection  conn = null;
+
+    // Boolean flag specifying if publish/query requests are handled synchronously, or asynchronously
+    boolean isAsync;
     
     // Used to reconnect if necessary
     private String dbURL;
@@ -38,27 +44,53 @@ public class JDBC {
     
     // Timeout (in seconds) used to check if connection is still valid
     private static final int CHECK_CONNECTION_TIMEOUT = 5;
-    
+
+    // Timeout (in milliseconds) specifying how long ds.getConnection() will wait for a connection before timing out
+    private static final int CONNECTION_POOL_TIMEOUT = 5000;
+
+    // Used if asynchronous publish/query handling has been specified
+    private HikariDataSource ds = null;
+
     DateFormat dfTimestamp  = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSZ");
     DateFormat dfDate       = new SimpleDateFormat("yyyy-MM-dd");
     DateFormat dfTime       = new SimpleDateFormat("HH:mm:ss.SSSZ");
     
     /**
      * The method used to setup the connection to the SQL Database, using the values retrieved from the source config.
-     * @param dbURL         The Database URL to be used to connect to the SQL Database.    
-     * @param username      The username to be used to connect to the SQL Database.
-     * @param password      The password to be used to connect to the SQL Database.
+     * @param dbURL             The Database URL to be used to connect to the SQL Database.
+     * @param username          The username to be used to connect to the SQL Database.
+     * @param password          The password to be used to connect to the SQL Database.
+     * @param asyncProcessing   A boolean flag specifying if publish/query requests are handled synchronously, or asynchronously.
+     * @param maxPoolSize       An integer representing the maxPoolSize for the Connection Pool.
      * @throws VantiqSQLException 
      */
-    public void setupJDBC(String dbURL, String username, String password) throws VantiqSQLException {        
+    public void setupJDBC(String dbURL, String username, String password, boolean asyncProcessing, int maxPoolSize) throws VantiqSQLException {
         try {
-            // Open a connection
-            conn = DriverManager.getConnection(dbURL,username,password);
+            if (asyncProcessing) {
+                // Create a connection pool
+                HikariConfig connectionPoolConfig = new HikariConfig();
+                connectionPoolConfig.setJdbcUrl(dbURL);
+                if (username != null) {
+                    connectionPoolConfig.setUsername(username);
+                }
+                if (password != null) {
+                    connectionPoolConfig.setPassword(password);
+                }
+                ds = new HikariDataSource(connectionPoolConfig);
+                ds.setConnectionTimeout(CONNECTION_POOL_TIMEOUT);
+
+                // Setting max pool size (should always match number of active threads for publish and query)
+                ds.setMaximumPoolSize(maxPoolSize);
+            } else {
+                // Open a single connection
+                conn = DriverManager.getConnection(dbURL,username,password);
+            }
             
             // Save login credentials for reconnection if necessary
             this.dbURL = dbURL;
             this.username = username;
             this.password = password;
+            this.isAsync = asyncProcessing;
         } catch (SQLException e) {
             // Handle errors for JDBC
             reportSQLError(e);
@@ -73,17 +105,30 @@ public class JDBC {
      * @throws VantiqSQLException
      */
     public HashMap[] processQuery(String sqlQuery) throws VantiqSQLException {
-        // Check that connection hasn't closed
-        diagnoseConnection();
-        
         HashMap[] rsArray = null;
-        try (Statement stmt = conn.createStatement();
-            ResultSet rs = stmt.executeQuery(sqlQuery)) {
-            rsArray = createMapFromResults(rs);           
-        } catch (SQLException e) {
-            // Handle errors for JDBC
-            reportSQLError(e);
-        } 
+
+        if (isAsync) {
+            try (Connection conn = ds.getConnection();
+                 Statement stmt = conn.createStatement();
+                 ResultSet rs = stmt.executeQuery(sqlQuery)) {
+                rsArray = createMapFromResults(rs);
+            } catch (SQLException e) {
+                // Handle errors for JDBC
+                reportSQLError(e);
+            }
+        } else {
+            // Check that connection hasn't closed
+            diagnoseConnection();
+
+            try (Statement stmt = conn.createStatement();
+                 ResultSet rs = stmt.executeQuery(sqlQuery)) {
+                rsArray = createMapFromResults(rs);
+            } catch (SQLException e) {
+                // Handle errors for JDBC
+                reportSQLError(e);
+            }
+        }
+
         return rsArray;
     }
     
@@ -94,16 +139,28 @@ public class JDBC {
      * @throws VantiqSQLException
      */
     public int processPublish(String sqlQuery) throws VantiqSQLException {
-        // Check that connection hasn't closed
-        diagnoseConnection();
-        
         int publishSuccess = -1;
-        try (Statement stmt = conn.createStatement()) {
-            publishSuccess = stmt.executeUpdate(sqlQuery);
-        } catch (SQLException e) {
-            // Handle errors for JDBC
-            reportSQLError(e);
-        } 
+
+        if (isAsync) {
+            try (Connection conn = ds.getConnection();
+                 Statement stmt = conn.createStatement()) {
+                publishSuccess = stmt.executeUpdate(sqlQuery);
+            } catch (SQLException e) {
+                // Handle errors for JDBC
+                reportSQLError(e);
+            }
+        } else {
+            // Check that connection hasn't closed
+            diagnoseConnection();
+
+            try (Statement stmt = conn.createStatement()) {
+                publishSuccess = stmt.executeUpdate(sqlQuery);
+            } catch (SQLException e) {
+                // Handle errors for JDBC
+                reportSQLError(e);
+            }
+        }
+
         return publishSuccess;
     }
     
@@ -173,7 +230,7 @@ public class JDBC {
     }
     
     /**
-     * Method used to try and reconnect if database connection was lost.
+     * Method used to try and reconnect if database connection was lost. Used for synchronous processing (connection pool handles this internally).
      * @throws VantiqSQLException
      */
     public void diagnoseConnection() throws VantiqSQLException {
@@ -202,12 +259,17 @@ public class JDBC {
      * Closes the SQL Connection.
      */
     public void close() {
+        // Close single connection if open
         try {
             if (conn!=null) {
                 conn.close();
             }
         } catch(SQLException e) {
             log.error("A error occurred when closing the Connection: ", e);
+        }
+        // Close connection pool if open
+        if (ds != null) {
+            ds.close();
         }
     }
 }

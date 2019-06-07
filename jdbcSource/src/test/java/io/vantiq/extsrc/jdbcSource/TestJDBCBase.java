@@ -19,6 +19,9 @@ public class TestJDBCBase {
     static String jdbcDriverLoc;
     static String testSourceName;
     static String testTypeName;
+    static String testProcedureName;
+    static String testRuleName;
+    static String testTopicName;
     
     @BeforeClass
     public static void getProps() {
@@ -30,5 +33,8 @@ public class TestJDBCBase {
         jdbcDriverLoc = System.getenv("JDBC_DRIVER_LOC");
         testSourceName = System.getProperty("EntConTestSourceName", "testSourceName");
         testTypeName = System.getProperty("EntConTestTypeName", "testTypeName");
+        testProcedureName = System.getProperty("EntConTestProcedureName", "testProcedureName");
+        testRuleName = System.getProperty("EntConTestRuleName", "testRuleName");
+        testTopicName = System.getProperty("EntConTestTopicName", "/test/topic/name");
     }
 }

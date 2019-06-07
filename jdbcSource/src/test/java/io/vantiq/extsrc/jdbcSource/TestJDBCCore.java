@@ -62,7 +62,7 @@ public class TestJDBCCore extends TestJDBCBase {
     @Test
     public void testPublishQuery() throws VantiqSQLException {
         assumeTrue(testDBUsername != null && testDBPassword != null && testDBURL != null && jdbcDriverLoc != null);
-        jdbc.setupJDBC(testDBURL, testDBUsername, testDBPassword);
+        jdbc.setupJDBC(testDBURL, testDBUsername, testDBPassword, false, 0);
         
         Map<String, Object> request;
         ExtensionServiceMessage msg = new ExtensionServiceMessage("");
@@ -85,7 +85,7 @@ public class TestJDBCCore extends TestJDBCBase {
     @Test
     public void testExecuteQuery() throws VantiqSQLException {
         assumeTrue(testDBUsername != null && testDBPassword != null && testDBURL != null && jdbcDriverLoc != null);
-        jdbc.setupJDBC(testDBURL, testDBUsername, testDBPassword);
+        jdbc.setupJDBC(testDBURL, testDBUsername, testDBPassword, false, 0);
         
         Map<String, Object> request;
         ExtensionServiceMessage msg = new ExtensionServiceMessage("");
@@ -108,7 +108,7 @@ public class TestJDBCCore extends TestJDBCBase {
     @Test
     public void testExitIfConnectionFails() throws VantiqSQLException {
         assumeTrue(testDBUsername != null && testDBPassword != null && testDBURL != null && jdbcDriverLoc != null);
-        jdbc.setupJDBC(testDBURL, testDBUsername, testDBPassword);
+        jdbc.setupJDBC(testDBURL, testDBUsername, testDBPassword, false, 0);
         
         core.start(3);
         assertTrue("Should have succeeded", core.exitIfConnectionFails(core.client, 3));
