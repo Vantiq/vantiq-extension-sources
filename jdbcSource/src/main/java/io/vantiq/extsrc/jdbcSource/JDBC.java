@@ -134,7 +134,7 @@ public class JDBC {
     }
     
     /**
-     * The method used to execute the provided query, triggered by a PUBLISH on the respective source from VANTIQ.
+     * The method used to execute the provided query, triggered by a PUBLISH on the respective VANTIQ source.
      * @param sqlQuery          A String representation of the query, retrieved from the PUBLISH message.
      * @return                  The integer value that is returned by the executeUpdate() method representing the row count.
      * @throws VantiqSQLException
@@ -165,8 +165,15 @@ public class JDBC {
         return publishSuccess;
     }
 
-
-    public int[] processBatchPublish(List queryList) throws VantiqSQLException {
+    /**
+     * The method used to execute the provided list of queries, triggered by a PUBLISH on the respective VANTIQ source. These queries
+     * are processed as a batch.
+     * @param queryList             The list of queries to be processed as a batch.
+     * @return
+     * @throws VantiqSQLException
+     * @throws ClassCastException
+     */
+    public int[] processBatchPublish(List queryList) throws VantiqSQLException, ClassCastException {
         int[] publishSuccess = null;
 
         if (isAsync) {

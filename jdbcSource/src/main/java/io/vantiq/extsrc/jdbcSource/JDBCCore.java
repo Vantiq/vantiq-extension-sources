@@ -254,6 +254,9 @@ public class JDBCCore {
         } catch (VantiqSQLException e) {
             log.error("Could not execute requested query.", e);
             log.error("Request was: {}", request);
+        } catch (ClassCastException e) {
+            log.error("Could not execute requested query. This is most likely because the query list did not contain Strings.", e);
+            log.error("Request was: {}", request);
         } catch (Exception e) {
             log.error("An unexpected error occurred when executing the requested query.", e);
             log.error("Request was: {}", request);
