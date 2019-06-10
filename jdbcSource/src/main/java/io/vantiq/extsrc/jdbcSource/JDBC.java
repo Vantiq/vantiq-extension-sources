@@ -21,6 +21,7 @@ import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -155,6 +156,46 @@ public class JDBC {
 
             try (Statement stmt = conn.createStatement()) {
                 publishSuccess = stmt.executeUpdate(sqlQuery);
+            } catch (SQLException e) {
+                // Handle errors for JDBC
+                reportSQLError(e);
+            }
+        }
+
+        return publishSuccess;
+    }
+
+
+    public int[] processBatchPublish(List queryList) throws VantiqSQLException {
+        int[] publishSuccess = null;
+
+        if (isAsync) {
+            try (Connection conn = ds.getConnection();
+                 Statement stmt = conn.createStatement()) {
+
+                // Adding queries into batch
+                for (int i = 0; i < queryList.size(); i++) {
+                    stmt.addBatch((String) queryList.get(i));
+                }
+
+                // Executing the batch
+                publishSuccess = stmt.executeBatch();
+            } catch (SQLException e) {
+                // Handle errors for JDBC
+                reportSQLError(e);
+            }
+        } else {
+            // Check that connection hasn't closed
+            diagnoseConnection();
+
+            try (Statement stmt = conn.createStatement()) {
+                // Adding queries into batch
+                for (int i = 0; i < queryList.size(); i++) {
+                    stmt.addBatch((String) queryList.get(i));
+                }
+
+                // Executing the batch
+                publishSuccess = stmt.executeBatch();
             } catch (SQLException e) {
                 // Handle errors for JDBC
                 reportSQLError(e);

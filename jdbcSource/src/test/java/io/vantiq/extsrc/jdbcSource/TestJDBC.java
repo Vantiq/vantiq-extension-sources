@@ -732,7 +732,16 @@ public class TestJDBC extends TestJDBCBase {
         deleteProcedure();
         deleteRule();
     }
-    
+
+    @Test
+    public void testInvalidBatchProcessing() {
+
+    }
+
+    @Test
+    public void testBatchProcessing() {
+        
+    }
     // ================================================= Helper functions =================================================
 
     public static boolean checkSourceExists() {

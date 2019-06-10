@@ -9,6 +9,7 @@
 package io.vantiq.extsrc.jdbcSource;
 
 import java.util.Arrays;
+import java.util.List;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -220,8 +221,8 @@ public class JDBCCore {
     }
     
     /**
-     * Executes the query that is provided as a String in the options specified by the "query" key in the
-     * object of the Publish message.
+     * Executes the query that is provided in the Publish Message. If query is an Array of Strings, then it is executed as a Batch request.
+     * If the query is a single String, then it is executed normally.
      * @param message   The Query message.
      */
     public void executePublish(ExtensionServiceMessage message) {
@@ -243,8 +244,12 @@ public class JDBCCore {
                 String queryString = (String) request.get("query");
                 int data = localJDBC.processPublish(queryString);
                 log.trace("The returned integer value from Publish Query is the following: ", data);
+            } else if (request.get("query") instanceof List) {
+                List queryArray = (List) request.get("query");
+                int[] data = localJDBC.processBatchPublish(queryArray);
+                log.trace("The returned integer array from Publish Query is the following: ", data);
             } else {
-                log.error("Query could not be executed because query was not a String");
+                log.error("Query could not be executed because query was not a String or a List");
             }
         } catch (VantiqSQLException e) {
             log.error("Could not execute requested query.", e);
