@@ -297,6 +297,7 @@ public class JDBCHandleConfiguration extends Handler<ExtensionServiceMessage> {
     /**
      * Method called by the query handler to process the request
      * @param client    The ExtensionWebSocketClient used to send a query response error if necessary
+     * @param message   The message sent to the Extension Source
      */
     private void handleQueryRequest(ExtensionWebSocketClient client, ExtensionServiceMessage message) {
         // Should never happen, but just in case something changes in the backend
@@ -309,7 +310,7 @@ public class JDBCHandleConfiguration extends Handler<ExtensionServiceMessage> {
         // Process query and send the results
         source.executeQuery(message);
     }
-    
+
     /**
      * Closes the source {@link JDBCCore} and marks the configuration as completed. The source will
      * be reactivated when the source reconnects, due either to a Reconnect message (likely created by an update to the

@@ -207,8 +207,10 @@ try {
 
 Another method to interact with the JDBC Source is to use VAIL to publish to the source. To do this, you will need to
 specify the SQL Query you wish to execute against your database as part of the Publish Parameters. The SQL Queries used here 
-can be **CREATE**, **INSERT**, **DELETE**, **DROP**, or other commands supported by your SQL database. The following are 
-examples of Procedures created in VANTIQ Modelo publishing to a JDBC source.
+can be **CREATE**, **INSERT**, **DELETE**, **DROP**, or other commands supported by your SQL database. The SQL Query must 
+either be represented as a String, or as a List of Strings. If the query is represented as a list, then all of the queries in 
+the list will be executed together as a batch. The following are examples of Procedures created in VANTIQ Modelo publishing to 
+a JDBC source.
 
 **Creating a table:**
 
@@ -251,6 +253,39 @@ try {
         // 'query' field. The field must be named 'query'.
         PUBLISH {"query":sqlQuery} to SOURCE JDBC1
     }
+} catch (error) {
+    // Catching any errors and throwing the exception.
+    exception(error.code, error.message)
+}
+```
+
+**Inserting to table as a batch:**
+
+```
+PROCEDURE insertBatchJDBC()
+
+try {
+    var myList = []
+    
+    // The for-loop is used to insert multiple rows of data
+    FOR i in range(0, 5) {
+    	// Creating the values that will be inserted
+        var id = i.toString()
+	var age = (20+i).toString()
+	var first = "Firstname" + i.toString()
+	var last = "Lastname" + i.toString()
+
+	// The SQL Statement that the JDBC Source will execute
+	// Notice that when inserting Strings, the values must be surrounded by ''. This 
+	// can be seen around the 'first' and 'last' values.
+        var sqlQuery = "INSERT INTO Test VALUES (" + id + ", " + age + ", '" + first + "', '" + last + "');"
+	
+	// Adding the SQL Statement to the list.
+	push(myList, sqlQuery)
+    }
+    
+    // Using a VAIL PUBLISH statement with the list as our 'query' parameter
+    PUBLISH {query:myList} to SOURCE JDBC1
 } catch (error) {
     // Catching any errors and throwing the exception.
     exception(error.code, error.message)

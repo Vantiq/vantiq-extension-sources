@@ -21,6 +21,7 @@ import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -133,7 +134,7 @@ public class JDBC {
     }
     
     /**
-     * The method used to execute the provided query, triggered by a PUBLISH on the respective source from VANTIQ.
+     * The method used to execute the provided query, triggered by a PUBLISH on the respective VANTIQ source.
      * @param sqlQuery          A String representation of the query, retrieved from the PUBLISH message.
      * @return                  The integer value that is returned by the executeUpdate() method representing the row count.
      * @throws VantiqSQLException
@@ -155,6 +156,53 @@ public class JDBC {
 
             try (Statement stmt = conn.createStatement()) {
                 publishSuccess = stmt.executeUpdate(sqlQuery);
+            } catch (SQLException e) {
+                // Handle errors for JDBC
+                reportSQLError(e);
+            }
+        }
+
+        return publishSuccess;
+    }
+
+    /**
+     * The method used to execute the provided list of queries, triggered by a PUBLISH on the respective VANTIQ source. These queries
+     * are processed as a batch.
+     * @param queryList             The list of queries to be processed as a batch.
+     * @return
+     * @throws VantiqSQLException
+     * @throws ClassCastException
+     */
+    public int[] processBatchPublish(List queryList) throws VantiqSQLException, ClassCastException {
+        int[] publishSuccess = null;
+
+        if (isAsync) {
+            try (Connection conn = ds.getConnection();
+                 Statement stmt = conn.createStatement()) {
+
+                // Adding queries into batch
+                for (int i = 0; i < queryList.size(); i++) {
+                    stmt.addBatch((String) queryList.get(i));
+                }
+
+                // Executing the batch
+                publishSuccess = stmt.executeBatch();
+            } catch (SQLException e) {
+                // Handle errors for JDBC
+                reportSQLError(e);
+            }
+        } else {
+            // Check that connection hasn't closed
+            diagnoseConnection();
+
+            try (Statement stmt = conn.createStatement()) {
+                // Adding queries into batch
+                for (int i = 0; i < queryList.size(); i++) {
+                    stmt.addBatch((String) queryList.get(i));
+                }
+
+                // Executing the batch
+                publishSuccess = stmt.executeBatch();
             } catch (SQLException e) {
                 // Handle errors for JDBC
                 reportSQLError(e);

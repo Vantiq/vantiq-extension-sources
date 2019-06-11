@@ -93,6 +93,17 @@ public class TestJDBC extends TestJDBCBase {
     // Queries for asynchronous processing test
     static final String CREATE_TABLE_ASYNCH = "CREATE TABLE TestAsynchProcessing(id int, first varchar (255), last varchar (255));";
     static final String DROP_TABLE_ASYNCH = "DROP TABLE TestAsynchProcessing";
+
+    // Queries for invalid batch processing tests
+    static final String CREATE_TABLE_INVALID_BATCH = "CREATE TABLE TestInvalidBatch(id int, first varchar (255), last varchar (255));";
+    static final String SELECT_TABLE_INVALID_BATCH = "SELECT * FROM TestInvalidBatch";
+    static final String DROP_TABLE_INVALID_BATCH = "DROP TABLE TestInvalidBatch";
+
+    // Queries for valid batch processing tests
+    static final String CREATE_TABLE_BATCH = "CREATE TABLE TestBatch(id int, first varchar (255), last varchar (255));";
+    static final String INSERT_TABLE_BATCH = "INSERT INTO TestBatch VALUES (1, 'First', 'Second');";
+    static final String SELECT_TABLE_BATCH = "SELECT * FROM TestBatch;";
+    static final String DROP_TABLE_BATCH = "DROP TABLE TestBatch";
     
     static final String timestampPattern = "\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}.\\d{3}-\\d{4}";
     static final String datePattern = "\\d{4}-\\d{2}-\\d{2}";
@@ -176,6 +187,20 @@ public class TestJDBC extends TestJDBCBase {
             // Delete seventh table
             try {
                 dropTablesJDBC.processPublish(DROP_TABLE_ASYNCH);
+            } catch (VantiqSQLException e) {
+                // Shouldn't throw Exception
+            }
+
+            // Delete eighth table
+            try {
+                dropTablesJDBC.processPublish(DROP_TABLE_INVALID_BATCH);
+            } catch (VantiqSQLException e) {
+                // Shouldn't throw Exception
+            }
+
+            // Delete ninth table
+            try {
+                dropTablesJDBC.processPublish(DROP_TABLE_BATCH);
             } catch (VantiqSQLException e) {
                 // Shouldn't throw Exception
             }
@@ -712,8 +737,8 @@ public class TestJDBC extends TestJDBCBase {
         // Execute Procedure to trigger asynchronous publish/queries (assign to variable to ensure that procedure has finished before selecting from type)
         VantiqResponse response = vantiq.execute(testProcedureName, new LinkedHashMap<>());
 
-        // Sleep for 2 seconds to make sure all queries have finished
-        Thread.sleep(2000);
+        // Sleep for 5 seconds to make sure all queries have finished
+        Thread.sleep(5000);
 
         // Select from the type and make sure all of our results are there as expected
         response = vantiq.select(testTypeName, null, null, null);
@@ -732,7 +757,99 @@ public class TestJDBC extends TestJDBCBase {
         deleteProcedure();
         deleteRule();
     }
-    
+
+    @Test
+    public void testInvalidBatchProcessing() {
+        // Only run test with intended vantiq availability
+        assumeTrue(testAuthToken != null && testVantiqServer != null);
+        assumeTrue(testDBUsername != null && testDBPassword != null && testDBURL != null && jdbcDriverLoc != null);
+
+        // Check that Source, Type, Topic, Procedure and Rule do not already exist in namespace, and skip test if they do
+        assumeFalse(checkSourceExists());
+
+        // Setup a VANTIQ JDBC Source, and start running the core
+        setupSource(createSourceDef(false, false));
+
+        // Create table
+        Map<String,Object> create_params = new LinkedHashMap<String,Object>();
+        create_params.put("query", CREATE_TABLE_INVALID_BATCH);
+        vantiq.publish("sources", testSourceName, create_params);
+
+        // Creating a list of integers to insert as a batch
+        ArrayList<Object> invalidBatch = new ArrayList<>();
+        for (int i = 0; i<50; i++) {
+            invalidBatch.add(10);
+        }
+
+        // Attempt to insert data into the table, which should fail
+        Map<String,Object> insert_params = new LinkedHashMap<String,Object>();
+        insert_params.put("query", invalidBatch);
+        vantiq.publish("sources", testSourceName, insert_params);
+
+        // Query the table and make sure it is empty
+        Map<String,Object> query_params = new LinkedHashMap<String,Object>();
+        query_params.put("query", SELECT_TABLE_INVALID_BATCH);
+        VantiqResponse response = vantiq.query(testSourceName, query_params);
+        JsonArray responseBody = (JsonArray) response.getBody();
+        assert responseBody.size() == 0;
+
+        // Now try a list of jibberish queries
+        for (int i = 0; i<50; i++) {
+            invalidBatch.add("jibberish");
+        }
+
+        // Attempt to insert data into the table, which should fail
+        insert_params.put("query", invalidBatch);
+        vantiq.publish("sources", testSourceName, insert_params);
+
+        // Query the table and make sure it is empty
+        response = vantiq.query(testSourceName, query_params);
+        responseBody = (JsonArray) response.getBody();
+        assert responseBody.size() == 0;
+
+        // Delete the Source
+        deleteSource();
+    }
+
+    @Test
+    public void testBatchProcessing() {
+        // Only run test with intended vantiq availability
+        assumeTrue(testAuthToken != null && testVantiqServer != null);
+        assumeTrue(testDBUsername != null && testDBPassword != null && testDBURL != null && jdbcDriverLoc != null);
+
+        // Check that Source, Type, Topic, Procedure and Rule do not already exist in namespace, and skip test if they do
+        assumeFalse(checkSourceExists());
+
+        // Setup a VANTIQ JDBC Source, and start running the core
+        setupSource(createSourceDef(false, false));
+
+        // Create table
+        Map<String,Object> create_params = new LinkedHashMap<String,Object>();
+        create_params.put("query", CREATE_TABLE_BATCH);
+        vantiq.publish("sources", testSourceName, create_params);
+
+        // Creating a list of strings to insert as a batch
+        ArrayList<String> batch = new ArrayList<String>();
+        for (int i = 0; i<50; i++) {
+            batch.add(INSERT_TABLE_BATCH);
+        }
+
+        // Inserting data into the table as a batch
+        Map<String,Object> insert_params = new LinkedHashMap<String,Object>();
+        insert_params.put("query", batch);
+        VantiqResponse response = vantiq.publish("sources", testSourceName, insert_params);
+        assert !response.hasErrors();
+
+        // Select the data from table and make sure the response is valid
+        Map<String,Object> query_params = new LinkedHashMap<String,Object>();
+        query_params.put("query", SELECT_TABLE_BATCH);
+        response = vantiq.query(testSourceName, query_params);
+        JsonArray responseBody = (JsonArray) response.getBody();
+        assert responseBody.size() == 50;
+
+        // Delete the Source
+        deleteSource();
+    }
     // ================================================= Helper functions =================================================
 
     public static boolean checkSourceExists() {
