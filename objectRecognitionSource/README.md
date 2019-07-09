@@ -51,15 +51,13 @@ Additionally, an example VANTIQ project named *objRecExample.zip* can be found i
 
 ## How to Run the Program<a name="objRecMain" id="objRecMain"></a>
 
-1.  If you intend to use any of the implementations that require OpenCV, you must install OpenCV version 3.4.2 for
-Java. The [official site](https://docs.opencv.org/3.4.2/d9/d52/tutorial_java_dev_intro.html) and [this more
-in-depth tutorial](https://opencv-java-tutorials.readthedocs.io/en/latest/01-installing-opencv-for-java.html)
-describe how to install it. Once it's installed, copy the jar and (lib)opencv_java342.dll/.so/.dylib to a single
-folder, then set the environment variable OPENCV_LOC to that folder. Some features may depend on additional
-.dll/.so/.dylib files, such as FFmpeg for IP cameras.
-    *   **NOTE:** If you are using a Windows or Linux machine, you may need to add the `opencv_ffmpeg342_64.dll` or 
-    `opencv_ffmpeg342_64.so` file, respectively, to the OPENCV_LOC folder. This file is located in the same directory as the 
-    other OpenCV .jar/.dll/.so/.dylib files. (Use `opencv_ffmpeg342.dll` or `opencv_ffmpeg342.so` for 32 bit version.)
+1.  If you intend to use any of the implementations that require OpenCV, you must install OpenCV version 4.1.0 for
+Java. The [official site](https://opencv.org/releases/) and [this more in-depth tutorial](https://opencv-java-tutorials.readthedocs.io/en/latest/01-installing-opencv-for-java.html) describe how to install it. Once it's installed, copy 
+the jar and (lib)opencv_java410.dll/.so/.dylib to a single folder, then set the environment variable OPENCV_LOC to that 
+folder. Some features may depend on additional .dll/.so/.dylib files, such as FFmpeg for IP cameras.
+    *   **NOTE:** If you are using a Windows or Linux machine, you may need to add the `opencv_ffmpeg410_64.dll` or 
+    `opencv_ffmpeg410_64.so` file, respectively, to the OPENCV_LOC folder. This file is located in the same directory as the 
+    other OpenCV .jar/.dll/.so/.dylib files. (Use `opencv_ffmpeg410.dll` or `opencv_ffmpeg410.so` for 32 bit version.)
         *   A typical indicator that you will need to add this file is if OpenCV cannot open video streams/files.
     *   The implementations dependent on OpenCV are FileRetriever, NetworkStreamRetriever, and CameraRetriever.
 2.  Clone this repository (vantiq-extension-sources) and navigate into `<repo location>/vantiq-extension-sources`.
@@ -111,14 +109,12 @@ sources inside your own code, then it is what you will use.
     *   If you know that you will not use specific classes in the *.neuralNet or *.imageRetriever packages you can
         remove them now.
     *   FileRetriever, NetworkStreamRetriever, and CameraRetriever all use OpenCV, which is not in the gradle
-        dependencies. If they are not removed you must install OpenCV version 3.4.2, set the environment variable
+        dependencies. If they are not removed you must install OpenCV version 4.1.0, set the environment variable
         OPENCV_LOC to the folder containing the jar, and ensure that when running your code the jar is in the classpath
-        and (lib)opencv_java342.dll/.so/.dylib is in a folder in `java.library.path`. You may see a warning about not 
-        having (lib)opencv_java342.dll/.so/.dylib in the correct directory when compiling the objectRecognition jar,
+        and (lib)opencv_java410.dll/.so/.dylib is in a folder in `java.library.path`. You may see a warning about not 
+        having (lib)opencv_java410.dll/.so/.dylib in the correct directory when compiling the objectRecognition jar,
         but this can be safely ignored since you will be setting the path yourself. Instructions for installing
-        OpenCV can be found at the [official site](https://docs.opencv.org/3.4.2/d9/d52/tutorial_java_dev_intro.html)
-        or [this more in-depth tutorial]
-        (https://opencv-java-tutorials.readthedocs.io/en/latest/01-installing-opencv-for-java.html).
+        OpenCV can be found at the [official site](https://opencv.org/releases/) or [this more in-depth tutorial](https://opencv-java-tutorials.readthedocs.io/en/latest/01-installing-opencv-for-java.html).
 2.  Run `./gradlew objectRecognitionSource:assemble` or `.\gradlew objectRecognitionSource:assemble` depending on the
     OS.
 3.  Navigate to `<repo location>/vantiq-extension-sources/objectRecognitionSource/build/libs` and copy
