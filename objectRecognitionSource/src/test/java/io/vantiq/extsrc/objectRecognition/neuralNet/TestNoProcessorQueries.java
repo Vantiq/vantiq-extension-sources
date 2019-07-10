@@ -23,7 +23,9 @@ public class TestNoProcessorQueries extends NeuralNetTestBase {
     static VantiqResponse vantiqResponse;
     static ObjectRecognitionCore core;
     static List<String> vantiqUploadFiles = new ArrayList<>();
-    
+
+    static final int WAIT_FOR_ASYNC_MILLIS = 5000;
+
     static final int CORE_START_TIMEOUT = 10;
     static final String OUTPUT_DIR = System.getProperty("buildDir") + "/resources/out";
     static final String SOURCE_NAME = "UnlikelyToExistTestObjectRecognitionSource";
@@ -311,14 +313,25 @@ public class TestNoProcessorQueries extends NeuralNetTestBase {
     public static void deleteFileFromVantiq(String filename) {
         vantiq.deleteOne("system.documents", filename);
     }
-    
-    public void checkUploadToVantiq(String name) {
-        vantiqResponse = vantiq.selectOne("system.documents", name);
-        if (vantiqResponse.hasErrors()) {
-            List<VantiqError> errors = vantiqResponse.getErrors();
-            for (int i = 0; i < errors.size(); i++) {
-                if (errors.get(i).getCode().equals(NOT_FOUND_CODE)) {
-                    fail("Image should have been uploaded to VANTIQ");
+
+    public void checkUploadToVantiq(String name) throws InterruptedException {
+        boolean done = false;
+        int retries = 0;
+        int maxRetries = WAIT_FOR_ASYNC_MILLIS / 50;
+        while (!done) {
+            done = true;
+            vantiqResponse = vantiq.selectOne("system.documents", name);
+            if (vantiqResponse.hasErrors()) {
+                if (++retries < maxRetries) {
+                    done = false;
+                    Thread.sleep(50);
+                } else {
+                    List<VantiqError> errors = vantiqResponse.getErrors();
+                    for (int i = 0; i < errors.size(); i++) {
+                        if (errors.get(i).getCode().equals(NOT_FOUND_CODE)) {
+                            fail("Image should have been uploaded to VANTIQ");
+                        }
+                    }
                 }
             }
         }

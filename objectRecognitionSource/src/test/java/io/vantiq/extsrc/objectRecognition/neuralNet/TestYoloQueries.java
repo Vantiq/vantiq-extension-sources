@@ -45,7 +45,8 @@ public class TestYoloQueries extends NeuralNetTestBase {
     static final String SOURCE_NAME = "UnlikelyToExistTestObjectRecognitionSource";
     static final String IP_CAMERA_ADDRESS = "http://207.192.232.2:8000/mjpg/video.mjpg";
     static final String NOT_FOUND_CODE = "io.vantiq.resource.not.found";
-    
+    static final int WAIT_FOR_ASYNC_MILLIS = 5000;
+
     static final String IMAGE_1_DATE = "2019-02-05--02-35-10";
     static final Map<String,String> IMAGE_1 = new LinkedHashMap<String,String>() {{
         put("filename", "objectRecognition/" + SOURCE_NAME + "/" + IMAGE_1_DATE + ".jpg");
@@ -825,45 +826,76 @@ public class TestYoloQueries extends NeuralNetTestBase {
     public static void deleteFileFromVantiq(String filename) {
         vantiq.deleteOne("system.documents", filename);
     }
-    
-    public void checkUploadToVantiq(String name) {
-        vantiqResponse = vantiq.selectOne("system.documents", name);
-        if (vantiqResponse.hasErrors()) {
-            List<VantiqError> errors = vantiqResponse.getErrors();
-            for (int i = 0; i < errors.size(); i++) {
-                if (errors.get(i).getCode().equals(NOT_FOUND_CODE)) {
-                    fail("Image should have been uploaded to VANTIQ");
+
+    public void checkUploadToVantiq(String name) throws InterruptedException {
+        boolean done = false;
+        int retries = 0;
+        int maxRetries = WAIT_FOR_ASYNC_MILLIS / 50;
+        while (!done) {
+            done = true;
+            vantiqResponse = vantiq.selectOne("system.documents", name);
+            if (vantiqResponse.hasErrors()) {
+                if (++retries < maxRetries) {
+                    done = false;
+                    Thread.sleep(50);
+                } else {
+                    List<VantiqError> errors = vantiqResponse.getErrors();
+                    for (int i = 0; i < errors.size(); i++) {
+                        if (errors.get(i).getCode().equals(NOT_FOUND_CODE)) {
+                            fail("Image should have been uploaded to VANTIQ");
+                        }
+                    }
                 }
             }
         }
     }
-    
-    public void checkNotUploadToVantiq(String name) {
-        vantiqResponse = vantiq.selectOne("system.documents", name);
-        if (vantiqResponse.isSuccess()) {
-            fail("Image should not have been uploaded to VANTIQ");
+
+    public void checkNotUploadToVantiq(String name) throws InterruptedException {
+        boolean done = false;
+        int retries = 0;
+        int maxRetries = WAIT_FOR_ASYNC_MILLIS / 50;
+        while (!done) {
+            done = true;
+            vantiqResponse = vantiq.selectOne("system.documents", name);
+            if (vantiqResponse.isSuccess()) {
+                if (++retries < maxRetries) {
+                    done = false;
+                    Thread.sleep(50);
+                } else {
+                    fail("Image should not have been uploaded to VANTIQ");
+                }
+            }
         }
     }
     
     public void checkQueryError(Map<String,Object> params, String operation) {
         vantiqResponse = vantiq.query(SOURCE_NAME, params);
         assert vantiqResponse.hasErrors();
-        assert vantiqResponse.getErrors().get(0).getMessage().equals("No imageName or imageDate was specified, "
-                + "or they were incorrectly specified. Cannot select image(s) to " + operation + ".");
+        String errorMessage = vantiqResponse.getErrors().get(0).getMessage();
+        if (!errorMessage.equals("No imageName or imageDate was specified, "
+                + "or they were incorrectly specified. Cannot select image(s) to " + operation + ".")) {
+            fail("Incorrect error message: " + errorMessage);
+        }
     }
     
     public void checkQueryErrorImageDateListSize(Map<String,Object> params) {
         vantiqResponse = vantiq.query(SOURCE_NAME, params);
         assert vantiqResponse.hasErrors();
-        assert vantiqResponse.getErrors().get(0).getMessage().equals("The imageDate value did not contain exactly"
-                + " two elements. Must be a list containing only [<yourStartDate>, <yourEndDate>].");
+        String errorMessage = vantiqResponse.getErrors().get(0).getMessage();
+        if (!errorMessage.equals("The imageDate value did not contain exactly"
+                + " two elements. Must be a list containing only [<yourStartDate>, <yourEndDate>].")) {
+            fail("Incorrect error message: " + errorMessage);
+        }
     }
     
     public void checkQueryErrorInvalidDate(Map<String,Object> params) {
         vantiqResponse = vantiq.query(SOURCE_NAME, params);
         assert vantiqResponse.hasErrors();
-        assert vantiqResponse.getErrors().get(0).getMessage().equals("One of the dates in the imageDate list could "
-                + "not be parsed. Please be sure that both dates are in the following format: yyyy-MM-dd--HH-mm-ss");
+        String errorMessage = vantiqResponse.getErrors().get(0).getMessage();
+        if (!errorMessage.equals("One of the dates in the imageDate list could "
+                + "not be parsed. Please be sure that both dates are in the following format: yyyy-MM-dd--HH-mm-ss")) {
+            fail("Incorrect error message: " + errorMessage);
+        }
     }
     
     public void invalidParametersHelper(Map<String,Object> params, String operation) {

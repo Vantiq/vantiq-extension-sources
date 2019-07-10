@@ -41,6 +41,8 @@ public class TestUploadAndDeleteQuery extends NeuralNetTestBase {
     
     static final String OUTPUT_DIR = System.getProperty("buildDir") + "/resources/out";
     static final String NOT_FOUND_CODE = "io.vantiq.resource.not.found";
+
+    static final int WAIT_FOR_ASYNC_MILLIS = 5000;
     
     static final String IMAGE_1_DATE = "2019-02-05--02-35-10";
     static final Map<String,String> IMAGE_1 = new LinkedHashMap<String,String>() {{
@@ -682,22 +684,44 @@ public class TestUploadAndDeleteQuery extends NeuralNetTestBase {
     
     // ================================================= Helper functions =================================================
     
-    public void checkUploadToVantiq(String name) {
-        vantiqResponse = vantiq.selectOne("system.documents", name);
-        if (vantiqResponse.hasErrors()) {
-            List<VantiqError> errors = vantiqResponse.getErrors();
-            for (int i = 0; i < errors.size(); i++) {
-                if (errors.get(i).getCode().equals(NOT_FOUND_CODE)) {
-                    fail("Image should have been uploaded to VANTIQ");
+    public void checkUploadToVantiq(String name) throws InterruptedException {
+        boolean done = false;
+        int retries = 0;
+        int maxRetries = WAIT_FOR_ASYNC_MILLIS / 50;
+        while (!done) {
+            done = true;
+            vantiqResponse = vantiq.selectOne("system.documents", name);
+            if (vantiqResponse.hasErrors()) {
+                if (++retries < maxRetries) {
+                    done = false;
+                    Thread.sleep(50);
+                } else {
+                    List<VantiqError> errors = vantiqResponse.getErrors();
+                    for (int i = 0; i < errors.size(); i++) {
+                        if (errors.get(i).getCode().equals(NOT_FOUND_CODE)) {
+                            fail("Image should have been uploaded to VANTIQ");
+                        }
+                    }
                 }
             }
         }
     }
     
-    public void checkNotUploadToVantiq(String name) {
-        vantiqResponse = vantiq.selectOne("system.documents", name);
-        if (vantiqResponse.isSuccess()) {
-            fail("Image should not have been uploaded to VANTIQ");
+    public void checkNotUploadToVantiq(String name) throws InterruptedException {
+        boolean done = false;
+        int retries = 0;
+        int maxRetries = WAIT_FOR_ASYNC_MILLIS / 50;
+        while (!done) {
+            done = true;
+            vantiqResponse = vantiq.selectOne("system.documents", name);
+            if (vantiqResponse.isSuccess()) {
+                if (++retries < maxRetries) {
+                    done = false;
+                    Thread.sleep(50);
+                } else {
+                    fail("Image should not have been uploaded to VANTIQ");
+                }
+            }
         }
     }
 }

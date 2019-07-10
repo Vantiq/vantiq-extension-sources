@@ -38,6 +38,7 @@ public class TestNoProcessor extends NeuralNetTestBase {
     static final int SAVE_RATE = 2; // Saves every other so that we can know it counts correctly
     static final String NOT_FOUND_CODE = "io.vantiq.resource.not.found";
     static final String CONFIG_JSON_LOCATION = "src/test/resources/";
+    static final int WAIT_FOR_ASYNC_MILLIS = 5000;
 
     static NoProcessor noProcessor;
     static Vantiq vantiq;
@@ -133,7 +134,7 @@ public class TestNoProcessor extends NeuralNetTestBase {
     }
 
     @Test
-    public void testImageSavingLocal() throws ImageProcessingException {
+    public void testImageSavingLocal() throws ImageProcessingException, InterruptedException {
 
         // Only run test with intended vantiq availability
         assumeTrue(testAuthToken != null && testVantiqServer != null);
@@ -155,6 +156,7 @@ public class TestNoProcessor extends NeuralNetTestBase {
             }
 
             // Should not return any results, just saving image
+            Thread.sleep(1000);
             NeuralNetResults results = npProcessor.processImage(getTestImage());
             assert results.getResults() == null;
 
@@ -166,10 +168,7 @@ public class TestNoProcessor extends NeuralNetTestBase {
 
             // Check it didn't save to VANTIQ
             lastFilename = "objectRecognition/" + SOURCE_NAME + '/' + npProcessor.lastFilename;
-            vantiqResponse = vantiq.selectOne("system.documents", lastFilename);
-            if (vantiqResponse.isSuccess()) {
-                fail();
-            }
+            checkNotUploadToVantiq(lastFilename);
 
             results = null;
             results = npProcessor.processImage(getTestImage());
@@ -194,10 +193,7 @@ public class TestNoProcessor extends NeuralNetTestBase {
 
             // Check it didn't save to VANTIQ
             lastFilename = "objectRecognition/" + SOURCE_NAME + '/' + npProcessor.lastFilename;
-            vantiqResponse = vantiq.selectOne("system.documents", lastFilename);
-            if (vantiqResponse.isSuccess()) {
-                fail();
-            }
+            checkNotUploadToVantiq(lastFilename);
 
         } finally {
             // delete the directory even if the test fails
@@ -244,15 +240,7 @@ public class TestNoProcessor extends NeuralNetTestBase {
             // Checking that image was saved to VANTIQ
             Thread.sleep(1000);
             lastFilename = "objectRecognition/" + SOURCE_NAME + '/' + npProcessor.lastFilename;
-            vantiqResponse = vantiq.selectOne("system.documents", lastFilename);
-            if (vantiqResponse.hasErrors()) {
-                List<VantiqError> errors = vantiqResponse.getErrors();
-                for (int i = 0; i < errors.size(); i++) {
-                    if (errors.get(i).getCode().equals(NOT_FOUND_CODE)) {
-                        fail();
-                    }
-                }
-            }
+            checkUploadToVantiq(lastFilename);
             vantiqSavedFiles.add(lastFilename);
 
             results = null;
@@ -278,15 +266,7 @@ public class TestNoProcessor extends NeuralNetTestBase {
             // Checking that image was saved to VANTIQ
             Thread.sleep(1000);
             lastFilename = "objectRecognition/" + SOURCE_NAME + '/' + npProcessor.lastFilename;
-            vantiqResponse = vantiq.selectOne("system.documents", lastFilename);
-            if (vantiqResponse.hasErrors()) {
-                List<VantiqError> errors = vantiqResponse.getErrors();
-                for (int i = 0; i < errors.size(); i++) {
-                    if (errors.get(i).getCode().equals(NOT_FOUND_CODE)) {
-                        fail();
-                    }
-                }
-            }
+            checkUploadToVantiq(lastFilename);
             vantiqSavedFiles.add(lastFilename);
 
         } finally {
@@ -332,15 +312,7 @@ public class TestNoProcessor extends NeuralNetTestBase {
             // Checking that image was saved to VANTIQ
             Thread.sleep(1000);
             lastFilename = "objectRecognition/" + SOURCE_NAME + '/' + npProcessor.lastFilename;
-            vantiqResponse = vantiq.selectOne("system.documents", lastFilename);
-            if (vantiqResponse.hasErrors()) {
-                List<VantiqError> errors = vantiqResponse.getErrors();
-                for (int i = 0; i < errors.size(); i++) {
-                    if (errors.get(i).getCode().equals(NOT_FOUND_CODE)) {
-                        fail();
-                    }
-                }
-            }
+            checkUploadToVantiq(lastFilename);
             vantiqSavedFiles.add(lastFilename);
 
         } finally {
@@ -411,15 +383,7 @@ public class TestNoProcessor extends NeuralNetTestBase {
             // Checking that image was saved in VANTIQ
             Thread.sleep(1000);
             lastFilename = "objectRecognition/" + SOURCE_NAME + '/' + npProcessor.lastFilename;
-            vantiqResponse = vantiq.selectOne("system.documents", lastFilename);
-            if (vantiqResponse.hasErrors()) {
-                List<VantiqError> errors = vantiqResponse.getErrors();
-                for (int i = 0; i < errors.size(); i++) {
-                    if (errors.get(i).getCode().equals(NOT_FOUND_CODE)) {
-                        fail();
-                    }
-                }
-            }
+            checkUploadToVantiq(lastFilename);
             vantiqSavedFiles.add(lastFilename);
 
             request.put("NNsaveImage", "both");
@@ -438,15 +402,7 @@ public class TestNoProcessor extends NeuralNetTestBase {
             // Checking that image was saved in VANTIQ
             Thread.sleep(1000);
             lastFilename = "objectRecognition/" + SOURCE_NAME + '/' + npProcessor.lastFilename;
-            vantiqResponse = vantiq.selectOne("system.documents", lastFilename);
-            if (vantiqResponse.hasErrors()) {
-                List<VantiqError> errors = vantiqResponse.getErrors();
-                for (int i = 0; i < errors.size(); i++) {
-                    if (errors.get(i).getCode().equals(NOT_FOUND_CODE)) {
-                        fail();
-                    }
-                }
-            }
+            checkUploadToVantiq(lastFilename);
             vantiqSavedFiles.add(lastFilename);
 
             // Save with "local" instead of "both", and remove fileName
@@ -473,10 +429,7 @@ public class TestNoProcessor extends NeuralNetTestBase {
             // Checking that image was not saved in VANTIQ
             Thread.sleep(1000);
             lastFilename = "objectRecognition/" + SOURCE_NAME + '/' + npProcessor.lastFilename;
-            vantiqResponse = vantiq.selectOne("system.documents", lastFilename);
-            if (vantiqResponse.isSuccess()) {
-                fail();
-            }
+            checkNotUploadToVantiq(lastFilename);
 
             queryOutputFile += ".jpeg";
             request.put("NNfileName", queryOutputFile);
@@ -497,6 +450,48 @@ public class TestNoProcessor extends NeuralNetTestBase {
 
             npProcessor.close();
         }
+    }
 
+    // ================================================= Helper functions =================================================
+
+    public void checkUploadToVantiq(String name) throws InterruptedException {
+        boolean done = false;
+        int retries = 0;
+        int maxRetries = WAIT_FOR_ASYNC_MILLIS / 50;
+        while (!done) {
+            done = true;
+            vantiqResponse = vantiq.selectOne("system.documents", name);
+            if (vantiqResponse.hasErrors()) {
+                if (++retries < maxRetries) {
+                    done = false;
+                    Thread.sleep(50);
+                } else {
+                    List<VantiqError> errors = vantiqResponse.getErrors();
+                    for (int i = 0; i < errors.size(); i++) {
+                        if (errors.get(i).getCode().equals(NOT_FOUND_CODE)) {
+                            fail("Image should have been uploaded to VANTIQ");
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    public void checkNotUploadToVantiq(String name) throws InterruptedException {
+        boolean done = false;
+        int retries = 0;
+        int maxRetries = WAIT_FOR_ASYNC_MILLIS / 50;
+        while (!done) {
+            done = true;
+            vantiqResponse = vantiq.selectOne("system.documents", name);
+            if (vantiqResponse.isSuccess()) {
+                if (++retries < maxRetries) {
+                    done = false;
+                    Thread.sleep(50);
+                } else {
+                    fail("Image should not have been uploaded to VANTIQ");
+                }
+            }
+        }
     }
 }

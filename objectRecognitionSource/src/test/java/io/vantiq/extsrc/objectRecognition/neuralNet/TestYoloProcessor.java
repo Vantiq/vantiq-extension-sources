@@ -63,7 +63,9 @@ public class TestYoloProcessor extends NeuralNetTestBase {
     static final int SAVE_RATE = 2; // Saves every other so that we can know it counts correctly
     static final String NOT_FOUND_CODE = "io.vantiq.resource.not.found";
     static final String CONFIG_JSON_LOCATION = "src/test/resources/";
-    
+
+    static final int WAIT_FOR_ASYNC_MILLIS = 5000;
+
     // For image resizing tests
     static final int TEST_IMAGE_WIDTH = 500;
     static final int TEST_IMAGE_HEIGHT = 375;
@@ -720,18 +722,11 @@ public class TestYoloProcessor extends NeuralNetTestBase {
             
             // Checking that image was saved to VANTIQ
             Thread.sleep(1000);
-            vantiqResponse = vantiq.selectOne("system.documents", results.getLastFilename());
-            if (vantiqResponse.hasErrors()) {
-                List<VantiqError> errors = vantiqResponse.getErrors();
-                for (int i = 0; i < errors.size(); i++) {
-                    if (errors.get(i).getCode().equals(NOT_FOUND_CODE)) {
-                        fail();
-                    }
-                }
-            }
+            checkUploadToVantiq(results.getLastFilename());
             vantiqSavedFiles.add(results.getLastFilename());
             
             // Get the path to the saved image in VANTIQ
+            vantiqResponse = vantiq.selectOne("system.documents", results.getLastFilename());
             JsonObject responseObj = (JsonObject) vantiqResponse.getBody();
             JsonElement pathJSON = responseObj.get("content");
             String imagePath = pathJSON.getAsString();
@@ -799,18 +794,11 @@ public class TestYoloProcessor extends NeuralNetTestBase {
             
             // Checking that image was saved to VANTIQ
             Thread.sleep(2000);
-            vantiqResponse = vantiq.selectOne("system.documents", results.getLastFilename());
-            if (vantiqResponse.hasErrors()) {
-                List<VantiqError> errors = vantiqResponse.getErrors();
-                for (int i = 0; i < errors.size(); i++) {
-                    if (errors.get(i).getCode().equals(NOT_FOUND_CODE)) {
-                        fail();
-                    }
-                }
-            }
+            checkUploadToVantiq(results.getLastFilename());
             vantiqSavedFiles.add(results.getLastFilename());
             
             // Get the path to the saved image in VANTIQ
+            vantiqResponse = vantiq.selectOne("system.documents", results.getLastFilename());
             JsonObject responseObj = (JsonObject) vantiqResponse.getBody();
             JsonElement pathJSON = responseObj.get("content");
             String imagePath = pathJSON.getAsString();
@@ -836,7 +824,7 @@ public class TestYoloProcessor extends NeuralNetTestBase {
     }
 
     @Test
-    public void testImageSavingLocal() throws ImageProcessingException {
+    public void testImageSavingLocal() throws ImageProcessingException, InterruptedException {
 
         // Only run test with intended vantiq availability
         assumeTrue(testAuthToken != null && testVantiqServer != null);
@@ -872,10 +860,7 @@ public class TestYoloProcessor extends NeuralNetTestBase {
             assert d.listFiles()[0].getName().matches(timestampPattern);
 
             // Check it didn't save to VANTIQ
-            vantiqResponse = vantiq.selectOne("system.documents", results.getLastFilename());
-            if (vantiqResponse.isSuccess()) {
-                fail();
-            }
+            checkNotUploadToVantiq(results.getLastFilename());
 
             results = null;
             results = ypImageSaver.processImage(getTestImage());
@@ -903,10 +888,7 @@ public class TestYoloProcessor extends NeuralNetTestBase {
             assert d.listFiles()[1].getName().matches(timestampPattern);
 
             // Check it didn't save to VANTIQ
-            vantiqResponse = vantiq.selectOne("system.documents", results.getLastFilename());
-            if (vantiqResponse.isSuccess()) {
-                fail();
-            }
+            checkNotUploadToVantiq(results.getLastFilename());
 
         } finally {
             // delete the directory even if the test fails
@@ -958,15 +940,7 @@ public class TestYoloProcessor extends NeuralNetTestBase {
 
             // Checking that image was saved to VANTIQ
             Thread.sleep(1000);
-            vantiqResponse = vantiq.selectOne("system.documents", results.getLastFilename());
-            if (vantiqResponse.hasErrors()) {
-                List<VantiqError> errors = vantiqResponse.getErrors();
-                for (int i = 0; i < errors.size(); i++) {
-                    if (errors.get(i).getCode().equals(NOT_FOUND_CODE)) {
-                        fail();
-                    }
-                }
-            }
+            checkUploadToVantiq(results.getLastFilename());
             vantiqSavedFiles.add(results.getLastFilename());
 
             results = null;
@@ -993,15 +967,7 @@ public class TestYoloProcessor extends NeuralNetTestBase {
 
             // Checking that image was saved to VANTIQ
             Thread.sleep(1000);
-            vantiqResponse = vantiq.selectOne("system.documents", results.getLastFilename());
-            if (vantiqResponse.hasErrors()) {
-                List<VantiqError> errors = vantiqResponse.getErrors();
-                for (int i = 0; i < errors.size(); i++) {
-                    if (errors.get(i).getCode().equals(NOT_FOUND_CODE)) {
-                        fail();
-                    }
-                }
-            }
+            checkUploadToVantiq(results.getLastFilename());
             vantiqSavedFiles.add(results.getLastFilename());
 
         } finally {
@@ -1053,15 +1019,7 @@ public class TestYoloProcessor extends NeuralNetTestBase {
 
             // Checking that image was saved to VANTIQ
             Thread.sleep(1000);
-            vantiqResponse = vantiq.selectOne("system.documents", results.getLastFilename());
-            if (vantiqResponse.hasErrors()) {
-                List<VantiqError> errors = vantiqResponse.getErrors();
-                for (int i = 0; i < errors.size(); i++) {
-                    if (errors.get(i).getCode().equals(NOT_FOUND_CODE)) {
-                        fail();
-                    }
-                }
-            }
+            checkUploadToVantiq(results.getLastFilename());
             vantiqSavedFiles.add(results.getLastFilename());
 
         } finally {
@@ -1139,15 +1097,7 @@ public class TestYoloProcessor extends NeuralNetTestBase {
 
             // Checking that image was saved in VANTIQ
             Thread.sleep(1000);
-            vantiqResponse = vantiq.selectOne("system.documents", results.getLastFilename());
-            if (vantiqResponse.hasErrors()) {
-                List<VantiqError> errors = vantiqResponse.getErrors();
-                for (int i = 0; i < errors.size(); i++) {
-                    if (errors.get(i).getCode().equals(NOT_FOUND_CODE)) {
-                        fail();
-                    }
-                }
-            }
+            checkUploadToVantiq(results.getLastFilename());
             vantiqSavedFiles.add(results.getLastFilename());
 
             request.put("NNsaveImage", "both");
@@ -1166,15 +1116,7 @@ public class TestYoloProcessor extends NeuralNetTestBase {
 
             // Checking that image was saved in VANTIQ
             Thread.sleep(1000);
-            vantiqResponse = vantiq.selectOne("system.documents", results.getLastFilename());
-            if (vantiqResponse.hasErrors()) {
-                List<VantiqError> errors = vantiqResponse.getErrors();
-                for (int i = 0; i < errors.size(); i++) {
-                    if (errors.get(i).getCode().equals(NOT_FOUND_CODE)) {
-                        fail();
-                    }
-                }
-            }
+            checkUploadToVantiq(results.getLastFilename());
             vantiqSavedFiles.add(results.getLastFilename());
 
             // Save with "local" instead of "both", and remove fileName
@@ -1201,10 +1143,7 @@ public class TestYoloProcessor extends NeuralNetTestBase {
 
             // Checking that image was not saved in VANTIQ
             Thread.sleep(1000);
-            vantiqResponse = vantiq.selectOne("system.documents", results.getLastFilename());
-            if (vantiqResponse.isSuccess()) {
-                fail();
-            }
+            checkNotUploadToVantiq(results.getLastFilename());
 
             queryOutputFile += ".jpeg";
             request.put("NNfileName", queryOutputFile);
@@ -1471,18 +1410,11 @@ public class TestYoloProcessor extends NeuralNetTestBase {
             
             // Checking that image was saved to VANTIQ
             Thread.sleep(1000);
-            vantiqResponse = vantiq.selectOne("system.documents", results.getLastFilename());
-            if (vantiqResponse.hasErrors()) {
-                List<VantiqError> errors = vantiqResponse.getErrors();
-                for (int i = 0; i < errors.size(); i++) {
-                    if (errors.get(i).getCode().equals(NOT_FOUND_CODE)) {
-                        fail();
-                    }
-                }
-            }
+            checkUploadToVantiq(results.getLastFilename());
             vantiqSavedFiles.add(results.getLastFilename());
             
             // Get the path to the saved image in VANTIQ
+            vantiqResponse = vantiq.selectOne("system.documents", results.getLastFilename());
             JsonObject responseObj = (JsonObject) vantiqResponse.getBody();
             JsonElement pathJSON = responseObj.get("content");
             String imagePath = pathJSON.getAsString();
@@ -1553,18 +1485,11 @@ public class TestYoloProcessor extends NeuralNetTestBase {
             
             // Checking that image was saved to VANTIQ
             Thread.sleep(2000);
-            vantiqResponse = vantiq.selectOne("system.documents", results.getLastFilename());
-            if (vantiqResponse.hasErrors()) {
-                List<VantiqError> errors = vantiqResponse.getErrors();
-                for (int i = 0; i < errors.size(); i++) {
-                    if (errors.get(i).getCode().equals(NOT_FOUND_CODE)) {
-                        fail();
-                    }
-                }
-            }
+            checkUploadToVantiq(results.getLastFilename());
             vantiqSavedFiles.add(results.getLastFilename());
             
             // Get the path to the saved image in VANTIQ
+            vantiqResponse = vantiq.selectOne("system.documents", results.getLastFilename());
             JsonObject responseObj = (JsonObject) vantiqResponse.getBody();
             JsonElement pathJSON = responseObj.get("content");
             String imagePath = pathJSON.getAsString();
@@ -1744,7 +1669,9 @@ public class TestYoloProcessor extends NeuralNetTestBase {
             }
         }
     }
+
     // ================================================= Helper functions =================================================
+
     String imageResultsAsString = "[{\"confidence\":0.8445639, \"location\":{\"top\":255.70024, \"left\":121.859344, \"bottom\":372.2343, "
             + "\"right\":350.1204}, \"label\":\"keyboard\"}, {\"confidence\":0.7974271, \"location\":{\"top\":91.255974, \"left\":164.41359, "
             + "\"bottom\":275.69666, \"right\":350.50714}, \"label\":\"tvmonitor\"}]";
@@ -1863,5 +1790,46 @@ public class TestYoloProcessor extends NeuralNetTestBase {
 
         ExtensionServiceMessage message = new ExtensionServiceMessage("").fromMap(msg);
         return message;
+    }
+
+    public void checkUploadToVantiq(String name) throws InterruptedException {
+        boolean done = false;
+        int retries = 0;
+        int maxRetries = WAIT_FOR_ASYNC_MILLIS / 50;
+        while (!done) {
+            done = true;
+            vantiqResponse = vantiq.selectOne("system.documents", name);
+            if (vantiqResponse.hasErrors()) {
+                if (++retries < maxRetries) {
+                    done = false;
+                    Thread.sleep(50);
+                } else {
+                    List<VantiqError> errors = vantiqResponse.getErrors();
+                    for (int i = 0; i < errors.size(); i++) {
+                        if (errors.get(i).getCode().equals(NOT_FOUND_CODE)) {
+                            fail("Image should have been uploaded to VANTIQ");
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    public void checkNotUploadToVantiq(String name) throws InterruptedException {
+        boolean done = false;
+        int retries = 0;
+        int maxRetries = WAIT_FOR_ASYNC_MILLIS / 50;
+        while (!done) {
+            done = true;
+            vantiqResponse = vantiq.selectOne("system.documents", name);
+            if (vantiqResponse.isSuccess()) {
+                if (++retries < maxRetries) {
+                    done = false;
+                    Thread.sleep(50);
+                } else {
+                    fail("Image should not have been uploaded to VANTIQ");
+                }
+            }
+        }
     }
 }
