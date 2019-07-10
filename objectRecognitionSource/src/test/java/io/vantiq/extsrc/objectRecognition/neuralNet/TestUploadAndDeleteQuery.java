@@ -40,8 +40,7 @@ public class TestUploadAndDeleteQuery extends NeuralNetTestBase {
     static List<String> vantiqUploadFiles = new ArrayList<>();
     
     static final String OUTPUT_DIR = System.getProperty("buildDir") + "/resources/out";
-    static final String NOT_FOUND_CODE = "io.vantiq.resource.not.found";
-    
+
     static final String IMAGE_1_DATE = "2019-02-05--02-35-10";
     static final Map<String,String> IMAGE_1 = new LinkedHashMap<String,String>() {{
         put("filename", "objectRecognition/" + SOURCE_NAME + "/" + IMAGE_1_DATE + ".jpg");
@@ -175,13 +174,13 @@ public class TestUploadAndDeleteQuery extends NeuralNetTestBase {
         
         // Checking that images were not uploaded to VANTIQ
         Thread.sleep(1000);
-        checkNotUploadToVantiq(IMAGE_1.get("filename"));
-        checkNotUploadToVantiq(IMAGE_2.get("filename"));
-        checkNotUploadToVantiq(IMAGE_3.get("filename"));
-        checkNotUploadToVantiq(IMAGE_4.get("filename"));
-        checkNotUploadToVantiq(IMAGE_5.get("filename"));
-        checkNotUploadToVantiq(IMAGE_6.get("filename"));
-        checkNotUploadToVantiq(IMAGE_7.get("filename"));
+        checkNotUploadToVantiq(IMAGE_1.get("filename"), vantiq);
+        checkNotUploadToVantiq(IMAGE_2.get("filename"), vantiq);
+        checkNotUploadToVantiq(IMAGE_3.get("filename"), vantiq);
+        checkNotUploadToVantiq(IMAGE_4.get("filename"), vantiq);
+        checkNotUploadToVantiq(IMAGE_5.get("filename"), vantiq);
+        checkNotUploadToVantiq(IMAGE_6.get("filename"), vantiq);
+        checkNotUploadToVantiq(IMAGE_7.get("filename"), vantiq);
         
         // Using wrong type for imageName
         request.put("imageName", 5);
@@ -189,13 +188,13 @@ public class TestUploadAndDeleteQuery extends NeuralNetTestBase {
         
         // Checking that images were not uploaded to VANTIQ
         Thread.sleep(1000);
-        checkNotUploadToVantiq(IMAGE_1.get("filename"));
-        checkNotUploadToVantiq(IMAGE_2.get("filename"));
-        checkNotUploadToVantiq(IMAGE_3.get("filename"));
-        checkNotUploadToVantiq(IMAGE_4.get("filename"));
-        checkNotUploadToVantiq(IMAGE_5.get("filename"));
-        checkNotUploadToVantiq(IMAGE_6.get("filename"));
-        checkNotUploadToVantiq(IMAGE_7.get("filename"));
+        checkNotUploadToVantiq(IMAGE_1.get("filename"), vantiq);
+        checkNotUploadToVantiq(IMAGE_2.get("filename"), vantiq);
+        checkNotUploadToVantiq(IMAGE_3.get("filename"), vantiq);
+        checkNotUploadToVantiq(IMAGE_4.get("filename"), vantiq);
+        checkNotUploadToVantiq(IMAGE_5.get("filename"), vantiq);
+        checkNotUploadToVantiq(IMAGE_6.get("filename"), vantiq);
+        checkNotUploadToVantiq(IMAGE_7.get("filename"), vantiq);
         
         // Using wrong type for imageDate
         request.remove("imageName");
@@ -204,13 +203,13 @@ public class TestUploadAndDeleteQuery extends NeuralNetTestBase {
         
         // Checking that images were not uploaded to VANTIQ
         Thread.sleep(1000);
-        checkNotUploadToVantiq(IMAGE_1.get("filename"));
-        checkNotUploadToVantiq(IMAGE_2.get("filename"));
-        checkNotUploadToVantiq(IMAGE_3.get("filename"));
-        checkNotUploadToVantiq(IMAGE_4.get("filename"));
-        checkNotUploadToVantiq(IMAGE_5.get("filename"));
-        checkNotUploadToVantiq(IMAGE_6.get("filename"));
-        checkNotUploadToVantiq(IMAGE_7.get("filename"));
+        checkNotUploadToVantiq(IMAGE_1.get("filename"), vantiq);
+        checkNotUploadToVantiq(IMAGE_2.get("filename"), vantiq);
+        checkNotUploadToVantiq(IMAGE_3.get("filename"), vantiq);
+        checkNotUploadToVantiq(IMAGE_4.get("filename"), vantiq);
+        checkNotUploadToVantiq(IMAGE_5.get("filename"), vantiq);
+        checkNotUploadToVantiq(IMAGE_6.get("filename"), vantiq);
+        checkNotUploadToVantiq(IMAGE_7.get("filename"), vantiq);
         
         // Using an imageDate list that is null
         List<String> invalidImageDates = null;
@@ -219,13 +218,13 @@ public class TestUploadAndDeleteQuery extends NeuralNetTestBase {
         
         // Checking that images were not uploaded to VANTIQ
         Thread.sleep(1000);
-        checkNotUploadToVantiq(IMAGE_1.get("filename"));
-        checkNotUploadToVantiq(IMAGE_2.get("filename"));
-        checkNotUploadToVantiq(IMAGE_3.get("filename"));
-        checkNotUploadToVantiq(IMAGE_4.get("filename"));
-        checkNotUploadToVantiq(IMAGE_5.get("filename"));
-        checkNotUploadToVantiq(IMAGE_6.get("filename"));
-        checkNotUploadToVantiq(IMAGE_7.get("filename"));
+        checkNotUploadToVantiq(IMAGE_1.get("filename"), vantiq);
+        checkNotUploadToVantiq(IMAGE_2.get("filename"), vantiq);
+        checkNotUploadToVantiq(IMAGE_3.get("filename"), vantiq);
+        checkNotUploadToVantiq(IMAGE_4.get("filename"), vantiq);
+        checkNotUploadToVantiq(IMAGE_5.get("filename"), vantiq);
+        checkNotUploadToVantiq(IMAGE_6.get("filename"), vantiq);
+        checkNotUploadToVantiq(IMAGE_7.get("filename"), vantiq);
         
         // Using an imageDate list that has no values
         invalidImageDates = new ArrayList<String>();
@@ -233,13 +232,13 @@ public class TestUploadAndDeleteQuery extends NeuralNetTestBase {
         
         // Checking that images were not uploaded to VANTIQ
         Thread.sleep(1000);
-        checkNotUploadToVantiq(IMAGE_1.get("filename"));
-        checkNotUploadToVantiq(IMAGE_2.get("filename"));
-        checkNotUploadToVantiq(IMAGE_3.get("filename"));
-        checkNotUploadToVantiq(IMAGE_4.get("filename"));
-        checkNotUploadToVantiq(IMAGE_5.get("filename"));
-        checkNotUploadToVantiq(IMAGE_6.get("filename"));
-        checkNotUploadToVantiq(IMAGE_7.get("filename"));
+        checkNotUploadToVantiq(IMAGE_1.get("filename"), vantiq);
+        checkNotUploadToVantiq(IMAGE_2.get("filename"), vantiq);
+        checkNotUploadToVantiq(IMAGE_3.get("filename"), vantiq);
+        checkNotUploadToVantiq(IMAGE_4.get("filename"), vantiq);
+        checkNotUploadToVantiq(IMAGE_5.get("filename"), vantiq);
+        checkNotUploadToVantiq(IMAGE_6.get("filename"), vantiq);
+        checkNotUploadToVantiq(IMAGE_7.get("filename"), vantiq);
         
         // Using an imageDate list that contains non-dates
         invalidImageDates.add("Not a date");
@@ -249,13 +248,13 @@ public class TestUploadAndDeleteQuery extends NeuralNetTestBase {
         
         // Checking that images were not uploaded to VANTIQ
         Thread.sleep(1000);
-        checkNotUploadToVantiq(IMAGE_1.get("filename"));
-        checkNotUploadToVantiq(IMAGE_2.get("filename"));
-        checkNotUploadToVantiq(IMAGE_3.get("filename"));
-        checkNotUploadToVantiq(IMAGE_4.get("filename"));
-        checkNotUploadToVantiq(IMAGE_5.get("filename"));
-        checkNotUploadToVantiq(IMAGE_6.get("filename"));
-        checkNotUploadToVantiq(IMAGE_7.get("filename"));
+        checkNotUploadToVantiq(IMAGE_1.get("filename"), vantiq);
+        checkNotUploadToVantiq(IMAGE_2.get("filename"), vantiq);
+        checkNotUploadToVantiq(IMAGE_3.get("filename"), vantiq);
+        checkNotUploadToVantiq(IMAGE_4.get("filename"), vantiq);
+        checkNotUploadToVantiq(IMAGE_5.get("filename"), vantiq);
+        checkNotUploadToVantiq(IMAGE_6.get("filename"), vantiq);
+        checkNotUploadToVantiq(IMAGE_7.get("filename"), vantiq);
         
         // Using an imageDate list with only one date
         invalidImageDates.clear();
@@ -265,13 +264,13 @@ public class TestUploadAndDeleteQuery extends NeuralNetTestBase {
         
         // Checking that images were not uploaded to VANTIQ
         Thread.sleep(1000);
-        checkNotUploadToVantiq(IMAGE_1.get("filename"));
-        checkNotUploadToVantiq(IMAGE_2.get("filename"));
-        checkNotUploadToVantiq(IMAGE_3.get("filename"));
-        checkNotUploadToVantiq(IMAGE_4.get("filename"));
-        checkNotUploadToVantiq(IMAGE_5.get("filename"));
-        checkNotUploadToVantiq(IMAGE_6.get("filename"));
-        checkNotUploadToVantiq(IMAGE_7.get("filename"));
+        checkNotUploadToVantiq(IMAGE_1.get("filename"), vantiq);
+        checkNotUploadToVantiq(IMAGE_2.get("filename"), vantiq);
+        checkNotUploadToVantiq(IMAGE_3.get("filename"), vantiq);
+        checkNotUploadToVantiq(IMAGE_4.get("filename"), vantiq);
+        checkNotUploadToVantiq(IMAGE_5.get("filename"), vantiq);
+        checkNotUploadToVantiq(IMAGE_6.get("filename"), vantiq);
+        checkNotUploadToVantiq(IMAGE_7.get("filename"), vantiq);
         
         // Using an imageDate list with more than two dates
         invalidImageDates.add(IMAGE_2_DATE);
@@ -281,13 +280,13 @@ public class TestUploadAndDeleteQuery extends NeuralNetTestBase {
         
         // Checking that images were not uploaded to VANTIQ
         Thread.sleep(1000);
-        checkNotUploadToVantiq(IMAGE_1.get("filename"));
-        checkNotUploadToVantiq(IMAGE_2.get("filename"));
-        checkNotUploadToVantiq(IMAGE_3.get("filename"));
-        checkNotUploadToVantiq(IMAGE_4.get("filename"));
-        checkNotUploadToVantiq(IMAGE_5.get("filename"));
-        checkNotUploadToVantiq(IMAGE_6.get("filename"));
-        checkNotUploadToVantiq(IMAGE_7.get("filename"));
+        checkNotUploadToVantiq(IMAGE_1.get("filename"), vantiq);
+        checkNotUploadToVantiq(IMAGE_2.get("filename"), vantiq);
+        checkNotUploadToVantiq(IMAGE_3.get("filename"), vantiq);
+        checkNotUploadToVantiq(IMAGE_4.get("filename"), vantiq);
+        checkNotUploadToVantiq(IMAGE_5.get("filename"), vantiq);
+        checkNotUploadToVantiq(IMAGE_6.get("filename"), vantiq);
+        checkNotUploadToVantiq(IMAGE_7.get("filename"), vantiq);
     }
     
     @Test
@@ -376,15 +375,15 @@ public class TestUploadAndDeleteQuery extends NeuralNetTestBase {
                 
         // Checking that all images were uploaded to VANTIQ
         Thread.sleep(1000);
-        checkUploadToVantiq(IMAGE_2.get("filename"));
+        checkUploadToVantiq(IMAGE_2.get("filename"), vantiq);
         
         // Checking that none of the other images were uploaded to VANTIQ
-        checkNotUploadToVantiq(IMAGE_1.get("filename"));
-        checkNotUploadToVantiq(IMAGE_3.get("filename"));
-        checkNotUploadToVantiq(IMAGE_4.get("filename"));
-        checkNotUploadToVantiq(IMAGE_5.get("filename"));
-        checkNotUploadToVantiq(IMAGE_6.get("filename"));
-        checkNotUploadToVantiq(IMAGE_7.get("filename"));
+        checkNotUploadToVantiq(IMAGE_1.get("filename"), vantiq);
+        checkNotUploadToVantiq(IMAGE_3.get("filename"), vantiq);
+        checkNotUploadToVantiq(IMAGE_4.get("filename"), vantiq);
+        checkNotUploadToVantiq(IMAGE_5.get("filename"), vantiq);
+        checkNotUploadToVantiq(IMAGE_6.get("filename"), vantiq);
+        checkNotUploadToVantiq(IMAGE_7.get("filename"), vantiq);
         
     }
     
@@ -404,13 +403,13 @@ public class TestUploadAndDeleteQuery extends NeuralNetTestBase {
                 
         // Checking that all images were uploaded to VANTIQ
         Thread.sleep(1000);
-        checkUploadToVantiq(IMAGE_1.get("filename"));
-        checkUploadToVantiq(IMAGE_2.get("filename"));
-        checkUploadToVantiq(IMAGE_3.get("filename"));
-        checkUploadToVantiq(IMAGE_4.get("filename"));
-        checkUploadToVantiq(IMAGE_5.get("filename"));
-        checkUploadToVantiq(IMAGE_6.get("filename"));
-        checkUploadToVantiq(IMAGE_7.get("filename"));
+        checkUploadToVantiq(IMAGE_1.get("filename"), vantiq);
+        checkUploadToVantiq(IMAGE_2.get("filename"), vantiq);
+        checkUploadToVantiq(IMAGE_3.get("filename"), vantiq);
+        checkUploadToVantiq(IMAGE_4.get("filename"), vantiq);
+        checkUploadToVantiq(IMAGE_5.get("filename"), vantiq);
+        checkUploadToVantiq(IMAGE_6.get("filename"), vantiq);
+        checkUploadToVantiq(IMAGE_7.get("filename"), vantiq);
     }
     
     @Test
@@ -428,15 +427,15 @@ public class TestUploadAndDeleteQuery extends NeuralNetTestBase {
                 
         // Checking that all images were uploaded to VANTIQ
         Thread.sleep(1000);
-        checkUploadToVantiq(IMAGE_2.get("filename"));
+        checkUploadToVantiq(IMAGE_2.get("filename"), vantiq);
         
         // Checking that none of the other images were uploaded to VANTIQ
-        checkNotUploadToVantiq(IMAGE_1.get("filename"));
-        checkNotUploadToVantiq(IMAGE_3.get("filename"));
-        checkNotUploadToVantiq(IMAGE_4.get("filename"));
-        checkNotUploadToVantiq(IMAGE_5.get("filename"));
-        checkNotUploadToVantiq(IMAGE_6.get("filename"));
-        checkNotUploadToVantiq(IMAGE_7.get("filename"));
+        checkNotUploadToVantiq(IMAGE_1.get("filename"), vantiq);
+        checkNotUploadToVantiq(IMAGE_3.get("filename"), vantiq);
+        checkNotUploadToVantiq(IMAGE_4.get("filename"), vantiq);
+        checkNotUploadToVantiq(IMAGE_5.get("filename"), vantiq);
+        checkNotUploadToVantiq(IMAGE_6.get("filename"), vantiq);
+        checkNotUploadToVantiq(IMAGE_7.get("filename"), vantiq);
     }
     
     @Test
@@ -454,15 +453,15 @@ public class TestUploadAndDeleteQuery extends NeuralNetTestBase {
                 
         // Checking that all images were uploaded to VANTIQ
         Thread.sleep(1000);
-        checkUploadToVantiq(IMAGE_1.get("filename"));
-        checkUploadToVantiq(IMAGE_2.get("filename"));
+        checkUploadToVantiq(IMAGE_1.get("filename"), vantiq);
+        checkUploadToVantiq(IMAGE_2.get("filename"), vantiq);
         
         // Checking that none of the other images were uploaded to VANTIQ
-        checkNotUploadToVantiq(IMAGE_3.get("filename"));
-        checkNotUploadToVantiq(IMAGE_4.get("filename"));
-        checkNotUploadToVantiq(IMAGE_5.get("filename"));
-        checkNotUploadToVantiq(IMAGE_6.get("filename"));
-        checkNotUploadToVantiq(IMAGE_7.get("filename"));
+        checkNotUploadToVantiq(IMAGE_3.get("filename"), vantiq);
+        checkNotUploadToVantiq(IMAGE_4.get("filename"), vantiq);
+        checkNotUploadToVantiq(IMAGE_5.get("filename"), vantiq);
+        checkNotUploadToVantiq(IMAGE_6.get("filename"), vantiq);
+        checkNotUploadToVantiq(IMAGE_7.get("filename"), vantiq);
     }
     
     @Test
@@ -480,15 +479,15 @@ public class TestUploadAndDeleteQuery extends NeuralNetTestBase {
                 
         // Checking that all images were uploaded to VANTIQ
         Thread.sleep(1000);
-        checkUploadToVantiq(IMAGE_4.get("filename"));
-        checkUploadToVantiq(IMAGE_5.get("filename"));
-        checkUploadToVantiq(IMAGE_6.get("filename"));
-        checkUploadToVantiq(IMAGE_7.get("filename"));
+        checkUploadToVantiq(IMAGE_4.get("filename"), vantiq);
+        checkUploadToVantiq(IMAGE_5.get("filename"), vantiq);
+        checkUploadToVantiq(IMAGE_6.get("filename"), vantiq);
+        checkUploadToVantiq(IMAGE_7.get("filename"), vantiq);
         
         // Checking that none of the other images were uploaded to VANTIQ
-        checkNotUploadToVantiq(IMAGE_1.get("filename"));
-        checkNotUploadToVantiq(IMAGE_2.get("filename"));
-        checkNotUploadToVantiq(IMAGE_3.get("filename"));
+        checkNotUploadToVantiq(IMAGE_1.get("filename"), vantiq);
+        checkNotUploadToVantiq(IMAGE_2.get("filename"), vantiq);
+        checkNotUploadToVantiq(IMAGE_3.get("filename"), vantiq);
     }
     
     @Test
@@ -506,15 +505,15 @@ public class TestUploadAndDeleteQuery extends NeuralNetTestBase {
                 
         // Checking that all images were uploaded to VANTIQ
         Thread.sleep(3000);
-        checkUploadToVantiq(IMAGE_2.get("filename"));
-        checkUploadToVantiq(IMAGE_3.get("filename"));
-        checkUploadToVantiq(IMAGE_4.get("filename"));
+        checkUploadToVantiq(IMAGE_2.get("filename"), vantiq);
+        checkUploadToVantiq(IMAGE_3.get("filename"), vantiq);
+        checkUploadToVantiq(IMAGE_4.get("filename"), vantiq);
         
         // Checking that none of the other images were uploaded to VANTIQ
-        checkNotUploadToVantiq(IMAGE_1.get("filename"));
-        checkNotUploadToVantiq(IMAGE_5.get("filename"));
-        checkNotUploadToVantiq(IMAGE_6.get("filename"));
-        checkNotUploadToVantiq(IMAGE_7.get("filename"));
+        checkNotUploadToVantiq(IMAGE_1.get("filename"), vantiq);
+        checkNotUploadToVantiq(IMAGE_5.get("filename"), vantiq);
+        checkNotUploadToVantiq(IMAGE_6.get("filename"), vantiq);
+        checkNotUploadToVantiq(IMAGE_7.get("filename"), vantiq);
     }
     
     @Test
@@ -677,27 +676,6 @@ public class TestUploadAndDeleteQuery extends NeuralNetTestBase {
                     && !imageFile.getName().equals(IMAGE_6.get("date") + ".jpg") && !imageFile.getName().equals(IMAGE_7.get("date") + ".jpg")) {
                 fail("Images should have been deleted locally.");
             }
-        }
-    }
-    
-    // ================================================= Helper functions =================================================
-    
-    public void checkUploadToVantiq(String name) {
-        vantiqResponse = vantiq.selectOne("system.documents", name);
-        if (vantiqResponse.hasErrors()) {
-            List<VantiqError> errors = vantiqResponse.getErrors();
-            for (int i = 0; i < errors.size(); i++) {
-                if (errors.get(i).getCode().equals(NOT_FOUND_CODE)) {
-                    fail("Image should have been uploaded to VANTIQ");
-                }
-            }
-        }
-    }
-    
-    public void checkNotUploadToVantiq(String name) {
-        vantiqResponse = vantiq.selectOne("system.documents", name);
-        if (vantiqResponse.isSuccess()) {
-            fail("Image should not have been uploaded to VANTIQ");
         }
     }
 }
