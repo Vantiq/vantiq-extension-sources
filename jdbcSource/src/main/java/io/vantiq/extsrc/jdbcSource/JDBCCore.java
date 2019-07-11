@@ -48,6 +48,7 @@ public class JDBCCore {
     final Logger log;
     final static int RECONNECT_INTERVAL = 5000;
     final static int DEFAULT_BUNDLE_SIZE = 500;
+    final static String SELECT_STATEMENT_IDENTIFIER = "select";
     
     // Used to check row bundling in tests
     public HashMap[] lastRowBundle = null;
@@ -192,17 +193,42 @@ public class JDBCCore {
                         "JDBC connection closed before operation could complete.", null);
             }
         }
-        
+
         // Gather query results and send the appropriate response, or send a query error if an exception is caught
         try {
             if (request.get("query") instanceof String) {
                 String queryString = (String) request.get("query");
-                HashMap[] queryArray = localJDBC.processQuery(queryString);
-                sendDataFromQuery(queryArray, message);
+                // Check if SQL Query is an update statement, or query statement
+                if (!queryString.trim().toLowerCase().startsWith(SELECT_STATEMENT_IDENTIFIER)) {
+                    int data = localJDBC.processPublish(queryString);
+                    log.trace("The returned integer value from Publish Query is the following: ", data);
+
+                    // Send empty response back
+                    client.sendQueryResponse(204, replyAddress, new LinkedHashMap<>());
+                } else {
+                    HashMap[] queryArray = localJDBC.processQuery(queryString);
+                    sendDataFromQuery(queryArray, message);
+                }
+            } else if (request.get("query") instanceof List) {
+                List queryArray = (List) request.get("query");
+                // Check that each batch element is a SQL Update Statement
+                for (int i = 0; i < queryArray.size(); i++) {
+                    if (queryArray.get(i).toString().trim().toLowerCase().startsWith(SELECT_STATEMENT_IDENTIFIER)) {
+                        client.sendQueryError(replyAddress, this.getClass().getName() + ".invalidBatchElement",
+                                "The Query Request could not be executed because at least one batch element "
+                                + "was not a string representation of a SQL Update Statement.", null);
+                        return;
+                    }
+                }
+                int[] data = localJDBC.processBatchPublish(queryArray);
+                log.trace("The returned integer array from Publish Query is the following: ", data);
+
+                // Send empty response back
+                client.sendQueryResponse(204, replyAddress, new LinkedHashMap<>());
             } else {
                 log.error("Query could not be executed because query was not a String.");
                 client.sendQueryError(replyAddress, this.getClass().getName() + ".queryNotString", 
-                        "The Publish Request could not be executed because the query property is"
+                        "The Query Request could not be executed because the query property is "
                         + "not a string.", null);
             }
         } catch (VantiqSQLException e) {
@@ -237,7 +263,7 @@ public class JDBCCore {
         if (localJDBC == null) {
             log.error("JDBC connection closed before operation could complete");
         }
-        
+
         // Gather query results, or send a query error if an exception is caught
         try {
             if (request.get("query") instanceof String) {
