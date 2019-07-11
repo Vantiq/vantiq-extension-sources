@@ -157,9 +157,14 @@ will be sent as a unique Notification.
 ## Select Statements
 
 In order to interact with the JDBC Source, one option is to use VAIL to select from the source. To do this, you will need 
-to specify the SQL Query you wish to execute against your database as part of the WITH clause. The SQL Queries used here must 
-only be **SELECT STATEMENTS**. The data will be returned to VANTIQ as a set of messages, where each message contains some 
-number of rows.
+to specify the SQL Query you wish to execute against your database as part of the WITH clause. *Typically*, the SQL Queries 
+used here must only be **SELECT STATEMENTS**. The data will be returned to VANTIQ as a set of messages, where each message 
+contains some number of rows.
+
+However, if the `isUpdate` parameter is specified and set to `true`, the SQL Queries can be any valid SQL Update Statement 
+(i.e. `CREATE`, `INSERT`, `DELETE`, `DROP`, etc...). This feature mimics the behavior of the Publish Statements, which are 
+defined [below](#publish). In this case, the VAIL Select Statements will return an empty map if the statement was executed 
+successfully, or a query error otherwise.
 
 A query parameter named `bundleFactor` determines how many rows are bundled into each message. Generally, the default value of 
 500 will be fine. However, in cases where rows may be very large, a smaller value may be required.
@@ -172,6 +177,7 @@ rows will be placed into a single message (the use of this is discouraged as it 
 From the perspective of consuming the rows, there is no visible difference here. The `bundleFactor` parameter is present to 
 allow control when returning very large rows.
 
+The following example uses a Vail Select Statement to **query** a database:
 ```
 PROCEDURE queryJDBC()
 
@@ -203,7 +209,28 @@ try {
 }
 ```
 
-## Publish Statements
+The following example uses a Vail Select Statement to **update** a database:
+```
+try {
+    // The SQL Statement that the JDBC Source will execute
+    var sqlQuery = "create table Test(id int not null, age int not null, first varchar (255), last varchar (255));"
+    
+    // Normal SELECT Statement in VAIL, passing the 'sqlQuery' as a parameter in the 
+    // 'query' field. The field must be named 'query'.
+    SELECT * FROM SOURCE JDBC1 AS results WITH 
+    query:sqlQuery,
+    isUpdate:true
+    
+    {
+    	log.info("The result is an empty map: " + results.toString())
+    }
+} catch (error) {
+    // Catching any errors and throwing the exception.
+    exception(error.code, error.message)
+}
+```
+
+## Publish Statements <a name="publish" id="publish"></a>
 
 Another method to interact with the JDBC Source is to use VAIL to publish to the source. To do this, you will need to
 specify the SQL Query you wish to execute against your database as part of the Publish Parameters. The SQL Queries used here 
