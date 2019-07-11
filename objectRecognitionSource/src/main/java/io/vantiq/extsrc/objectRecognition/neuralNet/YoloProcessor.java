@@ -60,8 +60,9 @@ import io.vantiq.client.Vantiq;
  * 
  * No additional data is given.
  */
-public class YoloProcessor extends NeuralNetUtils implements NeuralNetInterface2 {
 
+public class YoloProcessor extends NeuralNetUtils implements NeuralNetInterface2 {
+    
     Logger log = LoggerFactory.getLogger(this.getClass());
     String pbFile = null;
     String labelsFile = null;
@@ -419,6 +420,10 @@ public class YoloProcessor extends NeuralNetUtils implements NeuralNetInterface2
             image = cropImage(image, x, y, w, h);
         } else if (preCropping) {
             image = cropImage(image, this.x, this.y, this.w, this.h);
+        }
+        
+        if (!fileName.endsWith(".jpg") && !fileName.endsWith(".jpeg")) {
+            fileName += ".jpg";
         }
         
         if (!fileName.endsWith(".jpg") && !fileName.endsWith(".jpeg")) {
