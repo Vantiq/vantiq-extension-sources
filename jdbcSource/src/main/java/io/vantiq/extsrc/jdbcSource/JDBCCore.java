@@ -192,17 +192,38 @@ public class JDBCCore {
                         "JDBC connection closed before operation could complete.", null);
             }
         }
-        
+
+        // Check if query request is actually an update
+        boolean isUpdate = false;
+        if (request.get("isUpdate") instanceof Boolean && (Boolean) request.get("isUpdate")) {
+            isUpdate = (Boolean) request.get("isUpdate");
+        }
+
         // Gather query results and send the appropriate response, or send a query error if an exception is caught
         try {
             if (request.get("query") instanceof String) {
                 String queryString = (String) request.get("query");
-                HashMap[] queryArray = localJDBC.processQuery(queryString);
-                sendDataFromQuery(queryArray, message);
+                if (isUpdate) {
+                    int data = localJDBC.processPublish(queryString);
+                    log.trace("The returned integer value from Publish Query is the following: ", data);
+
+                    // Send empty response back
+                    client.sendQueryResponse(204, replyAddress, new LinkedHashMap<>());
+                } else {
+                    HashMap[] queryArray = localJDBC.processQuery(queryString);
+                    sendDataFromQuery(queryArray, message);
+                }
+            } else if (isUpdate && request.get("query") instanceof List) {
+                List queryArray = (List) request.get("query");
+                int[] data = localJDBC.processBatchPublish(queryArray);
+                log.trace("The returned integer array from Publish Query is the following: ", data);
+
+                // Send empty response back
+                client.sendQueryResponse(204, replyAddress, new LinkedHashMap<>());
             } else {
                 log.error("Query could not be executed because query was not a String.");
                 client.sendQueryError(replyAddress, this.getClass().getName() + ".queryNotString", 
-                        "The Publish Request could not be executed because the query property is"
+                        "The Query Request could not be executed because the query property is"
                         + "not a string.", null);
             }
         } catch (VantiqSQLException e) {
@@ -237,7 +258,7 @@ public class JDBCCore {
         if (localJDBC == null) {
             log.error("JDBC connection closed before operation could complete");
         }
-        
+
         // Gather query results, or send a query error if an exception is caught
         try {
             if (request.get("query") instanceof String) {
