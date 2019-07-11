@@ -50,15 +50,14 @@ import io.vantiq.extsrc.objectRecognition.query.DateRangeFilter;
  * necessary.
  */
 public class ObjectRecognitionCore {
-    // vars for server configuration
     String sourceName;
     String authToken;
     String targetVantiqServer;
     String modelDirectory;
     
-    // vars for source configuration
-    Timer                   pollTimer       = null;
-    ExecutorService         pool            = null;
+    public Timer                   pollTimer       = null;
+    public ExecutorService         pool            = null;
+
     ImageRetrieverInterface imageRetriever  = null;
     
     ObjectRecognitionConfigHandler objRecConfigHandler;

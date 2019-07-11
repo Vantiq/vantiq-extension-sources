@@ -27,11 +27,17 @@ public class ObjRecTestBase {
     public static final String VIDEO_LOCATION = System.getProperty("buildDir") + "/testResources/sampleVideo-1.0.mov";
     public static String testAuthToken = null;
     public static String testVantiqServer = null;
+    public static String testSourceName = null;
+    public static String testTypeName = null;
+    public static String testRuleName = null;
 
     @BeforeClass
     public static void getProps() {
         testAuthToken = System.getProperty("TestAuthToken", null);
         testVantiqServer = System.getProperty("TestVantiqServer", null);
+        testSourceName = System.getProperty("EntConTestSourceName", "testSourceName");
+        testTypeName = System.getProperty("EntConTestTypeName", "testTypeName");
+        testRuleName = System.getProperty("EntConTestRuleName", "testRuleName");
         assumeTrue("Tests require system property 'buildDir' to be set -- should be objectRecognitionSource/build",
                 System.getProperty("buildDir") != null);
     }
