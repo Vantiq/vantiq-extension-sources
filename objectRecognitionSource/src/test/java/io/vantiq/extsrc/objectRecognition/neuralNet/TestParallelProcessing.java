@@ -11,7 +11,6 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
-import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeTrue;
 
@@ -19,8 +18,7 @@ public class TestParallelProcessing extends NeuralNetTestBase {
 
     static ObjectRecognitionCore core;
     static Vantiq vantiq;
-    static VantiqResponse vantiqResponse;
-
+    
     static final String FAKE_MODEL_DIR = "";
     static final int CORE_START_TIMEOUT = 10;
     static final String IP_CAMERA_ADDRESS = "http://207.192.232.2:8000/mjpg/video.mjpg";
