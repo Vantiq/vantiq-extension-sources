@@ -188,9 +188,11 @@ the previous is sent.
     will be valid General Config options, but in the future only "pollTime" will be supported.)
 *   allowQueries: This option allows Queries to be received when set to `true'
 *   maxRunningThreads: Optional. Only used if `pollTime` has been specified. The maximum number of threads running at any 
-given point for polling requests. Must be a positive integer. Default value is 10.
+given point for polling requests from the specific VANTIQ source. Must be a positive integer. Default value is 10.
 *   maxQueuedTask: Optional. Only used if `pollTime` has been specified. The maximum number of queued tasks at any given point 
-for polling requests. Must be a positive integer. Default value is 20.
+for polling requests from the specific VANTIQ source. Must be a positive integer. Default value is 20.
+    *   **NOTE:** The default behavior of the Object Recognition Source is to process the captured frames in parallel. If you 
+    would like the source to process frames sequentially, then `maxRunningThreads` and `maxQueuedTasks` must both be set to 1.
 
 ### Options Available for Data Source
 
