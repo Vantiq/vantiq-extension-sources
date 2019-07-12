@@ -147,7 +147,9 @@ The Configuration document may look similar to the following example:
     {
        "objRecConfig": {
           "general": {
-             "pollTime": 3000
+             "pollTime": 3000,
+             "maxRunningThreads": 5,
+             "maxQueuedTasks": 10
           },
           "dataSource": {
              "camera": "http://166.155.71.82:8080/mjpg/video.mjpg",
@@ -185,6 +187,10 @@ the previous is sent.
     *   (**NOTE:** Previously named "pollRate". For a limited amount of time, both "pollTime" and "pollRate"
     will be valid General Config options, but in the future only "pollTime" will be supported.)
 *   allowQueries: This option allows Queries to be received when set to `true'
+*   maxRunningThreads: Optional. Only used if `pollTime` has been specified. The maximum number of threads running at any 
+given point for polling requests. Must be a positive integer. Default value is 10.
+*   maxQueuedTask: Optional. Only used if `pollTime` has been specified. The maximum number of queued tasks at any given point 
+for polling requests. Must be a positive integer. Default value is 20.
 
 ### Options Available for Data Source
 
