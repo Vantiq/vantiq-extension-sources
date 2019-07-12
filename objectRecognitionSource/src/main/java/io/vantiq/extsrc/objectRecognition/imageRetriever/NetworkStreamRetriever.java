@@ -48,12 +48,15 @@ public class NetworkStreamRetriever implements ImageRetrieverInterface {
     String         camera;
     Logger         log = LoggerFactory.getLogger(this.getClass().getCanonicalName());
     Boolean        isPushProtocol = false;
+    
+    private String sourceName;
 
     // Constants for source configuration
     private static final String CAMERA = "camera";
     
     @Override
     public void setupDataRetrieval(Map<String, ?> dataSourceConfig, ObjectRecognitionCore source) throws Exception {
+        sourceName = source.getSourceName();
         try {
             System.loadLibrary(Core.NATIVE_LIBRARY_NAME);
         } catch (Throwable t) {
@@ -94,6 +97,10 @@ public class NetworkStreamRetriever implements ImageRetrieverInterface {
      */
     @Override
     public ImageRetrieverResults getImage() throws ImageAcquisitionException {
+        // Used to check how long image retrieving takes
+        long after;
+        long before = System.currentTimeMillis();
+        
         // Reading the next video frame from the camera
         Mat matrix = new Mat();
         ImageRetrieverResults results = new ImageRetrieverResults();
@@ -119,8 +126,12 @@ public class NetworkStreamRetriever implements ImageRetrieverInterface {
                 throw new FatalImageException(this.getClass().getCanonicalName() + ".mainCameraClosed: " 
                         + "Camera '" + camera + "' has closed");
             } else {
-                throw new ImageAcquisitionException(this.getClass().getCanonicalName() + ".mainCameraReadError: " 
-                        + "Could not obtain frame from camera '" + camera + "'");
+                capture.read(matrix);
+                if (matrix.empty()) {
+                    matrix.release();
+                    throw new ImageAcquisitionException(this.getClass().getCanonicalName() + ".mainCameraReadError2: " 
+                            + "Could not obtain frame from camera '" + camera + "'");
+                }
             }
         }
       
@@ -138,6 +149,10 @@ public class NetworkStreamRetriever implements ImageRetrieverInterface {
         
         results.setImage(imageByte);
         results.setTimestamp(captureTime);
+        
+        after = System.currentTimeMillis();
+        log.debug("Image retrieving time for source " + sourceName + ": {}.{} seconds"
+                , (after - before) / 1000, String.format("%03d", (after - before) % 1000));
         
         return results;
     }
