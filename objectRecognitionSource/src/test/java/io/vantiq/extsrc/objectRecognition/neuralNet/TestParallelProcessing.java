@@ -79,11 +79,6 @@ public class TestParallelProcessing extends NeuralNetTestBase {
         // Make sure that appropriate number of entries are stored in type (this means discard policy works, and core is still alive)
         VantiqResponse response = vantiq.select(testTypeName, null, null, null);
         ArrayList responseBody = (ArrayList) response.getBody();
-
-        // The custom values for maxRunningThreads and maxQueuedTasks are 5 and 10 respectively
-        // The pollTime is set to 100 (10 fps). Since the TestProcessor sleepTime is set to 5 seconds, we know that 10 fps is impossible
-        // The first 5 tasks should take 5 seconds to complete, as well as the next 5. We know we should have ~10 entries after waiting 10 seconds.
-        // The timing is not exact, so we make sure we are under 20 total, (well below the 100 we would see if the TestProcessor sleepTime was 0).
         assert responseBody.size() < numberOfEntries;
 
         // We also make sure that the core did not close, proving the discard policy works and no fatal exceptions were thrown
