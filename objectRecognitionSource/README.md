@@ -191,8 +191,9 @@ the previous is sent.
 given point for polling requests from the specific VANTIQ source. Must be a positive integer. Default value is 10.
 *   maxQueuedTask: Optional. Only used if `pollTime` has been specified. The maximum number of queued tasks at any given point 
 for polling requests from the specific VANTIQ source. Must be a positive integer. Default value is 20.
-    *   **NOTE:** The default behavior of the Object Recognition Source is to process the captured frames in parallel. If you 
-    would like the source to process frames sequentially, then `maxRunningThreads` and `maxQueuedTasks` must both be set to 1.
+    *   **NOTE:** The default behavior of the Object Recognition Source is to process up to 10 captured frames in parallel at 
+    a time. If you would like the source to only process one frame at a time, then `maxRunningThreads` and `maxQueuedTasks` 
+    must both be set to 1.
 
 ### Options Available for Data Source
 
