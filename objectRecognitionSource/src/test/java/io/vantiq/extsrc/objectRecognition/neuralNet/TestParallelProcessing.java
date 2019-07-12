@@ -73,7 +73,7 @@ public class TestParallelProcessing extends NeuralNetTestBase {
         // Create Rule to store results in Type
         setupRule();
 
-        // Wait for 10 seconds
+        // Wait for 10 seconds while the source polls for frames from the data source and queues up tasks.
         Thread.sleep(10000);
 
         // Make sure that appropriate number of entries are stored in type (this means discard policy works, and core is still alive)

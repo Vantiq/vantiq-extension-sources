@@ -392,12 +392,14 @@ public class ObjectRecognitionConfigHandler extends Handler<ExtensionServiceMess
             log.warn("Deprecated config option, please use \"pollTime\" instead of \"pollRate\".");
             polling = (Integer) general.get(POLL_RATE);
         }
-        
+
         if (polling > 0) {
+            // Scheduling tasks to run <pollTime> milliseconds apart from each other
             int pollRate = polling;
             source.pollTimer = new Timer("dataCapture");
             source.pollTimer.schedule(task, 0, pollRate);
         } else if (polling == 0) {
+            // Scheduling tasks to run 1 millisecond apart from each other
             source.pollTimer = new Timer("dataCapture");
             source.pollTimer.schedule(task, 0, 1);
             // 1 ms will be fast enough unless image gathering, image processing, and data sending combined are

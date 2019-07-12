@@ -80,7 +80,6 @@ public class ObjectRecognitionCore {
     private static final String UPLOAD = "upload";
     private static final String DELETE = "delete";
     private static final String FILTER = "filter";
-    final static String SYNCH_KEY = "synchKey";
 
     /**
      * Stops sending messages to the source and tries to reconnect, closing on a failure
@@ -312,7 +311,7 @@ public class ObjectRecognitionCore {
         // Send the results of the neural net if it doesn't error out
         NeuralNetInterface localNeuralNet = null;
         try {
-            synchronized (SYNCH_KEY) {
+            synchronized (this) {
                 if (neuralNet == null) { // Should only happen when close() runs just before sendDataFromImage()
                     return;
                 }
@@ -370,7 +369,7 @@ public class ObjectRecognitionCore {
        // Send the results of the neural net, or send a Query error if an exception occurs
        NeuralNetInterface localNeuralNet = null;
        try {
-           synchronized (SYNCH_KEY) {
+           synchronized (this) {
                localNeuralNet = neuralNet;
            }
            if (localNeuralNet == null) { // Should only happen when close() runs just before sendDataFromImage()

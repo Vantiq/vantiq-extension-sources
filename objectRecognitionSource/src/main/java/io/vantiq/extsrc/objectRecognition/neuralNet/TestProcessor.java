@@ -7,6 +7,11 @@ import org.slf4j.LoggerFactory;
 
 import io.vantiq.extsrc.objectRecognition.exception.ImageProcessingException;
 
+/**
+ * This class is used to mimic processing an image for testing purposes. The "sleepTime" value is used to wait a fixed
+ * amount of time, instead of actually processing an image. This helps for testing purposes, to make sure that old tasks
+ * are being replaced by newer ones when the LinkedBlockingQueue has filled.
+ */
 public class TestProcessor implements NeuralNetInterface2 {
     
     Logger log = LoggerFactory.getLogger(this.getClass());

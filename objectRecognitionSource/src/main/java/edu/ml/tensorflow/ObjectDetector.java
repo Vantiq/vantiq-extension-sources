@@ -158,11 +158,12 @@ public class ObjectDetector {
     /**
      * Detect objects on the given image
      * <br>Edited to return the results as a map and conditionally save the image
-     * @param image The image in jpeg format
-     * @return      A List of Maps, each of which has a {@code label} stating the type of the object identified,
-     *              a {@code confidence} specifying on a scale of 0-1 how confident the neural net is that the
-     *              identification is accurate, and a {@code location} containing the coordinates for the
-     *              {@code top},{@code left}, {@code bottom}, and {@code right} edges of the bounding box for the object.
+     * @param image     The image in jpeg format
+     * @param timestamp The timestamp corresponding to when the frame was captured. Used to name the image if it is being saved
+     * @return          A List of Maps, each of which has a {@code label} stating the type of the object identified,
+     *                  a {@code confidence} specifying on a scale of 0-1 how confident the neural net is that the
+     *                  identification is accurate, and a {@code location} containing the coordinates for the
+     *                  {@code top},{@code left}, {@code bottom}, and {@code right} edges of the bounding box for the object.
      */
     public List<Map<String, ?>> detect(final byte[] image, Date timestamp) {
         try (Tensor<Float> normalizedImage = normalizeImage(image)) {
