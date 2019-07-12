@@ -18,15 +18,13 @@ public class TestParallelProcessing extends NeuralNetTestBase {
 
     static ObjectRecognitionCore core;
     static Vantiq vantiq;
-    
+
     static final String FAKE_MODEL_DIR = "";
     static final int CORE_START_TIMEOUT = 10;
     static final String IP_CAMERA_ADDRESS = "http://207.192.232.2:8000/mjpg/video.mjpg";
 
     @BeforeClass
     public static void classSetup() {
-        testAuthToken="-YyPeih6BkZoQoVa5tUT3cMZ4DXaWs7M6hg26WEdU88=";
-        testVantiqServer="https://dev.vantiq.com";
         vantiq = new io.vantiq.client.Vantiq(testVantiqServer);
         vantiq.setAccessToken(testAuthToken);
     }
@@ -41,49 +39,23 @@ public class TestParallelProcessing extends NeuralNetTestBase {
 
     @Test
     public void testDiscardPolicyDefaultThreadConfig() throws InterruptedException {
-        // Only run test with intended vantiq availability
-        assumeTrue(testAuthToken != null && testVantiqServer != null);
-
-        // Check that Source, Type, Topic, Procedure and Rule do not already exist in namespace, and skip test if they do
-        assumeFalse(checkSourceExists());
-        assumeFalse(checkTypeExists());
-        assumeFalse(checkRuleExists());
-
-        // Setup a VANTIQ Obj Rec Source, and start running the core
-        setupSource(createSourceDef(false));
-
-        // Create Type to store results
-        setupType();
-
-        // Create Rule to store results in Type
-        setupRule();
-
-        // Wait for 10 seconds
-        Thread.sleep(10000);
-
-        // Make sure that appropriate number of entries are stored in type (this means discard policy works, and core is still alive)
-        VantiqResponse response = vantiq.select(testTypeName, null, null, null);
-        ArrayList responseBody = (ArrayList) response.getBody();
-
-        // Defaults for maxRunningThreads and maxQueuedTasks are 10 and 20 respectively
+        // The default values for maxRunningThreads and maxQueuedTasks are 10 and 20 respectively
         // The pollTime is set to 100 (10 fps). Since the TestProcessor sleepTime is set to 5 seconds, we know that 10 fps is impossible
         // The first 10 tasks should take 5 seconds to complete, as well as the next 10. We know we should have ~20 entries after waiting 10 seconds.
         // The timing is not exact, so we make sure we are under 30 total, (well below the 100 we would see if the TestProcessor sleepTime was 0).
-        assert responseBody.size() < 30;
-
-        // We also make sure that the core did not close, proving the discard policy works and no fatal exceptions were thrown
-        assert core.pollTimer != null;
-        assert core.pool != null;
-
-        // Delete the Source/Type/Topic/Procedure/Rule from VANTIQ
-        core.close();
-        deleteSource();
-        deleteType();
-        deleteRule();
+        discardPolicyTestHelper(false, 30);
     }
 
     @Test
     public void testDiscardPolicyCustomThreadConfig() throws InterruptedException {
+        // The custom values for maxRunningThreads and maxQueuedTasks are 5 and 10 respectively
+        // The pollTime is set to 100 (10 fps). Since the TestProcessor sleepTime is set to 5 seconds, we know that 10 fps is impossible
+        // The first 5 tasks should take 5 seconds to complete, as well as the next 5. We know we should have ~10 entries after waiting 10 seconds.
+        // The timing is not exact, so we make sure we are under 20 total, (well below the 100 we would see if the TestProcessor sleepTime was 0).
+        discardPolicyTestHelper(true, 20);
+    }
+
+    public void discardPolicyTestHelper(boolean useCustomTaskConfig, int numberOfEntries) throws InterruptedException {
         // Only run test with intended vantiq availability
         assumeTrue(testAuthToken != null && testVantiqServer != null);
 
@@ -93,7 +65,7 @@ public class TestParallelProcessing extends NeuralNetTestBase {
         assumeFalse(checkRuleExists());
 
         // Setup a VANTIQ Obj Rec Source, and start running the core
-        setupSource(createSourceDef(true));
+        setupSource(createSourceDef(useCustomTaskConfig));
 
         // Create Type to store results
         setupType();
@@ -112,7 +84,7 @@ public class TestParallelProcessing extends NeuralNetTestBase {
         // The pollTime is set to 100 (10 fps). Since the TestProcessor sleepTime is set to 5 seconds, we know that 10 fps is impossible
         // The first 5 tasks should take 5 seconds to complete, as well as the next 5. We know we should have ~10 entries after waiting 10 seconds.
         // The timing is not exact, so we make sure we are under 20 total, (well below the 100 we would see if the TestProcessor sleepTime was 0).
-        assert responseBody.size() < 20;
+        assert responseBody.size() < numberOfEntries;
 
         // We also make sure that the core did not close, proving the discard policy works and no fatal exceptions were thrown
         assert core.pollTimer != null;
