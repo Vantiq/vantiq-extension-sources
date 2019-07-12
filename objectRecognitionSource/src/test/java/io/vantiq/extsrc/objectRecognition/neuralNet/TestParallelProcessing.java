@@ -85,7 +85,7 @@ public class TestParallelProcessing extends NeuralNetTestBase {
         assert core.pollTimer != null;
         assert core.pool != null;
 
-        // Delete the Source/Type/Topic/Procedure/Rule from VANTIQ
+        // Delete the Source/Type/Rule from VANTIQ
         core.close();
         deleteSource();
         deleteType();
