@@ -32,9 +32,9 @@ public class TestParallelProcessing extends NeuralNetTestBase {
     @AfterClass
     public static void tearDown() {
         // Double check that everything was deleted from VANTIQ
-        deleteSource();
-        deleteType();
-        deleteRule();
+        deleteSource(vantiq);
+        deleteType(vantiq);
+        deleteRule(vantiq);
     }
 
     @Test
@@ -60,9 +60,9 @@ public class TestParallelProcessing extends NeuralNetTestBase {
         assumeTrue(testAuthToken != null && testVantiqServer != null);
 
         // Check that Source, Type, Topic, Procedure and Rule do not already exist in namespace, and skip test if they do
-        assumeFalse(checkSourceExists());
-        assumeFalse(checkTypeExists());
-        assumeFalse(checkRuleExists());
+        assumeFalse(checkSourceExists(vantiq));
+        assumeFalse(checkTypeExists(vantiq));
+        assumeFalse(checkRuleExists(vantiq));
 
         // Setup a VANTIQ Obj Rec Source, and start running the core
         setupSource(createSourceDef(useCustomTaskConfig));
@@ -87,23 +87,12 @@ public class TestParallelProcessing extends NeuralNetTestBase {
 
         // Delete the Source/Type/Rule from VANTIQ
         core.close();
-        deleteSource();
-        deleteType();
-        deleteRule();
+        deleteSource(vantiq);
+        deleteType(vantiq);
+        deleteRule(vantiq);
     }
 
     // ================================================= Helper functions =================================================
-    public static boolean checkSourceExists() {
-        Map<String,String> where = new LinkedHashMap<String,String>();
-        where.put("name", testSourceName);
-        VantiqResponse response = vantiq.select("system.sources", null, where, null);
-        ArrayList responseBody = (ArrayList) response.getBody();
-        if (responseBody.isEmpty()) {
-            return false;
-        } else {
-            return true;
-        }
-    }
 
     public static void setupSource(Map<String,Object> sourceDef) {
         VantiqResponse insertResponse = vantiq.insert("system.sources", sourceDef);
@@ -138,7 +127,7 @@ public class TestParallelProcessing extends NeuralNetTestBase {
         neuralNet.put("type", "test");
         neuralNet.put("sleepTime", 5000);
 
-        // Placing general config options in "jdbcConfig"
+        // Placing general config options in "objRecConfig"
         objRecConfig.put("general", general);
         objRecConfig.put("dataSource", dataSource);
         objRecConfig.put("neuralNet", neuralNet);
@@ -156,24 +145,6 @@ public class TestParallelProcessing extends NeuralNetTestBase {
         return sourceDef;
     }
 
-    public static void deleteSource() {
-        Map<String,Object> where = new LinkedHashMap<String,Object>();
-        where.put("name", testSourceName);
-        VantiqResponse response = vantiq.delete("system.sources", where);
-    }
-
-    public static boolean checkTypeExists() {
-        Map<String,String> where = new LinkedHashMap<String,String>();
-        where.put("name", testTypeName);
-        VantiqResponse response = vantiq.select("system.types", null, where, null);
-        ArrayList responseBody = (ArrayList) response.getBody();
-        if (responseBody.isEmpty()) {
-            return false;
-        } else {
-            return true;
-        }
-    }
-
     public static void setupType() {
         Map<String,Object> typeDef = new LinkedHashMap<String,Object>();
         Map<String,Object> properties = new LinkedHashMap<String,Object>();
@@ -186,35 +157,11 @@ public class TestParallelProcessing extends NeuralNetTestBase {
         vantiq.insert("system.types", typeDef);
     }
 
-    public static void deleteType() {
-        Map<String,Object> where = new LinkedHashMap<String,Object>();
-        where.put("name", testTypeName);
-        VantiqResponse response = vantiq.delete("system.types", where);
-    }
-
-    public static boolean checkRuleExists() {
-        Map<String,String> where = new LinkedHashMap<String,String>();
-        where.put("name", testRuleName);
-        VantiqResponse response = vantiq.select("system.rules", null, where, null);
-        ArrayList responseBody = (ArrayList) response.getBody();
-        if (responseBody.isEmpty()) {
-            return false;
-        } else {
-            return true;
-        }
-    }
-
     public static void setupRule() {
         String rule = "RULE " + testRuleName + "\n"
-                    + "WHEN MESSAGE ARRIVES FROM " + testSourceName +  " AS message\n"
+                    + "WHEN MESSAGE ARRIVES FROM " + testSourceName + " AS message\n"
                     + "INSERT " + testTypeName + "(id: 1)";
 
         vantiq.insert("system.rules", rule);
-    }
-
-    public static void deleteRule() {
-        Map<String,Object> where = new LinkedHashMap<String,Object>();
-        where.put("name", testRuleName);
-        VantiqResponse response = vantiq.delete("system.rules", where);
     }
 }

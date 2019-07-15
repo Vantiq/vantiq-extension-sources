@@ -12,6 +12,7 @@ package io.vantiq.extsrc.objectRecognition.neuralNet;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeTrue;
 
 import java.awt.image.BufferedImage;
@@ -29,6 +30,8 @@ import java.util.Map;
 
 import javax.imageio.ImageIO;
 
+import com.google.gson.JsonArray;
+import io.vantiq.extsrc.objectRecognition.ObjectRecognitionCore;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.FixMethodOrder;
@@ -80,6 +83,11 @@ public class TestYoloProcessor extends NeuralNetTestBase {
     static final int KEYBOARD_CROPPED_WIDTH = 230;
     static final int KEYBOARD_CROPPED_HEIGHT = 125;
 
+    // Used to test suppressNullValues
+    static final String NULL_IP_CAMERA_ADDRESS = "http://183.77.203.213:80/-wvhttp-01-/GetOneShot?image_size=640x480&frame_count=1000000000";
+    static final int CORE_START_TIMEOUT = 10;
+
+    static ObjectRecognitionCore core;
     static YoloProcessor ypJson;
     static Vantiq vantiq;
     static VantiqResponse vantiqResponse;
@@ -137,6 +145,11 @@ public class TestYoloProcessor extends NeuralNetTestBase {
         if (d.exists()) {
             deleteDirectory(OUTPUT_DIR);
         }
+
+        // Double check that everything was deleted from VANTIQ
+        deleteSource(vantiq);
+        deleteType(vantiq);
+        deleteRule(vantiq);
     }
 
     @Test
@@ -1666,6 +1679,67 @@ public class TestYoloProcessor extends NeuralNetTestBase {
         }
     }
 
+    @Test
+    public void testNotSuppressNullValues() throws InterruptedException {
+        // Setting suppress null values to false
+        // Here, we check to see that we still received data even though there were no recognitions
+        testSuppressNullValuesHelper(false);
+    }
+
+    @Test
+    public void testSuppressNullValues() throws InterruptedException {
+        // Setting suppress null values to true
+        // Here, we check to see that we did not receive any data since there were no recognitions
+        testSuppressNullValuesHelper(true);
+    }
+
+    public void testSuppressNullValuesHelper(boolean suppressNullValues) throws InterruptedException {
+        // Only run test with intended vantiq availability
+        assumeTrue(testAuthToken != null && testVantiqServer != null);
+
+        // Check that Source, Type, Topic, Procedure and Rule do not already exist in namespace, and skip test if they do
+        assumeFalse(checkSourceExists(vantiq));
+        assumeFalse(checkTypeExists(vantiq));
+        assumeFalse(checkRuleExists(vantiq));
+
+        // Setup a VANTIQ Obj Rec Source, and start running the core
+        setupSource(createSourceDef(suppressNullValues));
+
+        // Create Type to store results
+        setupType();
+
+        // Create Rule to store results in Type
+        setupRule();
+
+        // Wait for 15 seconds while the source polls for frames from the data source and stores data in type
+        Thread.sleep(15000);
+
+        // Make sure that appropriate number of entries are stored in type (this means discard policy works, and core is still alive)
+        VantiqResponse response = vantiq.select(testTypeName, null, null, null);
+        ArrayList responseBody = (ArrayList) response.getBody();
+
+        // If suppressNullValues is set to true, we shouldn't have any results stored in our type
+        if (suppressNullValues) {
+            assert responseBody.size() == 0;
+
+        // Otherwise, we should have some results and they should be empty arrays
+        } else {
+            assert responseBody.size() > 0;
+
+            for (int i = 0; i < responseBody.size(); i++) {
+                JsonObject resultObject = (JsonObject) responseBody.get(i);
+                assert resultObject.get("results") instanceof JsonArray;
+                assert ((JsonArray) resultObject.get("results")).size() == 0;
+            }
+        }
+
+        // Delete the Source/Type/Rule from VANTIQ
+        core.close();
+        deleteSource(vantiq);
+        deleteType(vantiq);
+        deleteRule(vantiq);
+    }
+
     // ================================================= Helper functions =================================================
 
     String imageResultsAsString = "[{\"confidence\":0.8445639, \"location\":{\"top\":255.70024, \"left\":121.859344, \"bottom\":372.2343, "
@@ -1786,5 +1860,73 @@ public class TestYoloProcessor extends NeuralNetTestBase {
 
         ExtensionServiceMessage message = new ExtensionServiceMessage("").fromMap(msg);
         return message;
+    }
+
+    public static void setupSource(Map<String,Object> sourceDef) {
+        VantiqResponse insertResponse = vantiq.insert("system.sources", sourceDef);
+        if (insertResponse.isSuccess()) {
+            core = new ObjectRecognitionCore(testSourceName, testAuthToken, testVantiqServer, MODEL_DIRECTORY);
+            core.start(CORE_START_TIMEOUT);
+        }
+    }
+
+    public static Map<String,Object> createSourceDef(boolean suppressNullValues) {
+        Map<String,Object> sourceDef = new LinkedHashMap<String,Object>();
+        Map<String,Object> sourceConfig = new LinkedHashMap<String,Object>();
+        Map<String,Object> objRecConfig = new LinkedHashMap<String,Object>();
+        Map<String,Object> general = new LinkedHashMap<String,Object>();
+        Map<String,Object> dataSource = new LinkedHashMap<String,Object>();
+        Map<String,Object> neuralNet = new LinkedHashMap<String,Object>();
+
+        // Setting up general config options
+        general.put("pollTime", 1000);
+        general.put("suppressNullValues", suppressNullValues);
+
+        // Setting up dataSource config options
+        dataSource.put("camera", NULL_IP_CAMERA_ADDRESS);
+        dataSource.put("type", "network");
+
+        // Setting up neuralNet config options
+        neuralNet.put("type", "yolo");
+        neuralNet.put("metaFile", META_FILE);
+        neuralNet.put("pbFile", PB_FILE);
+
+        // Placing general config options in "objRecConfig"
+        objRecConfig.put("general", general);
+        objRecConfig.put("dataSource", dataSource);
+        objRecConfig.put("neuralNet", neuralNet);
+
+        // Putting objRecConfig and vantiq config in the source configuration
+        sourceConfig.put("objRecConfig", objRecConfig);
+
+        // Setting up the source definition
+        sourceDef.put("config", sourceConfig);
+        sourceDef.put("name", testSourceName);
+        sourceDef.put("type", "ObjectRecognition");
+        sourceDef.put("active", "true");
+        sourceDef.put("direction", "BOTH");
+
+        return sourceDef;
+    }
+
+    public static void setupType() {
+        Map<String,Object> typeDef = new LinkedHashMap<String,Object>();
+        Map<String,Object> properties = new LinkedHashMap<String,Object>();
+        Map<String,Object> propertyDef = new LinkedHashMap<String,Object>();
+        propertyDef.put("type", "Object");
+        propertyDef.put("multi", true);
+        propertyDef.put("required", true);
+        properties.put("results", propertyDef);
+        typeDef.put("properties", properties);
+        typeDef.put("name", testTypeName);
+        vantiq.insert("system.types", typeDef);
+    }
+
+    public static void setupRule() {
+        String rule = "RULE " + testRuleName + "\n"
+                + "WHEN MESSAGE ARRIVES FROM " + testSourceName +  " AS message\n"
+                + "INSERT " + testTypeName + "(results: message.results)";
+
+        vantiq.insert("system.rules", rule);
     }
 }

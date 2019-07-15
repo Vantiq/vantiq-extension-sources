@@ -88,6 +88,9 @@ public class ObjectRecognitionConfigHandler extends Handler<ExtensionServiceMess
     private static final String POLL_TIME = "pollTime";
     private static final String POLL_RATE = "pollRate";
     private static final String ALLOW_QUERIES = "allowQueries";
+    private static final String MAX_RUNNING_THREADS = "maxRunningThreads";
+    private static final String MAX_QUEUED_TASKS = "maxQueuedTasks";
+    private static final String SUPPRESS_NULL_VALUES = "suppressNullValues";
     
     // Constants for Query Parameters
     private static final String OPERATION = "operation";
@@ -100,8 +103,8 @@ public class ObjectRecognitionConfigHandler extends Handler<ExtensionServiceMess
     
     Handler<ExtensionServiceMessage> queryHandler;
     
-    private static final int MAX_RUNNING_THREADS = 10;
-    private static final int MAX_QUEUED_TASKS = 20;
+    private static final int MAX_RUNNING_THREADS_DEFAULT = 10;
+    private static final int MAX_QUEUED_TASKS_DEFAULT = 20;
     
     /**
      * Initializes the Handler for a source. The source name will be used in the logger's name.
@@ -357,15 +360,21 @@ public class ObjectRecognitionConfigHandler extends Handler<ExtensionServiceMess
     private boolean prepareCommunication(Map<String, ?> general) {
         int polling = -1; // initializing to an invalid input
         boolean queryable = false;
-        int maxRunningThreads = MAX_RUNNING_THREADS;
-        int maxQueuedTasks = MAX_QUEUED_TASKS;
-        
-        if (general.get("maxRunningThreads") instanceof Integer && (Integer) general.get("maxRunningThreads") > 0) {
-            maxRunningThreads = (Integer) general.get("maxRunningThreads");
+        int maxRunningThreads = MAX_RUNNING_THREADS_DEFAULT;
+        int maxQueuedTasks = MAX_QUEUED_TASKS_DEFAULT;
+
+        // First, we'll check the suppressNullValues option
+        if (general.get(SUPPRESS_NULL_VALUES) instanceof Boolean && (Boolean) general.get(SUPPRESS_NULL_VALUES)) {
+            source.suppressNullValues = (Boolean) general.get(SUPPRESS_NULL_VALUES);
+        }
+
+        // Next, we'll check the parallel image processing options
+        if (general.get(MAX_RUNNING_THREADS) instanceof Integer && (Integer) general.get(MAX_RUNNING_THREADS) > 0) {
+            maxRunningThreads = (Integer) general.get(MAX_RUNNING_THREADS);
         }
         
-        if (general.get("maxQueuedTasks") instanceof Integer && (Integer) general.get("maxQueuedTasks") > 0) {
-            maxQueuedTasks = (Integer) general.get("maxQueuedTasks");
+        if (general.get(MAX_QUEUED_TASKS) instanceof Integer && (Integer) general.get(MAX_QUEUED_TASKS) > 0) {
+            maxQueuedTasks = (Integer) general.get(MAX_QUEUED_TASKS);
         }
                 
         source.pool = new ThreadPoolExecutor(maxRunningThreads, maxRunningThreads, 0l, TimeUnit.MILLISECONDS, 

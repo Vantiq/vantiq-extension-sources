@@ -128,7 +128,7 @@ public class TestYoloQueries extends NeuralNetTestBase {
             core.stop();
             core = null;
         }
-        deleteSource();
+        deleteSource(vantiq);
         deleteDirectory(OUTPUT_DIR);
         
         for (int i = 0; i < vantiqUploadFiles.size(); i++) {
@@ -813,12 +813,6 @@ public class TestYoloQueries extends NeuralNetTestBase {
     
     public static void querySource(Map<String,Object> params) {
         vantiq.query(SOURCE_NAME, params);
-    }
-    
-    public static void deleteSource() {
-        Map<String,Object> where = new LinkedHashMap<String,Object>();
-        where.put("name", SOURCE_NAME);
-        vantiq.delete("system.sources", where);
     }
     
     public static void deleteFileFromVantiq(String filename) {

@@ -68,6 +68,7 @@ public class ObjectRecognitionCore {
     
     public String outputDir;
     public String lastQueryFilename;
+    public Boolean suppressNullValues = false;
     
     final Logger log;
     final static int    RECONNECT_INTERVAL = 5000;
@@ -328,6 +329,13 @@ public class ObjectRecognitionCore {
             if (!localNeuralNet.getClass().toString().contains("NoProcessor")) {
                 // Translate the results from the neural net and image into a message to send back 
                 Map message = createMapFromResults(imageResults, results);
+
+                // If suppressNullValues is set to true, then skip sending message results list is empty
+                if (suppressNullValues) {
+                    if (message.get("results") instanceof List && ((List) message.get("results")).size() == 0) {
+                        return;
+                    }
+                }
                 client.sendNotification(message);
             }
         } catch (ImageProcessingException e) {
