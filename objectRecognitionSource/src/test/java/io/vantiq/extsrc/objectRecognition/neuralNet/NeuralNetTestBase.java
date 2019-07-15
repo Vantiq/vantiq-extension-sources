@@ -23,7 +23,6 @@ import io.vantiq.client.Vantiq;
 import io.vantiq.client.VantiqError;
 import io.vantiq.client.VantiqResponse;
 import io.vantiq.extsrc.objectRecognition.ObjRecTestBase;
-import io.vantiq.extsrc.objectRecognition.ObjectRecognitionCore;
 
 public class NeuralNetTestBase extends ObjRecTestBase {
     public static final String MODEL_DIRECTORY = System.getProperty("buildDir") + "/models";

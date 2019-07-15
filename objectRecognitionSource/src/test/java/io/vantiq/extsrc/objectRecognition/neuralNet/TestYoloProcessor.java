@@ -1896,7 +1896,7 @@ public class TestYoloProcessor extends NeuralNetTestBase {
         objRecConfig.put("dataSource", dataSource);
         objRecConfig.put("neuralNet", neuralNet);
 
-        // Putting objRecConfig and vantiq config in the source configuration
+        // Putting objRecConfig in the source configuration
         sourceConfig.put("objRecConfig", objRecConfig);
 
         // Setting up the source definition
