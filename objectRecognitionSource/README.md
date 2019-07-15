@@ -150,7 +150,7 @@ The Configuration document may look similar to the following example:
              "pollTime": 3000,
              "maxRunningThreads": 5,
              "maxQueuedTasks": 10,
-             "suppressNullValues": true
+             "suppressEmptyNeuralNetResults": true
           },
           "dataSource": {
              "camera": "http://166.155.71.82:8080/mjpg/video.mjpg",
@@ -195,8 +195,8 @@ for polling requests from the specific VANTIQ source. Must be a positive integer
     *   **NOTE:** The default behavior of the Object Recognition Source is to process up to 10 captured frames in parallel at 
     a time. If you would like the source to only process one frame at a time, then `maxRunningThreads` and `maxQueuedTasks` 
     must both be set to 1.
-*   suppressNullValues: Optional. Only used if `pollTime` has been specified. Must be a boolean value. If set to `true`, only 
-the neural net results containing recognitions, (from polled frames), will be sent back to the VANTIQ Source as a 
+*   suppressEmptyNeuralNetResults: Optional. Only used if `pollTime` has been specified. Must be a boolean value. If set to 
+`true`, only the neural net results containing recognitions, (from polled frames), will be sent back to the VANTIQ Source as a 
 Notificiation.
 
 ### Options Available for Data Source
