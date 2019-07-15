@@ -149,7 +149,8 @@ The Configuration document may look similar to the following example:
           "general": {
              "pollTime": 3000,
              "maxRunningThreads": 5,
-             "maxQueuedTasks": 10
+             "maxQueuedTasks": 10,
+             "suppressEmptyNeuralNetResults": true
           },
           "dataSource": {
              "camera": "http://166.155.71.82:8080/mjpg/video.mjpg",
@@ -194,6 +195,9 @@ for polling requests from the specific VANTIQ source. Must be a positive integer
     *   **NOTE:** The default behavior of the Object Recognition Source is to process up to 10 captured frames in parallel at 
     a time. If you would like the source to only process one frame at a time, then `maxRunningThreads` and `maxQueuedTasks` 
     must both be set to 1.
+*   suppressEmptyNeuralNetResults: Optional. Only used if `pollTime` has been specified. Must be a boolean value. If set to 
+`true`, only the neural net results containing recognitions, (from polled frames), will be sent back to the VANTIQ Source as a 
+Notificiation.
 
 ### Options Available for Data Source
 
@@ -684,11 +688,18 @@ The Extension Source can be setup for polling, for queries, or for both.
 
 ## Testing<a name="testing" id="testing"></a>
     
-In order to properly run the tests, you must first add the VANTIQ server you wish to connect to and corresponding auth token to your gradle.properties file in the ~/.gradle directory as follows:
+In order to properly run the tests, you must first add the VANTIQ server you wish to connect to and corresponding auth token 
+to your gradle.properties file in the ~/.gradle directory. The Target VANTIQ Server and Auth Token will be used to create a 
+temporary VANTIQ Source, VANTIQ Type and VANTIQ Rule. They will be named _testSourceName_, _testTypeName_, and _testRuleName_ 
+respectively. These names can optionally be configured by adding `EntConTestSourceName`, `EntConTestTypeName` and 
+`EntConTestRuleName` to the gradle.properties file. The following shows what the gradle.properties file should look like:
 
 ``` 
     TestAuthToken=<yourAuthToken>
     TestVantiqServer=<desiredVantiqServer>
+    EntConTestSourceName=<yourDesiredSourceName>
+    EntConTestTypeName=<yourDesiredTypeName>
+    EntConTestRuleName=<yourDesiredRuleName>
 ```
 
 The test will download two large (~200 MB) files before running the test. If you do not want this to occur, do not run

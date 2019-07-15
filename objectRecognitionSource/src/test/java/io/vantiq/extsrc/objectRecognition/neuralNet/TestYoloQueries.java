@@ -42,7 +42,6 @@ public class TestYoloQueries extends NeuralNetTestBase {
     static final String PB_FILE = "coco-" + COCO_MODEL_VERSION + ".pb";
     static final String META_FILE = "coco-" + COCO_MODEL_VERSION + ".meta";
     static final String OUTPUT_DIR = System.getProperty("buildDir") + "/resources/out";
-    static final String SOURCE_NAME = "UnlikelyToExistTestObjectRecognitionSource";
     static final String IP_CAMERA_ADDRESS = "http://207.192.232.2:8000/mjpg/video.mjpg";
 
     static final String IMAGE_1_DATE = "2019-02-05--02-35-10";
@@ -128,7 +127,7 @@ public class TestYoloQueries extends NeuralNetTestBase {
             core.stop();
             core = null;
         }
-        deleteSource();
+        deleteSource(vantiq);
         deleteDirectory(OUTPUT_DIR);
         
         for (int i = 0; i < vantiqUploadFiles.size(); i++) {
@@ -813,12 +812,6 @@ public class TestYoloQueries extends NeuralNetTestBase {
     
     public static void querySource(Map<String,Object> params) {
         vantiq.query(SOURCE_NAME, params);
-    }
-    
-    public static void deleteSource() {
-        Map<String,Object> where = new LinkedHashMap<String,Object>();
-        where.put("name", SOURCE_NAME);
-        vantiq.delete("system.sources", where);
     }
     
     public static void deleteFileFromVantiq(String filename) {
