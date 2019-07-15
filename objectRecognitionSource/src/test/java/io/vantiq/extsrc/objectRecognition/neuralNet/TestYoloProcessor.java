@@ -84,7 +84,7 @@ public class TestYoloProcessor extends NeuralNetTestBase {
     static final int KEYBOARD_CROPPED_HEIGHT = 125;
 
     // Used to test suppressNullValues
-    static final String NULL_IP_CAMERA_ADDRESS = "http://183.77.203.213:80/-wvhttp-01-/GetOneShot?image_size=640x480&frame_count=1000000000";
+    static final String NO_RECOGNIZED_OBJECTS_CAMERA_ADDRESS = "http://183.77.203.213:80/-wvhttp-01-/GetOneShot?image_size=640x480&frame_count=1000000000";
     static final int CORE_START_TIMEOUT = 10;
 
     static ObjectRecognitionCore core;
@@ -1880,10 +1880,10 @@ public class TestYoloProcessor extends NeuralNetTestBase {
 
         // Setting up general config options
         general.put("pollTime", 1000);
-        general.put("suppressNullValues", suppressNullValues);
+        general.put("suppressEmptyNeuralNetResults", suppressNullValues);
 
         // Setting up dataSource config options
-        dataSource.put("camera", NULL_IP_CAMERA_ADDRESS);
+        dataSource.put("camera", NO_RECOGNIZED_OBJECTS_CAMERA_ADDRESS);
         dataSource.put("type", "network");
 
         // Setting up neuralNet config options

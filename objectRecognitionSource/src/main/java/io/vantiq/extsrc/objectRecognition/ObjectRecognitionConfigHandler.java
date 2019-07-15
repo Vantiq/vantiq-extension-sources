@@ -90,7 +90,7 @@ public class ObjectRecognitionConfigHandler extends Handler<ExtensionServiceMess
     private static final String ALLOW_QUERIES = "allowQueries";
     private static final String MAX_RUNNING_THREADS = "maxRunningThreads";
     private static final String MAX_QUEUED_TASKS = "maxQueuedTasks";
-    private static final String SUPPRESS_NULL_VALUES = "suppressNullValues";
+    private static final String SUPPRESS_EMPTY_NEURAL_NET_RESULTS = "suppressEmptyNeuralNetResults";
     
     // Constants for Query Parameters
     private static final String OPERATION = "operation";
@@ -364,8 +364,8 @@ public class ObjectRecognitionConfigHandler extends Handler<ExtensionServiceMess
         int maxQueuedTasks = MAX_QUEUED_TASKS_DEFAULT;
 
         // First, we'll check the suppressNullValues option
-        if (general.get(SUPPRESS_NULL_VALUES) instanceof Boolean && (Boolean) general.get(SUPPRESS_NULL_VALUES)) {
-            source.suppressNullValues = (Boolean) general.get(SUPPRESS_NULL_VALUES);
+        if (general.get(SUPPRESS_EMPTY_NEURAL_NET_RESULTS) instanceof Boolean && (Boolean) general.get(SUPPRESS_EMPTY_NEURAL_NET_RESULTS)) {
+            source.suppressNullValues = (Boolean) general.get(SUPPRESS_EMPTY_NEURAL_NET_RESULTS);
         }
 
         // Next, we'll check the parallel image processing options
