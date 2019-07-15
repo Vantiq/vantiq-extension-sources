@@ -68,7 +68,7 @@ public class ObjectRecognitionCore {
     
     public String outputDir;
     public String lastQueryFilename;
-    public Boolean suppressNullValues = false;
+    public Boolean suppressEmptyNeuralNetResults = false;
     
     final Logger log;
     final static int    RECONNECT_INTERVAL = 5000;
@@ -331,7 +331,7 @@ public class ObjectRecognitionCore {
                 Map message = createMapFromResults(imageResults, results);
 
                 // If suppressNullValues is set to true, then skip sending message results list is empty
-                if (suppressNullValues) {
+                if (suppressEmptyNeuralNetResults) {
                     if (message.get("results") instanceof List && ((List) message.get("results")).size() == 0) {
                         return;
                     }

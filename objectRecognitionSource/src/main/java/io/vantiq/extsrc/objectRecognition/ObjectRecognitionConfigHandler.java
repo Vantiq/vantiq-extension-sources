@@ -365,7 +365,7 @@ public class ObjectRecognitionConfigHandler extends Handler<ExtensionServiceMess
 
         // First, we'll check the suppressNullValues option
         if (general.get(SUPPRESS_EMPTY_NEURAL_NET_RESULTS) instanceof Boolean && (Boolean) general.get(SUPPRESS_EMPTY_NEURAL_NET_RESULTS)) {
-            source.suppressNullValues = (Boolean) general.get(SUPPRESS_EMPTY_NEURAL_NET_RESULTS);
+            source.suppressEmptyNeuralNetResults = (Boolean) general.get(SUPPRESS_EMPTY_NEURAL_NET_RESULTS);
         }
 
         // Next, we'll check the parallel image processing options
