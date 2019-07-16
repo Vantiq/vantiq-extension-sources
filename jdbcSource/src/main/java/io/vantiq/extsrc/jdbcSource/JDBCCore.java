@@ -199,15 +199,15 @@ public class JDBCCore {
             if (request.get("query") instanceof String) {
                 String queryString = (String) request.get("query");
                 // Check if SQL Query is an update statement, or query statement
-                if (!queryString.trim().toLowerCase().startsWith(SELECT_STATEMENT_IDENTIFIER)) {
+                if (queryString.trim().toLowerCase().startsWith(SELECT_STATEMENT_IDENTIFIER)) {
+                    HashMap[] queryArray = localJDBC.processQuery(queryString);
+                    sendDataFromQuery(queryArray, message);
+                } else {
                     int data = localJDBC.processPublish(queryString);
                     log.trace("The returned integer value from Publish Query is the following: ", data);
 
                     // Send empty response back
                     client.sendQueryResponse(204, replyAddress, new LinkedHashMap<>());
-                } else {
-                    HashMap[] queryArray = localJDBC.processQuery(queryString);
-                    sendDataFromQuery(queryArray, message);
                 }
             } else if (request.get("query") instanceof List) {
                 List queryArray = (List) request.get("query");
