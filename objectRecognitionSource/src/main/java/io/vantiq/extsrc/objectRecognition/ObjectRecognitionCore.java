@@ -74,13 +74,14 @@ public class ObjectRecognitionCore {
     final static int    RECONNECT_INTERVAL = 5000;
 
     // Constants for Query Parameters
-    private static final String IMAGE_NAME = "imageName";
-    private static final String IMAGE_DATE = "imageDate";
-    private static final String SAVED_RESOLUTION = "savedResolution";
-    private static final String LONG_EDGE = "longEdge";
-    private static final String UPLOAD = "upload";
-    private static final String DELETE = "delete";
-    private static final String FILTER = "filter";
+    private static final String IMAGE_NAME          = "imageName";
+    private static final String IMAGE_DATE          = "imageDate";
+    private static final String SAVED_RESOLUTION    = "savedResolution";
+    private static final String LONG_EDGE           = "longEdge";
+    private static final String UPLOAD              = "upload";
+    private static final String DELETE              = "delete";
+    private static final String FILTER              = "filter";
+    private static final String UPLOAD_AS_IMAGE     = "uploadAsImage";
 
     /**
      * Stops sending messages to the source and tries to reconnect, closing on a failure

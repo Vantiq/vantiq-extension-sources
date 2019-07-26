@@ -30,10 +30,14 @@ public class ImageUtil {
     public int frameSize;
     public Boolean queryResize = false;
     public int longEdge = 0;
+    public Boolean uploadAsImage = false;
+
+    // Used to upload image to VANTIQ as VANTIQ Image
+    final static String IMAGE_RESOURCE_PATH = "/resources/images";
 
     /**
      * Label image with classes and predictions given by the TensorFLow YOLO Implementation
-     * @param image         buffered image to label
+     * @param bufferedImage         buffered image to label
      * @param recognitions  list of recognized objects
      */
     public BufferedImage labelImage(BufferedImage bufferedImage, final List<Recognition> recognitions) {
@@ -124,24 +128,55 @@ public class ImageUtil {
      * @param target        The name of the file to be uploaded.
      */
     public void uploadToVantiq(File fileToUpload, String target) {
-        vantiq.upload(fileToUpload, 
-                "image/jpeg", 
-                "objectRecognition/" + sourceName + '/'  + target,
-                new BaseResponseHandler() {
-                    @Override public void onSuccess(Object body, Response response) {
-                        super.onSuccess(body, response);
-                        LOGGER.trace("Content Location = " + this.getBodyAsJsonObject().get("content"));
-                        
-                        if (outputDir == null) {
-                            deleteImage(fileToUpload);
-                        }
-                    }
-                    
-                    @Override public void onError(List<VantiqError> errors, Response response) {
-                        super.onError(errors, response);
-                        LOGGER.error("Errors uploading image with VANTIQ SDK: " + errors);
-                    }
-        });
+        // Create the response handler for either upload option
+        BaseResponseHandler responseHandler = new BaseResponseHandler() {
+            @Override public void onSuccess(Object body, Response response) {
+                super.onSuccess(body, response);
+                LOGGER.trace("Content Location = " + this.getBodyAsJsonObject().get("content"));
+
+                if (outputDir == null) {
+                    deleteImage(fileToUpload);
+                }
+            }
+
+            @Override public void onError(List<VantiqError> errors, Response response) {
+                super.onError(errors, response);
+                LOGGER.error("Errors uploading image with VANTIQ SDK: " + errors);
+            }
+        };
+
+        // Check if we should upload as a document, or image
+        if (uploadAsImage) {
+            vantiq.upload(fileToUpload,
+                    "image/jpeg",
+                    "objectRecognition/" + sourceName + '/'  + target,
+                    IMAGE_RESOURCE_PATH,
+                    responseHandler);
+        } else {
+            vantiq.upload(fileToUpload,
+                    "image/jpeg",
+                    "objectRecognition/" + sourceName + '/'  + target,
+                    responseHandler);
+        }
+
+//        vantiq.upload(fileToUpload,
+//                "image/jpeg",
+//                "objectRecognition/" + sourceName + '/'  + target,
+//                new BaseResponseHandler() {
+//                    @Override public void onSuccess(Object body, Response response) {
+//                        super.onSuccess(body, response);
+//                        LOGGER.trace("Content Location = " + this.getBodyAsJsonObject().get("content"));
+//
+//                        if (outputDir == null) {
+//                            deleteImage(fileToUpload);
+//                        }
+//                    }
+//
+//                    @Override public void onError(List<VantiqError> errors, Response response) {
+//                        super.onError(errors, response);
+//                        LOGGER.error("Errors uploading image with VANTIQ SDK: " + errors);
+//                    }
+//        });
     }
     
     /**
