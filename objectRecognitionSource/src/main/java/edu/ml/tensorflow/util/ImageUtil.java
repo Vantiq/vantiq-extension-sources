@@ -37,7 +37,7 @@ public class ImageUtil {
 
     /**
      * Label image with classes and predictions given by the TensorFLow YOLO Implementation
-     * @param bufferedImage         buffered image to label
+     * @param bufferedImage buffered image to label
      * @param recognitions  list of recognized objects
      */
     public BufferedImage labelImage(BufferedImage bufferedImage, final List<Recognition> recognitions) {
@@ -158,25 +158,6 @@ public class ImageUtil {
                     "objectRecognition/" + sourceName + '/'  + target,
                     responseHandler);
         }
-
-//        vantiq.upload(fileToUpload,
-//                "image/jpeg",
-//                "objectRecognition/" + sourceName + '/'  + target,
-//                new BaseResponseHandler() {
-//                    @Override public void onSuccess(Object body, Response response) {
-//                        super.onSuccess(body, response);
-//                        LOGGER.trace("Content Location = " + this.getBodyAsJsonObject().get("content"));
-//
-//                        if (outputDir == null) {
-//                            deleteImage(fileToUpload);
-//                        }
-//                    }
-//
-//                    @Override public void onError(List<VantiqError> errors, Response response) {
-//                        super.onError(errors, response);
-//                        LOGGER.error("Errors uploading image with VANTIQ SDK: " + errors);
-//                    }
-//        });
     }
     
     /**
