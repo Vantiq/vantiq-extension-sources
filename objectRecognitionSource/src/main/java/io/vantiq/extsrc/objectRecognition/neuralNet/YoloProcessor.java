@@ -370,6 +370,7 @@ public class YoloProcessor extends NeuralNetUtils implements NeuralNetInterface2
         String outputDir = null;
         String fileName = null;
         Vantiq vantiq = null;
+        boolean uploadAsImage = false;
 
         Date timestamp;
         if (processingParams != null && processingParams.get(IMAGE_TIMESTAMP) instanceof Date) {
@@ -387,6 +388,11 @@ public class YoloProcessor extends NeuralNetUtils implements NeuralNetInterface2
                 if (saveImage.equalsIgnoreCase(VANTIQ) || saveImage.equalsIgnoreCase(BOTH)) {
                     vantiq = new io.vantiq.client.Vantiq(server);
                     vantiq.setAccessToken(authToken);
+
+                    // Check if images should be uploaded to VANTIQ as VANTIQ IMAGES
+                    if (request.get(UPLOAD_AS_IMAGE) instanceof Boolean && (Boolean) request.get(UPLOAD_AS_IMAGE)) {
+                        uploadAsImage = (Boolean) request.get(UPLOAD_AS_IMAGE);
+                    }
                 }
                 if (!saveImage.equalsIgnoreCase(VANTIQ)) {
                     if (request.get(NN_OUTPUT_DIR) instanceof String) {
@@ -438,7 +444,7 @@ public class YoloProcessor extends NeuralNetUtils implements NeuralNetInterface2
         long after;
         long before = System.currentTimeMillis();
         try {
-            foundObjects = objectDetector.detect(image, outputDir, fileName, vantiq);
+            foundObjects = objectDetector.detect(image, outputDir, fileName, vantiq, uploadAsImage);
         } catch (IllegalArgumentException e) {
             throw new ImageProcessingException(this.getClass().getCanonicalName() + ".queryInvalidImage: " 
                     + "Data to be processed was invalid. Most likely it was not correctly encoded as a jpg.", e);
