@@ -90,32 +90,32 @@ public class YoloProcessor extends NeuralNetUtils implements NeuralNetInterface2
     ObjectDetector objectDetector = null;
     
     // Constants for Source Configuration options
-    private static final String CROP_BEFORE         = "cropBeforeAnalysis";
-    private static final String X                   = "x";
-    private static final String Y                   = "y";
-    private static final String WIDTH               = "width";
-    private static final String HEIGHT              = "height";
-    private static final String META_FILE           = "metaFile";
-    private static final String LABEL_FILE          = "labelFile";
-    private static final String PB_FILE             = "pbFile";
-    private static final String THRESHOLD           = "threshold";
-    private static final String ANCHORS             = "anchors";
-    private static final String SAVE_IMAGE          = "saveImage";
-    private static final String BOTH                = "both";
-    private static final String LOCAL               = "local";
-    private static final String VANTIQ              = "vantiq";
-    private static final String OUTPUT_DIR          = "outputDir";
-    private static final String LABEL_IMAGE         = "labelImage";
-    private static final String SAVE_RATE           = "saveRate";
-    private static final String SAVED_RESOLUTION    = "savedResolution";
-    private static final String LONG_EDGE           = "longEdge";
-    private static final String UPLOAD_AS_IMAGE     = "uploadAsImage";
+    private static final String CROP_BEFORE = "cropBeforeAnalysis";
+    private static final String X = "x";
+    private static final String Y = "y";
+    private static final String WIDTH = "width";
+    private static final String HEIGHT = "height";
+    private static final String META_FILE = "metaFile";
+    private static final String LABEL_FILE = "labelFile";
+    private static final String PB_FILE = "pbFile";
+    private static final String THRESHOLD = "threshold";
+    private static final String ANCHORS = "anchors";
+    private static final String SAVE_IMAGE = "saveImage";
+    private static final String BOTH = "both";
+    private static final String LOCAL = "local";
+    private static final String VANTIQ = "vantiq";
+    private static final String OUTPUT_DIR = "outputDir";
+    private static final String LABEL_IMAGE = "labelImage";
+    private static final String SAVE_RATE = "saveRate";
+    private static final String SAVED_RESOLUTION = "savedResolution";
+    private static final String LONG_EDGE = "longEdge";
+    private static final String UPLOAD_AS_IMAGE = "uploadAsImage";
 
 
     // Constants for Query Parameter options
-    private static final String NN_OUTPUT_DIR   = "NNoutputDir";
-    private static final String NN_FILENAME     = "NNfileName";
-    private static final String NN_SAVE_IMAGE   = "NNsaveImage";
+    private static final String NN_OUTPUT_DIR = "NNoutputDir";
+    private static final String NN_FILENAME = "NNfileName";
+    private static final String NN_SAVE_IMAGE = "NNsaveImage";
 
     private static SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd--HH-mm-ss");
 

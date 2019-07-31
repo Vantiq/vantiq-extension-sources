@@ -25,18 +25,18 @@ import io.vantiq.extsrc.objectRecognition.exception.ImageProcessingException;
 public class NoProcessor implements NeuralNetInterface {
 
     // Constants for Source Configuration options
-    private static final String SAVE_IMAGE          = "saveImage";
-    private static final String BOTH                = "both";
-    private static final String LOCAL               = "local";
-    private static final String VANTIQ              = "vantiq";
-    private static final String OUTPUT_DIR          = "outputDir";
-    private static final String SAVE_RATE           = "saveRate";
-    private static final String UPLOAD_AS_IMAGE     = "uploadAsImage";
+    private static final String SAVE_IMAGE = "saveImage";
+    private static final String BOTH = "both";
+    private static final String LOCAL = "local";
+    private static final String VANTIQ = "vantiq";
+    private static final String OUTPUT_DIR = "outputDir";
+    private static final String SAVE_RATE = "saveRate";
+    private static final String UPLOAD_AS_IMAGE = "uploadAsImage";
 
     // Constants for Query Parameter options
-    private static final String NN_OUTPUT_DIR   = "NNoutputDir";
-    private static final String NN_FILENAME     = "NNfileName";
-    private static final String NN_SAVE_IMAGE   = "NNsaveImage";
+    private static final String NN_OUTPUT_DIR = "NNoutputDir";
+    private static final String NN_FILENAME = "NNfileName";
+    private static final String NN_SAVE_IMAGE = "NNsaveImage";
     
     // This will be used to create
     // "year-month-date-hour-minute-seconds"

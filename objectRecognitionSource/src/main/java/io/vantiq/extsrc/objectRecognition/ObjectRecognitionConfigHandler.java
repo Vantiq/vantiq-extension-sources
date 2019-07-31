@@ -72,31 +72,31 @@ public class ObjectRecognitionConfigHandler extends Handler<ExtensionServiceMess
     boolean                 configComplete = false;
     
     // Constants for Source Configuration
-    private static final String CONFIG                              = "config";
-    private static final String OBJ_REC_CONFIG                      = "objRecConfig";
-    private static final String GENERAL                             = "general";
-    private static final String DATA_SOURCE                         = "dataSource";
-    private static final String FILE                                = "file";
-    private static final String CAMERA                              = "camera";
-    private static final String NETWORK                             = "network";
-    private static final String FTP                                 = "ftp";
-    private static final String NEURAL_NET                          = "neuralNet";
-    private static final String YOLO                                = "yolo";
-    private static final String NONE                                = "none";
-    private static final String DEFAULT                             = "default";
-    private static final String TEST                                = "test";
-    private static final String POLL_TIME                           = "pollTime";
-    private static final String POLL_RATE                           = "pollRate";
-    private static final String ALLOW_QUERIES                       = "allowQueries";
-    private static final String MAX_RUNNING_THREADS                 = "maxRunningThreads";
-    private static final String MAX_QUEUED_TASKS                    = "maxQueuedTasks";
-    private static final String SUPPRESS_EMPTY_NEURAL_NET_RESULTS   = "suppressEmptyNeuralNetResults";
+    private static final String CONFIG = "config";
+    private static final String OBJ_REC_CONFIG = "objRecConfig";
+    private static final String GENERAL = "general";
+    private static final String DATA_SOURCE = "dataSource";
+    private static final String FILE = "file";
+    private static final String CAMERA = "camera";
+    private static final String NETWORK = "network";
+    private static final String FTP = "ftp";
+    private static final String NEURAL_NET = "neuralNet";
+    private static final String YOLO = "yolo";
+    private static final String NONE = "none";
+    private static final String DEFAULT = "default";
+    private static final String TEST = "test";
+    private static final String POLL_TIME = "pollTime";
+    private static final String POLL_RATE = "pollRate";
+    private static final String ALLOW_QUERIES = "allowQueries";
+    private static final String MAX_RUNNING_THREADS = "maxRunningThreads";
+    private static final String MAX_QUEUED_TASKS = "maxQueuedTasks";
+    private static final String SUPPRESS_EMPTY_NEURAL_NET_RESULTS = "suppressEmptyNeuralNetResults";
 
     // Constants for Query Parameters
-    private static final String OPERATION           = "operation";
-    private static final String PROCESS_NEXT_FRAME  = "processnextframe";
-    private static final String UPLOAD              = "upload";
-    private static final String DELETE              = "delete";
+    private static final String OPERATION = "operation";
+    private static final String PROCESS_NEXT_FRAME = "processnextframe";
+    private static final String UPLOAD = "upload";
+    private static final String DELETE = "delete";
     
     Map<String, ?> lastDataSource = null;
     Map<String, ?> lastNeuralNet = null;
