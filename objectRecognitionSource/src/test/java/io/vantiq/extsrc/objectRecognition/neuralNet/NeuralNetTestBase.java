@@ -28,6 +28,8 @@ public class NeuralNetTestBase extends ObjRecTestBase {
     public static final String MODEL_DIRECTORY = System.getProperty("buildDir") + "/models";
     public static final String SOURCE_NAME = "testSourceName";
 
+    static final String VANTIQ_DOCUMENTS = "system.documents";
+    static final String VANTIQ_IMAGES = "system.images";
     static final String NOT_FOUND_CODE = "io.vantiq.resource.not.found";
     static final int WAIT_FOR_ASYNC_MILLIS = 5000;
 
@@ -41,13 +43,13 @@ public class NeuralNetTestBase extends ObjRecTestBase {
         }
     }
 
-    public static void checkUploadToVantiq(String name, Vantiq vantiq) throws InterruptedException {
+    public static void checkUploadToVantiq(String name, Vantiq vantiq, String resourceName) throws InterruptedException {
         boolean done = false;
         int retries = 0;
         int maxRetries = WAIT_FOR_ASYNC_MILLIS / 50;
         while (!done) {
             done = true;
-            VantiqResponse vantiqResponse = vantiq.selectOne("system.documents", name);
+            VantiqResponse vantiqResponse = vantiq.selectOne(resourceName, name);
             if (vantiqResponse.hasErrors()) {
                 if (++retries < maxRetries) {
                     done = false;
@@ -64,13 +66,13 @@ public class NeuralNetTestBase extends ObjRecTestBase {
         }
     }
 
-    public static void checkNotUploadToVantiq(String name, Vantiq vantiq) throws InterruptedException {
+    public static void checkNotUploadToVantiq(String name, Vantiq vantiq, String resourceName) throws InterruptedException {
         boolean done = false;
         int retries = 0;
         int maxRetries = WAIT_FOR_ASYNC_MILLIS / 50;
         while (!done) {
             done = true;
-            VantiqResponse vantiqResponse = vantiq.selectOne("system.documents", name);
+            VantiqResponse vantiqResponse = vantiq.selectOne(resourceName, name);
             if (vantiqResponse.isSuccess()) {
                 if (++retries < maxRetries) {
                     done = false;

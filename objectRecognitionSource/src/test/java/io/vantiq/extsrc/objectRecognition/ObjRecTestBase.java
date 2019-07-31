@@ -67,15 +67,4 @@ public class ObjRecTestBase {
             throw new RuntimeException("Error deleting directory " + d.getAbsolutePath(), e);
         }
     }
-    
-    public static boolean checkUrl(String url) {
-        try {
-            URL urlProtocolTest = new URL((String) url);
-            InputStream urlReadTest = urlProtocolTest.openStream();
-            urlReadTest.close();
-        } catch (IOException e) {
-            return false;
-        }
-        return true;
-    }
 }

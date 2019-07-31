@@ -42,6 +42,7 @@ public class TestNoProcessor extends NeuralNetTestBase {
     static VantiqResponse vantiqResponse;
 
     static List<String> vantiqSavedFiles = new ArrayList<>();
+    static List<String> vantiqSavedImageFiles = new ArrayList<>();
 
     static final String timestampPattern = "\\d{4}-\\d{2}-\\d{2}--\\d{2}-\\d{2}-\\d{2}\\.jpg";
     static final String sameTimestampPattern = "\\d{4}-\\d{2}-\\d{2}--\\d{2}-\\d{2}-\\d{2}\\(\\d+\\)\\.jpg";
@@ -60,9 +61,10 @@ public class TestNoProcessor extends NeuralNetTestBase {
 
     @AfterClass
     public static void deleteFromVantiq() throws InterruptedException {
+        // Deleting files saved as documents
         for (int i = 0; i < vantiqSavedFiles.size(); i++) {
             Thread.sleep(1000);
-            vantiq.deleteOne("system.documents", vantiqSavedFiles.get(i), new BaseResponseHandler() {
+            vantiq.deleteOne(VANTIQ_DOCUMENTS, vantiqSavedFiles.get(i), new BaseResponseHandler() {
 
                 @Override
                 public void onSuccess(Object body, Response response) {
@@ -76,6 +78,24 @@ public class TestNoProcessor extends NeuralNetTestBase {
 
             });
         }
+        // Deleting files saved as images
+        for (int i = 0; i < vantiqSavedImageFiles.size(); i++) {
+            Thread.sleep(1000);
+            vantiq.deleteOne(VANTIQ_IMAGES, vantiqSavedImageFiles.get(i), new BaseResponseHandler() {
+
+                @Override
+                public void onSuccess(Object body, Response response) {
+                    super.onSuccess(body, response);
+                }
+
+                @Override
+                public void onError(List<VantiqError> errors, Response response) {
+                    super.onError(errors, response);
+                }
+
+            });
+        }
+
     }
 
     @AfterClass
@@ -165,7 +185,7 @@ public class TestNoProcessor extends NeuralNetTestBase {
 
             // Check it didn't save to VANTIQ
             lastFilename = "objectRecognition/" + SOURCE_NAME + '/' + npProcessor.lastFilename;
-            checkNotUploadToVantiq(lastFilename, vantiq);
+            checkNotUploadToVantiq(lastFilename, vantiq, VANTIQ_DOCUMENTS);
 
             results = null;
             results = npProcessor.processImage(getTestImage());
@@ -190,7 +210,7 @@ public class TestNoProcessor extends NeuralNetTestBase {
 
             // Check it didn't save to VANTIQ
             lastFilename = "objectRecognition/" + SOURCE_NAME + '/' + npProcessor.lastFilename;
-            checkNotUploadToVantiq(lastFilename, vantiq);
+            checkNotUploadToVantiq(lastFilename, vantiq, VANTIQ_DOCUMENTS);
 
         } finally {
             // delete the directory even if the test fails
@@ -237,7 +257,7 @@ public class TestNoProcessor extends NeuralNetTestBase {
             // Checking that image was saved to VANTIQ
             Thread.sleep(1000);
             lastFilename = "objectRecognition/" + SOURCE_NAME + '/' + npProcessor.lastFilename;
-            checkUploadToVantiq(lastFilename, vantiq);
+            checkUploadToVantiq(lastFilename, vantiq, VANTIQ_DOCUMENTS);
             vantiqSavedFiles.add(lastFilename);
 
             results = null;
@@ -263,7 +283,7 @@ public class TestNoProcessor extends NeuralNetTestBase {
             // Checking that image was saved to VANTIQ
             Thread.sleep(1000);
             lastFilename = "objectRecognition/" + SOURCE_NAME + '/' + npProcessor.lastFilename;
-            checkUploadToVantiq(lastFilename, vantiq);
+            checkUploadToVantiq(lastFilename, vantiq, VANTIQ_DOCUMENTS);
             vantiqSavedFiles.add(lastFilename);
 
         } finally {
@@ -309,7 +329,7 @@ public class TestNoProcessor extends NeuralNetTestBase {
             // Checking that image was saved to VANTIQ
             Thread.sleep(1000);
             lastFilename = "objectRecognition/" + SOURCE_NAME + '/' + npProcessor.lastFilename;
-            checkUploadToVantiq(lastFilename, vantiq);
+            checkUploadToVantiq(lastFilename, vantiq, VANTIQ_DOCUMENTS);
             vantiqSavedFiles.add(lastFilename);
 
         } finally {
@@ -380,7 +400,7 @@ public class TestNoProcessor extends NeuralNetTestBase {
             // Checking that image was saved in VANTIQ
             Thread.sleep(1000);
             lastFilename = "objectRecognition/" + SOURCE_NAME + '/' + npProcessor.lastFilename;
-            checkUploadToVantiq(lastFilename, vantiq);
+            checkUploadToVantiq(lastFilename, vantiq, VANTIQ_DOCUMENTS);
             vantiqSavedFiles.add(lastFilename);
 
             request.put("NNsaveImage", "both");
@@ -399,7 +419,7 @@ public class TestNoProcessor extends NeuralNetTestBase {
             // Checking that image was saved in VANTIQ
             Thread.sleep(1000);
             lastFilename = "objectRecognition/" + SOURCE_NAME + '/' + npProcessor.lastFilename;
-            checkUploadToVantiq(lastFilename, vantiq);
+            checkUploadToVantiq(lastFilename, vantiq, VANTIQ_DOCUMENTS);
             vantiqSavedFiles.add(lastFilename);
 
             // Save with "local" instead of "both", and remove fileName
@@ -426,7 +446,7 @@ public class TestNoProcessor extends NeuralNetTestBase {
             // Checking that image was not saved in VANTIQ
             Thread.sleep(1000);
             lastFilename = "objectRecognition/" + SOURCE_NAME + '/' + npProcessor.lastFilename;
-            checkNotUploadToVantiq(lastFilename, vantiq);
+            checkNotUploadToVantiq(lastFilename, vantiq, VANTIQ_DOCUMENTS);
 
             queryOutputFile += ".jpeg";
             request.put("NNfileName", queryOutputFile);
@@ -443,6 +463,53 @@ public class TestNoProcessor extends NeuralNetTestBase {
             }
             if (dNew.exists()) {
                 deleteDirectory(queryOutputDir);
+            }
+
+            npProcessor.close();
+        }
+    }
+
+    @Test
+    public void testUploadAsImage() throws ImageProcessingException, InterruptedException {
+        // Only run test with intended vantiq availability
+        assumeTrue(testAuthToken != null && testVantiqServer != null);
+
+        String lastFilename;
+        Map config = new LinkedHashMap<>();
+        NoProcessor npProcessor = new NoProcessor();
+
+        config.put("outputDir", OUTPUT_DIR);
+        config.put("saveRate", SAVE_RATE);
+        config.put("saveImage", "vantiq");
+        config.put("uploadAsImage", true);
+        npProcessor.setupImageProcessing(config, SOURCE_NAME, MODEL_DIRECTORY, testAuthToken, testVantiqServer);
+
+        File d = new File(OUTPUT_DIR);
+        try {
+            // Ensure no results from previous tests
+            if (d.exists()) {
+                deleteDirectory(OUTPUT_DIR);
+            }
+
+            NeuralNetResults results = npProcessor.processImage(getTestImage());
+            assert results.getResults() == null;
+
+            // Should not exist since images are not being saved locally.
+            assert !d.exists();
+
+            // Checking that image was saved to VANTIQ as an image
+            Thread.sleep(1000);
+            lastFilename = "objectRecognition/" + SOURCE_NAME + '/' + npProcessor.lastFilename;
+            checkUploadToVantiq(lastFilename, vantiq, VANTIQ_IMAGES);
+            vantiqSavedImageFiles.add(lastFilename);
+
+            // Checking that image was not saved to VANTIQ as a document
+            checkNotUploadToVantiq(lastFilename, vantiq, VANTIQ_DOCUMENTS);
+
+        } finally {
+            // delete the directory even if the test fails
+            if (d.exists()) {
+                deleteDirectory(OUTPUT_DIR);
             }
 
             npProcessor.close();

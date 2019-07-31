@@ -93,6 +93,7 @@ public class TestYoloProcessor extends NeuralNetTestBase {
     static VantiqResponse vantiqResponse;
 
     static List<String> vantiqSavedFiles = new ArrayList<>();
+    static List<String> vantiqSavedImageFiles = new ArrayList<>();
 
     static final String timestampPattern = "\\d{4}-\\d{2}-\\d{2}--\\d{2}-\\d{2}-\\d{2}\\.jpg";
 
@@ -116,9 +117,27 @@ public class TestYoloProcessor extends NeuralNetTestBase {
 
     @AfterClass
     public static void deleteFromVantiq() throws InterruptedException {
+        // Deleting files saved as documents
         for (int i = 0; i < vantiqSavedFiles.size(); i++) {
             Thread.sleep(1000);
-            vantiq.deleteOne("system.documents", vantiqSavedFiles.get(i), new BaseResponseHandler() {
+            vantiq.deleteOne(VANTIQ_DOCUMENTS, vantiqSavedFiles.get(i), new BaseResponseHandler() {
+
+                @Override
+                public void onSuccess(Object body, Response response) {
+                    super.onSuccess(body, response);
+                }
+
+                @Override
+                public void onError(List<VantiqError> errors, Response response) {
+                    super.onError(errors, response);
+                }
+
+            });
+        }
+        // Deleting files saved as images
+        for (int i = 0; i < vantiqSavedImageFiles.size(); i++) {
+            Thread.sleep(1000);
+            vantiq.deleteOne(VANTIQ_IMAGES, vantiqSavedImageFiles.get(i), new BaseResponseHandler() {
 
                 @Override
                 public void onSuccess(Object body, Response response) {
@@ -731,7 +750,7 @@ public class TestYoloProcessor extends NeuralNetTestBase {
             
             // Checking that image was saved to VANTIQ
             Thread.sleep(1000);
-            checkUploadToVantiq(results.getLastFilename(), vantiq);
+            checkUploadToVantiq(results.getLastFilename(), vantiq, VANTIQ_DOCUMENTS);
             vantiqSavedFiles.add(results.getLastFilename());
             
             // Get the path to the saved image in VANTIQ
@@ -803,7 +822,7 @@ public class TestYoloProcessor extends NeuralNetTestBase {
             
             // Checking that image was saved to VANTIQ
             Thread.sleep(2000);
-            checkUploadToVantiq(results.getLastFilename(), vantiq);
+            checkUploadToVantiq(results.getLastFilename(), vantiq, VANTIQ_DOCUMENTS);
             vantiqSavedFiles.add(results.getLastFilename());
             
             // Get the path to the saved image in VANTIQ
@@ -869,7 +888,7 @@ public class TestYoloProcessor extends NeuralNetTestBase {
             assert d.listFiles()[0].getName().matches(timestampPattern);
 
             // Check it didn't save to VANTIQ
-            checkNotUploadToVantiq(results.getLastFilename(), vantiq);
+            checkNotUploadToVantiq(results.getLastFilename(), vantiq, VANTIQ_DOCUMENTS);
 
             results = null;
             results = ypImageSaver.processImage(getTestImage());
@@ -897,7 +916,7 @@ public class TestYoloProcessor extends NeuralNetTestBase {
             assert d.listFiles()[1].getName().matches(timestampPattern);
 
             // Check it didn't save to VANTIQ
-            checkNotUploadToVantiq(results.getLastFilename(), vantiq);
+            checkNotUploadToVantiq(results.getLastFilename(), vantiq, VANTIQ_DOCUMENTS);
 
         } finally {
             // delete the directory even if the test fails
@@ -949,7 +968,7 @@ public class TestYoloProcessor extends NeuralNetTestBase {
 
             // Checking that image was saved to VANTIQ
             Thread.sleep(1000);
-            checkUploadToVantiq(results.getLastFilename(), vantiq);
+            checkUploadToVantiq(results.getLastFilename(), vantiq, VANTIQ_DOCUMENTS);
             vantiqSavedFiles.add(results.getLastFilename());
 
             results = null;
@@ -976,7 +995,7 @@ public class TestYoloProcessor extends NeuralNetTestBase {
 
             // Checking that image was saved to VANTIQ
             Thread.sleep(1000);
-            checkUploadToVantiq(results.getLastFilename(), vantiq);
+            checkUploadToVantiq(results.getLastFilename(), vantiq, VANTIQ_DOCUMENTS);
             vantiqSavedFiles.add(results.getLastFilename());
 
         } finally {
@@ -1028,7 +1047,7 @@ public class TestYoloProcessor extends NeuralNetTestBase {
 
             // Checking that image was saved to VANTIQ
             Thread.sleep(1000);
-            checkUploadToVantiq(results.getLastFilename(), vantiq);
+            checkUploadToVantiq(results.getLastFilename(), vantiq, VANTIQ_DOCUMENTS);
             vantiqSavedFiles.add(results.getLastFilename());
 
         } finally {
@@ -1106,7 +1125,7 @@ public class TestYoloProcessor extends NeuralNetTestBase {
 
             // Checking that image was saved in VANTIQ
             Thread.sleep(1000);
-            checkUploadToVantiq(results.getLastFilename(), vantiq);
+            checkUploadToVantiq(results.getLastFilename(), vantiq, VANTIQ_DOCUMENTS);
             vantiqSavedFiles.add(results.getLastFilename());
 
             request.put("NNsaveImage", "both");
@@ -1125,7 +1144,7 @@ public class TestYoloProcessor extends NeuralNetTestBase {
 
             // Checking that image was saved in VANTIQ
             Thread.sleep(1000);
-            checkUploadToVantiq(results.getLastFilename(), vantiq);
+            checkUploadToVantiq(results.getLastFilename(), vantiq, VANTIQ_DOCUMENTS);
             vantiqSavedFiles.add(results.getLastFilename());
 
             // Save with "local" instead of "both", and remove fileName
@@ -1152,7 +1171,7 @@ public class TestYoloProcessor extends NeuralNetTestBase {
 
             // Checking that image was not saved in VANTIQ
             Thread.sleep(1000);
-            checkNotUploadToVantiq(results.getLastFilename(), vantiq);
+            checkNotUploadToVantiq(results.getLastFilename(), vantiq, VANTIQ_DOCUMENTS);
 
             queryOutputFile += ".jpeg";
             request.put("NNfileName", queryOutputFile);
@@ -1419,7 +1438,7 @@ public class TestYoloProcessor extends NeuralNetTestBase {
             
             // Checking that image was saved to VANTIQ
             Thread.sleep(1000);
-            checkUploadToVantiq(results.getLastFilename(), vantiq);
+            checkUploadToVantiq(results.getLastFilename(), vantiq, VANTIQ_DOCUMENTS);
             vantiqSavedFiles.add(results.getLastFilename());
             
             // Get the path to the saved image in VANTIQ
@@ -1494,7 +1513,7 @@ public class TestYoloProcessor extends NeuralNetTestBase {
             
             // Checking that image was saved to VANTIQ
             Thread.sleep(2000);
-            checkUploadToVantiq(results.getLastFilename(), vantiq);
+            checkUploadToVantiq(results.getLastFilename(), vantiq, VANTIQ_DOCUMENTS);
             vantiqSavedFiles.add(results.getLastFilename());
             
             // Get the path to the saved image in VANTIQ
@@ -1738,6 +1757,42 @@ public class TestYoloProcessor extends NeuralNetTestBase {
         deleteSource(vantiq);
         deleteType(vantiq);
         deleteRule(vantiq);
+    }
+
+    @Test
+    public void testUploadAsVantiqImage() throws ImageProcessingException, InterruptedException {
+        // Only run test with intended vantiq availability
+        assumeTrue(testAuthToken != null && testVantiqServer != null);
+
+        Map config = new LinkedHashMap<>();
+        Map preCrop = new LinkedHashMap<>();
+        YoloProcessor ypImageSaver = new YoloProcessor();
+
+        config.put("pbFile", PB_FILE);
+        config.put("metaFile", META_FILE);
+        config.put("outputDir", OUTPUT_DIR);
+        config.put("saveRate", SAVE_RATE);
+        config.put("saveImage", "vantiq");
+        config.put("uploadAsImage", true);
+        try {
+            ypImageSaver.setupImageProcessing(config, SOURCE_NAME, MODEL_DIRECTORY, testAuthToken, testVantiqServer);
+        } catch (Exception e) {
+            fail("Could not setup the YoloProcessor");
+        }
+        try {
+
+            NeuralNetResults results = ypImageSaver.processImage(getTestImage());
+            assert results != null;
+            assert results.getResults() != null;
+
+            // Checking that image was saved to VANTIQ
+            Thread.sleep(1000);
+            checkUploadToVantiq(results.getLastFilename(), vantiq, VANTIQ_IMAGES);
+            vantiqSavedImageFiles.add(results.getLastFilename());
+
+        } finally {
+            ypImageSaver.close();
+        }
     }
 
     // ================================================= Helper functions =================================================
