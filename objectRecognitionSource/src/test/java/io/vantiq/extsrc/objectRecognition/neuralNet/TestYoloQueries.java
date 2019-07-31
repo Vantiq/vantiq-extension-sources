@@ -245,7 +245,7 @@ public class TestYoloQueries extends NeuralNetTestBase {
         
         // Check that file was saved to Vantiq
         Thread.sleep(1000);
-        checkUploadToVantiq(IMAGE_8.get("filename"), vantiq);
+        checkUploadToVantiq(IMAGE_8.get("filename"), vantiq, VANTIQ_DOCUMENTS);
         
         // Deleting file for next test
         deleteFileFromVantiq(IMAGE_8.get("filename"));
@@ -256,7 +256,7 @@ public class TestYoloQueries extends NeuralNetTestBase {
         
         // Check that file was saved to Vantiq
         Thread.sleep(1000);
-        checkUploadToVantiq(IMAGE_8.get("filename"), vantiq);
+        checkUploadToVantiq(IMAGE_8.get("filename"), vantiq, VANTIQ_DOCUMENTS);
         
         // Deleting file for next test
         deleteFileFromVantiq(IMAGE_8.get("filename"));
@@ -267,7 +267,7 @@ public class TestYoloQueries extends NeuralNetTestBase {
         
         // Check that file was saved to Vantiq
         Thread.sleep(1000);
-        checkUploadToVantiq(core.lastQueryFilename, vantiq);
+        checkUploadToVantiq(core.lastQueryFilename, vantiq, VANTIQ_DOCUMENTS);
         
         deleteFileFromVantiq(core.lastQueryFilename);
         vantiqUploadFiles.add(core.lastQueryFilename);
@@ -301,7 +301,7 @@ public class TestYoloQueries extends NeuralNetTestBase {
         
         // Check that file was saved to Vantiq
         Thread.sleep(1000);
-        checkUploadToVantiq(IMAGE_8.get("filename"), vantiq);
+        checkUploadToVantiq(IMAGE_8.get("filename"), vantiq, VANTIQ_DOCUMENTS);
         
         // Deleting file for next test
         deleteFileFromVantiq(IMAGE_8.get("filename"));
@@ -325,7 +325,7 @@ public class TestYoloQueries extends NeuralNetTestBase {
         
         // Check that file was saved to Vantiq
         Thread.sleep(1000);
-        checkUploadToVantiq(IMAGE_8.get("filename"), vantiq);
+        checkUploadToVantiq(IMAGE_8.get("filename"), vantiq, VANTIQ_DOCUMENTS);
         
         // Deleting file for next test
         deleteFileFromVantiq(IMAGE_8.get("filename"));
@@ -351,7 +351,7 @@ public class TestYoloQueries extends NeuralNetTestBase {
         
         // Check that file was saved to Vantiq
         Thread.sleep(1000);
-        checkUploadToVantiq(core.lastQueryFilename, vantiq);
+        checkUploadToVantiq(core.lastQueryFilename, vantiq, VANTIQ_DOCUMENTS);
         
         deleteFileFromVantiq(core.lastQueryFilename);
         vantiqUploadFiles.add(core.lastQueryFilename);
@@ -374,15 +374,15 @@ public class TestYoloQueries extends NeuralNetTestBase {
         
         // Check the file was uploaded
         Thread.sleep(1000);
-        checkUploadToVantiq(IMAGE_2.get("filename"), vantiq);
+        checkUploadToVantiq(IMAGE_2.get("filename"), vantiq, VANTIQ_DOCUMENTS);
         
         // Checking that none of the other images were uploaded to VANTIQ
-        checkNotUploadToVantiq(IMAGE_1.get("filename"), vantiq);
-        checkNotUploadToVantiq(IMAGE_3.get("filename"), vantiq);
-        checkNotUploadToVantiq(IMAGE_4.get("filename"), vantiq);
-        checkNotUploadToVantiq(IMAGE_5.get("filename"), vantiq);
-        checkNotUploadToVantiq(IMAGE_6.get("filename"), vantiq);
-        checkNotUploadToVantiq(IMAGE_7.get("filename"), vantiq);
+        checkNotUploadToVantiq(IMAGE_1.get("filename"), vantiq, VANTIQ_DOCUMENTS);
+        checkNotUploadToVantiq(IMAGE_3.get("filename"), vantiq, VANTIQ_DOCUMENTS);
+        checkNotUploadToVantiq(IMAGE_4.get("filename"), vantiq, VANTIQ_DOCUMENTS);
+        checkNotUploadToVantiq(IMAGE_5.get("filename"), vantiq, VANTIQ_DOCUMENTS);
+        checkNotUploadToVantiq(IMAGE_6.get("filename"), vantiq, VANTIQ_DOCUMENTS);
+        checkNotUploadToVantiq(IMAGE_7.get("filename"), vantiq, VANTIQ_DOCUMENTS);
     }
     
     @Test
@@ -404,13 +404,13 @@ public class TestYoloQueries extends NeuralNetTestBase {
         
         // Checking that all images were uploaded to VANTIQ
         Thread.sleep(1000);
-        checkUploadToVantiq(IMAGE_1.get("filename"), vantiq);
-        checkUploadToVantiq(IMAGE_2.get("filename"), vantiq);
-        checkUploadToVantiq(IMAGE_3.get("filename"), vantiq);
-        checkUploadToVantiq(IMAGE_4.get("filename"), vantiq);
-        checkUploadToVantiq(IMAGE_5.get("filename"), vantiq);
-        checkUploadToVantiq(IMAGE_6.get("filename"), vantiq);
-        checkUploadToVantiq(IMAGE_7.get("filename"), vantiq);
+        checkUploadToVantiq(IMAGE_1.get("filename"), vantiq, VANTIQ_DOCUMENTS);
+        checkUploadToVantiq(IMAGE_2.get("filename"), vantiq, VANTIQ_DOCUMENTS);
+        checkUploadToVantiq(IMAGE_3.get("filename"), vantiq, VANTIQ_DOCUMENTS);
+        checkUploadToVantiq(IMAGE_4.get("filename"), vantiq, VANTIQ_DOCUMENTS);
+        checkUploadToVantiq(IMAGE_5.get("filename"), vantiq, VANTIQ_DOCUMENTS);
+        checkUploadToVantiq(IMAGE_6.get("filename"), vantiq, VANTIQ_DOCUMENTS);
+        checkUploadToVantiq(IMAGE_7.get("filename"), vantiq, VANTIQ_DOCUMENTS);
     }
     
     @Test
@@ -432,15 +432,15 @@ public class TestYoloQueries extends NeuralNetTestBase {
                         
         // Checking that all images were uploaded to VANTIQ
         Thread.sleep(1000);
-        checkUploadToVantiq(IMAGE_2.get("filename"), vantiq);
+        checkUploadToVantiq(IMAGE_2.get("filename"), vantiq, VANTIQ_DOCUMENTS);
         
         // Checking that none of the other images were uploaded to VANTIQ
-        checkNotUploadToVantiq(IMAGE_1.get("filename"), vantiq);
-        checkNotUploadToVantiq(IMAGE_3.get("filename"), vantiq);
-        checkNotUploadToVantiq(IMAGE_4.get("filename"), vantiq);
-        checkNotUploadToVantiq(IMAGE_5.get("filename"), vantiq);
-        checkNotUploadToVantiq(IMAGE_6.get("filename"), vantiq);
-        checkNotUploadToVantiq(IMAGE_7.get("filename"), vantiq);
+        checkNotUploadToVantiq(IMAGE_1.get("filename"), vantiq, VANTIQ_DOCUMENTS);
+        checkNotUploadToVantiq(IMAGE_3.get("filename"), vantiq, VANTIQ_DOCUMENTS);
+        checkNotUploadToVantiq(IMAGE_4.get("filename"), vantiq, VANTIQ_DOCUMENTS);
+        checkNotUploadToVantiq(IMAGE_5.get("filename"), vantiq, VANTIQ_DOCUMENTS);
+        checkNotUploadToVantiq(IMAGE_6.get("filename"), vantiq, VANTIQ_DOCUMENTS);
+        checkNotUploadToVantiq(IMAGE_7.get("filename"), vantiq, VANTIQ_DOCUMENTS);
     }
     
     @Test
@@ -462,15 +462,15 @@ public class TestYoloQueries extends NeuralNetTestBase {
                 
         // Checking that all images were uploaded to VANTIQ
         Thread.sleep(1000);
-        checkUploadToVantiq(IMAGE_1.get("filename"), vantiq);
-        checkUploadToVantiq(IMAGE_2.get("filename"), vantiq);
+        checkUploadToVantiq(IMAGE_1.get("filename"), vantiq, VANTIQ_DOCUMENTS);
+        checkUploadToVantiq(IMAGE_2.get("filename"), vantiq, VANTIQ_DOCUMENTS);
         
         // Checking that none of the other images were uploaded to VANTIQ
-        checkNotUploadToVantiq(IMAGE_3.get("filename"), vantiq);
-        checkNotUploadToVantiq(IMAGE_4.get("filename"), vantiq);
-        checkNotUploadToVantiq(IMAGE_5.get("filename"), vantiq);
-        checkNotUploadToVantiq(IMAGE_6.get("filename"), vantiq);
-        checkNotUploadToVantiq(IMAGE_7.get("filename"), vantiq);
+        checkNotUploadToVantiq(IMAGE_3.get("filename"), vantiq, VANTIQ_DOCUMENTS);
+        checkNotUploadToVantiq(IMAGE_4.get("filename"), vantiq, VANTIQ_DOCUMENTS);
+        checkNotUploadToVantiq(IMAGE_5.get("filename"), vantiq, VANTIQ_DOCUMENTS);
+        checkNotUploadToVantiq(IMAGE_6.get("filename"), vantiq, VANTIQ_DOCUMENTS);
+        checkNotUploadToVantiq(IMAGE_7.get("filename"), vantiq, VANTIQ_DOCUMENTS);
     }
     
     @Test
@@ -492,15 +492,15 @@ public class TestYoloQueries extends NeuralNetTestBase {
                 
         // Checking that all images were uploaded to VANTIQ
         Thread.sleep(1000);
-        checkUploadToVantiq(IMAGE_4.get("filename"), vantiq);
-        checkUploadToVantiq(IMAGE_5.get("filename"), vantiq);
-        checkUploadToVantiq(IMAGE_6.get("filename"), vantiq);
-        checkUploadToVantiq(IMAGE_7.get("filename"), vantiq);
+        checkUploadToVantiq(IMAGE_4.get("filename"), vantiq, VANTIQ_DOCUMENTS);
+        checkUploadToVantiq(IMAGE_5.get("filename"), vantiq, VANTIQ_DOCUMENTS);
+        checkUploadToVantiq(IMAGE_6.get("filename"), vantiq, VANTIQ_DOCUMENTS);
+        checkUploadToVantiq(IMAGE_7.get("filename"), vantiq, VANTIQ_DOCUMENTS);
         
         // Checking that none of the other images were uploaded to VANTIQ
-        checkNotUploadToVantiq(IMAGE_1.get("filename"), vantiq);
-        checkNotUploadToVantiq(IMAGE_2.get("filename"), vantiq);
-        checkNotUploadToVantiq(IMAGE_3.get("filename"), vantiq);
+        checkNotUploadToVantiq(IMAGE_1.get("filename"), vantiq, VANTIQ_DOCUMENTS);
+        checkNotUploadToVantiq(IMAGE_2.get("filename"), vantiq, VANTIQ_DOCUMENTS);
+        checkNotUploadToVantiq(IMAGE_3.get("filename"), vantiq, VANTIQ_DOCUMENTS);
     }
     
     @Test
@@ -522,15 +522,15 @@ public class TestYoloQueries extends NeuralNetTestBase {
                 
         // Checking that all images were uploaded to VANTIQ
         Thread.sleep(3000);
-        checkUploadToVantiq(IMAGE_2.get("filename"), vantiq);
-        checkUploadToVantiq(IMAGE_3.get("filename"), vantiq);
-        checkUploadToVantiq(IMAGE_4.get("filename"), vantiq);
+        checkUploadToVantiq(IMAGE_2.get("filename"), vantiq, VANTIQ_DOCUMENTS);
+        checkUploadToVantiq(IMAGE_3.get("filename"), vantiq, VANTIQ_DOCUMENTS);
+        checkUploadToVantiq(IMAGE_4.get("filename"), vantiq, VANTIQ_DOCUMENTS);
         
         // Checking that none of the other images were uploaded to VANTIQ
-        checkNotUploadToVantiq(IMAGE_1.get("filename"), vantiq);
-        checkNotUploadToVantiq(IMAGE_5.get("filename"), vantiq);
-        checkNotUploadToVantiq(IMAGE_6.get("filename"), vantiq);
-        checkNotUploadToVantiq(IMAGE_7.get("filename"), vantiq);
+        checkNotUploadToVantiq(IMAGE_1.get("filename"), vantiq, VANTIQ_DOCUMENTS);
+        checkNotUploadToVantiq(IMAGE_5.get("filename"), vantiq, VANTIQ_DOCUMENTS);
+        checkNotUploadToVantiq(IMAGE_6.get("filename"), vantiq, VANTIQ_DOCUMENTS);
+        checkNotUploadToVantiq(IMAGE_7.get("filename"), vantiq, VANTIQ_DOCUMENTS);
     }
     
     @Test
@@ -799,6 +799,49 @@ public class TestYoloQueries extends NeuralNetTestBase {
         assert resizedImage.getWidth() == CROPPED_WIDTH;
         assert resizedImage.getHeight() == CROPPED_HEIGHT;
     }
+
+    @Test
+    public void testUploadAsImage() throws IOException, InterruptedException {
+        // Only run test with intended vantiq availability
+        assumeTrue(testAuthToken != null && testVantiqServer != null);
+
+        // Only run test with intended vantiq availability
+        assumeTrue(testAuthToken != null && testVantiqServer != null);
+
+        addLocalTestImages();
+
+        Map<String,Object> params = new LinkedHashMap<String,Object>();
+        params.put("operation", "upload");
+        params.put("uploadAsImage", true);
+
+        List<String> imageDate = new ArrayList<String>();
+        imageDate.add(START_DATE);
+        imageDate.add(END_DATE);
+        params.put("imageDate", imageDate);
+
+        querySource(params);
+
+        // Checking that all images were uploaded to VANTIQ as images
+        Thread.sleep(3000);
+        checkUploadToVantiq(IMAGE_2.get("filename"), vantiq, VANTIQ_IMAGES);
+        checkUploadToVantiq(IMAGE_3.get("filename"), vantiq, VANTIQ_IMAGES);
+        checkUploadToVantiq(IMAGE_4.get("filename"), vantiq, VANTIQ_IMAGES);
+
+        // Checking that the other images were not uploaded to VANTIQ as images
+        checkNotUploadToVantiq(IMAGE_1.get("filename"), vantiq, VANTIQ_IMAGES);
+        checkNotUploadToVantiq(IMAGE_5.get("filename"), vantiq, VANTIQ_IMAGES);
+        checkNotUploadToVantiq(IMAGE_6.get("filename"), vantiq, VANTIQ_IMAGES);
+        checkNotUploadToVantiq(IMAGE_7.get("filename"), vantiq, VANTIQ_IMAGES);
+
+        // Checking that no images were uploaded to VANTIQ as documents
+        checkNotUploadToVantiq(IMAGE_1.get("filename"), vantiq, VANTIQ_DOCUMENTS);
+        checkNotUploadToVantiq(IMAGE_2.get("filename"), vantiq, VANTIQ_DOCUMENTS);
+        checkNotUploadToVantiq(IMAGE_3.get("filename"), vantiq, VANTIQ_DOCUMENTS);
+        checkNotUploadToVantiq(IMAGE_4.get("filename"), vantiq, VANTIQ_DOCUMENTS);
+        checkNotUploadToVantiq(IMAGE_5.get("filename"), vantiq, VANTIQ_DOCUMENTS);
+        checkNotUploadToVantiq(IMAGE_6.get("filename"), vantiq, VANTIQ_DOCUMENTS);
+        checkNotUploadToVantiq(IMAGE_7.get("filename"), vantiq, VANTIQ_DOCUMENTS);
+    }
     
     // ================================================= Helper functions =================================================
     
@@ -815,7 +858,8 @@ public class TestYoloQueries extends NeuralNetTestBase {
     }
     
     public static void deleteFileFromVantiq(String filename) {
-        vantiq.deleteOne("system.documents", filename);
+        vantiq.deleteOne(VANTIQ_DOCUMENTS, filename);
+        vantiq.deleteOne(VANTIQ_IMAGES, filename);
     }
     
     public void checkQueryError(Map<String,Object> params, String operation) {

@@ -208,6 +208,30 @@ public class TestObjRecConfig {
         sendConfig(conf);
         assertFalse("Should not fail when maxRunningThreads > maxQueuedTasks.", configIsFailed());
     }
+
+    @Test
+    public void testInvalidImageUploadConfig() {
+        Map conf = minimalConfig();
+        neuralNet.put("uploadAsImage", "jibberish");
+        sendConfig(conf);
+        assertFalse("Should not fail when image upload config is a string", configIsFailed());
+
+        neuralNet.put("uploadAsImage", 10);
+        sendConfig(conf);
+        assertFalse("Should not fail when image upload config is an int", configIsFailed());
+    }
+
+    @Test
+    public void testValidImageUploadConfig() {
+        Map conf = minimalConfig();
+        neuralNet.put("uploadAsImage", true);
+        sendConfig(conf);
+        assertFalse("Should not fail when image upload config is true", configIsFailed());
+
+        neuralNet.put("uploadAsImage", false);
+        sendConfig(conf);
+        assertFalse("Should not fail when image upload config is false", configIsFailed());
+    }
     
     @Test
     public void testMinimalConfig() {

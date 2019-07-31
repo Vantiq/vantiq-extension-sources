@@ -71,7 +71,7 @@ public class ObjectRecognitionCore {
     public Boolean suppressEmptyNeuralNetResults = false;
     
     final Logger log;
-    final static int    RECONNECT_INTERVAL = 5000;
+    final static int RECONNECT_INTERVAL = 5000;
 
     // Constants for Query Parameters
     private static final String IMAGE_NAME = "imageName";
@@ -81,6 +81,7 @@ public class ObjectRecognitionCore {
     private static final String UPLOAD = "upload";
     private static final String DELETE = "delete";
     private static final String FILTER = "filter";
+    private static final String UPLOAD_AS_IMAGE = "uploadAsImage";
 
     /**
      * Stops sending messages to the source and tries to reconnect, closing on a failure
@@ -549,6 +550,11 @@ public class ObjectRecognitionCore {
                    imageUtil.queryResize = true;
                }
            }
+       }
+
+       // Check if images should be uploaded to VANTIQ as VANTIQ IMAGES
+       if (request.get(UPLOAD_AS_IMAGE) instanceof Boolean && (Boolean) request.get(UPLOAD_AS_IMAGE)) {
+            imageUtil.uploadAsImage = (Boolean) request.get(UPLOAD_AS_IMAGE);
        }
        
        return imageUtil;

@@ -195,25 +195,23 @@ public class ObjectDetector {
     /**
      * Detect objects on the given image
      * <br>Edited to return the results as a map and conditionally save the image
-     * @param image     The image in jpeg format
-     * @param outputDir The directory to which the image should be written, (under current working directory unless
-     *                  otherwise specified). If saveImage is null, no image is saved.
-     * @param saveImage The destination to which the image shall be saved, (either in VANTIQ, locally, or both). If null and
-     *                  filename is null, no image is saved. If null and fileName is non-null, images will be saved.
-     * @param fileName  The name of the file to which the image is saved, with ".jpg" appended if necessary. If
-     *                  {@code outputDir} is null and no default exists, no image is saved. If {@code fileName} is null
-     *                  and {@code outputDir} is non-null, then the file is saved as
-     *                  "&lt;year&gt;-&lt;month&gt;-&lt;day&gt;--&lt;hour&gt;-&lt;minute&gt;-&lt;second&gt;.jpg"
-     * @param vantiq    The Vantiq variable used to connect to the VANTIQ SDK. Either authenticated, or set to null.
-     * @return          A List of Maps, each of which has a {@code label} stating the type of the object identified, a
-     *                  {@code confidence} specifying on a scale of 0-1 how confident the neural net is that the
-     *                  identification is accurate, and a {@code location} containing the coordinates for the
-     *                  {@code top},{@code left}, {@code bottom}, and {@code right} edges of the bounding box for
-     *                  the object.
+     * @param image         The image in jpeg format
+     * @param outputDir     The directory to which the image should be written, (under current working directory unless
+     *                      otherwise specified). If saveImage is null, no image is saved.
+     * @param fileName      The name of the file to which the image is saved, with ".jpg" appended if necessary. If
+     *                      {@code outputDir} is null and no default exists, no image is saved. If {@code fileName} is null
+     *                      and {@code outputDir} is non-null, then the file is saved as
+     *                      "&lt;year&gt;-&lt;month&gt;-&lt;day&gt;--&lt;hour&gt;-&lt;minute&gt;-&lt;second&gt;.jpg"
+     * @param vantiq        The Vantiq variable used to connect to the VANTIQ SDK. Either authenticated, or set to null.
+     * @param uploadAsImage The boolean flag used to specify if images should be uploaded to VANTIQ as Documents or VANTIQ Images
+     * @return              A List of Maps, each of which has a {@code label} stating the type of the object identified, a
+     *                      {@code confidence} specifying on a scale of 0-1 how confident the neural net is that the
+     *                      identification is accurate, and a {@code location} containing the coordinates for the
+     *                      {@code top},{@code left}, {@code bottom}, and {@code right} edges of the bounding box for
+     *                      the object.
      */
-    public List<Map<String, ?>> detect(final byte[] image, String outputDir, String fileName, Vantiq vantiq) {
+    public List<Map<String, ?>> detect(final byte[] image, String outputDir, String fileName, Vantiq vantiq, boolean uploadAsImage) {
         try (Tensor<Float> normalizedImage = normalizeImage(image)) {
-            Date now = new Date(); // Saves the time before
             List<Recognition> recognitions = YOLOClassifier.getInstance(threshold, anchorArray, frameSize).classifyImage(executeYOLOGraph(normalizedImage), labels);
             BufferedImage buffImage = imageUtil.createImageFromBytes(image);
             
@@ -224,6 +222,7 @@ public class ObjectDetector {
                 imageUtil.vantiq = vantiq;
                 imageUtil.sourceName = sourceName;
                 imageUtil.frameSize = frameSize;
+                imageUtil.uploadAsImage = uploadAsImage;
                 lastFilename = fileName;
                 if (labelImage) {
                     buffImage = imageUtil.labelImage(buffImage, recognitions);

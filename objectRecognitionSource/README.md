@@ -164,6 +164,7 @@ The Configuration document may look similar to the following example:
              "saveImage": "both",
              "saveRate": 1,
              "outputDir": "imageOut",
+             "uploadAsImage": true,
              "savedResolution": {
                 "longEdge": 400
              },
@@ -249,6 +250,9 @@ is set to be either "local" or "both".
 captured). If not specified, the value will default to 1 which saves every captured image.
 *   labelImage: Optional. If set to "true", images will be saved with bounding boxes and labels. If set to "false", or if not 
 set at all, the images will be saved with no bounding boxes or labels.
+*   uploadAsImage: Optional. If set to "true", images will be uploaded to VANTIQ as VANTIQ Images, (the default behavior 
+uploads images as VANTIQ Documents).
+    *   **NOTE**: This option is only relevant if "saveImage" has been set to either "vantiq" or "both".
 *   savedResolution: Optional. A map containing options for adjusting the resolution of the saved images.
     * *Options for savedResolution:*
     1. longEdge: Optional. This sets the maximum long edge dimension for saved images. Must be a non-negative integer that is 
@@ -327,6 +331,8 @@ it will be set to the default value, "processNextFrame".
         is defined here as a query parameter, it will override the value set in the source configuration, otherwise the source 
         configuration value will be used. The setting cannot be larger than that provided in the source configuration (since 
         that defines how the images are saved).
+        *   uploadAsImage: Optional. If set to "true", images will be uploaded to VANTIQ as VANTIQ Images, (the default 
+        behavior uploads images as VANTIQ Documents).
     
 *   **Delete locally saved images:**
     *   The user can specify an image or a set of images specified by their date & time to be deleted. The images will be 
@@ -356,6 +362,8 @@ it will be set to the default value, "processNextFrame".
         *   "cropBeforeAnalysis": Optional. This value can be set exactly like the "cropBeforeAnalysis" value in the source 
         configuration. If no cropBeforeAnalysis value is set as a query parameter, the source configuration's 
         cropBeforeAnalysis value will be used.
+        *   uploadAsImage: Optional. If set to "true", images will be uploaded to VANTIQ as VANTIQ Images, (the default 
+        behavior uploads images as VANTIQ Documents).
     
 **EXAMPLE QUERIES**:
 
@@ -367,11 +375,12 @@ SELECT * FROM SOURCE Camera1 AS results WITH
     	savedResolution: {longEdge:600}
 ```
 
-*   Upload Query using imageDate:
+*   Upload Query using imageDate, uploading as VANTIQ Images:
 ```
 SELECT * FROM SOURCE Camera1 AS results WITH
     	operation:"upload",
-    	imageDate:["2019-02-08--10-33-36", "2019-02-08--12-45-18"]
+    	imageDate:["2019-02-08--10-33-36", "2019-02-08--12-45-18"],
+        uploadAsImage: true
 ```
 
 *   Delete Query using imageName:
@@ -417,6 +426,15 @@ SELECT * FROM SOURCE Camera1 AS results WITH
             width: 600,
             height: 400
         }
+```
+
+* Process Next Frame Query, uploading as VANTIQ Image:
+```
+SELECT * FROM SOURCE Camera1 AS results WITH
+        operation:"processNextFrame",
+    	NNsaveImage:"vantiq",
+    	NNfileName:"testFile",
+        uploadAsImage: true
 ```
 
 *   Process Next Frame Query without specifying operation *(not recommended)*:

@@ -135,7 +135,7 @@ public class TestNoProcessorQueries extends NeuralNetTestBase {
         
         // Check that file was saved to Vantiq
         Thread.sleep(1000);
-        checkUploadToVantiq(IMAGE.get("filename"), vantiq);
+        checkUploadToVantiq(IMAGE.get("filename"), vantiq, VANTIQ_DOCUMENTS);
         
         // Deleting file for next test
         deleteFileFromVantiq(IMAGE.get("filename"));
@@ -146,7 +146,7 @@ public class TestNoProcessorQueries extends NeuralNetTestBase {
         
         // Check that file was saved to Vantiq
         Thread.sleep(1000);
-        checkUploadToVantiq(IMAGE.get("filename"), vantiq);
+        checkUploadToVantiq(IMAGE.get("filename"), vantiq, VANTIQ_DOCUMENTS);
         
         // Deleting file for next test
         deleteFileFromVantiq(IMAGE.get("filename"));
@@ -157,7 +157,7 @@ public class TestNoProcessorQueries extends NeuralNetTestBase {
         
         // Check that file was saved to Vantiq
         Thread.sleep(1000);
-        checkUploadToVantiq(core.lastQueryFilename, vantiq);
+        checkUploadToVantiq(core.lastQueryFilename, vantiq, VANTIQ_DOCUMENTS);
         
         deleteFileFromVantiq(core.lastQueryFilename);
         vantiqUploadFiles.add(core.lastQueryFilename);
@@ -191,7 +191,7 @@ public class TestNoProcessorQueries extends NeuralNetTestBase {
         
         // Check that file was saved to Vantiq
         Thread.sleep(1000);
-        checkUploadToVantiq(IMAGE.get("filename"), vantiq);
+        checkUploadToVantiq(IMAGE.get("filename"), vantiq, VANTIQ_DOCUMENTS);
         
         // Deleting file for next test
         deleteFileFromVantiq(IMAGE.get("filename"));
@@ -215,7 +215,7 @@ public class TestNoProcessorQueries extends NeuralNetTestBase {
         
         // Check that file was saved to Vantiq
         Thread.sleep(1000);
-        checkUploadToVantiq(IMAGE.get("filename"), vantiq);
+        checkUploadToVantiq(IMAGE.get("filename"), vantiq, VANTIQ_DOCUMENTS);
         
         // Deleting file for next test
         deleteFileFromVantiq(IMAGE.get("filename"));
@@ -241,12 +241,36 @@ public class TestNoProcessorQueries extends NeuralNetTestBase {
         
         // Check that file was saved to Vantiq
         Thread.sleep(1000);
-        checkUploadToVantiq(core.lastQueryFilename, vantiq);
+        checkUploadToVantiq(core.lastQueryFilename, vantiq, VANTIQ_DOCUMENTS);
         
         deleteFileFromVantiq(core.lastQueryFilename);
         vantiqUploadFiles.add(core.lastQueryFilename);
         
         deleteDirectory(OUTPUT_DIR);
+    }
+
+    @Test
+    public void testUploadAsImage() throws InterruptedException {
+        // Only run test with intended vantiq availability
+        assumeTrue(testAuthToken != null && testVantiqServer != null);
+
+        // Run query without setting "operation":"processNextFrame"
+        Map<String,Object> params = new LinkedHashMap<String,Object>();
+        params.put("NNsaveImage", "vantiq");
+        params.put("uploadAsImage", true);
+        params.put("NNfileName", QUERY_FILENAME);
+
+        querySource(params);
+
+        // Check that file was saved to Vantiq as an Image
+        Thread.sleep(1000);
+        checkUploadToVantiq(IMAGE.get("filename"), vantiq, VANTIQ_IMAGES);
+
+        // Check that it wasn't saved to Vantiq as a Document
+        checkNotUploadToVantiq(IMAGE.get("filename"), vantiq, VANTIQ_DOCUMENTS);
+
+        // Deleting file
+        deleteFileFromVantiq(IMAGE.get("filename"));
     }
     
     // ================================================= Helper functions =================================================
@@ -308,6 +332,7 @@ public class TestNoProcessorQueries extends NeuralNetTestBase {
     }
     
     public static void deleteFileFromVantiq(String filename) {
-        vantiq.deleteOne("system.documents", filename);
+        vantiq.deleteOne(VANTIQ_DOCUMENTS, filename);
+        vantiq.deleteOne(VANTIQ_IMAGES, filename);
     }
 }

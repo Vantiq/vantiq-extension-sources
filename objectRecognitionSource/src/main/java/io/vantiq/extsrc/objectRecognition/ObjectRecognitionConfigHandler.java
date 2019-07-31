@@ -91,7 +91,7 @@ public class ObjectRecognitionConfigHandler extends Handler<ExtensionServiceMess
     private static final String MAX_RUNNING_THREADS = "maxRunningThreads";
     private static final String MAX_QUEUED_TASKS = "maxQueuedTasks";
     private static final String SUPPRESS_EMPTY_NEURAL_NET_RESULTS = "suppressEmptyNeuralNetResults";
-    
+
     // Constants for Query Parameters
     private static final String OPERATION = "operation";
     private static final String PROCESS_NEXT_FRAME = "processnextframe";
