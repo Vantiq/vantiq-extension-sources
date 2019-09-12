@@ -20,7 +20,7 @@ sourceCompatibility = 1.8
 
 ext {
     jacksonVersion = '2.9.3'
-    eclipseMiloVersion = '0.2.1'
+    eclipseMiloVersion = '0.3.3'
     lombokVersion = '1.16.18'
     logbackVersion = '1.2.3'
     junitVersion = '4.12'
@@ -46,7 +46,10 @@ dependencies {
 
     compile "com.fasterxml.jackson.core:jackson-databind:${jacksonVersion}"
     compile "commons-cli:commons-cli:${commonsCliVersion}"
+    
     compile "org.eclipse.milo:sdk-client:${eclipseMiloVersion}"
+    compile "org.eclipse.milo:stack-client:${eclipseMiloVersion}"
+    compile "org.eclipse.milo:stack-core:${eclipseMiloVersion}"
 
     // To force the inclusion of the bouncy castle provider libraries into the application build,
     // we must re-declare these on Milo SDK-client's behalf. The dependency declared

@@ -10,7 +10,7 @@ package io.vantiq.extsrc.opcua.uaOperations;
 
 import lombok.extern.slf4j.Slf4j;
 import org.eclipse.milo.examples.server.ExampleServer;
-import org.eclipse.milo.opcua.stack.core.application.DirectoryCertificateValidator;
+import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.eclipse.milo.opcua.stack.core.util.SelfSignedCertificateBuilder;
 import org.eclipse.milo.opcua.stack.core.util.SelfSignedCertificateGenerator;
 import org.junit.After;
@@ -21,6 +21,7 @@ import java.io.File;
 import java.security.KeyPair;
 import java.security.NoSuchAlgorithmException;
 import java.security.cert.X509Certificate;
+import java.security.Security;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Pattern;
@@ -32,6 +33,8 @@ import static org.junit.Assert.fail;
  */
 @Slf4j
 public class OpcUaTestBase {
+    // Needed because NAMESPACE_URI isn't public...(changed somewhere in the 0.2.1 -> 0.3.3 transition)
+    public static final String exampleNamespace = "urn:eclipse:milo:hello-world";
     public static final String STANDARD_STORAGE_DIRECTORY = "/tmp/opcua-storage";
 
     protected ExampleServer exampleServer = null;
@@ -45,13 +48,16 @@ public class OpcUaTestBase {
     private static final Pattern IP_ADDR_PATTERN = Pattern.compile(
             "^(([01]?\\d\\d?|2[0-4]\\d|25[0-5])\\.){3}([01]?\\d\\d?|2[0-4]\\d|25[0-5])$");
 
-//    static {
+    static {
+        // TODO: May be replaced as part of hooking up with better credentials
+        // TODO: Snarf 0.2.4 source & grab this routine -- may be locally implementable
+        // TODO: ... rather than relying on SDK
 //        boolean removed = CryptoRestrictions.remove();
 //        assert removed;
-//
-//        // Required for SecurityPolicy.Aes256_Sha256_RsaPss
-//        Security.addProvider(new BouncyCastleProvider());
-//    }
+
+        // Required for SecurityPolicy.Aes256_Sha256_RsaPss
+        Security.addProvider(new BouncyCastleProvider());
+    }
 
     /**
      * Clear out any existing storage used in previous tests.
@@ -90,7 +96,7 @@ public class OpcUaTestBase {
             if (!secStore.exists() && !secStore.mkdirs()) {
                 fail("Could not create server's storage space");
             }
-            ksm.load(secStore); // STANDARD_STORAGE_DIRECTORY));
+            ksm.load(secStore);
 
             X509Certificate cert = ksm.getClientCertificate();
 
@@ -102,13 +108,18 @@ public class OpcUaTestBase {
 
             for (int i = 1; i < 5; i++) {
                 String alias = "TTC" + i;
-                cert = createCertificate(alias, "Trusted Test Certificate " + i, "urn:io:vantiq:client:trusted:" + i, true);
+                cert = createCertificate(alias,
+                        "Trusted Test Certificate " + i,
+                        "urn:io:vantiq:client:trusted:" + i,
+                        true);
                 trustedTestCerts.add(alias);
             }
 
             for (int i = 1; i < 5; i++) {
                 String alias = "UTC" + i;
-                cert = createCertificate(alias,"Untrusted Test Certificate " + i, "urn:io:vantiq:client:untrusted:" + i, false);
+                cert = createCertificate(alias,"Untrusted Test Certificate " + i,
+                        "urn:io:vantiq:client:untrusted:" + i,
+                        false);
                 untrustedTestCerts.add(alias);
             }
 
@@ -127,8 +138,12 @@ public class OpcUaTestBase {
      * @throws Exception
      */
     public void trustCertificateOnServer(X509Certificate theCert) throws Exception {
-        DirectoryCertificateValidator certificateValidator = new DirectoryCertificateValidator(pkiDir);
-        certificateValidator.addTrustedCertificate(theCert);
+        // TODO: Add support for trusted certs on server as Milo API improves and stabilizes
+        // TODO: Add some validator that handles things???
+
+        // DirectoryCertificateValidator no longer exists...  Check old code & re-implement?
+//        DirectoryCertificateValidator certificateValidator = new DirectoryCertificateValidator(pkiDir);
+//        certificateValidator.addTrustedCertificate(theCert);
     }
 
     /**

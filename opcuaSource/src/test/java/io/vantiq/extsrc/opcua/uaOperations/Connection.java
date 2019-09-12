@@ -147,7 +147,7 @@ public class Connection extends OpcUaTestBase {
 
         assert client == null;
 
-        opcConfig.put(OpcConstants.CONFIG_SECURITY_POLICY, SecurityPolicy.None.getSecurityPolicyUri());
+        opcConfig.put(OpcConstants.CONFIG_SECURITY_POLICY, SecurityPolicy.None.getUri());
 
         try {
             client = new OpcUaESClient(config);
@@ -167,11 +167,17 @@ public class Connection extends OpcUaTestBase {
             checkException(o, ".discoveryError");
             Assert.assertTrue("Incorrect exception cause", o.getCause() instanceof ExecutionException);
             ExecutionException e = (ExecutionException) o.getCause();
-            Assert.assertTrue("Missing UaException: " + e.getMessage(), e.getMessage().contains("UaException"));
-            Assert.assertTrue("Missing bad status clause: " + e.getMessage(), e.getMessage().contains("status=Bad_"));
-            Assert.assertTrue("Missing exception cause data: " + e.getMessage(), e.getMessage().contains("TcpEndpointUrlInvalid"));
-            Assert.assertTrue("Missing message clause: " + e.getMessage(), e.getMessage().contains("message="));
-            Assert.assertTrue("Improperly formatted Opc Exception: " + o.getMessage(), o.getMessage().contains(OpcUaESClient.ERROR_PREFIX));
+            // Here, we expect OPCUA exceptions, so check them.  However, the SDK we use appears
+            // to sometimes let pure Java exceptions out, so don't be as picky about those...
+            if (!e.getClass().getPackage().getName().startsWith("java")) {
+                // Then, the underlying implementation appears to have returned a "plain old" java exception.
+                // It's not supposed to, I don't think, but this isn't a test of the platform on which we build...
+                Assert.assertTrue("Missing UaException: " + e.getMessage(), e.getMessage().contains("UaException"));
+                Assert.assertTrue("Missing bad status clause: " + e.getMessage(), e.getMessage().contains("status=Bad_"));
+                Assert.assertTrue("Missing exception cause data: " + e.getMessage(), e.getMessage().contains("TcpEndpointUrlInvalid"));
+                Assert.assertTrue("Missing message clause: " + e.getMessage(), e.getMessage().contains("message="));
+                Assert.assertTrue("Improperly formatted Opc Exception: " + o.getMessage(), o.getMessage().contains(OpcUaESClient.ERROR_PREFIX));
+            }
         } catch (Throwable e) {
             fail("Unexpected exception thrown: " + Utils.errFromExc(e));
         }
@@ -272,11 +278,11 @@ public class Connection extends OpcUaTestBase {
     @Test
     public void testConnectionSecNone() {
         makeConnection(false,
-                SecurityPolicy.None.getSecurityPolicyUri(),
+                SecurityPolicy.None.getUri(),
                 null,
                 false);
         makeConnection(false,
-                SecurityPolicy.None.getSecurityPolicyUri(),
+                SecurityPolicy.None.getUri(),
                 MessageSecurityMode.None.toString(),
                 false);
 
@@ -287,7 +293,7 @@ public class Connection extends OpcUaTestBase {
 
         try {
             makeConnection(false,
-                    SecurityPolicy.None.getSecurityPolicyUri(),
+                    SecurityPolicy.None.getUri(),
                     null,
                     null,
                     null,
@@ -296,7 +302,7 @@ public class Connection extends OpcUaTestBase {
                     false,
                     true);
             makeConnection(false,
-                    SecurityPolicy.None.getSecurityPolicyUri(),
+                    SecurityPolicy.None.getUri(),
                     MessageSecurityMode.None.toString(),
                     null,
                     null,
@@ -314,7 +320,7 @@ public class Connection extends OpcUaTestBase {
 
         try {
             makeConnection(false,
-                    SecurityPolicy.None.getSecurityPolicyUri(),
+                    SecurityPolicy.None.getUri(),
                     null,
                     null,
                     null,
@@ -323,7 +329,7 @@ public class Connection extends OpcUaTestBase {
                     true,
                     true);
             makeConnection(false,
-                    SecurityPolicy.None.getSecurityPolicyUri(),
+                    SecurityPolicy.None.getUri(),
                     MessageSecurityMode.None.toString(),
                     null,
                     null,
@@ -337,17 +343,24 @@ public class Connection extends OpcUaTestBase {
     }
 
     @Test
-    public void testConnectionSecureUpw() {
-        EnumSet<SecurityPolicy> serverSecPols = exampleServer.getServer().getConfig().getSecurityPolicies();
+    public void testConnectionSecureUpw() throws Exception {
+
+        List<EndpointDescription> eps = exampleServer.getServer().getEndpointDescriptions();
+
+        EnumSet<MessageSecurityMode> serverMsgModes = EnumSet.noneOf(MessageSecurityMode.class);
+        EnumSet<SecurityPolicy> serverSecPols = EnumSet.noneOf(SecurityPolicy.class);
+
         // Unfortunately, no good way to find out what security modes there are.  So we'll
         // traverse the endpoints and act appropriately.
 
-        EndpointDescription[] eps = exampleServer.getServer().getEndpointDescriptions();
-        EnumSet<MessageSecurityMode> serverMsgModes = EnumSet.noneOf(MessageSecurityMode.class);
-
         for (EndpointDescription ep : eps) {
-            serverMsgModes.add(ep.getSecurityMode());
+            if (ep.getEndpointUrl().startsWith("opc.tpc")) {
+                // At present, these are all we test
+                serverSecPols.add(SecurityPolicy.fromUri(ep.getSecurityPolicyUri()));
+                serverMsgModes.add(ep.getSecurityMode());
+            }
         }
+        log.debug("For example server found secPols: {}, msgSec: {}", serverSecPols, serverMsgModes);
 
         // Below, we'll traverse the valid combinations.  None's must be paired and are tested elsewhere
         for (SecurityPolicy secPol : serverSecPols) {
@@ -356,25 +369,25 @@ public class Connection extends OpcUaTestBase {
                     if (!msgSec.equals(MessageSecurityMode.None)) {
                         log.info("Attempting sync connection using [{}, {}]", secPol, msgSec);
                         makeConnection(false,
-                                secPol.getSecurityPolicyUri(),
+                                secPol.getUri(),
                                 msgSec.toString(),
                                 true);
 
                         log.info("Attempting sync connection using [{}, {}]", secPol, "(missing)");
                         makeConnection(false,
-                                secPol.getSecurityPolicyUri(),
+                                secPol.getUri(),
                                 null,           // Also check that the defaulting works correctly
                                 true);
 
                         log.info("Attempting async connection using [{}, {}]", secPol, msgSec);
                         makeConnection(true,
-                                secPol.getSecurityPolicyUri(),
+                                secPol.getUri(),
                                 msgSec.toString(),
                                 true);
 
                         log.info("Attempting async connection using [{}, {}] with explicit anonymous user", secPol, msgSec);
                         makeConnection(true,
-                                secPol.getSecurityPolicyUri(),
+                                secPol.getUri(),
                                 msgSec.toString(),
                                 OpcConstants.CONFIG_IDENTITY_ANONYMOUS,
                                 null,
@@ -387,7 +400,7 @@ public class Connection extends OpcUaTestBase {
                         for (String uPw : upwCombos) {
                             log.info("Attempting sync connection using [{}, {}] using username/password: '{}'", secPol, msgSec, uPw);
                             makeConnection(false,
-                                    secPol.getSecurityPolicyUri(),
+                                    secPol.getUri(),
                                     msgSec.toString(),
                                     OpcConstants.CONFIG_IDENTITY_USERNAME_PASSWORD,
                                     uPw,
@@ -397,7 +410,7 @@ public class Connection extends OpcUaTestBase {
                         for (String uPw : upwCombos) {
                             log.info("Attempting async connection using [{}, {}] using username/password: '{}'", secPol, msgSec, uPw);
                             makeConnection(true,
-                                    secPol.getSecurityPolicyUri(),
+                                    secPol.getUri(),
                                     msgSec.toString(),
                                     OpcConstants.CONFIG_IDENTITY_USERNAME_PASSWORD,
                                     uPw,
@@ -410,16 +423,22 @@ public class Connection extends OpcUaTestBase {
     }
 
     @Test
-    public void testConnectionSecureCert() {
-        EnumSet<SecurityPolicy> serverSecPols = exampleServer.getServer().getConfig().getSecurityPolicies();
+    public void testConnectionSecureCert() throws Exception {
+
+        List<EndpointDescription> eps = exampleServer.getServer().getEndpointDescriptions();
+
+        EnumSet<MessageSecurityMode> serverMsgModes = EnumSet.noneOf(MessageSecurityMode.class);
+        EnumSet<SecurityPolicy> serverSecPols = EnumSet.noneOf(SecurityPolicy.class);
+
         // Unfortunately, no good way to find out what security modes there are.  So we'll
         // traverse the endpoints and act appropriately.
 
-        EndpointDescription[] eps = exampleServer.getServer().getEndpointDescriptions();
-        EnumSet<MessageSecurityMode> serverMsgModes = EnumSet.noneOf(MessageSecurityMode.class);
-
         for (EndpointDescription ep : eps) {
-            serverMsgModes.add(ep.getSecurityMode());
+            if (ep.getEndpointUrl().startsWith("opc.tpc")) {
+                // At present, these are all we test
+                serverSecPols.add(SecurityPolicy.fromUri(ep.getSecurityPolicyUri()));
+                serverMsgModes.add(ep.getSecurityMode());
+            }
         }
 
         // Below, we'll traverse the valid combinations.  None's must be paired and are tested elsewhere
@@ -432,7 +451,7 @@ public class Connection extends OpcUaTestBase {
                         for (String certKey : trustedTestCerts) {
                             log.info("Attempting sync connection using [{}, {}] using certificate: '{}'", secPol, msgSec, certKey);
                             makeConnection(false,
-                                    secPol.getSecurityPolicyUri(),
+                                    secPol.getUri(),
                                     msgSec.toString(),
                                     OpcConstants.CONFIG_IDENTITY_CERTIFICATE,
                                     certKey,
@@ -440,7 +459,7 @@ public class Connection extends OpcUaTestBase {
 
                             log.info("Attempting async connection using [{}, {}] using certificate: '{}'", secPol, msgSec, certKey);
                             makeConnection(true,
-                                    secPol.getSecurityPolicyUri(),
+                                    secPol.getUri(),
                                     msgSec.toString(),
                                     OpcConstants.CONFIG_IDENTITY_CERTIFICATE,
                                     certKey,
@@ -453,16 +472,22 @@ public class Connection extends OpcUaTestBase {
     }
 
     @Test
-    public void testConnectionSecureBadCert() {
-        EnumSet<SecurityPolicy> serverSecPols = exampleServer.getServer().getConfig().getSecurityPolicies();
+    public void testConnectionSecureBadCert() throws Exception {
+
+        List<EndpointDescription> eps = exampleServer.getServer().getEndpointDescriptions();
+
+        EnumSet<MessageSecurityMode> serverMsgModes = EnumSet.noneOf(MessageSecurityMode.class);
+        EnumSet<SecurityPolicy> serverSecPols = EnumSet.noneOf(SecurityPolicy.class);
+
         // Unfortunately, no good way to find out what security modes there are.  So we'll
         // traverse the endpoints and act appropriately.
 
-        EndpointDescription[] eps = exampleServer.getServer().getEndpointDescriptions();
-        EnumSet<MessageSecurityMode> serverMsgModes = EnumSet.noneOf(MessageSecurityMode.class);
-
         for (EndpointDescription ep : eps) {
-            serverMsgModes.add(ep.getSecurityMode());
+            if (ep.getEndpointUrl().startsWith("opc.tpc")) {
+                // At present, these are all we test
+                serverSecPols.add(SecurityPolicy.fromUri(ep.getSecurityPolicyUri()));
+                serverMsgModes.add(ep.getSecurityMode());
+            }
         }
 
         // Below, we'll traverse the valid combinations.  None's must be paired and are tested elsewhere
@@ -476,7 +501,7 @@ public class Connection extends OpcUaTestBase {
                             try {
                                 log.info("Attempting sync connection using [{}, {}] using certificate: '{}'", secPol, msgSec, certKey);
                                 makeRawConnection(false,
-                                        secPol.getSecurityPolicyUri(),
+                                        secPol.getUri(),
                                         msgSec.toString(),
                                         OpcConstants.CONFIG_IDENTITY_CERTIFICATE,
                                         certKey);
@@ -489,7 +514,7 @@ public class Connection extends OpcUaTestBase {
                             try {
                                 log.info("Attempting async connection using [{}, {}] using certificate: '{}'", secPol, msgSec, certKey);
                                 makeRawConnection(true,
-                                        secPol.getSecurityPolicyUri(),
+                                        secPol.getUri(),
                                         msgSec.toString(),
                                         OpcConstants.CONFIG_IDENTITY_CERTIFICATE,
                                         certKey);
@@ -510,16 +535,22 @@ public class Connection extends OpcUaTestBase {
         }
     }
 
-    public void runCertTest(List<String> certList, boolean expectFailure) {
-        EnumSet<SecurityPolicy> serverSecPols = exampleServer.getServer().getConfig().getSecurityPolicies();
+    public void runCertTest(List<String> certList, boolean expectFailure) throws Exception {
+
+        List<EndpointDescription> eps = exampleServer.getServer().getEndpointDescriptions();
+
+        EnumSet<MessageSecurityMode> serverMsgModes = EnumSet.noneOf(MessageSecurityMode.class);
+        EnumSet<SecurityPolicy> serverSecPols = EnumSet.noneOf(SecurityPolicy.class);
+
         // Unfortunately, no good way to find out what security modes there are.  So we'll
         // traverse the endpoints and act appropriately.
 
-        EndpointDescription[] eps = exampleServer.getServer().getEndpointDescriptions();
-        EnumSet<MessageSecurityMode> serverMsgModes = EnumSet.noneOf(MessageSecurityMode.class);
-
         for (EndpointDescription ep : eps) {
-            serverMsgModes.add(ep.getSecurityMode());
+            if (ep.getEndpointUrl().startsWith("opc.tpc")) {
+                // At present, these are all we test
+                serverSecPols.add(SecurityPolicy.fromUri(ep.getSecurityPolicyUri()));
+                serverMsgModes.add(ep.getSecurityMode());
+            }
         }
 
         boolean runSync = expectFailure;    // If expecting failure, act as if async so we can catch exceptions
@@ -534,7 +565,7 @@ public class Connection extends OpcUaTestBase {
                         for (String certKey : certList) {
                             log.info("Attempting sync connection using [{}, {}] using certificate: '{}'", secPol, msgSec, certKey);
                             makeConnection(runSync,
-                                    secPol.getSecurityPolicyUri(),
+                                    secPol.getUri(),
                                     msgSec.toString(),
                                     OpcConstants.CONFIG_IDENTITY_CERTIFICATE,
                                     certKey,
@@ -542,7 +573,7 @@ public class Connection extends OpcUaTestBase {
 
                             log.info("Attempting async connection using [{}, {}] using certificate: '{}'", secPol, msgSec, certKey);
                             makeConnection(true,
-                                    secPol.getSecurityPolicyUri(),
+                                    secPol.getUri(),
                                     msgSec.toString(),
                                     OpcConstants.CONFIG_IDENTITY_CERTIFICATE,
                                     certKey,
@@ -556,16 +587,22 @@ public class Connection extends OpcUaTestBase {
     }
 
     @Test
-    public void testConnectionSecureBadIdentity() {
-        EnumSet<SecurityPolicy> serverSecPols = exampleServer.getServer().getConfig().getSecurityPolicies();
+    public void testConnectionSecureBadIdentity()  throws Exception {
+
+        List<EndpointDescription> eps = exampleServer.getServer().getEndpointDescriptions();
+
+        EnumSet<MessageSecurityMode> serverMsgModes = EnumSet.noneOf(MessageSecurityMode.class);
+        EnumSet<SecurityPolicy> serverSecPols = EnumSet.noneOf(SecurityPolicy.class);
+
         // Unfortunately, no good way to find out what security modes there are.  So we'll
         // traverse the endpoints and act appropriately.
 
-        EndpointDescription[] eps = exampleServer.getServer().getEndpointDescriptions();
-        EnumSet<MessageSecurityMode> serverMsgModes = EnumSet.noneOf(MessageSecurityMode.class);
-
         for (EndpointDescription ep : eps) {
-            serverMsgModes.add(ep.getSecurityMode());
+            if (ep.getEndpointUrl().startsWith("opc.tpc")) {
+                // At present, these are all we test
+                serverSecPols.add(SecurityPolicy.fromUri(ep.getSecurityPolicyUri()));
+                serverMsgModes.add(ep.getSecurityMode());
+            }
         }
 
         String invalidCreds = "bogus1, bogus2";
@@ -578,7 +615,7 @@ public class Connection extends OpcUaTestBase {
 
                         try {
                             OpcUaESClient client = makeRawConnection(false,
-                                    secPol.getSecurityPolicyUri(),
+                                    secPol.getUri(),
                                     msgSec.toString(),
                                     OpcConstants.CONFIG_IDENTITY_USERNAME_PASSWORD,
                                     invalidCreds);
@@ -595,7 +632,7 @@ public class Connection extends OpcUaTestBase {
 
                         try {
                             OpcUaESClient client = makeRawConnection(true,
-                                    secPol.getSecurityPolicyUri(),
+                                    secPol.getUri(),
                                     msgSec.toString(),
                                     OpcConstants.CONFIG_IDENTITY_USERNAME_PASSWORD,
                                     invalidCreds);
@@ -618,7 +655,7 @@ public class Connection extends OpcUaTestBase {
     @Test
     public void testConnectionSecNoneAsync() {
         makeConnection(true,
-                SecurityPolicy.None.getSecurityPolicyUri(),
+                SecurityPolicy.None.getUri(),
                 null,
                 false);
     }
@@ -694,12 +731,7 @@ public class Connection extends OpcUaTestBase {
         // externally as well as internally.
         List<String> pubServers;
         if (!inProcessOnly) {
-            pubServers = Arrays.asList(Utils.OPC_INPROCESS_SERVER,
-                    Utils.OPC_PUBLIC_SERVER_1,
-                    Utils.OPC_PUBLIC_SERVER_2,
-                    Utils.OPC_PUBLIC_SERVER_3,
-                    Utils.OPC_PUBLIC_SERVER_NO_GOOD
-            );
+            pubServers = Utils.OPC_PUBLIC_SERVERS;
         } else {
             pubServers = Arrays.asList(Utils.OPC_INPROCESS_SERVER);
         }

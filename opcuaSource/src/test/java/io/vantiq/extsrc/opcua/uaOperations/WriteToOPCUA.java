@@ -13,6 +13,7 @@ import org.eclipse.milo.opcua.stack.core.security.SecurityPolicy;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.MessageSecurityMode;
 
 import org.junit.Assert;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
 import java.util.HashMap;
@@ -37,15 +38,26 @@ public class WriteToOPCUA extends OpcUaTestBase {
 
         config.put(OpcConstants.CONFIG_OPC_UA_INFORMATION, opcConfig);
         opcConfig.put(OpcConstants.CONFIG_STORAGE_DIRECTORY, STANDARD_STORAGE_DIRECTORY);
-        opcConfig.put(OpcConstants.CONFIG_SECURITY_POLICY, SecurityPolicy.Basic256Sha256.getSecurityPolicyUri());
-        opcConfig.put(OpcConstants.CONFIG_MESSAGE_SECURITY_MODE, MessageSecurityMode.SignAndEncrypt.toString());
+
+        // ExampleServer no longer has the same means to handle untrusted certs.  So, for now,
+        // we'll just use no security.  We test login elsewhere, so this shouldn't impact
+        // much in terms of testing.
+
+        // TODO: Add better credential generation/validation as the Milo SDK improves and/or stabilizes
+        // TODO: Use SecurityPolicy.Basic256Sha256.getUri());
+        // TODO: Use MessageSecurityMode.SignAndEncrypt.toString());
+
+        opcConfig.put(OpcConstants.CONFIG_SECURITY_POLICY, SecurityPolicy.None.getUri());
+        //SecurityPolicy.Basic256Sha256.getUri());
+        opcConfig.put(OpcConstants.CONFIG_MESSAGE_SECURITY_MODE, MessageSecurityMode.None.toString());
+        //MessageSecurityMode.SignAndEncrypt.toString());
         opcConfig.put(OpcConstants.CONFIG_DISCOVERY_ENDPOINT, Utils.OPC_INPROCESS_SERVER);
 
         OpcUaESClient client = Utils.makeConnection(config, false);
         Assert.assertNotNull("No client returned", client);
 
         performWrites(client,
-                ExampleNamespace.NAMESPACE_URI,
+                exampleNamespace,
                 Utils.EXAMPLE_NS_SCALAR_INT32_IDENTIFIER,
                 Utils.EXAMPLE_NS_SCALAR_INT32_TYPE,
                 42,
@@ -60,14 +72,14 @@ public class WriteToOPCUA extends OpcUaTestBase {
 
         config.put(OpcConstants.CONFIG_OPC_UA_INFORMATION, opcConfig);
         opcConfig.put(OpcConstants.CONFIG_STORAGE_DIRECTORY, STANDARD_STORAGE_DIRECTORY);
-        opcConfig.put(OpcConstants.CONFIG_SECURITY_POLICY, SecurityPolicy.None.getSecurityPolicyUri());
+        opcConfig.put(OpcConstants.CONFIG_SECURITY_POLICY, SecurityPolicy.None.getUri());
         opcConfig.put(OpcConstants.CONFIG_DISCOVERY_ENDPOINT, Utils.OPC_INPROCESS_SERVER);
 
         OpcUaESClient client = Utils.makeConnection(config, false);
         Assert.assertNotNull("No client returned", client);
 
         performWrites(client,
-                ExampleNamespace.NAMESPACE_URI,
+                exampleNamespace,
                 Utils.EXAMPLE_NS_SCALAR_STRING_IDENTIFIER,
                 Utils.EXAMPLE_NS_SCALAR_STRING_TYPE,
                 42,
@@ -118,13 +130,13 @@ public class WriteToOPCUA extends OpcUaTestBase {
 
         config.put(OpcConstants.CONFIG_OPC_UA_INFORMATION, opcConfig);
         opcConfig.put(OpcConstants.CONFIG_STORAGE_DIRECTORY, STANDARD_STORAGE_DIRECTORY);
-        opcConfig.put(OpcConstants.CONFIG_SECURITY_POLICY, SecurityPolicy.None.getSecurityPolicyUri());
+        opcConfig.put(OpcConstants.CONFIG_SECURITY_POLICY, SecurityPolicy.None.getUri());
         opcConfig.put(OpcConstants.CONFIG_DISCOVERY_ENDPOINT, Utils.OPC_INPROCESS_SERVER);
 
         OpcUaESClient client = Utils.makeConnection(config, false);
 
         try {
-            client.writeValue(ExampleNamespace.NAMESPACE_URI + "IAmNotThere", "HelloWorld/ScalarTypes/Int32", "Int32", new Integer(42));
+            client.writeValue(exampleNamespace + "IAmNotThere", "HelloWorld/ScalarTypes/Int32", "Int32", new Integer(42));
         }
         catch (OpcExtRuntimeException e) {
             if (!e.getMessage().startsWith(OpcUaESClient.ERROR_PREFIX + ".badNamespaceURN")) {
@@ -136,7 +148,7 @@ public class WriteToOPCUA extends OpcUaTestBase {
         }
 
         try {
-            client.writeValue(ExampleNamespace.NAMESPACE_URI, "HelloWorld/ScalarTypes/Int32" + "/IAmNotThere", "Int32", 42);
+            client.writeValue(exampleNamespace, "HelloWorld/ScalarTypes/Int32" + "/IAmNotThere", "Int32", 42);
         }
         catch (OpcExtRuntimeException e) {
             if (!e.getMessage().startsWith(OpcUaESClient.ERROR_PREFIX + ".writeError")) {
@@ -149,7 +161,7 @@ public class WriteToOPCUA extends OpcUaTestBase {
 
         try {
             // The following will fail because we're trying to write a float/double to an integer type
-            client.writeValue(ExampleNamespace.NAMESPACE_URI, "HelloWorld/ScalarTypes/Int32", "Int32", 3.14159);
+            client.writeValue(exampleNamespace, "HelloWorld/ScalarTypes/Int32", "Int32", 3.14159);
         }
         catch (OpcExtRuntimeException e) {
             if (!e.getMessage().startsWith(OpcUaESClient.ERROR_PREFIX + ".writeError")) {
@@ -161,7 +173,7 @@ public class WriteToOPCUA extends OpcUaTestBase {
         }
 
         try {
-            client.writeValue(ExampleNamespace.NAMESPACE_URI, "HelloWorld/ScalarTypes/Int32", "Int32", "I am most assuredly NOT an integer of any length!");
+            client.writeValue(exampleNamespace, "HelloWorld/ScalarTypes/Int32", "Int32", "I am most assuredly NOT an integer of any length!");
         }
         catch (OpcExtRuntimeException e) {
             if (!e.getMessage().startsWith(OpcUaESClient.ERROR_PREFIX + ".writeError")) {
