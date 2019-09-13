@@ -34,34 +34,28 @@ public class Utils {
     // This list is gathered from the somewhat maintained Wiki page:
     // https://github.com/node-opcua/node-opcua/wiki/publicly-available-OPC-UA-Servers-and-Clients
     //
-    // At present, we'll check the write value stuff only on our internal server.
+    // At present, we'll check the "write value" stuff only on our internal server.
 
     public static String OPC_PUBLIC_SERVER_1 = "opc.tcp://opcuaserver.com:48010";
-    // requires credentials & registration :-(
     public static String OPC_PUBLIC_SERVER_2 = "opc.tcp://opcua.rocks:4840";
     public static String OPC_PUBLIC_SERVER_3 = "opc.tcp://opcua-demo.factry.io:51210";
     public static String OPC_PUBLIC_SERVER_4 = "opc.tcp://commsvr.com:51234/UA/CAS_UA_Server";
-    // not responding
     public static String OPC_PUBLIC_SERVER_5 = "opc.tcp://uademo.prosysopc.com:53530";
-    // Configuration error:  Discovery is not returning the domain
     public static String OPC_PUBLIC_SERVER_6 = "opc.tcp://demo.ascolab.com:4841";
-    // unknown host
     public static String OPC_PUBLIC_SERVER_7 = "opc.tcp://milo.digitalpetri.com:62541/milo";
     public static String OPC_PUBLIC_SERVER_8 = "opc.tcp://opcuademo.sterfive.com:26543";
-        // #8 is currently broken -- discovery returns invalid nodes
     public static String OPC_PUBLIC_SERVER_9 = "http://opcua.demo-this.com:51211/UA/SampleServer";
-        // #9 is offline
 
     public static List<String> OPC_PUBLIC_SERVERS = Arrays.asList(
-            // OPC_PUBLIC_SERVER_1,
+            // OPC_PUBLIC_SERVER_1,  // requires credentials & registration :-(
             OPC_PUBLIC_SERVER_2,
             OPC_PUBLIC_SERVER_3,
-            // OPC_PUBLIC_SERVER_4,
-            // OPC_PUBLIC_SERVER_5,
-            // OPC_PUBLIC_SERVER_6,
+            // OPC_PUBLIC_SERVER_4,  // not responding
+            // OPC_PUBLIC_SERVER_5,  // returns that the service is unsupported.
+            // OPC_PUBLIC_SERVER_6,  // unknown host
             OPC_PUBLIC_SERVER_7,
             OPC_PUBLIC_SERVER_8
-            // OPC_PUBLIC_SERVER_9
+            // OPC_PUBLIC_SERVER_9    // #9 is offline
             );
 
     public static String OPC_INPROCESS_SERVER = "opc.tcp://localhost:12686/milo"; //"opc.tcp://localhost:12686/example";

@@ -31,16 +31,19 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.QualifiedName;
 import org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode;
 import org.eclipse.milo.opcua.stack.core.types.builtin.Variant;
+import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UByte;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UShort;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.MessageSecurityMode;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.MonitoringMode;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.TimestampsToReturn;
+import org.eclipse.milo.opcua.stack.core.types.structured.ApplicationDescription;
 import org.eclipse.milo.opcua.stack.core.types.structured.EndpointDescription;
 import org.eclipse.milo.opcua.stack.core.types.structured.MonitoredItemCreateRequest;
 import org.eclipse.milo.opcua.stack.core.types.structured.MonitoringParameters;
 import org.eclipse.milo.opcua.stack.core.types.structured.ReadValueId;
 
+import org.eclipse.milo.opcua.stack.core.types.structured.UserTokenPolicy;
 import org.slf4j.helpers.MessageFormatter;
 
 import java.io.File;
@@ -79,7 +82,6 @@ public class OpcUaESClient {
     protected UaSubscription subscription = null;
     protected String discoveryEndpoint = null;
     protected String serverEndpoint = null;
-    protected boolean replaceLocalhostInDiscoveredEndpoints = false;
     protected BiConsumer<NodeId, Object> subscriptionHandler;
     protected List<UInteger> currentMonitoredItemList = null;
     protected KeyStoreManager keyStoreManager = null;
@@ -151,18 +153,6 @@ public class OpcUaESClient {
         Map<String, Object> opcConfig = (Map<String, Object>) theConfig.get(OpcConstants.CONFIG_OPC_UA_INFORMATION);
         storageDirectory = opcConfig.get(OpcConstants.CONFIG_STORAGE_DIRECTORY) != null
                 ? (String) opcConfig.get(OpcConstants.CONFIG_STORAGE_DIRECTORY) : defaultStorageDirectory;
-
-        if (opcConfig.containsKey(OpcConstants.CONFIG_REPLACE_DISCOVERED_LOCALHOST)) {
-            Object replLH = opcConfig.get(OpcConstants.CONFIG_REPLACE_DISCOVERED_LOCALHOST);
-            if (replLH instanceof String) {
-                replaceLocalhostInDiscoveredEndpoints = replLH.toString().equalsIgnoreCase("true");
-            } else if (replLH instanceof Boolean) {
-                replaceLocalhostInDiscoveredEndpoints = (Boolean) replLH;
-            } else {
-                log.error(ERROR_PREFIX + ".invalid configuration item: " + OpcConstants.CONFIG_REPLACE_DISCOVERED_LOCALHOST
-                        + " -- type must be string or boolean.  Found: " + replLH.getClass().getName());
-            }
-        }
 
         client = createClient(opcConfig);
     }
@@ -453,7 +443,6 @@ public class OpcUaESClient {
             }
         }
 
-
         List<EndpointDescription> validEndpoints = endpoints.stream()
                 .filter(e -> (e.getSecurityPolicyUri().equals(securityPolicy.getUri())
                         && e.getSecurityMode().equals(msgSecMode)))
@@ -471,9 +460,39 @@ public class OpcUaESClient {
                 }
                 log.debug("    Acceptable endpoint: {} [{}, {}])", e.getEndpointUrl(), fragSpec, e.getSecurityMode());
             }
-        }
-        //.findFirst().orElseThrow(() -> new Exception("no acceptable endpoints returned"));
 
+            // The following code is here for testing only.  It allows us to fake a poorly configured
+            // server that reports invalid or unreachable endpoints as part of discovery.  This is, for
+            // reasons I'm sure i don't agree with, part of the protocol, so we must tolerate it.  The
+            // purportedly proper response is to substitute the address used for discovery for any
+            // unreachable addresses.  This, of course, makes little sense since the whole point of discovery
+            // is to allow these to be spread across different nodes.  But I didn't write the spec.
+
+            Boolean fakeBadAddress = (Boolean) config.get(OpcConstants.CONFIG_TEST_DISCOVERY_UNREACHABLE);
+            if (fakeBadAddress != null && fakeBadAddress) {
+                List<EndpointDescription> newValidEndpoints = new ArrayList<>();
+                for (EndpointDescription e : validEndpoints) {
+                    URI url = new URI(e.getEndpointUrl());
+                    URI borkedUri = new URI(url.getScheme(),
+                            null,
+                            "utterlyWorthlessHostThatShouldNeverResolve",
+                            url.getPort(),
+                            url.getPath(),
+                            null,
+                            null);
+                    EndpointDescription borkedEd = new EndpointDescription(borkedUri.toString(),
+                            e.getServer(),
+                            e.getServerCertificate(),
+                            e.getSecurityMode(),
+                            e.getSecurityPolicyUri(),
+                            e.getUserIdentityTokens(),
+                            e.getTransportProfileUri(),
+                            e.getSecurityLevel());
+                    newValidEndpoints.add(borkedEd);
+                }
+                validEndpoints = newValidEndpoints;
+            }
+        }
         // First, we'll look for an endpoint that doesn't contain localhost.  This is, generally,
         // a not too useful configuration since localhost is always a relative address.
 
@@ -485,15 +504,19 @@ public class OpcUaESClient {
                         // understand opc.tcp: as a scheme/protocol.
                         URI url = new URI(e.getEndpointUrl());
                         InetAddress ina = InetAddress.getByName(url.getHost());
-                        if (!ina.isLoopbackAddress()) {
+                        if (!ina.isLoopbackAddress() || ina.isReachable(3000)) {
                             return true;
                         }
                     } catch (UnknownHostException ex) {
                         log.warn("Recoverable error during discovered server URL validation:" + ex.getClass().getName() + "::" + ex.getMessage() + "-->" + e.getEndpointUrl());
                     } catch (URISyntaxException ex) {
                         log.warn("Recoverable error during discovered server URL validation:" + ex.getClass().getName() + "::" + ex.getMessage() + "-->" + e.getEndpointUrl());
+                    } catch (Exception ex) {
+                        // This means that we have some non-optimal addresses returned by discovery.
+                        // In these cases, we'll leave it up to the SDK & network stack to figure out how to get there.
+                        log.debug("Recoverable error during discovered server URL validation. Left to network stack to resolve:"
+                                + ex.getClass().getName() + "::" + ex.getMessage() + "-->" + e.getEndpointUrl());
                     }
-
                     return false;
                 }).findFirst().orElse(null);
 
@@ -501,10 +524,9 @@ public class OpcUaESClient {
         // If not, we'll go find one that is localhost & hope for the best
 
         if (endpoint == null) {
-            log.warn("No servers at non-loopback addresses found via discovery. " +
-                    "Checking for servers at loopback or otherwise non-optimal addresses.");
             // Discovery server returned either no reasonable endpoints or none that weren't a loopback.
-            // Here, we'll allow loopbacks as a last resort (though we may try & fix them up below)
+            log.warn("No servers at reachable, non-loopback addresses found via discovery. " +
+                    "Fixing up addresses to match discovery server.");
 
             endpoint = validEndpoints.stream()
                     .findFirst().orElse(null);
@@ -513,16 +535,29 @@ public class OpcUaESClient {
             // discovery server by setting the localhost-y address it reported
             // to be the same host as the discovery server
 
-            if (replaceLocalhostInDiscoveredEndpoints && endpoint != null) {
-                // Fixup loopback address...
+            // As noted above, the spec says that the discovery server can return unreachable addresses
+            // Consequently, we'll apply the spec'd response which is to substitute the discovery address.
+
+            if (endpoint != null) {
+                // Fixup loopback or unreachable address...
 
                 URI url = new URI(endpoint.getEndpointUrl());
                 try {
-                    InetAddress ina = InetAddress.getByName(url.getHost());
-                    if (ina.isLoopbackAddress()) {
-                        // We'll only do this replacement for loopback addresses.
+                    InetAddress ina = null;
+                    try {
+                        ina = InetAddress.getByName(url.getHost());
+                    } catch (UnknownHostException uhe) {
+                        // We'll treat this the same as unreachable.  Leave ina null to be checked below
+                    }
+
+                    if (ina == null || ina.isLoopbackAddress() || !ina.isReachable(3000)) {
+                        // We'll only do this replacement for loopback or unreachable addresses.
                         // We can end up here if the addresses are less than optimal, but the SDK can connect.
+
                         URI discUrl = new URI(discoveryEndpoint);
+
+                        log.info("Host {} is either unreachable or is a loopback address.  Substituting discovery address: {}",
+                                url.getHost(), discUrl.getHost());
 
                         URI fixedEndpoint = new URI(url.getScheme(),
                                 null,
@@ -531,7 +566,6 @@ public class OpcUaESClient {
                                 url.getPath(),
                                 null,
                                 null);
-                        //EndpointDescription(String endpointUrl, ApplicationDescription server, ByteString serverCertificate, MessageSecurityMode securityMode, String securityPolicyUri, UserTokenPolicy[] userIdentityTokens, String transportProfileUri, UByte securityLevel) {
 
                         EndpointDescription newEndpoint = new EndpointDescription(fixedEndpoint.toString(),
                                 endpoint.getServer(),
@@ -541,7 +575,8 @@ public class OpcUaESClient {
                                 endpoint.getUserIdentityTokens(),
                                 endpoint.getTransportProfileUri(),
                                 endpoint.getSecurityLevel());
-                        log.debug("Replacing loopback address for endpoint: {} --> {}", endpoint.getEndpointUrl(), newEndpoint.getEndpointUrl());
+                        log.debug("Replacing loopback/unreachable address for endpoint: {} --> {}",
+                                endpoint.getEndpointUrl(), newEndpoint.getEndpointUrl());
 
                         endpoint = newEndpoint;
                     }

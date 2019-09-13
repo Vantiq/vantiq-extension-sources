@@ -326,7 +326,6 @@ public class Connection extends OpcUaTestBase {
                     null,
                     false,
                     false,
-                    true,
                     true);
             makeConnection(false,
                     SecurityPolicy.None.getUri(),
@@ -335,8 +334,7 @@ public class Connection extends OpcUaTestBase {
                     null,
                     false,
                     false,
-                    true,
-                    false);
+                    true);
         } catch (ExecutionException e) {
             fail("Unexpected Exception: " + e.getClass().getName() + " -- " + e.getMessage());
         }
@@ -696,13 +694,42 @@ public class Connection extends OpcUaTestBase {
     public void makeConnection(boolean runAsync, String secPolicy, String msgSecMode,
                                String identityType, String identityValue, boolean inProcessOnly, boolean startProcessOnly) throws ExecutionException {
         try {
-            makeConnection(runAsync, secPolicy, msgSecMode, identityType, identityValue, inProcessOnly, startProcessOnly, false, false);
+            makeConnection(runAsync,
+                    secPolicy,
+                    msgSecMode,
+                    identityType,
+                    identityValue,
+                    inProcessOnly,
+                    startProcessOnly,
+                    false);
+        } catch (ExecutionException e) {
+            fail("Unexpected Exception: " + e.getClass().getName() + " -- " + e.getMessage());
+        }
+    }
+    public void makeConnection(boolean runAsync,
+                               String secPolicy,
+                               String msgSecMode,
+                               String identityType,
+                               String identityValue,
+                               boolean inProcessOnly,
+                               boolean startProcessOnly,
+                               boolean useServerAddress) throws ExecutionException {
+        try {
+            makeConnection(runAsync,
+                    secPolicy,
+                    msgSecMode,
+                    identityType,
+                    identityValue,
+                    inProcessOnly,
+                    startProcessOnly,
+                    useServerAddress,
+                    false);
         } catch (ExecutionException e) {
             fail("Unexpected Exception: " + e.getClass().getName() + " -- " + e.getMessage());
         }
     }
 
-    private static int invocationCount = 0;
+        private static int invocationCount = 0;
     public void makeConnection(boolean runAsync,
                                String secPolicy,
                                String msgSecMode,
@@ -711,13 +738,16 @@ public class Connection extends OpcUaTestBase {
                                boolean inProcessOnly,
                                boolean startProcessOnly,
                                boolean useServerAddress,
-                               boolean replaceLocalHost) throws ExecutionException {
+                               boolean fakeUnreachable) throws ExecutionException {
         HashMap config = new HashMap();
         Map<String, Object> opcConfig = new HashMap<>();
 
         config.put(OpcConstants.CONFIG_OPC_UA_INFORMATION, opcConfig);
         opcConfig.put(OpcConstants.CONFIG_STORAGE_DIRECTORY, STANDARD_STORAGE_DIRECTORY);
         opcConfig.put(OpcConstants.CONFIG_SECURITY_POLICY, secPolicy);
+        if (fakeUnreachable) {
+            opcConfig.put(OpcConstants.CONFIG_TEST_DISCOVERY_UNREACHABLE, true);
+        }
 
         if (msgSecMode != null && !msgSecMode.isEmpty()) {
             opcConfig.put(OpcConstants.CONFIG_MESSAGE_SECURITY_MODE, msgSecMode);
@@ -742,19 +772,6 @@ public class Connection extends OpcUaTestBase {
 
             if (useServerAddress && Utils.OPC_PUBLIC_SERVER_1.equals(discEP)) {
                 opcConfig.put(OpcConstants.CONFIG_SERVER_ENDPOINT, discEP);
-            }
-
-            if (replaceLocalHost) {
-
-                // Here, we'll alternate testing with both Boolean & Text to be maximally flexible
-                // in terms of the JSON configuration. This setting is to deal with erroneous configurations
-                // anyway, so let's not make things any more difficult than we have to.
-
-                if (invocationCount++ % 2 == 0) {
-                    opcConfig.put(OpcConstants.CONFIG_REPLACE_DISCOVERED_LOCALHOST, Boolean.valueOf(true));
-                } else {
-                    opcConfig.put(OpcConstants.CONFIG_REPLACE_DISCOVERED_LOCALHOST, "true");
-                }
             }
 
             try {
