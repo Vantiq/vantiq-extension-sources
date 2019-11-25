@@ -56,7 +56,7 @@ public class Monitoring extends OpcUaTestBase {
 
         config.put(OpcConstants.CONFIG_OPC_UA_INFORMATION, opcConfig);
         opcConfig.put(OpcConstants.CONFIG_STORAGE_DIRECTORY, STANDARD_STORAGE_DIRECTORY);
-        opcConfig.put(OpcConstants.CONFIG_SECURITY_POLICY, SecurityPolicy.None.getSecurityPolicyUri());
+        opcConfig.put(OpcConstants.CONFIG_SECURITY_POLICY, SecurityPolicy.None.getUri());
         opcConfig.put(OpcConstants.CONFIG_DISCOVERY_ENDPOINT, Utils.OPC_INPROCESS_SERVER);
 
         // Here, we'll create a simple map set that creates a monitored
@@ -155,14 +155,14 @@ public class Monitoring extends OpcUaTestBase {
 
         config.put(OpcConstants.CONFIG_OPC_UA_INFORMATION, opcConfig);
         opcConfig.put(OpcConstants.CONFIG_STORAGE_DIRECTORY, STANDARD_STORAGE_DIRECTORY);
-        opcConfig.put(OpcConstants.CONFIG_SECURITY_POLICY, SecurityPolicy.None.getSecurityPolicyUri());
+        opcConfig.put(OpcConstants.CONFIG_SECURITY_POLICY, SecurityPolicy.None.getUri());
         opcConfig.put(OpcConstants.CONFIG_DISCOVERY_ENDPOINT, Utils.OPC_INPROCESS_SERVER);
 
         // Here, we'll create a simple map set that creates a monitored
         opcConfig.put(OpcConstants.CONFIG_OPC_MONITORED_ITEMS, misMap);
         Map miMap = new HashMap<>();
         miMap.put(OpcConstants.CONFIG_MI_NAMESPACE_URN,
-                ExampleNamespace.NAMESPACE_URI);
+                exampleNamespace);
         miMap.put(OpcConstants.CONFIG_MI_IDENTIFIER,
                 Utils.EXAMPLE_NS_SCALAR_INT32_IDENTIFIER);
 
@@ -194,7 +194,7 @@ public class Monitoring extends OpcUaTestBase {
 
             int repetitionCount = 20;
             WriteToOPCUA.performWrites(client,
-                    ExampleNamespace.NAMESPACE_URI,
+                    exampleNamespace,
                     Utils.EXAMPLE_NS_SCALAR_INT32_IDENTIFIER,
                     Utils.EXAMPLE_NS_SCALAR_INT32_TYPE, repetitionCount, msDelayBetweenUpdates);
 
@@ -224,18 +224,25 @@ public class Monitoring extends OpcUaTestBase {
 
         config.put(OpcConstants.CONFIG_OPC_UA_INFORMATION, opcConfig);
         opcConfig.put(OpcConstants.CONFIG_STORAGE_DIRECTORY, STANDARD_STORAGE_DIRECTORY);
-        opcConfig.put(OpcConstants.CONFIG_SECURITY_POLICY, SecurityPolicy.Basic128Rsa15.getSecurityPolicyUri());
-        opcConfig.put(OpcConstants.CONFIG_MESSAGE_SECURITY_MODE, MessageSecurityMode.SignAndEncrypt.toString());
+
+        // ExampleServer no longer has the same means to handle untrusted certs.  So, for now,
+        // we'll just use no security.  We test login elsewhere, so this shouldn't impact
+        // much in terms of testing.
+
+        // TODO: Add better credential generation/validation as the Milo SDK improves and/or stabilizes
+        // TODO: Use SecurityPolicy.Basic256Sha256.getUri());
+        // TODO: Use MessageSecurityMode.SignAndEncrypt.toString());
+
+        opcConfig.put(OpcConstants.CONFIG_SECURITY_POLICY, SecurityPolicy.None.getUri());
+        opcConfig.put(OpcConstants.CONFIG_MESSAGE_SECURITY_MODE, MessageSecurityMode.None.toString());
         opcConfig.put(OpcConstants.CONFIG_DISCOVERY_ENDPOINT, Utils.OPC_INPROCESS_SERVER);
 
         // Here, we'll create a simple map set that creates a monitored item list
         opcConfig.put(OpcConstants.CONFIG_OPC_MONITORED_ITEMS, misMap);
 
-        Map miMap = new HashMap<>();
-        miMap.put(OpcConstants.CONFIG_MI_NAMESPACE_URN,
-                ExampleNamespace.NAMESPACE_URI);
-        miMap.put(OpcConstants.CONFIG_MI_IDENTIFIER,
-                Utils.EXAMPLE_NS_SCALAR_INT32_IDENTIFIER);
+        Map<String, String> miMap = new HashMap<>();
+        miMap.put(OpcConstants.CONFIG_MI_NAMESPACE_URN, exampleNamespace);
+        miMap.put(OpcConstants.CONFIG_MI_IDENTIFIER, Utils.EXAMPLE_NS_SCALAR_INT32_IDENTIFIER);
 
         // This time, we'll leave the string designation out since it's the default...
 
@@ -243,7 +250,7 @@ public class Monitoring extends OpcUaTestBase {
 
         miMap = new HashMap<>();
         miMap.put(OpcConstants.CONFIG_MI_NAMESPACE_URN,
-                ExampleNamespace.NAMESPACE_URI);
+                exampleNamespace);
         miMap.put(OpcConstants.CONFIG_MI_IDENTIFIER,
                 Utils.EXAMPLE_NS_SCALAR_STRING_IDENTIFIER);
 
@@ -323,12 +330,12 @@ public class Monitoring extends OpcUaTestBase {
             int repetitionCount = 10;
             int msDelayBetweenUpdates = 1500;
             WriteToOPCUA.performWrites(client,
-                    ExampleNamespace.NAMESPACE_URI,
+                    exampleNamespace,
                     Utils.EXAMPLE_NS_SCALAR_INT32_IDENTIFIER,
                     Utils.EXAMPLE_NS_SCALAR_INT32_TYPE, repetitionCount, msDelayBetweenUpdates);
 
             WriteToOPCUA.performWrites(client,
-                    ExampleNamespace.NAMESPACE_URI,
+                    exampleNamespace,
                     Utils.EXAMPLE_NS_SCALAR_STRING_IDENTIFIER,
                     Utils.EXAMPLE_NS_SCALAR_STRING_TYPE, repetitionCount, msDelayBetweenUpdates);
 

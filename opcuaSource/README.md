@@ -67,13 +67,28 @@ For OPC UA sources, the document contains the following properties
  - `discoveryEndpoint` -- This is the URL for the OPC UA server's discovery endpoint. This is the URL that the source will use to connect to the OPC UA server.
  - `securityPolicy` -- This is the specification (URI) of the security policy to be used to communicate with the OPC UA server. The security policy includes information about how (and whether) signing and encryption is done. The list of security policy URI's can be found in the OPC UA documentation.
  - `monitoredItems` -- This is the list of items to be monitored by the OPC UA source.  More detail can be found below.
+ 
+##### The Discovery Process and Server Connections
+
+The `discoveryEndpoint` is queried to find endpoints that are compatible with the `securityPolicy` specified. Once a match is found, that discovered endpoint becomes the point
+with which the connector will work.
+
+The OPC UA specification states that the OPC UA server may
+not know what addresses are usable by clients, so the endpoints reported by the discovery process may not be valid locally.
+Consequently, the connector will validate each
+endpoint by checking if the host name is resolvable, that the resultant internet address is reachable, and that the given address is
+not a loopback address.
+If any of these tests fail, the connector will replace the host name reported by the discovery process with the host used
+for discovery.
+This is as per the OPC UA specification.
+
+#### Special Requirements
 
 Additionally, there are some properties that can be added to deal with unusual situations.
 
- - `replaceDiscoveredLocalhost` -- If this is set to "true", any endpoints returned by the `discoveryEndpoint` that have a host that is a loopback address will be replaced with the host name from `discoveryEndpoint`. This is useful when the discovery server not configured cooperatively.
+ - `replaceDiscoveredLocalhost` -- Deprecated/Ignored -- this is now generic functionality with no special specification necessary.
  - `serverEndpointOverride` -- If this is set, any server address returned by the `discoveryEndpoint` will be replaced with this value. Again, this is useful when the discovery server is not configured cooperatively.
  
-
 ##### <a id="monitored_items"></a> Monitored Items
 
 The OPC UA source can be configured to monitor items (nodes) within the OPC UA server.  Specifically, the source will watch for data value changes for the nodes listed, reporting changes back to the VANTIQ system in the form of a message from the source.
