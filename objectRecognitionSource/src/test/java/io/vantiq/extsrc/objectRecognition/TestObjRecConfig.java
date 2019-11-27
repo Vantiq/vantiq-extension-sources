@@ -11,12 +11,17 @@ package io.vantiq.extsrc.objectRecognition;
 
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assume.assumeTrue;
 
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
 import io.vantiq.extjsdk.ExtensionServiceMessage;
@@ -24,6 +29,7 @@ import io.vantiq.extsrc.objectRecognition.imageRetriever.BasicTestRetriever;
 import io.vantiq.extsrc.objectRecognition.imageRetriever.ImageRetrieverInterface;
 import io.vantiq.extsrc.objectRecognition.neuralNet.BasicTestNeuralNet;
 import io.vantiq.extsrc.objectRecognition.neuralNet.NeuralNetInterface;
+import org.opencv.core.Core;
 
 public class TestObjRecConfig {
 
@@ -39,7 +45,14 @@ public class TestObjRecConfig {
     Map<String, Object> general;
     Map<String, Object> dataSource;
     Map<String, Object> neuralNet;
-    
+    Map<String, Object> postProcessor;
+
+    @BeforeClass
+    public static void getProps() {
+        assumeTrue("Tests require system property 'buildDir' to be set -- should be objectRecognitionSource/build",
+                System.getProperty("buildDir") != null);
+    }
+
     @Before
     public void setup() {
         sourceName = "src";
@@ -48,6 +61,7 @@ public class TestObjRecConfig {
         modelDirectory = "models";
         nCore = new NoSendORCore(sourceName, authToken, targetVantiqServer, modelDirectory);
         handler = new ObjectRecognitionConfigHandler(nCore);
+        postProcessor = null;
     }
     
     @After
@@ -259,6 +273,144 @@ public class TestObjRecConfig {
         sendConfig(conf);
         assertFalse("Should not fail with minimal configuration", configIsFailed());
     }
+
+    @Test
+    public void testEmptyPostProcessor() {
+        postProcessor = new HashMap<String, Object>();
+        Map conf = minimalConfig();
+        sendConfig(conf);
+        assertFalse("Should not fail with empty postProcessor", configIsFailed());
+    }
+
+    @Test
+    public void testEmptyPPMapper() {
+        postProcessor = new HashMap<String, Object>();
+        postProcessor.put(ObjectRecognitionConfigHandler.LOCATION_MAPPER, new HashMap<String, Object>());
+        Map conf = minimalConfig();
+        sendConfig(conf);
+        assertFalse("Should not fail with empty postProcessor", configIsFailed());
+    }
+
+    @Test
+    public void testBadCoords() {
+        postProcessor = new HashMap<String, Object>();
+        Map<String, Object> mapper = new HashMap<String,Object>();
+        List<Map> imgCoords = new ArrayList<>();
+        mapper.put(ObjectRecognitionConfigHandler.IMAGE_COORDINATES, imgCoords);
+        postProcessor.put(ObjectRecognitionConfigHandler.LOCATION_MAPPER, mapper);
+
+        Map conf = minimalConfig();
+        sendConfig(conf);
+        assertTrue("Should fail with missing mapping coordinate sets", configIsFailed());
+
+        List<Map> mappedCoords = new ArrayList<>();
+        mapper.put(ObjectRecognitionConfigHandler.MAPPED_COORDINATES, mappedCoords);
+
+        conf = minimalConfig();
+        sendConfig(conf);
+        assertTrue("Should fail with invalid coordinate lists", configIsFailed());
+
+        // Now, let's create some bad coordinate lists...
+
+        for (int i = 0; i <= ObjectRecognitionConfigHandler.REQUIRED_MAPPING_COORDINATES; i++) {
+            Map<String, Integer> aCoord = new HashMap<>();
+            aCoord.put(ObjectRecognitionConfigHandler.COORDINATE_X + "oops", i);
+            mappedCoords.add(aCoord);
+        }
+        conf = minimalConfig();
+        sendConfig(conf);
+        assertTrue("Should fail with invalid coordinate lists (2)", configIsFailed());
+
+        mapper.put(ObjectRecognitionConfigHandler.IMAGE_COORDINATES, mappedCoords);
+        conf = minimalConfig();
+        sendConfig(conf);
+        assertTrue("Should fail with invalid coordinate lists (3)", configIsFailed());
+
+        mappedCoords = new ArrayList<>();
+        mapper.put(ObjectRecognitionConfigHandler.MAPPED_COORDINATES, mappedCoords);
+        imgCoords = new ArrayList<>();
+        mapper.put(ObjectRecognitionConfigHandler.IMAGE_COORDINATES, imgCoords);
+
+        for (int i = 0; i < ObjectRecognitionConfigHandler.REQUIRED_MAPPING_COORDINATES; i++) {
+            Map<String, Integer> aCoord = new HashMap<>();
+            aCoord.put(ObjectRecognitionConfigHandler.COORDINATE_X + "oops", i);
+            mappedCoords.add(aCoord);
+            imgCoords.add(aCoord);
+        }
+        conf = minimalConfig();
+        sendConfig(conf);
+        assertTrue("Should fail with invalid coordinate lists (3)", configIsFailed());
+
+        mappedCoords = new ArrayList<>();
+        mapper.put(ObjectRecognitionConfigHandler.MAPPED_COORDINATES, mappedCoords);
+        imgCoords = new ArrayList<>();
+        mapper.put(ObjectRecognitionConfigHandler.IMAGE_COORDINATES, imgCoords);
+
+        for (int i = 0; i < ObjectRecognitionConfigHandler.REQUIRED_MAPPING_COORDINATES; i++) {
+            Map<String, Integer> aCoord = new HashMap<>();
+            aCoord.put(ObjectRecognitionConfigHandler.COORDINATE_X, i);
+            mappedCoords.add(aCoord);
+            imgCoords.add(aCoord);
+        }
+        conf = minimalConfig();
+        sendConfig(conf);
+        assertTrue("Should fail with invalid coordinate lists (4)", configIsFailed());
+
+        mappedCoords = new ArrayList<>();
+        mapper.put(ObjectRecognitionConfigHandler.MAPPED_COORDINATES, mappedCoords);
+        imgCoords = new ArrayList<>();
+        mapper.put(ObjectRecognitionConfigHandler.IMAGE_COORDINATES, imgCoords);
+
+        for (int i = 0; i < ObjectRecognitionConfigHandler.REQUIRED_MAPPING_COORDINATES; i++) {
+            Map<String, Object> aCoord = new HashMap<>();
+            aCoord.put(ObjectRecognitionConfigHandler.COORDINATE_X, i);
+            aCoord.put(ObjectRecognitionConfigHandler.COORDINATE_Y, i + "oops");
+            mappedCoords.add(aCoord);
+            imgCoords.add(aCoord);
+        }
+        conf = minimalConfig();
+        sendConfig(conf);
+        assertTrue("Should fail with invalid coordinate lists (5)", configIsFailed());
+    }
+
+    @Test
+    public void testValidPostProcessor() {
+        postProcessor = new HashMap<String, Object>();
+        Map<String, Object> mapper = new HashMap<String,Object>();
+        List<Map> imgCoords = new ArrayList<>();
+        List<Map> mappedCoords = new ArrayList<>();
+
+        mapper.put(ObjectRecognitionConfigHandler.IMAGE_COORDINATES, imgCoords);
+        mapper.put(ObjectRecognitionConfigHandler.MAPPED_COORDINATES, mappedCoords);
+        postProcessor.put(ObjectRecognitionConfigHandler.LOCATION_MAPPER, mapper);
+
+        // Now, let's construct some reasonable coordinate lists to validate setup.
+
+        for (int i = 0; i < ObjectRecognitionConfigHandler.REQUIRED_MAPPING_COORDINATES; i++) {
+            Map<String, Object> aCoord = new HashMap<>();
+            Number xVal = Float.valueOf(i + ".14159");
+            Number yVal = i;
+
+            // Verify that either x,y or lat,lon works as expected.
+            if ((i % 2) == 0) {
+                aCoord.put(ObjectRecognitionConfigHandler.COORDINATE_X, xVal);
+                aCoord.put(ObjectRecognitionConfigHandler.COORDINATE_Y, yVal);
+            } else {
+                aCoord.put(ObjectRecognitionConfigHandler.COORDINATE_LONGITUDE, xVal);
+                aCoord.put(ObjectRecognitionConfigHandler.COORDINATE_LATITUDE, String.valueOf(yVal));
+            }
+            mappedCoords.add(aCoord);
+            imgCoords.add(aCoord);
+        }
+        // For this to work correctly, we must connect OpenCV into the world.  So let's...
+
+        System.loadLibrary( Core.NATIVE_LIBRARY_NAME );
+
+        Map conf = minimalConfig();
+        sendConfig(conf);
+        assertFalse("Should not fail with valid setup", configIsFailed());
+
+    }
     
 // ================================================= Helper functions =================================================
     
@@ -280,6 +432,9 @@ public class TestObjRecConfig {
         ret.put("dataSource", dataSource);
         ret.put("general", general);
         ret.put("neuralNet", neuralNet);
+        if (postProcessor != null) {
+            ret.put(ObjectRecognitionConfigHandler.POST_PROCESSOR, postProcessor);
+        }
         
         return ret;
     }

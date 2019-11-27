@@ -33,10 +33,10 @@ import io.vantiq.client.Vantiq;
 import io.vantiq.extjsdk.ExtensionServiceMessage;
 import io.vantiq.extjsdk.ExtensionWebSocketClient;
 import io.vantiq.extjsdk.Handler;
-import io.vantiq.extjsdk.Response;
 import io.vantiq.extsrc.objectRecognition.exception.FatalImageException;
 import io.vantiq.extsrc.objectRecognition.exception.ImageAcquisitionException;
 import io.vantiq.extsrc.objectRecognition.exception.ImageProcessingException;
+import io.vantiq.extsrc.objectRecognition.imageRetriever.CoordinateConverter;
 import io.vantiq.extsrc.objectRecognition.imageRetriever.ImageRetrieverInterface;
 import io.vantiq.extsrc.objectRecognition.imageRetriever.ImageRetrieverResults;
 import io.vantiq.extsrc.objectRecognition.neuralNet.NeuralNetInterface;
@@ -65,6 +65,7 @@ public class ObjectRecognitionCore {
     ExtensionWebSocketClient    client      = null;
     NeuralNetInterface          neuralNet   = null;
     SimpleDateFormat            format      = new SimpleDateFormat("yyyy-MM-dd--HH-mm-ss");
+    CoordinateConverter         coordConverter = null;
     
     public String outputDir;
     public String lastQueryFilename;

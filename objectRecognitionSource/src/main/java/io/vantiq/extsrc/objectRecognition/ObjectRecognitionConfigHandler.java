@@ -11,11 +11,11 @@ package io.vantiq.extsrc.objectRecognition;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
+import java.util.List;
 import java.util.Map;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
@@ -25,6 +25,7 @@ import org.slf4j.LoggerFactory;
 import io.vantiq.extjsdk.ExtensionServiceMessage;
 import io.vantiq.extjsdk.ExtensionWebSocketClient;
 import io.vantiq.extjsdk.Handler;
+import io.vantiq.extsrc.objectRecognition.imageRetriever.CoordinateConverter;
 import io.vantiq.extsrc.objectRecognition.imageRetriever.ImageRetrieverInterface;
 import io.vantiq.extsrc.objectRecognition.imageRetriever.ImageRetrieverResults;
 import io.vantiq.extsrc.objectRecognition.neuralNet.NeuralNetInterface;
@@ -64,6 +65,7 @@ import io.vantiq.extsrc.objectRecognition.neuralNet.NeuralNetInterface;
  * CameraRetriever, {@code ftp} for FtpRetriever, and {@code network} for NetworkStreamRetriever for the dataSource
  * config; and {@code yolo} for YoloProcessor for the neuralNet config.
  */
+@SuppressWarnings({"WeakerAccess"})
 public class ObjectRecognitionConfigHandler extends Handler<ExtensionServiceMessage> {
     
     Logger                  log;
@@ -92,6 +94,17 @@ public class ObjectRecognitionConfigHandler extends Handler<ExtensionServiceMess
     private static final String MAX_QUEUED_TASKS = "maxQueuedTasks";
     private static final String SUPPRESS_EMPTY_NEURAL_NET_RESULTS = "suppressEmptyNeuralNetResults";
 
+    public static final String POST_PROCESSOR = "postProcessor";
+    public static final String LOCATION_MAPPER = "locationMapper";
+    public static Integer REQUIRED_MAPPING_COORDINATES = 4;
+    public static final String IMAGE_COORDINATES = "imageCoordinates";
+    public static final String MAPPED_COORDINATES = "mappedCoordinates";
+    public static final String COORDINATE_X = "x";
+    public static final String COORDINATE_Y = "y";
+    public static final String COORDINATE_LATITUDE = "lat";  // Alternative for y value in GPS cases
+    public static final String COORDINATE_LONGITUDE = "lon"; // Alternative for x value in GPS cases
+
+
     // Constants for Query Parameters
     private static final String OPERATION = "operation";
     private static final String PROCESS_NEXT_FRAME = "processnextframe";
@@ -100,6 +113,7 @@ public class ObjectRecognitionConfigHandler extends Handler<ExtensionServiceMess
     
     Map<String, ?> lastDataSource = null;
     Map<String, ?> lastNeuralNet = null;
+    Map<String, ?> lastPostProcessor = null;
     
     Handler<ExtensionServiceMessage> queryHandler;
     
@@ -185,6 +199,7 @@ public class ObjectRecognitionConfigHandler extends Handler<ExtensionServiceMess
         Map<String, Object> general;
         Map<String, Object> dataSource;
         Map<String, Object> neuralNetConfig;
+        Map<String, ?> postProcessorConfig;
         
         // Obtain the Maps for each object
         if ( !(config.get(CONFIG) instanceof Map && ((Map)config.get(CONFIG)).get(OBJ_REC_CONFIG) instanceof Map) ) {
@@ -212,6 +227,15 @@ public class ObjectRecognitionConfigHandler extends Handler<ExtensionServiceMess
             return;
         }
         neuralNetConfig = (Map) config.get(NEURAL_NET);
+
+        Object ppconf = config.get(POST_PROCESSOR);
+        if (ppconf != null && !(ppconf instanceof Map)) {
+            log.error("Post processor configuration invalid.  Ignoring this configuration change.");
+            failConfig();
+            return;
+        } else {
+            postProcessorConfig = (Map) ppconf;
+        }
         
         
         // Only create a new data source if the config changed, to save time and state
@@ -231,6 +255,18 @@ public class ObjectRecognitionConfigHandler extends Handler<ExtensionServiceMess
             boolean success = createNeuralNet(neuralNetConfig);
             if (!success) {
                 return; // Exit if the neural net could not be created. Closing taken care of by createNeuralNet()
+            }
+        }
+
+        // Only create a new neural net if the config changed, to save time and state
+        if (postProcessorConfig != null) {
+            if (postProcessorConfig.equals(lastPostProcessor)) {
+                log.info("post processor unchanged, keeping previous");
+            } else {
+                boolean success = createPostProcessor(postProcessorConfig);
+                if (!success) {
+                    return; // Exit if the neural net could not be created. Closing taken care of by createNeuralNet()
+                }
             }
         }
         
@@ -351,7 +387,120 @@ public class ObjectRecognitionConfigHandler extends Handler<ExtensionServiceMess
         log.debug("Image retriever class is {}", retrieverType);
         return true;
     }
-    
+
+    /**
+     * Create post processor for images processed by neural net
+     *
+     * At present, the only post processor we support is the location mapper.  But we'll leave
+     * the door open for further things in the future.
+     *
+     * @param ppConf    Map<String,?> holding post processor portion of the configuration
+     * @return boolean indicating success or failure
+     */
+    private boolean createPostProcessor(Map<String, ?> ppConf) {
+        try {
+            lastPostProcessor = null;
+            Object unknown = ppConf.get(LOCATION_MAPPER);
+            if (unknown == null) {
+                // nothing to do here, but no failure...
+                return true;
+            } else if (!(unknown instanceof Map)){
+                log.error("{} should be a Map but encountered {}", LOCATION_MAPPER, unknown.getClass().getName());
+                failConfig();
+                return false;
+            }
+
+            @SuppressWarnings("unchecked")
+            Map<String, ?> locMapCfg = (Map) unknown;
+            List<Map> imageCoords = null;
+            unknown = locMapCfg.get(IMAGE_COORDINATES);
+            if (unknown instanceof List) {
+                imageCoords = (List) unknown;
+            }
+            List<Map> mappedCoords = null;
+            unknown = locMapCfg.get(MAPPED_COORDINATES);
+            if (unknown instanceof List) {
+                mappedCoords = (List) unknown;
+            }
+            if (imageCoords == null && mappedCoords == null) {
+                // Then we're done.
+                return true;
+            } else if (imageCoords == null || mappedCoords == null) {
+                log.error("Image and Mapped coordinates are both required. " +
+                                "{} configuration is invalid and, thus, ignored.", LOCATION_MAPPER);
+                failConfig();
+                return false;
+            } else if (imageCoords.size() != REQUIRED_MAPPING_COORDINATES || mappedCoords.size() != imageCoords.size()) {
+                log.error("Image and Mapped coordinates must come as {} pairs.  Found {} for image, {} for mapped. " +
+                                "{} configuration is invalid and, thus, ignored.",
+                        REQUIRED_MAPPING_COORDINATES, imageCoords.size(), mappedCoords.size(), LOCATION_MAPPER);
+                failConfig();
+                return false;
+            }
+
+            // OK, now we have the basics handled.  Create the pairs of lists (validating as we go) and create
+            // the actual post processor.
+
+            Float[][] src = fetchCoordList(imageCoords);
+            Float[][] target = fetchCoordList(mappedCoords);
+
+            CoordinateConverter cc = new CoordinateConverter(src, target);
+            lastPostProcessor = ppConf;
+            source.coordConverter = cc;
+        } catch (Exception e) {
+            log.error("Exception occurred while setting up the post processor.", e);
+            failConfig();
+            return false;
+        }
+        // Got here, then things worked.  Signal that.
+        return true;
+    }
+
+    /**
+     * Convert our list of coordinates into a 2D array of Floats.
+     *
+     * Assumed that list size is checked by the caller
+     * @param clist List<Map<String, Float>> representing a set of coordinates
+     * @return Float[][] created from  said list.
+     * @throws IllegalArgumentException if the list contains things other than numbers.
+     */
+    private Float[][] fetchCoordList(List clist)  throws IllegalArgumentException {
+        Float[][] retVal = new Float[REQUIRED_MAPPING_COORDINATES][2];
+        for (int i = 0; i < REQUIRED_MAPPING_COORDINATES; i++) {
+            Object unknown = clist.get(i);
+            Float xValue, yValue;
+            if (unknown instanceof Map) {
+                Map coord = (Map) unknown;
+                Object maybeNum = coord.get(COORDINATE_X);
+                if (maybeNum == null) {
+                    maybeNum = coord.get(COORDINATE_LONGITUDE);
+                }
+                if (maybeNum instanceof Number) {
+                    xValue = ((Number) maybeNum).floatValue();
+                } else if (maybeNum instanceof String) {
+                    xValue = Float.valueOf((String) maybeNum);
+                } else {
+                    throw new IllegalArgumentException("No suitable X coordinate found in list.");
+                }
+
+                maybeNum = coord.get(COORDINATE_Y);
+                if (maybeNum == null) {
+                    maybeNum = coord.get(COORDINATE_LATITUDE);
+                }
+                if (maybeNum instanceof Number) {
+                    yValue = ((Number) maybeNum).floatValue();
+                } else if (maybeNum instanceof String) {
+                    yValue = Float.valueOf((String) maybeNum);
+                } else {
+                    throw new IllegalArgumentException("No suitable Y coordinate found in list.");
+                }
+                retVal[i] = new Float[] { xValue, yValue};
+            }
+        }
+        return retVal;
+    }
+
+
     /**
      * Sets up the the communication method, one of timed notifications, continuous notifications, or Query responses
      * @param general   The general portion of the configuration document
