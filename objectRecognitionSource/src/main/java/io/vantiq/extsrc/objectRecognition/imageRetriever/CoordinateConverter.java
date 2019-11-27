@@ -103,13 +103,13 @@ public class CoordinateConverter {
         imgMat.put(0, 2, 1f);   // Fill in an identity channel
 
         // imgMat.put(0, imgfloats.length, imgfloats);
-        log.error("imgMat at creation: {} ({})", imgMat.toString(), imgMat.channels());
+        log.debug("imgMat at creation: {} ({})", imgMat.toString(), imgMat.channels());
         dumpMatrix(imgMat, "imgMat");
         // imgMat.fromArray(imgPts);
         imgMat.reshape(1, 1);
-        log.error("imgMat after fill: {} ({})", imgMat.toString(), imgMat.channels());
+        log.debug("imgMat after fill: {} ({})", imgMat.toString(), imgMat.channels());
 
-        log.error("Converter type: {}, size: {}", converter.type(), converter.size().toString());
+        log.debug("Converter type: {}, size: {}", converter.type(), converter.size().toString());
 //        Mat ones = Mat.ones(imgMat.size(), imgMat.type());
 //        Mat cvtOnes = new MatOfPoint2f();
 //        imgMat.convertTo(cvtOnes, imgMat.type());
@@ -123,38 +123,38 @@ public class CoordinateConverter {
 //        log.error("imgMat1 type: {}, size: {}, ... {}", imgMat1.type(), imgMat1.size().toString(), imgMat1.toString());
 
         Mat imgAsConv = new Mat(0, 0, converter.type());
-        log.error("imgConv.type: {}", imgAsConv.type());
+        log.debug("imgConv.type: {}", imgAsConv.type());
         dumpMatrix(imgAsConv, "imgAsConv");
-        log.error("Channels: imgMat: {} vs. converter: {}", imgMat.channels(), converter.channels());
+        log.debug("Channels: imgMat: {} vs. converter: {}", imgMat.channels(), converter.channels());
         // imgMat.convertTo(imgAsConv, 6);
         Core.transpose(imgMat, imgAsConv);
-        log.error("After convert: imgConv.type: {} :: {}", imgAsConv.type(), imgAsConv.toString());
+        log.debug("After convert: imgConv.type: {} :: {}", imgAsConv.type(), imgAsConv.toString());
         dumpMatrix(imgAsConv, "imgAsConv (transposed imgMat)");
 
         //Mat converted = converter.mul(imgMat);
         Mat converted = new Mat();
-        log.error("imgAsConv x converter:  type: {} x {}", imgAsConv.type(), converter.type());
+        log.debug("imgAsConv x converter:  type: {} x {}", imgAsConv.type(), converter.type());
 
         Mat c = new Mat(0,0,imgAsConv.type());
         converter.convertTo(c, imgAsConv.type());
         dumpMatrix(c, "c -- converted converter");
 //        log.error("C's type: {} ({}/{}), imgAsConv: {} ({}, {})", c.toString(), c.type(), c.channels(),
 //                imgAsConv.toString(), imgAsConv.type(), imgAsConv.channels());
-        log.error("c's type: {} ({}/{}), imgAsConv: {} ({}, {})", c.toString(), c.type(), c.channels(),
+        log.debug("c's type: {} ({}/{}), imgAsConv: {} ({}, {})", c.toString(), c.type(), c.channels(),
                 imgAsConv.toString(), imgAsConv.type(), imgAsConv.channels());
         Core.gemm(c, imgAsConv, 1, new Mat(), 0, converted);
 
-        log.error("Converted {} into  {}", imgFlts, converted.toString());
+        log.debug("Converted {} into  {}", imgFlts, converted.toString());
         dumpMatrix(converted, "converted");
 
         return new Float[] {(float) converted.get(0,0)[0], (float) converted.get(1,0)[0]};
     }
 
     private void dumpMatrix(Mat m, String name) {
-        log.error("Contents of {}", name);
+        log.debug("Contents of {}", name);
         for (int row = 0; row < m.rows(); row++) {
             for (int col = 0; col < m.cols(); col++) {
-                log.error("\trow {}, col {} :: {}", row, col, m.get(row, col));
+                log.debug("\trow {}, col {} :: {}", row, col, m.get(row, col));
             }
         }
 
