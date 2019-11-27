@@ -1,4 +1,13 @@
+/*
+ * Copyright (c) 2019 Vantiq, Inc.
+ *
+ * All rights reserved.
+ *
+ * SPDX: MIT
+ */
+
 package io.vantiq.extsrc.objectRecognition.imageRetriever;
+
 
 import static org.opencv.core.Core.DECOMP_LU;
 import static org.opencv.core.CvType.CV_32F;
@@ -16,15 +25,29 @@ import org.slf4j.LoggerFactory;
  * Construct a coordinate converter based on the 4 non-collinear points provided.  This converter
  * is reusable using the <code>convert()</code> call.  To create a new converter, create a new instance of this
  * class.
+ *
+ * This class is based on the following article:
+ *    https://medium.com/hal24k-techblog/how-to-track-objects-in-the-real-world-with-tensorflow-sort-and-opencv-a64d9564ccb1
+ *
+ * Unfortunately, as is often the case with OpenCV & neuralNet references, this is Python-based.  The "raw" OpenCV
+ * doesn't necessarily have all the same capabilities defined the same way.  So, liberties have been taken and,
+ * undoubtedly, some unnecessary complications are included.  This is due, primarily, to the author's
+ * mis-/lackOf- complete understanding of Python and its attendant packages.
  */
 
+@SuppressWarnings({"FieldCanBeLocal"})
 public class CoordinateConverter {
 
+    @SuppressWarnings({"WeakerAccess"})
     Logger log = LoggerFactory.getLogger(this.getClass());
 
+    private Mat converter32 = null;     // Ultimately, this is the converter that's used.
+
+    // The following are used in converter32's construction & hang around for debug usage.  In general,
+    // these are all small so there's little gain in removing them.
     private Mat converter = null;
-    private MatOfPoint2f src = null;    // Src saved for doc/debug
-    private MatOfPoint2f dst = null;    // ditto
+    private MatOfPoint2f src = null;
+    private MatOfPoint2f dst = null;
 
 
     /**
@@ -38,8 +61,9 @@ public class CoordinateConverter {
      * @param source 2D array of floats defining the source space.  Must be of length 4
      * @param destination 2D array of floats defining the target space.  Length 4, where each point corresponds to those in src.
      */
-    public CoordinateConverter(Float source[][], Float destination[][]) {
+    public CoordinateConverter(Float[][] source, Float[][] destination) {
         this.converter = buildConverter(source, destination);
+        this.converter32 = prepareConverterForUse(this.converter);
     }
 
     /**
@@ -52,105 +76,126 @@ public class CoordinateConverter {
      * @param destination 2D array of floats defining the destination coordinate space
      * @return Mat holding the the constructed converter
      */
-    private Mat buildConverter(Float source[][], Float destination[][]) {
+    private Mat buildConverter(Float[][] source, Float[][] destination) {
 
-        Point srcPts[] = ptsFromFlts(source);
-        Point dstPts[] = ptsFromFlts(destination);
+        src = ptsFromFlts(source);
+        dst = ptsFromFlts(destination);
 
-        src = new MatOfPoint2f();
-        dst = new MatOfPoint2f();
-
-        src.fromArray(srcPts);
-        dst.fromArray(dstPts);
-        dumpMatrix(src, "src");
-        dumpMatrix(dst, "dst");
+        if (log.isTraceEnabled()) {
+            dumpMatrix(src, "src");
+            dumpMatrix(dst, "dst");
+        }
 
         // DECOMP_LU (Gaussian elimination with the optimal pivot element chosen) is the default.
         // We'll use the "long form" here should we need to add an option to override this in the future.
 
         Mat cnvtr = Imgproc.getPerspectiveTransform(src, dst, DECOMP_LU);
-        dumpMatrix(cnvtr, "Converter base");
+        if (log.isTraceEnabled()) {
+            dumpMatrix(cnvtr, "Converter base");
+        }
+
         return cnvtr;
     }
 
-    private Point[] ptsFromFlts(Float flts[][]) {
-        Point pts[] = new Point[flts.length];
+    private Mat prepareConverterForUse(Mat origConverter) {
+        // Java float vs double plays havoc here.  So, to deal with this, we'll convert our generated converter
+        // to something more palatable to the conversion process.  The converter returned above, for reasons unknown,
+        // returns a matrix of 64-bit floats, but the input is always 32-bit ones.  Since we use the 32-bit variety,
+        // we'll convert now to avoid having to convert on each new point.
+
+        Mat cnv32 = new Mat(0, 0, CV_32F);
+
+        origConverter.convertTo(cnv32, CV_32F);
+        dumpMatrix(cnv32, "cnv32");
+        return cnv32;
+    }
+
+    private MatOfPoint2f ptsFromFlts(Float[][] flts) {
+        MatOfPoint2f result =  new MatOfPoint2f();
+        Point[] pts = new Point[flts.length];
         for (int i = 0; i < flts.length; i++ ) {
             Point p = new Point(flts[i][0], flts[i][1]);
             pts[i] = p;
         }
-        return pts;
+        result.fromArray(pts);
+        return result;
     }
 
-    public Float[] convert(Float imgFlts[]) {
+    /**
+     * Convert a 2D coordinate according this converter's specification
+     *
+     * This method using OpenCV's matrix math & the previously generated perspectiveTransform
+     * to convert a pair of points from the source space to the destination space.  The converter
+     * is not tied to any particular type of conversion;  it operates based on the 4 non-collinear
+     * points which form the basis for this instance of the <class>CoordinateConverter</class>.
+     *
+     * @param srcCoordsArray Array[2] of Floats that represent the coordinate to be converted.
+     * @return Array[2] of Floats representing the result of the conversion.
+     */
+    public Float[] convert(Float[] srcCoordsArray) {
+        // (Object) cast to force log.debug() to understand that it's not a varargs thing....
+        log.debug("convert({}) called...", (Object) srcCoordsArray);
 
-//        Point imgPts[] = ptsFromFlts(imgFlts);
-//        for (int i = 0; i < imgPts.length; i++ ) {
-//            log.error("Input point {} is {}", i, imgPts[i]);
-//        }
-//        float imgfloats[] = new float[3];
-//        int i = 0;
-//        for (Point p :imgPts) {
-//            log.error("Convert: Point is {}", p.toString());
-//            imgfloats[i++] = 1.0f;
-//            imgfloats[i++] = (float) p.x;
-//            imgfloats[i++] = (float) p.y;
-//        }
-        log.debug("Converter: {}/{}::{}", converter.channels(), converter.depth(), converter.toString());
-        Mat imgMat = new Mat(1,3, CV_32F);
-        imgMat.put(0, 0, imgFlts[0]);
-        imgMat.put(0, 1, imgFlts[1]);
-        imgMat.put(0, 2, 1f);   // Fill in an identity channel
+        // Construct a matrix (OpenCV Mat) representation of our input coordinates for conversion.
+        // Note that we construct the transpose of what would normally be used for the coordinates
+        // since the conversion operation involves (matrix) multiplication of our converter
+        // with the transpose of the coordinates.  Since that's all we ever do with them & things are small,
+        // we'll just create the transpose manually & use that directly.
+        //
+        // Calling this out so that readers understand why the matrix is created this way.
 
-        // imgMat.put(0, imgfloats.length, imgfloats);
-        log.debug("imgMat at creation: {} ({})", imgMat.toString(), imgMat.channels());
-        dumpMatrix(imgMat, "imgMat");
-        // imgMat.fromArray(imgPts);
-        imgMat.reshape(1, 1);
-        log.debug("imgMat after fill: {} ({})", imgMat.toString(), imgMat.channels());
+        Mat coords = new Mat(3,1, CV_32F);
+        coords.put(0, 0, srcCoordsArray[0]);
+        coords.put(1, 0, srcCoordsArray[1]);
+        coords.put(2, 0, 1f);   // Fill in an identity value to ease matrix math
+        if (log.isTraceEnabled()) {
+            dumpMatrix(coords, "coords");   // Dump out for debug purposes
+        }
 
-        log.debug("Converter type: {}, size: {}", converter.type(), converter.size().toString());
-//        Mat ones = Mat.ones(imgMat.size(), imgMat.type());
-//        Mat cvtOnes = new MatOfPoint2f();
-//        imgMat.convertTo(cvtOnes, imgMat.type());
-//
-//        log.error("Ones type: {}, size: {}", ones.type(), ones.size().toString());
-//        log.error("cvtOnes type: {}, size: {}", cvtOnes.type(), cvtOnes.size().toString());
-//
-//        Mat imgMat1 = new Mat();
-//        Core.hconcat(Arrays.asList(imgMat, cvtOnes), imgMat1);
-//        // imgMat.push_back(cvtOnes);
-//        log.error("imgMat1 type: {}, size: {}, ... {}", imgMat1.type(), imgMat1.size().toString(), imgMat1.toString());
+        // Construct a Mat to hold the results of the transform
+        Mat resultCoords = new Mat();
+        log.trace("c's type: {} ({}/{}), coords: {} ({}, {})",
+                converter32.toString(), converter32.type(), converter32.channels(),
+                coords.toString(), coords.type(), coords.channels());
+        // Here, it's a bit tricky.
+        // Here, we're going to perform a matrix multiply of the converter with
+        // the (transpose of) our coordinates.  As noted above, the coordinates (coords) were created
+        // transposed, so there's no extra work here.  Also, as noted in the class constructor, the types
+        // in use here need to match, so we use a the coordinateConverter that's been converted to the types
+        // used for our coordinates.
+        //
+        // To perform this multiply, we'll use the Generalized Matrix Multiplication (gemm) method.
+        // Core.gemm(src1, src2, alpha, src3, beta, dst) performs the operation as:
+        //     dst = alpha*src1.t()*src2 + beta*src3.t()
+        // in python speak, which is to say that the result is the product of the (alphas * src1.transpose()) times
+        // src2, to which is added the product of beta * src3.transpose();
+        //
+        // In our case, we don't need any weighted version, so the alpha parameter (#3) is 1.  Moreover, we
+        // need nothing added to the results, so beta is zero, and the src3 parameter is an empty matrix.
+        // Despite beta being zero, we must pass in an empty src3 matrix (parameter #4) that would've been
+        // used in association with the beta parameter to adjust the result.
+        //
+        // The result of this operation appear in our resultCoords matrix, from which we extract the converter
+        // coordinates.
+        Core.gemm(converter32, coords, 1, new Mat(), 0, resultCoords);
 
-        Mat imgAsConv = new Mat(0, 0, converter.type());
-        log.debug("imgConv.type: {}", imgAsConv.type());
-        dumpMatrix(imgAsConv, "imgAsConv");
-        log.debug("Channels: imgMat: {} vs. converter: {}", imgMat.channels(), converter.channels());
-        // imgMat.convertTo(imgAsConv, 6);
-        Core.transpose(imgMat, imgAsConv);
-        log.debug("After convert: imgConv.type: {} :: {}", imgAsConv.type(), imgAsConv.toString());
-        dumpMatrix(imgAsConv, "imgAsConv (transposed imgMat)");
+        if (log.isTraceEnabled()) {
+            dumpMatrix(resultCoords, "resultCoords");
+        }
+        // Convert result matrix into a simple array of coordinates.
+        Float[] result = new Float[] {(float) resultCoords.get(0,0)[0], (float) resultCoords.get(1,0)[0]};
+        log.debug("convert({}) --> {}", srcCoordsArray, result);
 
-        //Mat converted = converter.mul(imgMat);
-        Mat converted = new Mat();
-        log.debug("imgAsConv x converter:  type: {} x {}", imgAsConv.type(), converter.type());
-
-        Mat c = new Mat(0,0,imgAsConv.type());
-        converter.convertTo(c, imgAsConv.type());
-        dumpMatrix(c, "c -- converted converter");
-//        log.error("C's type: {} ({}/{}), imgAsConv: {} ({}, {})", c.toString(), c.type(), c.channels(),
-//                imgAsConv.toString(), imgAsConv.type(), imgAsConv.channels());
-        log.debug("c's type: {} ({}/{}), imgAsConv: {} ({}, {})", c.toString(), c.type(), c.channels(),
-                imgAsConv.toString(), imgAsConv.type(), imgAsConv.channels());
-        Core.gemm(c, imgAsConv, 1, new Mat(), 0, converted);
-
-        log.debug("Converted {} into  {}", imgFlts, converted.toString());
-        dumpMatrix(converted, "converted");
-
-        return new Float[] {(float) converted.get(0,0)[0], (float) converted.get(1,0)[0]};
+        return result;
     }
 
+    /**
+     * Dump an OpenCV::Mat value for debug purposes
+     * @param m Mat to be dumped
+     * @param name String name of Mat (or other descriptive phrase of value to developer)
+     */
     private void dumpMatrix(Mat m, String name) {
+        log.debug(name + " description: {} (type: {}, size: {})", m.toString(), m.type(), m.size());
         log.debug("Contents of {}", name);
         for (int row = 0; row < m.rows(); row++) {
             for (int col = 0; col < m.cols(); col++) {

@@ -1,3 +1,11 @@
+/*
+ * Copyright (c) 2019 Vantiq, Inc.
+ *
+ * All rights reserved.
+ *
+ * SPDX: MIT
+ */
+
 package io.vantiq.extsrc.objectRecognition.imageRetriever;
 
 import lombok.extern.slf4j.Slf4j;
@@ -15,6 +23,9 @@ public class TestCoordConverter {
     public static void loadEmUp() {
         System.loadLibrary( Core.NATIVE_LIBRARY_NAME );
     }
+
+    // FIXME:  Would be good to get some "real" GPS conversions in unit tests since that's really
+    // FIXME: the primary goal here.
 
     @Test
     public void testIdentity() {
@@ -117,8 +128,8 @@ public class TestCoordConverter {
                 Float[] dst = tstRes[ti];
                 log.debug("Checking conversion of ({}, {})", src[0], src[1]);
                 Float[] res = converter.convert(src);
-                assertEquals("X coord mismatch in test points index" + ti, dst[0], res[0]);
-                assertEquals("Y coord mismatch in test points index" + ti, dst[1], res[1]);
+                assertEquals("X coord mismatch in test points index: " + ti, dst[0], res[0]);
+                assertEquals("Y coord mismatch in test points index: " + ti, dst[1], res[1]);
             }
         }
     }
