@@ -1,8 +1,11 @@
+plugins {
+    id 'java'
+    id 'application'
+    id 'io.franzbecker.gradle-lombok'
+}
+
 group 'io.vantiq'
 version 'unspecified'
-
-apply plugin: 'java'
-apply plugin: 'application'
 
 sourceCompatibility = 1.8
 
