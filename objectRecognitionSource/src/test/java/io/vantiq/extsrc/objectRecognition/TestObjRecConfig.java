@@ -374,6 +374,43 @@ public class TestObjRecConfig {
     }
 
     @Test
+    public void testInvalidResultSpec() {
+        postProcessor = new HashMap<String, Object>();
+        Map<String, Object> mapper = new HashMap<String,Object>();
+        List<Map> imgCoords = new ArrayList<>();
+        List<Map> mappedCoords = new ArrayList<>();
+
+        mapper.put(ObjectRecognitionConfigHandler.IMAGE_COORDINATES, imgCoords);
+        mapper.put(ObjectRecognitionConfigHandler.MAPPED_COORDINATES, mappedCoords);
+        postProcessor.put(ObjectRecognitionConfigHandler.LOCATION_MAPPER, mapper);
+
+        // Now, let's construct some reasonable coordinate lists to validate setup.
+
+        for (int i = 0; i < ObjectRecognitionConfigHandler.REQUIRED_MAPPING_COORDINATES; i++) {
+            Map<String, Object> aCoord = new HashMap<>();
+            Number xVal = Float.valueOf(i + ".14159");
+            Number yVal = i;
+
+            // Verify that either x,y or lat,lon works as expected.
+            if ((i % 2) == 0) {
+                aCoord.put(ObjectRecognitionConfigHandler.COORDINATE_X, xVal);
+                aCoord.put(ObjectRecognitionConfigHandler.COORDINATE_Y, yVal);
+            } else {
+                aCoord.put(ObjectRecognitionConfigHandler.COORDINATE_LONGITUDE, xVal);
+                aCoord.put(ObjectRecognitionConfigHandler.COORDINATE_LATITUDE, String.valueOf(yVal));
+            }
+            mappedCoords.add(aCoord);
+            imgCoords.add(aCoord);
+        }
+
+        mapper.put(ObjectRecognitionConfigHandler.RESULTS_AS_GEOJSON, 37);
+        Map conf = minimalConfig();
+        sendConfig(conf);
+        assertTrue("Should fail with non-boolean-ish " + ObjectRecognitionConfigHandler.RESULTS_AS_GEOJSON,
+                configIsFailed());
+    }
+
+    @Test
     public void testValidPostProcessor() {
         postProcessor = new HashMap<String, Object>();
         Map<String, Object> mapper = new HashMap<String,Object>();
@@ -410,6 +447,25 @@ public class TestObjRecConfig {
         sendConfig(conf);
         assertFalse("Should not fail with valid setup", configIsFailed());
 
+        mapper = new HashMap<String,Object>();
+        mapper.put(ObjectRecognitionConfigHandler.IMAGE_COORDINATES, imgCoords);
+        mapper.put(ObjectRecognitionConfigHandler.MAPPED_COORDINATES, mappedCoords);
+        mapper.put(ObjectRecognitionConfigHandler.RESULTS_AS_GEOJSON, true);
+        postProcessor = new HashMap<String, Object>();
+        postProcessor.put(ObjectRecognitionConfigHandler.LOCATION_MAPPER, mapper);
+        conf = minimalConfig();
+        sendConfig(conf);
+        assertFalse("Should not fail with valid setup & resultsAsGeoJSON", configIsFailed());
+
+        mapper = new HashMap<String,Object>();
+        mapper.put(ObjectRecognitionConfigHandler.IMAGE_COORDINATES, imgCoords);
+        mapper.put(ObjectRecognitionConfigHandler.MAPPED_COORDINATES, mappedCoords);
+        mapper.put(ObjectRecognitionConfigHandler.RESULTS_AS_GEOJSON, "false");
+        postProcessor = new HashMap<String, Object>();
+        postProcessor.put(ObjectRecognitionConfigHandler.LOCATION_MAPPER, mapper);
+        conf = minimalConfig();
+        sendConfig(conf);
+        assertFalse("Should not fail with valid setup & resultsAsGeoJSON (false/string)", configIsFailed());
     }
     
 // ================================================= Helper functions =================================================

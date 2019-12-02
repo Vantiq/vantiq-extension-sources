@@ -36,7 +36,6 @@ import io.vantiq.extjsdk.Handler;
 import io.vantiq.extsrc.objectRecognition.exception.FatalImageException;
 import io.vantiq.extsrc.objectRecognition.exception.ImageAcquisitionException;
 import io.vantiq.extsrc.objectRecognition.exception.ImageProcessingException;
-import io.vantiq.extsrc.objectRecognition.imageRetriever.CoordinateConverter;
 import io.vantiq.extsrc.objectRecognition.imageRetriever.ImageRetrieverInterface;
 import io.vantiq.extsrc.objectRecognition.imageRetriever.ImageRetrieverResults;
 import io.vantiq.extsrc.objectRecognition.neuralNet.NeuralNetInterface;
@@ -65,7 +64,7 @@ public class ObjectRecognitionCore {
     ExtensionWebSocketClient    client      = null;
     NeuralNetInterface          neuralNet   = null;
     SimpleDateFormat            format      = new SimpleDateFormat("yyyy-MM-dd--HH-mm-ss");
-    CoordinateConverter         coordConverter = null;
+    LocationMapper              locationMapper = null;
     
     public String outputDir;
     public String lastQueryFilename;
@@ -671,8 +670,7 @@ public class ObjectRecognitionCore {
        } else {
            map.put("neuralNet", new LinkedHashMap<>());
        }
-       
-       
+
        return map;
    }
     
@@ -742,5 +740,17 @@ public class ObjectRecognitionCore {
             return false;
         }
         return true;
+    }
+
+    public void createLocationMapper(Float[][] source, Float[][] destination, boolean convertToGeoJSON) {
+        locationMapper = new LocationMapper(source, destination, convertToGeoJSON);
+    }
+
+    public void createLocationMapper(Float[][] source, Float[][] destination) {
+        locationMapper = new LocationMapper(source, destination);
+    }
+
+    public LocationMapper getLocationMapper() {
+        return locationMapper;
     }
 }

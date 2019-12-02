@@ -25,7 +25,6 @@ import org.slf4j.LoggerFactory;
 import io.vantiq.extjsdk.ExtensionServiceMessage;
 import io.vantiq.extjsdk.ExtensionWebSocketClient;
 import io.vantiq.extjsdk.Handler;
-import io.vantiq.extsrc.objectRecognition.imageRetriever.CoordinateConverter;
 import io.vantiq.extsrc.objectRecognition.imageRetriever.ImageRetrieverInterface;
 import io.vantiq.extsrc.objectRecognition.imageRetriever.ImageRetrieverResults;
 import io.vantiq.extsrc.objectRecognition.neuralNet.NeuralNetInterface;
@@ -103,6 +102,8 @@ public class ObjectRecognitionConfigHandler extends Handler<ExtensionServiceMess
     public static final String COORDINATE_Y = "y";
     public static final String COORDINATE_LATITUDE = "lat";  // Alternative for y value in GPS cases
     public static final String COORDINATE_LONGITUDE = "lon"; // Alternative for x value in GPS cases
+    public static final String RESULTS_AS_GEOJSON = "resultsAsGeoJSON"; // (boolean) return results as geojson
+                                                                        // Implies that mapping is for GPS
 
 
     // Constants for Query Parameters
@@ -400,6 +401,8 @@ public class ObjectRecognitionConfigHandler extends Handler<ExtensionServiceMess
     private boolean createPostProcessor(Map<String, ?> ppConf) {
         try {
             lastPostProcessor = null;
+            boolean convertToGeoJSON = false;
+
             Object unknown = ppConf.get(LOCATION_MAPPER);
             if (unknown == null) {
                 // nothing to do here, but no failure...
@@ -437,6 +440,19 @@ public class ObjectRecognitionConfigHandler extends Handler<ExtensionServiceMess
                 failConfig();
                 return false;
             }
+            unknown = locMapCfg.get(RESULTS_AS_GEOJSON);
+            if (unknown != null) {  // Missing ==> false
+                if (unknown instanceof Boolean) {
+                    convertToGeoJSON = (Boolean) unknown;
+                } else if (unknown instanceof String) {
+                    convertToGeoJSON = Boolean.valueOf((String) unknown);
+                } else {
+                    log.error("Configuration element {}.{} must be a boolean or String representing a boolean.  Found {}.",
+                            LOCATION_MAPPER, RESULTS_AS_GEOJSON, unknown.getClass().getName());
+                    failConfig();
+                    return false;
+                }
+            }
 
             // OK, now we have the basics handled.  Create the pairs of lists (validating as we go) and create
             // the actual post processor.
@@ -444,9 +460,8 @@ public class ObjectRecognitionConfigHandler extends Handler<ExtensionServiceMess
             Float[][] src = fetchCoordList(imageCoords);
             Float[][] target = fetchCoordList(mappedCoords);
 
-            CoordinateConverter cc = new CoordinateConverter(src, target);
             lastPostProcessor = ppConf;
-            source.coordConverter = cc;
+            source.createLocationMapper(src, target, convertToGeoJSON);
         } catch (Exception e) {
             log.error("Exception occurred while setting up the post processor.", e);
             failConfig();
