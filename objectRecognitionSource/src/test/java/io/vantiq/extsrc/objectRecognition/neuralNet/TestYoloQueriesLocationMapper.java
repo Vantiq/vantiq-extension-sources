@@ -74,21 +74,33 @@ public class TestYoloQueriesLocationMapper extends NeuralNetTestBase {
     @Test
     public void testLocationMapperSimple() {
         PointChecker checker = new Plus50Checker();
-        performMapperTest(plus50SrcPts, plus50DstPts, checker);
+        performMapperTest(plus50SrcPts, plus50DstPts, false, checker);
+    }
+
+    @Test
+    public void testLocationMapperSimpleGJ() {
+        PointChecker checker = new Plus50GJChecker();
+        performMapperTest(plus50SrcPts, plus50DstPts, true, checker);
     }
 
     @Test
     public void testLocationMapperDoubler() {
         PointChecker checker = new XIdentYTimes2();
-        performMapperTest(xIdentYTimes2SrcPts, xIdentYTimes2DstPts, checker);
+        performMapperTest(xIdentYTimes2SrcPts, xIdentYTimes2DstPts, false, checker);
+    }
+
+    @Test
+    public void testLocationMapperDoublerGJ() {
+        PointChecker checker = new XIdentYTimes2GJ();
+        performMapperTest(xIdentYTimes2SrcPts, xIdentYTimes2DstPts, true, checker);
     }
 
     interface PointChecker {
         void check(JsonObject resLoc, JsonObject mappedLoc);
     }
 
-    public void performMapperTest(Float[][] srcPts, Float[][] dstPts, PointChecker ptChecker) {
-        setupSource(createSourceDef(buildConverterSpec(srcPts, dstPts)));
+    public void performMapperTest(Float[][] srcPts, Float[][] dstPts, boolean geoJsonResults, PointChecker ptChecker) {
+        setupSource(createSourceDef(buildConverterSpec(srcPts, dstPts, geoJsonResults)));
         VantiqResponse result;
 
         Map<String,Object> params = new LinkedHashMap<String,Object>();
@@ -140,7 +152,9 @@ public class TestYoloQueriesLocationMapper extends NeuralNetTestBase {
                 }
             }
         }
-        assertEquals("insufficient images with data", 5, imagesProcessed);
+        assertEquals("(This means the camera we're using is out or that there's nothing interesting going on --" +
+                " letting you know that nothing was tested) insufficient images with data",
+                5, imagesProcessed);
     }
 
     public static VantiqResponse querySource(Map<String,Object> params) {
@@ -155,7 +169,7 @@ public class TestYoloQueriesLocationMapper extends NeuralNetTestBase {
         }
     }
 
-    public static Map<String, Object> buildConverterSpec(Float[][] srcPts, Float[][] dstPts) {
+    public static Map<String, Object> buildConverterSpec(Float[][] srcPts, Float[][] dstPts, boolean resultsAsGeoJSON) {
         assertEquals("Bad source point list",
                 (long) ObjectRecognitionConfigHandler.REQUIRED_MAPPING_COORDINATES, srcPts.length);
         assertEquals("Bad destination point list",
@@ -167,6 +181,7 @@ public class TestYoloQueriesLocationMapper extends NeuralNetTestBase {
 
         mapper.put(ObjectRecognitionConfigHandler.IMAGE_COORDINATES, imgCoords);
         mapper.put(ObjectRecognitionConfigHandler.MAPPED_COORDINATES, mappedCoords);
+        mapper.put(ObjectRecognitionConfigHandler.RESULTS_AS_GEOJSON, resultsAsGeoJSON);
 
         // Now, let's construct some reasonable coordinate lists to validate setup.
 
@@ -239,12 +254,26 @@ public class TestYoloQueriesLocationMapper extends NeuralNetTestBase {
 
     // The following are various mapper specifications & checkers
 
+    abstract class BasePointChecker implements PointChecker {
+        void checkNull(String[] labels, JsonObject target, String targetName) {
+            for (String label : labels) {
+                assertNotNull("No " + label + " -- " + targetName, target.get(label));
+            }
+        }
+
+        abstract public void check(JsonObject resLoc, JsonObject mappedLoc);
+    }
+
     // X + 55, y+50 is the conversion
     static Float[][] plus50SrcPts = new Float[][] { {1.0f,1f}, {2f,1f}, {3f,3f}, {4f,3f}};
     static Float[][] plus50DstPts = new Float[][] { {56.0f,51f}, {57f,51f}, {58f,53f}, {59f,53f}};
 
-    class Plus50Checker implements PointChecker {
+    class Plus50Checker extends BasePointChecker {
+
         public void check(JsonObject resLoc, JsonObject mappedLoc) {
+            checkNull(new String[] {"top", "left", "bottom", "right"}, resLoc, "result");
+            checkNull(new String[] {"top", "left", "bottom", "right"}, mappedLoc, "mapped");
+
             assertEquals("mismatch top", resLoc.get("top").getAsFloat() + 50f,
                     mappedLoc.get("top").getAsFloat(), 0);
             assertEquals("mismatch bottom", resLoc.get("bottom").getAsFloat() + 50f,
@@ -256,12 +285,49 @@ public class TestYoloQueriesLocationMapper extends NeuralNetTestBase {
         }
     }
 
+    /**
+     * Check that doing the same plus50 work but converting to GeoJson works as expected...
+     */
+    class Plus50GJChecker extends BasePointChecker {
+
+        public void check(JsonObject resLoc, JsonObject mappedLoc) {
+            checkNull(new String[] {"top", "left", "bottom", "right"}, resLoc, "result");
+            checkNull(new String[] {"topLeft", "bottomRight"}, mappedLoc, "mapped");
+
+            JsonObject mappedTl= mappedLoc.get("topLeft").getAsJsonObject();
+            JsonObject mappedBr = mappedLoc.get("bottomRight").getAsJsonObject();
+            checkNull(new String[] {"type", "coordinates"}, mappedTl, "topLeft");
+            checkNull(new String[] {"type", "coordinates"}, mappedBr, "bottomRight");
+
+            assertEquals("Mapped top left isn't a point", "Point", mappedTl.get("type").getAsString());
+            assertEquals("Mapped bottom right isn't a point", "Point", mappedBr.get("type").getAsString());
+
+            // Remember that in GeoJSON, coordinates come as [y, x].  So top (y) is first array element...
+            assertEquals("mismatch top", resLoc.get("top").getAsFloat() + 50f,
+                    mappedTl.get("coordinates").getAsJsonArray().get(0).getAsFloat(),
+                    0);
+            assertEquals("mismatch bottom", resLoc.get("bottom").getAsFloat() + 50f,
+                    mappedBr.get("coordinates").getAsJsonArray().get(0).getAsFloat(),
+                    0);
+
+            assertEquals("mismatch left", resLoc.get("left").getAsFloat() + 55f,
+                    mappedTl.get("coordinates").getAsJsonArray().get(1).getAsFloat(),
+                    0);
+            assertEquals("mismatch right", resLoc.get("right").getAsFloat() + 55f,
+                    mappedBr.get("coordinates").getAsJsonArray().get(1).getAsFloat(),
+                    0);
+        }
+    }
+
     // X unchanged, y doubled is the conversion
     static Float[][] xIdentYTimes2SrcPts = new Float[][] { {1.0f,1f}, {2f,1f}, {3f,3f}, {4f,3f}};
     static Float[][] xIdentYTimes2DstPts = new Float[][] { {1.0f,2f}, {2f,2f}, {3f,6f}, {4f,6f}};
 
-    class XIdentYTimes2 implements PointChecker {
+    class XIdentYTimes2 extends BasePointChecker {
         public void check(JsonObject resLoc, JsonObject mappedLoc) {
+            checkNull(new String[] {"top", "left", "bottom", "right"}, resLoc, "result");
+            checkNull(new String[] {"top", "left", "bottom", "right"}, mappedLoc, "mapped");
+
             assertEquals("mismatch top", resLoc.get("top").getAsFloat() * 2f,
                     mappedLoc.get("top").getAsFloat(), 0);
             assertEquals("mismatch bottom", resLoc.get("bottom").getAsFloat() * 2f,
@@ -270,6 +336,37 @@ public class TestYoloQueriesLocationMapper extends NeuralNetTestBase {
                     mappedLoc.get("left").getAsFloat(), 0);
             assertEquals("mismatch right", resLoc.get("right").getAsFloat(),
                     mappedLoc.get("right").getAsFloat(), 0);
+        }
+    }
+
+    class XIdentYTimes2GJ extends BasePointChecker {
+
+        public void check(JsonObject resLoc, JsonObject mappedLoc) {
+            checkNull(new String[] {"top", "left", "bottom", "right"}, resLoc, "result");
+            checkNull(new String[] {"topLeft", "bottomRight"}, mappedLoc, "mapped");
+
+            JsonObject mappedTl= mappedLoc.get("topLeft").getAsJsonObject();
+            JsonObject mappedBr = mappedLoc.get("bottomRight").getAsJsonObject();
+            checkNull(new String[] {"type", "coordinates"}, mappedTl, "topLeft");
+            checkNull(new String[] {"type", "coordinates"}, mappedBr, "bottomRight");
+
+            assertEquals("Mapped top left isn't a point", "Point", mappedTl.get("type").getAsString());
+            assertEquals("Mapped bottom right isn't a point", "Point", mappedBr.get("type").getAsString());
+
+            // Remember that in GeoJSON, coordinates come as [y, x].  So top (y) is first array element...
+            assertEquals("mismatch top", resLoc.get("top").getAsFloat() * 2f,
+                    mappedTl.get("coordinates").getAsJsonArray().get(0).getAsFloat(),
+                    0);
+            assertEquals("mismatch bottom", resLoc.get("bottom").getAsFloat() * 2f,
+                    mappedBr.get("coordinates").getAsJsonArray().get(0).getAsFloat(),
+                    0);
+
+            assertEquals("mismatch left", resLoc.get("left").getAsFloat(),
+                    mappedTl.get("coordinates").getAsJsonArray().get(1).getAsFloat(),
+                    0);
+            assertEquals("mismatch right", resLoc.get("right").getAsFloat(),
+                    mappedBr.get("coordinates").getAsJsonArray().get(1).getAsFloat(),
+                    0);
         }
     }
 }
