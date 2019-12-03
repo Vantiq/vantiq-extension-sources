@@ -134,7 +134,7 @@ public class TestCoordConverter {
         }
     }
 
-    protected Float[][] generateRandomPoints(int pointCount) {
+    public static Float[][] generateRandomPoints(int pointCount) {
         Float[][] points = new Float [pointCount][2];
         for (int i = 0; i < pointCount; i++ ) {
             // Generate some random points all over the place to test against...

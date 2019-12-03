@@ -1,3 +1,11 @@
+/*
+ * Copyright (c) 2019 Vantiq, Inc.
+ *
+ * All rights reserved.
+ *
+ * SPDX: MIT
+ */
+
 package io.vantiq.extsrc.objectRecognition.neuralNet;
 
 import com.google.gson.JsonArray;
@@ -25,7 +33,7 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeTrue;
 
 @Slf4j
-public class TestYoloQueriesCC extends NeuralNetTestBase {
+public class TestYoloQueriesLocationMapper extends NeuralNetTestBase {
     static Vantiq vantiq;
     static VantiqResponse vantiqResponse;
     static ObjectRecognitionCore core;

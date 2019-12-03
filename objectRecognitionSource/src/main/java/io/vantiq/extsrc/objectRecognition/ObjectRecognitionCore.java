@@ -657,7 +657,8 @@ public class ObjectRecognitionCore {
        
        map.put("sourceName", sourceName);
        map.put("timestamp", imageResults.getTimestamp());
-       map.put("results", neuralNetResults.getResults());
+       List<Map<String, ?>> nnRes = neuralNetResults.getResults();
+       map.put("results", nnRes);
        
        if (imageResults.getOtherData() != null) {
            map.put("dataSource", imageResults.getOtherData());
@@ -669,6 +670,11 @@ public class ObjectRecognitionCore {
            map.put("neuralNet", neuralNetResults.getOtherData());
        } else {
            map.put("neuralNet", new LinkedHashMap<>());
+       }
+       if (locationMapper != null) {
+           // Then our source is configured to create a set of mapped results in addition to the NN results.
+           List<Map<String, ?>> mappedResults = locationMapper.mapResults(nnRes);
+           map.put("mappedResults", mappedResults);
        }
 
        return map;
