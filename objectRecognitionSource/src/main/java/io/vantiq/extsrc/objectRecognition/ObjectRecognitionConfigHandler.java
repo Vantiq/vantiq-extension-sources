@@ -238,7 +238,6 @@ public class ObjectRecognitionConfigHandler extends Handler<ExtensionServiceMess
             postProcessorConfig = (Map) ppconf;
         }
         
-        
         // Only create a new data source if the config changed, to save time and state
         if (lastDataSource != null && dataSource.equals(lastDataSource)) {
             log.info("dataSource unchanged, keeping previous");
@@ -259,7 +258,7 @@ public class ObjectRecognitionConfigHandler extends Handler<ExtensionServiceMess
             }
         }
 
-        // Only create a new neural net if the config changed, to save time and state
+        // Only create a new postProcessor if the config changed, to save time and state
         if (postProcessorConfig != null) {
             if (postProcessorConfig.equals(lastPostProcessor)) {
                 log.info("post processor unchanged, keeping previous");
@@ -457,8 +456,8 @@ public class ObjectRecognitionConfigHandler extends Handler<ExtensionServiceMess
             // OK, now we have the basics handled.  Create the pairs of lists (validating as we go) and create
             // the actual post processor.
 
-            Float[][] src = fetchCoordList(imageCoords);
-            Float[][] target = fetchCoordList(mappedCoords);
+            Double[][] src = fetchCoordList(imageCoords);
+            Double[][] target = fetchCoordList(mappedCoords);
 
             lastPostProcessor = ppConf;
             source.createLocationMapper(src, target, convertToGeoJSON);
@@ -475,15 +474,15 @@ public class ObjectRecognitionConfigHandler extends Handler<ExtensionServiceMess
      * Convert our list of coordinates into a 2D array of Floats.
      *
      * Assumed that list size is checked by the caller
-     * @param clist List<Map<String, Float>> representing a set of coordinates
-     * @return Float[][] created from  said list.
+     * @param clist List<Map<String, Double>> representing a set of coordinates
+     * @return Double[][] created from  said list.
      * @throws IllegalArgumentException if the list contains things other than numbers.
      */
-    private Float[][] fetchCoordList(List clist)  throws IllegalArgumentException {
-        Float[][] retVal = new Float[REQUIRED_MAPPING_COORDINATES][2];
+    private Double[][] fetchCoordList(List clist)  throws IllegalArgumentException {
+        Double[][] retVal = new Double[REQUIRED_MAPPING_COORDINATES][2];
         for (int i = 0; i < REQUIRED_MAPPING_COORDINATES; i++) {
             Object unknown = clist.get(i);
-            Float xValue, yValue;
+            Double xValue, yValue;
             if (unknown instanceof Map) {
                 Map coord = (Map) unknown;
                 Object maybeNum = coord.get(COORDINATE_X);
@@ -491,9 +490,9 @@ public class ObjectRecognitionConfigHandler extends Handler<ExtensionServiceMess
                     maybeNum = coord.get(COORDINATE_LONGITUDE);
                 }
                 if (maybeNum instanceof Number) {
-                    xValue = ((Number) maybeNum).floatValue();
+                    xValue = ((Number) maybeNum).doubleValue();
                 } else if (maybeNum instanceof String) {
-                    xValue = Float.valueOf((String) maybeNum);
+                    xValue = Double.valueOf((String) maybeNum);
                 } else {
                     throw new IllegalArgumentException("No suitable X coordinate found in list.");
                 }
@@ -503,13 +502,13 @@ public class ObjectRecognitionConfigHandler extends Handler<ExtensionServiceMess
                     maybeNum = coord.get(COORDINATE_LATITUDE);
                 }
                 if (maybeNum instanceof Number) {
-                    yValue = ((Number) maybeNum).floatValue();
+                    yValue = ((Number) maybeNum).doubleValue();
                 } else if (maybeNum instanceof String) {
-                    yValue = Float.valueOf((String) maybeNum);
+                    yValue = Double.valueOf((String) maybeNum);
                 } else {
                     throw new IllegalArgumentException("No suitable Y coordinate found in list.");
                 }
-                retVal[i] = new Float[] { xValue, yValue};
+                retVal[i] = new Double[] { xValue, yValue};
             }
         }
         return retVal;
