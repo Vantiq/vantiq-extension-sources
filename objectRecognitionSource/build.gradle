@@ -53,7 +53,7 @@ def standardImplementationTestPatterns = new ArrayList<String>(
 
 // This is the version of OpenCV that you will be using. Should be "XYZ" for version X.Y.Z
 
-def opencvVersion = "412"
+def opencvVersion = "410"   // Default value.  We'll use the OPENCV_LOC env. variable to find the version present.
 
 if (System.env.OPENCV_LOC != null ) {
     def ocv = new File(System.env.OPENCV_LOC)
@@ -64,7 +64,7 @@ if (System.env.OPENCV_LOC != null ) {
         }
     }
 } else {
-    logger.warn("No OPENCV Located.  Defaulting to OpenCV Version ${opencvVersion}")
+    logger.warn("No OPENCV Located via OPENCV_LOC env. variable.  Defaulting to OpenCV Version ${opencvVersion}")
 }
 // Add the logConfig folder to the classpath so that changes to logConfig/log4j2.xml will be used for logging
 // and set java.library.path to the contents of the environment variable OPENCV_LOC so the OpenCV native libraries are
