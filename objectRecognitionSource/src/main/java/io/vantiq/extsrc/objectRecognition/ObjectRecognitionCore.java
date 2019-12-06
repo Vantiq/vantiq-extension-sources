@@ -25,6 +25,8 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
+import com.google.common.annotations.VisibleForTesting;
+import lombok.Getter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -65,6 +67,7 @@ public class ObjectRecognitionCore {
     NeuralNetInterface          neuralNet   = null;
     SimpleDateFormat            format      = new SimpleDateFormat("yyyy-MM-dd--HH-mm-ss");
     LocationMapper              locationMapper = null;
+    protected int retryLimit = 0;   // Used in test cases to avoid looping forever.
     
     public String outputDir;
     public String lastQueryFilename;
@@ -114,7 +117,7 @@ public class ObjectRecognitionCore {
             }
         }
     };
-    
+
     /**
      * Stops sending messages to the source and tries to reconnect, closing on a failure
      */
@@ -195,7 +198,9 @@ public class ObjectRecognitionCore {
      */
     public boolean start(int timeout) {
         boolean sourcesSucceeded = false;
-        while (!sourcesSucceeded) {
+        boolean limitExceeded = false;
+        int attempts = 0;
+        while (!sourcesSucceeded && !limitExceeded) {
             client = new ExtensionWebSocketClient(sourceName);
             objRecConfigHandler = new ObjectRecognitionConfigHandler(this);
             
@@ -208,11 +213,20 @@ public class ObjectRecognitionCore {
             sourcesSucceeded = exitIfConnectionFails(client, timeout);
             try {
                 Thread.sleep(RECONNECT_INTERVAL);
+                if (retryLimit > 0) {
+                    attempts += 1;
+                    limitExceeded = (attempts >= retryLimit);
+                }
             } catch (InterruptedException e) {
                 log.error("An error occurred when trying to sleep the current thread. Error Message: ", e);
             }
         }
-        return true;
+        return sourcesSucceeded;
+    }
+
+    public boolean start(int timeout, int retryLimit) {
+        this.retryLimit = retryLimit;
+        return start(timeout);
     }
     
     /**
@@ -748,11 +762,11 @@ public class ObjectRecognitionCore {
         return true;
     }
 
-    public void createLocationMapper(Float[][] source, Float[][] destination, boolean convertToGeoJSON) {
+    public void createLocationMapper(Double[][] source, Double[][] destination, boolean convertToGeoJSON) {
         locationMapper = new LocationMapper(source, destination, convertToGeoJSON);
     }
 
-    public void createLocationMapper(Float[][] source, Float[][] destination) {
+    public void createLocationMapper(Double[][] source, Double[][] destination) {
         locationMapper = new LocationMapper(source, destination);
     }
 

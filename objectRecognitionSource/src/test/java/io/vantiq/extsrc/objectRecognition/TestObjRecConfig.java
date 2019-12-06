@@ -388,7 +388,7 @@ public class TestObjRecConfig {
 
         for (int i = 0; i < ObjectRecognitionConfigHandler.REQUIRED_MAPPING_COORDINATES; i++) {
             Map<String, Object> aCoord = new HashMap<>();
-            Number xVal = Float.valueOf(i + ".14159");
+            Number xVal = Double.valueOf(i + ".14159");
             Number yVal = i;
 
             // Verify that either x,y or lat,lon works as expected.
@@ -425,7 +425,7 @@ public class TestObjRecConfig {
 
         for (int i = 0; i < ObjectRecognitionConfigHandler.REQUIRED_MAPPING_COORDINATES; i++) {
             Map<String, Object> aCoord = new HashMap<>();
-            Number xVal = Float.valueOf(i + ".14159");
+            Number xVal = Double.valueOf(i + ".14159");
             Number yVal = i;
 
             // Verify that either x,y or lat,lon works as expected.

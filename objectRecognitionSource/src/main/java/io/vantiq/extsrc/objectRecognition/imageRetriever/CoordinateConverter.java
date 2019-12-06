@@ -10,7 +10,7 @@ package io.vantiq.extsrc.objectRecognition.imageRetriever;
 
 
 import static org.opencv.core.Core.DECOMP_LU;
-import static org.opencv.core.CvType.CV_32F;
+import static org.opencv.core.CvType.CV_64F;
 
 import org.opencv.core.Core;
 import org.opencv.core.Mat;
@@ -41,10 +41,6 @@ public class CoordinateConverter {
     @SuppressWarnings({"WeakerAccess"})
     Logger log = LoggerFactory.getLogger(this.getClass());
 
-    private Mat converter32 = null;     // Ultimately, this is the converter that's used.
-
-    // The following are used in converter32's construction & hang around for debug usage.  In general,
-    // these are all small so there's little gain in removing them.
     private Mat converter = null;
     private MatOfPoint2f src = null;
     private MatOfPoint2f dst = null;
@@ -61,9 +57,8 @@ public class CoordinateConverter {
      * @param source 2D array of floats defining the source space.  Must be of length 4
      * @param destination 2D array of floats defining the target space.  Length 4, where each point corresponds to those in src.
      */
-    public CoordinateConverter(Float[][] source, Float[][] destination) {
+    public CoordinateConverter(Double[][] source, Double[][] destination) {
         this.converter = buildConverter(source, destination);
-        this.converter32 = prepareConverterForUse(this.converter);
     }
 
     /**
@@ -76,7 +71,7 @@ public class CoordinateConverter {
      * @param destination 2D array of floats defining the destination coordinate space
      * @return Mat holding the the constructed converter
      */
-    private Mat buildConverter(Float[][] source, Float[][] destination) {
+    private Mat buildConverter(Double[][] source, Double[][] destination) {
 
         src = ptsFromFlts(source);
         dst = ptsFromFlts(destination);
@@ -97,20 +92,7 @@ public class CoordinateConverter {
         return cnvtr;
     }
 
-    private Mat prepareConverterForUse(Mat origConverter) {
-        // Java float vs double plays havoc here.  So, to deal with this, we'll convert our generated converter
-        // to something more palatable to the conversion process.  The converter returned above, for reasons unknown,
-        // returns a matrix of 64-bit floats, but the input is always 32-bit ones.  Since we use the 32-bit variety,
-        // we'll convert now to avoid having to convert on each new point.
-
-        Mat cnv32 = new Mat(0, 0, CV_32F);
-
-        origConverter.convertTo(cnv32, CV_32F);
-        dumpMatrix(cnv32, "cnv32");
-        return cnv32;
-    }
-
-    private MatOfPoint2f ptsFromFlts(Float[][] flts) {
+    private MatOfPoint2f ptsFromFlts(Double[][] flts) {
         MatOfPoint2f result =  new MatOfPoint2f();
         Point[] pts = new Point[flts.length];
         for (int i = 0; i < flts.length; i++ ) {
@@ -132,7 +114,7 @@ public class CoordinateConverter {
      * @param srcCoordsArray Array[2] of Floats that represent the coordinate to be converted.
      * @return Array[2] of Floats representing the result of the conversion.
      */
-    public Float[] convert(Float[] srcCoordsArray) {
+    public Double[] convert(Double[] srcCoordsArray) {
         // (Object) cast to force log.debug() to understand that it's not a varargs thing....
         log.debug("convert({}) called...", (Object) srcCoordsArray);
 
@@ -144,19 +126,17 @@ public class CoordinateConverter {
         //
         // Calling this out so that readers understand why the matrix is created this way.
 
-        Mat coords = new Mat(3,1, CV_32F);
+        Mat coords = new Mat(3,1, CV_64F);
         coords.put(0, 0, srcCoordsArray[0]);
         coords.put(1, 0, srcCoordsArray[1]);
-        coords.put(2, 0, 1f);   // Fill in an identity value to ease matrix math
+        coords.put(2, 0, 1);   // Fill in an identity value to ease matrix math
         if (log.isTraceEnabled()) {
             dumpMatrix(coords, "coords");   // Dump out for debug purposes
         }
 
         // Construct a Mat to hold the results of the transform
         Mat resultCoords = new Mat();
-        log.trace("c's type: {} ({}/{}), coords: {} ({}, {})",
-                converter32.toString(), converter32.type(), converter32.channels(),
-                coords.toString(), coords.type(), coords.channels());
+
         // Here, it's a bit tricky.
         // Here, we're going to perform a matrix multiply of the converter with
         // the (transpose of) our coordinates.  As noted above, the coordinates (coords) were created
@@ -177,13 +157,14 @@ public class CoordinateConverter {
         //
         // The result of this operation appear in our resultCoords matrix, from which we extract the converter
         // coordinates.
-        Core.gemm(converter32, coords, 1, new Mat(), 0, resultCoords);
+        Core.gemm(converter, coords, 1, new Mat(), 0, resultCoords);
 
         if (log.isTraceEnabled()) {
             dumpMatrix(resultCoords, "resultCoords");
         }
+
         // Convert result matrix into a simple array of coordinates.
-        Float[] result = new Float[] {(float) resultCoords.get(0,0)[0], (float) resultCoords.get(1,0)[0]};
+        Double[] result = new Double[] {(double) resultCoords.get(0,0)[0], (double) resultCoords.get(1,0)[0]};
         log.debug("convert({}) --> {}", srcCoordsArray, result);
 
         return result;
