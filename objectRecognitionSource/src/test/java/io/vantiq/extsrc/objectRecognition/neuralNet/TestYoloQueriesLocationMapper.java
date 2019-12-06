@@ -70,6 +70,13 @@ public class TestYoloQueriesLocationMapper extends NeuralNetTestBase {
 
     @After
     public void cleanup() {
+        // Need to close the core here.  If not, we have a race condition when the new source
+        // is created.  This core may "get" the configuration before the newly created core does,
+        // and then things sit & hang (or, now, fail after too many retries).
+        if (core != null) {
+            core.stop();
+            core = null;
+        }
         deleteSource(vantiq);
     }
 
@@ -154,8 +161,8 @@ public class TestYoloQueriesLocationMapper extends NeuralNetTestBase {
                 }
             }
         }
-        assertEquals("(This means the camera we're using is out or that there's nothing interesting going on --" +
-                " letting you know) insufficient images with data",
+        assertEquals("(This means the camera we're using is out or that there's nothing interesting going on) " +
+                "insufficient images with data",
                 5, imagesProcessed);
     }
 
