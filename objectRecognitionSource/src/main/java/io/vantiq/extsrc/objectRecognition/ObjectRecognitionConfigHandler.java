@@ -456,8 +456,8 @@ public class ObjectRecognitionConfigHandler extends Handler<ExtensionServiceMess
             // OK, now we have the basics handled.  Create the pairs of lists (validating as we go) and create
             // the actual post processor.
 
-            Double[][] src = fetchCoordList(imageCoords);
-            Double[][] target = fetchCoordList(mappedCoords);
+            Float[][] src = fetchCoordList(imageCoords);
+            Float[][] target = fetchCoordList(mappedCoords);
 
             lastPostProcessor = ppConf;
             source.createLocationMapper(src, target, convertToGeoJSON);
@@ -475,14 +475,14 @@ public class ObjectRecognitionConfigHandler extends Handler<ExtensionServiceMess
      *
      * Assumed that list size is checked by the caller
      * @param clist List<Map<String, Double>> representing a set of coordinates
-     * @return Double[][] created from  said list.
+     * @return Float[][] created from  said list.
      * @throws IllegalArgumentException if the list contains things other than numbers.
      */
-    private Double[][] fetchCoordList(List clist)  throws IllegalArgumentException {
-        Double[][] retVal = new Double[REQUIRED_MAPPING_COORDINATES][2];
+    private Float[][] fetchCoordList(List clist)  throws IllegalArgumentException {
+        Float[][] retVal = new Float[REQUIRED_MAPPING_COORDINATES][2];
         for (int i = 0; i < REQUIRED_MAPPING_COORDINATES; i++) {
             Object unknown = clist.get(i);
-            Double xValue, yValue;
+            Float xValue, yValue;
             if (unknown instanceof Map) {
                 Map coord = (Map) unknown;
                 Object maybeNum = coord.get(COORDINATE_X);
@@ -490,9 +490,9 @@ public class ObjectRecognitionConfigHandler extends Handler<ExtensionServiceMess
                     maybeNum = coord.get(COORDINATE_LONGITUDE);
                 }
                 if (maybeNum instanceof Number) {
-                    xValue = ((Number) maybeNum).doubleValue();
+                    xValue = ((Number) maybeNum).floatValue();
                 } else if (maybeNum instanceof String) {
-                    xValue = Double.valueOf((String) maybeNum);
+                    xValue = Float.valueOf((String) maybeNum);
                 } else {
                     throw new IllegalArgumentException("No suitable X coordinate found in list.");
                 }
@@ -502,13 +502,13 @@ public class ObjectRecognitionConfigHandler extends Handler<ExtensionServiceMess
                     maybeNum = coord.get(COORDINATE_LATITUDE);
                 }
                 if (maybeNum instanceof Number) {
-                    yValue = ((Number) maybeNum).doubleValue();
+                    yValue = ((Number) maybeNum).floatValue();
                 } else if (maybeNum instanceof String) {
-                    yValue = Double.valueOf((String) maybeNum);
+                    yValue = Float.valueOf((String) maybeNum);
                 } else {
                     throw new IllegalArgumentException("No suitable Y coordinate found in list.");
                 }
-                retVal[i] = new Double[] { xValue, yValue};
+                retVal[i] = new Float[] { xValue, yValue};
             }
         }
         return retVal;

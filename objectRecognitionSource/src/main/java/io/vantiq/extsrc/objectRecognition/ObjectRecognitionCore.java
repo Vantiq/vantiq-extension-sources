@@ -762,11 +762,11 @@ public class ObjectRecognitionCore {
         return true;
     }
 
-    public void createLocationMapper(Double[][] source, Double[][] destination, boolean convertToGeoJSON) {
+    public void createLocationMapper(Float[][] source, Float[][] destination, boolean convertToGeoJSON) {
         locationMapper = new LocationMapper(source, destination, convertToGeoJSON);
     }
 
-    public void createLocationMapper(Double[][] source, Double[][] destination) {
+    public void createLocationMapper(Float[][] source, Float[][] destination) {
         locationMapper = new LocationMapper(source, destination);
     }
 

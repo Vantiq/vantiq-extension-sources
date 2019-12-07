@@ -19,12 +19,12 @@ public class LocationMapper {
     public boolean resultsAsGeoJSON;
     public CoordinateConverter cc;
 
-    LocationMapper(Double[][] source, Double[][] destination, boolean convertToGeoJSON) {
+    LocationMapper(Float[][] source, Float[][] destination, boolean convertToGeoJSON) {
         cc = new CoordinateConverter(source, destination);
         resultsAsGeoJSON = convertToGeoJSON;
     }
 
-    LocationMapper(Double[][] source, Double[][] destination) {
+    LocationMapper(Float[][] source, Float[][] destination) {
         cc = new CoordinateConverter(source, destination);
         resultsAsGeoJSON = false;
     }
@@ -69,10 +69,10 @@ public class LocationMapper {
             Map<String, Object> outBox = new HashMap<>();
             if (!box.isEmpty()) {
                 // Tests sometimes send empty data...
-                Double yt = null;
-                Double xl = null;
-                Double yb = null;
-                Double xr = null;
+                Float yt = null;
+                Float xl = null;
+                Float yb = null;
+                Float xr = null;
                 Object o = box.get("location");
                 Map loc;
                 if (o instanceof Map) {
@@ -82,26 +82,26 @@ public class LocationMapper {
                 }
                 o = loc.get("top");
                 if (o instanceof Number) {
-                    yt = ((Number) o).doubleValue();
+                    yt = ((Number) o).floatValue();
                 }
                 o = loc.get("left");
                 if (o instanceof Number) {
-                    xl = ((Number) o).doubleValue();
+                    xl = ((Number) o).floatValue();
                 }
                 o = loc.get("bottom");
                 if (o instanceof Number) {
-                    yb = ((Number) o).doubleValue();
+                    yb = ((Number) o).floatValue();
                 }
                 o = loc.get("right");
                 if (o instanceof Number) {
-                    xr = ((Number) o).doubleValue();
+                    xr = ((Number) o).floatValue();
                 }
                 if (yt == null || yb == null || xr == null || xl == null) {
                     throw new IllegalArgumentException(this.getClass().getName() +
                             ".missingcoords: Input missing coordinates.");
                 }
-                Double[] topLeft = cc.convert(new Double[]{xl, yt});
-                Double[] bottomRight = cc.convert(new Double[]{xr, yb});
+                Float[] topLeft = cc.convert(new Float[]{xl, yt});
+                Float[] bottomRight = cc.convert(new Float[]{xr, yb});
 
                 // Now, construct our output map to add to the list...
                 outBox.put("confidence", box.get("confidence"));
@@ -115,11 +115,11 @@ public class LocationMapper {
                 } else {
                     Map<String, Object> gjEnt = new HashMap<>();
                     gjEnt.put("type", "Point");
-                    gjEnt.put("coordinates", new Double[]{topLeft[1], topLeft[0]});
+                    gjEnt.put("coordinates", new Float[]{topLeft[1], topLeft[0]});
                     outloc.put("topLeft", gjEnt);
                     gjEnt = new HashMap<>();
                     gjEnt.put("type", "Point");
-                    gjEnt.put("coordinates", new Double[]{bottomRight[1], bottomRight[0]});
+                    gjEnt.put("coordinates", new Float[]{bottomRight[1], bottomRight[0]});
                     outloc.put("bottomRight", gjEnt);
                 }
                 outBox.put("location", outloc);

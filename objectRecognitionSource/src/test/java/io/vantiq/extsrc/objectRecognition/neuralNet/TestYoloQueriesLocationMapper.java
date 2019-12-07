@@ -46,7 +46,7 @@ public class TestYoloQueriesLocationMapper extends NeuralNetTestBase {
     static final String META_FILE = "coco-" + COCO_MODEL_VERSION + ".meta";
     static final String OUTPUT_DIR = System.getProperty("buildDir") + "/resources/out";
     static final String IP_CAMERA_ADDRESS = "http://207.192.232.2:8000/mjpg/video.mjpg";
-    static final Double ACCEPTABLE_DELTA = 0.0001;
+    static final Float ACCEPTABLE_DELTA = 0.0001f;
 
     @BeforeClass
     public static void setup() {
@@ -99,7 +99,7 @@ public class TestYoloQueriesLocationMapper extends NeuralNetTestBase {
     }
 
     @Test
-    public void testLocationMapperDoublerGJ() {
+    public void testLocationMapperFloatrGJ() {
         PointChecker checker = new XIdentYTimes2GJ();
         performMapperTest(xIdentYTimes2SrcPts, xIdentYTimes2DstPts, true, checker);
     }
@@ -108,7 +108,7 @@ public class TestYoloQueriesLocationMapper extends NeuralNetTestBase {
         void check(JsonObject resLoc, JsonObject mappedLoc);
     }
 
-    public void performMapperTest(Double[][] srcPts, Double[][] dstPts, boolean geoJsonResults, PointChecker ptChecker) {
+    public void performMapperTest(Float[][] srcPts, Float[][] dstPts, boolean geoJsonResults, PointChecker ptChecker) {
         setupSource(createSourceDef(buildConverterSpec(srcPts, dstPts, geoJsonResults)));
         VantiqResponse result;
 
@@ -119,7 +119,7 @@ public class TestYoloQueriesLocationMapper extends NeuralNetTestBase {
         int imagesProcessed = 0;    // We must process 5 images that have results.
                                     // There may be some that contain nothing of interest
         int imageAttempts = 0;
-        while (imagesProcessed < 5 && imageAttempts < 25) {
+        while (imagesProcessed < 5 && imageAttempts < 40) {
             imageAttempts += 1;
             result = querySource(params);
             log.debug("Ran query, result: {}", result);
@@ -178,7 +178,7 @@ public class TestYoloQueriesLocationMapper extends NeuralNetTestBase {
         }
     }
 
-    public static Map<String, Object> buildConverterSpec(Double[][] srcPts, Double[][] dstPts, boolean resultsAsGeoJSON) {
+    public static Map<String, Object> buildConverterSpec(Float[][] srcPts, Float[][] dstPts, boolean resultsAsGeoJSON) {
         assertEquals("Bad source point list",
                 (long) ObjectRecognitionConfigHandler.REQUIRED_MAPPING_COORDINATES, srcPts.length);
         assertEquals("Bad destination point list",
@@ -274,8 +274,8 @@ public class TestYoloQueriesLocationMapper extends NeuralNetTestBase {
     }
 
     // X + 55, y+50 is the conversion
-    static Double[][] plus50SrcPts = new Double[][] { {1.0d,1d}, {2d,1d}, {3d,3d}, {4d,3d}};
-    static Double[][] plus50DstPts = new Double[][] { {56.0d,51d}, {57d,51d}, {58d,53d}, {59d,53d}};
+    static Float[][] plus50SrcPts = new Float[][] { {1.0f,1f}, {2f,1f}, {3f,3f}, {4f,3f}};
+    static Float[][] plus50DstPts = new Float[][] { {56.0f,51f}, {57f,51f}, {58f,53f}, {59f,53f}};
 
     class Plus50Checker extends BasePointChecker {
 
@@ -283,14 +283,14 @@ public class TestYoloQueriesLocationMapper extends NeuralNetTestBase {
             checkNull(new String[] {"top", "left", "bottom", "right"}, resLoc, "result");
             checkNull(new String[] {"top", "left", "bottom", "right"}, mappedLoc, "mapped");
 
-            assertEquals("mismatch top", resLoc.get("top").getAsDouble() + 50d,
-                    mappedLoc.get("top").getAsDouble(), ACCEPTABLE_DELTA);
-            assertEquals("mismatch bottom", resLoc.get("bottom").getAsDouble() + 50d,
-                    mappedLoc.get("bottom").getAsDouble(), ACCEPTABLE_DELTA);
-            assertEquals("mismatch left", resLoc.get("left").getAsDouble() + 55d,
-                    mappedLoc.get("left").getAsDouble(), ACCEPTABLE_DELTA);
-            assertEquals("mismatch right", resLoc.get("right").getAsDouble() + 55d,
-                    mappedLoc.get("right").getAsDouble(), ACCEPTABLE_DELTA);
+            assertEquals("mismatch top", resLoc.get("top").getAsFloat() + 50f,
+                    mappedLoc.get("top").getAsFloat(), ACCEPTABLE_DELTA);
+            assertEquals("mismatch bottom", resLoc.get("bottom").getAsFloat() + 50f,
+                    mappedLoc.get("bottom").getAsFloat(), ACCEPTABLE_DELTA);
+            assertEquals("mismatch left", resLoc.get("left").getAsFloat() + 55f,
+                    mappedLoc.get("left").getAsFloat(), ACCEPTABLE_DELTA);
+            assertEquals("mismatch right", resLoc.get("right").getAsFloat() + 55f,
+                    mappedLoc.get("right").getAsFloat(), ACCEPTABLE_DELTA);
         }
     }
 
@@ -312,39 +312,39 @@ public class TestYoloQueriesLocationMapper extends NeuralNetTestBase {
             assertEquals("Mapped bottom right isn't a point", "Point", mappedBr.get("type").getAsString());
 
             // Remember that in GeoJSON, coordinates come as [y, x].  So top (y) is first array element...
-            assertEquals("mismatch top", resLoc.get("top").getAsDouble() + 50d,
-                    mappedTl.get("coordinates").getAsJsonArray().get(0).getAsDouble(),
+            assertEquals("mismatch top", resLoc.get("top").getAsFloat() + 50f,
+                    mappedTl.get("coordinates").getAsJsonArray().get(0).getAsFloat(),
                     ACCEPTABLE_DELTA);
-            assertEquals("mismatch bottom", resLoc.get("bottom").getAsDouble() + 50d,
-                    mappedBr.get("coordinates").getAsJsonArray().get(0).getAsDouble(),
+            assertEquals("mismatch bottom", resLoc.get("bottom").getAsFloat() + 50f,
+                    mappedBr.get("coordinates").getAsJsonArray().get(0).getAsFloat(),
                     ACCEPTABLE_DELTA);
 
-            assertEquals("mismatch left", resLoc.get("left").getAsDouble() + 55d,
-                    mappedTl.get("coordinates").getAsJsonArray().get(1).getAsDouble(),
+            assertEquals("mismatch left", resLoc.get("left").getAsFloat() + 55f,
+                    mappedTl.get("coordinates").getAsJsonArray().get(1).getAsFloat(),
                     ACCEPTABLE_DELTA);
-            assertEquals("mismatch right", resLoc.get("right").getAsDouble() + 55d,
-                    mappedBr.get("coordinates").getAsJsonArray().get(1).getAsDouble(),
+            assertEquals("mismatch right", resLoc.get("right").getAsFloat() + 55f,
+                    mappedBr.get("coordinates").getAsJsonArray().get(1).getAsFloat(),
                     ACCEPTABLE_DELTA);
         }
     }
 
     // X unchanged, y doubled is the conversion
-    static Double[][] xIdentYTimes2SrcPts = new Double[][] { {1.0d,1d}, {2d,1d}, {3d,3d}, {4d,3d}};
-    static Double[][] xIdentYTimes2DstPts = new Double[][] { {1.0d,2d}, {2d,2d}, {3d,6d}, {4d,6d}};
+    static Float[][] xIdentYTimes2SrcPts = new Float[][] { {1.0f,1f}, {2f,1f}, {3f,3f}, {4f,3f}};
+    static Float[][] xIdentYTimes2DstPts = new Float[][] { {1.0f,2f}, {2f,2f}, {3f,6f}, {4f,6f}};
 
     class XIdentYTimes2 extends BasePointChecker {
         public void check(JsonObject resLoc, JsonObject mappedLoc) {
             checkNull(new String[] {"top", "left", "bottom", "right"}, resLoc, "result");
             checkNull(new String[] {"top", "left", "bottom", "right"}, mappedLoc, "mapped");
 
-            assertEquals("mismatch top", resLoc.get("top").getAsDouble() * 2d,
-                    mappedLoc.get("top").getAsDouble(), ACCEPTABLE_DELTA);
-            assertEquals("mismatch bottom", resLoc.get("bottom").getAsDouble() * 2d,
-                    mappedLoc.get("bottom").getAsDouble(), ACCEPTABLE_DELTA);
-            assertEquals("mismatch left", resLoc.get("left").getAsDouble(),
-                    mappedLoc.get("left").getAsDouble(), ACCEPTABLE_DELTA);
-            assertEquals("mismatch right", resLoc.get("right").getAsDouble(),
-                    mappedLoc.get("right").getAsDouble(), ACCEPTABLE_DELTA);
+            assertEquals("mismatch top", resLoc.get("top").getAsFloat() * 2f,
+                    mappedLoc.get("top").getAsFloat(), ACCEPTABLE_DELTA);
+            assertEquals("mismatch bottom", resLoc.get("bottom").getAsFloat() * 2f,
+                    mappedLoc.get("bottom").getAsFloat(), ACCEPTABLE_DELTA);
+            assertEquals("mismatch left", resLoc.get("left").getAsFloat(),
+                    mappedLoc.get("left").getAsFloat(), ACCEPTABLE_DELTA);
+            assertEquals("mismatch right", resLoc.get("right").getAsFloat(),
+                    mappedLoc.get("right").getAsFloat(), ACCEPTABLE_DELTA);
         }
     }
 
@@ -363,18 +363,18 @@ public class TestYoloQueriesLocationMapper extends NeuralNetTestBase {
             assertEquals("Mapped bottom right isn't a point", "Point", mappedBr.get("type").getAsString());
 
             // Remember that in GeoJSON, coordinates come as [y, x].  So top (y) is first array element...
-            assertEquals("mismatch top", resLoc.get("top").getAsDouble() * 2d,
-                    mappedTl.get("coordinates").getAsJsonArray().get(0).getAsDouble(),
+            assertEquals("mismatch top", resLoc.get("top").getAsFloat() * 2f,
+                    mappedTl.get("coordinates").getAsJsonArray().get(0).getAsFloat(),
                     ACCEPTABLE_DELTA);
-            assertEquals("mismatch bottom", resLoc.get("bottom").getAsDouble() * 2d,
-                    mappedBr.get("coordinates").getAsJsonArray().get(0).getAsDouble(),
+            assertEquals("mismatch bottom", resLoc.get("bottom").getAsFloat() * 2f,
+                    mappedBr.get("coordinates").getAsJsonArray().get(0).getAsFloat(),
                     ACCEPTABLE_DELTA);
 
-            assertEquals("mismatch left", resLoc.get("left").getAsDouble(),
-                    mappedTl.get("coordinates").getAsJsonArray().get(1).getAsDouble(),
+            assertEquals("mismatch left", resLoc.get("left").getAsFloat(),
+                    mappedTl.get("coordinates").getAsJsonArray().get(1).getAsFloat(),
                     ACCEPTABLE_DELTA);
-            assertEquals("mismatch right", resLoc.get("right").getAsDouble(),
-                    mappedBr.get("coordinates").getAsJsonArray().get(1).getAsDouble(),
+            assertEquals("mismatch right", resLoc.get("right").getAsFloat(),
+                    mappedBr.get("coordinates").getAsJsonArray().get(1).getAsFloat(),
                     ACCEPTABLE_DELTA);
         }
     }

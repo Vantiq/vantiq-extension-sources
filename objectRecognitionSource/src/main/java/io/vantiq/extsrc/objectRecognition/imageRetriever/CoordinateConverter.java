@@ -8,14 +8,12 @@
 
 package io.vantiq.extsrc.objectRecognition.imageRetriever;
 
-
-import static org.opencv.core.Core.DECOMP_LU;
-import static org.opencv.core.CvType.CV_64F;
+import static org.opencv.core.CvType.CV_32FC2;
+import static org.opencv.core.CvType.CV_64FC1;
 
 import org.opencv.core.Core;
 import org.opencv.core.Mat;
-import org.opencv.core.MatOfPoint2f;
-import org.opencv.core.Point;
+import org.opencv.core.Size;
 import org.opencv.imgproc.Imgproc;
 
 import org.slf4j.Logger;
@@ -42,8 +40,8 @@ public class CoordinateConverter {
     Logger log = LoggerFactory.getLogger(this.getClass());
 
     private Mat converter = null;
-    private MatOfPoint2f src = null;
-    private MatOfPoint2f dst = null;
+    private Mat src = null;
+    private Mat dst = null;
 
 
     /**
@@ -54,11 +52,84 @@ public class CoordinateConverter {
      * image (using a different coordinate space) as the 4 points (0-3) in the destination space.  Thought of another
      * way, these two sets of points calibrate the transformation from one coordinate space to another.
      *
+     * Note: If one or the other of the quadrilaterals specified is insufficiently defined (that is, the segments are
+     * too close to collinear, no error is given but the results are bizarre.
+     *
+     * TODO: Determine proper collinearity test here so that we can throw an error & fail rather than just
+     * TODO: getting bizarre results. That is, improve on simple collinearity to determine if the
+     * TODO: quadrilateral is separated enough.
+     *
      * @param source 2D array of floats defining the source space.  Must be of length 4
      * @param destination 2D array of floats defining the target space.  Length 4, where each point corresponds to those in src.
      */
-    public CoordinateConverter(Double[][] source, Double[][] destination) {
-        this.converter = buildConverter(source, destination);
+    public CoordinateConverter(Float[][] source, Float[][] destination) {
+        this.converter = buildConverter(source, destination, false);
+    }
+
+    public CoordinateConverter(Float[][] source, Float[][] destination, boolean checkCollinearity) {
+        this.converter = buildConverter(source, destination, checkCollinearity);
+    }
+
+
+    /**
+     * Check points for collinearity
+     *
+     * When creating a coordinate converter, we need to ensure that the converter's
+     * quadrilaterals used to specify the various points are, in fact, quadrilaterals.  That is,
+     * since we specify the quadrilaterals using 4 points, we need to ensure that the no 3 of
+     * the provided points are collinear.
+     *
+     * We will do this by verifying that the no 2 line segments that share a point have the same
+     * (or very close) slope.
+     *
+     * This variant uses a default value of .00001 as zero.
+     *
+     * @param points Float[4][2] specifying the points for the 4 points, x & y.
+     * @return boolean indicating collinearity
+     */
+    static public boolean checkCollinearity(Float[][] points) {
+        return checkCollinearity(points, 0.00001f);
+    }
+
+    /**
+     * Check points for collinearity
+     *
+     * When creating a coorindate converter, we need to ensure that the converter's
+     * quadrilaterals used to specify the various points are, in fact, quadrilaterals.  That is,
+     * since we specify the quadrilaterals using 4 points, we need to ensure that the no 3 of
+     * the provided points are collinear.
+     *
+     * We will do this by verifying that the no 2 line segments that share a point have the same
+     * (or very close) slope.
+     *
+     * @param points Float[4][2] specifying the points for the 4 points, x & y.
+     * @param eps Float indicating what passes for zero comparing the slopes.
+     * @return boolean indicating collinearity
+     */
+    static public boolean checkCollinearity(Float[][] points, Float eps) {
+        // 3 points (p1, p2, p3) are collinear if and only if
+        //     abs( (p2.x-p1.x)*(p3.y-p1.y) -
+        //          (p3.x-p1.x)*(p2.y-p1.y) ) <= eps
+        // Where eps is what passes for zero.  That is, if the slopes
+        // of lines sharing a point are the same (or very close), then
+        // the lines are collinear.
+
+        Float x12 = points[1][0] - points[0][0];
+        Float y12 = points[1][1] - points[0][1];
+        Float x13 = points[2][0] - points[0][0];
+        Float y13 = points[2][1] - points[0][1];
+        Float x14 = points[3][0] - points[0][0];
+        Float y14 = points[3][1] - points[0][1];
+        Float x23 = points[2][0] - points[1][0];
+        Float y23 = points[2][1] - points[1][1];
+        Float x24 = points[3][0] - points[1][0];
+        Float y24 = points[3][1] - points[1][1];
+        // Test each unique triplet.
+        // 4 choose 3 = 4 triplets: 123, 124, 134, 234
+        return ((Math.abs(x12 * y13 - x13 * y12) < eps) ||
+                (Math.abs(x12 * y14 - x14 * y12) < eps) ||
+                (Math.abs(x13 * y14 - x14 * y13) < eps) ||
+                (Math.abs(x23 * y24 - x24 * y23) < eps));
     }
 
     /**
@@ -69,12 +140,26 @@ public class CoordinateConverter {
      *
      * @param source 2D array of floats defining the source coordinate space
      * @param destination 2D array of floats defining the destination coordinate space
+     * @param checkCollinearity boolean indicating if the constructor should check source & destination points for collinearity
      * @return Mat holding the the constructed converter
      */
-    private Mat buildConverter(Double[][] source, Double[][] destination) {
+    private Mat buildConverter(Float[][] source, Float[][] destination, boolean checkCollinearity) {
 
-        src = ptsFromFlts(source);
-        dst = ptsFromFlts(destination);
+        if (checkCollinearity(source)) {
+            if (checkCollinearity) {
+                throw new IllegalArgumentException("Source points provided are collinear.");
+            } else {
+                log.warn("Source points are collinear (or close) which may cause problems in conversion");
+            }
+        } else if (checkCollinearity(destination)) {
+            if (checkCollinearity) {
+                throw new IllegalArgumentException("Destination points provided are collinear.");
+            } else {
+                log.warn("Destination points are collinear (or close) which may cause problems in conversion");
+            }
+        }
+        src = matixFromInput(source);
+        dst = matixFromInput(destination);
 
         if (log.isTraceEnabled()) {
             dumpMatrix(src, "src");
@@ -84,7 +169,7 @@ public class CoordinateConverter {
         // DECOMP_LU (Gaussian elimination with the optimal pivot element chosen) is the default.
         // We'll use the "long form" here should we need to add an option to override this in the future.
 
-        Mat cnvtr = Imgproc.getPerspectiveTransform(src, dst, DECOMP_LU);
+        Mat cnvtr = Imgproc.getPerspectiveTransform(src, dst, Core.DECOMP_LU);
         if (log.isTraceEnabled()) {
             dumpMatrix(cnvtr, "Converter base");
         }
@@ -92,14 +177,35 @@ public class CoordinateConverter {
         return cnvtr;
     }
 
-    private MatOfPoint2f ptsFromFlts(Double[][] flts) {
-        MatOfPoint2f result =  new MatOfPoint2f();
-        Point[] pts = new Point[flts.length];
-        for (int i = 0; i < flts.length; i++ ) {
-            Point p = new Point(flts[i][0], flts[i][1]);
-            pts[i] = p;
+    private Mat matixFromInput(Float[][] flts) {
+        Mat result = new Mat(new Size(1, 4), CV_32FC2);
+        float maxX = 0, minX = 0, maxY = 0, minY = 0;
+
+        for (int i = 0; i < flts.length; i++) {
+            if (i == 0) {
+                maxX = minX = flts[i][0];
+                maxY = minY = flts[i][1];
+
+            } else {
+                if (maxX < flts[i][0]) {
+                    maxX = flts[i][0];
+                }
+                if (minX > flts[i][0]) {
+                    minX = flts[i][0];
+                }
+                if (maxY < flts[i][1]) {
+                    maxY = flts[i][1];
+                }
+                if (minY > flts[i][1]) {
+                    minY = flts[i][1];
+                }
+
+            }
+            result.put(i, 0, flts[i][0], flts[i][1]);
         }
-        result.fromArray(pts);
+
+        dumpMatrix(result, "input Matrix");
+        log.debug("X difference: {}, y difference: {}", maxX - minX, maxY - minY);
         return result;
     }
 
@@ -114,7 +220,7 @@ public class CoordinateConverter {
      * @param srcCoordsArray Array[2] of Floats that represent the coordinate to be converted.
      * @return Array[2] of Floats representing the result of the conversion.
      */
-    public Double[] convert(Double[] srcCoordsArray) {
+    public Float[] convert(Float[] srcCoordsArray) {
         // (Object) cast to force log.debug() to understand that it's not a varargs thing....
         log.debug("convert({}) called...", (Object) srcCoordsArray);
 
@@ -126,16 +232,13 @@ public class CoordinateConverter {
         //
         // Calling this out so that readers understand why the matrix is created this way.
 
-        Mat coords = new Mat(3,1, CV_64F);
+        Mat coords = new Mat(3,1, CV_64FC1);
         coords.put(0, 0, srcCoordsArray[0]);
         coords.put(1, 0, srcCoordsArray[1]);
-        coords.put(2, 0, 1);   // Fill in an identity value to ease matrix math
+        coords.put(2, 0, 1d);   // Fill in an identity value to ease matrix math
         if (log.isTraceEnabled()) {
             dumpMatrix(coords, "coords");   // Dump out for debug purposes
         }
-
-        // Construct a Mat to hold the results of the transform
-        Mat resultCoords = new Mat();
 
         // Here, it's a bit tricky.
         // Here, we're going to perform a matrix multiply of the converter with
@@ -157,14 +260,18 @@ public class CoordinateConverter {
         //
         // The result of this operation appear in our resultCoords matrix, from which we extract the converter
         // coordinates.
-        Core.gemm(converter, coords, 1, new Mat(), 0, resultCoords);
+
+        // Construct a Mat to hold the results of the transform
+        Mat resultCoords = new Mat();
+        // Do the math...
+        Core.gemm(converter, coords, 1, Mat.zeros(converter.size(), converter.type()), 0, resultCoords);
 
         if (log.isTraceEnabled()) {
             dumpMatrix(resultCoords, "resultCoords");
         }
 
         // Convert result matrix into a simple array of coordinates.
-        Double[] result = new Double[] {(double) resultCoords.get(0,0)[0], (double) resultCoords.get(1,0)[0]};
+        Float[] result = new Float[] {(float) resultCoords.get(0,0)[0], (float) resultCoords.get(1,0)[0]};
         log.debug("convert({}) --> {}", srcCoordsArray, result);
 
         return result;
