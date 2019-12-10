@@ -143,7 +143,7 @@ stopped as well.
 
 The Configuration document may look similar to the following example:
 
-```
+```json
     {
        "objRecConfig": {
           "general": {
@@ -261,6 +261,240 @@ uploads images as VANTIQ Documents).
         *   **NOTE:** We do not support enlarging images. This feature can be used *only* to resize images to smaller 
         dimensions. If the longEdge value is larger than the image's longest dimension, then the image will be saved without 
         any changes.
+        
+### <a name="postProcessor" id="postProcessor"></a>Options Available Post Processing
+
+Post processing capabilities can be added allowing the source to augment the neural net output for an image.
+
+#### <a name="locationMappingPost" id="locationMappingPost"></a>Location Mapping
+
+Sometimes, it is desirable to get the object location (output from YOLO processors) as viewed in a different context.
+The location provided by the neural net is the location in the image.
+However, perhaps this data will be overlayed on a different image,
+the image might be resized, or
+there is interest in getting the location coordinates in some other coordinate space.
+To provide this information, use the *location mapper* post processor.
+
+The location mapper is configured as part of the the source configuration.
+The configuration includes four (4) non-collinear points in the image coordinate space (*i.e.* pixel coordinates
+on the image) and four (4) non-collinear points in the destination coordinate space.
+These four points must each refer to exactly the same place, respectively.
+It is worth emphasizing that the various coordinates determine the mapping for the entire
+coordinate space.
+The accuracy and precision with which you determine and specify these points
+completely determines the accuracy of the coordinate space translation.
+
+As noted, coordinate spaces are determined by four non-collinear points, that is
+four points that form a quadrilateral.
+If the points are collinear, the translation will be often be incorrect.
+It is generally a good idea to think about this quadrilateral and specify the points in some common order (_e.g_ top left, top right, bottom right, bottom left -- clockwise from top left).
+Doing things this way reduces the likelyhood of error.
+
+The `locationMapper` element is contained within the `postProcessor` element, and contains the following members.
+
+* `imageCoordinates` -- The set of input coordinates. These are specified as an array of 4 elements, where each element contains `x` and `y` members.  If preferred, `lon` and `lat` can be used for `x` and `y`, respectively.
+* `mappedCoordinates` -- The set of output coordinates.  These are specified the same was as the input coordinates.  Critically important, the first `mappedCoordinates` entry is mapped from the first `imageCoordinates` entry, and so on.
+* `resultsAsGeoJSON` -- a boolean indicating that the result of the mapping should be specified as GeoJSON points.
+
+As an example, assume we wish to shift the bounding boxes for our objects down and to the right by 50 pixels.
+This means we'd add 50 (right and down in the image) from each point.
+A configuration that does that might look like the following. (The points chosen are arbitrary;
+any other point sets within the image coordinate space will work identically.)
+
+```json
+      "postProcessor": {
+        "locationMapper": {
+          "imageCoordinates": [
+            { "x": 1, "y": 1 },
+            { "x": 2, "y": 1 },
+            { "x": 3, "y": 3 },
+            { "x": 4, "y": 3 }
+          ],
+          "mappedCoordinates": [
+            { "x": 51, "y": 51 },
+            { "x": 52, "y": 51 },
+            { "x": 53, "y": 53 },
+            { "x": 54, "y": 53 }
+          ]
+        }
+      }
+```
+
+Looking at an entire source configuration, we should see something like the following.
+
+```json
+{
+  "objRecConfig": {
+      "dataSource": {
+        "camera": "...",
+        "type": "network"
+      },
+      "general": {
+        "allowQueries": true
+      },
+      "neuralNet": {
+        "pbFile": "coco-1.2.pb",
+        "metaFile": "coco-1.2.meta",
+        "type": "yolo",
+        "saveImage": "local",
+        "outputDir": "mySource/out"
+      },
+      "postProcessor": {
+        "locationMapper": {
+          "imageCoordinates": [
+            { "x": 1, "y": 1 },
+            { "x": 2, "y": 1 },
+            { "x": 3, "y": 3 },
+            { "x": 4, "y": 3 }
+          ],
+          "mappedCoordinates": [
+            { "x": 51, "y": 51 },
+            { "x": 52, "y": 51 },
+            { "x": 53, "y": 53 },
+            { "x": 54, "y": 53 }
+          ]
+        }
+      }
+   }
+}
+```
+
+The result of such a configuration is that any neural net results are augmented with the mapped coordinates.  This is true of reports from the source as well as results in queries.
+Output from a source configured as above would look like the following:
+
+```json
+{
+  "filename": "mySource/out/mySource/2019-12-10--14-13-49.jpg",
+  "sourceName": "mySource",
+  "timestamp": 1576016029900,
+  "results": [
+    {
+      "confidence": 0.5269125,
+      "location": {
+        "top": 116.07966,
+        "left": 293.64996,
+        "bottom": 196.53435,
+        "right": 371.21164
+      },
+      "label": "car"
+    }
+  ],
+  "dataSource": {},
+  "neuralNet": {},
+  "mappedResults": [
+    {
+      "confidence": 0.5269125,
+      "location": {
+        "top": 166.07966,
+        "left": 343.64996,
+        "bottom": 246.53435,
+        "right": 421.21164
+      },
+      "label": "car"
+    }
+  ]
+}
+```
+
+Specifically, note the `mappedResults` element.
+
+We can also configure the location mapper to produce results in a GeoJSON format.
+This is normally associated with GPS-type coordinates.
+The location mapper does not know if the coordinate map is to GPS;
+it will produce GeoJSON when so instructed.
+It is up to the receiving application to make the correct interpretation.
+
+Using the same source as above, we can add the GeoJSON output thusly.
+
+```json
+{
+  "objRecConfig": {
+      "dataSource": {
+        "camera": "...",
+        "type": "network"
+      },
+      "general": {
+        "allowQueries": true
+      },
+      "neuralNet": {
+        "pbFile": "coco-1.2.pb",
+        "metaFile": "coco-1.2.meta",
+        "type": "yolo",
+        "saveImage": "local",
+        "outputDir": "mySource/out"
+      },
+      "postProcessor": {
+        "locationMapper": {
+          "resultsAsGeoJSON": true,
+          "imageCoordinates": [
+            { "x": 1, "y": 1 },
+            { "x": 2, "y": 1 },
+            { "x": 3, "y": 3 },
+            { "x": 4, "y": 3 }
+          ],
+          "mappedCoordinates": [
+            { "x": 51, "y": 51 },
+            { "x": 52, "y": 51 },
+            { "x": 53, "y": 53 },
+            { "x": 54, "y": 53 }
+          ]
+        }
+      }
+   }
+}
+```
+
+Output from such a source will look like the following.
+
+```json
+{
+  "filename": "mySource/out/mySource/2019-12-10--14-11-25.jpg",
+  "sourceName": "mySource",
+  "timestamp": 1576015885182,
+  "results": [
+    {
+      "confidence": 0.6540536,
+      "location": {
+        "top": 30.737188,
+        "left": 341.99405,
+        "bottom": 428.0833,
+        "right": 796.15137
+      },
+      "label": "train"
+    }
+  ],
+  "dataSource": {},
+  "neuralNet": {},
+  "mappedResults": [
+    {
+      "confidence": 0.6540536,
+      "location": {
+        "bottomRight": {
+          "coordinates": [
+            478.0833,
+            846.15137
+          ],
+          "type": "Point"
+        },
+        "topLeft": {
+          "coordinates": [
+            80.737188,
+            391.99405
+          ],
+          "type": "Point"
+        }
+      },
+      "label": "train"
+    }
+  ]
+}
+```
+
+Here again, note the `mappedResults` element.
+Specifically, note that instead of the `top`, `left`, `bottom`, and `right` members, we have the two GeoJSON elements -- `bottomRight` and `topLeft`, each of which specifies a `Point` forming
+the bounding box delimters in the output coordinate space.
+
+
 
 ## Messages from the Source<a name="msgFormat" id="msgFormat"></a>
 
