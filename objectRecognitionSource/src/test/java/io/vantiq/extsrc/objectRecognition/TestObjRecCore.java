@@ -19,6 +19,7 @@ import static org.junit.Assume.assumeTrue;
 
 import java.io.File;
 import java.io.IOException;
+import java.math.BigDecimal;
 import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -47,7 +48,7 @@ import org.opencv.core.Core;
 @SuppressWarnings({"WeakerAccess"})
 public class TestObjRecCore extends ObjRecTestBase {
 
-    static final Float ACCEPTABLE_DELTA = 0.00001f;
+    static final Double ACCEPTABLE_DELTA = 0.0001d;
     
     NoSendORCore core;
     
@@ -58,12 +59,6 @@ public class TestObjRecCore extends ObjRecTestBase {
     
     ImageRetrieverInterface retriever;
     NeuralNetInterface      neuralNet;
-
-    @BeforeClass
-    public static void setupOpenCV() {
-        // Some tests use openCV now (testing coordinate conversion, so load it up)
-        System.loadLibrary( Core.NATIVE_LIBRARY_NAME );
-    }
 
     @Before
     public void setup() {
@@ -200,7 +195,7 @@ public class TestObjRecCore extends ObjRecTestBase {
         assertTrue("Test helper setupNeuralNet failed unexpectedly"
                 , setupNeuralNet(BasicTestNeuralNet.THROW_EXCEPTION_ON_REQ));
         if (doCoordConversion) {
-            core.createLocationMapper(plus50SrcPts, plus50fstPts, convertToJson);
+            core.createLocationMapper(plus50SrcPts, plus50DstPts, convertToJson);
         }
         core.sendDataFromImage(imageData);
         lastBytes = core.fClient.getLastMessageAsBytes();
@@ -376,18 +371,34 @@ public class TestObjRecCore extends ObjRecTestBase {
         assertFalse("Failure does not mean it should be closed", core.isClosed());
     }
 
-    Float[][] plus50SrcPts = new Float[][] { {1.0f,1f}, {2f,1f}, {3f,3f}, {4f,3f}};
-    Float[][] plus50fstPts = new Float[][] { {51.0f,51f}, {52f,51f}, {53f,53f}, {54f,53f}};
+    BigDecimal[][] plus50SrcPts = new BigDecimal[][]{
+            {new BigDecimal(3), new BigDecimal(3)},
+            {new BigDecimal(1.0d), new BigDecimal(1)},
+            {new BigDecimal(2), new BigDecimal(1)},
+            {new BigDecimal(4), new BigDecimal(3)}
+    };
+    BigDecimal[][] plus50DstPts = new BigDecimal[][]{
+            {new BigDecimal(53d), new BigDecimal(53d)},
+            {new BigDecimal(51.0d), new BigDecimal(51d)},
+            {new BigDecimal(52d), new BigDecimal(51d)},
+            {new BigDecimal(54d), new BigDecimal(53d)}};
 
-
-    Float[][] FloatSrcPts = new Float[][] { {1.0f,1f}, {2f,1f}, {3f,3f}, {4f,3f}};
-    Float[][] FloatDstPts = new Float[][] { {2.0f,2f}, {4f,2f}, {6f,6f}, {8f,6f}};
+    BigDecimal[][] doubleSrcPts = new BigDecimal[][] {
+            {new BigDecimal(1.0f), new BigDecimal(1f)},
+            {new BigDecimal(2f), new BigDecimal(1f)},
+            {new BigDecimal(3f), new BigDecimal(3f)},
+            {new BigDecimal(4f),new BigDecimal(3f)}};
+    BigDecimal[][] doubleDstPts = new BigDecimal[][] {
+            {new BigDecimal(2.0f), new BigDecimal(2f)},
+            {new BigDecimal(4f), new BigDecimal(2f)},
+            {new BigDecimal(6f), new BigDecimal(6f)},
+            {new BigDecimal(8f), new BigDecimal(6f)}};
 
     static List<Map<String, ?>> generateSomePoints(int pointCount) {
         List<Map<String, ?>> res = new ArrayList<>();
-        Float[][] pts = TestCoordConverter.generateRandomPoints(pointCount);
+        BigDecimal[][] pts = TestCoordConverter.generateRandomPoints(pointCount);
         for (int i = 0; i < pointCount/2; i++) {
-            Map<String, Float> aloc = new HashMap<>();
+            Map<String, BigDecimal> aloc = new HashMap<>();
             aloc.put("top", pts[i][1]);
             aloc.put("left", pts[i][0]);
             aloc.put("bottom", pts[i+1][1]);
@@ -402,10 +413,10 @@ public class TestObjRecCore extends ObjRecTestBase {
         aBox.put("confidence", .95);
         aBox.put("label", "a thingamajig");
         Map<String, Number> loc = new HashMap<>();
-        loc.put("top", 1f);
-        loc.put("left", 1f);
-        loc.put("bottom", 3.0f);
-        loc.put("right", 4.0f);
+        loc.put("top", 1d);
+        loc.put("left", 1d);
+        loc.put("bottom", 3.0d);
+        loc.put("right", 4.0d);
         aBox.put("location", loc);
         testinp.add(aBox);
         aBox = new HashMap<>();
@@ -416,10 +427,10 @@ public class TestObjRecCore extends ObjRecTestBase {
         int i = 0;
         for (Map<String, ?> aloc : targets) {
             loc = new HashMap<>();
-            loc.put("top", ((Number) aloc.get("top")).floatValue());
-            loc.put("left", ((Number) aloc.get("left")).floatValue());;
-            loc.put("bottom", ((Number) aloc.get("bottom")).floatValue());
-            loc.put("right", ((Number) aloc.get("right")).floatValue());
+            loc.put("top", ((Number) aloc.get("top")).doubleValue());
+            loc.put("left", ((Number) aloc.get("left")).doubleValue());;
+            loc.put("bottom", ((Number) aloc.get("bottom")).doubleValue());
+            loc.put("right", ((Number) aloc.get("right")).doubleValue());
             aBox.put("location", loc);
             aBox.put("label", "another thingamajig# " + i++);
             testinp.add(aBox);
@@ -431,7 +442,7 @@ public class TestObjRecCore extends ObjRecTestBase {
     public void testLocationMapperPlain() {
         assertNull("Should not have a location mapper", core.locationMapper);
 
-        core.createLocationMapper(plus50SrcPts, plus50fstPts);
+        core.createLocationMapper(plus50SrcPts, plus50DstPts);
         assertNotNull("Should now have a location mapper", core.locationMapper);
 
         // now, create some test data...
@@ -446,18 +457,18 @@ public class TestObjRecCore extends ObjRecTestBase {
             assertEquals("bad label value", testinp.get(i).get("label"), res.get(i).get("label"));
             assertEquals("bad confidence value", testinp.get(i).get("confidence"), res.get(i).get("confidence"));
             @SuppressWarnings({"unchecked"})
-            Map<String, Float> inloc = (Map<String, Float>) testinp.get(i).get("location");
+            Map<String, Double> inloc = (Map<String, Double>) testinp.get(i).get("location");
             @SuppressWarnings({"unchecked"})
-            Map<String, Float> resloc = (Map<String, Float>) res.get(i).get("location");
+            Map<String, Double> resloc = (Map<String, Double>) res.get(i).get("location");
             assertEquals("Wrong number of locations in result", inloc.size(), resloc.size());
 
-            assertEquals("mapped top", inloc.get("top") + 50f, resloc.get("top"), ACCEPTABLE_DELTA);
-            assertEquals("mapped left", inloc.get("left") + 50f, resloc.get("left"), ACCEPTABLE_DELTA);
-            assertEquals("mapped bottom", inloc.get("bottom") + 50f, resloc.get("bottom"), ACCEPTABLE_DELTA);
-            assertEquals("mapped right", inloc.get("right") + 50f, resloc.get("right"), ACCEPTABLE_DELTA);
+            assertEquals("mapped top", inloc.get("top") + 50d, resloc.get("top"), ACCEPTABLE_DELTA);
+            assertEquals("mapped left", inloc.get("left") + 50d, resloc.get("left"), ACCEPTABLE_DELTA);
+            assertEquals("mapped bottom", inloc.get("bottom") + 50d, resloc.get("bottom"), ACCEPTABLE_DELTA);
+            assertEquals("mapped right", inloc.get("right") + 50d, resloc.get("right"), ACCEPTABLE_DELTA);
         }
 
-        core.createLocationMapper(FloatSrcPts, FloatDstPts);
+        core.createLocationMapper(doubleSrcPts, doubleDstPts);
         assertNotNull("Should now have a location mapper", core.locationMapper);
 
         // now, create some test data...
@@ -470,15 +481,15 @@ public class TestObjRecCore extends ObjRecTestBase {
             assertEquals("bad label value", testinp.get(i).get("label"), res.get(i).get("label"));
             assertEquals("bad confidence value", testinp.get(i).get("confidence"), res.get(i).get("confidence"));
             @SuppressWarnings({"unchecked"})
-            Map<String, Float> inloc = (Map<String, Float>) testinp.get(i).get("location");
+            Map<String, Double> inloc = (Map<String, Double>) testinp.get(i).get("location");
             @SuppressWarnings({"unchecked"})
-            Map<String, Float> resloc = (Map<String, Float>) res.get(i).get("location");
+            Map<String, Double> resloc = (Map<String, Double>) res.get(i).get("location");
             assertEquals("Wrong number of locations in result", inloc.size(), resloc.size());
 
-            assertEquals("mapped top", inloc.get("top") * 2f, resloc.get("top"), ACCEPTABLE_DELTA);
-            assertEquals("mapped left", inloc.get("left") * 2f, resloc.get("left"), ACCEPTABLE_DELTA);
-            assertEquals("mapped bottom", inloc.get("bottom") * 2f, resloc.get("bottom"), ACCEPTABLE_DELTA);
-            assertEquals("mapped bottom", inloc.get("bottom") * 2f, resloc.get("bottom"), ACCEPTABLE_DELTA);
+            assertEquals("mapped top", inloc.get("top") * 2d, resloc.get("top"), ACCEPTABLE_DELTA);
+            assertEquals("mapped left", inloc.get("left") * 2d, resloc.get("left"), ACCEPTABLE_DELTA);
+            assertEquals("mapped bottom", inloc.get("bottom") * 2d, resloc.get("bottom"), ACCEPTABLE_DELTA);
+            assertEquals("mapped bottom", inloc.get("bottom") * 2d, resloc.get("bottom"), ACCEPTABLE_DELTA);
         }
     }
 
@@ -486,7 +497,7 @@ public class TestObjRecCore extends ObjRecTestBase {
     public void testLocationMapperGeoJSON() {
         assertNull("Should not have a location mapper", core.locationMapper);
 
-        core.createLocationMapper(plus50SrcPts, plus50fstPts, true);
+        core.createLocationMapper(plus50SrcPts, plus50DstPts, true);
         assertNotNull("Should now have a location mapper", core.locationMapper);
 
         // now, create some test data...
@@ -499,7 +510,7 @@ public class TestObjRecCore extends ObjRecTestBase {
             assertEquals("bad label value", testinp.get(i).get("label"), res.get(i).get("label"));
             assertEquals("bad confidence value", testinp.get(i).get("confidence"), res.get(i).get("confidence"));
             @SuppressWarnings({"unchecked"})
-            Map<String, Float> inloc = (Map<String, Float>) testinp.get(i).get("location");
+            Map<String, Double> inloc = (Map<String, Double>) testinp.get(i).get("location");
             @SuppressWarnings({"unchecked"})
             Map<String, Map<String, ?>> resloc = (Map<String, Map<String, ?>>) res.get(i).get("location");
 
@@ -514,20 +525,20 @@ public class TestObjRecCore extends ObjRecTestBase {
             assertEquals("mapped topLeft type", "Point", tlEnt.get("type"));
             assertEquals("mapped bottomRight type", "Point", brEnt.get("type"));
 
-            Float[] tlCoords = (Float[]) tlEnt.get("coordinates");
+            Double[] tlCoords = (Double[]) tlEnt.get("coordinates");
             assertNotNull("No topLeft coordinates", tlCoords);
             assertEquals("Wrong number of topLeft coordinates", 2, tlCoords.length);
-            Float[] brCoords = (Float[]) brEnt.get("coordinates");
+            Double[] brCoords = (Double[]) brEnt.get("coordinates");
             assertNotNull("No bottomRight coordinates", brCoords);
             assertEquals("Wrong number of bottomRight coordinates", 2, brCoords.length);
 
-            assertEquals("mapped topLeft longitude", inloc.get("top") + 50f, tlCoords[0], ACCEPTABLE_DELTA);
-            assertEquals("mapped topLeft latitude", inloc.get("left") + 50f, tlCoords[1], ACCEPTABLE_DELTA);
-            assertEquals("mapped bottomRight longitude", inloc.get("bottom") + 50f, brCoords[0], ACCEPTABLE_DELTA);
-            assertEquals("mapped bottomRight latitude", inloc.get("right") + 50f, brCoords[1], ACCEPTABLE_DELTA);
+            assertEquals("mapped topLeft longitude", inloc.get("top") + 50d, tlCoords[0], ACCEPTABLE_DELTA);
+            assertEquals("mapped topLeft latitude", inloc.get("left") + 50d, tlCoords[1], ACCEPTABLE_DELTA);
+            assertEquals("mapped bottomRight longitude", inloc.get("bottom") + 50d, brCoords[0], ACCEPTABLE_DELTA);
+            assertEquals("mapped bottomRight latitude", inloc.get("right") + 50d, brCoords[1], ACCEPTABLE_DELTA);
         }
 
-        core.createLocationMapper(FloatSrcPts, FloatDstPts, true);
+        core.createLocationMapper(doubleSrcPts, doubleDstPts, true);
         assertNotNull("Should now have a location mapper", core.locationMapper);
 
         // now, create some test data...
@@ -540,7 +551,7 @@ public class TestObjRecCore extends ObjRecTestBase {
             assertEquals("bad label value", testinp.get(i).get("label"), res.get(i).get("label"));
             assertEquals("bad confidence value", testinp.get(i).get("confidence"), res.get(i).get("confidence"));
             @SuppressWarnings({"unchecked"})
-            Map<String, Float> inloc = (Map<String, Float>) testinp.get(i).get("location");
+            Map<String, Double> inloc = (Map<String, Double>) testinp.get(i).get("location");
             @SuppressWarnings({"unchecked"})
             Map<String, Map<String, ?>> resloc = (Map<String, Map<String, ?>>) res.get(i).get("location");
 
@@ -556,17 +567,17 @@ public class TestObjRecCore extends ObjRecTestBase {
             assertEquals("mapped topLeft type", "Point", tlEnt.get("type"));
             assertEquals("mapped bottomRight type", "Point", brEnt.get("type"));
 
-            Float[] tlCoords = (Float[]) tlEnt.get("coordinates");
+            Double[] tlCoords = (Double[]) tlEnt.get("coordinates");
             assertNotNull("No topLeft coordinates", tlCoords);
             assertEquals("Wrong number of topLeft coordinates", 2, tlCoords.length);
-            Float[] brCoords = (Float[]) brEnt.get("coordinates");
+            Double[] brCoords = (Double[]) brEnt.get("coordinates");
             assertNotNull("No bottomRight coordinates", brCoords);
             assertEquals("Wrong number of bottomRight coordinates", 2, brCoords.length);
 
-            assertEquals("mapped topLeft longitude", inloc.get("top") * 2f, tlCoords[0], ACCEPTABLE_DELTA);
-            assertEquals("mapped topLeft latitude", inloc.get("left") * 2f, tlCoords[1], ACCEPTABLE_DELTA);
-            assertEquals("mapped bottomRight longitude", inloc.get("bottom") * 2f, brCoords[0], ACCEPTABLE_DELTA);
-            assertEquals("mapped bottomRight latitude", inloc.get("right") * 2f, brCoords[1], ACCEPTABLE_DELTA);
+            assertEquals("mapped topLeft longitude", inloc.get("top") * 2d, tlCoords[0], ACCEPTABLE_DELTA);
+            assertEquals("mapped topLeft latitude", inloc.get("left") * 2d, tlCoords[1], ACCEPTABLE_DELTA);
+            assertEquals("mapped bottomRight longitude", inloc.get("bottom") * 2d, brCoords[0], ACCEPTABLE_DELTA);
+            assertEquals("mapped bottomRight latitude", inloc.get("right") * 2d, brCoords[1], ACCEPTABLE_DELTA);
         }
     }
 // ================================================= Helper functions =================================================

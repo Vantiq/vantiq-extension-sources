@@ -11,6 +11,7 @@ package io.vantiq.extsrc.objectRecognition;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
 import java.util.Timer;
@@ -456,8 +457,8 @@ public class ObjectRecognitionConfigHandler extends Handler<ExtensionServiceMess
             // OK, now we have the basics handled.  Create the pairs of lists (validating as we go) and create
             // the actual post processor.
 
-            Float[][] src = fetchCoordList(imageCoords);
-            Float[][] target = fetchCoordList(mappedCoords);
+            BigDecimal[][] src = fetchCoordList(imageCoords);
+            BigDecimal[][] target = fetchCoordList(mappedCoords);
 
             lastPostProcessor = ppConf;
             source.createLocationMapper(src, target, convertToGeoJSON);
@@ -471,18 +472,18 @@ public class ObjectRecognitionConfigHandler extends Handler<ExtensionServiceMess
     }
 
     /**
-     * Convert our list of coordinates into a 2D array of Floats.
+     * Convert our list of coordinates into a 2D array of BigDecimal numbers.
      *
      * Assumed that list size is checked by the caller
      * @param clist List<Map<String, Double>> representing a set of coordinates
-     * @return Float[][] created from  said list.
+     * @return BigDecimal[][] created from  said list.
      * @throws IllegalArgumentException if the list contains things other than numbers.
      */
-    private Float[][] fetchCoordList(List clist)  throws IllegalArgumentException {
-        Float[][] retVal = new Float[REQUIRED_MAPPING_COORDINATES][2];
+    private BigDecimal[][] fetchCoordList(List clist)  throws IllegalArgumentException {
+        BigDecimal[][] retVal = new BigDecimal[REQUIRED_MAPPING_COORDINATES][2];
         for (int i = 0; i < REQUIRED_MAPPING_COORDINATES; i++) {
             Object unknown = clist.get(i);
-            Float xValue, yValue;
+            BigDecimal xValue, yValue;
             if (unknown instanceof Map) {
                 Map coord = (Map) unknown;
                 Object maybeNum = coord.get(COORDINATE_X);
@@ -490,9 +491,9 @@ public class ObjectRecognitionConfigHandler extends Handler<ExtensionServiceMess
                     maybeNum = coord.get(COORDINATE_LONGITUDE);
                 }
                 if (maybeNum instanceof Number) {
-                    xValue = ((Number) maybeNum).floatValue();
+                    xValue = new BigDecimal(maybeNum.toString());
                 } else if (maybeNum instanceof String) {
-                    xValue = Float.valueOf((String) maybeNum);
+                    xValue = new BigDecimal((String) maybeNum);
                 } else {
                     throw new IllegalArgumentException("No suitable X coordinate found in list.");
                 }
@@ -502,13 +503,13 @@ public class ObjectRecognitionConfigHandler extends Handler<ExtensionServiceMess
                     maybeNum = coord.get(COORDINATE_LATITUDE);
                 }
                 if (maybeNum instanceof Number) {
-                    yValue = ((Number) maybeNum).floatValue();
+                    yValue = new BigDecimal(maybeNum.toString());
                 } else if (maybeNum instanceof String) {
-                    yValue = Float.valueOf((String) maybeNum);
+                    yValue = new BigDecimal((String) maybeNum);
                 } else {
                     throw new IllegalArgumentException("No suitable Y coordinate found in list.");
                 }
-                retVal[i] = new Float[] { xValue, yValue};
+                retVal[i] = new BigDecimal[] { xValue, yValue};
             }
         }
         return retVal;

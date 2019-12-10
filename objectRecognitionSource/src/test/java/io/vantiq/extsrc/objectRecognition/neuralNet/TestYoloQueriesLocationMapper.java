@@ -46,7 +46,9 @@ public class TestYoloQueriesLocationMapper extends NeuralNetTestBase {
     static final String META_FILE = "coco-" + COCO_MODEL_VERSION + ".meta";
     static final String OUTPUT_DIR = System.getProperty("buildDir") + "/resources/out";
     static final String IP_CAMERA_ADDRESS = "http://207.192.232.2:8000/mjpg/video.mjpg";
-    static final Float ACCEPTABLE_DELTA = 0.0001f;
+    static final Double ACCEPTABLE_DELTA = 0.0001d;
+    static final Long REQUIRED_IMAGES = 4L;
+    static final int IMAGE_ATTEMPTS = 40;
 
     @BeforeClass
     public static void setup() {
@@ -99,7 +101,7 @@ public class TestYoloQueriesLocationMapper extends NeuralNetTestBase {
     }
 
     @Test
-    public void testLocationMapperFloatrGJ() {
+    public void testLocationMapperDoublerGJ() {
         PointChecker checker = new XIdentYTimes2GJ();
         performMapperTest(xIdentYTimes2SrcPts, xIdentYTimes2DstPts, true, checker);
     }
@@ -116,10 +118,10 @@ public class TestYoloQueriesLocationMapper extends NeuralNetTestBase {
         params.put("operation", "processNextFrame");
         params.put("sendFullResponse", true);
 
-        int imagesProcessed = 0;    // We must process 5 images that have results.
+        long imagesProcessed = 0;    // We must process 5 images that have results.
                                     // There may be some that contain nothing of interest
         int imageAttempts = 0;
-        while (imagesProcessed < 5 && imageAttempts < 40) {
+        while (imagesProcessed < REQUIRED_IMAGES && imageAttempts < IMAGE_ATTEMPTS) {
             imageAttempts += 1;
             result = querySource(params);
             log.debug("Ran query, result: {}", result);
@@ -163,7 +165,7 @@ public class TestYoloQueriesLocationMapper extends NeuralNetTestBase {
         }
         assertEquals("(This means the camera we're using is out or that there's nothing interesting going on) " +
                 "insufficient images with data",
-                5, imagesProcessed);
+                (Long) REQUIRED_IMAGES, (Long) imagesProcessed);
     }
 
     public static VantiqResponse querySource(Map<String,Object> params) {

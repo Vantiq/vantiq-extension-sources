@@ -29,7 +29,6 @@ import io.vantiq.extsrc.objectRecognition.imageRetriever.BasicTestRetriever;
 import io.vantiq.extsrc.objectRecognition.imageRetriever.ImageRetrieverInterface;
 import io.vantiq.extsrc.objectRecognition.neuralNet.BasicTestNeuralNet;
 import io.vantiq.extsrc.objectRecognition.neuralNet.NeuralNetInterface;
-import org.opencv.core.Core;
 
 public class TestObjRecConfig {
 
@@ -439,9 +438,6 @@ public class TestObjRecConfig {
             mappedCoords.add(aCoord);
             imgCoords.add(aCoord);
         }
-        // For this to work correctly, we must connect OpenCV into the world.  So let's...
-
-        System.loadLibrary( Core.NATIVE_LIBRARY_NAME );
 
         Map conf = minimalConfig();
         sendConfig(conf);

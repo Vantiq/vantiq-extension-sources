@@ -11,6 +11,7 @@ package io.vantiq.extsrc.objectRecognition;
 
 import java.io.File;
 import java.io.FilenameFilter;
+import java.math.BigDecimal;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -25,8 +26,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
-import com.google.common.annotations.VisibleForTesting;
-import lombok.Getter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -762,11 +761,11 @@ public class ObjectRecognitionCore {
         return true;
     }
 
-    public void createLocationMapper(Float[][] source, Float[][] destination, boolean convertToGeoJSON) {
+    public void createLocationMapper(BigDecimal[][] source, BigDecimal[][] destination, boolean convertToGeoJSON) {
         locationMapper = new LocationMapper(source, destination, convertToGeoJSON);
     }
 
-    public void createLocationMapper(Float[][] source, Float[][] destination) {
+    public void createLocationMapper(BigDecimal[][] source, BigDecimal[][] destination) {
         locationMapper = new LocationMapper(source, destination);
     }
 

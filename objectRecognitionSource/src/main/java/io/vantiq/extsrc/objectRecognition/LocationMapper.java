@@ -10,6 +10,7 @@ package io.vantiq.extsrc.objectRecognition;
 
 import io.vantiq.extsrc.objectRecognition.imageRetriever.CoordinateConverter;
 
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -19,12 +20,12 @@ public class LocationMapper {
     public boolean resultsAsGeoJSON;
     public CoordinateConverter cc;
 
-    LocationMapper(Float[][] source, Float[][] destination, boolean convertToGeoJSON) {
+    LocationMapper(BigDecimal[][] source, BigDecimal[][] destination, boolean convertToGeoJSON) {
         cc = new CoordinateConverter(source, destination);
         resultsAsGeoJSON = convertToGeoJSON;
     }
 
-    LocationMapper(Float[][] source, Float[][] destination) {
+    LocationMapper(BigDecimal[][] source, BigDecimal[][] destination) {
         cc = new CoordinateConverter(source, destination);
         resultsAsGeoJSON = false;
     }
@@ -100,26 +101,26 @@ public class LocationMapper {
                     throw new IllegalArgumentException(this.getClass().getName() +
                             ".missingcoords: Input missing coordinates.");
                 }
-                Float[] topLeft = cc.convert(new Float[]{xl, yt});
-                Float[] bottomRight = cc.convert(new Float[]{xr, yb});
+                BigDecimal[] topLeft = cc.convert(new BigDecimal[]{new BigDecimal(xl), new BigDecimal(yt)});
+                BigDecimal[] bottomRight = cc.convert(new BigDecimal[]{new BigDecimal(xr), new BigDecimal(yb)});
 
                 // Now, construct our output map to add to the list...
                 outBox.put("confidence", box.get("confidence"));
                 outBox.put("label", box.get("label"));
                 Map<String, Object> outloc = new HashMap<>();
                 if (!resultsAsGeoJSON) {
-                    outloc.put("top", topLeft[1]);
-                    outloc.put("left", topLeft[0]);
-                    outloc.put("bottom", bottomRight[1]);
-                    outloc.put("right", bottomRight[0]);
+                    outloc.put("top", topLeft[1].doubleValue());
+                    outloc.put("left", topLeft[0].doubleValue());
+                    outloc.put("bottom", bottomRight[1].doubleValue());
+                    outloc.put("right", bottomRight[0].doubleValue());
                 } else {
                     Map<String, Object> gjEnt = new HashMap<>();
                     gjEnt.put("type", "Point");
-                    gjEnt.put("coordinates", new Float[]{topLeft[1], topLeft[0]});
+                    gjEnt.put("coordinates", new Double[]{topLeft[1].doubleValue(), topLeft[0].doubleValue()});
                     outloc.put("topLeft", gjEnt);
                     gjEnt = new HashMap<>();
                     gjEnt.put("type", "Point");
-                    gjEnt.put("coordinates", new Float[]{bottomRight[1], bottomRight[0]});
+                    gjEnt.put("coordinates", new Double[]{bottomRight[1].doubleValue(), bottomRight[0].doubleValue()});
                     outloc.put("bottomRight", gjEnt);
                 }
                 outBox.put("location", outloc);
@@ -128,5 +129,4 @@ public class LocationMapper {
         }
         return output;
     }
-
 }
