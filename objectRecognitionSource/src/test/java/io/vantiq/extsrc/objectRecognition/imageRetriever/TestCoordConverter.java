@@ -251,11 +251,13 @@ public class TestCoordConverter {
                 {new BigDecimal(-83.74813303468181), new BigDecimal(42.78190293489615)},
                 {new BigDecimal(-83.74800177407815), new BigDecimal(42.78187357400434)},
         };
+        assertFalse("Source Points Collinear", CoordinateConverter.checkCollinearity(alleyCam1SrcPts, new BigDecimal(0.00001d)));
         assertFalse("Destination Points Collinear", CoordinateConverter.checkCollinearity(alleyCam1DstPts, new BigDecimal(0.00001d)));
     }
 
+    // (No data from AlleyCam3 was sent, so can't test it...)
+
     @Test
-   // @Ignore // not working yet...  Input data suspect
     public void testAlleyCam1() {
         // image location --> lat/long
         // Coords in order topLeft, topRight, bottomRight, bottomLeft (CW from topLeft)
@@ -273,10 +275,57 @@ public class TestCoordConverter {
                 {new BigDecimal(-83.74800177407815), new BigDecimal(42.78187357400434)},
         };
 
-        assertFalse("Source Points Collinear", CoordinateConverter.checkCollinearity(alleyCam1SrcPts));
-        assertFalse("Destination Points Collinear", CoordinateConverter.checkCollinearity(alleyCam1DstPts, new BigDecimal(0.00001d)));
+        performAllyCamTest(alleyCam1SrcPts, alleyCam1DstPts);
+    }
 
-        performConverterTest(alleyCam1SrcPts, alleyCam1DstPts);
+    @Test
+    public void testAlleyCam2() {
+        // image location --> lat/long
+        // Coords in order topLeft, topRight, bottomRight, bottomLeft (CW from topLeft)
+        BigDecimal[][] alleyCam2SrcPts = new BigDecimal[][]{
+                {new BigDecimal(185d), new BigDecimal(6.d)},
+                {new BigDecimal(501d), new BigDecimal(8.d)},
+                {new BigDecimal(842.d), new BigDecimal(694.d)},
+                {new BigDecimal(177.d), new BigDecimal(697.d)},
+        };
+        // longitude, latitude == x,y  -- reversed from traditional specification (but like GeoJSON)
+        BigDecimal[][] alleyCamDstPts = new BigDecimal[][]{
+                {new BigDecimal(-83.74799640966012), new BigDecimal(42.27827320046149)},
+                {new BigDecimal(-83.74806581181838), new BigDecimal(42.278274936924966)},
+                {new BigDecimal(-83.74806195614292), new BigDecimal(42.27856080155207)},
+                {new BigDecimal(-83.74798165751054), new BigDecimal(42.27855723561665)},
+        };
+
+        performAllyCamTest(alleyCam2SrcPts, alleyCamDstPts);
+    }
+
+    @Test
+    public void testAlleyCam4() {
+        // image location --> lat/long
+        // Coords in order topLeft, topRight, bottomRight, bottomLeft (CW from topLeft)
+        BigDecimal[][] alleyCamSrcPts = new BigDecimal[][]{
+                {new BigDecimal(486.d), new BigDecimal(30.d)},
+                {new BigDecimal(704.d), new BigDecimal(29.d)},
+                {new BigDecimal(713.d), new BigDecimal(697.d)},
+                {new BigDecimal(153.d), new BigDecimal(699.d)},
+        };
+        // longitude, latitude == x,y  -- reversed from traditional specification (but like GeoJSON)
+        BigDecimal[][] alleyCamDstPts = new BigDecimal[][]{
+                {new BigDecimal(-83.7480351164952), new BigDecimal(42.27897774612168)},
+                {new BigDecimal(-83.7479613557473), new BigDecimal(42.27897973062916)},
+                {new BigDecimal(-83.74795967936666), new BigDecimal(42.27877160508008)},
+                {new BigDecimal(-83.74804852754028), new BigDecimal(42.278773837658)},
+        };
+
+        performAllyCamTest(alleyCamSrcPts, alleyCamDstPts);
+    }
+
+    protected void performAllyCamTest(BigDecimal[][] alleyCamSrcPts, BigDecimal[][] alleyCamDstPts) {
+
+        assertFalse("Source Points Collinear", CoordinateConverter.checkCollinearity(alleyCamSrcPts));
+        assertFalse("Destination Points Collinear", CoordinateConverter.checkCollinearity(alleyCamDstPts));
+
+        performConverterTest(alleyCamSrcPts, alleyCamDstPts);
     }
 
     protected void performConverterTest(BigDecimal[][] srcPts, BigDecimal[][] dstPts) {
@@ -289,8 +338,9 @@ public class TestCoordConverter {
         CoordinateConverter converter = new CoordinateConverter(srcPts, dstPts);
 
         // verify that that converted correctly converts all the src pts -> dst points
+        // If tracing, dump all the differences first.
 
-        for (int iter = 0; iter < 2; iter++) {
+        for (int iter = (log.isTraceEnabled() ? 0 : 1); iter < 2; iter++) {
             for (int i = 0; i < srcPts.length; i++) {
                 BigDecimal[] src = srcPts[i];
                 BigDecimal[] dst = dstPts[i];
@@ -301,8 +351,8 @@ public class TestCoordConverter {
                     assertTrue("Y coord mismatch (" + i + "): expected: " + dst[1] + ", found: " + res[1],
                             dst[1].compareTo(res[1]) == 0);
                 } else {
-                    log.debug("Iter: {}:{}, X: dst: {}, res:{}, diff: {}", iter, i, dst[0], res[0], dst[0].subtract(res[0]));
-                    log.debug("Iter: {}:{}, Y: dst: {}, res:{}, diff: {}", iter, i, dst[1], res[1], dst[1].subtract(res[1]));
+                    log.trace("Iter: {}:{}, X: dst: {}, res:{}, diff: {}", iter, i, dst[0], res[0], dst[0].subtract(res[0]));
+                    log.trace("Iter: {}:{}, Y: dst: {}, res:{}, diff: {}", iter, i, dst[1], res[1], dst[1].subtract(res[1]));
                 }
             }
         }
