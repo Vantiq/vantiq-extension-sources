@@ -10,7 +10,6 @@ package io.vantiq.extsrc.objectRecognition.imageRetriever;
 
 import lombok.extern.slf4j.Slf4j;
 import org.junit.Test;
-
 import java.math.BigDecimal;
 
 import static org.junit.Assert.assertEquals;
@@ -20,12 +19,6 @@ import static org.junit.Assert.assertNotNull;
 
 @Slf4j
 public class TestCoordConverter {
-
-    static final BigDecimal ACCEPTABLE_DELTA = new BigDecimal(0.00000001d);
-    
-
-    // FIXME:  Would be good to get some "real" GPS conversions in unit tests since that's really
-    // FIXME: the primary goal here.
 
     @Test
     public void testIdentity() {

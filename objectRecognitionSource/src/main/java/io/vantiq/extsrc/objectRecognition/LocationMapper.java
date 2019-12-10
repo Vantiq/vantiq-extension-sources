@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018 Vantiq, Inc.
+ * Copyright (c) 2019 Vantiq, Inc.
  *
  * All rights reserved.
  *

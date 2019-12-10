@@ -31,7 +31,6 @@ import io.vantiq.extsrc.objectRecognition.imageRetriever.TestCoordConverter;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.After;
 import org.junit.Before;
-import org.junit.BeforeClass;
 import org.junit.Test;
 
 import io.vantiq.extjsdk.ExtensionServiceMessage;
@@ -42,7 +41,6 @@ import io.vantiq.extsrc.objectRecognition.imageRetriever.ImageRetrieverResults;
 import io.vantiq.extsrc.objectRecognition.neuralNet.BasicTestNeuralNet;
 import io.vantiq.extsrc.objectRecognition.neuralNet.NeuralNetInterface;
 import io.vantiq.extsrc.objectRecognition.neuralNet.NeuralNetResults;
-import org.opencv.core.Core;
 
 @Slf4j
 @SuppressWarnings({"WeakerAccess"})
@@ -339,8 +337,7 @@ public class TestObjRecCore extends ObjRecTestBase {
         core.start(3);
         assertTrue("Should have succeeded", core.exitIfConnectionFails(core.client, 3));
         assertFalse("Success means it shouldn't be closed", core.isClosed());
-        
-        
+
         core.close();
         core = new NoSendORCore(sourceName, authToken, targetVantiqServer, modelDirectory);
         FalseClient fc = new FalseClient(sourceName);
@@ -371,73 +368,6 @@ public class TestObjRecCore extends ObjRecTestBase {
         assertFalse("Failure does not mean it should be closed", core.isClosed());
     }
 
-    BigDecimal[][] plus50SrcPts = new BigDecimal[][]{
-            {new BigDecimal(3), new BigDecimal(3)},
-            {new BigDecimal(1.0d), new BigDecimal(1)},
-            {new BigDecimal(2), new BigDecimal(1)},
-            {new BigDecimal(4), new BigDecimal(3)}
-    };
-    BigDecimal[][] plus50DstPts = new BigDecimal[][]{
-            {new BigDecimal(53d), new BigDecimal(53d)},
-            {new BigDecimal(51.0d), new BigDecimal(51d)},
-            {new BigDecimal(52d), new BigDecimal(51d)},
-            {new BigDecimal(54d), new BigDecimal(53d)}};
-
-    BigDecimal[][] doubleSrcPts = new BigDecimal[][] {
-            {new BigDecimal(1.0f), new BigDecimal(1f)},
-            {new BigDecimal(2f), new BigDecimal(1f)},
-            {new BigDecimal(3f), new BigDecimal(3f)},
-            {new BigDecimal(4f),new BigDecimal(3f)}};
-    BigDecimal[][] doubleDstPts = new BigDecimal[][] {
-            {new BigDecimal(2.0f), new BigDecimal(2f)},
-            {new BigDecimal(4f), new BigDecimal(2f)},
-            {new BigDecimal(6f), new BigDecimal(6f)},
-            {new BigDecimal(8f), new BigDecimal(6f)}};
-
-    static List<Map<String, ?>> generateSomePoints(int pointCount) {
-        List<Map<String, ?>> res = new ArrayList<>();
-        BigDecimal[][] pts = TestCoordConverter.generateRandomPoints(pointCount);
-        for (int i = 0; i < pointCount/2; i++) {
-            Map<String, BigDecimal> aloc = new HashMap<>();
-            aloc.put("top", pts[i][1]);
-            aloc.put("left", pts[i][0]);
-            aloc.put("bottom", pts[i+1][1]);
-            aloc.put("right", pts[i+1][0]);
-            res.add(aloc);
-        }
-        return res;
-    }
-    static List<Map<String, ?>> createTestData() {
-        List<Map<String, ?>> testinp = new ArrayList<>();
-        Map<String, Object> aBox = new HashMap<>();
-        aBox.put("confidence", .95);
-        aBox.put("label", "a thingamajig");
-        Map<String, Number> loc = new HashMap<>();
-        loc.put("top", 1d);
-        loc.put("left", 1d);
-        loc.put("bottom", 3.0d);
-        loc.put("right", 4.0d);
-        aBox.put("location", loc);
-        testinp.add(aBox);
-        aBox = new HashMap<>();
-        aBox.put("confidence", .35);
-        aBox.put("label", "another thingamajig");
-        loc = new HashMap<>();
-        List<Map<String, ?>> targets = generateSomePoints(100);
-        int i = 0;
-        for (Map<String, ?> aloc : targets) {
-            loc = new HashMap<>();
-            loc.put("top", ((Number) aloc.get("top")).doubleValue());
-            loc.put("left", ((Number) aloc.get("left")).doubleValue());;
-            loc.put("bottom", ((Number) aloc.get("bottom")).doubleValue());
-            loc.put("right", ((Number) aloc.get("right")).doubleValue());
-            aBox.put("location", loc);
-            aBox.put("label", "another thingamajig# " + i++);
-            testinp.add(aBox);
-        }
-
-        return testinp;
-    }
     @Test
     public void testLocationMapperPlain() {
         assertNull("Should not have a location mapper", core.locationMapper);
@@ -580,7 +510,78 @@ public class TestObjRecCore extends ObjRecTestBase {
             assertEquals("mapped bottomRight latitude", inloc.get("right") * 2d, brCoords[1], ACCEPTABLE_DELTA);
         }
     }
-// ================================================= Helper functions =================================================
+
+    // Coordinate conversion data & support methods
+
+    BigDecimal[][] plus50SrcPts = new BigDecimal[][]{
+            {new BigDecimal(3), new BigDecimal(3)},
+            {new BigDecimal(1.0d), new BigDecimal(1)},
+            {new BigDecimal(2), new BigDecimal(1)},
+            {new BigDecimal(4), new BigDecimal(3)}
+    };
+    BigDecimal[][] plus50DstPts = new BigDecimal[][]{
+            {new BigDecimal(53d), new BigDecimal(53d)},
+            {new BigDecimal(51.0d), new BigDecimal(51d)},
+            {new BigDecimal(52d), new BigDecimal(51d)},
+            {new BigDecimal(54d), new BigDecimal(53d)}};
+
+    BigDecimal[][] doubleSrcPts = new BigDecimal[][] {
+            {new BigDecimal(1.0f), new BigDecimal(1f)},
+            {new BigDecimal(2f), new BigDecimal(1f)},
+            {new BigDecimal(3f), new BigDecimal(3f)},
+            {new BigDecimal(4f),new BigDecimal(3f)}};
+    BigDecimal[][] doubleDstPts = new BigDecimal[][] {
+            {new BigDecimal(2.0f), new BigDecimal(2f)},
+            {new BigDecimal(4f), new BigDecimal(2f)},
+            {new BigDecimal(6f), new BigDecimal(6f)},
+            {new BigDecimal(8f), new BigDecimal(6f)}};
+
+    static List<Map<String, ?>> generateSomePoints(int pointCount) {
+        List<Map<String, ?>> res = new ArrayList<>();
+        BigDecimal[][] pts = TestCoordConverter.generateRandomPoints(pointCount);
+        for (int i = 0; i < pointCount/2; i++) {
+            Map<String, BigDecimal> aloc = new HashMap<>();
+            aloc.put("top", pts[i][1]);
+            aloc.put("left", pts[i][0]);
+            aloc.put("bottom", pts[i+1][1]);
+            aloc.put("right", pts[i+1][0]);
+            res.add(aloc);
+        }
+        return res;
+    }
+    static List<Map<String, ?>> createTestData() {
+        List<Map<String, ?>> testinp = new ArrayList<>();
+        Map<String, Object> aBox = new HashMap<>();
+        aBox.put("confidence", .95);
+        aBox.put("label", "a thingamajig");
+        Map<String, Number> loc = new HashMap<>();
+        loc.put("top", 1d);
+        loc.put("left", 1d);
+        loc.put("bottom", 3.0d);
+        loc.put("right", 4.0d);
+        aBox.put("location", loc);
+        testinp.add(aBox);
+        aBox = new HashMap<>();
+        aBox.put("confidence", .35);
+        aBox.put("label", "another thingamajig");
+        loc = new HashMap<>();
+        List<Map<String, ?>> targets = generateSomePoints(100);
+        int i = 0;
+        for (Map<String, ?> aloc : targets) {
+            loc = new HashMap<>();
+            loc.put("top", ((Number) aloc.get("top")).doubleValue());
+            loc.put("left", ((Number) aloc.get("left")).doubleValue());;
+            loc.put("bottom", ((Number) aloc.get("bottom")).doubleValue());
+            loc.put("right", ((Number) aloc.get("right")).doubleValue());
+            aBox.put("location", loc);
+            aBox.put("label", "another thingamajig# " + i++);
+            testinp.add(aBox);
+        }
+
+        return testinp;
+    }
+
+    // ================================================= Helper functions =================================================
     
     public boolean setupRetriever(String config) {
         Map<String, Object> conf = new LinkedHashMap<>();
