@@ -11,6 +11,10 @@ package io.vantiq.extsrc.objectRecognition.imageRetriever;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.math.BigDecimal;
+import java.math.MathContext;
+import java.math.RoundingMode;
+
 /**
  * Construct a coordinate converter based on the 4 non-collinear points provided.  This converter
  * is reusable using the <code>convert()</code> call.  To create a new converter, create a new instance of this
@@ -31,9 +35,10 @@ public class CoordinateConverter2 {
     @SuppressWarnings({"WeakerAccess"})
     Logger log = LoggerFactory.getLogger(this.getClass());
 
-    private double[] converter = null;
-    private double[] src = null;
-    private double[] dst = null;
+    private BigDecimal[] converter = null;
+    private BigDecimal[] src = null;
+    private BigDecimal[] dst = null;
+    private MathContext mc = new MathContext(8, RoundingMode.CEILING);
 
 
     /**
@@ -54,11 +59,11 @@ public class CoordinateConverter2 {
      * @param source 2D array of floats defining the source space.  Must be of length 4
      * @param destination 2D array of floats defining the target space.  Length 4, where each point corresponds to those in src.
      */
-    public CoordinateConverter2(double[][] source, double[][] destination) {
+    public CoordinateConverter2(BigDecimal[][] source, BigDecimal[][] destination) {
         this.converter = buildConverter(source, destination, false);
     }
 
-    public CoordinateConverter2(double[][] source, double[][] destination, boolean checkCollinearity) {
+    public CoordinateConverter2(BigDecimal[][] source, BigDecimal[][] destination, boolean checkCollinearity) {
         this.converter = buildConverter(source, destination, checkCollinearity);
     }
 
@@ -79,8 +84,8 @@ public class CoordinateConverter2 {
      * @param points Float[4][2] specifying the points for the 4 points, x & y.
      * @return boolean indicating collinearity
      */
-    static public boolean checkCollinearity(double[][] points) {
-        return checkCollinearity(points, 0.00001f);
+    static public boolean checkCollinearity(BigDecimal[][] points) {
+        return checkCollinearity(points, new BigDecimal(.00001));
     }
 
     /**
@@ -98,7 +103,7 @@ public class CoordinateConverter2 {
      * @param eps Float indicating what passes for zero comparing the slopes.
      * @return boolean indicating collinearity
      */
-    static public boolean checkCollinearity(double[][] points, double eps) {
+    static public boolean checkCollinearity(BigDecimal[][] points, BigDecimal eps) {
         // 3 points (p1, p2, p3) are collinear if and only if
         //     abs( (p2.x-p1.x)*(p3.y-p1.y) -
         //          (p3.x-p1.x)*(p2.y-p1.y) ) <= eps
@@ -106,39 +111,39 @@ public class CoordinateConverter2 {
         // of lines sharing a point are the same (or very close), then
         // the lines are collinear.
 
-        double x12 = points[1][0] - points[0][0];
-        double y12 = points[1][1] - points[0][1];
-        double x13 = points[2][0] - points[0][0];
-        double y13 = points[2][1] - points[0][1];
-        double x14 = points[3][0] - points[0][0];
-        double y14 = points[3][1] - points[0][1];
-        double x23 = points[2][0] - points[1][0];
-        double y23 = points[2][1] - points[1][1];
-        double x24 = points[3][0] - points[1][0];
-        double y24 = points[3][1] - points[1][1];
+        BigDecimal x12 = points[1][0].subtract(points[0][0]);
+        BigDecimal y12 = points[1][1].subtract(points[0][1]);
+        BigDecimal x13 = points[2][0].subtract(points[0][0]);
+        BigDecimal y13 = points[2][1].subtract(points[0][1]);
+        BigDecimal x14 = points[3][0].subtract(points[0][0]);
+        BigDecimal y14 = points[3][1].subtract(points[0][1]);
+        BigDecimal x23 = points[2][0].subtract(points[1][0]);
+        BigDecimal y23 = points[2][1].subtract(points[1][1]);
+        BigDecimal x24 = points[3][0].subtract(points[1][0]);
+        BigDecimal y24 = points[3][1].subtract(points[1][1]);
         // Test each unique triplet.
         // 4 choose 3 = 4 triplets: 123, 124, 134, 234
-        return ((Math.abs(x12 * y13 - x13 * y12) < eps) ||
-                (Math.abs(x12 * y14 - x14 * y12) < eps) ||
-                (Math.abs(x13 * y14 - x14 * y13) < eps) ||
-                (Math.abs(x23 * y24 - x24 * y23) < eps));
+        return (x12.multiply(y13).subtract(x13.multiply(y12)).abs().compareTo(eps)) < 0 ||
+                (x12.multiply(y14).subtract(x14.multiply(y12)).abs().compareTo(eps) < 0) ||
+                (x13.multiply(y14).subtract(x14.multiply(y13)).abs().compareTo(eps) < 0 ||
+                (x23.multiply(y24).subtract(x24.multiply(y23))).abs().compareTo(eps) < 0);
     }
 
-    double[] adj(double[] m) { // Compute the adjugate of m
-        return new double[]{
-                m[4] * m[8] - m[5] * m[7], m[2] * m[7] - m[1] * m[8], m[1] * m[5] - m[2] * m[4],
-                m[5] * m[6] - m[3] * m[8], m[0] * m[8] - m[2] * m[6], m[2] * m[3] - m[0] * m[5],
-                m[3] * m[7] - m[4] * m[6], m[1] * m[6] - m[0] * m[7], m[0] * m[4] - m[1] * m[3]
+    BigDecimal[] adj(BigDecimal[] m) { // Compute the adjugate of m
+        return new BigDecimal[]{
+                m[4].multiply(m[8]).subtract(m[5].multiply(m[7])), m[2].multiply(m[7]).subtract(m[1].multiply(m[8])), m[1].multiply(m[5]).subtract(m[2].multiply(m[4])),
+                m[5].multiply(m[6]).subtract(m[3].multiply(m[8])), m[0].multiply(m[8]).subtract(m[2].multiply(m[6])), m[2].multiply(m[3]).subtract(m[0].multiply(m[5])),
+                m[3].multiply(m[7]).subtract(m[4].multiply(m[6])), m[1].multiply(m[6]).subtract(m[0].multiply(m[7])), m[0].multiply(m[4]).subtract(m[1].multiply(m[3])),
         };
     }
 
-    double[] multmm(double[] a, double[] b) { // multiply two matrices
-        double[] c = new double[9];
+    BigDecimal[] multmm(BigDecimal[] a, BigDecimal[] b) { // multiply two matrices
+        BigDecimal[] c = new BigDecimal[9];
         for (int i = 0; i < 3; i++) {
             for (int j = 0; j < 3; j++) {
-                double cij = 0;
+                BigDecimal cij = new BigDecimal(0);
                 for (int k = 0; k < 3; k++) {
-                    cij += a[3 * i + k] * b[3 * k + j];
+                    cij = cij.add(a[3 * i + k].multiply(b[3 * k + j]));
                 }
                 c[3 * i + j] = cij;
             }
@@ -146,42 +151,42 @@ public class CoordinateConverter2 {
         return c;
     }
 
-    double[] multmv(double[] m, double[] v) { // multiply matrix and vector
-        return new double[]{
-                m[0] * v[0] + m[1] * v[1] + m[2] * v[2],
-                m[3] * v[0] + m[4] * v[1] + m[5] * v[2],
-                m[6] * v[0] + m[7] * v[1] + m[8] * v[2]
+    BigDecimal[] multmv(BigDecimal[] m, BigDecimal[] v) { // multiply matrix and vector
+        return new BigDecimal[]{
+                m[0].multiply(v[0]).add(m[1].multiply(v[1])).add(m[2].multiply(v[2])),
+                m[3].multiply(v[0]).add(m[4].multiply(v[1])).add(m[5].multiply(v[2])),
+                m[6].multiply(v[0]).add(m[7].multiply(v[1])).add(m[8].multiply(v[2])),
         };
     }
 
-    double[] basisToPoints(double x1, double y1, double x2, double y2, double x3, double y3, double x4, double y4) {
-        double[] m = new double[]{
+    BigDecimal[] basisToPoints(BigDecimal x1, BigDecimal y1, BigDecimal x2, BigDecimal y2, BigDecimal x3, BigDecimal y3, BigDecimal x4, BigDecimal y4) {
+        BigDecimal[] m = new BigDecimal[]{
                 x1, x2, x3,
                 y1, y2, y3,
-                1, 1, 1
+                BigDecimal.ONE, BigDecimal.ONE, BigDecimal.ONE
         };
-        double[] v = multmv(adj(m),new double[]{x4, y4, 1});
-        return multmm(m,new double[]{
-                v[0], 0, 0,
-                0, v[1], 0,
-                0, 0, v[2]
+        BigDecimal[] v = multmv(adj(m),new BigDecimal[]{x4, y4, BigDecimal.ONE});
+        return multmm(m,new BigDecimal[]{
+                v[0], BigDecimal.ZERO, BigDecimal.ZERO,
+                BigDecimal.ZERO, v[1], BigDecimal.ZERO,
+                BigDecimal.ZERO, BigDecimal.ZERO, v[2]
         });
     }
 
-    double[] general2DProjection(
-            double x1s, double y1s, double x1d, double y1d,
-            double x2s, double y2s, double x2d, double y2d,
-            double x3s, double y3s, double x3d, double y3d,
-            double x4s, double y4s, double x4d, double y4d
+    BigDecimal[] general2DProjection(
+            BigDecimal x1s, BigDecimal y1s, BigDecimal x1d, BigDecimal y1d,
+            BigDecimal x2s, BigDecimal y2s, BigDecimal x2d, BigDecimal y2d,
+            BigDecimal x3s, BigDecimal y3s, BigDecimal x3d, BigDecimal y3d,
+            BigDecimal x4s, BigDecimal y4s, BigDecimal x4d, BigDecimal y4d
     ) {
-        double[] s = basisToPoints(x1s, y1s, x2s, y2s, x3s, y3s, x4s, y4s);
-        double[] d = basisToPoints(x1d, y1d, x2d, y2d, x3d, y3d, x4d, y4d);
+        BigDecimal[] s = basisToPoints(x1s, y1s, x2s, y2s, x3s, y3s, x4s, y4s);
+        BigDecimal[] d = basisToPoints(x1d, y1d, x2d, y2d, x3d, y3d, x4d, y4d);
         return multmm(d, adj(s));
     }
 
-    double[] project(double[] m, double x, double y) {
-        double[] v = multmv(m, new double[]{x, y, 1});
-        return new double[]{v[0]/v[2], v[1]/v[2]};
+    BigDecimal[] project(BigDecimal[] m, BigDecimal x, BigDecimal y) {
+        BigDecimal[] v = multmv(m, new BigDecimal[]{x, y, BigDecimal.ONE});
+        return new BigDecimal[]{v[0].divide(v[2], BigDecimal.ROUND_CEILING), v[1].divide(v[2], BigDecimal.ROUND_CEILING)};
     }
  /**
   * Construct the converter from the lists of floats.
@@ -194,7 +199,7 @@ public class CoordinateConverter2 {
   * @param checkCollinearity boolean indicating if the constructor should check source & destination points for collinearity
   * @return Mat holding the the constructed converter
   */
-    private double[] buildConverter(double[][] source, double [][] destination, boolean checkCollinearity) {
+    private BigDecimal[] buildConverter(BigDecimal[][] source, BigDecimal [][] destination, boolean checkCollinearity) {
         return general2DProjection(
                 source[0][0], source[0][1], destination[0][0], destination[0][1],
                 source[1][0], source[1][1], destination[1][0], destination[1][1],
@@ -245,7 +250,7 @@ public class CoordinateConverter2 {
      * @param srcCoordsArray Array[2] of Floats that represent the coordinate to be converted.
      * @return Array[2] of Floats representing the result of the conversion.
      */
-    public double[] convert(double [] srcCoordsArray) {
+    public BigDecimal[] convert(BigDecimal [] srcCoordsArray) {
         return project(converter, srcCoordsArray[0], srcCoordsArray[1]);
 
     }

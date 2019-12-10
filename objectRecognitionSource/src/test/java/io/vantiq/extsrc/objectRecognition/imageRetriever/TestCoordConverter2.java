@@ -9,23 +9,22 @@
 package io.vantiq.extsrc.objectRecognition.imageRetriever;
 
 import lombok.extern.slf4j.Slf4j;
-import org.junit.BeforeClass;
 import org.junit.Test;
-import org.opencv.core.Core;
+
+import java.math.BigDecimal;
+import java.math.BigInteger;
+import java.math.MathContext;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.assertNotNull;
 
 @Slf4j
 public class TestCoordConverter2 {
 
-    static final double ACCEPTABLE_DELTA = 0.00000001d;
-
-    @BeforeClass
-    public static void loadEmUp() {
-        System.loadLibrary(Core.NATIVE_LIBRARY_NAME);
-    }
+    static final BigDecimal ACCEPTABLE_DELTA = new BigDecimal(0.00000001d);
+    
 
     // FIXME:  Would be good to get some "real" GPS conversions in unit tests since that's really
     // FIXME: the primary goal here.
@@ -34,27 +33,42 @@ public class TestCoordConverter2 {
     public void testIdentity() {
 
         // Test the simplest of conversions
-        double[][] srcPts = new double[][]{{1.0d, 1d}, {2d, 1d}, {3d, 3d}, {4d, 3d}};
-        double[][] dstPts = new double[][]{{1.0d, 1d}, {2d, 1d}, {3d, 3d}, {4d, 3d}};
+        BigDecimal[][] srcPts = new BigDecimal[][]{
+                {new BigDecimal(1.0d), new BigDecimal(1d)},
+                {new BigDecimal(2d), new BigDecimal(1d)},
+                {new BigDecimal(3d), new BigDecimal(3d)},
+                {new BigDecimal(4d), new BigDecimal(3d)}};
+        BigDecimal[][] dstPts = new BigDecimal[][]{
+                {new BigDecimal(1.0d), new BigDecimal(1d)},
+                {new BigDecimal(2d), new BigDecimal(1d)},
+                {new BigDecimal(3d), new BigDecimal(3d)},
+                {new BigDecimal(4d), new BigDecimal(3d)}};
 
-        double[][] tstPts = generateRandomPoints(100);
-        double[][] tstResPts = tstPts.clone();
+        BigDecimal[][] tstPts = generateRandomPoints(100);
+        BigDecimal[][] tstResPts = tstPts.clone();
 
         performConverterTest(srcPts, dstPts, tstPts, tstResPts);
     }
 
-     @Test
+    @Test
     public void testFlipY() {
 
-        // Test the simplest of conversions
-        double[][] srcPts = new double[][]{{1.0d, 1d}, {2d, 1d}, {3d, 3d}, {4d, 3d}};
-        double[][] dstPts = new double[][]{{1.0d, -1d}, {2d, -1d}, {3d, -3d}, {4d, -3d}};
+        BigDecimal[][] srcPts = new BigDecimal[][]{
+                {new BigDecimal(1.0d), new BigDecimal(1d)},
+                {new BigDecimal(2d), new BigDecimal(1d)},
+                {new BigDecimal(3d), new BigDecimal(3d)},
+                {new BigDecimal(4d), new BigDecimal(3d)}};
+        BigDecimal[][] dstPts = new BigDecimal[][]{
+                {new BigDecimal(1.0d), new BigDecimal(-1d)},
+                {new BigDecimal(2d), new BigDecimal(-1d)},
+                {new BigDecimal(3d), new BigDecimal(-3d)},
+                {new BigDecimal(4d), new BigDecimal(-3d)}};
 
-        double[][] tstPts = generateRandomPoints(100);
-        double[][] tstResPts = new double[tstPts.length][2];
+        BigDecimal[][] tstPts = generateRandomPoints(100);
+        BigDecimal[][] tstResPts = new BigDecimal[tstPts.length][2];
         for (int i = 0; i < tstPts.length; i++) {
             tstResPts[i][0] = tstPts[i][0];
-            tstResPts[i][1] = -tstPts[i][1];
+            tstResPts[i][1] = BigDecimal.ZERO.subtract(tstPts[i][1]);
         }
         performConverterTest(srcPts, dstPts, tstPts, tstResPts);
     }
@@ -62,14 +76,21 @@ public class TestCoordConverter2 {
     @Test
     public void testFlipX() {
 
-        // Test the simplest of conversions
-        double[][] srcPts = new double[][]{{1.0d, 1d}, {2d, 1d}, {3d, 3d}, {4d, 3d}};
-        double[][] dstPts = new double[][]{{-1.0d, 1d}, {-2d, 1d}, {-3d, 3d}, {-4d, 3d}};
+        BigDecimal[][] srcPts = new BigDecimal[][]{
+                {new BigDecimal(1.0d), new BigDecimal(1d)},
+                {new BigDecimal(2d), new BigDecimal(1d)},
+                {new BigDecimal(3d), new BigDecimal(3d)},
+                {new BigDecimal(4d), new BigDecimal(3d)}};
+        BigDecimal[][] dstPts = new BigDecimal[][]{
+                {new BigDecimal(-1.0d), new BigDecimal(1d)},
+                {new BigDecimal(-2d), new BigDecimal(1d)},
+                {new BigDecimal(-3d), new BigDecimal(3d)},
+                {new BigDecimal(-4d), new BigDecimal(3d)}};
 
-        double[][] tstPts = generateRandomPoints(100);
-        double[][] tstResPts = new double[tstPts.length][2];
+        BigDecimal[][] tstPts = generateRandomPoints(100);
+        BigDecimal[][] tstResPts = new BigDecimal[tstPts.length][2];
         for (int i = 0; i < tstPts.length; i++) {
-            tstResPts[i][0] = -tstPts[i][0];
+            tstResPts[i][0] = BigDecimal.ZERO.subtract(tstPts[i][0]);
             tstResPts[i][1] = tstPts[i][1];
         }
         performConverterTest(srcPts, dstPts, tstPts, tstResPts);
@@ -78,15 +99,22 @@ public class TestCoordConverter2 {
     @Test
     public void testInvertImage() {
 
-        // Test the simplest of conversions
-        double[][] srcPts = new double[][]{{1.0d, 1d}, {2d, 1d}, {3d, 3d}, {4d, 3d}};
-        double[][] dstPts = new double[][]{{-1.0d, -1d}, {-2d, -1d}, {-3d, -3d}, {-4d, -3d}};
+        BigDecimal[][] srcPts = new BigDecimal[][]{
+                {new BigDecimal(1.0d), new BigDecimal(1d)},
+                {new BigDecimal(2d), new BigDecimal(1d)},
+                {new BigDecimal(3d), new BigDecimal(3d)},
+                {new BigDecimal(4d), new BigDecimal(3d)}};
+        BigDecimal[][] dstPts = new BigDecimal[][]{
+                {new BigDecimal(-1.0d), new BigDecimal(-1d)},
+                {new BigDecimal(-2d), new BigDecimal(-1d)},
+                {new BigDecimal(-3d), new BigDecimal(-3d)},
+                {new BigDecimal(-4d), new BigDecimal(-3d)}};
 
-        double[][] tstPts = generateRandomPoints(100);
-        double[][] tstResPts = new double[tstPts.length][2];
+        BigDecimal[][] tstPts = generateRandomPoints(100);
+        BigDecimal[][] tstResPts = new BigDecimal[tstPts.length][2];
         for (int i = 0; i < tstPts.length; i++) {
-            tstResPts[i][0] = -tstPts[i][0];
-            tstResPts[i][1] = -tstPts[i][1];
+            tstResPts[i][0] = BigDecimal.ZERO.subtract(tstPts[i][0]);
+            tstResPts[i][1] = BigDecimal.ZERO.subtract(tstPts[i][1]);
         }
         performConverterTest(srcPts, dstPts, tstPts, tstResPts);
     }
@@ -95,22 +123,23 @@ public class TestCoordConverter2 {
     public void test50Plus() {
         // Test change of base -- still a linear conversion (add 50)
 
-        double[][] srcPts = new double[][]{
-                {3d, 3d},
-                {1.0d, 1d},
-                {2d, 1d},
-                {4d, 3d}};
-        double[][] dstPts = new double[][]{
-                {53d, 53d},
-                {51.0d, 51d},
-                {52d, 51d},
-                {54d, 53d}};
+        BigDecimal[][] srcPts = new BigDecimal[][]{
+                {new BigDecimal(3), new BigDecimal(3)},
+                {new BigDecimal(1.0d), new BigDecimal(1)},
+                {new BigDecimal(2), new BigDecimal(1)},
+                {new BigDecimal(4), new BigDecimal(3)}
+        };
+        BigDecimal[][] dstPts = new BigDecimal[][]{
+                {new BigDecimal(53d), new BigDecimal(53d)},
+                {new BigDecimal(51.0d), new BigDecimal(51d)},
+                {new BigDecimal(52d), new BigDecimal(51d)},
+                {new BigDecimal(54d), new BigDecimal(53d)}};
 
-        double[][] tstPts = generateRandomPoints(100);
-        double[][] tstResPts = new double[tstPts.length][2];
+        BigDecimal[][] tstPts = generateRandomPoints(100);
+        BigDecimal[][] tstResPts = new BigDecimal[tstPts.length][2];
         for (int i = 0; i < tstPts.length; i++) {
-            tstResPts[i][0] = tstPts[i][0] + 50;
-            tstResPts[i][1] = tstPts[i][1] + 50;
+            tstResPts[i][0] = tstPts[i][0].add(new BigDecimal(50));
+            tstResPts[i][1] = tstPts[i][1].add(new BigDecimal(50));
         }
 
         performConverterTest(srcPts, dstPts, tstPts, tstResPts);
@@ -120,14 +149,26 @@ public class TestCoordConverter2 {
     public void testScaleChange() {
         // Test a conversion that changes the scale of both the x & y axes.
 
-        double[][] srcPts = new double[][]{{1.0d, 1d}, {2d, 1d}, {3d, 3d}, {4d, 3d}};
-        double[][] dstPts = new double[][]{{2.0d, .002d}, {4d, .002d}, {6d, .006d}, {8d, .006d}};
+        BigDecimal[][] srcPts = new BigDecimal[][]{
+                {new BigDecimal(1.0d), new BigDecimal(1d)},
+                {new BigDecimal(2d), new BigDecimal(1d)},
+                {new BigDecimal(3d), new BigDecimal(3d)},
+                {new BigDecimal(4d), new BigDecimal(3d)}
+        };
+        BigDecimal[][] dstPts = new BigDecimal[][]{
+                {new BigDecimal(2.0d), new BigDecimal(.002d)},
+                {new BigDecimal(4d), new BigDecimal(.002d)},
+                {new BigDecimal(6d), new BigDecimal(.006d)},
+                {new BigDecimal(8d), new BigDecimal(.006d)}
+        };
 
-        double[][] tstPts = generateRandomPoints(200);
-        double[][] tstResPts = new double[tstPts.length][2];
+        BigDecimal[][] tstPts = generateRandomPoints(200);
+        BigDecimal[][] tstResPts = new BigDecimal[tstPts.length][2];
         for (int i = 0; i < tstPts.length; i++) {
-            tstResPts[i][0] = tstPts[i][0] * 2;
-            tstResPts[i][1] = (tstPts[i][1] * 2) / 1000;
+            tstResPts[i][0] = tstPts[i][0].multiply(new BigDecimal(2));
+            tstResPts[i][1] = tstPts[i][1].multiply(new BigDecimal(2))
+                    .divide(new BigDecimal(1000),
+                            BigDecimal.ROUND_HALF_UP);
         }
         performConverterTest(srcPts, dstPts, tstPts, tstResPts);
 
@@ -137,34 +178,42 @@ public class TestCoordConverter2 {
     public void testWarpChange() {
         // Test a conversion that changes the scale of only the x axis
 
-        double[][] srcPts = new double[][]{
-                {3d, 3d},
-                {2d, 1d},
-                {1.0d, 1d},
-                {4d, 3d}};
-        double[][] dstPts = new double[][]{
-                {6d, 3d},
-                {4d, 1d},
-                {2.0d, 1d},
-                {8d, 3d}};
+        BigDecimal[][] srcPts = new BigDecimal[][]{
+                {new BigDecimal(3), new BigDecimal(3)},
+                {new BigDecimal(2), new BigDecimal(1)},
+                {new BigDecimal(1.0), new BigDecimal(1)},
+                {new BigDecimal(4), new BigDecimal(3)}};
+        BigDecimal[][] dstPts = new BigDecimal[][]{
+                {new BigDecimal(6d), new BigDecimal(3)},
+                {new BigDecimal(4d), new BigDecimal(1d)},
+                {new BigDecimal(2.0), new BigDecimal(1d)},
+                {new BigDecimal(8d), new BigDecimal(3d)}};
 
-        double[][] tstPts = generateRandomPoints(200);
-        double[][] tstResPts = new double[tstPts.length][2];
+        BigDecimal[][] tstPts = generateRandomPoints(200);
+        BigDecimal[][] tstResPts = new BigDecimal[tstPts.length][2];
         for (int i = 0; i < tstPts.length; i++) {
-            tstResPts[i][0] = tstPts[i][0] * 2;
+            tstResPts[i][0] = tstPts[i][0].multiply(new BigDecimal(2));
             tstResPts[i][1] = tstPts[i][1];
         }
         performConverterTest(srcPts, dstPts, tstPts, tstResPts);
 
-        srcPts = new double[][]{{1.0d, 1d}, {2d, 1d}, {3d, 3d}, {4d, 3d}};
-        dstPts = new double[][]{{1.0d, 10d}, {2d, 10d}, {3d, 30d}, {4d, 30d}};
+        srcPts = new BigDecimal[][]{
+                {new BigDecimal(1.0), new BigDecimal(1d)},
+                {new BigDecimal(2d), new BigDecimal(1d)},
+                {new BigDecimal(3d), new BigDecimal(3d)},
+                {new BigDecimal(4d), new BigDecimal(3d)}};
+        dstPts = new BigDecimal[][]{
+                {new BigDecimal(1.0d), new BigDecimal(10d)},
+                {new BigDecimal(2d), new BigDecimal(10d)},
+                {new BigDecimal(3d), new BigDecimal(30d)},
+                {new BigDecimal(4d), new BigDecimal(30d)}};
 
         // Now, let's do a warp that changes only the y axis
         tstPts = generateRandomPoints(200);
-        tstResPts = new double[tstPts.length][2];
+        tstResPts = new BigDecimal[tstPts.length][2];
         for (int i = 0; i < tstPts.length; i++) {
             tstResPts[i][0] = tstPts[i][0];
-            tstResPts[i][1] = tstPts[i][1] * 10;
+            tstResPts[i][1] = tstPts[i][1].multiply(new BigDecimal(10));
         }
         performConverterTest(srcPts, dstPts, tstPts, tstResPts);
     }
@@ -172,18 +221,18 @@ public class TestCoordConverter2 {
     @Test
     public void testGpsConv() {
         // image location --> lat/long
-        double[][] gpsSrcPts = new double[][]{
-                {1205d, 698d}, // Corner of dashed line bottom right
-                {87d, 328d}, // Corner of white rumble strip top left
-                {1200d, 278d}, // Third lamppost top right
-                {36d, 583d}, // Corner of rectangular road marking bottom left
+        BigDecimal[][] gpsSrcPts = new BigDecimal[][]{
+                {new BigDecimal(1205), new BigDecimal(698d)}, // Corner of dashed line bottom right
+                {new BigDecimal(87d), new BigDecimal(328d)}, // Corner of white rumble strip top left
+                {new BigDecimal(1200d), new BigDecimal(278d)}, // Third lamppost top right
+                {new BigDecimal(36d), new BigDecimal(583d)}, // Corner of rectangular road marking bottom left
         };
         // longitude, latitude == x,y  -- reversed from traditional specification (but like GeoJSON)
-        double[][] gpsDstPts = new double[][]{
-                {6.603560d, 52.036730d * 1000}, // Corner of dashed line bottom right
-                {6.603227d, 52.036181d * 1000}, // Corner of white rumble strip top left
-                {6.602018d, 52.036769d * 1000}, // Third lamppost top right
-                {6.603638d, 52.036558d * 1000}, // Corner of rectangular road marking bottom left
+        BigDecimal[][] gpsDstPts = new BigDecimal[][]{
+                {new BigDecimal(6.603560), new BigDecimal(52.036730d * 1000)}, // Corner of dashed line bottom right
+                {new BigDecimal(6.603227), new BigDecimal(52.036181d * 1000)}, // Corner of white rumble strip top left
+                {new BigDecimal(6.602018), new BigDecimal(52.036769d * 1000)}, // Third lamppost top right
+                {new BigDecimal(6.603638), new BigDecimal(52.036558d * 1000)}, // Corner of rectangular road marking bottom left
 //                {.003560d, .036730d}, // Corner of dashed line bottom right
 //                {.003227d, .036181d}, // Corner of white rumble strip top left
 //                {.002018d, .036769d}, // Third lamppost top right
@@ -196,24 +245,24 @@ public class TestCoordConverter2 {
 
     @Test
     public void testAlleyCam1Collinearity() {
-        double[][] alleyCam1SrcPts = new double[][]{
-                {65.d, 10.d},
-                {847.d, 8.d},
-                {850.d, 694.d},
-                {63.d, 696.d},
+        BigDecimal[][] alleyCam1SrcPts = new BigDecimal[][]{
+                {new BigDecimal(65.d), new BigDecimal(10.d)},
+                {new BigDecimal(847.d), new BigDecimal(8.d)},
+                {new BigDecimal(850.d), new BigDecimal(694.d)},
+                {new BigDecimal(63.d), new BigDecimal(696.d)},
         };
         // longitude, latitude == x,y  -- reversed from traditional specification (but like GeoJSON)
-        double[][] alleyCam1DstPts = new double[][]{
-                {-83.74801820260836d, 42.27796103748212d},
-                {-83.74819690478398d, 42.27796396568019d},
-                {-83.74813303468181d, 42.78190293489615d},
-                {-83.74800177407815d, 42.78187357400434d},
+        BigDecimal[][] alleyCam1DstPts = new BigDecimal[][]{
+                {new BigDecimal(-83.74801820260836), new BigDecimal(42.27796103748212)},
+                {new BigDecimal(-83.74819690478398), new BigDecimal(42.27796396568019)},
+                {new BigDecimal(-83.74813303468181), new BigDecimal(42.78190293489615)},
+                {new BigDecimal(-83.74800177407815), new BigDecimal(42.78187357400434)},
 //                {-.74801820260836d, .27796103748212d},
 //                {-.74819690478398d, .27796396568019d},
 //                {-.74813303468181d, .78190293489615d},
 //                {-.74800177407815d, .78187357400434d},
         };
-        assertFalse("Destination Points Collinear", CoordinateConverter2.checkCollinearity(alleyCam1DstPts, 0.00001d));
+        assertFalse("Destination Points Collinear", CoordinateConverter2.checkCollinearity(alleyCam1DstPts, new BigDecimal(0.00001d)));
     }
 
     @Test
@@ -221,18 +270,18 @@ public class TestCoordConverter2 {
     public void testAlleyCam1() {
         // image location --> lat/long
         // Coords in order topLeft, topRight, bottomRight, bottomLeft (CW from topLeft)
-        double[][] alleyCam1SrcPts = new double[][]{
-                {65.d, 10.d},
-                {847.d, 8.d},
-                {850.d, 694.d},
-                {63.d, 696.d},
+        BigDecimal[][] alleyCam1SrcPts = new BigDecimal[][]{
+                {new BigDecimal(65.d), new BigDecimal(10.d)},
+                {new BigDecimal(847.d), new BigDecimal(8.d)},
+                {new BigDecimal(850.d), new BigDecimal(694.d)},
+                {new BigDecimal(63.d), new BigDecimal(696.d)},
         };
             // longitude, latitude == x,y  -- reversed from traditional specification (but like GeoJSON)
-        double[][] alleyCam1DstPts = new double[][]{
-                {-83.74801820260836d, 42.27796103748212d},
-                {-83.74819690478398d, 42.27796396568019d},
-                {-83.74813303468181d, 42.78190293489615d},
-                {-83.74800177407815d, 42.78187357400434d},
+        BigDecimal[][] alleyCam1DstPts = new BigDecimal[][]{
+                {new BigDecimal(-83.74801820260836), new BigDecimal(42.27796103748212)},
+                {new BigDecimal(-83.74819690478398), new BigDecimal(42.27796396568019)},
+                {new BigDecimal(-83.74813303468181), new BigDecimal(42.78190293489615)},
+                {new BigDecimal(-83.74800177407815), new BigDecimal(42.78187357400434)},
 //                {-.74801820260836d, .27796103748212d},
 //                {-.74819690478398d, .27796396568019d},
 //                {-.74813303468181d, .78190293489615d},
@@ -240,16 +289,16 @@ public class TestCoordConverter2 {
         };
 
         assertFalse("Source Points Collinear", CoordinateConverter2.checkCollinearity(alleyCam1SrcPts));
-        assertFalse("Destination Points Collinear", CoordinateConverter2.checkCollinearity(alleyCam1DstPts, 0.00001d));
+        assertFalse("Destination Points Collinear", CoordinateConverter2.checkCollinearity(alleyCam1DstPts, new BigDecimal(0.00001d)));
 
         performConverterTest(alleyCam1SrcPts, alleyCam1DstPts);
     }
 
-    protected void performConverterTest(double[][] srcPts, double[][] dstPts) {
+    protected void performConverterTest(BigDecimal[][] srcPts, BigDecimal[][] dstPts) {
         performConverterTest(srcPts, dstPts, null, null);
     }
 
-    protected void performConverterTest(double[][] srcPts, double[][] dstPts, double[][] tstSrc, double[][] tstRes) {
+    protected void performConverterTest(BigDecimal[][] srcPts, BigDecimal[][] dstPts, BigDecimal[][] tstSrc, BigDecimal[][] tstRes) {
 
         // First, create a converter calibrated by the src & dst points passed in.
         CoordinateConverter2 converter = new CoordinateConverter2(srcPts, dstPts);
@@ -258,15 +307,17 @@ public class TestCoordConverter2 {
 
         for (int iter = 0; iter < 2; iter++) {
             for (int i = 0; i < srcPts.length; i++) {
-                double[] src = srcPts[i];
-                double[] dst = dstPts[i];
-                double[] res = converter.convert(src);
+                BigDecimal[] src = srcPts[i];
+                BigDecimal[] dst = dstPts[i];
+                BigDecimal[] res = converter.convert(src);
                 if (iter ==1) {
-                    assertEquals("X coord mismatch (" + i + ")", dst[0], res[0], ACCEPTABLE_DELTA);
-                    assertEquals("Y coord mismatch (" + i + ")", dst[1], res[1], ACCEPTABLE_DELTA);
+                    assertTrue("X coord mismatch (" + i + "): expected: " + dst[0] + ", found: " + res[0],
+                            dst[0].compareTo(res[0]) == 0);
+                    assertTrue("Y coord mismatch (" + i + "): expected: " + dst[1] + ", found: " + res[1],
+                            dst[1].compareTo(res[1]) == 0);
                 } else {
-                    log.debug("Iter: {}:{}, X: dst: {}, res:{}, diff: {}", iter, i, dst[0], res[0], dst[0] - res[0]);
-                    log.debug("Iter: {}:{}, Y: dst: {}, res:{}, diff: {}", iter, i, dst[1], res[1], dst[1] - res[1]);
+                    log.debug("Iter: {}:{}, X: dst: {}, res:{}, diff: {}", iter, i, dst[0], res[0], dst[0].subtract(res[0]));
+                    log.debug("Iter: {}:{}, Y: dst: {}, res:{}, diff: {}", iter, i, dst[1], res[1], dst[1].subtract(res[1]));
                 }
             }
         }
@@ -279,26 +330,34 @@ public class TestCoordConverter2 {
                     tstSrc.length, tstRes.length);
 
             for (int ti = 0; ti < tstSrc.length; ti++) {
-                double[] src = tstSrc[ti];
-                double[] dst = tstRes[ti];
+                BigDecimal[] src = tstSrc[ti];
+                BigDecimal[] dst = tstRes[ti];
                 log.debug("Checking conversion of ({}, {})", src[0], src[1]);
-                double[] res = converter.convert(src);
-                assertEquals("X coord mismatch in test points index: " + ti, dst[0], res[0], ACCEPTABLE_DELTA);
-                assertEquals("Y coord mismatch in test points index: " + ti, dst[1], res[1], ACCEPTABLE_DELTA);
+                BigDecimal[] res = converter.convert(src);
+
+                // Crazy test generation sometimes comes up with odd values.  Scale numbers to reasonable
+                for (int i = 0; i < 2; i++) {
+                    res[i] = res[i].setScale(dst[i].scale(), BigDecimal.ROUND_HALF_UP);
+                }
+                assertTrue("X coord mismatch in test points index: " + ti + ": expected: " + dst[0] + ", found: " + res[0],
+                        dst[0].compareTo(res[0]) == 0);
+                assertTrue("Y coord mismatch in test points index: " + ti + ": expected: " + dst[1] + ", found: " + res[1],
+                        dst[1].compareTo(res[1]) == 0);
             }
         }
     }
 
-    public static double[][] generateRandomPoints(int pointCount) {
-        double[][] points = new double[pointCount][2];
+    public static BigDecimal[][] generateRandomPoints(int pointCount) {
+        BigDecimal[][] points = new BigDecimal[pointCount][2];
         for (int i = 0; i < pointCount; i++) {
             // Generate some random points all over the place to test against...
-            double factor1 = (i % 5 == 0 ? 1d : 10d * (i % 7 == 0 ? pointCount : 1));
-            double x = (double) (Math.random() * factor1);
+            BigDecimal factor1 = new BigDecimal(i % 5 == 0 ? 1d : 10d * (i % 7 == 0 ? pointCount : 1));
+            BigDecimal x = factor1.multiply(new BigDecimal(Math.random()));
 
-            double factor2 = (i % 2 == 0 ? 1d : 130d * (i % 3 == 0 ? pointCount : 1));
-            double y = (double) (Math.random() * factor1);
-            points[i] = new double[]{x, y};
+            BigDecimal factor2 = new BigDecimal(i % 2 == 0 ? 1d : 130d * (i % 3 == 0 ? pointCount : 1));
+            // Limit craziness of test comparison for randomly generated values...
+            BigDecimal y = factor2.multiply(new BigDecimal(Math.random())).setScale(12, BigDecimal.ROUND_HALF_UP);
+            points[i] = new BigDecimal[]{x, y};
         }
         return points;
     }
