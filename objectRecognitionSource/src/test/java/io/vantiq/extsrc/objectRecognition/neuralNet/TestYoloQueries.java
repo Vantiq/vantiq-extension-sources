@@ -1,3 +1,11 @@
+/*
+ * Copyright (c) 2019 Vantiq, Inc.
+ *
+ * All rights reserved.
+ *
+ * SPDX: MIT
+ */
+
 package io.vantiq.extsrc.objectRecognition.neuralNet;
 
 import static org.junit.Assert.fail;

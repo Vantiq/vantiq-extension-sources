@@ -11,6 +11,7 @@ package io.vantiq.extsrc.objectRecognition;
 
 import java.io.File;
 import java.io.FilenameFilter;
+import java.math.BigDecimal;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -33,7 +34,6 @@ import io.vantiq.client.Vantiq;
 import io.vantiq.extjsdk.ExtensionServiceMessage;
 import io.vantiq.extjsdk.ExtensionWebSocketClient;
 import io.vantiq.extjsdk.Handler;
-import io.vantiq.extjsdk.Response;
 import io.vantiq.extsrc.objectRecognition.exception.FatalImageException;
 import io.vantiq.extsrc.objectRecognition.exception.ImageAcquisitionException;
 import io.vantiq.extsrc.objectRecognition.exception.ImageProcessingException;
@@ -65,6 +65,8 @@ public class ObjectRecognitionCore {
     ExtensionWebSocketClient    client      = null;
     NeuralNetInterface          neuralNet   = null;
     SimpleDateFormat            format      = new SimpleDateFormat("yyyy-MM-dd--HH-mm-ss");
+    LocationMapper              locationMapper = null;
+    protected int retryLimit = 0;   // Used in test cases to avoid looping forever.
     
     public String outputDir;
     public String lastQueryFilename;
@@ -114,7 +116,7 @@ public class ObjectRecognitionCore {
             }
         }
     };
-    
+
     /**
      * Stops sending messages to the source and tries to reconnect, closing on a failure
      */
@@ -195,7 +197,9 @@ public class ObjectRecognitionCore {
      */
     public boolean start(int timeout) {
         boolean sourcesSucceeded = false;
-        while (!sourcesSucceeded) {
+        boolean limitExceeded = false;
+        int attempts = 0;
+        while (!sourcesSucceeded && !limitExceeded) {
             client = new ExtensionWebSocketClient(sourceName);
             objRecConfigHandler = new ObjectRecognitionConfigHandler(this);
             
@@ -208,11 +212,20 @@ public class ObjectRecognitionCore {
             sourcesSucceeded = exitIfConnectionFails(client, timeout);
             try {
                 Thread.sleep(RECONNECT_INTERVAL);
+                if (retryLimit > 0) {
+                    attempts += 1;
+                    limitExceeded = (attempts >= retryLimit);
+                }
             } catch (InterruptedException e) {
                 log.error("An error occurred when trying to sleep the current thread. Error Message: ", e);
             }
         }
-        return true;
+        return sourcesSucceeded;
+    }
+
+    public boolean start(int timeout, int retryLimit) {
+        this.retryLimit = retryLimit;
+        return start(timeout);
     }
     
     /**
@@ -657,7 +670,8 @@ public class ObjectRecognitionCore {
        
        map.put("sourceName", sourceName);
        map.put("timestamp", imageResults.getTimestamp());
-       map.put("results", neuralNetResults.getResults());
+       List<Map<String, ?>> nnRes = neuralNetResults.getResults();
+       map.put("results", nnRes);
        
        if (imageResults.getOtherData() != null) {
            map.put("dataSource", imageResults.getOtherData());
@@ -670,8 +684,12 @@ public class ObjectRecognitionCore {
        } else {
            map.put("neuralNet", new LinkedHashMap<>());
        }
-       
-       
+       if (locationMapper != null) {
+           // Then our source is configured to create a set of mapped results in addition to the NN results.
+           List<Map<String, ?>> mappedResults = locationMapper.mapResults(nnRes);
+           map.put("mappedResults", mappedResults);
+       }
+
        return map;
    }
     
@@ -741,5 +759,17 @@ public class ObjectRecognitionCore {
             return false;
         }
         return true;
+    }
+
+    public void createLocationMapper(BigDecimal[][] source, BigDecimal[][] destination, boolean convertToGeoJSON) {
+        locationMapper = new LocationMapper(source, destination, convertToGeoJSON);
+    }
+
+    public void createLocationMapper(BigDecimal[][] source, BigDecimal[][] destination) {
+        locationMapper = new LocationMapper(source, destination);
+    }
+
+    public LocationMapper getLocationMapper() {
+        return locationMapper;
     }
 }

@@ -9,18 +9,26 @@
 
 package io.vantiq.extsrc.objectRecognition;
 
+import static junit.framework.TestCase.assertNull;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeTrue;
 
 import java.io.File;
 import java.io.IOException;
+import java.math.BigDecimal;
 import java.nio.file.Files;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
+import io.vantiq.extsrc.objectRecognition.imageRetriever.TestCoordConverter;
+import lombok.extern.slf4j.Slf4j;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -34,7 +42,11 @@ import io.vantiq.extsrc.objectRecognition.neuralNet.BasicTestNeuralNet;
 import io.vantiq.extsrc.objectRecognition.neuralNet.NeuralNetInterface;
 import io.vantiq.extsrc.objectRecognition.neuralNet.NeuralNetResults;
 
+@Slf4j
+@SuppressWarnings({"WeakerAccess"})
 public class TestObjRecCore extends ObjRecTestBase {
+
+    static final Double ACCEPTABLE_DELTA = 0.0001d;
     
     NoSendORCore core;
     
@@ -45,7 +57,7 @@ public class TestObjRecCore extends ObjRecTestBase {
     
     ImageRetrieverInterface retriever;
     NeuralNetInterface      neuralNet;
-    
+
     @Before
     public void setup() {
         sourceName = "src";
@@ -165,10 +177,9 @@ public class TestObjRecCore extends ObjRecTestBase {
         assert retrieverResults == null;
         assertTrue("Core should be closed after runtime error", core.isClosed());
     }
-    
-    
-    @Test
-    public void testProcessImage() throws IOException {
+
+    // Verify core operation, not really doing much.
+    public void performProcessImageTest(boolean doCoordConversion, boolean convertToJson) {
         final LocalImageRetrieverResults imageData;
         Map sentMsg;
         byte[] lastBytes;
@@ -178,14 +189,17 @@ public class TestObjRecCore extends ObjRecTestBase {
             assumeFalse("Could not read image for the test", true);
             return; // Never reaches, just silences imageData not initialized errors
         }
-        
+
         assertTrue("Test helper setupNeuralNet failed unexpectedly"
                 , setupNeuralNet(BasicTestNeuralNet.THROW_EXCEPTION_ON_REQ));
+        if (doCoordConversion) {
+            core.createLocationMapper(plus50SrcPts, plus50DstPts, convertToJson);
+        }
         core.sendDataFromImage(imageData);
         lastBytes = core.fClient.getLastMessageAsBytes();
         assert lastBytes == null;
         assertFalse("Core should not be closed", core.isClosed());
-        
+
         assertTrue("Test helper setupNeuralNet failed unexpectedly"
                 , setupNeuralNet(null));
         core.sendDataFromImage(imageData);
@@ -194,24 +208,44 @@ public class TestObjRecCore extends ObjRecTestBase {
         assert sentMsg.get("object") instanceof Map;
         Map<String, ?> sentObj = (Map) sentMsg.get("object");
         assert sentObj.get("results") instanceof List;
+        if (doCoordConversion) {
+            assert sentObj.get("mappedResults") != null;
+            assert sentObj.get("mappedResults") instanceof List;
+            assert ((List) sentObj.get("mappedResults")).size() == ((List) sentObj.get("results")).size();
+        }
         assert sentObj.get("dataSource") instanceof Map;
         assert sentObj.get("neuralNet") instanceof Map;
         assertFalse("Core should not be closed", core.isClosed());
-        
+
         assertTrue("Test helper setupNeuralNet failed unexpectedly"
                 , setupNeuralNet(BasicTestNeuralNet.THROW_FATAL_ON_REQ));
         core.sendDataFromImage(imageData);
         assertTrue("Core should be closed after fatal error", core.isClosed());
-        
+
         core.closed = false;
         core.neuralNet = neuralNet;
         core.start(5);
         assertFalse("Resetting closed status failed", core.isClosed());
-        
+
         assertTrue("Test helper setupNeuralNet failed unexpectedly"
                 , setupNeuralNet(BasicTestNeuralNet.THROW_RUNTIME_ON_REQ));
         core.sendDataFromImage(imageData);
         assertTrue("Core should be closed after runtime error", core.isClosed());
+    }
+    
+    @Test
+    public void testProcessImage() throws IOException {
+        performProcessImageTest(false, false);
+    }
+
+    @Test
+    public void testProcessImageCoordConverter() throws IOException {
+        performProcessImageTest(true, false);
+    }
+
+    @Test
+    public void testProcessImageCoordConverterGeoJson() throws IOException {
+        performProcessImageTest(true, true);
     }
     
     @Test
@@ -303,8 +337,7 @@ public class TestObjRecCore extends ObjRecTestBase {
         core.start(3);
         assertTrue("Should have succeeded", core.exitIfConnectionFails(core.client, 3));
         assertFalse("Success means it shouldn't be closed", core.isClosed());
-        
-        
+
         core.close();
         core = new NoSendORCore(sourceName, authToken, targetVantiqServer, modelDirectory);
         FalseClient fc = new FalseClient(sourceName);
@@ -334,7 +367,221 @@ public class TestObjRecCore extends ObjRecTestBase {
         assertFalse("Should fail due to timeout on source connection", core.exitIfConnectionFails(core.client, 3));
         assertFalse("Failure does not mean it should be closed", core.isClosed());
     }
-// ================================================= Helper functions =================================================
+
+    @Test
+    public void testLocationMapperPlain() {
+        assertNull("Should not have a location mapper", core.locationMapper);
+
+        core.createLocationMapper(plus50SrcPts, plus50DstPts);
+        assertNotNull("Should now have a location mapper", core.locationMapper);
+
+        // now, create some test data...
+
+        List<Map<String, ?>> testinp = createTestData();
+
+
+        List<Map<String, ?>> res = core.locationMapper.mapResults(testinp);
+        // Check output...
+        assert res.size() == testinp.size();
+        for (int i = 0; i < res.size(); i++ ) {
+            assertEquals("bad label value", testinp.get(i).get("label"), res.get(i).get("label"));
+            assertEquals("bad confidence value", testinp.get(i).get("confidence"), res.get(i).get("confidence"));
+            @SuppressWarnings({"unchecked"})
+            Map<String, Double> inloc = (Map<String, Double>) testinp.get(i).get("location");
+            @SuppressWarnings({"unchecked"})
+            Map<String, Double> resloc = (Map<String, Double>) res.get(i).get("location");
+            assertEquals("Wrong number of locations in result", inloc.size(), resloc.size());
+
+            assertEquals("mapped top", inloc.get("top") + 50d, resloc.get("top"), ACCEPTABLE_DELTA);
+            assertEquals("mapped left", inloc.get("left") + 50d, resloc.get("left"), ACCEPTABLE_DELTA);
+            assertEquals("mapped bottom", inloc.get("bottom") + 50d, resloc.get("bottom"), ACCEPTABLE_DELTA);
+            assertEquals("mapped right", inloc.get("right") + 50d, resloc.get("right"), ACCEPTABLE_DELTA);
+        }
+
+        core.createLocationMapper(doubleSrcPts, doubleDstPts);
+        assertNotNull("Should now have a location mapper", core.locationMapper);
+
+        // now, create some test data...
+        testinp = createTestData();
+
+        res = core.locationMapper.mapResults(testinp);
+        // Check output...
+        assert res.size() == testinp.size();
+        for (int i = 0; i < res.size(); i++ ) {
+            assertEquals("bad label value", testinp.get(i).get("label"), res.get(i).get("label"));
+            assertEquals("bad confidence value", testinp.get(i).get("confidence"), res.get(i).get("confidence"));
+            @SuppressWarnings({"unchecked"})
+            Map<String, Double> inloc = (Map<String, Double>) testinp.get(i).get("location");
+            @SuppressWarnings({"unchecked"})
+            Map<String, Double> resloc = (Map<String, Double>) res.get(i).get("location");
+            assertEquals("Wrong number of locations in result", inloc.size(), resloc.size());
+
+            assertEquals("mapped top", inloc.get("top") * 2d, resloc.get("top"), ACCEPTABLE_DELTA);
+            assertEquals("mapped left", inloc.get("left") * 2d, resloc.get("left"), ACCEPTABLE_DELTA);
+            assertEquals("mapped bottom", inloc.get("bottom") * 2d, resloc.get("bottom"), ACCEPTABLE_DELTA);
+            assertEquals("mapped bottom", inloc.get("bottom") * 2d, resloc.get("bottom"), ACCEPTABLE_DELTA);
+        }
+    }
+
+    @Test
+    public void testLocationMapperGeoJSON() {
+        assertNull("Should not have a location mapper", core.locationMapper);
+
+        core.createLocationMapper(plus50SrcPts, plus50DstPts, true);
+        assertNotNull("Should now have a location mapper", core.locationMapper);
+
+        // now, create some test data...
+        List<Map<String, ?>> testinp = createTestData();
+
+        List<Map<String, ?>> res = core.locationMapper.mapResults(testinp);
+        // Check output...
+        assert res.size() == testinp.size();
+        for (int i = 0; i < res.size(); i++ ) {
+            assertEquals("bad label value", testinp.get(i).get("label"), res.get(i).get("label"));
+            assertEquals("bad confidence value", testinp.get(i).get("confidence"), res.get(i).get("confidence"));
+            @SuppressWarnings({"unchecked"})
+            Map<String, Double> inloc = (Map<String, Double>) testinp.get(i).get("location");
+            @SuppressWarnings({"unchecked"})
+            Map<String, Map<String, ?>> resloc = (Map<String, Map<String, ?>>) res.get(i).get("location");
+
+            // When converting to GeoJSON, results come back as 2 points (topLeft & bottomRight) as opposed
+            // to 4 single numbers
+            assertEquals("Wrong number of locations in result", 2, resloc.size());
+            Map<String, ?> tlEnt = resloc.get("topLeft");
+            assertNotNull("Missing topLeft", tlEnt);
+            Map<String, ?> brEnt = resloc.get("bottomRight");
+            assertNotNull("Missing bottomRight", brEnt);
+
+            assertEquals("mapped topLeft type", "Point", tlEnt.get("type"));
+            assertEquals("mapped bottomRight type", "Point", brEnt.get("type"));
+
+            Double[] tlCoords = (Double[]) tlEnt.get("coordinates");
+            assertNotNull("No topLeft coordinates", tlCoords);
+            assertEquals("Wrong number of topLeft coordinates", 2, tlCoords.length);
+            Double[] brCoords = (Double[]) brEnt.get("coordinates");
+            assertNotNull("No bottomRight coordinates", brCoords);
+            assertEquals("Wrong number of bottomRight coordinates", 2, brCoords.length);
+
+            assertEquals("mapped topLeft longitude", inloc.get("top") + 50d, tlCoords[0], ACCEPTABLE_DELTA);
+            assertEquals("mapped topLeft latitude", inloc.get("left") + 50d, tlCoords[1], ACCEPTABLE_DELTA);
+            assertEquals("mapped bottomRight longitude", inloc.get("bottom") + 50d, brCoords[0], ACCEPTABLE_DELTA);
+            assertEquals("mapped bottomRight latitude", inloc.get("right") + 50d, brCoords[1], ACCEPTABLE_DELTA);
+        }
+
+        core.createLocationMapper(doubleSrcPts, doubleDstPts, true);
+        assertNotNull("Should now have a location mapper", core.locationMapper);
+
+        // now, create some test data...
+        testinp = createTestData();
+
+        res = core.locationMapper.mapResults(testinp);
+        // Check output...
+        assert res.size() == testinp.size();
+        for (int i = 0; i < res.size(); i++ ) {
+            assertEquals("bad label value", testinp.get(i).get("label"), res.get(i).get("label"));
+            assertEquals("bad confidence value", testinp.get(i).get("confidence"), res.get(i).get("confidence"));
+            @SuppressWarnings({"unchecked"})
+            Map<String, Double> inloc = (Map<String, Double>) testinp.get(i).get("location");
+            @SuppressWarnings({"unchecked"})
+            Map<String, Map<String, ?>> resloc = (Map<String, Map<String, ?>>) res.get(i).get("location");
+
+            // When converting to GeoJSON, results come back as 2 points (topLeft & bottomRight) as opposed
+            // to 4 single numbers
+            log.debug("Returned locations: {}", resloc);
+            assertEquals("Wrong number of locations in result", 2, resloc.size());
+            Map<String, ?> tlEnt = resloc.get("topLeft");
+            assertNotNull("Missing topLeft", tlEnt);
+            Map<String, ?> brEnt = resloc.get("bottomRight");
+            assertNotNull("Missing bottomRight", brEnt);
+
+            assertEquals("mapped topLeft type", "Point", tlEnt.get("type"));
+            assertEquals("mapped bottomRight type", "Point", brEnt.get("type"));
+
+            Double[] tlCoords = (Double[]) tlEnt.get("coordinates");
+            assertNotNull("No topLeft coordinates", tlCoords);
+            assertEquals("Wrong number of topLeft coordinates", 2, tlCoords.length);
+            Double[] brCoords = (Double[]) brEnt.get("coordinates");
+            assertNotNull("No bottomRight coordinates", brCoords);
+            assertEquals("Wrong number of bottomRight coordinates", 2, brCoords.length);
+
+            assertEquals("mapped topLeft longitude", inloc.get("top") * 2d, tlCoords[0], ACCEPTABLE_DELTA);
+            assertEquals("mapped topLeft latitude", inloc.get("left") * 2d, tlCoords[1], ACCEPTABLE_DELTA);
+            assertEquals("mapped bottomRight longitude", inloc.get("bottom") * 2d, brCoords[0], ACCEPTABLE_DELTA);
+            assertEquals("mapped bottomRight latitude", inloc.get("right") * 2d, brCoords[1], ACCEPTABLE_DELTA);
+        }
+    }
+
+    // Coordinate conversion data & support methods
+
+    BigDecimal[][] plus50SrcPts = new BigDecimal[][]{
+            {new BigDecimal(3), new BigDecimal(3)},
+            {new BigDecimal(1.0d), new BigDecimal(1)},
+            {new BigDecimal(2), new BigDecimal(1)},
+            {new BigDecimal(4), new BigDecimal(3)}
+    };
+    BigDecimal[][] plus50DstPts = new BigDecimal[][]{
+            {new BigDecimal(53d), new BigDecimal(53d)},
+            {new BigDecimal(51.0d), new BigDecimal(51d)},
+            {new BigDecimal(52d), new BigDecimal(51d)},
+            {new BigDecimal(54d), new BigDecimal(53d)}};
+
+    BigDecimal[][] doubleSrcPts = new BigDecimal[][] {
+            {new BigDecimal(1.0f), new BigDecimal(1f)},
+            {new BigDecimal(2f), new BigDecimal(1f)},
+            {new BigDecimal(3f), new BigDecimal(3f)},
+            {new BigDecimal(4f),new BigDecimal(3f)}};
+    BigDecimal[][] doubleDstPts = new BigDecimal[][] {
+            {new BigDecimal(2.0f), new BigDecimal(2f)},
+            {new BigDecimal(4f), new BigDecimal(2f)},
+            {new BigDecimal(6f), new BigDecimal(6f)},
+            {new BigDecimal(8f), new BigDecimal(6f)}};
+
+    static List<Map<String, ?>> generateSomePoints(int pointCount) {
+        List<Map<String, ?>> res = new ArrayList<>();
+        BigDecimal[][] pts = TestCoordConverter.generateRandomPoints(pointCount);
+        for (int i = 0; i < pointCount/2; i++) {
+            Map<String, BigDecimal> aloc = new HashMap<>();
+            aloc.put("top", pts[i][1]);
+            aloc.put("left", pts[i][0]);
+            aloc.put("bottom", pts[i+1][1]);
+            aloc.put("right", pts[i+1][0]);
+            res.add(aloc);
+        }
+        return res;
+    }
+    static List<Map<String, ?>> createTestData() {
+        List<Map<String, ?>> testinp = new ArrayList<>();
+        Map<String, Object> aBox = new HashMap<>();
+        aBox.put("confidence", .95);
+        aBox.put("label", "a thingamajig");
+        Map<String, Number> loc = new HashMap<>();
+        loc.put("top", 1d);
+        loc.put("left", 1d);
+        loc.put("bottom", 3.0d);
+        loc.put("right", 4.0d);
+        aBox.put("location", loc);
+        testinp.add(aBox);
+        aBox = new HashMap<>();
+        aBox.put("confidence", .35);
+        aBox.put("label", "another thingamajig");
+        loc = new HashMap<>();
+        List<Map<String, ?>> targets = generateSomePoints(100);
+        int i = 0;
+        for (Map<String, ?> aloc : targets) {
+            loc = new HashMap<>();
+            loc.put("top", ((Number) aloc.get("top")).doubleValue());
+            loc.put("left", ((Number) aloc.get("left")).doubleValue());;
+            loc.put("bottom", ((Number) aloc.get("bottom")).doubleValue());
+            loc.put("right", ((Number) aloc.get("right")).doubleValue());
+            aBox.put("location", loc);
+            aBox.put("label", "another thingamajig# " + i++);
+            testinp.add(aBox);
+        }
+
+        return testinp;
+    }
+
+    // ================================================= Helper functions =================================================
     
     public boolean setupRetriever(String config) {
         Map<String, Object> conf = new LinkedHashMap<>();

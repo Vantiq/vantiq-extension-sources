@@ -52,7 +52,8 @@ public class BasicTestRetriever implements ImageRetrieverInterface {
             try {
                 return new ImageRetrieverResults(Files.readAllBytes(new File(ObjRecTestBase.JPEG_IMAGE_LOCATION).toPath()));
             } catch (IOException e) {
-                throw new FatalImageException("Couldn't find the image location");
+                throw new FatalImageException("Couldn't find the image location " + ObjRecTestBase.JPEG_IMAGE_LOCATION +
+                        " -- Did you run gradle copyTestResources?");
             }
         }
     }
@@ -69,7 +70,8 @@ public class BasicTestRetriever implements ImageRetrieverInterface {
             try {
                 return new ImageRetrieverResults(Files.readAllBytes(new File(ObjRecTestBase.JPEG_IMAGE_LOCATION).toPath()));
             } catch (IOException e) {
-                throw new FatalImageException("Couldn't find the image location");
+                throw new FatalImageException("Couldn't find the image location " + ObjRecTestBase.JPEG_IMAGE_LOCATION +
+                        " -- Did you run gradle copyTestResources?");
             }
         }
     }
