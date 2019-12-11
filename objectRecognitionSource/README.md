@@ -284,6 +284,10 @@ coordinate space.
 The accuracy and precision with which you determine and specify these points
 completely determines the accuracy of the coordinate space translation.
 
+(**Note** that the coordinate mapping assumes a 2-D space.
+This is sufficient for image recognition applications,
+but not necessarily for large-scale mapping.)
+
 As noted, coordinate spaces are determined by four non-collinear points, that is
 four points that form a quadrilateral.
 If the points are collinear, the translation will be often be incorrect.
