@@ -33,7 +33,7 @@ import java.math.RoundingMode;
  * doesn't necessarily have all the same capabilities defined the same way.  So, liberties have been taken and,
  * undoubtedly, some unnecessary complications are included.  Ultimately, for many of the cases with cameras
  * observing a fairly small area but wanting to plot things on a map (i.e. use GPS (lat, long) coordinates), the
- * Float-level precision was not sufficient.  Thus, this conversion operations using BigDecimal-based coordinates.
+ * Float-level precision was not sufficient.  Thus, this conversion operates using BigDecimal-based coordinates.
  */
 
 @SuppressWarnings({"FieldCanBeLocal"})
@@ -71,7 +71,7 @@ public class CoordinateConverter {
     }
 
     /**
-     * Convert a 2D coordinate according this converter's specification
+     * Convert a 2D coordinate according to this converter's specification
      * <p>
      * This method converts from source coordinate space to destination using matrix constructed as
      * instance creation. The converter is not tied to any particular type of conversion;

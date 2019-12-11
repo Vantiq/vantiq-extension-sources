@@ -17,6 +17,10 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 
+/**
+ * This class left in as an example for how to make things operate using the OpenCV version
+ * of getPerspectiveWarp().  Will be deleted, but want it on the record.
+ */
 @Slf4j
 public class TestCoordConverterFloat {
 
@@ -131,6 +135,8 @@ public class TestCoordConverterFloat {
                 {36f, 583f}, // Corner of rectangular road marking bottom left
         };
         // longitude, latitude == x,y  -- reversed from traditional specification (but like GeoJSON)
+        // Only works with some sig digits removed.  Float precision issue.
+        // And then only works with high acceptable delta.
         Float[][] gpsDstPts = new Float[][]{
 //                {6.603560f, 52.036730f * 1000}, // Corner of dashed line bottom right
 //                {6.603227f, 52.036181f * 1000}, // Corner of white rumble strip top left
@@ -160,16 +166,11 @@ public class TestCoordConverterFloat {
                 {-83.74819690478398f, 42.27796396568019f},
                 {-83.74813303468181f, 42.78190293489615f},
                 {-83.74800177407815f, 42.78187357400434f},
-//                {-.74801820260836f, .27796103748212f},
-//                {-.74819690478398f, .27796396568019f},
-//                {-.74813303468181f, .78190293489615f},
-//                {-.74800177407815f, .78187357400434f},
         };
         assertFalse("Destination Points Collinear", CoordinateConverterFloat.checkCollinearity(alleyCam1DstPts, 0.00001f));
     }
 
     @Test
-   // @Ignore // not working yet...  Input data suspect
     public void testAlleyCam1() {
         // image location --> lat/long
         // Coords in order topLeft, topRight, bottomRight, bottomLeft (CW from topLeft)
@@ -179,7 +180,10 @@ public class TestCoordConverterFloat {
                 {850.f, 694.f},
                 {63.f, 696.f},
         };
-            // longitude, latitude == x,y  -- reversed from traditional specification (but like GeoJSON)
+        // longitude, latitude == x,y  -- reversed from traditional specification (but like GeoJSON)
+        // Only works with some sig digits removed.  Float precision issue.
+        // And then only works with high acceptable delta.
+        // Too high for actual use case acceptability.
         Float[][] alleyCam1DstPts = new Float[][]{
 //                {-83.74801820260836f, 42.27796103748212f},
 //                {-83.74819690478398f, 42.27796396568019f},

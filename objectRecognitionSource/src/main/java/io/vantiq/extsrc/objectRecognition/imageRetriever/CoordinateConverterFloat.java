@@ -31,6 +31,9 @@ import org.slf4j.LoggerFactory;
  * doesn't necessarily have all the same capabilities defined the same way.  So, liberties have been taken and,
  * undoubtedly, some unnecessary complications are included.  This is due, primarily, to the author's
  * mis-/lackOf- complete understanding of Python and its attendant packages.
+ *
+ * This class left in as an example for how to make things operate using the OpenCV version
+ * of getPerspectiveWarp().  Will be deleted, but want it on the record.
  */
 
 @SuppressWarnings({"FieldCanBeLocal"})
@@ -158,8 +161,8 @@ public class CoordinateConverterFloat {
                 log.warn("Destination points are collinear (or close) which may cause problems in conversion");
             }
         }
-        src = matixFromInput(source);
-        dst = matixFromInput(destination);
+        src = matrixFromInput(source);
+        dst = matrixFromInput(destination);
 
         if (log.isTraceEnabled()) {
             dumpMatrix(src, "src");
@@ -177,7 +180,7 @@ public class CoordinateConverterFloat {
         return cnvtr;
     }
 
-    private Mat matixFromInput(Float[][] flts) {
+    private Mat matrixFromInput(Float[][] flts) {
         Mat result = new Mat(new Size(1, 4), CV_32FC2);
         float maxX = 0, minX = 0, maxY = 0, minY = 0;
 
@@ -204,7 +207,9 @@ public class CoordinateConverterFloat {
             result.put(i, 0, flts[i][0], flts[i][1]);
         }
 
-        dumpMatrix(result, "input Matrix");
+        if (log.isTraceEnabled()) {
+            dumpMatrix(result, "input Matrix");
+        }
         log.debug("X difference: {}, y difference: {}", maxX - minX, maxY - minY);
         return result;
     }

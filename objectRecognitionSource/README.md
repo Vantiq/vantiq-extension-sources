@@ -290,7 +290,7 @@ but not necessarily for large-scale mapping.)
 
 As noted, coordinate spaces are determined by four non-collinear points, that is
 four points that form a quadrilateral.
-If the points are collinear, the translation will be often be incorrect.
+If the points are collinear, the translation will often be incorrect.
 It is generally a good idea to think about this quadrilateral and specify the points in some common order (_e.g_ top left, top right, bottom right, bottom left -- clockwise from top left).
 Doing things this way reduces the likelyhood of error.
 

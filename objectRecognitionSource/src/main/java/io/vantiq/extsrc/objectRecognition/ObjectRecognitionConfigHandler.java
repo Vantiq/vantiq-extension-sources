@@ -548,7 +548,7 @@ public class ObjectRecognitionConfigHandler extends Handler<ExtensionServiceMess
             public void run() {
                 ImageRetrieverResults image = source.retrieveImage();
                 // Send data from image in a new thread
-                // Note: source.pool can be null of things are closed before we run.
+                // Note: source.pool can be null if things are closed before we run.
                 // This check (mostly) avoids extraneous & worrisome NPEs in log.
                 if (source.pool != null) {
                     source.pool.execute(new Runnable() {
