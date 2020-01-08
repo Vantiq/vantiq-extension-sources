@@ -122,12 +122,12 @@ public class YOLOClassifier {
     private List<Recognition> getRecognition(final PriorityQueue<Recognition> priorityQueue) {
         List<Recognition> recognitions = new ArrayList();
 
-        if (priorityQueue.size() > 0) {
+        if (!priorityQueue.isEmpty()) {
             // Best recognition
             Recognition bestRecognition = priorityQueue.poll();
             recognitions.add(bestRecognition);
             
-            while (priorityQueue.size() > 0) {
+            while (!priorityQueue.isEmpty()) {
                 Recognition recognition = priorityQueue.poll();
                 boolean overlaps = false;
                 for (Recognition previousRecognition : recognitions) {
