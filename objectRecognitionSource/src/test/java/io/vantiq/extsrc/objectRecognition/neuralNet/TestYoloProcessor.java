@@ -1748,6 +1748,7 @@ public class TestYoloProcessor extends NeuralNetTestBase {
             for (int i = 0; i < responseBody.size(); i++) {
                 JsonObject resultObject = (JsonObject) responseBody.get(i);
                 assert resultObject.get("results") instanceof JsonArray;
+                System.out.println("Results: " + resultObject.get("results"));
                 assert ((JsonArray) resultObject.get("results")).size() == 0;
             }
         }
@@ -1967,6 +1968,7 @@ public class TestYoloProcessor extends NeuralNetTestBase {
         neuralNet.put("type", "yolo");
         neuralNet.put("metaFile", META_FILE);
         neuralNet.put("pbFile", PB_FILE);
+        neuralNet.put("threshold", 60); // Overcome strange interpretation of camera images
 
         // Placing general config options in "objRecConfig"
         objRecConfig.put("general", general);
