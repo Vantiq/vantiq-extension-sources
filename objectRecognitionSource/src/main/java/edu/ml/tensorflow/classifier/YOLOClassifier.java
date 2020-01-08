@@ -20,7 +20,6 @@ import java.util.PriorityQueue;
 public class YOLOClassifier {
     private final static float OVERLAP_THRESHOLD = 0.5f;
     private final static int MAX_RECOGNIZED_CLASSES = 24;
-    private final static int MAX_RESULTS = 24;
     public final static int NUMBER_OF_BOUNDING_BOX = 5;
     
     // Default anchor values used to properly label recognitions on original image
@@ -128,7 +127,7 @@ public class YOLOClassifier {
             Recognition bestRecognition = priorityQueue.poll();
             recognitions.add(bestRecognition);
             
-            for (int i = 0; i < Math.min(priorityQueue.size(), MAX_RESULTS); ++i) {
+            while (priorityQueue.size() > 0) {
                 Recognition recognition = priorityQueue.poll();
                 boolean overlaps = false;
                 for (Recognition previousRecognition : recognitions) {
