@@ -520,39 +520,4 @@ public class TestNoProcessor extends NeuralNetTestBase {
             npProcessor.close();
         }
     }
-
-    @Test
-    public void testNotificationEnMass() throws Exception {
-
-        assumeTrue(testAuthToken != null && testVantiqServer != null);
-
-        ExtensionWebSocketClient client = new ExtensionWebSocketClient("testSrc");
-        client.initiateFullConnection(testVantiqServer, testAuthToken).get();
-        
-//        ObjectRecognitionCore("testSrc", testAuthToken, testVantiqServer, )
-//        Map config = new LinkedHashMap<>();
-//        NoProcessor npProcessor = new NoProcessor();
-//        
-//        config.put("saveImage", "local");
-//        config.put("outputDir", OUTPUT_DIR);
-//        config.put("saveRate", SAVE_RATE);
-//        npProcessor.setupImageProcessing(config, SOURCE_NAME, MODEL_DIRECTORY, testAuthToken, testVantiqServer);
-//        assertTrue("NoProcessor should still setup with empty config", npProcessor.isSetup);
-
-        List<String> simpleList = new ArrayList<>();
-        for (int i = 0; i < 20; i++) {
-            String junk = Integer.toString(i);
-            simpleList.add(junk);
-        }
-        for (int i = 0; i < 100000; i++) {
-            System.out.println("Sending entity #" + i);
-            Map ntfy = new HashMap();
-            ntfy.put("data", simpleList);
-            ntfy.put("msgId", Integer.toString(i));
-            client.sendNotification(ntfy);
-            Thread.sleep(0, 1);
-            //assertTrue( "testAssert", i > 5000);
-        }
-        assertTrue(false);
-    }
 }
