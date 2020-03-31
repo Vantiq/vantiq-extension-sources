@@ -12,17 +12,13 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeTrue;
 
-import java.io.Externalizable;
 import java.io.File;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-import io.vantiq.extjsdk.ExtensionWebSocketClient;
-import io.vantiq.extsrc.objectRecognition.ObjectRecognitionCore;
-import org.junit.AfterClass;
+mport org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.FixMethodOrder;
 import org.junit.Test;
@@ -34,7 +30,6 @@ import io.vantiq.client.VantiqError;
 import io.vantiq.client.VantiqResponse;
 import io.vantiq.extsrc.objectRecognition.exception.ImageProcessingException;
 import okhttp3.Response;
-import org.slf4j.LoggerFactory;
 
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
 public class TestNoProcessor extends NeuralNetTestBase {
@@ -55,13 +50,13 @@ public class TestNoProcessor extends NeuralNetTestBase {
     // A single processor is used for the entire class because it is very expensive to do initial setup
     @BeforeClass
     public static void classSetup() {
-//        noProcessor = new NoProcessor();
+        noProcessor = new NoProcessor();
 
         Map<String, Object> config = new LinkedHashMap<>();
-//        noProcessor.setupImageProcessing(config, SOURCE_NAME, MODEL_DIRECTORY, testAuthToken, testVantiqServer);
-//
-//        vantiq = new io.vantiq.client.Vantiq(testVantiqServer);
-//        vantiq.setAccessToken(testAuthToken);
+        noProcessor.setupImageProcessing(config, SOURCE_NAME, MODEL_DIRECTORY, testAuthToken, testVantiqServer);
+
+        vantiq = new io.vantiq.client.Vantiq(testVantiqServer);
+        vantiq.setAccessToken(testAuthToken);
     }
 
     @AfterClass
