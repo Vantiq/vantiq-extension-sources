@@ -174,6 +174,7 @@ public class TestYoloQueriesLocationMapper extends NeuralNetTestBase {
 
     public static void setupSource(Map<String,Object> sourceDef) {
         VantiqResponse insertResponse = vantiq.insert("system.sources", sourceDef);
+        assertTrue("Cannot create source: " + insertResponse.toString(), insertResponse.isSuccess());
         if (insertResponse.isSuccess()) {
             core = new ObjectRecognitionCore(SOURCE_NAME, testAuthToken, testVantiqServer, MODEL_DIRECTORY);;
             core.start(CORE_START_TIMEOUT);
@@ -251,7 +252,7 @@ public class TestYoloQueriesLocationMapper extends NeuralNetTestBase {
         // Setting up the source definition
         sourceDef.put("config", sourceConfig);
         sourceDef.put("name", SOURCE_NAME);
-        sourceDef.put("type", "ObjectRecognition");
+        sourceDef.put("type",  OR_SRC_TYPE);
         sourceDef.put("active", "true");
         sourceDef.put("direction", "BOTH");
         log.debug("Source def'n: {}", sourceDef);

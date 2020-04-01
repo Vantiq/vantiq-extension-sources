@@ -27,6 +27,7 @@ import io.vantiq.extsrc.objectRecognition.ObjRecTestBase;
 public class NeuralNetTestBase extends ObjRecTestBase {
     public static final String MODEL_DIRECTORY = System.getProperty("buildDir") + "/models";
     public static final String SOURCE_NAME = "testSourceName";
+    public static final String OR_SRC_TYPE = "OBJECT_RECOGNITION";
 
     static final String VANTIQ_DOCUMENTS = "system.documents";
     static final String VANTIQ_IMAGES = "system.images";

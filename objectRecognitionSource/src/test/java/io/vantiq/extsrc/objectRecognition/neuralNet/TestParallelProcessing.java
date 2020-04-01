@@ -138,7 +138,7 @@ public class TestParallelProcessing extends NeuralNetTestBase {
         // Setting up the source definition
         sourceDef.put("config", sourceConfig);
         sourceDef.put("name", testSourceName);
-        sourceDef.put("type", "ObjectRecognition");
+        sourceDef.put("type", OR_SRC_TYPE);
         sourceDef.put("active", "true");
         sourceDef.put("direction", "BOTH");
 
