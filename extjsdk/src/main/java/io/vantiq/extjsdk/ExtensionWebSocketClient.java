@@ -245,6 +245,10 @@ public class ExtensionWebSocketClient {
                 this.send(msg);
             } catch (InterruptedException ie) {
                 log.warn("Obtaining space to sent notifications was interrupted.", ie);
+            } catch (Exception e) {
+                // If we get an exception during the send, we're unlikely to get a response so release now.
+                outstandingNotifications.release();
+                throw e;
             }
         }
     }
