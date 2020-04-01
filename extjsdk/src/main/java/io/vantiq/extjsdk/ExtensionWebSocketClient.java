@@ -24,6 +24,7 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 
 // Logging
@@ -56,6 +57,8 @@ public class ExtensionWebSocketClient {
      * The WebSocket used to talk to the Vantiq deployment. null when no connection is established
      */
     WebSocket webSocket = null;
+    
+    Semaphore outstandingNotifications = null;
     /**
      * The name of the source this client is connected to.
      */
@@ -122,6 +125,7 @@ public class ExtensionWebSocketClient {
      */
     public ExtensionWebSocketClient (String sourceName) {
         this.sourceName = sourceName;
+        outstandingNotifications = new Semaphore(5, true);
         log = LoggerFactory.getLogger(this.getClass().getCanonicalName() + "#" + sourceName);
         listener = new ExtensionWebSocketListener(this);
     }
@@ -236,8 +240,24 @@ public class ExtensionWebSocketClient {
             m.put("object", data);
             ExtensionServiceMessage msg = new ExtensionServiceMessage("");
             msg.fromMap(m);
-            this.send(msg);
+            try {
+                outstandingNotifications.acquire();
+                this.send(msg);
+            } catch (InterruptedException ie) {
+                log.warn("Obtaining space to sent notifications was interrupted.", ie);
+            }
         }
+    }
+
+    /**
+     * Acknowledge the notification
+     * 
+     * We control the number of outstanding notifications so as not to overrun the websocket and/or OkHttp.
+     * To deal manage this, we use this method to allow the listener to acknowledge notifications upon
+     * receipt of a response message.
+     */
+    void acknowledgeNotification() {
+        outstandingNotifications.release();
     }
 
     /**
@@ -572,6 +592,7 @@ public class ExtensionWebSocketClient {
         // Saving and nulling before closing so EWSListener can know when it is closed by the client 
         WebSocket socket = webSocket;
         webSocket = null;
+        outstandingNotifications = null;
         if (socket != null) {
             try {
                 socket.close(1000, "Closed by client");
