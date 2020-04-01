@@ -252,7 +252,7 @@ public class ExtensionWebSocketListener implements WebSocketListener{
             if (statusCheck >= 300) {
                 log.error("Map of the received message: {}", msg);
             } else {
-                log.debug("Map of the received message: {}", msg);
+                log.trace("Map of the received message: {}", msg);
             }
         } else {
             log.debug("Map of the received message: {}", msg);
@@ -264,7 +264,7 @@ public class ExtensionWebSocketListener implements WebSocketListener{
         // Since we're acting through the WebSocket interface, this means it should be a Http response
         if (msg.get("op") == null) {
             Response message = Response.fromMap(msg);
-            log.debug("Http response received");
+            log.trace("Http response received");
             if (client.isAuthed()) {
                 // Is an error message before successful connection to the target source
                 // This is most likely a failure related to a source connection request
@@ -272,6 +272,8 @@ public class ExtensionWebSocketListener implements WebSocketListener{
                     log.warn("Error occurred attempting to connect to source.");
                     log.debug("Error message was: {}", message);
                     client.sourceFuture.complete(false);
+                } else {
+                    client.acknowledgeNotification();
                 }
                 if (this.httpHandler != null) {
                     try {
@@ -282,7 +284,7 @@ public class ExtensionWebSocketListener implements WebSocketListener{
                     }
                 }
                 else {
-                    log.debug("Http response received with no handler set");
+                    log.trace("Http response received with no handler set");
                 }
             }
             else {
