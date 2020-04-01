@@ -8,6 +8,7 @@
 
 package io.vantiq.extsrc.jdbcSource;
 
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeTrue;
@@ -362,7 +363,7 @@ public class TestJDBC extends TestJDBCBase {
             queryResult = jdbc.processQuery(SELECT_QUERY_EXTENDED_TYPES);
             String timestampTest = (String) queryResult[0].get("ts");
             assert timestampTest.matches(timestampPattern);
-            assert timestampTest.equals(FORMATTED_TIMESTAMP);
+            assertTrue("Expected " + FORMATTED_TIMESTAMP + ", but got " + timestampTest,timestampTest.equals(FORMATTED_TIMESTAMP));
             String dateTest = (String) queryResult[0].get("testDate");
             assert dateTest.matches(datePattern);
             assert dateTest.equals(DATE);
@@ -415,7 +416,8 @@ public class TestJDBC extends TestJDBCBase {
         JsonArray responseBody = (JsonArray) response.getBody();
         JsonObject responseMap = (JsonObject) responseBody.get(0);
         String timestamp = (String) responseMap.get("ts").getAsString();
-        assert timestamp.equals(FORMATTED_TIMESTAMP);
+        assertTrue("Expected " + FORMATTED_TIMESTAMP + ", but got " + timestamp,
+                timestamp.equals(FORMATTED_TIMESTAMP));
 
         // Create a Type with DateTime property
         setupType();
@@ -519,7 +521,8 @@ public class TestJDBC extends TestJDBCBase {
                     assert queryResult[0].get("ts").equals(FORMATTED_TIMESTAMP);
                 }
                 if (i != 1) {
-                    assert queryResult[0].get("testDate").equals(DATE);
+                    assertTrue("Expected " + DATE + ", but got " + queryResult[0].get("testDate"),
+                            queryResult[0].get("testDate").equals(DATE));
                 }
                 if (i != 2) {
                     assert queryResult[0].get("testTime").equals(FORMATTED_TIME);
@@ -987,6 +990,11 @@ public class TestJDBC extends TestJDBCBase {
     }
 
     public static void setupSource(Map<String,Object> sourceDef) {
+
+        Map<String,String> where = new LinkedHashMap<String,String>();
+        where.put("name", "JDBC");
+        VantiqResponse implResp = vantiq.select("system.sourceimpls", null, where, null);
+
         VantiqResponse insertResponse = vantiq.insert("system.sources", sourceDef);
         if (insertResponse.isSuccess()) {
             core = new JDBCCore(testSourceName, testAuthToken, testVantiqServer);
