@@ -509,6 +509,7 @@ public class TestJDBC extends TestJDBCBase {
             // Insert data into database
             try {
                 publishResult = jdbc.processPublish(queryString);
+                assertTrue("publish failed: " + publishResult, publishResult > 0);
             } catch (Exception e) {
                 fail("No exception should be thrown when inserting null values: " + e.getMessage());
             }
@@ -516,6 +517,7 @@ public class TestJDBC extends TestJDBCBase {
             // Make sure collected data is identical to input data, and fail if any type of exception is caught
             try {
                 queryResult = jdbc.processQuery(QUERY_NULL_VALUES);
+                assert queryResult.length == 1;
                 assert queryResult[0].size() == 5;
                 if (i != 0) {
                     assert queryResult[0].get("ts").equals(FORMATTED_TIMESTAMP);
@@ -525,7 +527,8 @@ public class TestJDBC extends TestJDBCBase {
                             queryResult[0].get("testDate").equals(DATE));
                 }
                 if (i != 2) {
-                    assert queryResult[0].get("testTime").equals(FORMATTED_TIME);
+                    assertTrue("Expected " + FORMATTED_TIME + ", but got " + queryResult[0].get("testTime"),
+                         queryResult[0].get("testTime").equals(FORMATTED_TIME));
                 }
                 if (i != 3) {
                     assert queryResult[0].get("testInt").toString().equals(TEST_INT);
