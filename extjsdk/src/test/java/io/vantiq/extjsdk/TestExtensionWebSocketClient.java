@@ -20,12 +20,15 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+
+import static org.junit.Assert.fail;
 
 
 public class TestExtensionWebSocketClient extends ExtjsdkTestBase{
@@ -286,6 +289,36 @@ public class TestExtensionWebSocketClient extends ExtjsdkTestBase{
         assert socket.compareData("op", ExtensionServiceMessage.OP_NOTIFICATION);
         assert socket.compareData("object.msg", "str");
         assert socket.compareData("resourceId", srcName);
+    }
+
+    @Test
+    public void testBadNotificationArguments() {
+        markSourceConnected(true);
+
+        Integer[] intArray = new Integer[3];
+        intArray[0] = 1;
+        intArray[1] = 2;
+        intArray[2] = 3;
+
+        try {
+            client.sendNotification(intArray);
+            fail("Send of Array should fail.");
+        } catch (IllegalArgumentException iae) {
+            // Expected
+        } // Other invalid exceptions will escape & cause failure.
+
+        List<String> stringList = new ArrayList<>();
+        stringList.add("This ");
+        stringList.add("should ");
+        stringList.add("not ");
+        stringList.add("work.");
+
+        try {
+            client.sendNotification(stringList);
+            fail("Send of List should fail.");
+        } catch (IllegalArgumentException iae) {
+            // Expected
+        } // Other invalid exceptions will escape & cause failure.
     }
     
 // ============================== Helper functions ==============================

@@ -234,7 +234,7 @@ public class TestYoloProcessor extends NeuralNetTestBase {
         try {
             ypImageSaver.setupImageProcessing(config, SOURCE_NAME, MODEL_DIRECTORY, testAuthToken, testVantiqServer);
         } catch (Exception e) {
-            fail("Should not fail with meta file but no label file.");
+            fail("Should not fail with meta file but no label file: " + e.getClass().getName() + "::" + e.getMessage());
         }
 
         // Meta file included and anchors included
@@ -243,7 +243,7 @@ public class TestYoloProcessor extends NeuralNetTestBase {
         try {
             ypImageSaver.setupImageProcessing(config, SOURCE_NAME, MODEL_DIRECTORY, testAuthToken, testVantiqServer);
         } catch (Exception e) {
-            fail("Should not fail with meta file and anchors.");
+            fail("Should not fail with meta file and anchors: " + e.getClass().getName() + "::" + e.getMessage());
         }
 
         // Label file included, no meta file
@@ -254,7 +254,7 @@ public class TestYoloProcessor extends NeuralNetTestBase {
         try {
             ypImageSaver.setupImageProcessing(config, SOURCE_NAME, MODEL_DIRECTORY, testAuthToken, testVantiqServer);
         } catch (Exception e) {
-            fail("Should not fail with label file but no meta file.");
+            fail("Should not fail with label file but no meta file: " + e.getClass().getName() + "::" + e.getMessage());
         }
 
         // Label file included and anchors included
@@ -263,7 +263,7 @@ public class TestYoloProcessor extends NeuralNetTestBase {
         try {
             ypImageSaver.setupImageProcessing(config, SOURCE_NAME, MODEL_DIRECTORY, testAuthToken, testVantiqServer);
         } catch (Exception e) {
-            fail("Should not fail with label file and anchors.");
+            fail("Should not fail with label file and anchors: " + e.getClass().getName() + "::" + e.getMessage());
         }
 
         // Label and meta file included, anchors included
@@ -272,7 +272,7 @@ public class TestYoloProcessor extends NeuralNetTestBase {
         try {
             ypImageSaver.setupImageProcessing(config, SOURCE_NAME, MODEL_DIRECTORY, testAuthToken, testVantiqServer);
         } catch (Exception e) {
-            fail("Should not fail with label and meta file, and anchors.");
+            fail("Should not fail with label and meta file, and anchors: " + e.getClass().getName() + "::" + e.getMessage());
         }
 
     }
@@ -288,7 +288,7 @@ public class TestYoloProcessor extends NeuralNetTestBase {
         try {
             ypImageSaver.setupImageProcessing(config, SOURCE_NAME, MODEL_DIRECTORY, testAuthToken, testVantiqServer);
         } catch (Exception e) {
-            fail("Should not fail setup.");
+            fail("Should not fail setup: " + e.getClass().getName() + "::" + e.getMessage());
         }
         
         // useMetaIfAvailable flag should be true, since Config Size value is unchanged (default is 416)
@@ -302,7 +302,7 @@ public class TestYoloProcessor extends NeuralNetTestBase {
         try {
             ypImageSaver2.setupImageProcessing(config, SOURCE_NAME, MODEL_DIRECTORY, testAuthToken, testVantiqServer);
         } catch (Exception e) {
-            fail("Should not fail setup.");
+            fail("Should not fail setup: " + e.getClass().getName() + "::" + e.getMessage());
         }
         
         // useMetaIfAvailable flag should still be true regardless of meta file presence
@@ -339,7 +339,7 @@ public class TestYoloProcessor extends NeuralNetTestBase {
             ypImageSaver.setupImageProcessing(neuralNetConfig, SOURCE_NAME, MODEL_DIRECTORY, testAuthToken, testVantiqServer);
             verifyProcessing(ypImageSaver, expectedResults);
         } catch (Exception e) {
-            fail("Should not fail with valid config.");
+            fail("Should not fail with valid config: " + e.getClass().getName() + "::" + e.getMessage());
         } finally {
             if (ypImageSaver != null) {
                 ypImageSaver.close();
@@ -355,7 +355,7 @@ public class TestYoloProcessor extends NeuralNetTestBase {
             ypImageSaver.setupImageProcessing(neuralNetConfig, SOURCE_NAME, MODEL_DIRECTORY, testAuthToken, testVantiqServer);
             verifyProcessing(ypImageSaver, expectedResults);
         } catch (Exception e) {
-            fail("Should not fail with valid config.");
+            fail("Should not fail with valid config: " + e.getClass().getName() + "::" + e.getMessage());
         } finally {
             if (ypImageSaver != null) {
                 ypImageSaver.close();
@@ -371,7 +371,7 @@ public class TestYoloProcessor extends NeuralNetTestBase {
             ypImageSaver.setupImageProcessing(neuralNetConfig, SOURCE_NAME, MODEL_DIRECTORY, testAuthToken, testVantiqServer);
             verifyProcessing(ypImageSaver, expectedResults);
         } catch (Exception e) {
-            fail("Should not fail with valid config.");
+            fail("Should not fail with valid config: " + e.getClass().getName() + "::" + e.getMessage());
         } finally {
             if (ypImageSaver != null) {
                 ypImageSaver.close();
@@ -387,7 +387,7 @@ public class TestYoloProcessor extends NeuralNetTestBase {
             ypImageSaver.setupImageProcessing(neuralNetConfig, SOURCE_NAME, MODEL_DIRECTORY, testAuthToken, testVantiqServer);
             verifyProcessing(ypImageSaver, expectedResults);
         } catch (Exception e) {
-            fail("Should not fail with valid config.");
+            fail("Should not fail with valid config: " + e.getClass().getName() + "::" + e.getMessage());
         } finally {
             if (ypImageSaver != null) {
                 ypImageSaver.close();
@@ -410,7 +410,7 @@ public class TestYoloProcessor extends NeuralNetTestBase {
             ypImageSaver.setupImageProcessing(neuralNetConfig, SOURCE_NAME, MODEL_DIRECTORY, testAuthToken, testVantiqServer);
             verifyProcessing(ypImageSaver, imageResultsAsString608);
         } catch (Exception e) {
-            fail("Should not fail with valid config.");
+            fail("Should not fail with valid config: " + e.getClass().getName() + "::" + e.getMessage());
         } finally {
             if (ypImageSaver != null) {
                 ypImageSaver.close();
@@ -431,7 +431,7 @@ public class TestYoloProcessor extends NeuralNetTestBase {
         try {
             ypImageSaver.setupImageProcessing(config, SOURCE_NAME, MODEL_DIRECTORY, testAuthToken, testVantiqServer);
         } catch (Exception e) {
-            fail("Should not fail with valid anchors.");
+            fail("Should not fail with valid anchors: " + e.getClass().getName() + "::" + e.getMessage());
         }
 
         // Checking mix of integers and floating points
@@ -442,7 +442,7 @@ public class TestYoloProcessor extends NeuralNetTestBase {
         try {
             ypImageSaver.setupImageProcessing(config, SOURCE_NAME, MODEL_DIRECTORY, testAuthToken, testVantiqServer);
         } catch (Exception e) {
-            fail("Should not fail with invalid anchors");
+            fail("Should not fail with invalid anchors: " + e.getClass().getName() + "::" + e.getMessage());
         }
     }
 
@@ -460,7 +460,7 @@ public class TestYoloProcessor extends NeuralNetTestBase {
         try {
             ypImageSaver.setupImageProcessing(config, SOURCE_NAME, MODEL_DIRECTORY, testAuthToken, testVantiqServer);
         } catch (Exception e) {
-            fail("Should not fail with invalid anchors");
+            fail("Should not fail with invalid anchors: " + e.getClass().getName() + "::" + e.getMessage());
         }
 
         // anchorList is too long
@@ -471,7 +471,7 @@ public class TestYoloProcessor extends NeuralNetTestBase {
         try {
             ypImageSaver.setupImageProcessing(config, SOURCE_NAME, MODEL_DIRECTORY, testAuthToken, testVantiqServer);
         } catch (Exception e) {
-            fail("Should not fail with invalid anchors");
+            fail("Should not fail with invalid anchors: " + e.getClass().getName() + "::" + e.getMessage());
         }
 
         // anchorList contains non-numbers
@@ -482,7 +482,7 @@ public class TestYoloProcessor extends NeuralNetTestBase {
         try {
             ypImageSaver.setupImageProcessing(config, SOURCE_NAME, MODEL_DIRECTORY, testAuthToken, testVantiqServer);
         } catch (Exception e) {
-            fail("Should not fail with invalid anchors");
+            fail("Should not fail with invalid anchors: " + e.getClass().getName() + "::" + e.getMessage());
         }
     }
 
@@ -1699,7 +1699,7 @@ public class TestYoloProcessor extends NeuralNetTestBase {
             ypImageSaver.setupImageProcessing(config, SOURCE_NAME, MODEL_DIRECTORY, testAuthToken, testVantiqServer);
             verifyProcessing(ypImageSaver, croppedImageResultsAsString);
         } catch (Exception e) {
-            fail("Should not fail with valid config.");
+            fail("Should not fail with valid config: " + e.getClass().getName() + "::" + e.getMessage());
         } finally {
             if (ypImageSaver != null) {
                 ypImageSaver.close();
