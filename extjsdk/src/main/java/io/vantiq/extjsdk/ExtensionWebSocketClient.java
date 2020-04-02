@@ -20,8 +20,10 @@ import okhttp3.*;
 import okhttp3.ws.WebSocket;
 import okhttp3.ws.WebSocketCall;
 
+import java.lang.reflect.Array;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Semaphore;
@@ -227,11 +229,15 @@ public class ExtensionWebSocketClient {
     /**
      * Sends a notification to the specified source if it is connected.
      *
-     * @param data  The data to be sent to the source
+     * @param data  The data to be sent to the source.  Data cannot be an array or List.
      */
     // Fills in a notification message to sourceName with data
     // Requires this client to be connected to the source
     public void sendNotification(Object data) {
+
+        if (data != null && (data.getClass().isArray() || data instanceof List)) {
+            throw new IllegalArgumentException("Notifications cannot be lists or arrays.");
+        }
         if (isConnected()) {
             Map<String,Object> m = new LinkedHashMap<>();
             m.put("op", ExtensionServiceMessage.OP_NOTIFICATION);

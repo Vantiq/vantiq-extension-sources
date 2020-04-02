@@ -97,7 +97,8 @@ There are three types of messages that can be sent to a source: Notifications, Q
 Notifications are JSON messages that the source will pass on to any Vantiq rules saying
 `WHEN MESSAGE ARRIVES FROM SOURCE <source name>`. To send one, simply call
 `client.sendNotification(<object to be sent>)`, which will translate the message into JSON and add everything Vantiq
-needs to recognize the message. 
+needs to recognize the message.
+Note that neither `List` or array objects can be sent as notifications.
 
 #### <a name="queryResponse" id="queryResponse"></a>Query Responses
 Query responses are responses to a `SELECT` request from Vantiq that targets a source, and can either be a Map or an
