@@ -1,0 +1,6 @@
+{
+   "name" : "HikVision",
+   "baseType" : "EXTENSION",
+   "verticle" : "service:extensionSource",
+   "config" : {}
+}

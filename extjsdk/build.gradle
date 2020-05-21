@@ -77,7 +77,7 @@ dependencies {
 
     testCompile group: 'junit', name: 'junit', version: '4.12'
     // Used for uploading documents (images) to VANTIQ with VANTIQ SDK
-    testCompile 'io.vantiq:vantiq-sdk:1.0.24'
+    testCompile 'io.vantiq:vantiq-sdk:1.0.27'
 }
 
 // Create a jar with all dependencies included

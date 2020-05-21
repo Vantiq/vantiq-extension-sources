@@ -63,7 +63,7 @@ public class JDBC {
      * @param password          The password to be used to connect to the SQL Database.
      * @param asyncProcessing   A boolean flag specifying if publish/query requests are handled synchronously, or asynchronously.
      * @param maxPoolSize       An integer representing the maxPoolSize for the Connection Pool.
-     * @throws VantiqSQLException 
+     * @throws VantiqSQLException Throw VantiqSQLException
      */
     public void setupJDBC(String dbURL, String username, String password, boolean asyncProcessing, int maxPoolSize) throws VantiqSQLException {
         try {
@@ -103,7 +103,7 @@ public class JDBC {
      * @param sqlQuery          A String representation of the query, retrieved from the WITH clause from VANTIQ.
      * @return                  A HashMap Array containing all of the data retrieved by the query, (empty HashMap 
      *                          Array if nothing was returned)
-     * @throws VantiqSQLException
+     * @throws VantiqSQLException Throw VantiqSQLException
      */
     public HashMap[] processQuery(String sqlQuery) throws VantiqSQLException {
         HashMap[] rsArray = null;
@@ -137,7 +137,7 @@ public class JDBC {
      * The method used to execute the provided query, triggered by a PUBLISH on the respective VANTIQ source.
      * @param sqlQuery          A String representation of the query, retrieved from the PUBLISH message.
      * @return                  The integer value that is returned by the executeUpdate() method representing the row count.
-     * @throws VantiqSQLException
+     * @throws VantiqSQLException Throw VantiqSQLException
      */
     public int processPublish(String sqlQuery) throws VantiqSQLException {
         int publishSuccess = -1;
@@ -169,8 +169,8 @@ public class JDBC {
      * The method used to execute the provided list of queries, triggered by a PUBLISH on the respective VANTIQ source. These queries
      * are processed as a batch.
      * @param queryList             The list of queries to be processed as a batch.
-     * @return
-     * @throws VantiqSQLException
+     * @return                      
+     * @throws VantiqSQLException Throw VantiqSQLException
      * @throws ClassCastException
      */
     public int[] processBatchPublish(List queryList) throws VantiqSQLException, ClassCastException {
@@ -217,7 +217,7 @@ public class JDBC {
      * @param queryResults   A ResultSet containing return value from executeQuery()
      * @return               A HashMap Array containing all of the rows from the ResultSet, each converted to a HashMap,
      *                       (or an empty HashMap Array if the ResultSet was empty).
-     * @throws VantiqSQLException
+     * @throws VantiqSQLException Throw VantiqSQLException
      */
     HashMap[] createMapFromResults(ResultSet queryResults) throws VantiqSQLException {
         ArrayList<HashMap> rows = new ArrayList<HashMap>();
@@ -279,7 +279,7 @@ public class JDBC {
     
     /**
      * Method used to try and reconnect if database connection was lost. Used for synchronous processing (connection pool handles this internally).
-     * @throws VantiqSQLException
+     * @throws VantiqSQLException Throw VantiqSQLException
      */
     public void diagnoseConnection() throws VantiqSQLException {
         try {
@@ -295,7 +295,7 @@ public class JDBC {
     /**
      * Method used to throw the VantiqSQLException whenever is necessary
      * @param e The SQLException caught by the calling method
-     * @throws VantiqSQLException
+     * @throws VantiqSQLException Throw VantiqSQLException
      */
     public void reportSQLError(SQLException e) throws VantiqSQLException {
         String message = this.getClass().getCanonicalName() + ": A database error occurred: " + e.getMessage() +

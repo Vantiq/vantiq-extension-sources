@@ -1,0 +1,26 @@
+¡¾Demo Instruction¡¿
+-------------------------------------
+1. The Demo mainly introduces alarm arming and listening related functions.
+
+2. The Demo includes alarm message types: COMM_ALARM,COMM_ALARM_V30,COMM_ALARM_RULE,COMM_UPLOAD_PLATE_RESULT,COMM_ITS_PLATE_RESULT,COMM_ALARM_PDC(added in 20150929),
+COMM_ITS_PARK_VEHICLE(added in 20160329),COMM_DIAGNOSIS_UPLOAD(added in 20160706),COMM_UPLOAD_FACESNAP_RESULT(added in 20161202),COMM_ALARM_FACE_DETECTION(added in 20161202),COMM_ALARMHOST_CID_ALARM(added in 20161202)
+
+3. You can find the compiled executable program in [bin] folder(Release version£©, and SDK log save path:"C:\SdkLog"
+
+¡¾Matters need attention¡¿
+------------------------------------
+1. Please download the latest version of the device network SDK from Hikvision official website: https://overseasadmin.hikvision.com/en/Support/Downloads/SDK
+
+2. If you do integration you need to copy files in SDK package [lib] folder to your project.
+
+   Please make sure that HCNetSDKCom(including the function component dll library file inside) is in the same folder with HCNetSDK.dll,HCCore.dll. Meanwhile, the name of HCNetSDKCom can¡¯t be changed.
+ 
+   As for this demo,you do not need to copy any files. All the library files required are already in [bin] folder.
+
+3. If the software you developed do not integrate functions properly and the program does not specify the path to the loaded dll library, try to remove HCNetSDK.dll while the program is running. 
+
+   If it can be deleted, the program may call the dll file in the Windows->System32 directory of the system disk. It is recommended to delete or update the relevant dll file in the directory.
+
+   If it cannot be deleted, right-click the dll file to select the attribute to confirm the SDK library version.
+
+4. If the corresponding function cannot be implemented after the above steps, please judge the reason according to the error number returned by call NET_DVR_GetLastError.

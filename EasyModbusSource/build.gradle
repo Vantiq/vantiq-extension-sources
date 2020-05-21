@@ -1,0 +1,89 @@
+group 'io.vantiq'
+version 'unspecified'
+
+apply plugin: 'java'
+apply plugin: 'application'
+
+sourceCompatibility = 1.8
+
+repositories {
+    mavenCentral()
+    jcenter()
+    
+    // Used for checking VANTIQ date format behavior with VANTIQ SDK
+    maven {
+    	url "https://dl.bintray.com/vantiq/maven"
+    }
+}
+
+mainClassName = 'io.vantiq.extsrc.EasyModbusSource.EasyModbusMain'
+
+startScripts{
+    doLast{
+        def windowsScriptFile = file getWindowsScript()
+        def unixScriptFile = file getUnixScript()
+        // Add the log Config to the top of the classpath
+        windowsScriptFile.text = windowsScriptFile.text.replace("CLASSPATH=", "CLASSPATH=%APP_HOME%\\logConfig;")
+        unixScriptFile.text = unixScriptFile.text.replace('CLASSPATH=', 'CLASSPATH=$APP_HOME/logConfig:')
+    }
+}
+
+// Copies the logger setup into logConfig in the distribution
+applicationDistribution.from("src/main/resources") {
+    include "log4j2.xml"
+    into "logConfig"
+}
+
+tasks.withType(Test) {
+	if (System.env.JDBC_DRIVER_LOC == null) {
+    	logger.warn("Some tests may have been skipped. Environment variable 'JDBC_DRIVER_LOC' is not set. " +
+    			"Please set it to a location containing the appropriate JDBC Driver .jar file.")
+    }	
+	if (rootProject.hasProperty("EntConJDBCUsername")) {
+        systemProperty "EntConJDBCUsername", rootProject.findProperty("EntConJDBCUsername") ?: "empty"
+    }
+    if (rootProject.hasProperty("EntConJDBCPassword")) {
+        systemProperty "EntConJDBCPassword", rootProject.findProperty("EntConJDBCPassword") ?: "empty"
+    }
+    if (rootProject.hasProperty("EntConJDBCURL")) {
+        systemProperty "EntConJDBCURL", rootProject.findProperty("EntConJDBCURL") ?: "empty"
+    }
+    if (rootProject.hasProperty("EntConTestSourceName")) {
+        systemProperty "EntConTestSourceName", rootProject.findProperty("EntConTestSourceName")
+    }
+    if (rootProject.hasProperty("EntConTestTypeName")) {
+        systemProperty "EntConTestTypeName", rootProject.findProperty("EntConTestTypeName")
+    }
+    if (rootProject.hasProperty("TestAuthToken")) {
+        systemProperty "TestAuthToken", rootProject.findProperty("TestAuthToken") ?: "empty"
+    }
+    if (rootProject.hasProperty("TestVantiqServer")) {
+        systemProperty "TestVantiqServer", rootProject.findProperty("TestVantiqServer") ?: "empty"
+    }
+}
+
+dependencies {
+    // This dependency is used internally, and not exposed to consumers on their own compile classpath.
+    implementation 'com.google.guava:guava:23.0'
+    
+    compile project(':extjsdk')
+    
+    compile "org.slf4j:slf4j-api:1.7.25"
+    compile "org.apache.logging.log4j:log4j-slf4j-impl:2.11.0"
+    
+    //  Compiling relevant JDBC Driver .jar file
+    runtime files("${System.env.JDBC_DRIVER_LOC}")
+
+    runtime files('lib/EasyModbusJava.jar')
+    
+    // Used for checking VANTIQ date format behavior with VANTIQ SDK
+    compile 'io.vantiq:vantiq-sdk:1.0.27'
+    
+    // Use JUnit test framework
+    testCompile 'junit:junit:4.12'
+    testCompile project(path:":extjsdk", configuration:"testArtifacts")
+
+    // Used to create a connection pool if asynchronous processing has been specified for publish/query handlers
+    compile group: 'com.zaxxer', name: 'HikariCP', version: '3.3.1'
+
+}

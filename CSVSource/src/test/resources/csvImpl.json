@@ -1,0 +1,6 @@
+{
+   "name" : "CSV",
+   "baseType" : "EXTENSION",
+   "verticle" : "service:extensionSource",
+   "config" : {}
+}

@@ -1,0 +1,20 @@
+package io.vantiq.extsrc.CSVSource.exception;
+
+
+/**
+ * A custom exception used to extract the useful information from a SQLException
+ */
+public class VantiqCSVException extends Exception {
+    
+    public VantiqCSVException() {
+        super();
+    }
+
+    public VantiqCSVException(String message) {
+        super(message);
+    }
+    
+    public VantiqCSVException(String message, Throwable cause) {
+        super(message, cause);
+    }
+}

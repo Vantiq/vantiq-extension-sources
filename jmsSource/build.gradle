@@ -65,7 +65,7 @@ dependencies {
     compile files("${System.env.JMS_DRIVER_LOC}")
 
     // Used for testing extension source in VANTIQ
-    testCompile 'io.vantiq:vantiq-sdk:1.0.17'
+    testCompile 'io.vantiq:vantiq-sdk:1.0.27'
 
     // Use JUnit test framework
     testCompile 'junit:junit:4.12'
