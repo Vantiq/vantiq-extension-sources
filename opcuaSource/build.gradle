@@ -20,7 +20,7 @@ sourceCompatibility = 1.8
 
 ext {
     jacksonVersion = '2.9.3'
-    eclipseMiloVersion = '0.3.3'
+    eclipseMiloVersion = '0.4.1'
     lombokVersion = '1.16.18'
     logbackVersion = '1.2.3'
     junitVersion = '4.12'
