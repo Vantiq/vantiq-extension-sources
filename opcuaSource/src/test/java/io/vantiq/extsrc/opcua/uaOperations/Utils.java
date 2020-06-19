@@ -58,7 +58,7 @@ public class Utils {
             // OPC_PUBLIC_SERVER_9    // #9 is offline
             );
 
-    public static String OPC_INPROCESS_SERVER = "opc.tcp://localhost:12686/milo"; //"opc.tcp://localhost:12686/example";
+    public static String OPC_INPROCESS_SERVER = "opc.tcp://localhost:12686/milo";
     public static String OPC_PUBLIC_SERVER_NO_GOOD = "opc.tcp://opcuaserver.com:4840";
 
     public static String EXAMPLE_NS_SCALAR_INT32_IDENTIFIER = "HelloWorld/ScalarTypes/Int32";
