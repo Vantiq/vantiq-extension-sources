@@ -53,7 +53,7 @@ public class Utils {
             // OPC_PUBLIC_SERVER_4,  // not responding
             // OPC_PUBLIC_SERVER_5,  // returns that the service is unsupported.
             // OPC_PUBLIC_SERVER_6,  // unknown host
-            OPC_PUBLIC_SERVER_7,
+            OPC_PUBLIC_SERVER_7,     // Flaky support -- sometimes times out after discovery, sometimes before
             OPC_PUBLIC_SERVER_8
             // OPC_PUBLIC_SERVER_9    // #9 is offline
             );
