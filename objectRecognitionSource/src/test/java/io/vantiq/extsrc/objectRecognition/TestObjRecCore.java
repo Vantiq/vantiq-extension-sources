@@ -390,12 +390,21 @@ public class TestObjRecCore extends ObjRecTestBase {
             Map<String, Double> inloc = (Map<String, Double>) testinp.get(i).get("location");
             @SuppressWarnings({"unchecked"})
             Map<String, Double> resloc = (Map<String, Double>) res.get(i).get("location");
+
+            assertEquals("mapped top", 
+                    inloc.get("top") + 50d, resloc.get("top"),ACCEPTABLE_DELTA);
+            assertEquals("mapped left", 
+                    inloc.get("left") + 50d, resloc.get("left"), ACCEPTABLE_DELTA);
+            assertEquals("mapped bottom", 
+                    inloc.get("bottom") + 50d, resloc.get("bottom"), ACCEPTABLE_DELTA);
+            assertEquals("mapped right", 
+                    inloc.get("right") + 50d, resloc.get("right"), ACCEPTABLE_DELTA);
+            assertEquals("mapped centerX",
+                    inloc.get("centerX") + 50d, resloc.get("centerX"), ACCEPTABLE_DELTA);
+            assertEquals("mapped centerY",
+                    inloc.get("centerY") + 50d, resloc.get("centerY"), ACCEPTABLE_DELTA);
             assertEquals("Wrong number of locations in result", inloc.size(), resloc.size());
 
-            assertEquals("mapped top", inloc.get("top") + 50d, resloc.get("top"), ACCEPTABLE_DELTA);
-            assertEquals("mapped left", inloc.get("left") + 50d, resloc.get("left"), ACCEPTABLE_DELTA);
-            assertEquals("mapped bottom", inloc.get("bottom") + 50d, resloc.get("bottom"), ACCEPTABLE_DELTA);
-            assertEquals("mapped right", inloc.get("right") + 50d, resloc.get("right"), ACCEPTABLE_DELTA);
         }
 
         core.createLocationMapper(doubleSrcPts, doubleDstPts);
@@ -414,12 +423,20 @@ public class TestObjRecCore extends ObjRecTestBase {
             Map<String, Double> inloc = (Map<String, Double>) testinp.get(i).get("location");
             @SuppressWarnings({"unchecked"})
             Map<String, Double> resloc = (Map<String, Double>) res.get(i).get("location");
-            assertEquals("Wrong number of locations in result", inloc.size(), resloc.size());
 
-            assertEquals("mapped top", inloc.get("top") * 2d, resloc.get("top"), ACCEPTABLE_DELTA);
-            assertEquals("mapped left", inloc.get("left") * 2d, resloc.get("left"), ACCEPTABLE_DELTA);
-            assertEquals("mapped bottom", inloc.get("bottom") * 2d, resloc.get("bottom"), ACCEPTABLE_DELTA);
-            assertEquals("mapped bottom", inloc.get("bottom") * 2d, resloc.get("bottom"), ACCEPTABLE_DELTA);
+            assertEquals("mapped top", 
+                    inloc.get("top") * 2d, resloc.get("top"), ACCEPTABLE_DELTA);
+            assertEquals("mapped left", 
+                    inloc.get("left") * 2d, resloc.get("left"), ACCEPTABLE_DELTA);
+            assertEquals("mapped bottom", 
+                    inloc.get("bottom") * 2d, resloc.get("bottom"), ACCEPTABLE_DELTA);
+            assertEquals("mapped bottom", 
+                    inloc.get("bottom") * 2d, resloc.get("bottom"), ACCEPTABLE_DELTA);
+            assertEquals("mapped centerX",
+                    inloc.get("centerX") * 2d, resloc.get("centerX"), ACCEPTABLE_DELTA);
+            assertEquals("mapped centerY",
+                    inloc.get("centerY") * 2d, resloc.get("centerY"), ACCEPTABLE_DELTA);
+            assertEquals("Wrong number of locations in result", inloc.size(), resloc.size());
         }
     }
 
@@ -444,13 +461,16 @@ public class TestObjRecCore extends ObjRecTestBase {
             @SuppressWarnings({"unchecked"})
             Map<String, Map<String, ?>> resloc = (Map<String, Map<String, ?>>) res.get(i).get("location");
 
-            // When converting to GeoJSON, results come back as 2 points (topLeft & bottomRight) as opposed
-            // to 4 single numbers
-            assertEquals("Wrong number of locations in result", 2, resloc.size());
+            // When converting to GeoJSON, results come back as 3 points (center, topLeft & bottomRight) as opposed
+            // to 6 single numbers (top, left, bottom, right, centerX, centerY)
+            
+            assertEquals("Wrong number of locations in result", 3, resloc.size());
             Map<String, ?> tlEnt = resloc.get("topLeft");
             assertNotNull("Missing topLeft", tlEnt);
             Map<String, ?> brEnt = resloc.get("bottomRight");
             assertNotNull("Missing bottomRight", brEnt);
+            Map<String, ?> centEnt = resloc.get("center");
+            assertNotNull("Missing center", centEnt);
 
             assertEquals("mapped topLeft type", "Point", tlEnt.get("type"));
             assertEquals("mapped bottomRight type", "Point", brEnt.get("type"));
@@ -461,11 +481,23 @@ public class TestObjRecCore extends ObjRecTestBase {
             Double[] brCoords = (Double[]) brEnt.get("coordinates");
             assertNotNull("No bottomRight coordinates", brCoords);
             assertEquals("Wrong number of bottomRight coordinates", 2, brCoords.length);
+            Double[] center = (Double[]) centEnt.get("coordinates");
+            assertNotNull("No center coordinates", centEnt);
+            assertEquals("Wrong number of center coordinates", 2, center.length);
 
-            assertEquals("mapped topLeft longitude", inloc.get("top") + 50d, tlCoords[0], ACCEPTABLE_DELTA);
-            assertEquals("mapped topLeft latitude", inloc.get("left") + 50d, tlCoords[1], ACCEPTABLE_DELTA);
-            assertEquals("mapped bottomRight longitude", inloc.get("bottom") + 50d, brCoords[0], ACCEPTABLE_DELTA);
-            assertEquals("mapped bottomRight latitude", inloc.get("right") + 50d, brCoords[1], ACCEPTABLE_DELTA);
+            assertEquals("mapped topLeft longitude", 
+                    inloc.get("top") + 50d, tlCoords[0], ACCEPTABLE_DELTA);
+            assertEquals("mapped topLeft latitude", 
+                    inloc.get("left") + 50d, tlCoords[1], ACCEPTABLE_DELTA);
+            assertEquals("mapped bottomRight longitude", 
+                    inloc.get("bottom") + 50d, brCoords[0], ACCEPTABLE_DELTA);
+            assertEquals("mapped bottomRight latitude", 
+                    inloc.get("right") + 50d, brCoords[1], ACCEPTABLE_DELTA);
+            assertEquals("mapped center longitude", 
+                    inloc.get("centerY") + 50d, center[0], ACCEPTABLE_DELTA);
+            assertEquals("mapped center latitude", 
+                    inloc.get("centerX") + 50d, center[1], ACCEPTABLE_DELTA);
+
         }
 
         core.createLocationMapper(doubleSrcPts, doubleDstPts, true);
@@ -488,11 +520,13 @@ public class TestObjRecCore extends ObjRecTestBase {
             // When converting to GeoJSON, results come back as 2 points (topLeft & bottomRight) as opposed
             // to 4 single numbers
             log.debug("Returned locations: {}", resloc);
-            assertEquals("Wrong number of locations in result", 2, resloc.size());
+            assertEquals("Wrong number of locations in result", 3, resloc.size());
             Map<String, ?> tlEnt = resloc.get("topLeft");
             assertNotNull("Missing topLeft", tlEnt);
             Map<String, ?> brEnt = resloc.get("bottomRight");
             assertNotNull("Missing bottomRight", brEnt);
+            Map<String, ?> centEnt = resloc.get("center");
+            assertNotNull("Missing center", centEnt);
 
             assertEquals("mapped topLeft type", "Point", tlEnt.get("type"));
             assertEquals("mapped bottomRight type", "Point", brEnt.get("type"));
@@ -503,11 +537,19 @@ public class TestObjRecCore extends ObjRecTestBase {
             Double[] brCoords = (Double[]) brEnt.get("coordinates");
             assertNotNull("No bottomRight coordinates", brCoords);
             assertEquals("Wrong number of bottomRight coordinates", 2, brCoords.length);
+            Double[] center = (Double[]) centEnt.get("coordinates");
+            assertNotNull("No center coordinates", centEnt);
+            assertEquals("Wrong number of center coordinates", 2, center.length);
 
             assertEquals("mapped topLeft longitude", inloc.get("top") * 2d, tlCoords[0], ACCEPTABLE_DELTA);
             assertEquals("mapped topLeft latitude", inloc.get("left") * 2d, tlCoords[1], ACCEPTABLE_DELTA);
             assertEquals("mapped bottomRight longitude", inloc.get("bottom") * 2d, brCoords[0], ACCEPTABLE_DELTA);
             assertEquals("mapped bottomRight latitude", inloc.get("right") * 2d, brCoords[1], ACCEPTABLE_DELTA);
+
+            assertEquals("mapped center longitude",
+                    inloc.get("centerY") * 2d, center[0], ACCEPTABLE_DELTA);
+            assertEquals("mapped center latitude",
+                    inloc.get("centerX") * 2d, center[1], ACCEPTABLE_DELTA);
         }
     }
 
@@ -545,6 +587,9 @@ public class TestObjRecCore extends ObjRecTestBase {
             aloc.put("left", pts[i][0]);
             aloc.put("bottom", pts[i+1][1]);
             aloc.put("right", pts[i+1][0]);
+            aloc.put("centerX", aloc.get("right").subtract(aloc.get("left")).divide(new BigDecimal(2.0), BigDecimal.ROUND_HALF_UP));
+            aloc.put("centerY", aloc.get("bottom").subtract(aloc.get("top")).divide(new BigDecimal(2.0), BigDecimal.ROUND_HALF_UP));
+
             res.add(aloc);
         }
         return res;
@@ -559,6 +604,8 @@ public class TestObjRecCore extends ObjRecTestBase {
         loc.put("left", 1d);
         loc.put("bottom", 3.0d);
         loc.put("right", 4.0d);
+        loc.put("centerY", ((double) loc.get("bottom") - (double) loc.get("top"))/2.0d);
+        loc.put("centerX", ((double) loc.get("right") - (double) loc.get("left"))/2.0d);
         aBox.put("location", loc);
         testinp.add(aBox);
         aBox = new HashMap<>();
@@ -573,6 +620,9 @@ public class TestObjRecCore extends ObjRecTestBase {
             loc.put("left", ((Number) aloc.get("left")).doubleValue());;
             loc.put("bottom", ((Number) aloc.get("bottom")).doubleValue());
             loc.put("right", ((Number) aloc.get("right")).doubleValue());
+            loc.put("centerY", ((double) loc.get("bottom") - (double) loc.get("top"))/2.0d);
+            loc.put("centerX", ((double) loc.get("right") - (double) loc.get("left"))/2.0d);
+
             aBox.put("location", loc);
             aBox.put("label", "another thingamajig# " + i++);
             testinp.add(aBox);

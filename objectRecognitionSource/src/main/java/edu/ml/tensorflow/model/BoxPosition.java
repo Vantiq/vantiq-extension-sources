@@ -1,5 +1,8 @@
 package edu.ml.tensorflow.model;
 
+import java.util.HashMap;
+import java.util.Map;
+
 /**
  * Model to store the position of the bounding boxes
  */
@@ -10,12 +13,26 @@ public class BoxPosition {
     private float bottom;
     private float width;
     private float height;
+    private float centerX;
+    private float centerY;
 
-    public BoxPosition(float left, float top, float width, float height) {
-        this.left = left;
-        this.top = top;
+
+    /**
+     * Build from center point + height & width
+     *
+     * @param x float X coordinate of the center
+     * @param y float Y coordinate of the center
+     * @param width float width of box
+     * @param height float height of box
+     */
+    public BoxPosition(float x, float y, float width, float height) {
+
+        this.left = x - width / 2;
+        this.top = y - height / 2;
         this.width = width;
         this.height = height;
+        this.centerX = x;
+        this.centerY = y;
 
         init();
     }
@@ -25,6 +42,8 @@ public class BoxPosition {
         this.top = boxPosition.top;
         this.width = boxPosition.width;
         this.height = boxPosition.height;
+        this.centerX = boxPosition.centerX;
+        this.centerY = boxPosition.centerY;
 
         init();
     }
@@ -34,6 +53,8 @@ public class BoxPosition {
         this.top = boxPosition.top * scaleY;
         this.width = boxPosition.width * scaleX;
         this.height = boxPosition.height * scaleY;
+        this.centerX = boxPosition.centerX * scaleX;
+        this.centerY = boxPosition.centerY * scaleY;
 
         init();
     }
@@ -98,6 +119,34 @@ public class BoxPosition {
         return (int) bottom;
     }
 
+    public float getCenterX() {
+        return centerX;
+    }
+
+    public int getCenterXInt() {
+        return (int) centerX;
+    }
+    public float getCenterY() {
+        return centerY;
+    }
+
+    public int getCenterYInt() {
+        return (int) centerY;
+    }
+
+    public Map asExternalMap() {
+        HashMap<String, Object> location = new HashMap<>();
+
+        location.put("left", getLeft());
+        location.put("top", getTop());
+        location.put("right", getRight());
+        location.put("bottom", getBottom());
+        location.put("centerX", getCenterX());
+        location.put("centerY", getCenterY());
+
+        return location;
+    }
+    
     @Override
     public String toString() {
         return "BoxPosition{" +

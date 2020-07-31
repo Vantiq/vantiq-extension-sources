@@ -9,6 +9,7 @@
 
 package io.vantiq.extsrc.objectRecognition.neuralNet;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
@@ -1748,16 +1749,17 @@ public class TestYoloProcessor extends NeuralNetTestBase {
 
         // If suppressNullValues is set to true, we shouldn't have any results stored in our type
         if (suppressNullValues) {
-            assert responseBody.size() == 0;
-
-        // Otherwise, we should have some results and they should be empty arrays
+            assertEquals("Get responseBody content when none expected: " + responseBody, 
+                    0, responseBody.size());
         } else {
+            // Otherwise, we should have some results and they should be empty arrays
             assert responseBody.size() > 0;
 
             for (int i = 0; i < responseBody.size(); i++) {
                 JsonObject resultObject = (JsonObject) responseBody.get(i);
                 assert resultObject.get("results") instanceof JsonArray;
-                assert ((JsonArray) resultObject.get("results")).size() == 0;
+                assertEquals("Get resultObject.results content when none expected: " + responseBody,
+                        0, ((JsonArray) resultObject.get("results")).size());
             }
         }
 
@@ -1807,40 +1809,54 @@ public class TestYoloProcessor extends NeuralNetTestBase {
     // ================================================= Helper functions =================================================
 
     String imageResultsAsString = "[" +
-            "{\"confidence\":0.8445639, " +
-                 "\"location\":{\"top\":255.70024, \"left\":121.859344, \"bottom\":372.2343, \"right\":350.1204}, \"label\":\"keyboard\"}," +
-            "{\"confidence\":0.7974271," +
-                "\"location\":{\"top\":91.255974, \"left\":164.41359, \"bottom\":275.69666, \"right\":350.50714}, \"label\":\"tvmonitor\"}," +
-            "{\"confidence\":0.6308692, " +
-                "\"location\":{\"top\":13.766539, \"left\":-0.614191, \"bottom\":367.22836, \"right\":122.28085}, \"label\":\"refrigerator\"}, " +
+            "{\"confidence\": 0.8445639, " +
+                 "\"location\": {\"top\": 255.70024, \"left\": 121.859344, \"bottom\": 372.2343, \"right\": 350.1204, " +
+                        "\"centerX\": 235.98985, \"centerY\": 313.9673 }, \"label\": \"keyboard\"}," +
+            "{\"confidence\": 0.7974271," +
+                "\"location\":{\"top\": 91.255974, \"left\": 164.41359, \"bottom\": 275.69666, \"right\": 350.50714," +
+                        "\"centerX\": 257.46036, \"centerY\": 183.47632 }, \"label\": \"tvmonitor\"}," +
+            "{\"confidence\": 0.6308692, " +
+                "\"location\":{\"top\": 13.766539, \"left\": -0.614191, \"bottom\": 367.22836, \"right\": 122.28085," +
+                        "\"centerX\": 60.83333, \"centerY\": 190.49745 }, \"label\": \"refrigerator\"}, " +
             "{\"confidence\":0.53600997," +
-                "\"location\":{\"top\":309.05722, \"left\":422.40067, \"bottom\":361.50223, \"right\":485.40735}, \"label\":\"mouse\"}" +
+                "\"location\":{\"top\": 309.05722, \"left\": 422.40067, \"bottom\": 361.50223, \"right\": 485.40735," +
+                        "\"centerX\": 453.90402, \"centerY\": 335.2797 }, \"label\": \"mouse\"}" +
     "]";
 
     // In this class, some tests are dependent upon whether there's a VANTIQ server defined.  When those tests run,
     // they alter the conditions of other tests.  To make running the tests a bit more friendly, we'll try
     // and be aware of these conditions and set our expectations accordingly.
 
+   
     String imageResultsAsStringWithoutServer = "[{\"confidence\":0.8445639, "
-               + "\"location\":{\"top\":169.16179, \"left\":6.4747205, \"bottom\":285.69586, \"right\":234.73576}, \"label\":\"keyboard\"},"
-            + "{\"confidence\":0.7974271, "
-                + "\"location\":{\"top\":33.56367, \"left\":241.33667, \"bottom\":218.00436, \"right\":427.43024}, \"label\":\"tvmonitor\"},"
-            + "{\"confidence\":0.6955277, "
-                + "\"location\":{\"top\":149.68317, \"left\":507.42972, \"bottom\":256.89297, \"right\":739.0765}, \"label\":\"keyboard\"},"
-            + "{\"confidence\":0.53600997, "
-               + "\"location\":{\"top\":222.51874, \"left\":76.24681, \"bottom\":274.96375, \"right\":139.2535}, \"label\":\"mouse\"}" +
+               + "\"location\": {\"top\": 169.16177, \"left\": 6.4747243, \"bottom\": 285.69586, \"right\": 234.73576," +
+                    "\"centerX\": 120.60525, \"centerY\": 227.42882 }, \"label\":\"keyboard\"},"
+            + "{\"confidence\": 0.7974271, "
+                + "\"location\": {\"top\": 33.56367, \"left\": 241.33667, \"bottom\": 218.00436, \"right\": 427.43024," +
+                    "\"centerX\": 334.38342, \"centerY\": 125.78402 }, \"label\": \"tvmonitor\"},"
+            + "{\"confidence\": 0.6955277, "
+                + "\"location\": {\"top\": 149.68317, \"left\": 507.42972, \"bottom\": 256.89297, \"right\": 739.0765," +
+                     "\"centerX\": 623.2531, \"centerY\": 203.28807 }, \"label\": \"keyboard\"},"
+            + "{\"confidence\": 0.53600997, "
+               + "\"location\": {\"top\": 222.51874, \"left\": 76.24681, \"bottom\": 274.96375, \"right\": 139.2535," +
+                    "\"centerX\": 107.75015, \"centerY\": 248.74124 }, \"label\": \"mouse\"}" +
     "]";
 
     
     String imageResultsAsString608 = "[{\"confidence\":0.8672237, "
-            + "\"location\":{\"top\":93.55155, \"left\":157.38762, \"bottom\":280.36542, \"right\":345.06442}, \"label\":\"tvmonitor\"},"
-        + "{\"confidence\":0.7927524, \"location\":{\"top\":263.62683, \"left\":123.48807, \"bottom\":371.69046, \"right\":331.86023}, \"label\":\"keyboard\"}, "
-        + "{\"confidence\":0.57419246, \"location\":{\"top\":146.11186, \"left\":319.9637, \"bottom\":317.0444, \"right\":423.20792}, \"label\":\"cup\"}" +
+            + "\"location\": {\"top\": 93.55155, \"left\": 157.38762, \"bottom\": 280.36542, \"right\": 345.06442, " +
+                 "\"centerX\": 251.22603, \"centerY\": 186.95847 }, \"label\": \"tvmonitor\"},"
+        + "{\"confidence\" :0.7927524, \"location\": {\"top\": 263.62683, \"left\": 123.48807, \"bottom\": 371.69046," +
+            "\"right\": 331.86023, \"centerX\": 227.67413, \"centerY\": 317.65866 }, \"label\": \"keyboard\"}, "
+        + "{\"confidence\": 0.57419246, \"location\": {\"top\": 146.11186, \"left\": 319.9637, \"bottom\": 317.0444," +
+            "\"right\": 423.20792, \"centerX\": 371.58582, \"centerY\": 231.57812 }, \"label\": \"cup\"}" +
     "]";
     
-    String croppedImageResultsAsString = "[{\"confidence\":0.91599655, \"location\":{\"top\":8.16388, \"left\":1.0525968, \"bottom\":118.984344, " 
-            +"\"right\":217.2165}, \"label\":\"keyboard\"}," +
-            "{\"confidence\":0.57027775, \"location\":{\"top\":2.1221037, \"left\":205.86801, \"bottom\":64.227806, \"right\":230.19707}, \"label\":\"cup\"}" +
+    String croppedImageResultsAsString = "[{\"confidence\": 0.91599655, \"location\": " +
+            "{\"top\": 8.16388, \"left\": 1.0525968, \"bottom\": 118.984344, " +
+                "\"right\": 217.2165, \"centerX\": 109.134544, \"centerY\": 63.574112 }, \"label\": \"keyboard\"}," +
+            "{\"confidence\": 0.57027775, \"location\": {\"top\": 2.1221037, \"left\": 205.86801, \"bottom\": 64.227806, " +
+                "\"right\": 230.19707, \"centerX\": 218.03256, \"centerY\": 33.174957 }, \"label\": \"cup\"}" +
        "]";
     
     String neuralNetJSON1 =
