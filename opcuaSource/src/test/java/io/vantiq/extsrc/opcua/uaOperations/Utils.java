@@ -53,12 +53,12 @@ public class Utils {
             // OPC_PUBLIC_SERVER_4,  // not responding
             // OPC_PUBLIC_SERVER_5,  // returns that the service is unsupported.
             // OPC_PUBLIC_SERVER_6,  // unknown host
-            OPC_PUBLIC_SERVER_7,
+            OPC_PUBLIC_SERVER_7,     // Flaky support -- sometimes times out after discovery, sometimes before
             OPC_PUBLIC_SERVER_8
             // OPC_PUBLIC_SERVER_9    // #9 is offline
             );
 
-    public static String OPC_INPROCESS_SERVER = "opc.tcp://localhost:12686/milo"; //"opc.tcp://localhost:12686/example";
+    public static String OPC_INPROCESS_SERVER = "opc.tcp://localhost:12686/milo";
     public static String OPC_PUBLIC_SERVER_NO_GOOD = "opc.tcp://opcuaserver.com:4840";
 
     public static String EXAMPLE_NS_SCALAR_INT32_IDENTIFIER = "HelloWorld/ScalarTypes/Int32";
