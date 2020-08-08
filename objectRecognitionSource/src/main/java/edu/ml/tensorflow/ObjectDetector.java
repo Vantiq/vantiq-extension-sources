@@ -339,7 +339,10 @@ public class ObjectDetector {
             location.put("top", recognition.getScaledLocation(scaleX, scaleY).getTop());
             location.put("right", recognition.getScaledLocation(scaleX, scaleY).getRight());
             location.put("bottom", recognition.getScaledLocation(scaleX, scaleY).getBottom());
-        	map.put("location", location);
+            location.put("centerX", recognition.getScaledLocation(scaleX, scaleY).getCenterX());
+            location.put("centerY", recognition.getScaledLocation(scaleX, scaleY).getCenterY());
+
+            map.put("location", location);
         	
         	jsonRecognitions.add(map);
         	

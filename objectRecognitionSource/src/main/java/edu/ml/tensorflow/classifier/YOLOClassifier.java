@@ -111,8 +111,9 @@ public class YOLOClassifier {
             double confidenceInClass = argMax.getMaxValue() * boundingBox.getConfidence();
             if (confidenceInClass > threshold) {
                 predictionQueue.add(new Recognition(argMax.getIndex(), labels.get(argMax.getIndex()), (float) confidenceInClass,
-                        new BoxPosition((float) (boundingBox.getX() - boundingBox.getWidth() / 2),
-                                (float) (boundingBox.getY() - boundingBox.getHeight() / 2),
+                        /* BoxPosition() now takes center points */
+                        new BoxPosition((float) boundingBox.getX(),
+                                (float) boundingBox.getY(),
                                 (float) boundingBox.getWidth(),
                                 (float) boundingBox.getHeight())));
             }

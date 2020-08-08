@@ -74,6 +74,9 @@ public class LocationMapper {
                 Float xl = null;
                 Float yb = null;
                 Float xr = null;
+                Float xc = null;
+                Float yc = null;
+                
                 Object o = box.get("location");
                 Map loc;
                 if (o instanceof Map) {
@@ -97,12 +100,35 @@ public class LocationMapper {
                 if (o instanceof Number) {
                     xr = ((Number) o).floatValue();
                 }
+
                 if (yt == null || yb == null || xr == null || xl == null) {
                     throw new IllegalArgumentException(this.getClass().getName() +
                             ".missingcoords: Input missing coordinates.");
                 }
+
+                o = loc.get("centerY");
+                if (o == null) {
+                    // Then we have no centerY coordinate -- make one up for later use...
+                    // To make one up, we'll split the diff between the endpoints...
+                    yc = yt + (yb - yt)/2.0f;
+                } else if (o instanceof Number) {
+                    yc = ((Number) o).floatValue();
+                }
+                o = loc.get("centerX");
+                if (o == null) {
+                    // Then we have no centerX coordinate -- make one up for later use...
+                    xc = xl + (xr - xl)/2.0f;
+                } else if (o instanceof Number) {
+                    xc =  ((Number) o).floatValue();
+                }
+
+                if (yc == null || xc == null) {
+                    throw new IllegalArgumentException(this.getClass().getName() +
+                            ".missingCenterCoords: Input missing center coordinates.");
+                }
                 BigDecimal[] topLeft = cc.convert(new BigDecimal[]{new BigDecimal(xl), new BigDecimal(yt)});
                 BigDecimal[] bottomRight = cc.convert(new BigDecimal[]{new BigDecimal(xr), new BigDecimal(yb)});
+                BigDecimal[] center = cc.convert(new BigDecimal[]{new BigDecimal(xc), new BigDecimal(yc)});
 
                 // Now, construct our output map to add to the list...
                 outBox.put("confidence", box.get("confidence"));
@@ -113,6 +139,8 @@ public class LocationMapper {
                     outloc.put("left", topLeft[0].doubleValue());
                     outloc.put("bottom", bottomRight[1].doubleValue());
                     outloc.put("right", bottomRight[0].doubleValue());
+                    outloc.put("centerY", center[1].doubleValue());
+                    outloc.put("centerX", center[0].doubleValue());
                 } else {
                     Map<String, Object> gjEnt = new HashMap<>();
                     gjEnt.put("type", "Point");
@@ -122,6 +150,10 @@ public class LocationMapper {
                     gjEnt.put("type", "Point");
                     gjEnt.put("coordinates", new Double[]{bottomRight[1].doubleValue(), bottomRight[0].doubleValue()});
                     outloc.put("bottomRight", gjEnt);
+                    gjEnt = new HashMap<>();
+                    gjEnt.put("type", "Point");
+                    gjEnt.put("coordinates", new Double[]{center[1].doubleValue(), center[0].doubleValue()});
+                    outloc.put("center", gjEnt);
                 }
                 outBox.put("location", outloc);
             }
