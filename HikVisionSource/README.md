@@ -58,7 +58,7 @@ name for each class is the class's fully qualified class name, *e.g.* "io.vantiq
 The server config file is written as `property=value`, with each property on its
 own line. The following is an example of a valid server.config file:
 ```
-authToken=vadfEarscQadfagdfjrKt7Fj1xjfjzBxliahO9adliiH-Dj--gNM=
+authToken=XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 sources=HikVision1
 targetServer=https://dev.vantiq.com/
 ```
@@ -90,16 +90,16 @@ The Configuration document may look similar to the following example:
          "DVRIP": "realhikvisionthermal.dyndns.org",
          "DVRIP9": "92.201.182.251",
          "DVRPort": "8000",
-         "DVRUserName": "admin",
-         "DVRPassword": "abcd1234"
+         "DVRUserName": "username",
+         "DVRPassword": "password"
       },
       {
          "CameraId": "HikVision1",
          "Enable": "false",
          "DVRIP": "123.157.208.25",
          "DVRPort": "48104",
-         "DVRUserName": "admin",
-         "DVRPassword": "Hik123456"
+         "DVRUserName": "username",
+         "DVRPassword": "password"
       }
    ],
    "options": {
