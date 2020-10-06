@@ -44,3 +44,5 @@ trace.db/
 *.mov
 *.pb
 lib/
+windows/
+*.dll

@@ -57,7 +57,7 @@ name for each class is the class's fully qualified class name, *e.g.* "io.vantiq
 The server config file is written as `property=value`, with each property on its
 own line. The following is an example of a valid server.config file:
 ```
-authToken=vadfEarscQadfagdfjrKt7Fj1xjfjzBxliahO9adliiH-Dj--gNM=
+authToken=XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 sources=EasyModbus1
 targetServer=https://dev.vantiq.com/
 ```
