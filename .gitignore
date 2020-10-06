@@ -43,3 +43,4 @@ trace.db/
 *server.config
 *.mov
 *.pb
+lib/

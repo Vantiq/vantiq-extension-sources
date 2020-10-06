@@ -1,0 +1,6 @@
+{
+   "name" : "EasyModbus",
+   "baseType" : "EXTENSION",
+   "verticle" : "service:extensionSource",
+   "config" : {}
+}
