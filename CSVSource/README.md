@@ -69,14 +69,16 @@ Document.
 The Configuration document may look similar to the following example:
 
     {
+        "csvConfig": {
         "fileFolderPath": "d:/tmp/csv",
         "filePrefix": "eje",
         "fileExtension": "csv",
         "maxLinesInEvent": 200,
-        "schema": {
-            "field0": "value",
-            "field2": "flag",
-            "field1": "YScale"
+            "schema": {
+                "field0": "value",
+                "field2": "flag",
+                "field1": "YScale"
+            }
         },
         "options": {
             "maxActiveTasks": 2,
