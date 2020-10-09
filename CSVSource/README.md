@@ -3,6 +3,12 @@
 This document outlines how to incorporate a CSV Source into your project. The CSV source allows a user to construct applications that detect creation of CSV files in pre-defined folder and upload the file content as events to VANTIQ. The extension source enables control on the names of the different attribute based on the order in the CSV file, and change the name or delete after processing the file. 
 The extension source can handle multiple files parallel;  this is controlled by parameters in the config section . 
 
+The extension source supports only notifications from source to vantiq , those contains the csv converted to json messages based on the schema definition given in the configuration. 
+
+using filewatcher , when new file is created in pre configured folder , support the configurable name file pattern, the context is being build and converted to json . that json is being sent to VANTIQ as incoming event . 
+
+when process start , based on configiration , extension can work on all files exist in the input folder which support the name file pattern , in this way , in case system is failed , it will resnt all accomulated files once it restarted again . 
+
 In order to incorporate this Extension Source, you will need to create the Source in the VANTIQ Modelo IDE. The documentation has been split into two parts, [Setting Up Your Machine](#machine) and [Setting Up Your VANTIQ Modelo IDE](#vantiq).
 
 # Prerequisites <a name="pre" id="pre"></a>
@@ -74,6 +80,7 @@ The Configuration document may look similar to the following example:
         "filePrefix": "eje",
         "fileExtension": "csv",
         "maxLinesInEvent": 200,
+        "delimiter":",",
             "schema": {
                 "field0": "value",
                 "field2": "flag",
@@ -89,12 +96,12 @@ The Configuration document may look similar to the following example:
         }
     }
 
-### Options Available for configuration root. 
+### Configuration
 *   **fileFolderPath**: Required. The folder in which this source will look for CSV files. 
 *   **filePrefix**: Optional . The prefix of the file pattern to look for, if not set any file name will be accepted. 
 *   **fileExtension**: Required. The file extension of the files to be processed 
 *   **maxLinesInEvent**: Required. Determine how many lines from the CSV file will be sent in a single message to the server. Depending on the number of the lines of the CSV file, a high value might result in messages too large to process efficiently or a memory exception. 
-
+*   **delimiter**: the delimiter to be used when parse the CSV file
 
 ### Schema Configuration
 Schema can be used to control the field names on the uploaded event. If no name is assigned, 'fieldX' will be used where 'X' is the index of the field in the line.  For example field0, field1, etc. 
@@ -126,10 +133,16 @@ Messages that are sent to the source as Notifications are JSON objects in the fo
 The data is formatted as a HashMap which represents a row of data. Each map is a series of key-value pairs with the keys 
 being the column name and the values being the column value. If multiple rows of data are returned by the notification, the number iof max events is determined by the `maxLinesInEvent` 
 
+## Event structure
+Each event consists on the follwoing structure :
+
+* **file** : the source file from where the data was extracted
+* **segment** : number of CSV lines on the current segment 
+* **lines** : the json buffer itself . 
 
 ## Error Messages
 
-Query errors originating from the source will always have the code be the fully-qualified class name with a small descriptor 
+parsing CSV errors originating from the source will always have the code be the fully-qualified class name with a small descriptor 
 attached, and the message will include the exception causing it and the request that spawned it.
 
 The exception thrown by the CSV Class will always be a VantiqCSVException. This is a wrapper around the traditional Exception, and contains the Error Message, and Error Code from the original Exception.

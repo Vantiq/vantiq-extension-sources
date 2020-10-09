@@ -2,7 +2,7 @@ package io.vantiq.extsrc.CSVSource.exception;
 
 
 /**
- * A custom exception used to extract the useful information from a SQLException
+ * A custom exception used to extract the useful information from a Exception
  */
 public class VantiqCSVException extends Exception {
     

@@ -38,17 +38,23 @@ public class CSVReader {
 
         return field ; 
     }
-    static public ArrayList<Map<String,String>> execute(String csvFile, Map<String, Object>     config,   ExtensionWebSocketClient oClient  ) {
+    @SuppressWarnings("unchecked")
+    static public ArrayList<Map<String,String>> execute(String csvFile,  Map<String, Object>     config,   ExtensionWebSocketClient oClient  ) {
 
         String line = "";
-        String cvsSplitBy = ";";
         int numOfRecords ; 
-        int numOfLine = 0 ; 
+        int numOfProcessedLinesInSegment = 0 ; 
         Map<String,String> schema = null;
 
         if (config.get("schema") != null)
         {
             schema = (Map<String,String>) config.get("schema");
+        }
+
+        String delimiter = ";";
+        if (config.get("delimiter") != null)
+        {
+            delimiter = config.get("delimiter").toString();
         }
 
 
@@ -60,9 +66,9 @@ public class CSVReader {
 
             numOfRecords = 0 ; 
             while ((line = br.readLine()) != null) {
-                numOfLine++;
+                numOfProcessedLinesInSegment++;
                 // use comma as separator
-                String[] values = line.split(cvsSplitBy);
+                String[] values = line.split(delimiter);
 
                 Map<String, String> lineValues = new HashMap<String, String>(); 
                 
@@ -77,7 +83,11 @@ public class CSVReader {
 
                 if (numOfRecords >= numLinesInEvent)
                 {
-                    sendNotification(csvFile,numOfLine,file,oClient);
+                    //TODO : this is for testing logic. could have been smarter...
+                    if (oClient != null) 
+                        sendNotification(csvFile, numOfProcessedLinesInSegment, file, oClient);
+                    else
+                        return file; 
                     numLinesInEvent = 0 ; 
                         
                 }
@@ -86,7 +96,7 @@ public class CSVReader {
 
             if (numLinesInEvent > 0 )
             {
-                if (oClient != null) sendNotification(csvFile,numOfLine,file,oClient);
+                if (oClient != null) sendNotification(csvFile, numOfProcessedLinesInSegment, file, oClient);
                 numLinesInEvent = 0 ; 
                     
             }

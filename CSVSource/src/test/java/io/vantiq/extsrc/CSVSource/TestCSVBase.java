@@ -19,6 +19,7 @@ public class TestCSVBase {
     static String testProcedureName;
     static String testRuleName;
     static String testTypeName;
+    static String testDelimiter;
 
 //    static String testIPAddress ; 
 //    static int testIPPort; 
@@ -44,5 +45,6 @@ public class TestCSVBase {
         testFileExtension = System.getProperty("EntFileExtension", "csv");
         testFullFilePath = System.getProperty("EntFileExtension", "c:/tmp/csvTest/in/csvt*.csv");
         testMaxLinesInEvent=Integer.parseInt( System.getProperty("EntMaxLinesInEvent", "200"));
+        testDelimiter = System.getProperty("EntDelimiter", ",");
     }
 }

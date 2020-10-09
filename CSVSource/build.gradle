@@ -34,19 +34,6 @@ applicationDistribution.from("src/main/resources") {
     into "logConfig"
 }
 
-tasks.withType(Test) {
-
-    if (rootProject.hasProperty("EntConTestSourceName")) {
-        systemProperty "EntConTestSourceName", rootProject.findProperty("EntConTestSourceName")
-    }
-    if (rootProject.hasProperty("TestAuthToken")) {
-        systemProperty "TestAuthToken", rootProject.findProperty("TestAuthToken") ?: "empty"
-    }
-    if (rootProject.hasProperty("TestVantiqServer")) {
-        systemProperty "TestVantiqServer", rootProject.findProperty("TestVantiqServer") ?: "empty"
-    }
-}
-
 dependencies {
     // This dependency is used internally, and not exposed to consumers on their own compile classpath.
     implementation 'com.google.guava:guava:23.0'

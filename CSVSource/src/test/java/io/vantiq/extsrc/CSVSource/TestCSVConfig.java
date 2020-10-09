@@ -10,7 +10,6 @@ package io.vantiq.extsrc.CSVSource;
 
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assume.assumeTrue;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -46,21 +45,12 @@ public class TestCSVConfig extends TestCSVBase {
     public void tearDown() {
         nCore.stop();
     }
-    /*
-    @Test
-    public void testEmptyConfig() {
-        Map conf = new LinkedHashMap<>();
-        Map vantiqConf = new LinkedHashMap<>();
-        sendConfig(conf, vantiqConf);
-        assertTrue("Should fail on empty configuration", configIsFailed());
-    }
-    */
-
+    
     @Test
     public void testMissingSchema() {
 
-        Map conf = minimalConfig();
-        Map vantiqConf = createMinimalOptions();
+        Map<String,Object> conf = minimalConfig();
+        Map<String,Object> vantiqConf = createMinimalOptions();
         conf.remove("schema");
         sendConfig(conf, vantiqConf);
         assertTrue("Should fail when missing 'schema' configuration", configIsFailed());
@@ -68,21 +58,10 @@ public class TestCSVConfig extends TestCSVBase {
     
     @Test 
     public void testMissingOptions() {
-        Map conf = minimalConfig();
-        Map options = new LinkedHashMap<>();
+        Map<String,Object> conf = minimalConfig();
         sendConfig(conf, null);
         assertTrue("Should fail when missing 'Options' configuration", configIsFailed());
     }
-    /*
-    @Test 
-    public void testMissingPackageRows() {
-        Map conf = minimalConfig();
-        Map vantiqConf = createMinimalOptions();
-        vantiqConf.remove("packageRows");
-        sendConfig(conf, vantiqConf);
-        assertTrue("Should fail when missing 'packageRows' configuration", configIsFailed());
-    }
-    */
 
   
     
@@ -90,8 +69,8 @@ public class TestCSVConfig extends TestCSVBase {
     public void testMinimalConfig() {
         nCore.start(5); // Need a client to avoid NPEs on sends
         
-        Map conf = minimalConfig();
-        Map vantiqConf = createMinimalOptions();
+        Map<String,Object> conf = minimalConfig();
+        Map<String,Object> vantiqConf = createMinimalOptions();
         sendConfig(conf, vantiqConf);
         boolean r = configIsFailed();
         assertFalse("Should not fail with minimal configuration", r);//configIsFailed());
@@ -114,7 +93,7 @@ public class TestCSVConfig extends TestCSVBase {
     }
     
     public Map<String, Object> minimalConfig() {
-        createMinimalGeneral();
+        createTestSchema();
         Map<String, Object> ret = new LinkedHashMap<>();
         ret.put("schema", schema);
         createMinimalConfig(ret);
@@ -123,11 +102,11 @@ public class TestCSVConfig extends TestCSVBase {
         return ret;
     }
     
-    public void createMinimalGeneral() {
+    public void createTestSchema() {
         schema = new LinkedHashMap<>();
         schema.put("field0", "value");
-        schema.put("fieldA", "flag");
         schema.put("field1", "YScale");
+        schema.put("field2", "flag");
 
 
     }
@@ -137,6 +116,7 @@ public class TestCSVConfig extends TestCSVBase {
         config.put("filePrefix", testFilePrefix);
         config.put("fileExtension", testFileExtension);
         config.put("maxLinesInEvent", testMaxLinesInEvent);
+        config.put("delimiter", testDelimiter);
 
 
     }

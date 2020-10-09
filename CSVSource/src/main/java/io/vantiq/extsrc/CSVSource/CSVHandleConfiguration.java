@@ -46,9 +46,6 @@ public class CSVHandleConfiguration extends Handler<ExtensionServiceMessage> {
     Handler<ExtensionServiceMessage> queryHandler;
     Handler<ExtensionServiceMessage> publishHandler;
 
-    private static final int MAX_ACTIVE_TASKS = 5;
-    private static final int MAX_QUEUED_TASKS = 10;
-
     // Constants for getting config options
     private static final String CONFIG = "config";
     private static final String CSVCONFIG = "csvConfig";
@@ -60,9 +57,6 @@ public class CSVHandleConfiguration extends Handler<ExtensionServiceMessage> {
     private static final String FILE_PREFIX = "filePrefix";
     private static final String FILE_EXTENSION = "fileExtension";
     private static final String MAX_LINES_IN_EVENT = "maxLinesInEvent";
-    private static final String MAX_ACTIVE = "maxActiveTasks";
-    private static final String MAX_QUEUED = "maxQueuedTasks";
-    
 
 
     public CSVHandleConfiguration(CSVCore source) {
@@ -74,15 +68,17 @@ public class CSVHandleConfiguration extends Handler<ExtensionServiceMessage> {
     /**
      * Interprets the configuration message sent by the Vantiq server and sets up the CSV Source.
      */
+    @SuppressWarnings("unchecked")
     @Override
     public void handleMessage(ExtensionServiceMessage message) {
-        Map<String, Object> configObject = (Map) message.getObject();
+        Map<String, Object> configObject = (Map<String, Object>) message.getObject();
         Map<String, Object> config;
         Map<String, Object> options;
         Map<String, Object> csvConfig;
         String fileFolderPath ; 
         String filePrefix; 
         String fileExtension;
+        
         
 
         // Obtain entire config from the message object
@@ -91,7 +87,8 @@ public class CSVHandleConfiguration extends Handler<ExtensionServiceMessage> {
             failConfig();
             return;
         }
-        config = (Map) configObject.get(CONFIG);
+
+        config = (Map<String,Object>) configObject.get(CONFIG);
 
 
 
@@ -100,7 +97,7 @@ public class CSVHandleConfiguration extends Handler<ExtensionServiceMessage> {
             failConfig();
             return;
         }
-        options= (Map) config.get(OPTIONS);
+        options= (Map<String,Object>) config.get(OPTIONS);
 
 
         if ( !(config.get(CSVCONFIG) instanceof Map)) {
@@ -109,11 +106,13 @@ public class CSVHandleConfiguration extends Handler<ExtensionServiceMessage> {
             return;
         }
 
-        csvConfig = (Map) config.get(CSVCONFIG);
+        csvConfig = (Map<String,Object>) config.get(CSVCONFIG);
 
         // Retrieve the csvConfig and the vantiq config
-        if ( !(csvConfig.get(FILE_FOLDER_PATH) instanceof String && csvConfig.get(FILE_EXTENSION) instanceof String) ) {
-                log.error("Configuration failed. Configuration must contain 'fileFolderPath' and 'filePrefix' fields.");
+        if ( !(csvConfig.get(FILE_FOLDER_PATH) instanceof String 
+                && csvConfig.get(FILE_EXTENSION) instanceof String 
+                && csvConfig.get(FILE_PREFIX) instanceof String) ) {
+                log.error("Configuration failed. Configuration must contain 'fileFolderPath' , 'filePrefix' and 'fileExtension' fields.");
             failConfig();
             return;
         }
@@ -150,7 +149,7 @@ public class CSVHandleConfiguration extends Handler<ExtensionServiceMessage> {
 
         if (config.get(MAX_LINES_IN_EVENT) instanceof Integer) {
         } else {
-            log.error("Configuration failed. No maxLinesInEvents was specified");
+            log.error("Configuration failed. No maxLinesInEvents was specified or it is not Integer");
             return false;
         }
         
@@ -162,7 +161,7 @@ public class CSVHandleConfiguration extends Handler<ExtensionServiceMessage> {
             }
             CSV csv = new CSV();
        
-            csv.setupCSV(oClient,FileFolderPath,fullFilePath,config,options,asynchronousProcessing);
+            csv.setupCSV(oClient,FileFolderPath,fullFilePath,config,options);
             source.csv = csv; 
         } catch (Exception e) {
             log.error("Configuration failed. Exception occurred while setting up CSV Source: ", e);
