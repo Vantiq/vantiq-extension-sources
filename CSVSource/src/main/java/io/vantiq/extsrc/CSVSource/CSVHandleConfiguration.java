@@ -51,7 +51,11 @@ public class CSVHandleConfiguration extends Handler<ExtensionServiceMessage> {
 
     // Constants for getting config options
     private static final String CONFIG = "config";
+    private static final String CSVCONFIG = "csvConfig";
+    private static final String OPTIONS = "options";
+    
 
+    private static final String SCHEMA = "schema";
     private static final String FILE_FOLDER_PATH = "fileFolderPath";
     private static final String FILE_PREFIX = "filePrefix";
     private static final String FILE_EXTENSION = "fileExtension";
@@ -74,6 +78,7 @@ public class CSVHandleConfiguration extends Handler<ExtensionServiceMessage> {
     public void handleMessage(ExtensionServiceMessage message) {
         Map<String, Object> configObject = (Map) message.getObject();
         Map<String, Object> config;
+        Map<String, Object> options;
         Map<String, String> schema;
         Map<String, Object> csvConfig;
         Map<String, Object> general;
@@ -81,6 +86,7 @@ public class CSVHandleConfiguration extends Handler<ExtensionServiceMessage> {
         String filePrefix; 
         String fileExtension;
         
+
         // Obtain entire config from the message object
         if ( !(configObject.get(CONFIG) instanceof Map)) {
             log.error("Configuration failed. No configuration suitable for CSV Source.");
@@ -88,29 +94,50 @@ public class CSVHandleConfiguration extends Handler<ExtensionServiceMessage> {
             return;
         }
         config = (Map) configObject.get(CONFIG);
-        
+
+
+
+        if ( !(config.get(OPTIONS) instanceof Map)) {
+            log.error("Configuration failed. No configuration suitable for CSV Source. ) No OPTIONS ");
+            failConfig();
+            return;
+        }
+        options= (Map) config.get(OPTIONS);
+
+
+        if ( !(config.get(CSVCONFIG) instanceof Map)) {
+            log.error("Configuration failed. No configuration suitable for CSV Source. )NOCSVConfig");
+            failConfig();
+            return;
+        }
+
+        csvConfig = (Map) config.get(CSVCONFIG);
+
         // Retrieve the csvConfig and the vantiq config
-        if ( !(config.get(FILE_FOLDER_PATH) instanceof String && config.get(FILE_EXTENSION) instanceof String) ) {
+        if ( !(csvConfig.get(FILE_FOLDER_PATH) instanceof String && csvConfig.get(FILE_EXTENSION) instanceof String) ) {
                 log.error("Configuration failed. Configuration must contain 'fileFolderPath' and 'filePrefix' fields.");
             failConfig();
             return;
         }
-        
-        fileFolderPath = (String) config.get(FILE_FOLDER_PATH);
+        fileFolderPath = (String) csvConfig.get(FILE_FOLDER_PATH);
         filePrefix = "";
-        if (config.get(FILE_PREFIX) != null)
+        if (csvConfig.get(FILE_PREFIX) != null)
         {
-            filePrefix = (String) config.get(FILE_PREFIX);
+            filePrefix = (String) csvConfig.get(FILE_PREFIX);
         }
-        fileExtension = (String) config.get(FILE_EXTENSION);
+        fileExtension = (String) csvConfig.get(FILE_EXTENSION);
 
-
-        schema = (Map<String, String>) config.get("schema");
+        if ( !(csvConfig.get(SCHEMA) instanceof Map)) {
+            log.error("Configuration failed. No configuration suitable for CSV Source. )NO SCHEMA");
+            failConfig();
+            return;
+        }
+        schema = (Map<String, String>) csvConfig.get("schema");
         
 
         String fullFilePath = String.format("%s/%s*.%s",fileFolderPath,filePrefix,fileExtension);
 
-        boolean success = createCSVConnection(config ,fileFolderPath,fullFilePath,source.client);
+        boolean success = createCSVConnection(csvConfig,options ,fileFolderPath,fullFilePath,source.client);
         if (!success) {
             failConfig();
             return;
@@ -121,7 +148,7 @@ public class CSVHandleConfiguration extends Handler<ExtensionServiceMessage> {
     }
     
     
-     boolean createCSVConnection(Map<String, Object> config ,String FileFolderPath,String fullFilePath,ExtensionWebSocketClient oClient) {
+     boolean createCSVConnection(Map<String, Object> config,Map<String, Object> options ,String FileFolderPath,String fullFilePath,ExtensionWebSocketClient oClient) {
         
         int size = 1;
 
@@ -140,7 +167,7 @@ public class CSVHandleConfiguration extends Handler<ExtensionServiceMessage> {
             }
             CSV csv = new CSV();
        
-            csv.setupCSV(oClient,FileFolderPath,fullFilePath,config,asynchronousProcessing);
+            csv.setupCSV(oClient,FileFolderPath,fullFilePath,config,options,asynchronousProcessing);
             source.csv = csv; 
         } catch (Exception e) {
             log.error("Configuration failed. Exception occurred while setting up CSV Source: ", e);
@@ -159,7 +186,7 @@ public class CSVHandleConfiguration extends Handler<ExtensionServiceMessage> {
      * configuration document) or to the WebSocket connection crashing momentarily.
      */
     private void failConfig() {
-//        source.close();
+        source.close();
         configComplete = true;
     }
     

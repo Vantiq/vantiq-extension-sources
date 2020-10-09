@@ -31,7 +31,7 @@ public class TestCSVConfig extends TestCSVBase {
     String authToken;
     String targetVantiqServer;
     
-    Map<String, Object> general;
+    Map<String, Object> schema;
     
     @Before
     public void setup() {
@@ -46,7 +46,7 @@ public class TestCSVConfig extends TestCSVBase {
     public void tearDown() {
         nCore.stop();
     }
-    
+    /*
     @Test
     public void testEmptyConfig() {
         Map conf = new LinkedHashMap<>();
@@ -54,116 +54,59 @@ public class TestCSVConfig extends TestCSVBase {
         sendConfig(conf, vantiqConf);
         assertTrue("Should fail on empty configuration", configIsFailed());
     }
-    
+    */
+
     @Test
-    public void testMissingGeneral() {
+    public void testMissingSchema() {
+
         Map conf = minimalConfig();
-        Map vantiqConf = createMinimalVantiq();
-        conf.remove("general");
+        Map vantiqConf = createMinimalOptions();
+        conf.remove("schema");
         sendConfig(conf, vantiqConf);
-        assertTrue("Should fail when missing 'general' configuration", configIsFailed());
+        assertTrue("Should fail when missing 'schema' configuration", configIsFailed());
     }
     
     @Test 
-    public void testMissingVantiq() {
+    public void testMissingOptions() {
         Map conf = minimalConfig();
-        Map vantiqConf = new LinkedHashMap<>();
-        sendConfig(conf, vantiqConf);
-        assertTrue("Should fail when missing 'vantiq' configuration", configIsFailed());
+        Map options = new LinkedHashMap<>();
+        sendConfig(conf, null);
+        assertTrue("Should fail when missing 'Options' configuration", configIsFailed());
     }
-    
+    /*
     @Test 
     public void testMissingPackageRows() {
         Map conf = minimalConfig();
-        Map vantiqConf = createMinimalVantiq();
+        Map vantiqConf = createMinimalOptions();
         vantiqConf.remove("packageRows");
         sendConfig(conf, vantiqConf);
         assertTrue("Should fail when missing 'packageRows' configuration", configIsFailed());
     }
-    
-    @Test
-    public void testPackageRowsFalse() {
-        Map conf = minimalConfig();
-        Map vantiqConf = createMinimalVantiq();
-        vantiqConf.put("packageRows","false");
-        sendConfig(conf, vantiqConf);
-        assertTrue("Should fail when 'packageRows' is set to 'false'", configIsFailed());
-    }
+    */
+
+  
     
     @Test
     public void testMinimalConfig() {
         nCore.start(5); // Need a client to avoid NPEs on sends
         
         Map conf = minimalConfig();
-        Map vantiqConf = createMinimalVantiq();
+        Map vantiqConf = createMinimalOptions();
         sendConfig(conf, vantiqConf);
-        assertFalse("Should not fail with minimal configuration", configIsFailed());
+        boolean r = configIsFailed();
+        assertFalse("Should not fail with minimal configuration", r);//configIsFailed());
     }
     
-    @Test
-    public void testPollingConfig() {
-        nCore.start(5);
-        
-        Map conf = minimalConfig();
-        conf.put("pollTime", 3000);
-        conf.put("pollQuery", "SELECT * FROM Test");
-        Map vantiqConf = createMinimalVantiq();
-        sendConfig(conf, vantiqConf);
-        assertFalse("Should not fail with polling configuration", configIsFailed());
-        
-        conf.remove("pollQuery");
-        sendConfig(conf, vantiqConf);
-        assertFalse("Should not fail with missing pollQuery configuration", configIsFailed());
-        
-        conf.remove("pollTime");
-        conf.put("pollQuery", "SELECT * FROM Test");
-        sendConfig(conf, vantiqConf);
-        assertFalse("Should not fail with missing pollTime configuration", configIsFailed());
-    }
 
-    @Test
-    public void testAsynchronousProcessing() {
-        nCore.start(5);
-
-        // Setting asynchronousProcessing incorrectly
-        Map conf = minimalConfig();
-        conf.put("asynchronousProcessing", "jibberish");
-        Map vantiqConf = createMinimalVantiq();
-        sendConfig(conf, vantiqConf);
-        assertFalse("Should not fail with invalid asynchronousProcessing value", configIsFailed());
-
-        // Setting asynchronousProcessing to false (same as not including it)
-        conf.put("asynchronousProcessing", false);
-        sendConfig(conf, vantiqConf);
-        assertFalse("Should not fail with asynchronousProcessing set to false", configIsFailed());
-
-        // Setting asynchronousProcessing to true
-        conf.put("asynchronousProcessing", true);
-        sendConfig(conf, vantiqConf);
-        assertFalse("Should not fail with asynchronousProcessing set to true", configIsFailed());
-
-        // Setting maxRunningThreads and maxQueuedTasks incorrectly
-        conf.put("maxActiveTasks", "jibberish");
-        conf.put("maxQueuedTasks", "moreJibberish");
-        sendConfig(conf, vantiqConf);
-        assertFalse("Should not fail when maxActiveTasks and maxQueuedTasks are set incorrectly", configIsFailed());
-
-        // Setting maxRunningThreads and maxQueuedTasks correctly
-        conf.put("maxActiveTasks", 10);
-        conf.put("maxQueuedTasks", 20);
-        sendConfig(conf, vantiqConf);
-        assertFalse("Should not fail when maxActiveTasks and maxQueuedTasks are set correctly", configIsFailed());
-    }
-    
 // ================================================= Helper functions =================================================
     
-    public void sendConfig(Map<String, ?> csvConfig, Map<String, ?> vantiqConfig) {
+    public void sendConfig(Map<String, ?> csvConfig, Map<String, ?> options) {
         ExtensionServiceMessage m = new ExtensionServiceMessage("");
         
         Map<String, Object> obj = new LinkedHashMap<>();
         Map<String, Object> config = new LinkedHashMap<>();
         config.put("csvConfig", csvConfig);
-        config.put("vantiq", vantiqConfig);
+        config.put("options", options);
         obj.put("config", config);
         m.object = obj;
         
@@ -173,23 +116,40 @@ public class TestCSVConfig extends TestCSVBase {
     public Map<String, Object> minimalConfig() {
         createMinimalGeneral();
         Map<String, Object> ret = new LinkedHashMap<>();
-        ret.put("general", general);
+        ret.put("schema", schema);
+        createMinimalConfig(ret);
+//        ret.put("csvConfig", general);
         
         return ret;
     }
     
     public void createMinimalGeneral() {
-        general = new LinkedHashMap<>();
-        general.put("fileFolderPath", testFileFolderPath);
-        general.put("filePrefix", testFilePrefix);
-        general.put("fileExtension", testFileExtension);
+        schema = new LinkedHashMap<>();
+        schema.put("field0", "value");
+        schema.put("fieldA", "flag");
+        schema.put("field1", "YScale");
 
 
     }
-    
-    public Map<String, String> createMinimalVantiq() {
-        Map<String, String> vantiq = new LinkedHashMap<>();
-        vantiq.put("packageRows", "true");
+    public void createMinimalConfig(Map<String, Object> config) {
+       
+        config.put("fileFolderPath", testFileFolderPath);
+        config.put("filePrefix", testFilePrefix);
+        config.put("fileExtension", testFileExtension);
+        config.put("maxLinesInEvent", testMaxLinesInEvent);
+
+
+    }
+
+     
+    public Map<String, Object> createMinimalOptions() {
+        Map<String, Object> vantiq = new LinkedHashMap<>();
+        vantiq.put("maxActiveTasks", 2);
+        vantiq.put("maxQueuedTasks", 4);
+        vantiq.put("processExistingFiles", true);
+        vantiq.put("deleteAfterProcessing", false);
+        vantiq.put("extensionAfterProcessing", "csv.done");
+        
         return vantiq;
     }
     

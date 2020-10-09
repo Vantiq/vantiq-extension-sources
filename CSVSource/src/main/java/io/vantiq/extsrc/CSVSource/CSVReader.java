@@ -86,7 +86,7 @@ public class CSVReader {
 
             if (numLinesInEvent > 0 )
             {
-                sendNotification(csvFile,numOfLine,file,oClient);
+                if (oClient != null) sendNotification(csvFile,numOfLine,file,oClient);
                 numLinesInEvent = 0 ; 
                     
             }

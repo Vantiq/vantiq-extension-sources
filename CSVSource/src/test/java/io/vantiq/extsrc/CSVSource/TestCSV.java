@@ -8,6 +8,8 @@
 
 package io.vantiq.extsrc.CSVSource;
 
+import static org.junit.Assume.assumeTrue;
+
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -22,77 +24,28 @@ import io.vantiq.extsrc.CSVSource.exception.VantiqCSVException;
 
 public class TestCSV extends TestCSVBase {
     
-    // Queries to be tested
-    static final String CREATE_TABLE = "create table Test(id int not null, age int not null, "
-            + "first varchar (255), last varchar (255));";
-    static final String PUBLISH_QUERY = "INSERT INTO Test VALUES (1, 25, 'Santa', 'Claus');";
-    static final String SELECT_QUERY = "SELECT id, first, last, age FROM Test;";
-    static final String DELETE_ROW = "DELETE FROM Test WHERE first='Santa';";
-    static final String DELETE_TABLE = "DROP TABLE Test;";
-    
-    // Date values used to test oddball types
-    static final String TIMESTAMP = "2018-08-15 9:24:18";
-    static final String DATE = "2018-08-15";
-    static final String TIME = "9:24:18";
-    static final String FORMATTED_TIMESTAMP = "2018-08-15T09:24:18.000-0700";
-    static final String FORMATTED_TIME = "09:24:18.000-0800";
-    static final String VANTIQ_FORMATTED_TIMESTAMP = "2018-08-15T16:24:18Z";
-    
-    // Queries to test oddball types
-    static final String CREATE_TABLE_EXTENDED_TYPES = "create table TestTypes(id int, ts TIMESTAMP, testDate DATE, "
-            + "testTime TIME, testDec decimal(5,2));";
-    static final String PUBLISH_QUERY_EXTENDED_TYPES = "INSERT INTO TestTypes VALUES (1, '" + TIMESTAMP + "', '" + DATE + "',"
-            + " '" + TIME + "', 145.86);";
-    static final String SELECT_QUERY_EXTENDED_TYPES = "SELECT * FROM TestTypes;";
-    static final String DELETE_ROW_EXTENDED_TYPES = "DELETE FROM TestTypes;";
-    static final String DELETE_TABLE_EXTENDED_TYPES = "DROP TABLE TestTypes;";
-    
-    // Queries to test errors
-    static final String NO_TABLE = "SELECT * FROM jibberish";
-    static final String NO_FIELD = "SELECT jibberish FROM Test";
-    static final String SYNTAX_ERROR = "ELECT * FROM Test";
-    static final String INSERT_NO_FIELD = "INSERT INTO Test VALUES (1, 25, 'Santa', 'Claus', 'jibberish')";
-    static final String INSERT_WRONG_TYPE = "INSERT INTO Test VALUES ('string', 'string', 3, 4)";
-    
-    // Queries to test DateTime format in VANTIQ
-    static final String CREATE_TABLE_DATETIME = "CREATE TABLE TestDates(ts TIMESTAMP);";
-    static final String INSERT_VALUE_DATETIME = "INSERT INTO TestDates VALUES ('" + TIMESTAMP + "');";
-    static final String QUERY_TABLE_DATETIME = "SELECT * FROM TestDates";
-    static final String DROP_TABLE_DATETIME = "DROP TABLE TestDates";
-    
-    // Queries to test null values
-    static final String CREATE_TABLE_NULL_VALUES = "CREATE TABLE TestNullValues(ts TIMESTAMP, testDate DATE, testTime TIME, "
-            + "testInt int, testString varchar (255), testDec decimal(5,2));";
-    static final String INSERT_ALL_NULL_VALUES = "INSERT INTO TestNullValues VALUES (null, null, null, null, null, null)";
-    static final String QUERY_NULL_VALUES = "SELECT * FROM TestNullValues";
-    static final String DELETE_ROW_NULL_VALUES = "DELETE FROM TestNullValues";
-    static final String DROP_TABLE_NULL_VALUES = "DROP TABLE TestNullValues";
-    
-    // Queries for checking dropped connection
-    static final String CREATE_TABLE_AFTER_LOST_CONNECTION = "CREATE TABLE NoConnection(id int);";
-    static final String DROP_TABLE_AFTER_LOST_CONNECTION = "DROP TABLE NoConnection;";
-    
-    // Queries for max message size test
-    static final String CREATE_TABLE_MAX_MESSAGE_SIZE = "CREATE TABLE TestMessageSize(id int, first varchar (255), last varchar (255), "
-            + "age int, title varchar (255), is_active varchar (255), department varchar (255), salary int);";
-    static final String INSERT_ROW_MAX_MESSAGE_SIZE = "INSERT INTO TestMessageSize VALUES(1, 'First', 'Last', 30, 'Title', 'Active',"
-            + " 'Department', 1000000);";
-
- 
-    
     static final String TEST_INT = "10";
     static final String TEST_STRING = "test";
     static final String TEST_DEC = "123.45";
             
     static final int CORE_START_TIMEOUT = 10;
-    
     static CSVCore core;
     static CSV csv;
     static Vantiq vantiq;
+    static Map<String,Object> config ;
+    static Map<String,Object> options ;
+
     
     @Before
     public void setup() {
+        config = new HashMap<String,Object>(); 
+        
+        TestCSVConfig o = new TestCSVConfig();
+        config = o.minimalConfig();
+        options = o.createMinimalOptions();
+
         csv = new CSV();
+
         vantiq = new io.vantiq.client.Vantiq(testVantiqServer);
         vantiq.setAccessToken(testAuthToken);
     }
@@ -100,25 +53,12 @@ public class TestCSV extends TestCSVBase {
     
     
     @Test
-    public void testExtendedTypes() throws VantiqCSVException {
-        /*
-        assumeTrue(testIPAddress != null && testIPPort != 0 ) ;
-        csv.setupCSV(testIPAddress, testIPPort, false, 0);        HashMap[] queryResult;
-        */
-        int publishResult;
-        
-    }
-    
-    @Test
     public void testCorrectErrors() throws VantiqCSVException {
-        /*
-        assumeTrue(testIPAddress != null && testIPPort != 0 ) ;
-        csv.setupCSV(testIPAddress, testIPPort, false, 0);
-        */
-        HashMap[] queryResult;
-        int publishResult;
         
-        // Check error code for selecting from non-existent table
+    
+        assumeTrue(testFileFolderPath != null && testFullFilePath != null ) ;
+        csv.setupCSV(null,testFileFolderPath, testFullFilePath,config,options, false);
+
         
         
     }
@@ -272,7 +212,7 @@ public class TestCSV extends TestCSVBase {
         where.put("name", testProcedureName);
         VantiqResponse response = vantiq.delete("system.procedures", where);
     }
-
+/*
     public static boolean checkRuleExists() {
         Map<String,String> where = new LinkedHashMap<String,String>();
         where.put("name", testRuleName);
@@ -305,7 +245,7 @@ public class TestCSV extends TestCSVBase {
 
         vantiq.insert("system.rules", rule);
     }
-
+*/
     public static void deleteRule() {
         Map<String,Object> where = new LinkedHashMap<String,Object>();
         where.put("name", testRuleName);

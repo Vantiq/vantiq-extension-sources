@@ -77,8 +77,6 @@ public class CSV {
             filePrefix = (String) config.get("filePrefix"); 
         }
         
-        options = (Map<String, Object>) config.get("options");
-
         if (options.get("extensionAfterProcessing")!=null)
         {
             extensionAfterProcessing = (String) options.get("extensionAfterProcessing"); 
@@ -126,12 +124,13 @@ public class CSV {
 
     }
 
-    public void setupCSV(ExtensionWebSocketClient oClient,String fileFolderPath , String fullFilePath ,Map<String, Object>  config ,boolean asyncProcessing ) throws VantiqCSVException
+    public void setupCSV(ExtensionWebSocketClient oClient,String fileFolderPath , String fullFilePath ,Map<String, Object>  config ,Map<String, Object>  options ,boolean asyncProcessing ) throws VantiqCSVException
     {
         try 
         {
             this.fullFilePath = fullFilePath;
             this.config = config; 
+            this.options = options; 
             this.oClient = oClient;
 
             serviceWatcher = FileSystems.getDefault().newWatchService(); 
