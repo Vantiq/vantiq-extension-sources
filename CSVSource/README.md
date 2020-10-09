@@ -1,7 +1,7 @@
 # Overview
 
 This document outlines how to incorporate a CSV Source into your project. The CSV source allows a user to construct applications that detect creation of CSV files in pre-defined folder and upload the file content as events to VANTIQ. The extension source enables control on the names of the different attribute based on the order in the CSV file, and change the name or delete after processing the file. 
-The extension source can handle multiple files parralel , this can be controled by parameters in the config section . 
+The extension source can handle multiple files parallel;  this is controlled by parameters in the config section . 
 
 In order to incorporate this Extension Source, you will need to create the Source in the VANTIQ Modelo IDE. The documentation has been split into two parts, [Setting Up Your Machine](#machine) and [Setting Up Your VANTIQ Modelo IDE](#vantiq).
 
@@ -25,7 +25,7 @@ Additionally, an example project named *CSVExample.zip* can be found in the *src
 
 *   **CSVMain** -- The main function for the program. Connects to sources as specified in a
     configuration file.
-*   **CSVCore** -- Coordinates the connections to Vantiq , responsible for recovery the connection with Vantiq Server
+*   **CSVCore** -- Coordinates the connections to VANTIQ, responsible for managing the connection with Vantiq Server
 *   **CSVHandleConfiguration** -- Sets up the trigger to the file system for detect and processed new csv file 
 *   **CSV** -- The class that directly interacts with the file system watch service , detects the file and processes it . 
 
@@ -59,11 +59,11 @@ targetServer=https://dev.vantiq.com/
     removed when read.
 *   **targetServer**: Required. The Vantiq server hosting the sources.
 
-# Setting Up Your VANTIQ Modelo IDE <a name="vantiq" id="vantiq"></a>
+# Setting Up VANTIQ <a name="vantiq" id="vantiq"></a>
 
 ## Source Configuration
 
-To set up the Source in the VANTIQ Modelo IDE, you will need to add a Source to your project. Please check the [Prerequisites](#pre)  to make sure you have properly added a Source Definition to VANTIQ Modelo. Once this is complete, you can select CSV (or whatever you named your Source Definition) as the Source Type. You will then need to fill out the Source Configuration 
+To set up the Source in the VANTIQ Modelo IDE, you will need to add a Source to your project. Make sure you have properly added a Source Definition to VANTIQ. Once this is complete, you can select CSV (or whatever you named your Source Definition) as the Source Type. You will then need to fill out the Source Configuration 
 Document.
 
 The Configuration document may look similar to the following example:
@@ -88,41 +88,41 @@ The Configuration document may look similar to the following example:
     }
 
 ### Options Available for configuration root. 
-*   **fileFolderPath**: Required. the folder where the CSV files are going to be created 
-*   **filePrefix**: Optional . The prefix of the file pattern to look for ,if not set an empty string will be used as default 
-*   **fileExtension**: Required. the  extension of the files to be processed 
-*   **maxLinesInEvent**: Required. determine how many lines from the CSV file will be sent in a single message to the server. depend on the size of the lines of the CSV , set to high value might end with a memory exception. 
+*   **fileFolderPath**: Required. The folder in which this source will look for CSV files. 
+*   **filePrefix**: Optional . The prefix of the file pattern to look for, if not set any file name will be accepted. 
+*   **fileExtension**: Required. The file extension of the files to be processed 
+*   **maxLinesInEvent**: Required. Determine how many lines from the CSV file will be sent in a single message to the server. Depending on the number of the lines of the CSV file, a high value might result in messages too large to process efficiently or a memory exception. 
 
 
-### Options Available for schema
-Schema can be used to control the field names on the uploaded event , in no name is assigned 'FieldX' will be used as 'X' is the index of the field in the line for example field0 , field1 etc . 
+### Schema Configuration
+Schema can be used to control the field names on the uploaded event. If no name is assigned, 'fieldX' will be used where 'X' is the index of the field in the line.  For example field0, field1, etc. 
 
-those values can be used to override that default behavior for example , define the following `schema : { field2 : "address"}`
+Those values can be used to override that default behavior for example, the following 
 
 will cause the attribute of the 3rd value in each line to be called "address". 
-so instead of loading event : 
+So instead of loading event : 
 
-`{field0:1,fiels1:true,field2:"there"}` it will upload `{field0:1,fiels1:true,address:"there"}`
-this feature can save coversion processing on the server.
+`{ field0:1, field1:true, field2:"there"}` it will upload `{ field0:1, field1:true, address:"there"}`
+this can save conversion processing on the server.
 
-### Options Available for options
+### Execution Options
 
-*   **maxActiveTasks**: Optional. The maximum number of threads running at any given point for CSV files running parralel . Must be a positive integer. Default value is 5.
+*   **maxActiveTasks**: Optional. The maximum number of threads running at any given point. This is the number of CSV files being processed simultaneously. Must be a positive integer. Default value is 5.
 *   **maxQueuedTasks**: Optional. The maximum number of queued tasks at any given point for CSV files,overflowing that number might cause lack of data . Must be a positive integer. Default value is 10.
-*   **processExistingFiles**: Optional. if set to `true` , the service will process all files already exists in the folder `fileFolderPath` which are filtered using `filePrefix` and the `fileExtension` , otherwise the service will process only new files, default set to `false` 
-*   **extensionAfterProcessing**: Optional. setting the file extension after it has been processed , for avoiding reprocessing in case `processExistingFiles` is set to `true`, default value is combination of the 'fileExtension' and `done` , for example `.csv.done` when `fileExtension` set to `.csv`.
-*   **deleteAfterProcessing**: Optional. delete the processed file only if processed suceesfully. for avoiding reprocessing in case `processExistingFiles` is set to `true`, default value is `false`
+*   **processExistingFiles**: Optional. If set to `true`, the service will process all files already existing in the folder `fileFolderPath` (filtered using `filePrefix` and the `fileExtension`). Otherwise the service will process only new files.  Default is`false`.
+*   **extensionAfterProcessing**: Optional. Rename the file after it has been processed to avoid reprocessing (_e.g._ for cases where `processExistingFiles` is set to `true`).  The default value is combination of the 'fileExtension' and `done`.  For example `.csv.done` when `fileExtension` set to `.csv`.
+*   **deleteAfterProcessing**: Optional. Delete the processed file only if processed successfully to avoid reprocessing in cases where `processExistingFiles` is set to `true`. Default value is `false`
 
 ## Messages from the Source
 
 Messages that are sent to the source as Notifications are JSON objects in the following format:
 ```
 {
-   {field0:columnValue, field1:columnValue, etc..}
+   {"field0":columnValue, "field1":columnValue, etc..}
 }
 ```
 The data is formatted as a HashMap which represents a row of data. Each map is a series of key-value pairs with the keys 
-being the column name and the values being the column value. If multiple rows of data are returned by the notification, the number iof max events is determind by the `maxLinesInEvent` 
+being the column name and the values being the column value. If multiple rows of data are returned by the notification, the number iof max events is determined by the `maxLinesInEvent` 
 
 
 ## Error Messages
