@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018 Vantiq, Inc.
+ * Copyright (c) 2020 Vantiq, Inc.
  *
  * All rights reserved.
  * 
@@ -79,9 +79,7 @@ public class CSVHandleConfiguration extends Handler<ExtensionServiceMessage> {
         Map<String, Object> configObject = (Map) message.getObject();
         Map<String, Object> config;
         Map<String, Object> options;
-        Map<String, String> schema;
         Map<String, Object> csvConfig;
-        Map<String, Object> general;
         String fileFolderPath ; 
         String filePrefix; 
         String fileExtension;
@@ -132,7 +130,6 @@ public class CSVHandleConfiguration extends Handler<ExtensionServiceMessage> {
             failConfig();
             return;
         }
-        schema = (Map<String, String>) csvConfig.get("schema");
         
 
         String fullFilePath = String.format("%s/%s*.%s",fileFolderPath,filePrefix,fileExtension);
@@ -150,10 +147,8 @@ public class CSVHandleConfiguration extends Handler<ExtensionServiceMessage> {
     
      boolean createCSVConnection(Map<String, Object> config,Map<String, Object> options ,String FileFolderPath,String fullFilePath,ExtensionWebSocketClient oClient) {
         
-        int size = 1;
 
         if (config.get(MAX_LINES_IN_EVENT) instanceof Integer) {
-                size = (int) config.get(MAX_LINES_IN_EVENT);
         } else {
             log.error("Configuration failed. No maxLinesInEvents was specified");
             return false;

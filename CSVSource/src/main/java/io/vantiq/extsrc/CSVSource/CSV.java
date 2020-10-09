@@ -38,12 +38,8 @@ import io.vantiq.extsrc.CSVSource.exception.VantiqCSVException;
 public class CSV {
     Logger log = LoggerFactory.getLogger(this.getClass().getCanonicalName());
 
-    // Boolean flag specifying if publish/query requests are handled synchronously,
-    // or asynchronously
-    boolean isAsync;
     String fullFilePath;
     WatchService serviceWatcher;
-    int NumLinesInEvents; 
 
     ExtensionWebSocketClient oClient ; 
     Map<String, Object>  config;
@@ -52,58 +48,55 @@ public class CSV {
 
     ExecutorService executionPool = null;
 
-    String extenstion = ".csv"; 
+    String extension = ".csv"; 
     String filePrefix = ""; 
     FilenameFilter fileFilter ; 
     String extensionAfterProcessing = ".done";
     boolean deleteAfterProcessing = false; 
 
-    void prepareConfigurationData()
-    {
-        extenstion = "csv"; 
-        if (config.get("fileExtension")!=null)
-        {
-            extenstion = (String) config.get("fileExtension"); 
+    private static final int MAX_ACTIVE_TASKS = 5;
+    private static final int MAX_QUEUED_TASKS = 10;
+
+    private static final String MAX_ACTIVE_TASKS_LABEL = "maxActiveTasks";
+    private static final String MAX_QUEUED_TASKS_LABEL = "maxQueuedTasks";
+
+    void prepareConfigurationData()    {
+        extension  = "csv"; 
+        if (config.get("fileExtension")!=null)        {
+            extension  = (String) config.get("fileExtension"); 
         }
 
-        if (!extenstion.startsWith("."))
-        {
-            extenstion = "."+extenstion; 
+        if (!extension .startsWith("."))        {
+            extension  = "."+extension ; 
         }
 
         
-        if (config.get("filePrefix")!=null)
-        {
+        if (config.get("filePrefix")!=null)        {
             filePrefix = (String) config.get("filePrefix"); 
         }
         
-        if (options.get("extensionAfterProcessing")!=null)
-        {
+        if (options.get("extensionAfterProcessing")!=null)        {
             extensionAfterProcessing = (String) options.get("extensionAfterProcessing"); 
         }
         else
-            extensionAfterProcessing = extenstion + extensionAfterProcessing;
+            extensionAfterProcessing = extension  + extensionAfterProcessing;
         
-        if (!extensionAfterProcessing.startsWith("."))
-        {
+        if (!extensionAfterProcessing.startsWith("."))        {
             extensionAfterProcessing = "."+extensionAfterProcessing; 
         }
 
-        if (options.get("deleteAfterProcessing")!=null)
-        {
+        if (options.get("deleteAfterProcessing")!=null)        {
             deleteAfterProcessing = (boolean) options.get("deleteAfterProcessing"); 
         }
         
-        int maxActiveTasks = 5; 
-        int maxQueuedTasks = 10; 
+        int maxActiveTasks = MAX_ACTIVE_TASKS; 
+        int maxQueuedTasks = MAX_QUEUED_TASKS; 
 
-        if (options.get("maxActiveTasks")!=null)
-        {
-            maxActiveTasks = (int) options.get("maxActiveTasks");
+        if (options.get(MAX_ACTIVE_TASKS_LABEL)!=null)        {
+            maxActiveTasks = (int) options.get(MAX_ACTIVE_TASKS_LABEL);
         }
-        if (options.get("maxQueuedTasks")!=null)
-        {
-            maxQueuedTasks = (int) options.get("maxQueuedTasks");
+        if (options.get(MAX_QUEUED_TASKS_LABEL)!=null)        {
+            maxQueuedTasks = (int) options.get(MAX_QUEUED_TASKS_LABEL);
         }
 
         executionPool = new ThreadPoolExecutor(maxActiveTasks, maxActiveTasks, 0l, TimeUnit.MILLISECONDS,
@@ -113,7 +106,7 @@ public class CSV {
             public boolean accept(File dir, String name) {
                String lowercaseName = name.toLowerCase();
 
-               if (lowercaseName.endsWith(extenstion) && lowercaseName.startsWith(filePrefix)) {
+               if (lowercaseName.endsWith(extension ) && lowercaseName.startsWith(filePrefix)) {
                   return true;
                } else {
                   return false;
@@ -190,7 +183,7 @@ public class CSV {
                         }
                         else if (extensionAfterProcessing != "")
                         {
-                            File newfullFileName = new File( fullFileName.replace(extenstion, extensionAfterProcessing));
+                            File newfullFileName = new File( fullFileName.replace(extension , extensionAfterProcessing));
                             log.info("File {} renamed to {}", fullFileName,newfullFileName);
                             file.renameTo(newfullFileName);
                         }

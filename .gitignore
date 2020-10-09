@@ -46,3 +46,4 @@ trace.db/
 lib/
 windows/
 *.dll
+*.csv
