@@ -1,6 +1,6 @@
 # Overview
 
-The following documentation outlines how to incorporate a CSV Source as part of your project. This allows a user to construct applications that detect creation of csv files in pre defined folder and upload the file content as events to vantiq. the extension source enable control on the names of the idfferent attribute base on the order in the csv file and change the name or delete after procsiing the file. 
+This document outlines how to incorporate a CSV Source into your project. The CSV source allows a user to construct applications that detect creation of CSV files in pre-defined folder and upload the file content as events to VANTIQ. The extension source enables control on the names of the different attribute based on the order in the CSV file, and change the name or delete after processing the file. 
 The extension source can handle multiple files parralel , this can be controled by parameters in the config section . 
 
 In order to incorporate this Extension Source, you will need to create the Source in the VANTIQ Modelo IDE. The documentation has been split into two parts, [Setting Up Your Machine](#machine) and [Setting Up Your VANTIQ Modelo IDE](#vantiq).
