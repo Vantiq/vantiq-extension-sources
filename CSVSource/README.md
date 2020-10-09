@@ -27,7 +27,7 @@ Additionally, an example project named *CSVExample.zip* can be found in the *src
     configuration file.
 *   **CSVCore** -- Coordinates the connections to Vantiq , responsible for recovery the connection with Vantiq Server
 *   **CSVHandleConfiguration** -- Sets up the trigger to the file system for detect and processed new csv file 
-*   **CSV** -- The class that directly interacts with the file system watch service , detect the file and process it . 
+*   **CSV** -- The class that directly interacts with the file system watch service , detects the file and processes it . 
 
 ## How to Run the Program
 
