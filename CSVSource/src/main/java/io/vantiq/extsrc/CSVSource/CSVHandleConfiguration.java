@@ -78,8 +78,6 @@ public class CSVHandleConfiguration extends Handler<ExtensionServiceMessage> {
         String fileFolderPath ; 
         String filePrefix; 
         String fileExtension;
-        
-        
 
         // Obtain entire config from the message object
         if ( !(configObject.get(CONFIG) instanceof Map)) {
@@ -90,15 +88,12 @@ public class CSVHandleConfiguration extends Handler<ExtensionServiceMessage> {
 
         config = (Map<String,Object>) configObject.get(CONFIG);
 
-
-
         if ( !(config.get(OPTIONS) instanceof Map)) {
             log.error("Configuration failed. No configuration suitable for CSV Source. ) No OPTIONS ");
             failConfig();
             return;
         }
         options= (Map<String,Object>) config.get(OPTIONS);
-
 
         if ( !(config.get(CSVCONFIG) instanceof Map)) {
             log.error("Configuration failed. No configuration suitable for CSV Source. )NOCSVConfig");
@@ -118,8 +113,7 @@ public class CSVHandleConfiguration extends Handler<ExtensionServiceMessage> {
         }
         fileFolderPath = (String) csvConfig.get(FILE_FOLDER_PATH);
         filePrefix = "";
-        if (csvConfig.get(FILE_PREFIX) != null)
-        {
+        if (csvConfig.get(FILE_PREFIX) != null){
             filePrefix = (String) csvConfig.get(FILE_PREFIX);
         }
         fileExtension = (String) csvConfig.get(FILE_EXTENSION);
@@ -129,11 +123,10 @@ public class CSVHandleConfiguration extends Handler<ExtensionServiceMessage> {
             failConfig();
             return;
         }
-        
 
-        String fullFilePath = String.format("%s/%s*.%s",fileFolderPath,filePrefix,fileExtension);
+        String fullFilePath = String.format("%s/%s*.%s", fileFolderPath, filePrefix, fileExtension);
 
-        boolean success = createCSVConnection(csvConfig,options ,fileFolderPath,fullFilePath,source.client);
+        boolean success = createCSVConnection(csvConfig, options, fileFolderPath, fullFilePath, source.client);
         if (!success) {
             failConfig();
             return;
@@ -142,17 +135,13 @@ public class CSVHandleConfiguration extends Handler<ExtensionServiceMessage> {
         log.trace("Setup complete");
         configComplete = true;
     }
-    
-    
-     boolean createCSVConnection(Map<String, Object> config,Map<String, Object> options ,String FileFolderPath,String fullFilePath,ExtensionWebSocketClient oClient) {
-        
 
+    boolean createCSVConnection(Map<String, Object> config, Map<String, Object> options , String FileFolderPath, String fullFilePath, ExtensionWebSocketClient oClient) {
         if (config.get(MAX_LINES_IN_EVENT) instanceof Integer) {
         } else {
             log.error("Configuration failed. No maxLinesInEvents was specified or it is not Integer");
             return false;
         }
-        
 
         // Initialize CSV Source with config values
         try {
@@ -161,18 +150,16 @@ public class CSVHandleConfiguration extends Handler<ExtensionServiceMessage> {
             }
             CSV csv = new CSV();
        
-            csv.setupCSV(oClient,FileFolderPath,fullFilePath,config,options);
+            csv.setupCSV(oClient, FileFolderPath, fullFilePath, config, options);
             source.csv = csv; 
         } catch (Exception e) {
             log.error("Configuration failed. Exception occurred while setting up CSV Source: ", e);
             return false;
         }
         
-        
         log.trace("CSV source created");
         return true;
     }
-
 
     /**
      * Closes the source {@link CSVCore} and marks the configuration as completed. The source will

@@ -15,8 +15,6 @@ In order to incorporate this Extension Source, you will need to create the Sourc
 
 **IMPORTANT:** Read the [Testing](#testing) section before building this project.
 
-An understanding of the VANTIQ Extension Source SDK is assumed. Please read the [Extension Source README.md](../README.md) for more 
-information.
 
 The user must [define the CSV Source implementation](../README.md#-defining-a-typeimplementation) in the VANTIQ Modelo IDE. For an example of the definition, 
 please see the [*csvImpl.json*](src/test/resources/csvImpl.json) file located in the *src/test/resources* directory.
@@ -67,9 +65,12 @@ targetServer=https://dev.vantiq.com/
 
 # Setting Up VANTIQ <a name="vantiq" id="vantiq"></a>
 
+An understanding of the VANTIQ Extension Source SDK is assumed. Please read the [Extension Source README.md](../README.md) for more information.
+
+
 ## Source Configuration
 
-To set up the Source in the VANTIQ Modelo IDE, you will need to add a Source to your project. Make sure you have properly added a Source Definition to VANTIQ. Once this is complete, you can select CSV (or whatever you named your Source Definition) as the Source Type. You will then need to fill out the Source Configuration 
+To set up the Source in the VANTIQ Modelo IDE, you will need to add a Source to your project. Make sure you have properly added a Source Implementation to VANTIQ. Once this is complete, you can select CSV (or whatever you named your Source Implementation) as the Source Type. You will then need to fill out the Source Configuration 
 Document.
 
 The Configuration document may look similar to the following example:
@@ -101,7 +102,7 @@ The Configuration document may look similar to the following example:
 *   **filePrefix**: Optional . The prefix of the file pattern to look for, if not set any file name will be accepted. 
 *   **fileExtension**: Required. The file extension of the files to be processed 
 *   **maxLinesInEvent**: Required. Determine how many lines from the CSV file will be sent in a single message to the server. Depending on the number of the lines of the CSV file, a high value might result in messages too large to process efficiently or a memory exception. 
-*   **delimiter**: the delimiter to be used when parse the CSV file
+*   **delimiter**: the delimiter to be used when parse the CSV file , default is "," , the system will step over null values which might be in the result of the split operation . 
 
 ### Schema Configuration
 Schema can be used to control the field names on the uploaded event. If no name is assigned, 'fieldX' will be used where 'X' is the index of the field in the line.  For example field0, field1, etc. 

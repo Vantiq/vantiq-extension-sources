@@ -47,3 +47,4 @@ lib/
 windows/
 *.dll
 *.csv
+*/.vscode/

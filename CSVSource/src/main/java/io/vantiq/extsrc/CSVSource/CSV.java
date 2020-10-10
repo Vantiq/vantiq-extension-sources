@@ -62,9 +62,6 @@ import io.vantiq.extsrc.CSVSource.exception.VantiqCSVException;
 
 public class CSV {
     Logger log = LoggerFactory.getLogger(this.getClass().getCanonicalName());
-
-
-    
     // Used to receive configuration informatio . 
     Map<String, Object>  config;
     Map<String, Object>  options ;
@@ -189,8 +186,8 @@ public class CSV {
         String fullFileName = String.format("%s/%s", fileFolderPath, filename);
 
         File path = new File (fileFolderPath);
-        if (fileFilter.accept(path, filename)) {
 
+        if (fileFilter.accept(path, filename)) {
             executionPool.execute(new Runnable() {
                 @Override
                 public void run() {
@@ -208,7 +205,6 @@ public class CSV {
                             log.info("File {} renamed to {}", fullFileName,newfullFileName);
                             file.renameTo(newfullFileName);
                         }
-
                     } catch (RejectedExecutionException e) {
                         log.error("The queue of tasks has filled, and as a result the request was unable to be processed.", e);
                     } catch (Exception ex) {
@@ -223,12 +219,10 @@ public class CSV {
 
     void hanldeExistingFiles(String fileFolderPath)
     {
-
         File folder = new File(fileFolderPath);
 
         String[] listOfFiles = folder.list(fileFilter);
         for (String fileName : listOfFiles) {
-
             executeInPool(fileFolderPath, fileName);
         }
 
@@ -243,11 +237,8 @@ public class CSV {
         WatchKey key = null;
         bContinue = true;
 
-
-        while (bContinue)
-        {
+        while (bContinue){
             try {
-
                 key = serviceWatcher.take();
                 // Dequeueing events
                 Kind<?> kind = null;
@@ -262,33 +253,23 @@ public class CSV {
                         @SuppressWarnings("unchecked")
                         Path newPath = ((WatchEvent<Path>) watchEvent)
                                 .context();
-                        // Output
                         log.info("New path created: " + newPath);
-
-                       executeInPool(fileFolderPath, newPath.toString());
-                     
-
+                        executeInPool(fileFolderPath, newPath.toString());
                     } else if (ENTRY_MODIFY == kind) {
                         // modified
                         @SuppressWarnings("unchecked")
                         Path newPath = ((WatchEvent<Path>) watchEvent)
                                 .context();
-                        // Output
                         log.info("New path modified: " + newPath);
                     }
-    
                 }
                 key.reset();
-    
             }
-            catch (InterruptedException ex1)
-            {
+            catch (InterruptedException ex1) {
                 log.error("processThread inloop failure", ex1);
             }
         }
-
         log.info("Process thread exited");
-
     }
     
     public void reportCSVError(Exception e) throws VantiqCSVException {
@@ -297,12 +278,8 @@ public class CSV {
         throw new VantiqCSVException(message,e);
     }
 
-
-    
-    
     public void close() {
         // Close single connection if open
-        
         bContinue = false; 
 
         executionPool.shutdownNow();

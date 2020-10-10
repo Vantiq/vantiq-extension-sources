@@ -51,7 +51,7 @@ public class TestCSVReader extends TestCSVBase{
     @Test
     public void testReadSimpleFile1Record() {
 
-        CreateFileForTest("a.csv","s;1;2");
+        CreateFileForTest("a.csv","s,1,2");
         ArrayList<Map<String,String>> content = CSVReader.execute("a.csv", config, null);
         assertTrue("Unexpected lines of csv file in array", content.size() == 1);
         assertTrue("Unexpected values in first of line of csv file in array", content.get(0).size() == 3);
@@ -140,6 +140,22 @@ public class TestCSVReader extends TestCSVBase{
 
     }
 
+    @Test
+    public void testFredTest2() {
+
+        CreateFileForTest("a.csv","fred12345namir33marty");
+        config.put("delimiter","[0-9]");
+        
+        ArrayList<Map<String,String>> content = CSVReader.execute("a.csv", config, null);
+        assertTrue("Unexpected lines of csv file in array", content.size() == 1);
+        assertTrue("Unexpected values in first of line of csv file in array", content.get(0).size() == 3);
+
+        assertTrue("Unexpected field value in first of line of csv file in array", content.get(0).get("value").equals("fred"));
+        assertTrue("Unexpected field YScale in first of line of csv file in array", content.get(0).get("YScale").equals("namir"));
+        assertTrue("Unexpected field flag in first of line of csv file in array", content.get(0).get("flag").equals("marty"));
+
+
+    }
 
     
 // ================================================= Helper functions =================================================

@@ -31,7 +31,6 @@ import org.slf4j.LoggerFactory;
  *      <li>{@code targetServer}: Required. The Vantiq server hosting the sources.
  *  </ul>
  */
-
 public class CSVMain {
 
     static final Logger             log = LoggerFactory.getLogger(CSVMain.class);
