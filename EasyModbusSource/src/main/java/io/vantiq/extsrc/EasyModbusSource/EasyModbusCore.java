@@ -198,9 +198,8 @@ public class EasyModbusCore {
         try {
             if (request.get("query") instanceof String) {
                 String queryString = (String) request.get("query");
-                // Check if SQL Query is an update statement, or query statement
+                // Check if Query is an update statement, or query statement
                 if (queryString.trim().toLowerCase().startsWith(SELECT_STATEMENT_IDENTIFIER)) {
-//                    HashMap[] queryArray = localEasyModbus.processQuery(queryString);
                     HashMap[] queryArray = localEasyModbus.processQuery(message);
                     sendDataFromQuery(queryArray, message);
                 } else {
@@ -212,12 +211,12 @@ public class EasyModbusCore {
                 }
             } else if (request.get("query") instanceof List) {
                 List queryArray = (List) request.get("query");
-                // Check that each batch element is a SQL Update Statement
+                // Check that each batch element is an Update Statement
                 for (int i = 0; i < queryArray.size(); i++) {
                     if (queryArray.get(i).toString().trim().toLowerCase().startsWith(SELECT_STATEMENT_IDENTIFIER)) {
                         client.sendQueryError(replyAddress, this.getClass().getName() + ".invalidBatchElement",
                                 "The Query Request could not be executed because at least one batch element "
-                                + "was not a string representation of a SQL Update Statement.", null);
+                                + "was not a string representation of an Update Statement.", null);
                         return;
                     }
                 }

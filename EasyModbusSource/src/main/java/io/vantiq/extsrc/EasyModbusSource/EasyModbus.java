@@ -44,92 +44,69 @@ public class EasyModbus {
     DateFormat dfDate       = new SimpleDateFormat("yyyy-MM-dd");
     DateFormat dfTime       = new SimpleDateFormat("HH:mm:ss.SSSZ");
     
-    public void setupEasyModbus(String tcpAddress,int tcpPort , boolean asyncProcessing, int maxPoolSize ) throws VantiqEasymodbusException
-    {
-        try 
-        {
-            oClient.Connect(tcpAddress,tcpPort);
-            log.info("EasyModsub trying to connect on {}:{}", tcpAddress,tcpPort);
+    public void setupEasyModbus(String tcpAddress, int tcpPort, boolean asyncProcessing, int maxPoolSize) throws VantiqEasymodbusException {
+        try {
+            oClient.Connect(tcpAddress, tcpPort);
+            log.info("EasyModsub trying to connect on {}:{}", tcpAddress, tcpPort);
         }   
-        catch (Exception e)     
-        {
-
-            log.error("EasyModsub failed to connect on {}:{} - {}", tcpAddress,tcpPort,e);
+        catch (Exception e) {
+            log.error("EasyModsub failed to connect on {}:{} - {}", tcpAddress, tcpPort, e);
             reportEasyModbusError(e);
         }
     }
 
-    HashMap[] hanldeSelectCommand(String[] s) throws VantiqEasymodbusException 
-    {
-        if (!oClient.isConnected())
-        {
+    HashMap[] hanldeSelectCommand(String[] s) throws VantiqEasymodbusException {
+        if (!oClient.isConnected()) {
             throw new VantiqEasymodbusException(String.format("EasyDombus is not connected Code %d",3)) ;
-
         }
         String w = s[3].toLowerCase();
 
         int index = 0;
         int size = VectorSize;
-        if (!s[1].equals("*"))
-        {
+        if (!s[1].equals("*")) {
             index = Integer.parseInt(s[1].substring(4));
             size = 1;
         }
 
         try {
-
-        
-            switch (w)
-            {
-                case "registers":
-                    {
+            switch (w) {
+                case "registers": {
                         int[] rr = oClient.ReadInputRegisters(index, size);
                         InputRegisters r = new InputRegisters();
                         r.Set(rr, index);
                         return r.Get(); 
-
                     }
-                case "holdingregisters":
-                    {
+                case "holdingregisters":  {
                         int[] rr = oClient.ReadHoldingRegisters(index, size);
                         InputRegisters r = new InputRegisters();
                         r.Set(rr, index);
                         return r.Get(); 
-
                     }
-                case "discrete":
-                    {
+                case "discrete": {
                         boolean[] rr = oClient.ReadDiscreteInputs(index, size);
                         InputDiscrete r = new InputDiscrete();
                         r.Set(rr, index);
                         return r.Get(); 
                     }
-                case "coils":
-                    {
+                case "coils": {
                         boolean[] rr = oClient.ReadCoils(index, size);
                         InputDiscrete r = new InputDiscrete();
                         r.Set(rr, index);
                         return r.Get(); 
-
                     }
-
                 default:
-
                     throw new VantiqEasymodbusException(String.format("Unsupported Query target %s Code %d",s[4],3)) ;
             }
         }
-        catch (Exception e)
-        {
+        catch (Exception e){
             throw new VantiqEasymodbusException(e.getMessage()) ;
-
         }
     }
+
     int hanldeUpdateCommand(ExtensionServiceMessage message) throws VantiqEasymodbusException 
     {
-        if (!oClient.isConnected())
-        {
+        if (!oClient.isConnected()) {
             throw new VantiqEasymodbusException(String.format("EasyDombus is not connected Code %d",10)) ;
-
         }
 
         
@@ -138,20 +115,15 @@ public class EasyModbus {
         Map<String, ?> request = (Map<String, ?>) message.getObject();
         String type = (String) request.get("type");
 
-        if (!(request.get("address")==null))
-        {
+        if (!(request.get("address")==null)){
             addressInt = (int) request.get("address");
         }
 
         List<Map<String,Object>> l = (List<Map<String,Object>>) request.get("body");
 
-        try
-        {
-                
-            switch (type)
-            {
-                case "holdingregisters":
-                    {
+        try {
+            switch (type) {
+                case "holdingregisters": {
                         List<Map<String,Object>> m1  = (List<Map<String,Object>>) l.get(0).get("registers");
 
                         int[] buffer = new int[m1.size()];
@@ -164,48 +136,39 @@ public class EasyModbus {
                         oClient.WriteMultipleRegisters(addressInt, buffer);
                         return 0 ; 
                     }
-                case "coils":
-                    {
+                case "coils": {
                         List<Map<String,Object>> m1  = (List<Map<String,Object>>) l.get(0).get("values");
                         
                         boolean[] buffer = new boolean[m1.size()];
-                        for (int i = 0 ; i < m1.size() ; i++)
-                        {
+                        for (int i = 0 ; i < m1.size() ; i++) {
                             Map<String,Object> m = m1.get(i);
                             buffer[i] = (boolean) m.get("value");
-                            
                         }
 
                         oClient.WriteMultipleCoils(addressInt, buffer);
                         return 0;
                     }
-                default:
-                    {
+                default: {
                         throw new VantiqEasymodbusException(String.format("Unsupported Query target %s Code %d",type,14)) ;
                     }
             }
         }
-        catch (Exception ex)
-        {
+        catch (Exception ex){
             throw new VantiqEasymodbusException(String.format("Exception Raised %s",ex.getMessage(),15)) ;
-
         }
 
     }
-    public HashMap[]  HandleQuery(String query) throws VantiqEasymodbusException 
-    {
 
+    public HashMap[]  HandleQuery(String query) throws VantiqEasymodbusException {
         String[] s = query.split(" ");
         return hanldeSelectCommand(s);
-
     }
 
-    public HashMap[]  HandleQuery(ExtensionServiceMessage message) throws VantiqEasymodbusException 
-    {
+    public HashMap[]  HandleQuery(ExtensionServiceMessage message) throws VantiqEasymodbusException {
         Map<String, ?> request = (Map<String, ?>) message.getObject();
 
         String op = message.getOp();
-        switch (op)
+        switch (op) 
         {
             case "query":
                 {
@@ -217,18 +180,16 @@ public class EasyModbus {
                 hanldeUpdateCommand(message);
                 return null ; 
             }
-
             default:
-                {
-                    throw new VantiqEasymodbusException(String.format("Unsupported Query command %s Code %d", op ,3)) ;
-                }
+            {
+                throw new VantiqEasymodbusException(String.format("Unsupported Query command %s Code %d", op ,3)) ;
+            }
         }
-
     }
 
     /**
      * The method used to execute the provided query, triggered by a SELECT on the respective source from VANTIQ.
-     * @param sqlQuery          A String representation of the query, retrieved from the WITH clause from VANTIQ.
+     * @param processQuery          A String representation of the query, retrieved from the WITH clause from VANTIQ.
      * @return                  A HashMap Array containing all of the data retrieved by the query, (empty HashMap 
      *                          Array if nothing was returned)
      * @throws VantiqSQLException
@@ -247,32 +208,6 @@ public class EasyModbus {
 
         String sqlQuery = (String) request.get("query");
         rsArray = HandleQuery(message);
-/*
-        if (isAsync) {
-            try (Connection conn = ds.getConnection();
-                 Statement stmt = conn.createStatement();
-                 ResultSet rs = stmt.executeQuery(sqlQuery)) {
-                rsArray = createMapFromResults(rs);
-            } catch (SQLException e) {
-                // Handle errors for EasyModbus
-                reportEasyModbusError(e);
-            }
-        } else {
-            // Check that connection hasn't closed
-            diagnoseConnection();
-
-
-
-
-            try (Statement stmt = conn.createStatement();
-                 ResultSet rs = stmt.executeQuery(sqlQuery)) {
-                rsArray = createMapFromResults(rs);
-            } catch (SQLException e) {
-                // Handle errors for EasyModbus
-                reportEasyModbusError(e);
-            }
-        }
-*/
         return rsArray;
     }
     
@@ -289,27 +224,6 @@ public class EasyModbus {
 
         publishSuccess = hanldeUpdateCommand(message);
         return publishSuccess;
-/*
-        if (isAsync) {
-            try (Connection conn = ds.getConnection();
-                 Statement stmt = conn.createStatement()) {
-                publishSuccess = stmt.executeUpdate(sqlQuery);
-            } catch (SQLException e) {
-                // Handle errors for EasyModbus
-                reportEasyModbusError(e);
-            }
-        } else {
-            // Check that connection hasn't closed
-            diagnoseConnection();
-
-            try (Statement stmt = conn.createStatement()) {
-                publishSuccess = stmt.executeUpdate(sqlQuery);
-            } catch (SQLException e) {
-                // Handle errors for EasyModbus
-                reportEasyModbusError(e);
-            }
-        }
-*/
     }
 
     /**
@@ -355,10 +269,8 @@ public class EasyModbus {
                 reportEasyModbusError(e);
             }
         }
-
         return publishSuccess;
     }
-    
     
     /**
      * Method used to try and reconnect if database connection was lost. Used for synchronous processing (connection pool handles this internally).
@@ -366,8 +278,7 @@ public class EasyModbus {
      */
     public void diagnoseConnection() throws VantiqEasymodbusException {
         try {
-            if (!oClient.isConnected())
-            {
+            if (!oClient.isConnected()) {
                 oClient.Connect();
             }
         } catch (Exception e) {
@@ -381,11 +292,9 @@ public class EasyModbus {
                 ", Error Code: " + e.getCause();
         throw new VantiqEasymodbusException(message);
     }
-
-
     
     /**
-     * Closes the SQL Connection.
+     * Closes the Client Connection.
      */
     public void close() {
         // Close single connection if open
@@ -399,4 +308,3 @@ public class EasyModbus {
         }
     }
 }
-

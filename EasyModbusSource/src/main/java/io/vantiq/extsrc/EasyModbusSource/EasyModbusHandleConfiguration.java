@@ -27,18 +27,14 @@ import io.vantiq.extjsdk.Handler;
  * Sets up the source using the configuration document, which looks as below.
  *<pre> {
  *      EasyModbusConfig: {
- *          general: {
- *              &lt;general options&gt;
- *          }
+            "TCPAddress": "127.0.0.1",
+            "TCPPort": 502,
+            "Size": 20,
+            "pollTime": 1000,
+            "pollQuery": "select * from coils"
+}
  *      }
  * }</pre>
- * 
- * The options for general are as follows. At least one must be valid for the source to function:
- * <ul>
- *      <li>{@code username}: The username to log into the SQL Database.
- *      <li>{@code password}: The password to log into the SQL Database.
- *      <li>{@code dbURL}: The URL of the SQL Database to be used. *                      
- * </ul>
  */
 
 public class EasyModbusHandleConfiguration extends Handler<ExtensionServiceMessage> {
@@ -123,20 +119,14 @@ public class EasyModbusHandleConfiguration extends Handler<ExtensionServiceMessa
      */
     
      boolean createEasyModbusConnection(Map<String, Object> config ,String tcpAddress,int TcpPort) {
-        
         int size = 20;
 
-      
-
-
         if (config.get(BUFFER_SIZE) instanceof Integer) {
-//        if (config.get(BUFFER_SIZE) != null) {
                 size = (int) config.get(BUFFER_SIZE);
         } else {
             log.error("Configuration failed. No Size was specified");
             return false;
         }
-        
 
         // Creating the publish and query handlers
         int maxPoolSize = createQueryAndPublishHandlers(config);
