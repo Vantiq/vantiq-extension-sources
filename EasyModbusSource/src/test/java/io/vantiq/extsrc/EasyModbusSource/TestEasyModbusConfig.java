@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018 Vantiq, Inc.
+ * Copyright (c) 2020 Vantiq, Inc.
  *
  * All rights reserved.
  * 
@@ -62,32 +62,6 @@ public class TestEasyModbusConfig extends TestEasyModbusBase {
         conf.remove("general");
         sendConfig(conf, vantiqConf);
         assertTrue("Should fail when missing 'general' configuration", configIsFailed());
-    }
-    
-    @Test 
-    public void testMissingVantiq() {
-        Map conf = minimalConfig();
-        Map vantiqConf = new LinkedHashMap<>();
-        sendConfig(conf, vantiqConf);
-        assertTrue("Should fail when missing 'vantiq' configuration", configIsFailed());
-    }
-    
-    @Test 
-    public void testMissingPackageRows() {
-        Map conf = minimalConfig();
-        Map vantiqConf = createMinimalVantiq();
-        vantiqConf.remove("packageRows");
-        sendConfig(conf, vantiqConf);
-        assertTrue("Should fail when missing 'packageRows' configuration", configIsFailed());
-    }
-    
-    @Test
-    public void testPackageRowsFalse() {
-        Map conf = minimalConfig();
-        Map vantiqConf = createMinimalVantiq();
-        vantiqConf.put("packageRows","false");
-        sendConfig(conf, vantiqConf);
-        assertTrue("Should fail when 'packageRows' is set to 'false'", configIsFailed());
     }
     
     @Test
@@ -185,6 +159,7 @@ public class TestEasyModbusConfig extends TestEasyModbusBase {
         general = new LinkedHashMap<>();
         general.put("TCPAddress", testIPAddress);
         general.put("TCPPort", testIPPort);
+        general.put("Size", testSize);
     }
     
     public Map<String, String> createMinimalVantiq() {

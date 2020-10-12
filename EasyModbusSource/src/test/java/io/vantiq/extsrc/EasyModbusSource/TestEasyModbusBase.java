@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018 Vantiq, Inc.
+ * Copyright (c) 2020 Vantiq, Inc.
  *
  * All rights reserved.
  * 
@@ -13,6 +13,7 @@ import org.junit.BeforeClass;
 public class TestEasyModbusBase {
     static String testIPAddress;
     static int testIPPort;
+    static int testSize;
     static String testVantiqServer;
     static String testAuthToken;
     static String testSourceName;
@@ -25,7 +26,8 @@ public class TestEasyModbusBase {
 
     @BeforeClass
     public static void getProps() {
-        testIPAddress =  System.getProperty("EntConIPAddress", null);
-        testIPPort=  Integer.parseInt(System.getProperty("EntConIPPort", null));
+        testIPAddress =  System.getProperty("EntConIPAddress", "127.0.0.1");
+        testIPPort=  Integer.parseInt(System.getProperty("EntConIPPort", "502"));
+        testSize=  Integer.parseInt(System.getProperty("EntBufferSize", "20"));
     }
 }

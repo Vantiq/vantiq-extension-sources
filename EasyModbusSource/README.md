@@ -76,13 +76,17 @@ To set up the Source in the VANTIQ Modelo IDE, you will need to add a Source to 
 
 The Configuration document may look similar to the following example:
 ```
-    {
-        "TCPAddress": "127.0.0.1",
-        "TCPPort": 502,
-        "Size": 20,
-        "pollTime": 1000,
-        "pollQuery": "select * from coils"
-    }
+{
+	"easyModbusConfig":{
+    	"general":{
+  	 	"TCPAddress": "127.0.0.1",
+	   	"TCPPort": 502,
+ 	  	"Size": 20,
+	   	"pollTime": 1000,
+ 	  	"pollQuery": "select * from coils"
+        }
+	}
+}
 ```    
 ### Options Available for easyModbus Config
 *   **TCPAddress**: Required. The TCP address of the EasyModbus server.
@@ -188,21 +192,88 @@ The Configuration document may look similar to the following example:
 Messages that are sent to the source as Notifications from the pollQuery are JSON objects with a similar format as the example above.
 ```
 {
-   {
     "registers": [
         {
-            "index": 0,
-            "value": false
+        "index": 0,
+        "value": 0
         },
-        .
-        .
-        .
         {
-            "index": 19,
-            "value": false
+        "index": 1,
+        "value": 0
+        },
+        {
+        "index": 2,
+        "value": 0
+        },
+        {
+        "index": 3,
+        "value": 0
+        },
+        {
+        "index": 4,
+        "value": 0
+        },
+        {
+        "index": 5,
+        "value": 0
+        },
+        {
+        "index": 6,
+        "value": 0
+        },
+        {
+        "index": 7,
+        "value": 0
+        },
+        {
+        "index": 8,
+        "value": 0
+        },
+        {
+        "index": 9,
+        "value": 0
+        },
+        {
+        "index": 10,
+        "value": 0
+        },
+        {
+        "index": 11,
+        "value": 0
+        },
+        {
+        "index": 12,
+        "value": 0
+        },
+        {
+        "index": 13,
+        "value": 0
+        },
+        {
+        "index": 14,
+        "value": 0
+        },
+        {
+        "index": 15,
+        "value": 0
+        },
+        {
+        "index": 16,
+        "value": 0
+        },
+        {
+        "index": 17,
+        "value": 0
+        },
+        {
+        "index": 18,
+        "value": 0
+        },
+        {
+        "index": 19,
+        "value": 0
         }
     ]
-
 }
 ```
 The data is formatted as a HashMap which represents a row of data. Each map is a series of key-value pairs with the keys being the column name and the values being the column value. If multiple rows of data are returned by the pollQuery, each row will be sent as a unique Notification. 

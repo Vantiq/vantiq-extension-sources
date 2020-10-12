@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018 Vantiq, Inc.
+ * Copyright (c) 2020 Vantiq, Inc.
  *
  * All rights reserved.
  * 
@@ -8,6 +8,8 @@
 
 package io.vantiq.extsrc.EasyModbusSource;
 
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeTrue;
 
@@ -21,22 +23,20 @@ import org.junit.BeforeClass;
 import org.junit.Before;
 import org.junit.Test;
 
+import groovyjarjarantlr.collections.List;
+
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 
 import io.vantiq.client.Vantiq;
 import io.vantiq.client.VantiqResponse;
+
 import io.vantiq.extsrc.EasyModbusSource.exception.VantiqEasymodbusException;
 
 public class TestEasyModbus extends TestEasyModbusBase {
     
     // Queries to be tested
-    static final String CREATE_TABLE = "create table Test(id int not null, age int not null, "
-            + "first varchar (255), last varchar (255));";
-    static final String PUBLISH_QUERY = "INSERT INTO Test VALUES (1, 25, 'Santa', 'Claus');";
-    static final String SELECT_QUERY = "SELECT id, first, last, age FROM Test;";
-    static final String DELETE_ROW = "DELETE FROM Test WHERE first='Santa';";
-    static final String DELETE_TABLE = "DROP TABLE Test;";
+    static final String SELECT_QUERY = "SELECT * from coils";
     
     // Date values used to test oddball types
     static final String TIMESTAMP = "2018-08-15 9:24:18";
@@ -58,6 +58,7 @@ public class TestEasyModbus extends TestEasyModbusBase {
     // Queries to test errors
     static final String NO_TABLE = "SELECT * FROM jibberish";
     static final String NO_FIELD = "SELECT jibberish FROM Test";
+    static final String NO_FIELD_ITEM_INDEX = "SELECT itemrish FROM Test";
     static final String SYNTAX_ERROR = "ELECT * FROM Test";
     static final String INSERT_NO_FIELD = "INSERT INTO Test VALUES (1, 25, 'Santa', 'Claus', 'jibberish')";
     static final String INSERT_WRONG_TYPE = "INSERT INTO Test VALUES ('string', 'string', 3, 4)";
@@ -143,7 +144,10 @@ public class TestEasyModbus extends TestEasyModbusBase {
         easyModbus.setupEasyModbus(testIPAddress, testIPPort, false, 0);
         
         HashMap[] queryResult;
-        int deleteResult;
+
+        Map<String, Object> request = CreateFalseCoilsRequest();
+        easyModbus.hanldeUpdateCommand(request);
+
         
         // Try processQuery with a nonsense query
         try {
@@ -156,10 +160,20 @@ public class TestEasyModbus extends TestEasyModbusBase {
         // Select the row that we previously inserted
         try {
             queryResult = easyModbus.processQuery(SELECT_QUERY);
-            assert (Integer) queryResult[0].get("id") == 1;
-            assert (Integer) queryResult[0].get("age") == 25;
-            assert queryResult[0].get("first").equals("Santa");
-            assert queryResult[0].get("last").equals("Claus");
+            assert (Integer) queryResult[0].size() == 1;
+            ArrayList<Value> list = (ArrayList<Value>) queryResult[0].get("values");
+            assert (Integer) list.size() == 20;
+            for (int i = 0 ; i <list.size() ; i++){
+                Value v = list.get(i); 
+                assert v.index == i;
+                assertFalse("illegal value on Index : "+v.index ,v.value ) ; // all fields should be false. 
+            }
+
+            request = SetValue(request,0,true);
+            int rc = easyModbus.hanldeUpdateCommand(request);
+            assert rc == 0;
+
+
         } catch (VantiqEasymodbusException e) {
             fail("Should not throw an exception: " + e.getMessage());
         }
@@ -168,14 +182,24 @@ public class TestEasyModbus extends TestEasyModbusBase {
         // Try selecting again, should return empty HashMap Array since row was deleted
         try {
             queryResult = easyModbus.processQuery(SELECT_QUERY);
-            assert queryResult.length == 0;
+            assert (Integer) queryResult[0].size() == 1;
+            ArrayList<Value> list = (ArrayList<Value>) queryResult[0].get("values");
+            assert (Integer) list.size() == 20;
+            Value v1 = list.get(0); 
+            assertTrue("illegal value on Index : "+v1.index ,v1.value ) ; // all fields should be false. 
+
+            for (int i = 1 ; i <list.size() ; i++){
+                Value v = list.get(i); 
+                assert v.index == i;
+                assertFalse("illegal value on Index : "+v.index ,v.value ) ; // all fields should be false. 
+            }
         } catch (VantiqEasymodbusException e) {
             fail("Should not throw an exception: " + e.getMessage());
         }
         
         easyModbus.close();
     }
-    
+
     @Test
     public void testExtendedTypes() throws VantiqEasymodbusException {
         assumeTrue(testIPAddress != null && testIPPort != 0 ) ;
@@ -184,21 +208,21 @@ public class TestEasyModbus extends TestEasyModbusBase {
         int publishResult;
         
     }
-    
+
     @Test
     public void testCorrectErrors() throws VantiqEasymodbusException {
         assumeTrue(testIPAddress != null && testIPPort != 0 ) ;
         easyModbus.setupEasyModbus(testIPAddress, testIPPort, false, 0);
         HashMap[] queryResult;
         int publishResult;
-/*        
+        
         // Check error code for selecting from non-existent table
         try {
             queryResult = easyModbus.processQuery(NO_TABLE);
             fail("Should have thrown an exception.");
         } catch (VantiqEasymodbusException e) {
             String message = e.getMessage();
-            assert message.contains("1146");
+            assert message.contains("1006");
         }
         
         // Check error code for selecting non-existent field
@@ -207,190 +231,59 @@ public class TestEasyModbus extends TestEasyModbusBase {
             fail("Should have thrown an exception.");
         } catch (VantiqEasymodbusException e) {
             String message = e.getMessage();
-            assert message.contains("1054");
+            assert message.contains("1007");
         }
-        
+
+        try {
+            queryResult = easyModbus.processQuery(NO_FIELD_ITEM_INDEX);
+            fail("Should have thrown an exception.");
+        } catch (VantiqEasymodbusException e) {
+            String message = e.getMessage();
+            assert message.contains("1004");
+        }
+
         // Check error code for syntax error
         try {
             queryResult = easyModbus.processQuery(SYNTAX_ERROR);
             fail("Should have thrown an exception.");
         } catch (VantiqEasymodbusException e) {
             String message = e.getMessage();
-            assert message.contains("1064");
+            assert message.contains("1005");
         }
         
-        // Check error code for using INSERT with executeQuery() method
-        try {
-            queryResult = easyModbus.processQuery(PUBLISH_QUERY);
-            fail("Should have thrown an exception.");
-        } catch (VantiqEasymodbusException e) {
-            String message = e.getMessage();
-            assert message.contains("0");
-        }
-  */      
-        
     }
-    /*
-    @Test
-    public void testAsynchronousProcessing() throws InterruptedException {
-        doAsynchronousProcessing(true);
-    }
-
-    @Test
-    public void testAsynchronousProcessingWithDefaults() throws InterruptedException {
-        doAsynchronousProcessing(false);
-    }
-
-    public void doAsynchronousProcessing(boolean useCustomTaskConfig) throws InterruptedException {
-        // Only run test with intended vantiq availability
-        assumeTrue(testAuthToken != null && testVantiqServer != null);
-
-        // Check that Source, Type, Topic, Procedure and Rule do not already exist in namespace, and skip test if they do
-        assumeFalse(checkSourceExists());
-        assumeFalse(checkTypeExists());
-        assumeFalse(checkTopicExists());
-        assumeFalse(checkProcedureExists());
-        assumeFalse(checkRuleExists());
-
-        // Setup a VANTIQ easyModbus Source, and start running the core
-        setupSource(createSourceDef(true, useCustomTaskConfig));
-
-        // Create Type to store query results
-        setupAsynchType();
-
-        // Create Topic used to trigger Rule
-        setupTopic();
-
-        // Create Procedure to publish to VANTIQ Source
-        setupProcedure();
-
-        // Create Rule to query the VANTIQ Source
-        setupRule();
-
-        // Publish to the source in order to create a table
-        Map<String,Object> create_params = new LinkedHashMap<String,Object>();
-        create_params.put("query", CREATE_TABLE_ASYNCH);
-        vantiq.publish("sources", testSourceName, create_params);
-
-
-        // Execute Procedure to trigger asynchronous publish/queries (assign to variable to ensure that procedure has finished before selecting from type)
-        VantiqResponse response = vantiq.execute(testProcedureName, new LinkedHashMap<>());
-
-        // Sleep for 5 seconds to make sure all queries have finished
-        Thread.sleep(5000);
-
-        // Select from the type and make sure all of our results are there as expected
-        response = vantiq.select(testTypeName, null, null, null);
-        ArrayList responseBody = (ArrayList) response.getBody();
-        assert responseBody.size() == 500;
-
-        // Delete the table for next test
-        Map<String,Object> delete_params = new LinkedHashMap<String,Object>();
-        delete_params.put("query", DROP_TABLE_ASYNCH);
-        vantiq.publish("sources", testSourceName, delete_params);
-
-        // Delete the Source/Type/Topic/Procedure/Rule from VANTIQ
-        deleteSource();
-        deleteType();
-        deleteTopic();
-        deleteProcedure();
-        deleteRule();
-    }
-
-    @Test
-    public void testInvalidBatchProcessing() {
-        // Only run test with intended vantiq availability
-        assumeTrue(testAuthToken != null && testVantiqServer != null);
-        assumeTrue(testDBUsername != null && testDBPassword != null && testDBURL != null && easyModbusDriverLoc != null);
-
-        // Check that Source does not already exist in namespace, and skip test if they do
-        assumeFalse(checkSourceExists());
-
-        // Setup a VANTIQ easyModbus Source, and start running the core
-        setupSource(createSourceDef(false, false));
-
-        // Create table
-        Map<String,Object> create_params = new LinkedHashMap<String,Object>();
-        create_params.put("query", CREATE_TABLE_INVALID_BATCH);
-        vantiq.publish("sources", testSourceName, create_params);
-
-        // Creating a list of integers to insert as a batch
-        ArrayList<Object> invalidBatch = new ArrayList<>();
-        for (int i = 0; i<50; i++) {
-            invalidBatch.add(10);
-        }
-
-        // Attempt to insert data into the table, which should fail
-        Map<String,Object> insert_params = new LinkedHashMap<String,Object>();
-        insert_params.put("query", invalidBatch);
-        vantiq.publish("sources", testSourceName, insert_params);
-
-        // Query the table and make sure it is empty
-        Map<String,Object> query_params = new LinkedHashMap<String,Object>();
-        query_params.put("query", SELECT_TABLE_INVALID_BATCH);
-        VantiqResponse response = vantiq.query(testSourceName, query_params);
-        JsonArray responseBody = (JsonArray) response.getBody();
-        assert responseBody.size() == 0;
-
-        // Now try a list of jibberish queries
-        for (int i = 0; i<50; i++) {
-            invalidBatch.add("jibberish");
-        }
-
-        // Attempt to insert data into the table, which should fail
-        insert_params.put("query", invalidBatch);
-        vantiq.publish("sources", testSourceName, insert_params);
-
-        // Query the table and make sure it is empty
-        response = vantiq.query(testSourceName, query_params);
-        responseBody = (JsonArray) response.getBody();
-        assert responseBody.size() == 0;
-
-        // Delete the Source
-        deleteSource();
-    }
-
-    @Test
-    public void testBatchProcessing() {
-        // Only run test with intended vantiq availability
-        assumeTrue(testAuthToken != null && testVantiqServer != null);
-        assumeTrue(testDBUsername != null && testDBPassword != null && testDBURL != null && easyModbusDriverLoc != null);
-
-        // Check that Source does not already exist in namespace, and skip test if they do
-        assumeFalse(checkSourceExists());
-
-        // Setup a VANTIQ easyModbus Source, and start running the core
-        setupSource(createSourceDef(false, false));
-
-        // Create table
-        Map<String,Object> create_params = new LinkedHashMap<String,Object>();
-        create_params.put("query", CREATE_TABLE_BATCH);
-        vantiq.publish("sources", testSourceName, create_params);
-
-        // Creating a list of strings to insert as a batch
-        ArrayList<String> batch = new ArrayList<String>();
-        for (int i = 0; i<50; i++) {
-            batch.add(INSERT_TABLE_BATCH);
-        }
-
-        // Inserting data into the table as a batch
-        Map<String,Object> insert_params = new LinkedHashMap<String,Object>();
-        insert_params.put("query", batch);
-        VantiqResponse response = vantiq.publish("sources", testSourceName, insert_params);
-        assert !response.hasErrors();
-
-        // Select the data from table and make sure the response is valid
-        Map<String,Object> query_params = new LinkedHashMap<String,Object>();
-        query_params.put("query", SELECT_TABLE_BATCH);
-        response = vantiq.query(testSourceName, query_params);
-        JsonArray responseBody = (JsonArray) response.getBody();
-        assert responseBody.size() == 50;
-
-        // Delete the Source
-        deleteSource();
-    }
-*/
+    
     // ================================================= Helper functions =================================================
+    private Map<String, Object> CreateFalseCoilsRequest() {
+        Map<String, Object> request = new HashMap<String, Object>(); 
+        Map<String, Object> b = new HashMap<String, Object>(); 
+        ArrayList<Map<String,Object>> l = new ArrayList<Map<String,Object>>(); // request.get("body");
+        request.put("type","coils");
+        request.put("body",l);
+
+        ArrayList<HashMap<String,Object>> n = new ArrayList<HashMap<String,Object>>(); 
+        for (int i = 0 ; i < 20 ; i++){
+            HashMap<String,Object> m = new HashMap<String,Object>(); 
+            m.put("value", false);
+            n.add(m);
+        }
+       
+        b.put("values",n);
+        l.add( b);
+        return request;
+    }
+
+    private Map<String, Object> SetValue( Map<String, Object> request , int index , boolean value) {
+        request.put("type","coils");
+        ArrayList<Map<String,Object>> l = (ArrayList<Map<String,Object>>) request.get("body");
+        Map<String, Object> b = l.get(0);
+
+        ArrayList<HashMap<String,Object>> n = (ArrayList<HashMap<String,Object>>) b.get("values");
+        HashMap<String,Object> m = n.get(index);
+        m.put("value", value);
+        return request ; 
+    }
+    
 
     public static boolean checkSourceExists() {
         Map<String,String> where = new LinkedHashMap<String,String>();

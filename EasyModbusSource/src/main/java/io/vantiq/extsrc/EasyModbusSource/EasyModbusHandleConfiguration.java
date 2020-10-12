@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018 Vantiq, Inc.
+ * Copyright (c) 2020 Vantiq, Inc.
  *
  * All rights reserved.
  * 
@@ -89,19 +89,34 @@ public class EasyModbusHandleConfiguration extends Handler<ExtensionServiceMessa
             return;
         }
         config = (Map) configObject.get(CONFIG);
-        
+
+        if ( !(config.get("easyModbusConfig") instanceof Map)) {
+            log.error("Configuration failed. No configuration suitable for EasyModbus Source.(easyModbusConfig)");
+            failConfig();
+            return;
+        }
+        EasyModbusConfig = (Map) config.get("easyModbusConfig");
+
+        if ( !(EasyModbusConfig.get("general") instanceof Map)) {
+            log.error("Configuration failed. No configuration suitable for EasyModbus Source.(general)");
+            failConfig();
+            return;
+        }
+        general = (Map) EasyModbusConfig.get("general");
+
+
         // Retrieve the EasyModbusConfig and the vantiq config
-        if ( !(config.get(TCPADDRESS_CONFIG) instanceof String && config.get(TCPPORT_CONFIG) instanceof Integer) ) {
-                log.error("Configuration failed. Configuration must contain 'TCPAddress' and 'TCPPort' fields.");
+        if ( !(general.get(TCPADDRESS_CONFIG) instanceof String && general.get(TCPPORT_CONFIG) instanceof Integer) ) {
+                log.error("Configuration failed. Configuration (EasyModbusConfig) must contain 'TCPAddress' and 'TCPPort' fields.");
             failConfig();
             return;
         }
         
-        tcpAddress = (String) config.get(TCPADDRESS_CONFIG);
-        tcpPort = (int) config.get(TCPPORT_CONFIG);
+        tcpAddress = (String) general.get(TCPADDRESS_CONFIG);
+        tcpPort = (int) general.get(TCPPORT_CONFIG);
         
 
-        boolean success = createEasyModbusConnection(config , tcpAddress,tcpPort);
+        boolean success = createEasyModbusConnection(general , tcpAddress,tcpPort);
         if (!success) {
             failConfig();
             return;

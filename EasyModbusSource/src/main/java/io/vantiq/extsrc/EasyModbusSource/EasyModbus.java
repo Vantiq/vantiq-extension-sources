@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018 Vantiq, Inc.
+ * Copyright (c) 2020 Vantiq, Inc.
  *
  * All rights reserved.
  * 
@@ -57,14 +57,21 @@ public class EasyModbus {
 
     HashMap[] hanldeSelectCommand(String[] s) throws VantiqEasymodbusException {
         if (!oClient.isConnected()) {
-            throw new VantiqEasymodbusException(String.format("EasyDombus is not connected Code %d",3)) ;
+            throw new VantiqEasymodbusException(String.format("EasyDombus is not connected Code %d",1003)) ;
         }
         String w = s[3].toLowerCase();
 
         int index = 0;
         int size = VectorSize;
         if (!s[1].equals("*")) {
-            index = Integer.parseInt(s[1].substring(4));
+            if (!s[1].substring(0,4).toLowerCase().equals("item"))
+                throw new VantiqEasymodbusException(String.format("Unsupported Query Field %s  must start with item (ex. item0)  Code %d",s[1],1007)) ;
+
+            try {
+                index = Integer.parseInt(s[1].substring(4));
+            } catch (Exception ex ) {
+                throw new VantiqEasymodbusException(String.format("Unsupported Query Field %s  must contains offeset (ex. Coil0)  Code %d",s[1],1004)) ;
+            }
             size = 1;
         }
 
@@ -95,24 +102,16 @@ public class EasyModbus {
                         return r.Get(); 
                     }
                 default:
-                    throw new VantiqEasymodbusException(String.format("Unsupported Query target %s Code %d",s[4],3)) ;
+                    throw new VantiqEasymodbusException(String.format("Unsupported Query Field target %s Code %d",s[3],1006)) ;
             }
         }
         catch (Exception e){
             throw new VantiqEasymodbusException(e.getMessage()) ;
         }
     }
-
-    int hanldeUpdateCommand(ExtensionServiceMessage message) throws VantiqEasymodbusException 
-    {
-        if (!oClient.isConnected()) {
-            throw new VantiqEasymodbusException(String.format("EasyDombus is not connected Code %d",10)) ;
-        }
-
-        
+    int hanldeUpdateCommand( Map<String, ?> request) throws VantiqEasymodbusException {
         int addressInt = 0 ; 
             
-        Map<String, ?> request = (Map<String, ?>) message.getObject();
         String type = (String) request.get("type");
 
         if (!(request.get("address")==null)){
@@ -152,16 +151,36 @@ public class EasyModbus {
                         throw new VantiqEasymodbusException(String.format("Unsupported Query target %s Code %d",type,14)) ;
                     }
             }
-        }
-        catch (Exception ex){
+        } catch (Exception ex){
             throw new VantiqEasymodbusException(String.format("Exception Raised %s",ex.getMessage(),15)) ;
         }
+
+
+    }
+
+    int hanldeUpdateCommand(ExtensionServiceMessage message) throws VantiqEasymodbusException  {
+        try {
+            if (!oClient.isConnected()) {
+                throw new VantiqEasymodbusException(String.format("EasyDombus is not connected Code %d",10)) ;
+            }
+
+            Map<String, ?> request = (Map<String, ?>) message.getObject();
+            return hanldeUpdateCommand(request); 
+        } catch (Exception ex){
+            throw new VantiqEasymodbusException(String.format("Exception Raised %s",ex.getMessage(),15)) ;
+        }
+    
 
     }
 
     public HashMap[]  HandleQuery(String query) throws VantiqEasymodbusException {
         String[] s = query.split(" ");
-        return hanldeSelectCommand(s);
+        if (s[0].toLowerCase().equals("select")){
+            return hanldeSelectCommand(s);
+        }
+        else
+            throw new VantiqEasymodbusException(String.format("Unsupported Query Syntax %s Code %d",s[0],1005)) ;
+
     }
 
     public HashMap[]  HandleQuery(ExtensionServiceMessage message) throws VantiqEasymodbusException {
