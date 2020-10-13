@@ -51,3 +51,24 @@ dependencies {
     testCompile 'junit:junit:4.12'
     testCompile project(path:":extjsdk", configuration:"testArtifacts")
 }
+
+tasks.withType(Test) {
+    if (rootProject.hasProperty('TestAuthToken')) {
+        systemProperty 'TestAuthToken', rootProject.findProperty('TestAuthToken') ?: 'empty'
+    }
+    if (rootProject.hasProperty('TestVantiqServer')) {
+        systemProperty 'TestVantiqServer', rootProject.findProperty('TestVantiqServer') ?: 'empty'
+    }
+    if (rootProject.hasProperty('EntFileFolderPath')) {
+        systemProperty 'EntFileFolderPath', rootProject.findProperty('EntFileFolderPath') ?: 'empty'
+    }
+    if (rootProject.hasProperty('EntFileExtension')) {
+        systemProperty 'EntFileExtension', rootProject.findProperty('EntFileExtension') ?: 'csv'
+    }
+    if (rootProject.hasProperty('EntFilePrefix')) {
+        systemProperty 'EntFilePrefix', rootProject.findProperty('EntFilePrefix')
+    }
+    if (rootProject.hasProperty('EntMaxLinesInEvent')) {
+        systemProperty 'EntMaxLinesInEvent', rootProject.findProperty('EntMaxLinesInEvent')
+    }
+}
