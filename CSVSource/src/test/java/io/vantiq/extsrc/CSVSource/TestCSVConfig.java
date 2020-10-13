@@ -75,10 +75,7 @@ public class TestCSVConfig extends TestCSVBase {
         boolean r = configIsFailed();
         assertFalse("Should not fail with minimal configuration", r);//configIsFailed());
     }
-    
-
 // ================================================= Helper functions =================================================
-    
     public void sendConfig(Map<String, ?> csvConfig, Map<String, ?> options) {
         ExtensionServiceMessage m = new ExtensionServiceMessage("");
         
@@ -97,7 +94,6 @@ public class TestCSVConfig extends TestCSVBase {
         Map<String, Object> ret = new LinkedHashMap<>();
         ret.put("schema", schema);
         createMinimalConfig(ret);
-//        ret.put("csvConfig", general);
         
         return ret;
     }

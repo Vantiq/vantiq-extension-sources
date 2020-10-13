@@ -26,38 +26,23 @@ import io.vantiq.extjsdk.Handler;
  *          }
  *      }
  * }</pre>
- * 
- * The options for general are as follows. At least one must be valid for the source to function:
- * <ul>
- *      <li>{@code username}: The username to log into the SQL Database.
- *      <li>{@code password}: The password to log into the SQL Database.
- *      <li>{@code dbURL}: The URL of the SQL Database to be used. *                      
- * </ul>
  */
-
 public class CSVHandleConfiguration extends Handler<ExtensionServiceMessage> {
     Logger                  log;
     String                  sourceName;
     CSVCore                 source;
-    boolean                 configComplete = false; // Not currently used
-    boolean                 asynchronousProcessing = false;
-    
+    boolean                 configComplete = false; // Used for autotestign support.
         
-    Handler<ExtensionServiceMessage> queryHandler;
-    Handler<ExtensionServiceMessage> publishHandler;
-
     // Constants for getting config options
     private static final String CONFIG = "config";
     private static final String CSVCONFIG = "csvConfig";
     private static final String OPTIONS = "options";
     
-
     private static final String SCHEMA = "schema";
     private static final String FILE_FOLDER_PATH = "fileFolderPath";
     private static final String FILE_PREFIX = "filePrefix";
     private static final String FILE_EXTENSION = "fileExtension";
     private static final String MAX_LINES_IN_EVENT = "maxLinesInEvent";
-
 
     public CSVHandleConfiguration(CSVCore source) {
         this.source = source;
@@ -113,7 +98,7 @@ public class CSVHandleConfiguration extends Handler<ExtensionServiceMessage> {
         }
         fileFolderPath = (String) csvConfig.get(FILE_FOLDER_PATH);
         filePrefix = "";
-        if (csvConfig.get(FILE_PREFIX) != null){
+        if (csvConfig.get(FILE_PREFIX) != null) {
             filePrefix = (String) csvConfig.get(FILE_PREFIX);
         }
         fileExtension = (String) csvConfig.get(FILE_EXTENSION);
@@ -135,7 +120,15 @@ public class CSVHandleConfiguration extends Handler<ExtensionServiceMessage> {
         log.trace("Setup complete");
         configComplete = true;
     }
-
+/**
+ * implement Singelton for CSV class
+ * @param config
+ * @param options
+ * @param FileFolderPath
+ * @param fullFilePath
+ * @param oClient
+ * @return
+ */
     boolean createCSVConnection(Map<String, Object> config, Map<String, Object> options , String FileFolderPath, String fullFilePath, ExtensionWebSocketClient oClient) {
         if (config.get(MAX_LINES_IN_EVENT) instanceof Integer) {
         } else {

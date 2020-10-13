@@ -130,7 +130,7 @@ public class CSVCore {
     /**
      * Tries to connect to a source and waits up to {@code timeout} seconds before failing and trying again.
      * This one should run under thread ,as it should continue untill process is exiting. 
-     * @param timeout   The maximum number of seconds to wait before assuming failure and retring.
+     * @param timeout   The maximum number of seconds to wait before assuming failure and retrying.
      * @return          true if the source connection succeeds, (will retry indefinitely and never return false).
      */
     public boolean start(int timeout) {

@@ -82,6 +82,7 @@ The Configuration document may look similar to the following example:
         "fileExtension": "csv",
         "maxLinesInEvent": 200,
         "delimiter":",",
+        "processNullValues":false,
             "schema": {
                 "field0": "value",
                 "field2": "flag",
@@ -103,6 +104,9 @@ The Configuration document may look similar to the following example:
 *   **fileExtension**: Required. The file extension of the files to be processed 
 *   **maxLinesInEvent**: Required. Determine how many lines from the CSV file will be sent in a single message to the server. Depending on the number of the lines of the CSV file, a high value might result in messages too large to process efficiently or a memory exception. 
 *   **delimiter**: the delimiter to be used when parse the CSV file , default is "," , the system will step over null values which might be in the result of the split operation . 
+*   **processNullValues**: in case of null value ( means two consequtive delimiters in file) determine if 
+the schema filed index should be increment or not . for example , for the follwoing line 1,,,f , determine if
+"field1"="f" or "field3"="f" . 
 
 ### Schema Configuration
 Schema can be used to control the field names on the uploaded event. If no name is assigned, 'fieldX' will be used where 'X' is the index of the field in the line.  For example field0, field1, etc. 
@@ -140,7 +144,39 @@ Each event consists on the follwoing structure :
 * **file** : the source file from where the data was extracted
 * **segment** : number of CSV lines on the current segment 
 * **lines** : the json buffer itself . 
-
+...
+{
+   "file": "d:/tmp/csv/ejesmall.csv",
+   "segment": 39,
+   "lines": [
+      {
+         "flag": "1",
+         "value": "109411211",
+         "YScale": "13.8000"
+      },
+      {
+         "flag": "1",
+         "value": "109415211",
+         "YScale": "112.3507"
+      },
+      {
+         "flag": "1",
+         "value": "109416211",
+         "YScale": "-111.5000"
+      },
+      {
+         "flag": "1",
+         "value": "109432211",
+         "YScale": "1.0440"
+      },
+      {
+         "flag": "1",
+         "value": "109433211",
+         "YScale": "-0.3000"
+      }
+   ]
+}
+...
 ## Error Messages
 
 parsing CSV errors originating from the source will always have the code be the fully-qualified class name with a small descriptor 

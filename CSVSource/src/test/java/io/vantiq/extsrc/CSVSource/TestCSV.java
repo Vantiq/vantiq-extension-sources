@@ -10,16 +10,13 @@ package io.vantiq.extsrc.CSVSource;
 
 import static org.junit.Assume.assumeTrue;
 
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.LinkedHashMap;
 import java.util.Map;
 
 import org.junit.Before;
 import org.junit.Test;
 
 import io.vantiq.client.Vantiq;
-import io.vantiq.client.VantiqResponse;
 import io.vantiq.extsrc.CSVSource.exception.VantiqCSVException;
 
 public class TestCSV extends TestCSVBase {
@@ -31,7 +28,6 @@ public class TestCSV extends TestCSVBase {
     static Map<String,Object> config ;
     static Map<String,Object> options ;
 
-    
     @Before
     public void setup() {
         config = new HashMap<String,Object>(); 
@@ -46,17 +42,10 @@ public class TestCSV extends TestCSVBase {
         vantiq.setAccessToken(testAuthToken);
     }
     
-    
-    
     @Test
     public void testCorrectErrors() throws VantiqCSVException {
-        
-    
         assumeTrue(testFileFolderPath != null && testFullFilePath != null ) ;
         csv.setupCSV(null,testFileFolderPath, testFullFilePath,config,options);
-
-        
-        
     }
     // ================================================= Helper functions =================================================
 }

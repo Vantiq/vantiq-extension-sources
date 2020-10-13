@@ -34,6 +34,7 @@ public class TestCSVReader extends TestCSVBase{
         TestCSVConfig o = new TestCSVConfig();
         config = o.minimalConfig();
         options = o.createMinimalOptions();
+        CSVReader.segmentList.clear();
 
     }
     @After
@@ -65,6 +66,7 @@ public class TestCSVReader extends TestCSVBase{
     }
     @Test
     public void testToManyEventsForSingleSegment() {
+       
 
         CreateFileForTest("a.csv","s;1;2");
         AppendFileForTest("a.csv","s1;11;21");
@@ -72,16 +74,32 @@ public class TestCSVReader extends TestCSVBase{
         AppendFileForTest("a.csv","s1;11;21");
         AppendFileForTest("a.csv","s1;11;21");
         AppendFileForTest("a.csv","s1;11;21");
-        AppendFileForTest("a.csv","s1;11;21");
+        AppendFileForTest("a.csv","s11;111;211");
         AppendFileForTest("a.csv","s1;11;21");
 
         config.put("maxLinesInEvent",3);
         config.put("delimiter",";");
 
-        ArrayList<Map<String,String>> content = CSVReader.execute("a.csv", config, null);
-        assertTrue("Unexpected lines of csv file in array", content.size() == 3);
-        assertTrue("Unexpected values in first of line of csv file in array", content.get(0).size() == 3);
+        ArrayList<Map<String,String>> lastSegment = CSVReader.execute("a.csv", config, null);
+        assertTrue("Unexpected number of segments", CSVReader.segmentList.size() == 3);
 
+        assertTrue("Unexpected lines of csv file in array", lastSegment.size() == 2);
+        assertTrue("Unexpected values in first of line of csv file in array", lastSegment.get(0).size() == 3);
+
+        String v = lastSegment.get(0).get("value");
+        assertTrue("Unexpected field value in first of line of csv file in array", v.equals("s11"));
+        assertTrue("Unexpected field flag in first of line of csv file in array", lastSegment.get(0).get("flag").equals("211"));
+        assertTrue("Unexpected field YScale in first of line of csv file in array", lastSegment.get(0).get("YScale").equals("111"));
+
+        java.util.LinkedHashMap firstSegment = (java.util.LinkedHashMap )CSVReader.segmentList.get(0) ; 
+        ArrayList<Map<String,String>> firstSegmentLines = (ArrayList<Map<String,String>>) firstSegment.get("lines");
+
+        assertTrue("Unexpected lines of csv file in array", firstSegment.size() == 3);
+        assertTrue("Unexpected values in first of line of csv file in array", firstSegmentLines.size() == 3);
+
+        assertTrue("Unexpected field value in first of line of csv file in array", firstSegmentLines.get(0).get("value").equals("s"));
+        assertTrue("Unexpected field flag in first of line of csv file in array", firstSegmentLines.get(0).get("flag").equals("2"));
+        assertTrue("Unexpected field YScale in first of line of csv file in array", firstSegmentLines.get(0).get("YScale").equals("1"));
     }
 
     @Test
@@ -92,6 +110,7 @@ public class TestCSVReader extends TestCSVBase{
         config.put("delimiter",";");
         
         ArrayList<Map<String,String>> content = CSVReader.execute("a.csv", config, null);
+        assertTrue("Unexpected number of segments", CSVReader.segmentList.size() == 1);
         assertTrue("Unexpected lines of csv file in array", content.size() == 2);
         assertTrue("Unexpected values in first of line of csv file in array", content.get(0).size() == 3);
 
@@ -153,6 +172,39 @@ public class TestCSVReader extends TestCSVBase{
         assertTrue("Unexpected field value in first of line of csv file in array", content.get(0).get("value").equals("fred"));
         assertTrue("Unexpected field YScale in first of line of csv file in array", content.get(0).get("YScale").equals("namir"));
         assertTrue("Unexpected field flag in first of line of csv file in array", content.get(0).get("flag").equals("marty"));
+
+
+    }
+    @Test
+    public void testSkipNullValues() {
+
+        CreateFileForTest("a.csv","fred12345namir33marty");
+        config.put("delimiter","[0-9]");
+        
+        ArrayList<Map<String,String>> content = CSVReader.execute("a.csv", config, null);
+        assertTrue("Unexpected lines of csv file in array", content.size() == 1);
+        assertTrue("Unexpected values in first of line of csv file in array", content.get(0).size() == 3);
+
+        assertTrue("Unexpected field value in first of line of csv file in array", content.get(0).get("value").equals("fred"));
+        assertTrue("Unexpected field YScale in first of line of csv file in array", content.get(0).get("YScale").equals("namir"));
+        assertTrue("Unexpected field flag in first of line of csv file in array", content.get(0).get("flag").equals("marty"));
+
+
+    }
+    @Test
+    public void testProccessedNullValues() {
+
+        CreateFileForTest("a.csv","fred12345namir33marty");
+        config.put("delimiter","[0-9]");
+        config.put("processNullValues","true");
+        
+        ArrayList<Map<String,String>> content = CSVReader.execute("a.csv", config, null);
+        assertTrue("Unexpected lines of csv file in array", content.size() == 1);
+        assertTrue("Unexpected values in first of line of csv file in array", content.get(0).size() == 3);
+
+        assertTrue("Unexpected field value in first of line of csv file in array", content.get(0).get("value").equals("fred"));
+        assertTrue("Unexpected field YScale in first of line of csv file in array", content.get(0).get("field5").equals("namir"));
+        assertTrue("Unexpected field flag in first of line of csv file in array", content.get(0).get("field7").equals("marty"));
 
 
     }

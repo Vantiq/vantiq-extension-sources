@@ -43,9 +43,7 @@ public class CSVMain {
     static final int NO_AUTH_EXIT = 1;
     static final int NO_SOURCE_EXIT = 2;
     static final int NO_SERVER_EXIT = 3;
-    
-    
-    
+
     /**
      * Connects to the Vantiq source and starts polling for data. Exits when all sources are done running.
      * @param args  Should be either null or the first argument as a config file

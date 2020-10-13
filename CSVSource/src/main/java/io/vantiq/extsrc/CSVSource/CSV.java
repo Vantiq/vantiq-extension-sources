@@ -59,7 +59,6 @@ import io.vantiq.extsrc.CSVSource.exception.VantiqCSVException;
  *  }</pre>
  *
  */
-
 public class CSV {
     Logger log = LoggerFactory.getLogger(this.getClass().getCanonicalName());
     // Used to receive configuration informatio . 
@@ -86,34 +85,30 @@ public class CSV {
 
     private static final String MAX_ACTIVE_TASKS_LABEL = "maxActiveTasks";
     private static final String MAX_QUEUED_TASKS_LABEL = "maxQueuedTasks";
-
+/**
+ * Create resource which will requiered by the extension activity 
+ */
     void prepareConfigurationData()    {
-
         extension  = "csv"; 
         
         if (config.get("fileExtension") != null)        {
             extension  = (String) config.get("fileExtension"); 
         }
-
         if (!extension .startsWith("."))        {
             extension  = "." + extension ; 
         }
-
-        
         if (config.get("filePrefix")!=null)        {
             filePrefix = (String) config.get("filePrefix"); 
         }
-        
         if (options.get("extensionAfterProcessing") != null)        {
             extensionAfterProcessing = (String) options.get("extensionAfterProcessing"); 
         }
         else
             extensionAfterProcessing = extension  + extensionAfterProcessing;
-        
+
         if (!extensionAfterProcessing.startsWith("."))        {
             extensionAfterProcessing = "." + extensionAfterProcessing; 
         }
-
         if (options.get("deleteAfterProcessing") != null)        {
             deleteAfterProcessing = (boolean) options.get("deleteAfterProcessing"); 
         }
@@ -137,11 +132,19 @@ public class CSV {
             return lowercaseName.endsWith(extension) && lowercaseName.startsWith(filePrefix);
             };
     }
-
-    public void setupCSV(ExtensionWebSocketClient oClient ,String fileFolderPath ,String fullFilePath ,Map<String, Object>  config ,Map<String, Object>  options  ) throws VantiqCSVException
-    {
+/**
+ * function set the watcher service on the folder where files created . 
+ * its olso clean existing files which havnt been processed yet . 
+ * 
+ * @param oClient
+ * @param fileFolderPath
+ * @param fullFilePath
+ * @param config
+ * @param options
+ * @throws VantiqCSVException
+ */
+    public void setupCSV(ExtensionWebSocketClient oClient ,String fileFolderPath ,String fullFilePath ,Map<String, Object>  config ,Map<String, Object>  options  ) throws VantiqCSVException {
         try {
-
             this.fullFilePath = fullFilePath;
             this.config = config; 
             this.options = options; 
@@ -149,11 +152,8 @@ public class CSV {
 
             serviceWatcher = FileSystems.getDefault().newWatchService(); 
             Path path = Paths.get(fileFolderPath);
-
             path.register(serviceWatcher, ENTRY_CREATE);
-
             log.info("CSV trying to subscribe to {}", fileFolderPath);
-
            
             prepareConfigurationData(); 
 
@@ -161,30 +161,27 @@ public class CSV {
 
             // working on files already exists in folder. 
             if (options.get("processExistingFiles") != null)  {
-
                 Object processExistingFiles = options.get("processExistingFiles");
                 if (processExistingFiles instanceof Boolean )
                     if ((boolean)processExistingFiles) {
-
                         log.info("Start working on existing file in folder {}", fileFolderPath);
                         hanldeExistingFiles(fileFolderPath);
-
                     }
             }
-
-
-        }   
-        catch (Exception e)     {
-
+        }  catch (Exception e)     {
             log.error("CSV failed to read  from {}", fullFilePath, e);
             reportCSVError(e);
         }
     }
-
-    void executeInPool(String fileFolderPath, String filename)
-    {
+/**
+ * Handeling accepted file , work only in case the file name is match the file name patterm . 
+ * the input file can be renamed and stay in the folder (usually for debug purpuses) or can be deleted . 
+ * 
+ * @param fileFolderPath - the path where the file is ocated
+ * @param filename - the file name to be procesed. 
+ */
+    void executeInPool(String fileFolderPath, String filename){
         String fullFileName = String.format("%s/%s", fileFolderPath, filename);
-
         File path = new File (fileFolderPath);
 
         if (fileFilter.accept(path, filename)) {
@@ -199,8 +196,7 @@ public class CSV {
                         if (deleteAfterProcessing) {
                             log.info("File {} deleted", fullFileName);
                             file.delete();
-                        }
-                        else if (extensionAfterProcessing != "") {
+                        } else if (extensionAfterProcessing != "") {
                             File newfullFileName = new File( fullFileName.replace(extension, extensionAfterProcessing));
                             log.info("File {} renamed to {}", fullFileName,newfullFileName);
                             file.renameTo(newfullFileName);
@@ -208,32 +204,34 @@ public class CSV {
                     } catch (RejectedExecutionException e) {
                         log.error("The queue of tasks has filled, and as a result the request was unable to be processed.", e);
                     } catch (Exception ex) {
-                        log.error("Failure in executing Tass", ex);
+                        log.error("Failure in executing Task", ex);
                     }
                 }
-
             });
         }
-
     }
-
-    void hanldeExistingFiles(String fileFolderPath)
-    {
+    /**
+     * Responsible for handling files whihc already exist in folder and will not be notified by the 
+     * WatchService
+     * 
+     * @param fileFolderPath - the path of the files waiting to be processed . 
+     */
+    void hanldeExistingFiles(String fileFolderPath){
         File folder = new File(fileFolderPath);
 
         String[] listOfFiles = folder.list(fileFilter);
         for (String fileName : listOfFiles) {
             executeInPool(fileFolderPath, fileName);
         }
-
     }
-
     /**
-     * currently , only new entries are neing handled , however , it recorded rename as well 
-     * buit still not processes , just to understand if it will be requiered in the future 
+     * function hanled the watcher service notifications.
+     * currently , only new entries are being handled , however , it logs rename files as well 
+     * without any processing , just to understand if it will be requiered in the future 
+     *
+     * @param fileFolderPath - path to the watched folder
      */
-    void processThread(String fileFolderPath) 
-    {
+    void processThread(String fileFolderPath)  {
         WatchKey key = null;
         bContinue = true;
 
@@ -253,19 +251,18 @@ public class CSV {
                         @SuppressWarnings("unchecked")
                         Path newPath = ((WatchEvent<Path>) watchEvent)
                                 .context();
-                        log.info("New path created: " + newPath);
+                        log.info("New path created: {}" , newPath.toString());
                         executeInPool(fileFolderPath, newPath.toString());
                     } else if (ENTRY_MODIFY == kind) {
                         // modified
                         @SuppressWarnings("unchecked")
                         Path newPath = ((WatchEvent<Path>) watchEvent)
                                 .context();
-                        log.info("New path modified: " + newPath);
+                        log.debug("Ignored path modified: {}" ,newPath.toString());
                     }
                 }
                 key.reset();
-            }
-            catch (InterruptedException ex1) {
+            } catch (InterruptedException ex1) {
                 log.error("processThread inloop failure", ex1);
             }
         }
@@ -283,13 +280,9 @@ public class CSV {
         bContinue = false; 
 
         executionPool.shutdownNow();
-
         try{
             serviceWatcher.close();
+        } catch (IOException ioex) {
         }
-        catch (IOException ioex) {
-        }
-
- 
     }
 }
