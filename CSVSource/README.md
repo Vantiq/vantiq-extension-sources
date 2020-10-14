@@ -7,7 +7,7 @@ The extension source supports only notifications from source to VANTIQ , those c
 
 using filewatcher , when new file is created in pre configured folder , support the configurable name file pattern, the context is being build and converted to json . that json is being sent to VANTIQ as incoming event . 
 
-when process start , based on configiration , extension can work on all files exist in the input folder which support the name file pattern , in this way , in case system is failed , it will resnt all accomulated files once it restarted again . 
+When the process starts, based on configuration, extension can work on all files exist in the input folder which support the name file pattern. In this way, in cases where the extension is not running during file updates, it will resend all accumulated files once it restarted. 
 
 In order to incorporate this Extension Source, you will need to create the Source in the VANTIQ system. The documentation has been split into two parts, [Setting Up Your Machine](#machine) and [Setting Up Your VANTIQ](#vantiq).
 
