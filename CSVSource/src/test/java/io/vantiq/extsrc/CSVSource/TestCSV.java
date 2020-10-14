@@ -10,6 +10,9 @@ package io.vantiq.extsrc.CSVSource;
 
 import static org.junit.Assume.assumeTrue;
 
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -44,7 +47,7 @@ public class TestCSV extends TestCSVBase {
     
     @Test
     public void testCorrectErrors() throws VantiqCSVException {
-        assumeTrue(testFileFolderPath != null && testFullFilePath != null ) ;
+        assumeTrue(testFileFolderPath != null && testFullFilePath != null && IsTestFileFolderExists()) ;
         csv.setupCSV(null,testFileFolderPath, testFullFilePath,config,options);
     }
     // ================================================= Helper functions =================================================

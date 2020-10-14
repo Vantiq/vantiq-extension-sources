@@ -19,6 +19,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.junit.After;
+import org.junit.Assume;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -36,6 +37,8 @@ public class TestCSVReader extends TestCSVBase{
         options = o.createMinimalOptions();
         CSVReader.segmentList.clear();
 
+      
+
     }
     @After
     public void tearDown() {
@@ -52,8 +55,8 @@ public class TestCSVReader extends TestCSVBase{
     @Test
     public void testReadSimpleFile1Record() {
 
-        CreateFileForTest("a.csv","s,1,2");
-        ArrayList<Map<String,String>> content = CSVReader.execute("a.csv", config, null);
+        CreateFileForTest(testFullFilePath,"s,1,2");
+        ArrayList<Map<String,String>> content = CSVReader.execute(testFullFilePath, config, null);
         assertTrue("Unexpected lines of csv file in array", content.size() == 1);
         assertTrue("Unexpected values in first of line of csv file in array", content.get(0).size() == 3);
 
@@ -68,19 +71,19 @@ public class TestCSVReader extends TestCSVBase{
     public void testToManyEventsForSingleSegment() {
        
 
-        CreateFileForTest("a.csv","s;1;2");
-        AppendFileForTest("a.csv","s1;11;21");
-        AppendFileForTest("a.csv","s1;11;21");
-        AppendFileForTest("a.csv","s1;11;21");
-        AppendFileForTest("a.csv","s1;11;21");
-        AppendFileForTest("a.csv","s1;11;21");
-        AppendFileForTest("a.csv","s11;111;211");
-        AppendFileForTest("a.csv","s1;11;21");
+        CreateFileForTest(testFullFilePath,"s;1;2");
+        AppendFileForTest(testFullFilePath,"s1;11;21");
+        AppendFileForTest(testFullFilePath,"s1;11;21");
+        AppendFileForTest(testFullFilePath,"s1;11;21");
+        AppendFileForTest(testFullFilePath,"s1;11;21");
+        AppendFileForTest(testFullFilePath,"s1;11;21");
+        AppendFileForTest(testFullFilePath,"s11;111;211");
+        AppendFileForTest(testFullFilePath,"s1;11;21");
 
         config.put("maxLinesInEvent",3);
         config.put("delimiter",";");
 
-        ArrayList<Map<String,String>> lastSegment = CSVReader.execute("a.csv", config, null);
+        ArrayList<Map<String,String>> lastSegment = CSVReader.execute(testFullFilePath, config, null);
         assertTrue("Unexpected number of segments", CSVReader.segmentList.size() == 3);
 
         assertTrue("Unexpected lines of csv file in array", lastSegment.size() == 2);
@@ -105,11 +108,11 @@ public class TestCSVReader extends TestCSVBase{
     @Test
     public void testReadSimpleFile2Record() {
 
-        CreateFileForTest("a.csv","s;1;2");
-        AppendFileForTest("a.csv","s1;11;21");
+        CreateFileForTest(testFullFilePath,"s;1;2");
+        AppendFileForTest(testFullFilePath,"s1;11;21");
         config.put("delimiter",";");
         
-        ArrayList<Map<String,String>> content = CSVReader.execute("a.csv", config, null);
+        ArrayList<Map<String,String>> content = CSVReader.execute(testFullFilePath, config, null);
         assertTrue("Unexpected number of segments", CSVReader.segmentList.size() == 1);
         assertTrue("Unexpected lines of csv file in array", content.size() == 2);
         assertTrue("Unexpected values in first of line of csv file in array", content.get(0).size() == 3);
@@ -125,10 +128,10 @@ public class TestCSVReader extends TestCSVBase{
     @Test
     public void testNotEnoughFieldsInSchema() {
 
-        CreateFileForTest("a.csv","s,1,2,3");
-        AppendFileForTest("a.csv","s1,11,21,31");
+        CreateFileForTest(testFullFilePath,"s,1,2,3");
+        AppendFileForTest(testFullFilePath,"s1,11,21,31");
         
-        ArrayList<Map<String,String>> content = CSVReader.execute("a.csv", config, null);
+        ArrayList<Map<String,String>> content = CSVReader.execute(testFullFilePath, config, null);
         assertTrue("Unexpected lines of csv file in array", content.size() == 2);
         assertTrue("Unexpected values in first of line of csv file in array", content.get(0).size() == 4);
 
@@ -144,11 +147,14 @@ public class TestCSVReader extends TestCSVBase{
     @Test
     public void testFredTest() {
 
-        CreateFileForTest("a.csv","fred;namir;marty");
-        AppendFileForTest("a.csv","s1;11;21");
+
+        CreateFileForTest(testFullFilePath,"fred;namir;marty");
+        AppendFileForTest(testFullFilePath,"s1;11;21");
+
+        
         config.put("delimiter",";");
         
-        ArrayList<Map<String,String>> content = CSVReader.execute("a.csv", config, null);
+        ArrayList<Map<String,String>> content = CSVReader.execute(testFullFilePath, config, null);
         assertTrue("Unexpected lines of csv file in array", content.size() == 2);
         assertTrue("Unexpected values in first of line of csv file in array", content.get(0).size() == 3);
 
@@ -162,10 +168,10 @@ public class TestCSVReader extends TestCSVBase{
     @Test
     public void testFredTest2() {
 
-        CreateFileForTest("a.csv","fred12345namir33marty");
+        CreateFileForTest(testFullFilePath,"fred12345namir33marty");
         config.put("delimiter","[0-9]");
         
-        ArrayList<Map<String,String>> content = CSVReader.execute("a.csv", config, null);
+        ArrayList<Map<String,String>> content = CSVReader.execute(testFullFilePath, config, null);
         assertTrue("Unexpected lines of csv file in array", content.size() == 1);
         assertTrue("Unexpected values in first of line of csv file in array", content.get(0).size() == 3);
 
@@ -178,10 +184,10 @@ public class TestCSVReader extends TestCSVBase{
     @Test
     public void testSkipNullValues() {
 
-        CreateFileForTest("a.csv","fred12345namir33marty");
+        CreateFileForTest(testFullFilePath,"fred12345namir33marty");
         config.put("delimiter","[0-9]");
         
-        ArrayList<Map<String,String>> content = CSVReader.execute("a.csv", config, null);
+        ArrayList<Map<String,String>> content = CSVReader.execute(testFullFilePath, config, null);
         assertTrue("Unexpected lines of csv file in array", content.size() == 1);
         assertTrue("Unexpected values in first of line of csv file in array", content.get(0).size() == 3);
 
@@ -194,11 +200,11 @@ public class TestCSVReader extends TestCSVBase{
     @Test
     public void testProccessedNullValues() {
 
-        CreateFileForTest("a.csv","fred12345namir33marty");
+        CreateFileForTest(testFullFilePath,"fred12345namir33marty");
         config.put("delimiter","[0-9]");
         config.put("processNullValues","true");
         
-        ArrayList<Map<String,String>> content = CSVReader.execute("a.csv", config, null);
+        ArrayList<Map<String,String>> content = CSVReader.execute(testFullFilePath, config, null);
         assertTrue("Unexpected lines of csv file in array", content.size() == 1);
         assertTrue("Unexpected values in first of line of csv file in array", content.get(0).size() == 3);
 

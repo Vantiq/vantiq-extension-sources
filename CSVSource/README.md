@@ -1,20 +1,19 @@
 # Overview
 
-This document outlines how to incorporate a CSV Source into your project. The CSV source allows a user to construct applications that detect creation of CSV files in pre-defined folder and upload the file content as events to VANTIQ. The extension source enables control on the names of the different attribute based on the order in the CSV file, and change the name or delete after processing the file. 
+This document outlines how to incorporate a CSV Source into your project. The CSV source allows a user to construct applications that detect creation of CSV files in pre-defined folder and upload the file content as events to VANTIQ. The extension source enables control on the names of the different attribute based on the order in the CSV file, and change the name or delete the file after processing. 
 The extension source can handle multiple files parallel;  this is controlled by parameters in the config section . 
 
-The extension source supports only notifications from source to vantiq , those contains the csv converted to json messages based on the schema definition given in the configuration. 
+The extension source supports only notifications from source to VANTIQ , those contain the file content converted to json messages based on the schema definition given in the configuration. 
 
 using filewatcher , when new file is created in pre configured folder , support the configurable name file pattern, the context is being build and converted to json . that json is being sent to VANTIQ as incoming event . 
 
 when process start , based on configiration , extension can work on all files exist in the input folder which support the name file pattern , in this way , in case system is failed , it will resnt all accomulated files once it restarted again . 
 
-In order to incorporate this Extension Source, you will need to create the Source in the VANTIQ Modelo IDE. The documentation has been split into two parts, [Setting Up Your Machine](#machine) and [Setting Up Your VANTIQ Modelo IDE](#vantiq).
+In order to incorporate this Extension Source, you will need to create the Source in the VANTIQ system. The documentation has been split into two parts, [Setting Up Your Machine](#machine) and [Setting Up Your VANTIQ](#vantiq).
 
 # Prerequisites <a name="pre" id="pre"></a>
 
 **IMPORTANT:** Read the [Testing](#testing) section before building this project.
-
 
 The user must [define the CSV Source implementation](../README.md#-defining-a-typeimplementation) in the VANTIQ Modelo IDE. For an example of the definition, 
 please see the [*csvImpl.json*](src/test/resources/csvImpl.json) file located in the *src/test/resources* directory.
@@ -74,7 +73,7 @@ To set up the Source in the VANTIQ Modelo IDE, you will need to add a Source to 
 Document.
 
 The Configuration document may look similar to the following example:
-
+...
     {
         "csvConfig": {
         "fileFolderPath": "d:/tmp/csv",
@@ -97,6 +96,7 @@ The Configuration document may look similar to the following example:
             "deleteAfterProcessing": false
         }
     }
+...
 
 ### Configuration
 *   **fileFolderPath**: Required. The folder in which this source will look for CSV files. 
@@ -132,20 +132,6 @@ this can save conversion processing on the server.
 Messages that are sent to the source as Notifications are JSON objects in the following format:
 ```
 {
-   {"field0":columnValue, "field1":columnValue, etc..}
-}
-```
-The data is formatted as a HashMap which represents a row of data. Each map is a series of key-value pairs with the keys 
-being the column name and the values being the column value. If multiple rows of data are returned by the notification, the number iof max events is determined by the `maxLinesInEvent` 
-
-## Event structure
-Each event consists on the follwoing structure :
-
-* **file** : the source file from where the data was extracted
-* **segment** : number of CSV lines on the current segment 
-* **lines** : the json buffer itself . 
-...
-{
    "file": "d:/tmp/csv/ejesmall.csv",
    "segment": 39,
    "lines": [
@@ -176,7 +162,16 @@ Each event consists on the follwoing structure :
       }
    ]
 }
-...
+```
+number for lines will not exeeded the value determined by the `maxLinesInEvent` configuratipon parameter .
+
+## Event structure
+Each event consists on the follwoing structure :
+
+* **file** : the source file from where the data was extracted
+* **segment** : number of CSV lines on the current segment 
+* **lines** : the json buffer itself . where the key values are used from the schema definition . 
+
 ## Error Messages
 
 parsing CSV errors originating from the source will always have the code be the fully-qualified class name with a small descriptor 
@@ -184,6 +179,30 @@ attached, and the message will include the exception causing it and the request 
 
 The exception thrown by the CSV Class will always be a VantiqCSVException. This is a wrapper around the traditional Exception, and contains the Error Message, and Error Code from the original Exception.
 
+## Testing <a name="testing" id="testing"></a>
+
+In order to properly run the tests, you must add properties to your _gradle.properties_ file in the _~/.gradle_ directory. These properties include the location where to simulate the file to be sent 
+
+one can control the configuration parameter for the testing by customizing gradle.properties file. The following shows what the gradle.properties file should look like:
+
+```
+    TestVantiqServer=<yourVantiqServer>
+    TestAuthToken=<yourAuthToken>
+    EntFileFolderPath=<yourDesiredFolderPath>
+    EntFileExtension=<yourDesiredFileExtension>
+    EntFilePrefix=<yourDesiredFilePrefix>
+    EntMaxLinesInEvent=<yourDesiredLinesInEvent>
+    EntDelimiter=<yourDesiredDelimiter>
+```
+possible set of values might be :
+    EntFileFolderPath="c:/tmp/csvtest"
+    EntFileExtension="csv"
+    EntFilePrefix="Export"
+    EntMaxLinesInEvent=20
+    EntDelimiter=","
+
+will process only files from the following name pattern: 
+c:/tmp/csvtest/Export*.csv
 
 ## Licensing
 The source code uses the [MIT License](https://opensource.org/licenses/MIT).  

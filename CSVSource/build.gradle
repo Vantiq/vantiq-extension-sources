@@ -71,4 +71,10 @@ tasks.withType(Test) {
     if (rootProject.hasProperty('EntMaxLinesInEvent')) {
         systemProperty 'EntMaxLinesInEvent', rootProject.findProperty('EntMaxLinesInEvent')
     }
+    if (rootProject.hasProperty('EntDelimiter')) {
+        systemProperty 'EntDelimiter', rootProject.findProperty('EntDelimiter')?:","
+    }
+    if (rootProject.hasProperty('EntFullFilePath')) {
+        systemProperty 'EntFullFilePath', rootProject.findProperty('EntFullFilePath')?:"b.csv"
+    }
 }

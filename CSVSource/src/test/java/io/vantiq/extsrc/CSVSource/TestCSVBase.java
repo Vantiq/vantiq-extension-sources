@@ -8,6 +8,10 @@
 
 package io.vantiq.extsrc.CSVSource;
 
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+
 import org.junit.BeforeClass;
 
 public class TestCSVBase {
@@ -29,8 +33,15 @@ public class TestCSVBase {
         testFileFolderPath = System.getProperty("EntFileFolderPath", "c:/tmp/csvTest/in");
         testFilePrefix = System.getProperty("EntFilePrefix", "csvt");
         testFileExtension = System.getProperty("EntFileExtension", "csv");
-        testFullFilePath = System.getProperty("EntFileExtension", "c:/tmp/csvTest/in/csvt*.csv");
+        testFullFilePath = System.getProperty("EntFullFilePath", "a.csv");
         testMaxLinesInEvent=Integer.parseInt( System.getProperty("EntMaxLinesInEvent", "200"));
         testDelimiter = System.getProperty("EntDelimiter", ",");
+
     }
+
+    public static boolean IsTestFileFolderExists() {
+        Path p = Paths.get(testFileFolderPath);
+        return Files.exists(p);
+    }
+
 }

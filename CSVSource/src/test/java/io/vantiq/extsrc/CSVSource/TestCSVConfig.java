@@ -10,6 +10,7 @@ package io.vantiq.extsrc.CSVSource;
 
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assume.assumeTrue;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -67,6 +68,8 @@ public class TestCSVConfig extends TestCSVBase {
     
     @Test
     public void testMinimalConfig() {
+        assumeTrue(testFileFolderPath != null && testFullFilePath != null && IsTestFileFolderExists()) ;
+
         nCore.start(5); // Need a client to avoid NPEs on sends
         
         Map<String,Object> conf = minimalConfig();
