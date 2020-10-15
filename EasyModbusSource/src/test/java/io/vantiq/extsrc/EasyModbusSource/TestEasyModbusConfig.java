@@ -40,6 +40,8 @@ public class TestEasyModbusConfig extends TestEasyModbusBase {
         targetVantiqServer = "dev.vantiq.com";
         nCore = new NoSendEasyModbusCore(sourceName, authToken, targetVantiqServer);
         handler = new EasyModbusHandleConfiguration(nCore);
+        assumeTrue("Simulation is not running",TestEasyModbusBase.isSimulationRunning());
+
     }
     
     @After
@@ -66,6 +68,8 @@ public class TestEasyModbusConfig extends TestEasyModbusBase {
     
     @Test
     public void testMinimalConfig() {
+        assumeTrue("Simulation is not running",TestEasyModbusBase.isSimulationRunning());
+
         assumeTrue(testIPAddress != null && testIPPort != 0 ) ;
         nCore.start(5); // Need a client to avoid NPEs on sends
         

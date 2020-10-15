@@ -57,7 +57,7 @@ public class EasyModbus {
 
     HashMap[] hanldeSelectCommand(String[] s) throws VantiqEasymodbusException {
         if (!oClient.isConnected()) {
-            throw new VantiqEasymodbusException(String.format("EasyDombus is not connected Code %d",1003)) ;
+            throw new VantiqEasymodbusException(String.format("EasyModbus is not connected Code %d",1000)) ;
         }
         String w = s[3].toLowerCase();
 
@@ -148,11 +148,11 @@ public class EasyModbus {
                         return 0;
                     }
                 default: {
-                        throw new VantiqEasymodbusException(String.format("Unsupported Query target %s Code %d",type,14)) ;
+                        throw new VantiqEasymodbusException(String.format("Unsupported Query target %s Code %d",type,1002)) ;
                     }
             }
         } catch (Exception ex){
-            throw new VantiqEasymodbusException(String.format("Exception Raised %s",ex.getMessage(),15)) ;
+            throw new VantiqEasymodbusException(String.format("Exception Raised %s",ex.getMessage(),1001)) ;
         }
 
 
@@ -161,13 +161,13 @@ public class EasyModbus {
     int hanldeUpdateCommand(ExtensionServiceMessage message) throws VantiqEasymodbusException  {
         try {
             if (!oClient.isConnected()) {
-                throw new VantiqEasymodbusException(String.format("EasyDombus is not connected Code %d",10)) ;
+                throw new VantiqEasymodbusException(String.format("EasyDombus is not connected Code %d",1000)) ;
             }
 
             Map<String, ?> request = (Map<String, ?>) message.getObject();
             return hanldeUpdateCommand(request); 
         } catch (Exception ex){
-            throw new VantiqEasymodbusException(String.format("Exception Raised %s",ex.getMessage(),15)) ;
+            throw new VantiqEasymodbusException(String.format("Exception Raised %s",ex.getMessage(),1001)) ;
         }
     
 
@@ -201,7 +201,7 @@ public class EasyModbus {
             }
             default:
             {
-                throw new VantiqEasymodbusException(String.format("Unsupported Query command %s Code %d", op ,3)) ;
+                throw new VantiqEasymodbusException(String.format("Unsupported operation command %s Code %d", op ,1003)) ;
             }
         }
     }

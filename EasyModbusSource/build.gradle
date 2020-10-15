@@ -34,34 +34,6 @@ applicationDistribution.from("src/main/resources") {
     into "logConfig"
 }
 
-tasks.withType(Test) {
-	if (System.env.JDBC_DRIVER_LOC == null) {
-    	logger.warn("Some tests may have been skipped. Environment variable 'JDBC_DRIVER_LOC' is not set. " +
-    			"Please set it to a location containing the appropriate JDBC Driver .jar file.")
-    }	
-	if (rootProject.hasProperty("EntConJDBCUsername")) {
-        systemProperty "EntConJDBCUsername", rootProject.findProperty("EntConJDBCUsername") ?: "empty"
-    }
-    if (rootProject.hasProperty("EntConJDBCPassword")) {
-        systemProperty "EntConJDBCPassword", rootProject.findProperty("EntConJDBCPassword") ?: "empty"
-    }
-    if (rootProject.hasProperty("EntConJDBCURL")) {
-        systemProperty "EntConJDBCURL", rootProject.findProperty("EntConJDBCURL") ?: "empty"
-    }
-    if (rootProject.hasProperty("EntConTestSourceName")) {
-        systemProperty "EntConTestSourceName", rootProject.findProperty("EntConTestSourceName")
-    }
-    if (rootProject.hasProperty("EntConTestTypeName")) {
-        systemProperty "EntConTestTypeName", rootProject.findProperty("EntConTestTypeName")
-    }
-    if (rootProject.hasProperty("TestAuthToken")) {
-        systemProperty "TestAuthToken", rootProject.findProperty("TestAuthToken") ?: "empty"
-    }
-    if (rootProject.hasProperty("TestVantiqServer")) {
-        systemProperty "TestVantiqServer", rootProject.findProperty("TestVantiqServer") ?: "empty"
-    }
-}
-
 dependencies {
     // This dependency is used internally, and not exposed to consumers on their own compile classpath.
     implementation 'com.google.guava:guava:23.0'
@@ -72,7 +44,7 @@ dependencies {
     compile "org.apache.logging.log4j:log4j-slf4j-impl:2.11.0"
     
     //  Compiling relevant JDBC Driver .jar file
-    runtime files("${System.env.JDBC_DRIVER_LOC}")
+    //  runtime files("${System.env.JDBC_DRIVER_LOC}")
 
     implementation files('lib/EasyModbusJava.jar')
     
@@ -85,5 +57,30 @@ dependencies {
 
     // Used to create a connection pool if asynchronous processing has been specified for publish/query handlers
     compile group: 'com.zaxxer', name: 'HikariCP', version: '3.3.1'
+
+}
+tasks.withType(Test) {
+	//if (System.env.EASYModBus_LOC == null) {
+    //	logger.warn("Some tests may have been skipped. Environment variable 'EASYModBus_LOC' is not set. " +
+    //			"Please set it to a location containing the appropriate EasyModbus Driver .jar file.")
+    //}	
+    if (rootProject.hasProperty("EntConTestSourceName")) {
+        systemProperty "EntConTestSourceName", rootProject.findProperty("EntConTestSourceName")
+    }
+    if (rootProject.hasProperty("TestAuthToken")) {
+        systemProperty "TestAuthToken", rootProject.findProperty("TestAuthToken") ?: "empty"
+    }
+    if (rootProject.hasProperty("TestVantiqServer")) {
+        systemProperty "TestVantiqServer", rootProject.findProperty("TestVantiqServer") ?: "empty"
+    }
+    if (rootProject.hasProperty("EntConIPAddress")) {
+        systemProperty "EntConIPAddress", rootProject.findProperty("EntConIPAddress") ?: "127.0.0.1"
+    }
+    if (rootProject.hasProperty("EntConIPPort")) {
+        systemProperty "EntConIPPort", rootProject.findProperty("EntConIPPort") ?: "502"
+    }
+    if (rootProject.hasProperty("EntBufferSize")) {
+        systemProperty "EntBufferSize", rootProject.findProperty("EntBufferSize") ?: "20"
+    }
 
 }

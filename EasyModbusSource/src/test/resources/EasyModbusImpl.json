@@ -2,5 +2,6 @@
    "name" : "EasyModbus",
    "baseType" : "EXTENSION",
    "verticle" : "service:extensionSource",
-   "config" : {}
+   "config" : {},
+   "operations": [ "select","notification" ]
 }

@@ -47,11 +47,13 @@ public class TestEasyModbusCore extends TestEasyModbusBase {
         sourceName = "src";
         authToken = "token";
         targetVantiqServer = "dev.vantiq.com";
+
         
         easyModbus = new EasyModbus();
         core = new NoSendEasyModbusCore(sourceName, authToken, targetVantiqServer);
         core.easyModbus = easyModbus;
         core.start(10);
+        assumeTrue("Simulation is not running",TestEasyModbusBase.isSimulationRunning());
     }
     
     @After
@@ -84,6 +86,7 @@ public class TestEasyModbusCore extends TestEasyModbusBase {
     
     @Test
     public void testExecuteQuery() throws VantiqEasymodbusException {
+
         assumeTrue(testIPAddress != null && testIPPort != 0 ) ;
         easyModbus.setupEasyModbus(testIPAddress, testIPPort, false, 0);
         

@@ -18,113 +18,25 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
 import org.junit.Before;
 import org.junit.Test;
 
-import groovyjarjarantlr.collections.List;
-
-import com.google.gson.JsonArray;
-import com.google.gson.JsonObject;
-
 import io.vantiq.client.Vantiq;
 import io.vantiq.client.VantiqResponse;
-
 import io.vantiq.extsrc.EasyModbusSource.exception.VantiqEasymodbusException;
 
 public class TestEasyModbus extends TestEasyModbusBase {
     
     // Queries to be tested
-    static final String SELECT_QUERY = "SELECT * from coils";
-    
-    // Date values used to test oddball types
-    static final String TIMESTAMP = "2018-08-15 9:24:18";
-    static final String DATE = "2018-08-15";
-    static final String TIME = "9:24:18";
-    static final String FORMATTED_TIMESTAMP = "2018-08-15T09:24:18.000-0700";
-    static final String FORMATTED_TIME = "09:24:18.000-0800";
-    static final String VANTIQ_FORMATTED_TIMESTAMP = "2018-08-15T16:24:18Z";
-    
-    // Queries to test oddball types
-    static final String CREATE_TABLE_EXTENDED_TYPES = "create table TestTypes(id int, ts TIMESTAMP, testDate DATE, "
-            + "testTime TIME, testDec decimal(5,2));";
-    static final String PUBLISH_QUERY_EXTENDED_TYPES = "INSERT INTO TestTypes VALUES (1, '" + TIMESTAMP + "', '" + DATE + "',"
-            + " '" + TIME + "', 145.86);";
-    static final String SELECT_QUERY_EXTENDED_TYPES = "SELECT * FROM TestTypes;";
-    static final String DELETE_ROW_EXTENDED_TYPES = "DELETE FROM TestTypes;";
-    static final String DELETE_TABLE_EXTENDED_TYPES = "DROP TABLE TestTypes;";
-    
+    static final String SELECT_COILS = "SELECT * from coils";
+    static final String SELECT_HOLDINGREGISTERS = "SELECT * from holdingregisters";
+
     // Queries to test errors
     static final String NO_TABLE = "SELECT * FROM jibberish";
     static final String NO_FIELD = "SELECT jibberish FROM Test";
     static final String NO_FIELD_ITEM_INDEX = "SELECT itemrish FROM Test";
     static final String SYNTAX_ERROR = "ELECT * FROM Test";
-    static final String INSERT_NO_FIELD = "INSERT INTO Test VALUES (1, 25, 'Santa', 'Claus', 'jibberish')";
-    static final String INSERT_WRONG_TYPE = "INSERT INTO Test VALUES ('string', 'string', 3, 4)";
     
-    // Queries to test DateTime format in VANTIQ
-    static final String CREATE_TABLE_DATETIME = "CREATE TABLE TestDates(ts TIMESTAMP);";
-    static final String INSERT_VALUE_DATETIME = "INSERT INTO TestDates VALUES ('" + TIMESTAMP + "');";
-    static final String QUERY_TABLE_DATETIME = "SELECT * FROM TestDates";
-    static final String DROP_TABLE_DATETIME = "DROP TABLE TestDates";
-    
-    // Queries to test null values
-    static final String CREATE_TABLE_NULL_VALUES = "CREATE TABLE TestNullValues(ts TIMESTAMP, testDate DATE, testTime TIME, "
-            + "testInt int, testString varchar (255), testDec decimal(5,2));";
-    static final String INSERT_ALL_NULL_VALUES = "INSERT INTO TestNullValues VALUES (null, null, null, null, null, null)";
-    static final String QUERY_NULL_VALUES = "SELECT * FROM TestNullValues";
-    static final String DELETE_ROW_NULL_VALUES = "DELETE FROM TestNullValues";
-    static final String DROP_TABLE_NULL_VALUES = "DROP TABLE TestNullValues";
-    
-    // Queries for checking dropped connection
-    static final String CREATE_TABLE_AFTER_LOST_CONNECTION = "CREATE TABLE NoConnection(id int);";
-    static final String DROP_TABLE_AFTER_LOST_CONNECTION = "DROP TABLE NoConnection;";
-    
-    // Queries for max message size test
-    static final String CREATE_TABLE_MAX_MESSAGE_SIZE = "CREATE TABLE TestMessageSize(id int, first varchar (255), last varchar (255), "
-            + "age int, title varchar (255), is_active varchar (255), department varchar (255), salary int);";
-    static final String INSERT_ROW_MAX_MESSAGE_SIZE = "INSERT INTO TestMessageSize VALUES(1, 'First', 'Last', 30, 'Title', 'Active',"
-            + " 'Department', 1000000);";
-    static final String QUERY_TABLE_MAX_MESSAGE_SIZE = "SELECT * FROM TestMessageSize;";
-    static final String DROP_TABLE_MAX_MESSAGE_SIZE = "DROP TABLE TestMessageSize";
-
-    // Queries for asynchronous processing test
-    static final String CREATE_TABLE_ASYNCH = "CREATE TABLE TestAsynchProcessing(id int, first varchar (255), last varchar (255));";
-    static final String DROP_TABLE_ASYNCH = "DROP TABLE TestAsynchProcessing";
-
-    // Queries for invalid batch processing tests
-    static final String CREATE_TABLE_INVALID_BATCH = "CREATE TABLE TestInvalidBatch(id int, first varchar (255), last varchar (255));";
-    static final String SELECT_TABLE_INVALID_BATCH = "SELECT * FROM TestInvalidBatch";
-    static final String DROP_TABLE_INVALID_BATCH = "DROP TABLE TestInvalidBatch";
-
-    // Queries for valid batch processing tests
-    static final String CREATE_TABLE_BATCH = "CREATE TABLE TestBatch(id int, first varchar (255), last varchar (255));";
-    static final String INSERT_TABLE_BATCH = "INSERT INTO TestBatch VALUES (1, 'First', 'Second');";
-    static final String SELECT_TABLE_BATCH = "SELECT * FROM TestBatch;";
-    static final String DROP_TABLE_BATCH = "DROP TABLE TestBatch";
-
-    // Queries for updating DB using VANTIQ Query
-    static final String CREATE_TABLE_QUERY = "CREATE TABLE TestQueryUpdate(id int, name varchar (255));";
-    static final String INSERT_TABLE_QUERY = "INSERT INTO TestQueryUpdate VALUES (1, 'Name');";
-    static final String SELECT_TABLE_QUERY = "SELECT * FROM TestQueryUpdate;";
-    static final String DELETE_ROWS_QUERY = "DELETE FROM TestQueryUpdate;";
-    static final String DROP_TABLE_QUERY = "DROP TABLE TestQueryUpdate;";
-
-    // Queries for updating DB using VANTIQ Query, as batch
-    static final String CREATE_TABLE_BATCH_QUERY = "CREATE TABLE TestQueryBatchUpdate(id int);";
-    static final String INSERT_TABLE_BATCH_QUERY = "INSERT INTO TestQueryBatchUpdate VALUES (1);";
-    static final String SELECT_TABLE_BATCH_QUERY = "SELECT * FROM TestQueryBatchUpdate;";
-    static final String DROP_TABLE_BATCH_QUERY = "DROP TABLE TestQueryBatchUpdate;";
-    
-    static final String timestampPattern = "\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}.\\d{3}-\\d{4}";
-    static final String datePattern = "\\d{4}-\\d{2}-\\d{2}";
-    static final String timePattern = "\\d{2}:\\d{2}:\\d{2}.\\d{3}-\\d{4}";
-    
-    static final String TEST_INT = "10";
-    static final String TEST_STRING = "test";
-    static final String TEST_DEC = "123.45";
-            
     static final int CORE_START_TIMEOUT = 10;
     
     static EasyModbusCore core;
@@ -133,13 +45,14 @@ public class TestEasyModbus extends TestEasyModbusBase {
     
     @Before
     public void setup() {
+        assumeTrue("Simulation is not running",TestEasyModbusBase.isSimulationRunning());
         easyModbus = new EasyModbus();
         vantiq = new io.vantiq.client.Vantiq(testVantiqServer);
         vantiq.setAccessToken(testAuthToken);
     }
     
     @Test
-    public void testProcessQuery() throws VantiqEasymodbusException {
+    public void testProcessCoilsQuery() throws VantiqEasymodbusException {
         assumeTrue(testIPAddress != null && testIPPort != 0 ) ;
         easyModbus.setupEasyModbus(testIPAddress, testIPPort, false, 0);
         
@@ -159,7 +72,7 @@ public class TestEasyModbus extends TestEasyModbusBase {
         
         // Select the row that we previously inserted
         try {
-            queryResult = easyModbus.processQuery(SELECT_QUERY);
+            queryResult = easyModbus.processQuery(SELECT_COILS);
             assert (Integer) queryResult[0].size() == 1;
             ArrayList<Value> list = (ArrayList<Value>) queryResult[0].get("values");
             assert (Integer) list.size() == 20;
@@ -181,7 +94,7 @@ public class TestEasyModbus extends TestEasyModbusBase {
         
         // Try selecting again, should return empty HashMap Array since row was deleted
         try {
-            queryResult = easyModbus.processQuery(SELECT_QUERY);
+            queryResult = easyModbus.processQuery(SELECT_COILS);
             assert (Integer) queryResult[0].size() == 1;
             ArrayList<Value> list = (ArrayList<Value>) queryResult[0].get("values");
             assert (Integer) list.size() == 20;
@@ -201,13 +114,59 @@ public class TestEasyModbus extends TestEasyModbusBase {
     }
 
     @Test
-    public void testExtendedTypes() throws VantiqEasymodbusException {
+    public void testProcessHoldingRegistersQuery() throws VantiqEasymodbusException {
         assumeTrue(testIPAddress != null && testIPPort != 0 ) ;
-        easyModbus.setupEasyModbus(testIPAddress, testIPPort, false, 0);        HashMap[] queryResult;
+        easyModbus.setupEasyModbus(testIPAddress, testIPPort, false, 0);
         
-        int publishResult;
+        HashMap[] queryResult;
+
+        Map<String, Object> request = CreateResetRegistersRequest();
+        easyModbus.hanldeUpdateCommand(request);
+
         
+        // Select the row that we previously inserted
+        try {
+            queryResult = easyModbus.processQuery(SELECT_HOLDINGREGISTERS);
+            assert (Integer) queryResult[0].size() == 1;
+            ArrayList<Register> list = (ArrayList<Register>) queryResult[0].get("registers");
+            assert (Integer) list.size() == 20;
+            for (int i = 0 ; i <list.size() ; i++){
+                Register v = list.get(i); 
+                assert v.index == i;
+                assertTrue("illegal value on Index : "+v.index ,v.value==0 ) ; // all fields should be false. 
+            }
+
+            request = SetValue(request,0,1);
+            int rc = easyModbus.hanldeUpdateCommand(request);
+            assert rc == 0;
+
+
+        } catch (VantiqEasymodbusException e) {
+            fail("Should not throw an exception: " + e.getMessage());
+        }
+        
+        
+        // Try selecting again, should return empty HashMap Array since row was deleted
+        try {
+            queryResult = easyModbus.processQuery(SELECT_HOLDINGREGISTERS);
+            assert (Integer) queryResult[0].size() == 1;
+            ArrayList<Register> list = (ArrayList<Register>) queryResult[0].get("registers");
+            assert (Integer) list.size() == 20;
+            Register v1 = list.get(0); 
+            assertTrue("illegal value on Index : "+v1.index ,v1.value == 1) ; // all fields should be false. 
+
+            for (int i = 1 ; i <list.size() ; i++){
+                Register v = list.get(i); 
+                assert v.index == i;
+                assertTrue("illegal value on Index : "+v.index ,v.value==0 ) ; // all fields should be false. 
+            }
+        } catch (VantiqEasymodbusException e) {
+            fail("Should not throw an exception: " + e.getMessage());
+        }
+        
+        easyModbus.close();
     }
+
 
     @Test
     public void testCorrectErrors() throws VantiqEasymodbusException {
@@ -272,13 +231,40 @@ public class TestEasyModbus extends TestEasyModbusBase {
         l.add( b);
         return request;
     }
+    private Map<String, Object> CreateResetRegistersRequest() {
+        Map<String, Object> request = new HashMap<String, Object>(); 
+        Map<String, Object> b = new HashMap<String, Object>(); 
+        ArrayList<Map<String,Object>> l = new ArrayList<Map<String,Object>>(); // request.get("body");
+        request.put("type","holdingregisters");
+        request.put("body",l);
 
+        ArrayList<HashMap<String,Object>> n = new ArrayList<HashMap<String,Object>>(); 
+        for (int i = 0 ; i < 20 ; i++){
+            HashMap<String,Object> m = new HashMap<String,Object>(); 
+            m.put("value", 0);
+            n.add(m);
+        }
+       
+        b.put("registers",n);
+        l.add( b);
+        return request;
+    }
     private Map<String, Object> SetValue( Map<String, Object> request , int index , boolean value) {
         request.put("type","coils");
         ArrayList<Map<String,Object>> l = (ArrayList<Map<String,Object>>) request.get("body");
         Map<String, Object> b = l.get(0);
 
         ArrayList<HashMap<String,Object>> n = (ArrayList<HashMap<String,Object>>) b.get("values");
+        HashMap<String,Object> m = n.get(index);
+        m.put("value", value);
+        return request ; 
+    }
+    private Map<String, Object> SetValue( Map<String, Object> request , int index , Integer value) {
+        request.put("type","holdingregisters");
+        ArrayList<Map<String,Object>> l = (ArrayList<Map<String,Object>>) request.get("body");
+        Map<String, Object> b = l.get(0);
+
+        ArrayList<HashMap<String,Object>> n = (ArrayList<HashMap<String,Object>>) b.get("registers");
         HashMap<String,Object> m = n.get(index);
         m.put("value", value);
         return request ; 

@@ -3,7 +3,7 @@
 The following documentation outlines how to incorporate a EasyModbus Source as part of your project. This allows a user to construct applications that interact with a PLC using the EasyModbus layer, thus being able to get coils , descreets and registery information , and able to update cois and registries. 
 
 In order to incorporate this Extension Source, you will need to set up your local machine with a EasyModbus client jre that can connect implement to your EasyModbus server . Once you have done this, you will need to create the Source in the VANTIQ Modelo IDE. The documentation 
-has been split into two parts, [Setting Up Your Machine](#machine) and [Setting Up Your VANTIQ Modelo IDE](#vantiq).
+has been split into two parts, [Setting Up Your Machine](#machine) and [Setting Up Your VANTIQ](#vantiq).
 
 # Prerequisites <a name="pre" id="pre"></a>
 
@@ -29,7 +29,6 @@ the *src/test/resources* contains [*EasyModbus Server Simulator (.NET Version).z
 *   **EasyModbusMain** -- The main function for the program. Connects to sources as specified in a
     configuration file.
 *   **EasyModbusCore** -- Coordinates the connections to the EasyModbus server, and sends the resulting data back to VANTIQ Modelo if necessary.
-
 *   **EasyModbusHandleConfiguration** -- Sets up the EasyModbus connection based on the source's configuration document, and
     initializes the queryHandler and publishHandler.
 *   **EasyModbus** -- The class that directly interacts with the EasyModbus Driver, executing the query and publish requests as sent
@@ -39,7 +38,6 @@ the *src/test/resources* contains [*EasyModbus Server Simulator (.NET Version).z
 download from [*here*](http://easymodbustcp.net/en/) the java version , you can download from the site simulated server as well , i used the one which is .net based. 
 
 ## How to Run the Program
-
 1.  Clone this repository (vantiq-extension-sources) and navigate into `<repo location>/vantiq-extension-sources`.
 2.  Run `./gradlew easyModbusSource:assemble`.
 3.  Navigate to `<repo location>/vantiq-extension-sources/easyModbusSource/build/distributions`. The zip and tar files both contain 
@@ -95,194 +93,14 @@ The Configuration document may look similar to the following example:
 *   **pollTime**: Optional. If specified, you must specify the pollQuery as well. This option allows you to specify a polling 
     rate indicating the frequency (in milliseconds) at which the pollQuery will be executed. The value must be a positive
     number greater than 0, (*i.e.* 3000 --> executing every 3 seconds).
-*   **pollQuery**: Optional. If specified, you must specify the pollTime as well. This option indicates the SQL Query that will be executed by the EasyModbus Source, (frequency assigned by the pollTime). The SQL Query must be a **SELECT** statement, and the returned data will be sent as a Notification to the source. The data can be captured by creating a Rule in the
+*   **pollQuery**: Optional. If specified, you must specify the pollTime as well. This option indicates the SQL Query that will be executed by the EasyModbus Source, (frequency assigned by the pollTime). The SQL Query must be a **SELECT** statement, and the returned data will be sent as a Notification to the source. The data can be captured by creating a Rule in the VANTIQ Modelo IDE 
 
-    VANTIQ Modelo IDE, as in the following example:
-    
-    ```
-    {
-    "values": [
-        {
-            "index": 0,
-            "value": false
-        },
-        {
-            "index": 1,
-            "value": false
-        },
-        {
-            "index": 2,
-            "value": false
-        },
-        {
-            "index": 3,
-            "value": false
-        },
-        {
-            "index": 4,
-            "value": false
-        },
-        {
-            "index": 5,
-            "value": false
-        },
-        {
-            "index": 6,
-            "value": false
-        },
-        {
-            "index": 7,
-            "value": false
-        },
-        {
-            "index": 8,
-            "value": false
-        },
-        {
-            "index": 9,
-            "value": false
-        },
-        {
-            "index": 10,
-            "value": false
-        },
-        {
-            "index": 11,
-            "value": false
-        },
-        {
-            "index": 12,
-            "value": false
-        },
-        {
-            "index": 13,
-            "value": false
-        },
-        {
-            "index": 14,
-            "value": false
-        },
-        {
-            "index": 15,
-            "value": false
-        },
-        {
-            "index": 16,
-            "value": false
-        },
-        {
-            "index": 17,
-            "value": false
-        },
-        {
-            "index": 18,
-            "value": false
-        },
-        {
-            "index": 19,
-            "value": false
-        }
-    ]
-    }
- 
-    ```
-
-## Messages from the Source
-
-Messages that are sent to the source as Notifications from the pollQuery are JSON objects with a similar format as the example above.
-```
-{
-    "registers": [
-        {
-        "index": 0,
-        "value": 0
-        },
-        {
-        "index": 1,
-        "value": 0
-        },
-        {
-        "index": 2,
-        "value": 0
-        },
-        {
-        "index": 3,
-        "value": 0
-        },
-        {
-        "index": 4,
-        "value": 0
-        },
-        {
-        "index": 5,
-        "value": 0
-        },
-        {
-        "index": 6,
-        "value": 0
-        },
-        {
-        "index": 7,
-        "value": 0
-        },
-        {
-        "index": 8,
-        "value": 0
-        },
-        {
-        "index": 9,
-        "value": 0
-        },
-        {
-        "index": 10,
-        "value": 0
-        },
-        {
-        "index": 11,
-        "value": 0
-        },
-        {
-        "index": 12,
-        "value": 0
-        },
-        {
-        "index": 13,
-        "value": 0
-        },
-        {
-        "index": 14,
-        "value": 0
-        },
-        {
-        "index": 15,
-        "value": 0
-        },
-        {
-        "index": 16,
-        "value": 0
-        },
-        {
-        "index": 17,
-        "value": 0
-        },
-        {
-        "index": 18,
-        "value": 0
-        },
-        {
-        "index": 19,
-        "value": 0
-        }
-    ]
-}
-```
-The data is formatted as a HashMap which represents a row of data. Each map is a series of key-value pairs with the keys being the column name and the values being the column value. If multiple rows of data are returned by the pollQuery, each row will be sent as a unique Notification. 
 
 
 ## Select Statements
 
-In order to interact with the EasyModbus Source, one option is to use VAIL to select from the source. To do this, you will need 
-to specify the SQL Query you wish to execute against your database as part of the WITH clause. *Typically*, the SQL Queries 
+In order to interact with the EasyModbus Source, one option is to use VAIL to select from the source. To do this, you will need to specify the SQL liked Query you wish to execute against your EasyModbus source. The data will be returned to VANTIQ as a json buffer , which contains all fields of the different storages.
+
 used here would be **SELECT STATEMENTS**. The data will be returned to VANTIQ as a set of messages, where each message 
 contains some number of rows.
 
@@ -333,6 +151,7 @@ select * from source EasyModbus1 as r with query : "select item0 from coils"
    }
 ]
 ```
+
 ## Publish Statements
 Using Publish statmet one can updates values in the PLC, EasyModbus server accept update request only for
 the holdingregisters and the coils list . 
@@ -361,16 +180,73 @@ a similar example on coils will look
 
 ```
 
+## Messages from the Source
 
+Messages that are sent to the source as Notifications from the pollQuery are JSON objects with a similar format as the example above.The example below is the result of query values from registers ,
+the event in case of query from coils is a bit different and apears after the above example .
 
+result of select * from registers 
+```
+{
+    "registers": [
+        {
+        "index": 0,
+        "value": 0
+        },
+        {
+        "index": 1,
+        "value": 0
+        },
+        .
+        .
+        .
+        {
+        "index": 19,
+        "value": 0
+        }
+    ]
+}
+```
+result of user select * from coils
+    
+```
+    {
+    "values": [
+        {
+            "index": 0,
+            "value": false
+        },
+        {
+            "index": 1,
+            "value": false
+        },
+        .
+        .
+        .
+        {
+            "index": 19,
+            "value": false
+        }
+    ]
+    }
+
+```
 
 ## Error Messages
 
-Query errors originating from the source will always have the code be the fully-qualified class name with a small descriptor 
-attached, and the message will include the exception causing it and the request that spawned it.
+Query errors originating from the source will always have the code be the fully-qualified class name with a small descriptor attached, and the message will include the exception causing it and the request that spawned it.
 
-The exception thrown by the EasyModbus Class will always be a VantiqEasyMosbusException. This is a wrapper around the traditional Exception , and contains the Error Message,  and Error Code from the original Exception.
+The exception thrown by the EasyModbus Class will always be a VantiqEasyMosbusException. This is a wrapper around the traditional Exception, and contains the Error Message, and Error Code from the original Exception.
 
+Error Code      Description 
+1000            EasyDombus is not connected
+1001            General Exception 
+1002            Unsupported Query target
+1003            Unsupported operation command ( only select and publish are supported )
+1004            Unsupported Query Field, must contains offeset (ex. Coil0)
+1005            Unsupported Query Syntax , no select statment. 
+1006            Unexpected QUery entoty, check the from statment 
+1007            Unsupported Query Field, must start with item (ex. item0)
 
 ## Licensing
 The source code uses the [MIT License](https://opensource.org/licenses/MIT).  
