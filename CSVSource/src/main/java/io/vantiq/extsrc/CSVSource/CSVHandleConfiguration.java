@@ -120,15 +120,16 @@ public class CSVHandleConfiguration extends Handler<ExtensionServiceMessage> {
         log.trace("Setup complete");
         configComplete = true;
     }
-/**
- * implement Singelton for CSV class
- * @param config
- * @param options
- * @param FileFolderPath
- * @param fullFilePath
- * @param oClient
- * @return
- */
+    
+    /**
+     * implement Singelton for CSV class
+     * @param config
+     * @param options
+     * @param FileFolderPath
+     * @param fullFilePath
+     * @param oClient
+     * @return
+     */
     boolean createCSVConnection(Map<String, Object> config, Map<String, Object> options , String FileFolderPath, String fullFilePath, ExtensionWebSocketClient oClient) {
         if (config.get(MAX_LINES_IN_EVENT) instanceof Integer) {
         } else {

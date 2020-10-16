@@ -24,6 +24,7 @@ public class TestCSVBase {
     static String testFileExtension;
     static String testFullFilePath ; 
     static int testMaxLinesInEvent;
+    static boolean testprocessNullValues ;
     
     @BeforeClass
     public static void getProps() {
@@ -36,7 +37,7 @@ public class TestCSVBase {
         testFullFilePath = System.getProperty("EntFullFilePath", "a.csv");
         testMaxLinesInEvent=Integer.parseInt( System.getProperty("EntMaxLinesInEvent", "200"));
         testDelimiter = System.getProperty("EntDelimiter", ",");
-
+        testprocessNullValues = Boolean.parseBoolean(System.getProperty("EntProcessNullValue", "false"));
     }
 
     public static boolean IsTestFileFolderExists() {

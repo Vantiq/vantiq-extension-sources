@@ -1,3 +1,10 @@
+/*
+ * Copyright (c) 2020 Vantiq, Inc.
+ *
+ * All rights reserved.
+ * 
+ * SPDX: MIT
+ */
 package io.vantiq.extsrc.CSVSource;
 
 import java.io.BufferedReader;
@@ -21,13 +28,13 @@ import io.vantiq.extjsdk.ExtensionWebSocketClient;
 public class CSVReader {
     private static final String MAX_LINES_IN_EVENT = "maxLinesInEvent";
     public static ArrayList segmentList = new ArrayList<>();
-/**
- * Send message containing the segment of event t
- * @param filename - the original filename , for possible processing in the Server
- * @param numPacket - number of events being sent to the Server while processing the current file.  
- * @param file - the list of events to be sent .
- * @param oClient
- */
+    /**
+     * Send message containing the segment of event t
+     * @param filename - the original filename , for possible processing in the Server
+     * @param numPacket - number of events being sent to the Server while processing the current file.  
+     * @param file - the list of events to be sent .
+     * @param oClient
+     */
     static void sendNotification(String filename, int numPacket, ArrayList<Map<String,String>> file, ExtensionWebSocketClient oClient)
     {
         Map<String,Object> m = new LinkedHashMap<>();
@@ -40,6 +47,7 @@ public class CSVReader {
             segmentList.add(m); // this for auto testing only , will not allocate space in production
         }
     }
+    
     /**
      * Return the attribute to be used for the current field based on the index of the field in the line 
      * in case no match it used the default attribute "FieldX" where X is the field index
@@ -58,6 +66,7 @@ public class CSVReader {
         }
         return field ; 
     }
+
     /**
      * Responsible for reading the lines from the fike and convert to events to be sent to server 
      * each line is being splite by the delimiter and then based on the schema object , determine the 

@@ -18,7 +18,7 @@ In order to incorporate this Extension Source, you will need to create the Sourc
 The user must [define the CSV Source implementation](../README.md#-defining-a-typeimplementation) in the VANTIQ Modelo IDE. For an example of the definition, 
 please see the [*csvImpl.json*](src/test/resources/csvImpl.json) file located in the *src/test/resources* directory.
 
-Additionally, an example project named *CSVExample.zip* can be found in the *src/test/resources* directory.
+Additionally, an example project named *CSVExample.zip* can be found in the *src/test/resources* directory , together with *ejesmall.csv* which is a csv file with starture relates to the SCVExample types.
 
 *   It should be noted that this example look for csv files in folder d:\tmp\csv with names filtered as eje*.csv
 
@@ -172,6 +172,12 @@ Each event consists on the follwoing structure :
 * **segment** : number of CSV lines on the current segment 
 * **lines** : the json buffer itself . where the key values are used from the schema definition . 
 
+## Running the example
+the file the `/src/test/resource/ejesmall.csv` is aligned with the sample application , its content will
+be insert to the `csvInputLines` type exists in the Vantiq application. 
+
+once you copy it to the input folder , default is `d:/tmp/csv` , the extension service will send the file in multiple segments , the app will save those in a type. 
+
 ## Error Messages
 
 parsing CSV errors originating from the source will always have the code be the fully-qualified class name with a small descriptor 
@@ -193,6 +199,7 @@ One can control the configuration parameter for the testing by customizing gradl
     EntFilePrefix=<yourDesiredFilePrefix>
     EntMaxLinesInEvent=<yourDesiredLinesInEvent>
     EntDelimiter=<yourDesiredDelimiter>
+    EntProcessNullValue=<True|False>
 ```
 possible set of values might be :
     EntFileFolderPath="c:/tmp/csvtest"
@@ -200,6 +207,7 @@ possible set of values might be :
     EntFilePrefix="Export"
     EntMaxLinesInEvent=20
     EntDelimiter=","
+    EntProcessNullValue="false"
 
 will process only files from the following name pattern: 
 c:/tmp/csvtest/Export*.csv

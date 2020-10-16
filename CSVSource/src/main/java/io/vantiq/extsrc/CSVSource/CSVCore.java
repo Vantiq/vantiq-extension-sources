@@ -103,8 +103,7 @@ public class CSVCore {
                     }
                 }
             }
-        }
-    };    
+        }}; 
     
     /**
      * Creates a new CSVCore with the settings given.
