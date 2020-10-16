@@ -1,10 +1,10 @@
 # Overview
 
-This document outlines how to incorporate a CSV Source into your project. The CSV source allows a user to construct applications that detect creation of CSV files in pre-defined folder and upload the file content as events to VANTIQ. The extension source enables control on the names of the different attribute based on the order in the CSV file, and change the name or delete the file after processing. 
+This document outlines how to incorporate a CSV Source into your project. The CSV source allows a user to construct applications that detect creation of CSV files in pre-defined folder and upload the file content as events to Vantiq. The extension source enables control on the names of the different attribute based on the order in the CSV file, and change the name or delete the file after processing. 
 The extension source can handle multiple files parallel;
 this is controlled by parameters in the config section. 
 
-The extension source supports only notifications from source to VANTIQ, those contain the file content converted to json messages based on the schema definition given in the configuration. 
+The extension source supports only notifications from source to Vantiq, those contain the file content converted to json messages based on the schema definition given in the configuration. 
 
 When new file is created in pre configured folder (with a name matching the configurable pattern), the file content is parsed and  converted to json.
 That json is then sent to Vantiq as incoming event. 
@@ -25,7 +25,7 @@ The documentation has been split into two parts, [Setting Up Your Machine](#mach
 
 *   **CSVMain** -- The main function for the program. Connects to sources as specified in a
     configuration file.
-*   **CSVCore** -- Coordinates the connections to VANTIQ, responsible for managing the connection with Vantiq Server
+*   **CSVCore** -- Coordinates the connections to Vantiq, responsible for managing the connection with Vantiq Server
 *   **CSVHandleConfiguration** -- Sets up the trigger to the file system for detect and processed new csv file 
 *   **CSV** -- The class that directly interacts with the file system watch service, detects the file and processes it. 
 
@@ -65,20 +65,20 @@ targetServer=https://dev.vantiq.com/
 
 An understanding of the Vantiq Extension Source SDK is assumed. Please read the [Extension Source README.md](../README.md) for more information.
 
-In order to incorporate this Extension Source, you will need to create the Source Implementation in the VANTIQ system.
+In order to incorporate this Extension Source, you will need to create the Source Implementation in the Vantiq system.
 
 ## Source Implementation
 
 When creating a CSVSource Extension source,
 you must first create the source implementation.
 This is done by using the `csvImpl.json` file found in `src/test/resources/csvImpl.json`.
-To make the source type known to VANTIQ, use the `vantiq` cli command
+To make the source type known to Vantiq, use the `vantiq` cli command
 
 ```
 vantiq -s <profileName> load sourceimpls <fileName>
 ```
 
-where `<profileName>` is replaced by the VANTIQ profile name, and `<fileName>` is the file to be loaded.
+where `<profileName>` is replaced by the Vantiq profile name, and `<fileName>` is the file to be loaded.
 
 (You can, of course, change the source implementation name from that provided in this definition file.)
 
