@@ -15,13 +15,6 @@ In order to incorporate this Extension Source, you will need to create the Sourc
 
 **IMPORTANT:** Read the [Testing](#testing) section before building this project.
 
-The user must [define the CSV Source implementation](../README.md#-defining-a-typeimplementation) in the VANTIQ Modelo IDE. For an example of the definition, 
-please see the [*csvImpl.json*](src/test/resources/csvImpl.json) file located in the *src/test/resources* directory.
-
-Additionally, an example project named *CSVExample.zip* can be found in the *src/test/resources* directory , together with *ejesmall.csv* which is a csv file with starture relates to the SCVExample types.
-
-*   It should be noted that this example look for csv files in folder d:\tmp\csv with names filtered as eje*.csv
-
 # Setting Up Your Machine <a name="machine" id="machine"></a>
 
 ## Repository Contents
@@ -169,10 +162,18 @@ number for lines will not exeeded the value determined by the `maxLinesInEvent` 
 Each event consists on the follwoing structure :
 
 * **file** : the source file from where the data was extracted
-* **segment** : number of CSV lines on the current segment 
+* **segment** : the index of the segment , in case the number of lines in the file exceed the `maxLinesInEvent` , the file will be devide to multiple segments. 
 * **lines** : the json buffer itself . where the key values are used from the schema definition . 
 
 ## Running the example
+
+The user must [define the CSV Source implementation](../README.md#-defining-a-typeimplementation) in the VANTIQ Modelo IDE. For an example of the definition, 
+please see the [*csvImpl.json*](src/test/resources/csvImpl.json) file located in the *src/test/resources* directory.
+
+Additionally, an example project named *CSVExample.zip* can be found in the *src/test/resources* directory , together with *ejesmall.csv* which is a csv file with structure relates to the SCVExample types.
+
+*   It should be noted that this example look for csv files in folder d:\tmp\csv with names filtered as eje*.csv
+
 the file the `/src/test/resource/ejesmall.csv` is aligned with the sample application , its content will
 be insert to the `csvInputLines` type exists in the Vantiq application. 
 

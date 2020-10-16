@@ -120,7 +120,7 @@ public class CSVHandleConfiguration extends Handler<ExtensionServiceMessage> {
         log.trace("Setup complete");
         configComplete = true;
     }
-    
+
     /**
      * implement Singelton for CSV class
      * @param config
@@ -131,8 +131,7 @@ public class CSVHandleConfiguration extends Handler<ExtensionServiceMessage> {
      * @return
      */
     boolean createCSVConnection(Map<String, Object> config, Map<String, Object> options , String FileFolderPath, String fullFilePath, ExtensionWebSocketClient oClient) {
-        if (config.get(MAX_LINES_IN_EVENT) instanceof Integer) {
-        } else {
+        if ( !(config.get(MAX_LINES_IN_EVENT) instanceof Integer)) {
             log.error("Configuration failed. No maxLinesInEvents was specified or it is not Integer");
             return false;
         }
