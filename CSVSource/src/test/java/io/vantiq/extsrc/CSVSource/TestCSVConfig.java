@@ -63,8 +63,6 @@ public class TestCSVConfig extends TestCSVBase {
         sendConfig(conf, null);
         assertTrue("Should fail when missing 'Options' configuration", configIsFailed());
     }
-
-  
     
     @Test
     public void testMinimalConfig() {
@@ -108,14 +106,12 @@ public class TestCSVConfig extends TestCSVBase {
         schema.put("field2", "flag");
     }
     public void createMinimalConfig(Map<String, Object> config) {
-       
         config.put("fileFolderPath", testFileFolderPath);
         config.put("filePrefix", testFilePrefix);
         config.put("fileExtension", testFileExtension);
         config.put("maxLinesInEvent", testMaxLinesInEvent);
         config.put("delimiter", testDelimiter);
     }
-
      
     public Map<String, Object> createMinimalOptions() {
         Map<String, Object> vantiq = new LinkedHashMap<>();

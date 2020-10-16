@@ -11,9 +11,7 @@ package io.vantiq.extsrc.CSVSource;
 import org.junit.After;
 import org.junit.Before;
 
-
 public class TestCSVCore extends TestCSVBase {
-    
     NoSendCSVCore core;
     
     String sourceName;
