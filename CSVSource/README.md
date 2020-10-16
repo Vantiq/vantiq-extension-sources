@@ -1,15 +1,19 @@
 # Overview
 
 This document outlines how to incorporate a CSV Source into your project. The CSV source allows a user to construct applications that detect creation of CSV files in pre-defined folder and upload the file content as events to VANTIQ. The extension source enables control on the names of the different attribute based on the order in the CSV file, and change the name or delete the file after processing. 
-The extension source can handle multiple files parallel;  this is controlled by parameters in the config section . 
+The extension source can handle multiple files parallel;
+this is controlled by parameters in the config section. 
 
-The extension source supports only notifications from source to VANTIQ , those contain the file content converted to json messages based on the schema definition given in the configuration. 
+The extension source supports only notifications from source to VANTIQ, those contain the file content converted to json messages based on the schema definition given in the configuration. 
 
-using filewatcher , when new file is created in pre configured folder , support the configurable name file pattern, the context is being build and converted to json . that json is being sent to VANTIQ as incoming event . 
+When new file is created in pre configured folder (with a name matching the configurable pattern), the file content is parsed and  converted to json.
+That json is then sent to Vantiq as incoming event. 
 
-When the process starts, based on configuration, extension can work on all files exist in the input folder which support the name file pattern. In this way, in cases where the extension is not running during file updates, it will resend all accumulated files once it restarted. 
+When the process starts, based on configuration, 
+the extension can process all files exist in the input folder which support the name file pattern.
+In this way, in cases where the extension is not running during file updates, it will resend all accumulated files once it restarted. 
 
-In order to incorporate this Extension Source, you will need to create the Source in the VANTIQ system. The documentation has been split into two parts, [Setting Up Your Machine](#machine) and [Setting Up Your VANTIQ](#vantiq).
+The documentation has been split into two parts, [Setting Up Your Machine](#machine) and [Setting Up Your Vantiq](#vantiq).
 
 # Prerequisites <a name="pre" id="pre"></a>
 
@@ -23,7 +27,7 @@ In order to incorporate this Extension Source, you will need to create the Sourc
     configuration file.
 *   **CSVCore** -- Coordinates the connections to VANTIQ, responsible for managing the connection with Vantiq Server
 *   **CSVHandleConfiguration** -- Sets up the trigger to the file system for detect and processed new csv file 
-*   **CSV** -- The class that directly interacts with the file system watch service , detects the file and processes it . 
+*   **CSV** -- The class that directly interacts with the file system watch service, detects the file and processes it. 
 
 ## How to Run the Program
 
@@ -42,7 +46,9 @@ name for each class is the class's fully qualified class name, *e.g.* "io.vantiq
 ## Server Config File
 
 The server config file is written as `property=value`, with each property on its
-own line. The following is an example of a valid server.config file:
+own line. 
+The following is an example of a valid server.config file:
+
 ```
 authToken=XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 sources=CSV1
@@ -50,37 +56,56 @@ targetServer=https://dev.vantiq.com/
 ```
 
 ### Vantiq Options
-*   **authToken**: Required. The authentication token to connect with. These can be obtained from the namespace admin.
-*   **sources**: Required. A comma separated list of the sources to which you wish to connect. Any whitespace will be
-    removed when read.
-*   **targetServer**: Required. The Vantiq server hosting the sources.
 
-# Setting Up VANTIQ <a name="vantiq" id="vantiq"></a>
+* **authToken**: Required. The authentication token to connect with. These can be obtained from the namespace admin.
+* **sources**: Required. A comma separated list of the sources to which you wish to connect. Any whitespace will be removed when read.
+* **targetServer**: Required. The Vantiq server hosting the sources.
 
-An understanding of the VANTIQ Extension Source SDK is assumed. Please read the [Extension Source README.md](../README.md) for more information.
+# Setting Up Vantiq <a name="vantiq" id="vantiq"></a>
 
+An understanding of the Vantiq Extension Source SDK is assumed. Please read the [Extension Source README.md](../README.md) for more information.
+
+In order to incorporate this Extension Source, you will need to create the Source Implementation in the VANTIQ system.
+
+## Source Implementation
+
+When creating a CSVSource Extension source,
+you must first create the source implementation.
+This is done by using the `csvImpl.json` file found in `src/test/resources/csvImpl.json`.
+To make the source type known to VANTIQ, use the `vantiq` cli command
+
+```
+vantiq -s <profileName> load sourceimpls <fileName>
+```
+
+where `<profileName>` is replaced by the VANTIQ profile name, and `<fileName>` is the file to be loaded.
+
+(You can, of course, change the source implementation name from that provided in this definition file.)
+
+That completed, you will need to create the Source in the Vantiq system. 
 
 ## Source Configuration
 
-To set up the Source in the VANTIQ Modelo IDE, you will need to add a Source to your project. Make sure you have properly added a Source Implementation to VANTIQ. Once this is complete, you can select CSV (or whatever you named your Source Implementation) as the Source Type. You will then need to fill out the Source Configuration 
-Document.
+To set up the Source in the Vantiq system, you will need to add a Source to your project. Make sure you have properly added a Source Implementation to Vantiq. Once this is complete, you can select CSV (or whatever you named your Source Implementation) as the Source Type. You will then need to fill out the 
+Source ConfigurationDocument.
 
 The Configuration document may look similar to the following example:
-...
+
+```json
     {
         "csvConfig": {
-        "fileFolderPath": "d:/tmp/csv",
-        "filePrefix": "eje",
-        "fileExtension": "csv",
-        "maxLinesInEvent": 200,
-        "delimiter":",",
-        "processNullValues":false,
-            "schema": {
-                "field0": "value",
-                "field2": "flag",
-                "field1": "YScale"
-            }
-        },
+            "fileFolderPath": "d:/tmp/csv",
+            "filePrefix": "eje",
+            "fileExtension": "csv",
+            "maxLinesInEvent": 200,
+            "delimiter":",",
+            "processNullValues":false,
+                "schema": {
+                    "field0": "value",
+                    "field2": "flag",
+                    "field1": "YScale"
+                }
+            },
         "options": {
             "maxActiveTasks": 2,
             "maxQueuedTasks": 4,
@@ -89,17 +114,17 @@ The Configuration document may look similar to the following example:
             "deleteAfterProcessing": false
         }
     }
-...
+```
 
 ### Configuration
 *   **fileFolderPath**: Required. The folder in which this source will look for CSV files. 
-*   **filePrefix**: Optional . The prefix of the file pattern to look for, if not set any file name will be accepted. 
+*   **filePrefix**: Optional. The prefix of the file pattern to look for, if not set any file name will be accepted. 
 *   **fileExtension**: Required. The file extension of the files to be processed 
 *   **maxLinesInEvent**: Required. Determine how many lines from the CSV file will be sent in a single message to the server. Depending on the number of the lines of the CSV file, a high value might result in messages too large to process efficiently or a memory exception. 
-*   **delimiter**: the delimiter to be used when parse the CSV file , default is "," , the system will step over null values which might be in the result of the split operation . 
-*   **processNullValues**: in case of null value ( means two consequtive delimiters in file) determine if 
-the schema filed index should be increment or not . for example , for the follwoing line 1,,,f , determine if
-"field1"="f" or "field3"="f" . 
+*   **delimiter**: the delimiter to be used when parse the CSV file, default is ",", the system will step over null values which might be in the result of the split operation. 
+*   **processNullValues**: in case of null value ( means two consecutive delimiters in file) determine if 
+the schema filed index should be incremented or not. For example, for the following line _1,,,f_,
+determine if *field1* is "f" or *field3* is "f". 
 
 ### Schema Configuration
 Schema can be used to control the field names on the uploaded event. If no name is assigned, 'fieldX' will be used where 'X' is the index of the field in the line.  For example field0, field1, etc. 
@@ -107,23 +132,28 @@ Schema can be used to control the field names on the uploaded event. If no name 
 Those values can be used to override that default behavior for example, the following 
 
 will cause the attribute of the 3rd value in each line to be called "address". 
-So instead of loading event : 
+So instead of loading event: 
 
 `{ field0:1, field1:true, field2:"there"}` it will upload `{ field0:1, field1:true, address:"there"}`
 this can save conversion processing on the server.
 
 ### Execution Options
 
-*   **maxActiveTasks**: Optional. The maximum number of threads running at any given point. This is the number of CSV files being processed simultaneously. Must be a positive integer. Default value is 5.
-*   **maxQueuedTasks**: Optional. The maximum number of queued tasks at any given point for CSV files,overflowing that number might cause lack of data . Must be a positive integer. Default value is 10.
-*   **processExistingFiles**: Optional. If set to `true`, the service will process all files already existing in the folder `fileFolderPath` (filtered using `filePrefix` and the `fileExtension`). Otherwise the service will process only new files.  Default is`false`.
-*   **extensionAfterProcessing**: Optional. Rename the file after it has been processed to avoid reprocessing (_e.g._ for cases where `processExistingFiles` is set to `true`).  The default value is combination of the 'fileExtension' and `done`.  For example `.csv.done` when `fileExtension` set to `.csv`.
-*   **deleteAfterProcessing**: Optional. Delete the processed file only if processed successfully to avoid reprocessing in cases where `processExistingFiles` is set to `true`. Default value is `false`
+* **maxActiveTasks**: Optional. The maximum number of threads running at any given point. This is the number of CSV files being processed simultaneously. This value must be a positive integer. Default value is 5.
+* **maxQueuedTasks**: Optional. The maximum number of queued tasks at any given point for CSV files, overflowing that number might cause some new files to be missed. This value must be a positive integer. Default value is 10.
+* **processExistingFiles**: Optional. If set to `true`, the service will process all files already existing in the folder `fileFolderPath` (filtered using `filePrefix` and the `fileExtension`). Otherwise the service will process only new files.  Default is`false`.
+* **extensionAfterProcessing**: Optional. Rename the file after it has been processed to avoid reprocessing (_e.g._ for cases where `processExistingFiles` is set to `true`).  The default value is combination of the 'fileExtension' and `done`.  For example `.csv.done` when `fileExtension` set to `.csv`.
+* **deleteAfterProcessing**: Optional. Delete the processed file only if processed successfully to avoid reprocessing in cases where `processExistingFiles` is set to `true`. Default value is `false`.
+
+**Note**: the sum of **maxActiveTask** and **maxQueuedTasks** is the maximum number of files that can be processed simultaneously.
+If more than this number is attempted,
+they will be ignored.
 
 ## Messages from the Source
 
 Messages that are sent to the source as Notifications are JSON objects in the following format:
-```
+
+```json
 {
    "file": "d:/tmp/csv/ejesmall.csv",
    "segment": 39,
@@ -156,39 +186,46 @@ Messages that are sent to the source as Notifications are JSON objects in the fo
    ]
 }
 ```
-number for lines will not exeeded the value determined by the `maxLinesInEvent` configuratipon parameter .
+
+where the size of the `lines` property will not exceed the value from the `maxLinesInEvent` configuratipon parameter.
 
 ## Event structure
-Each event consists on the following structure :
+Each event consists on the following structure:
 
-* **file** : the source file from which the data was extracted
-* **segment** : the index of the segment , in case the number of lines in the file exceed the `maxLinesInEvent` , the file will be devide to multiple segments. 
-* **lines** : the json buffer itself . where the key values are used from the schema definition . 
+* **file**: the source file from which the data was extracted
+* **segment**: the index of the segment, in case the number of lines in the file exceed the `maxLinesInEvent`, the file will be divided to multiple segments. 
+* **lines**: the json buffer itself, where the key values are used from the schema definition. 
 
 ## Running the example
 
-The user must [define the CSV Source implementation](../README.md#-defining-a-typeimplementation) in the VANTIQ Modelo IDE. For an example of the definition, 
+As noted above, the user must [define the CSV Source implementation](../README.md#-defining-a-typeimplementation) in the Vantiq system.
+For an example of the definition, 
 please see the [*csvImpl.json*](src/test/resources/csvImpl.json) file located in the *src/test/resources* directory.
 
-Additionally, an example project named *CSVExample.zip* can be found in the *src/test/resources* directory , together with *ejesmall.csv* which is a csv file with structure relates to the SCVExample types.
+Additionally, an example project named *CSVExample.zip* can be found in the *src/test/resources* directory, together with *ejesmall.csv* which is a csv file with structure relates to the CSVExample project types.
 
-*   It should be noted that this example look for csv files in folder d:\tmp\csv with names filtered as eje*.csv
+* It should be noted that this example looks for csv files in folder d:\tmp\csv with names filtered as eje*.csv.
+You will probably need to change this for your environment.
 
-the file the `/src/test/resource/ejesmall.csv` is aligned with the sample application , its content will
-be insert to the `csvInputLines` type exists in the Vantiq application. 
+The file the `/src/test/resource/ejesmall.csv` is aligned with the sample application, its content will be inserted to the `csvInputLines` type exists in the Vantiq application. 
 
-once you copy it to the input folder , default is `d:/tmp/csv` , the extension service will send the file in multiple segments , the app will save those in a type. 
+Once you copy it to the input folder (default is `d:/tmp/csv`),
+the extension source will send the file in multiple segments,
+with the app will saving those in a type. 
 
 ## Error Messages
 
-parsing CSV errors originating from the source will always have the code be the fully-qualified class name with a small descriptor 
-attached, and the message will include the exception causing it and the request that spawned it.
+Parsing CSV errors originating from the source will always have the code be the fully-qualified class name with a small descriptor 
+attached,
+and the message will include the exception causing the problem and the originating request.
 
-The exception thrown by the CSV Class will always be a VantiqCSVException. This is a wrapper around the traditional Exception, and contains the Error Message, and Error Code from the original Exception.
+The exception thrown by the CSV Class will always be a VantiqCSVException.
+This is a wrapper around the traditional exception, and contains the Error Message,
+and Error Code from the original Exception.
 
 ## Testing <a name="testing" id="testing"></a>
 
-In order to properly run the tests, you must add properties to your _gradle.properties_ file in the _~/.gradle_ directory. These properties include the VANTIQ server against which the tests will be run.
+In order to properly run the tests, you must add properties to your _gradle.properties_ file in the _~/.gradle_ directory. These properties include the Vantiq server against which the tests will be run.
 
 One can control the configuration parameter for the testing by customizing gradle.properties file. The following shows what the gradle.properties file should look like:
 
@@ -202,16 +239,23 @@ One can control the configuration parameter for the testing by customizing gradl
     EntDelimiter=<yourDesiredDelimiter>
     EntProcessNullValue=<True|False>
 ```
-possible set of values might be :
+
+possible set of values might be:
+
+```
     EntFileFolderPath="c:/tmp/csvtest"
     EntFileExtension="csv"
     EntFilePrefix="Export"
     EntMaxLinesInEvent=20
     EntDelimiter=","
     EntProcessNullValue="false"
+```
 
 will process only files from the following name pattern: 
-c:/tmp/csvtest/Export*.csv
+
+```
+    c:/tmp/csvtest/Export*.csv
+```
 
 ## Licensing
 The source code uses the [MIT License](https://opensource.org/licenses/MIT).  
