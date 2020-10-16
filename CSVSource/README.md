@@ -183,7 +183,7 @@ The exception thrown by the CSV Class will always be a VantiqCSVException. This 
 
 In order to properly run the tests, you must add properties to your _gradle.properties_ file in the _~/.gradle_ directory. These properties include the VANTIQ server against which the tests will be run.
 
-one can control the configuration parameter for the testing by customizing gradle.properties file. The following shows what the gradle.properties file should look like:
+One can control the configuration parameter for the testing by customizing gradle.properties file. The following shows what the gradle.properties file should look like:
 
 ```
     TestVantiqServer=<yourVantiqServer>
