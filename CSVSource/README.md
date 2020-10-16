@@ -159,9 +159,9 @@ Messages that are sent to the source as Notifications are JSON objects in the fo
 number for lines will not exeeded the value determined by the `maxLinesInEvent` configuratipon parameter .
 
 ## Event structure
-Each event consists on the follwoing structure :
+Each event consists on the following structure :
 
-* **file** : the source file from where the data was extracted
+* **file** : the source file from which the data was extracted
 * **segment** : the index of the segment , in case the number of lines in the file exceed the `maxLinesInEvent` , the file will be devide to multiple segments. 
 * **lines** : the json buffer itself . where the key values are used from the schema definition . 
 

@@ -35,7 +35,7 @@ import org.slf4j.LoggerFactory;
 import io.vantiq.extjsdk.ExtensionWebSocketClient;
 import io.vantiq.extsrc.CSVSource.exception.VantiqCSVException;
 /**
- * Implemeting WatchService based on configuration given in csvConfig in extension configuration.   
+ * Implementing WatchService based on configuration given in csvConfig in extension configuration.   
  * Sets up the source using the configuration document, which looks as below.
  *<pre>    "csvConfig": {
  *     "fileFolderPath": "d:/tmp/csv",
