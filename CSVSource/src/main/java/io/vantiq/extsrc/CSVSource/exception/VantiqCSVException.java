@@ -1,5 +1,12 @@
-package io.vantiq.extsrc.CSVSource.exception;
+/*
+ * Copyright (c) 2020 Vantiq, Inc.
+ *
+ * All rights reserved.
+ *
+ * SPDX: MIT
+ */
 
+package io.vantiq.extsrc.CSVSource.exception;
 
 /**
  * A custom exception used to extract the useful information from a Exception

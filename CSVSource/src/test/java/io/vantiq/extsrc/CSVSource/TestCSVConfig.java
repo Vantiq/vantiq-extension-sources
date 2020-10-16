@@ -106,8 +106,6 @@ public class TestCSVConfig extends TestCSVBase {
         schema.put("field0", "value");
         schema.put("field1", "YScale");
         schema.put("field2", "flag");
-
-
     }
     public void createMinimalConfig(Map<String, Object> config) {
        
@@ -116,8 +114,6 @@ public class TestCSVConfig extends TestCSVBase {
         config.put("fileExtension", testFileExtension);
         config.put("maxLinesInEvent", testMaxLinesInEvent);
         config.put("delimiter", testDelimiter);
-
-
     }
 
      

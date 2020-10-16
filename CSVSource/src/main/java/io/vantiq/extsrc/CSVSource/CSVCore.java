@@ -61,7 +61,7 @@ public class CSVCore {
             try {
                 if ( !success.get(10, TimeUnit.SECONDS) ) {
                     if (!client.isOpen()) {
-                        log.error("Failed to connect to server url '" + targetVantiqServer + "'.");
+                        log.error("Failed to connect to server url '{}'.", targetVantiqServer);
                     } else if (!client.isAuthed()) {
                         log.error("Failed to authenticate within 10 seconds using the given authentication data.");
                     } else {
@@ -83,14 +83,14 @@ public class CSVCore {
         @Override
         public void handleMessage(ExtensionWebSocketClient message) {
             log.trace("WebSocket closed unexpectedly. Attempting to reconnect");
-            
+
             if (pollTimer != null) {
                 pollTimer.cancel();
                 pollTimer = null;
             }
-   
+
             oConfigHandler.configComplete = false;
-            
+
             boolean sourcesSucceeded = false;
             while (!sourcesSucceeded) {
                 client.initiateFullConnection(targetVantiqServer, authToken);
@@ -103,7 +103,8 @@ public class CSVCore {
                     }
                 }
             }
-        }}; 
+        }
+    }; 
     
     /**
      * Creates a new CSVCore with the settings given.
@@ -128,7 +129,7 @@ public class CSVCore {
     
     /**
      * Tries to connect to a source and waits up to {@code timeout} seconds before failing and trying again.
-     * This one should run under thread ,as it should continue untill process is exiting. 
+     * This one should run under thread as it should continue until the process exits. 
      * @param timeout   The maximum number of seconds to wait before assuming failure and retrying.
      * @return          true if the source connection succeeds, (will retry indefinitely and never return false).
      */
@@ -191,11 +192,11 @@ public class CSVCore {
         if (!sourcesSucceeded) {
             log.error("Failed to connect to all sources.");
             if (!client.isOpen()) {
-                log.error("Failed to connect to server url '" + targetVantiqServer + "'.");
+                log.error("Failed to connect to server url '{}'.", targetVantiqServer);
             } else if (!client.isAuthed()) {
-                log.error("Failed to authenticate within " + timeout + " seconds using the given authentication data.");
+                log.error("Failed to authenticate within {} seconds using the given authentication data.", timeout);
             } else {
-                log.error("Failed to connect within 10 seconds");
+                log.error("Failed to connect within {} seconds", timeout);
             }
             return false;
         }

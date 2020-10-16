@@ -68,8 +68,8 @@ public class CSVReader {
     }
 
     /**
-     * Responsible for reading the lines from the fike and convert to events to be sent to server 
-     * each line is being splite by the delimiter and then based on the schema object , determine the 
+     * Responsible for reading the lines from the file and converting it events to be sent to server. 
+     * Each line is split by the delimiter and then, based on the schema object, determine the 
      * attribute name. 
      * @param csvFile
      * @param config
@@ -119,10 +119,8 @@ public class CSVReader {
                 }
 
                 file.add(lineValues);
-                numOfRecords++ ; 
+                numOfRecords++; 
                 
-
-
                 if (file.size() >= MaxLinesInEvent ) {
                     sendNotification(csvFile, packetIndex, file, oClient);
                     file = new ArrayList<Map<String,String>>();
@@ -132,11 +130,10 @@ public class CSVReader {
             if (file.size() > 0 ) {
                 sendNotification(csvFile, packetIndex, file, oClient);
             }
-            return file ; 
+            return file; 
         } catch (IOException e) {
             e.printStackTrace();
         }
         return null; 
     }
-
 }

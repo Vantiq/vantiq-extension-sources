@@ -38,6 +38,4 @@ public class TestCSVCore extends TestCSVBase {
     public void tearDown() {
         core.stop();
     }
-    
-    
 }

@@ -50,5 +50,4 @@ public class TestCSV extends TestCSVBase {
         assumeTrue(testFileFolderPath != null && testFullFilePath != null && IsTestFileFolderExists()) ;
         csv.setupCSV(null,testFileFolderPath, testFullFilePath,config,options);
     }
-    // ================================================= Helper functions =================================================
 }

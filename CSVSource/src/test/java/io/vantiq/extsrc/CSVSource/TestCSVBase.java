@@ -44,5 +44,4 @@ public class TestCSVBase {
         Path p = Paths.get(testFileFolderPath);
         return Files.exists(p);
     }
-
 }
