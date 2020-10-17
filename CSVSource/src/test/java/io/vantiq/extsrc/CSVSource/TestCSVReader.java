@@ -50,7 +50,6 @@ public class TestCSVReader extends TestCSVBase{
     
     @Test
     public void testReadSimpleFile1Record() {
-
         CreateFileForTest(testFullFilePath,"s,1,2");
         ArrayList<Map<String,String>> content = CSVReader.execute(testFullFilePath, config, null);
         assertTrue("Unexpected lines of csv file in array", content.size() == 1);
@@ -64,7 +63,6 @@ public class TestCSVReader extends TestCSVBase{
 
     @Test
     public void testToManyEventsForSingleSegment() {
-       
         CreateFileForTest(testFullFilePath,"s;1;2");
         AppendFileForTest(testFullFilePath,"s1;11;21");
         AppendFileForTest(testFullFilePath,"s1;11;21");
@@ -101,7 +99,6 @@ public class TestCSVReader extends TestCSVBase{
 
     @Test
     public void testReadSimpleFile2Record() {
-
         CreateFileForTest(testFullFilePath,"s;1;2");
         AppendFileForTest(testFullFilePath,"s1;11;21");
         config.put("delimiter",";");
@@ -119,7 +116,6 @@ public class TestCSVReader extends TestCSVBase{
 
     @Test
     public void testNotEnoughFieldsInSchema() {
-
         CreateFileForTest(testFullFilePath,"s,1,2,3");
         AppendFileForTest(testFullFilePath,"s1,11,21,31");
         
@@ -136,11 +132,8 @@ public class TestCSVReader extends TestCSVBase{
 
     @Test
     public void testFredTest() {
-
-
         CreateFileForTest(testFullFilePath,"fred;namir;marty");
         AppendFileForTest(testFullFilePath,"s1;11;21");
-
         
         config.put("delimiter",";");
         
@@ -155,7 +148,6 @@ public class TestCSVReader extends TestCSVBase{
 
     @Test
     public void testFredTest2() {
-
         CreateFileForTest(testFullFilePath,"fred12345namir33marty");
         config.put("delimiter","[0-9]");
         
@@ -170,7 +162,6 @@ public class TestCSVReader extends TestCSVBase{
 
     @Test
     public void testnoSkipNullValuesWithCommaDelimiter() {
-
         CreateFileForTest(testFullFilePath,"s1,,s3");
         config.put("processNullValues","true");
 
@@ -184,7 +175,6 @@ public class TestCSVReader extends TestCSVBase{
 
     @Test
     public void testSkipNullValuesWithCommaDelimiter() {
-
         CreateFileForTest(testFullFilePath,"s1,,s3");
         
         ArrayList<Map<String,String>> content = CSVReader.execute(testFullFilePath, config, null);
@@ -197,7 +187,6 @@ public class TestCSVReader extends TestCSVBase{
 
     @Test
     public void testSkipNullValues() {
-
         CreateFileForTest(testFullFilePath,"fred12345namir33marty");
         config.put("delimiter","[0-9]");
         
@@ -211,8 +200,7 @@ public class TestCSVReader extends TestCSVBase{
     }
 
     @Test
-    public void testProccessedNullValues() {
-
+    public void testProcessedNullValues() {
         CreateFileForTest(testFullFilePath,"fred12345namir33marty");
         config.put("delimiter","[0-9]");
         config.put("processNullValues","true");
@@ -225,11 +213,9 @@ public class TestCSVReader extends TestCSVBase{
         assertTrue("Unexpected field YScale in first of line of csv file in array", content.get(0).get("field5").equals("namir"));
         assertTrue("Unexpected field flag in first of line of csv file in array", content.get(0).get("field7").equals("marty"));
     }
-
     
 // ================================================= Helper functions =================================================
     void CreateFileForTest(String fileName,String content)    {
-
         try
         {
             FileWriter write = new FileWriter( fileName , false);
@@ -243,7 +229,6 @@ public class TestCSVReader extends TestCSVBase{
     }
 
     void AppendFileForTest(String fileName,String content)    {
-
         try
         {
             FileWriter write = new FileWriter( fileName , true);
@@ -255,5 +240,4 @@ public class TestCSVReader extends TestCSVBase{
             assert ex.getMessage().equals("CreateFileForTest failed");
         }
     }
-
 }

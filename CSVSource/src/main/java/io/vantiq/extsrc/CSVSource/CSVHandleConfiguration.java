@@ -74,14 +74,14 @@ public class CSVHandleConfiguration extends Handler<ExtensionServiceMessage> {
         config = (Map<String,Object>) configObject.get(CONFIG);
 
         if ( !(config.get(OPTIONS) instanceof Map)) {
-            log.error("Configuration failed. No configuration suitable for CSV Source. ) No OPTIONS ");
+            log.error("Configuration failed. No configuration suitable for CSV Source: No OPTIONS ");
             failConfig();
             return;
         }
-        options= (Map<String,Object>) config.get(OPTIONS);
+        options = (Map<String,Object>) config.get(OPTIONS);
 
         if ( !(config.get(CSVCONFIG) instanceof Map)) {
-            log.error("Configuration failed. No configuration suitable for CSV Source. )NOCSVConfig");
+            log.error("Configuration failed. No configuration suitable for CSV Source: No CSVConfig");
             failConfig();
             return;
         }
@@ -122,7 +122,7 @@ public class CSVHandleConfiguration extends Handler<ExtensionServiceMessage> {
     }
 
     /**
-     * implement Singelton for CSV class
+     * implement Singleton for CSV class
      * @param config
      * @param options
      * @param FileFolderPath
