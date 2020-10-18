@@ -31,93 +31,90 @@ import io.vantiq.extjsdk.ExtensionServiceMessage;
 import io.vantiq.extjsdk.FalseClient;
 import io.vantiq.extsrc.EasyModbusSource.exception.VantiqEasymodbusException;
 
-
 public class TestEasyModbusCore extends TestEasyModbusBase {
-    
+
     NoSendEasyModbusCore core;
-    
+
     String sourceName;
     String authToken;
     String targetVantiqServer;
-    
+
     EasyModbus easyModbus;
-    
+
     @Before
     public void setup() {
         sourceName = "src";
         authToken = "token";
         targetVantiqServer = "dev.vantiq.com";
 
-        
         easyModbus = new EasyModbus();
         core = new NoSendEasyModbusCore(sourceName, authToken, targetVantiqServer);
         core.easyModbus = easyModbus;
         core.start(10);
-        assumeTrue("Simulation is not running",TestEasyModbusBase.isSimulationRunning());
+        assumeTrue("Simulation is not running", TestEasyModbusBase.isSimulationRunning());
     }
-    
+
     @After
     public void tearDown() {
         core.stop();
     }
-    
+
     @Test
     public void testPublishQuery() throws VantiqEasymodbusException {
-        assumeTrue(testIPAddress != null && testIPPort != 0 ) ;
+        assumeTrue(testIPAddress != null && testIPPort != 0);
         easyModbus.setupEasyModbus(testIPAddress, testIPPort, false, 0);
-        
+
         Map<String, Object> request;
         ExtensionServiceMessage msg = new ExtensionServiceMessage("");
         Map<String, String> header = new LinkedHashMap<>();
         header.put(ExtensionServiceMessage.ORIGIN_ADDRESS_HEADER, "queryAddress");
         msg.messageHeaders = header;
-        
+
         request = new LinkedHashMap<>();
         msg.object = request;
         core.executePublish(msg);
         assertFalse("Core should not be closed", core.isClosed());
-        
+
         request = new LinkedHashMap<>();
         request.put("query", "jibberish");
         msg.object = request;
         core.executePublish(msg);
         assertFalse("Core should not be closed", core.isClosed());
     }
-    
+
     @Test
     public void testExecuteQuery() throws VantiqEasymodbusException {
 
-        assumeTrue(testIPAddress != null && testIPPort != 0 ) ;
+        assumeTrue(testIPAddress != null && testIPPort != 0);
         easyModbus.setupEasyModbus(testIPAddress, testIPPort, false, 0);
-        
+
         Map<String, Object> request;
         ExtensionServiceMessage msg = new ExtensionServiceMessage("");
         Map<String, String> header = new LinkedHashMap<>();
         header.put(ExtensionServiceMessage.ORIGIN_ADDRESS_HEADER, "queryAddress");
         msg.messageHeaders = header;
-        
+
         request = new LinkedHashMap<>();
         msg.object = request;
         core.executeQuery(msg);
         assertFalse("Core should not be closed", core.isClosed());
-        
+
         request = new LinkedHashMap<>();
         request.put("query", "jibberish");
         msg.object = request;
         core.executeQuery(msg);
         assertFalse("Core should not be closed", core.isClosed());
     }
-    
+
     @Test
     public void testExitIfConnectionFails() throws VantiqEasymodbusException {
-        assumeTrue(testIPAddress != null && testIPPort != 0 ) ;
+        assumeTrue(testIPAddress != null && testIPPort != 0);
         easyModbus.setupEasyModbus(testIPAddress, testIPPort, false, 0);
-        
+
         core.start(3);
         assertTrue("Should have succeeded", core.exitIfConnectionFails(core.client, 3));
         assertFalse("Success means it shouldn't be closed", core.isClosed());
-        
-        
+
         core.close();
         core = new NoSendEasyModbusCore(sourceName, authToken, targetVantiqServer);
         FalseClient fc = new FalseClient(sourceName);
@@ -127,7 +124,7 @@ public class TestEasyModbusCore extends TestEasyModbusBase {
         fc.completeAuthentication(false);
         assertFalse("Should fail due to authentication failing", core.exitIfConnectionFails(core.client, 3));
         assertFalse("Failure does not mean it should be closed", core.isClosed());
-        
+
         core.close();
         core = new NoSendEasyModbusCore(sourceName, authToken, targetVantiqServer);
         fc = new FalseClient(sourceName);
@@ -136,7 +133,7 @@ public class TestEasyModbusCore extends TestEasyModbusBase {
         fc.completeWebSocketConnection(false);
         assertFalse("Should fail due to WebSocket failing", core.exitIfConnectionFails(core.client, 3));
         assertFalse("Failure does not mean it should be closed", core.isClosed());
-        
+
         core.close();
         core = new NoSendEasyModbusCore(sourceName, authToken, targetVantiqServer);
         fc = new FalseClient(sourceName);

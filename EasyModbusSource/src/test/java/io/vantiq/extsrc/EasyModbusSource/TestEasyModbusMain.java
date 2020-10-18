@@ -19,12 +19,12 @@ import org.junit.Before;
 import org.junit.Test;
 
 public class TestEasyModbusMain {
-    
+
     @Before
     public void setup() {
         System.setSecurityManager(new NoExit());
     }
-    
+
     @After
     public void tearDown() {
         List<EasyModbusCore> sources = EasyModbusMain.sources;
@@ -36,11 +36,11 @@ public class TestEasyModbusMain {
             EasyModbusMain.sources = null;
         }
     }
-    
+
     @Test
     public void testConfigs() {
         Properties props = new Properties();
-        
+
         try {
             // Fail when no props are given
             EasyModbusMain.createSources(props);
@@ -49,7 +49,7 @@ public class TestEasyModbusMain {
             assert e.getMessage().equals("Exit Requested: auth token was not specified.");
             // Expected this Exception
         }
-        
+
         try {
             // Fail when only authToken is set
             props.setProperty("authToken", "a token");
@@ -59,7 +59,7 @@ public class TestEasyModbusMain {
             assert e.getMessage().equals("Exit Requested: source(s) not specified.");
             // Expected this Exception
         }
-        
+
         try {
             // Fail when only authToken and sources are set
             props.setProperty("sources", "a source");
@@ -69,7 +69,7 @@ public class TestEasyModbusMain {
             assert e.getMessage().equals("Exit Requested: target server not specified.");
             // Expected this Exception
         }
-        
+
         // Succeed when authToken, targetVantiqServer, and sources are set
         props.setProperty("sources", "s");
         props.setProperty("targetServer", "url");
@@ -78,7 +78,7 @@ public class TestEasyModbusMain {
         EasyModbusCore s = EasyModbusMain.sources.get(0);
         assert s.getSourceName().equals("s");
         s.stop();
-        
+
         try {
             // Fail when only sources is set
             props.remove("authToken");
@@ -88,7 +88,7 @@ public class TestEasyModbusMain {
             assert e.getMessage().equals("Exit Requested: auth token was not specified.");
             // Expected this Exception
         }
-        
+
         String targetServer = "dev.vantiq.com";
         props.setProperty("authToken", "a token");
         props.setProperty("sources", "s2, s1  ");
@@ -102,18 +102,21 @@ public class TestEasyModbusMain {
         s1.stop();
         s2.stop();
     }
-    
-// ================================================= Helper functions =================================================
-    
-    private static class NoExit extends SecurityManager 
-    {
+
+    // ================================================= Helper functions
+    // =================================================
+
+    private static class NoExit extends SecurityManager {
         @Override
-        public void checkPermission(Permission perm) {}
+        public void checkPermission(Permission perm) {
+        }
+
         @Override
-        public void checkPermission(Permission perm, Object context) {}
+        public void checkPermission(Permission perm, Object context) {
+        }
+
         @Override
-        public void checkExit(int status) 
-        {
+        public void checkExit(int status) {
             super.checkExit(status);
             if (status == 1) {
                 throw new ExitException("Exit Requested: auth token was not specified.");
@@ -126,9 +129,8 @@ public class TestEasyModbusMain {
             }
         }
     }
-    
-    protected static class ExitException extends SecurityException 
-    {
+
+    protected static class ExitException extends SecurityException {
         private static final long serialVersionUID = 1L;
 
         public ExitException(String string) {

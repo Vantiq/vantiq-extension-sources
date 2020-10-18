@@ -24,15 +24,15 @@ import io.vantiq.extjsdk.ExtensionServiceMessage;
 public class TestEasyModbusConfig extends TestEasyModbusBase {
 
     EasyModbusHandleConfiguration handler;
-    
+
     NoSendEasyModbusCore nCore;
-    
+
     String sourceName;
     String authToken;
     String targetVantiqServer;
-    
+
     Map<String, Object> general;
-    
+
     @Before
     public void setup() {
         sourceName = "src";
@@ -40,15 +40,14 @@ public class TestEasyModbusConfig extends TestEasyModbusBase {
         targetVantiqServer = "dev.vantiq.com";
         nCore = new NoSendEasyModbusCore(sourceName, authToken, targetVantiqServer);
         handler = new EasyModbusHandleConfiguration(nCore);
-        assumeTrue("Simulation is not running",TestEasyModbusBase.isSimulationRunning());
-
+        assumeTrue("Simulation is not running", TestEasyModbusBase.isSimulationRunning());
     }
-    
+
     @After
     public void tearDown() {
         nCore.stop();
     }
-    
+
     @Test
     public void testEmptyConfig() {
         Map conf = new LinkedHashMap<>();
@@ -56,7 +55,7 @@ public class TestEasyModbusConfig extends TestEasyModbusBase {
         sendConfig(conf, vantiqConf);
         assertTrue("Should fail on empty configuration", configIsFailed());
     }
-    
+
     @Test
     public void testMissingGeneral() {
         Map conf = minimalConfig();
@@ -65,36 +64,36 @@ public class TestEasyModbusConfig extends TestEasyModbusBase {
         sendConfig(conf, vantiqConf);
         assertTrue("Should fail when missing 'general' configuration", configIsFailed());
     }
-    
+
     @Test
     public void testMinimalConfig() {
-        assumeTrue("Simulation is not running",TestEasyModbusBase.isSimulationRunning());
+        assumeTrue("Simulation is not running", TestEasyModbusBase.isSimulationRunning());
 
-        assumeTrue(testIPAddress != null && testIPPort != 0 ) ;
+        assumeTrue(testIPAddress != null && testIPPort != 0);
         nCore.start(5); // Need a client to avoid NPEs on sends
-        
+
         Map conf = minimalConfig();
         Map vantiqConf = createMinimalVantiq();
         sendConfig(conf, vantiqConf);
         assertFalse("Should not fail with minimal configuration", configIsFailed());
     }
-    
+
     @Test
     public void testPollingConfig() {
-        assumeTrue(testIPAddress != null && testIPPort != 0 ) ;
+        assumeTrue(testIPAddress != null && testIPPort != 0);
         nCore.start(5);
-        
+
         Map conf = minimalConfig();
         conf.put("pollTime", 3000);
         conf.put("pollQuery", "SELECT * FROM Test");
         Map vantiqConf = createMinimalVantiq();
         sendConfig(conf, vantiqConf);
         assertFalse("Should not fail with polling configuration", configIsFailed());
-        
+
         conf.remove("pollQuery");
         sendConfig(conf, vantiqConf);
         assertFalse("Should not fail with missing pollQuery configuration", configIsFailed());
-        
+
         conf.remove("pollTime");
         conf.put("pollQuery", "SELECT * FROM Test");
         sendConfig(conf, vantiqConf);
@@ -103,7 +102,7 @@ public class TestEasyModbusConfig extends TestEasyModbusBase {
 
     @Test
     public void testAsynchronousProcessing() {
-        assumeTrue(testIPAddress != null && testIPPort != 0 ) ;
+        assumeTrue(testIPAddress != null && testIPPort != 0);
         nCore.start(5);
 
         // Setting asynchronousProcessing incorrectly
@@ -135,44 +134,46 @@ public class TestEasyModbusConfig extends TestEasyModbusBase {
         sendConfig(conf, vantiqConf);
         assertFalse("Should not fail when maxActiveTasks and maxQueuedTasks are set correctly", configIsFailed());
     }
-    
-// ================================================= Helper functions =================================================
-    
+
+    // ================================================= Helper functions
+
     public void sendConfig(Map<String, ?> easyModbusConfig, Map<String, ?> vantiqConfig) {
         ExtensionServiceMessage m = new ExtensionServiceMessage("");
-        
+
         Map<String, Object> obj = new LinkedHashMap<>();
         Map<String, Object> config = new LinkedHashMap<>();
         config.put("easyModbusConfig", easyModbusConfig);
         config.put("vantiq", vantiqConfig);
         obj.put("config", config);
         m.object = obj;
-        
+
         handler.handleMessage(m);
     }
-    
+
     public Map<String, Object> minimalConfig() {
         createMinimalGeneral();
         Map<String, Object> ret = new LinkedHashMap<>();
         ret.put("general", general);
-        
+
         return ret;
     }
-    
+
     public void createMinimalGeneral() {
         general = new LinkedHashMap<>();
         general.put("TCPAddress", testIPAddress);
         general.put("TCPPort", testIPPort);
         general.put("Size", testSize);
     }
-    
+
     public Map<String, String> createMinimalVantiq() {
         Map<String, String> vantiq = new LinkedHashMap<>();
         vantiq.put("packageRows", "true");
         return vantiq;
     }
-    
+
     public boolean configIsFailed() {
         return handler.isComplete() && nCore.isClosed();
     }
+    // =================================================
+
 }

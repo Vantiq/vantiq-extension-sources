@@ -25,7 +25,9 @@ import io.vantiq.extjsdk.Handler;
 
 /**
  * Sets up the source using the configuration document, which looks as below.
- *<pre> {
+ * 
+ * <pre>
+ *  {
  *      EasyModbusConfig: {
             "TCPAddress": "127.0.0.1",
             "TCPPort": 502,
@@ -34,16 +36,16 @@ import io.vantiq.extjsdk.Handler;
             "pollQuery": "select * from coils"
 }
  *      }
- * }</pre>
+ * }
+ * </pre>
  */
-
 public class EasyModbusHandleConfiguration extends Handler<ExtensionServiceMessage> {
-    Logger                  log;
-    String                  sourceName;
-    EasyModbusCore          source;
-    boolean                 configComplete = false; // Not currently used
-    boolean                 asynchronousProcessing = false;
-        
+    Logger log;
+    String sourceName;
+    EasyModbusCore source;
+    boolean configComplete = false; // Not currently used
+    boolean asynchronousProcessing = false;
+
     Handler<ExtensionServiceMessage> queryHandler;
     Handler<ExtensionServiceMessage> publishHandler;
 
@@ -61,16 +63,16 @@ public class EasyModbusHandleConfiguration extends Handler<ExtensionServiceMessa
     private static final String ASYNCH_PROCESSING = "asynchronousProcessing";
     private static final String MAX_ACTIVE = "maxActiveTasks";
     private static final String MAX_QUEUED = "maxQueuedTasks";
-    
 
     public EasyModbusHandleConfiguration(EasyModbusCore source) {
         this.source = source;
         this.sourceName = source.getSourceName();
         log = LoggerFactory.getLogger(this.getClass().getCanonicalName() + "#" + sourceName);
     }
-    
+
     /**
-     * Interprets the configuration message sent by the Vantiq server and sets up the EasyModbus Source.
+     * Interprets the configuration message sent by the Vantiq server and sets up
+     * the EasyModbus Source.
      */
     @Override
     public void handleMessage(ExtensionServiceMessage message) {
@@ -79,65 +81,65 @@ public class EasyModbusHandleConfiguration extends Handler<ExtensionServiceMessa
         Map<String, Object> vantiq;
         Map<String, Object> EasyModbusConfig;
         Map<String, Object> general;
-        String tcpAddress ;
+        String tcpAddress;
         int tcpPort;
-        
+
         // Obtain entire config from the message object
-        if ( !(configObject.get(CONFIG) instanceof Map)) {
+        if (!(configObject.get(CONFIG) instanceof Map)) {
             log.error("Configuration failed. No configuration suitable for EasyModbus Source.");
             failConfig();
             return;
         }
         config = (Map) configObject.get(CONFIG);
 
-        if ( !(config.get("easyModbusConfig") instanceof Map)) {
+        if (!(config.get("easyModbusConfig") instanceof Map)) {
             log.error("Configuration failed. No configuration suitable for EasyModbus Source.(easyModbusConfig)");
             failConfig();
             return;
         }
         EasyModbusConfig = (Map) config.get("easyModbusConfig");
 
-        if ( !(EasyModbusConfig.get("general") instanceof Map)) {
+        if (!(EasyModbusConfig.get("general") instanceof Map)) {
             log.error("Configuration failed. No configuration suitable for EasyModbus Source.(general)");
             failConfig();
             return;
         }
         general = (Map) EasyModbusConfig.get("general");
 
-
         // Retrieve the EasyModbusConfig and the vantiq config
-        if ( !(general.get(TCPADDRESS_CONFIG) instanceof String && general.get(TCPPORT_CONFIG) instanceof Integer) ) {
-                log.error("Configuration failed. Configuration (EasyModbusConfig) must contain 'TCPAddress' and 'TCPPort' fields.");
+        if (!(general.get(TCPADDRESS_CONFIG) instanceof String && general.get(TCPPORT_CONFIG) instanceof Integer)) {
+            log.error(
+                    "Configuration failed. Configuration (EasyModbusConfig) must contain 'TCPAddress' and 'TCPPort' fields.");
             failConfig();
             return;
         }
-        
+
         tcpAddress = (String) general.get(TCPADDRESS_CONFIG);
         tcpPort = (int) general.get(TCPPORT_CONFIG);
-        
 
-        boolean success = createEasyModbusConnection(general , tcpAddress,tcpPort);
+        boolean success = createEasyModbusConnection(general, tcpAddress, tcpPort);
         if (!success) {
             failConfig();
             return;
         }
-        
+
         log.trace("Setup complete");
         configComplete = true;
     }
-    
+
     /**
      * Attempts to create the EasyModbus Source based on the configuration document.
-     * @param generalConfig     The general configuration for the EasyModbus Source
-     * @param vantiq            The vantiq configuration for the EasyModbus Source
-     * @return                  true if the EasyModbus source could be created, false otherwise
+     *
+     * @param config     The configuration for the EasyModbus Source
+     * @param tcpAddress Ip Address of the EasyModbus server
+     * @param TcpPort    Port of the EasyModbus server
+     * @return true if the EasyModbus source could be created, false otherwise
      */
-    
-     boolean createEasyModbusConnection(Map<String, Object> config ,String tcpAddress,int TcpPort) {
+    boolean createEasyModbusConnection(Map<String, Object> config, String tcpAddress, int TcpPort) {
         int size = 20;
 
         if (config.get(BUFFER_SIZE) instanceof Integer) {
-                size = (int) config.get(BUFFER_SIZE);
+            size = (int) config.get(BUFFER_SIZE);
         } else {
             log.error("Configuration failed. No Size was specified");
             return false;
@@ -145,21 +147,21 @@ public class EasyModbusHandleConfiguration extends Handler<ExtensionServiceMessa
 
         // Creating the publish and query handlers
         int maxPoolSize = createQueryAndPublishHandlers(config);
-        
+
         // Initialize EasyModbus Source with config values
         try {
             if (source.easyModbus != null) {
                 source.easyModbus.close();
             }
             EasyModbus easyModbus = new EasyModbus();
-       
-            easyModbus.setupEasyModbus(tcpAddress,TcpPort, asynchronousProcessing, maxPoolSize);
-            source.easyModbus = easyModbus; 
+
+            easyModbus.setupEasyModbus(tcpAddress, TcpPort, asynchronousProcessing, maxPoolSize);
+            source.easyModbus = easyModbus;
         } catch (Exception e) {
             log.error("Configuration failed. Exception occurred while setting up EASYModbus Source: ", e);
             return false;
         }
-        
+
         // Create polling query if specified
         if (config.get(POLL_TIME) instanceof Integer) {
             if (config.get(POLL_QUERY) instanceof String) {
@@ -181,27 +183,29 @@ public class EasyModbusHandleConfiguration extends Handler<ExtensionServiceMessa
             } else {
                 log.error("A pollQuery must be specified along with the pollTime.");
             }
-            
+
         }
-        
+
         // Start listening for queries and publishes
         source.client.setQueryHandler(queryHandler);
         source.client.setPublishHandler(publishHandler);
-        
+
         log.trace("EASYModbus source created");
         return true;
     }
 
     /**
      * Method used to create the query and publish handlers
-     * @param generalConfig     The general configuration of the EasyModbus Source
-     * @return                  Returns the maximum pool size, equal to twice the number of active tasks.
-     *                          If default active tasks is used, then returns 0.
+     * 
+     * @param generalConfig The general configuration of the EasyModbus Source
+     * @return Returns the maximum pool size, equal to twice the number of active
+     *         tasks. If default active tasks is used, then returns 0.
      */
     private int createQueryAndPublishHandlers(Map<String, ?> generalConfig) {
         int maxPoolSize = 0;
 
-        // Checking if asynchronous processing was specified in the general configuration
+        // Checking if asynchronous processing was specified in the general
+        // configuration
         if (generalConfig.get(ASYNCH_PROCESSING) instanceof Boolean && (Boolean) generalConfig.get(ASYNCH_PROCESSING)) {
             asynchronousProcessing = true;
             int maxActiveTasks = MAX_ACTIVE_TASKS;
@@ -216,7 +220,7 @@ public class EasyModbusHandleConfiguration extends Handler<ExtensionServiceMessa
             }
 
             // Used to set the max pool size for connection pool
-            maxPoolSize = 2*maxActiveTasks;
+            maxPoolSize = 2 * maxActiveTasks;
 
             // Creating the thread pool executors with Queue
             source.queryPool = new ThreadPoolExecutor(maxActiveTasks, maxActiveTasks, 0l, TimeUnit.MILLISECONDS,
@@ -236,10 +240,14 @@ public class EasyModbusHandleConfiguration extends Handler<ExtensionServiceMessa
                             }
                         });
                     } catch (RejectedExecutionException e) {
-                        log.error("The queue of tasks has filled, and as a result the request was unable to be processed.", e);
+                        log.error(
+                                "The queue of tasks has filled, and as a result the request was unable to be processed.",
+                                e);
                         String replyAddress = ExtensionServiceMessage.extractReplyAddress(message);
-                        source.client.sendQueryError(replyAddress, "io.vantiq.extsrc.EasyModbusHandleConfiguration.queryHandler.queuedTasksFull",
-                                "The queue of tasks has filled, and as a result the request was unable to be processed.", null);
+                        source.client.sendQueryError(replyAddress,
+                                "io.vantiq.extsrc.EasyModbusHandleConfiguration.queryHandler.queuedTasksFull",
+                                "The queue of tasks has filled, and as a result the request was unable to be processed.",
+                                null);
                     }
                 }
             };
@@ -254,7 +262,9 @@ public class EasyModbusHandleConfiguration extends Handler<ExtensionServiceMessa
                             }
                         });
                     } catch (RejectedExecutionException e) {
-                        log.error("The queue of tasks has filled, and as a result the request was unable to be processed.", e);
+                        log.error(
+                                "The queue of tasks has filled, and as a result the request was unable to be processed.",
+                                e);
                     }
                 }
             };
@@ -279,12 +289,14 @@ public class EasyModbusHandleConfiguration extends Handler<ExtensionServiceMessa
 
     /**
      * Method called by the query handler to process the request
-     * @param client    The ExtensionWebSocketClient used to send a query response error if necessary
-     * @param message   The message sent to the Extension Source
+     * 
+     * @param client  The ExtensionWebSocketClient used to send a query response
+     *                error if necessary
+     * @param message The message sent to the Extension Source
      */
     private void handleQueryRequest(ExtensionWebSocketClient client, ExtensionServiceMessage message) {
         // Should never happen, but just in case something changes in the backend
-        if ( !(message.getObject() instanceof Map) ) {
+        if (!(message.getObject() instanceof Map)) {
             String replyAddress = ExtensionServiceMessage.extractReplyAddress(message);
             client.sendQueryError(replyAddress, "io.vantiq.extsrc.EasyModbusHandleConfiguration.invalidQueryRequest",
                     "Request must be a map", null);
@@ -295,19 +307,23 @@ public class EasyModbusHandleConfiguration extends Handler<ExtensionServiceMessa
     }
 
     /**
-     * Closes the source {@link EasyModbusCore} and marks the configuration as completed. The source will
-     * be reactivated when the source reconnects, due either to a Reconnect message (likely created by an update to the
+     * Closes the source {@link EasyModbusCore} and marks the configuration as
+     * completed. The source will be reactivated when the source reconnects, due
+     * either to a Reconnect message (likely created by an update to the
      * configuration document) or to the WebSocket connection crashing momentarily.
      */
     private void failConfig() {
         source.close();
         configComplete = true;
     }
-    
+
     /**
-     * Returns whether the configuration handler has completed. Necessary since the sourceConnectionFuture is completed
-     * before the configuration can complete, so a program may need to wait before using configured resources.
-     * @return  true when the configuration has completed (successfully or not), false otherwise
+     * Returns whether the configuration handler has completed. Necessary since the
+     * sourceConnectionFuture is completed before the configuration can complete, so
+     * a program may need to wait before using configured resources.
+     * 
+     * @return true when the configuration has completed (successfully or not),
+     *         false otherwise
      */
     public boolean isComplete() {
         return configComplete;

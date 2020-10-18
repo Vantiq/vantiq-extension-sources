@@ -1,8 +1,19 @@
+/*
+ * Copyright (c) 2020 Vantiq, Inc.
+ *
+ * All rights reserved.
+ * 
+ * SPDX: MIT
+ */
 package io.vantiq.extsrc.EasyModbusSource;
 
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
+/**
+ * convertion between the Java object as accepted from Vantiq and the structure as expected
+ * by the EasyModbus SDK .
+ */
 public class InputDiscrete {
     ArrayList<Value>  values = new ArrayList<Value>() ; 
 

@@ -1,6 +1,6 @@
 # Overview
 
-The following documentation outlines how to incorporate a EasyModbus Source as part of your project. This allows a user to construct applications that interact with a PLC using the EasyModbus layer, thus being able to get coils , descreets and registery information , and able to update cois and registries. 
+The following documentation outlines how to incorporate a EasyModbus Source as part of your project. This allows a user to construct applications that interact with a PLC using the EasyModbus layer, thus being able to get coils , descreets , registery or holdingregistry information , and able to update coils and holdingregistry. 
 
 In order to incorporate this Extension Source, you will need to set up your local machine with a EasyModbus client jre that can connect implement to your EasyModbus server . Once you have done this, you will need to create the Source in the VANTIQ Modelo IDE. The documentation 
 has been split into two parts, [Setting Up Your Machine](#machine) and [Setting Up Your VANTIQ](#vantiq).
@@ -8,6 +8,7 @@ has been split into two parts, [Setting Up Your Machine](#machine) and [Setting 
 # Prerequisites <a name="pre" id="pre"></a>
 
 **IMPORTANT:** Read the [Testing](#testing) section before building this project.
+for validating the solution tests included in the extension source one must activate the easyModbus server simultion. The *src/test/resources* contains [*EasyModbus Server Simulator (.NET Version).zip*](src/test/resources) which containts server side simulation of EasyModbus protocol
 
 An understanding of the VANTIQ Extension Source SDK is assumed. Please read the [Extension Source README.md](../README.md) for more 
 information.
@@ -17,7 +18,6 @@ please see the [*easyModbusImpl.json*](src/test/resources/easyModbusImpl.json) f
 
 Additionally, an example project named *EasyModbusExample.zip* can be found in the *src/test/resources* directory.
 
-the *src/test/resources* contains [*EasyModbus Server Simulator (.NET Version).zip*](src/test/resources) which containts server side simulation of EasyModbus protocol
 
 *   It should be noted that this example consist of the simulated server above
 *   In order to activate the pollTime/pollQuery, simply remove the comment prepending the pollTime.
