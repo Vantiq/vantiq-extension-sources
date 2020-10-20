@@ -7,20 +7,12 @@ has been split into two parts, [Setting Up Your Machine](#machine) and [Setting 
 
 # Prerequisites <a name="pre" id="pre"></a>
 
+In order to compile correctly , one must download the EasyModbus Java Version and locate the EasyModbusJava.jar in one of the path folder. you can access the download it [*here*](http://easymodbustcp.net/en), you can download from the site simulated server as well , I used the one which is .net based.
+
+
 **IMPORTANT:** Read the [Testing](#testing) section before building this project.
 for validating the solution tests included in the extension source one must activate the easyModbus server simultion. The *src/test/resources* contains [*EasyModbus Server Simulator (.NET Version).zip*](src/test/resources) which containts server side simulation of EasyModbus protocol
 
-An understanding of the VANTIQ Extension Source SDK is assumed. Please read the [Extension Source README.md](../README.md) for more 
-information.
-
-The user must [define the EasyModbus Source implementation](../README.md#-defining-a-typeimplementation) in the VANTIQ Modelo IDE. For an example of the definition, 
-please see the [*easyModbusImpl.json*](src/test/resources/easyModbusImpl.json) file located in the *src/test/resources* directory.
-
-Additionally, an example project named *EasyModbusExample.zip* can be found in the *src/test/resources* directory.
-
-
-*   It should be noted that this example consist of the simulated server above
-*   In order to activate the pollTime/pollQuery, simply remove the comment prepending the pollTime.
 
 # Setting Up Your Machine <a name="machine" id="machine"></a>
 
@@ -33,6 +25,8 @@ Additionally, an example project named *EasyModbusExample.zip* can be found in t
     initializes the queryHandler and publishHandler.
 *   **EasyModbus** -- The class that directly interacts with the EasyModbus Driver, executing the query and publish requests as sent
     by the VANTIQ Modelo IDE and appropriately formatting the results.
+
+
 
 ## Prerequisite 
 download from [*here*](http://easymodbustcp.net/en/) the java version , you can download from the site simulated server as well , i used the one which is .net based. 
@@ -66,11 +60,29 @@ targetServer=https://dev.vantiq.com/
     removed when read.
 *   **targetServer**: Required. The Vantiq server hosting the sources.
 
-# Setting Up Your VANTIQ Modelo IDE <a name="vantiq" id="vantiq"></a>
+# Setting Up Your VANTIQ <a name="vantiq" id="vantiq"></a>
+
+An understanding of the VANTIQ Extension Source SDK is assumed. Please read the [Extension Source README.md](../README.md) for more information.
+
+In order to incorporate this Extension Source, you will need to create the Source Implementation in the Vantiq system.
+
+
+## Source Implementation
+
+When creating a EasyModbusSource Extension source, you must first create the source implementation. This is done by using the [*easyModbusImpl.json*](src/test/resources/easyModbusImpl.json)  file found in src/test/resources/csvImpl.json. To make the source type known to Vantiq, use the vantiq cli command
+
+```
+vantiq -s <profileName> load sourceimpls <fileName>
+```
+where <profileName> is replaced by the Vantiq profile name, and <fileName> is the file to be loaded.
+
+(You can, of course, change the source implementation name from that provided in this definition file.)
+
+That completed, you will need to create the Source in the Vantiq system.
 
 ## Source Configuration
 
-To set up the Source in the VANTIQ Modelo IDE, you will need to add a Source to your project. Please check the [Prerequisites](#pre) to make sure you have properly added a Source Definition to VANTIQ Modelo. Once this is complete, you can select EasyModbus (or whatever you named your Source Definition) as the Source Type. You will then need to fill out the Source Configuration Document.
+To set up the Source in the VANTIQ system, you will need to add a Source to your project.  Make sure you have properly added a Source Implementation to Vantiq. Once this is complete, you can select EasyModbus (or whatever you named your Source Definition) as the Source Type. You will then need to fill out the Source Configuration Document.
 
 The Configuration document may look similar to the following example:
 ```
@@ -86,7 +98,8 @@ The Configuration document may look similar to the following example:
 	}
 }
 ```    
-### Options Available for easyModbus Config
+### Configuration
+
 *   **TCPAddress**: Required. The TCP address of the EasyModbus server.
 *   **TCPPort**: Required. The Tcp Port  of the EasyModbus server.
 *   **Size**: Optional. Size of the EasyModbus data vectors. 
@@ -153,6 +166,7 @@ select * from source EasyModbus1 as r with query : "select item0 from coils"
 ```
 
 ## Publish Statements
+
 Using Publish statmet one can updates values in the PLC, EasyModbus server accept update request only for
 the holdingregisters and the coils list . 
 
@@ -231,6 +245,15 @@ result of user select * from coils
     }
 
 ```
+## Running the example
+As noted above, the user must define the EasyModbus Source implementation in the Vantiq system. For an example of the definition, please see the `easyModbusImpl.json` file located in the `src/test/resources directory`.
+
+Additionally, an example project named `EasyModbusExample.zip` can be found in the `src/test/resources directory`. 
+
+You must activate the EasyMudBus simulation , run the application in one of the zip file, i used that one [*EasyModbus Server Simulator (.NET Version).zip*](src/test/resources)
+
+It should be noted that this example looks for EasyModbus simulation on the local host 127.0.0.1 , listen on port 502
+
 
 ## Error Messages
 
