@@ -43,3 +43,10 @@ trace.db/
 *server.config
 *.mov
 *.pb
+lib/
+windows/
+*.dll
+*.csv
+*/.vscode/
+.vscode/settings.json
+.vscode/launch.json
