@@ -31,6 +31,11 @@ for validating the solution tests included in the extension source one must acti
 ## Prerequisite 
 download from [*here*](http://easymodbustcp.net/en/) the java version , you can download from the site simulated server as well , i used the one which is .net based. 
 
+Define the environment variable **EASY_MODBUS_LOC**.
+This should be the directory where the EasyModbusJava.jar file is located.
+This is used by the build file to build at source.
+Note: To use gradle builds, you will need to define this variable appropriately in your IDE.
+
 ## How to Run the Program
 1.  Clone this repository (vantiq-extension-sources) and navigate into `<repo location>/vantiq-extension-sources`.
 2.  Run `./gradlew easyModbusSource:assemble`.
