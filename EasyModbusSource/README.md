@@ -95,11 +95,11 @@ The Configuration document may look similar to the following example:
 {
 	"easyModbusConfig":{
     	    "general": {
-  	 	"TCPAddress": "127.0.0.1",
-	   	"TCPPort": 502,
- 	  	"Size": 20,
-	   	"pollTime": 1000,
- 	  	"pollQuery": "select * from coils"
+                "TCPAddress": "127.0.0.1",
+                "TCPPort": 502,
+                "Size": 20,
+                "pollTime": 1000,
+                "pollQuery": "select * from coils"
             }
 	}
 }

@@ -25,7 +25,7 @@ import org.slf4j.LoggerFactory;
 import com.zaxxer.hikari.HikariDataSource;
 
 import io.vantiq.extjsdk.ExtensionServiceMessage;
-import io.vantiq.extsrc.EasyModbusSource.exception.VantiqEasymodbusException;
+import io.vantiq.extsrc.EasyModbusSource.exception.VantiqEasyModbusException;
 
 /**
  * Responsible for the connection with the EasyModbus server and triggering it
@@ -55,7 +55,7 @@ public class EasyModbus {
     DateFormat dfTime = new SimpleDateFormat("HH:mm:ss.SSSZ");
 
     public void setupEasyModbus(String tcpAddress, int tcpPort, boolean asyncProcessing, int maxPoolSize)
-            throws VantiqEasymodbusException {
+            throws VantiqEasyModbusException {
         try {
             oClient.Connect(tcpAddress, tcpPort);
             log.info("EasyModsub trying to connect on {}:{}", tcpAddress, tcpPort);
@@ -66,30 +66,30 @@ public class EasyModbus {
     }
 
     /**
-     * Handeling select statment received from Vantiq or from polling configuration
+     * Handling select statement received from Vantiq or from polling configuration
      * 
      * @param select statment .
      * @return HashMap contains the result .
-     * @throws VantiqEasymodbusException
+     * @throws VantiqEasyModbusException
      */
-    HashMap[] hanldeSelectCommand(String[] s) throws VantiqEasymodbusException {
+    HashMap[] hanldeSelectCommand(String[] s) throws VantiqEasyModbusException {
         if (!oClient.isConnected()) {
-            throw new VantiqEasymodbusException(String.format("EasyModbus is not connected Code %d", 1000));
+            throw new VantiqEasyModbusException(String.format("EasyModbus is not connected Code %d", 1000));
         }
         String w = s[3].toLowerCase();
 
         int index = 0;
-        int size = VectorSize;
+        int size = vectorSize;
         if (!s[1].equals("*")) {
             if (!s[1].substring(0, 4).toLowerCase().equals("item"))
-                throw new VantiqEasymodbusException(String
+                throw new VantiqEasyModbusException(String
                         .format("Unsupported Query Field %s  must start with item (ex. item0)  Code %d", s[1], 1007));
 
             try {
                 index = Integer.parseInt(s[1].substring(4));
             } catch (Exception ex) {
-                throw new VantiqEasymodbusException(String
-                        .format("Unsupported Query Field %s  must contains offeset (ex. Coil0)  Code %d", s[1], 1004));
+                throw new VantiqEasyModbusException(String
+                        .format("Unsupported Query Field %s  must contain offeset (ex. Coil0)  Code %d", s[1], 1004));
             }
             size = 1;
         }
@@ -99,33 +99,33 @@ public class EasyModbus {
                 case "registers": {
                     int[] rr = oClient.ReadInputRegisters(index, size);
                     InputRegisters r = new InputRegisters();
-                    r.Set(rr, index);
-                    return r.Get();
+                    r.set(rr, index);
+                    return r.get();
                 }
                 case "holdingregisters": {
                     int[] rr = oClient.ReadHoldingRegisters(index, size);
                     InputRegisters r = new InputRegisters();
-                    r.Set(rr, index);
-                    return r.Get();
+                    r.set(rr, index);
+                    return r.get();
                 }
                 case "discrete": {
                     boolean[] rr = oClient.ReadDiscreteInputs(index, size);
                     InputDiscrete r = new InputDiscrete();
-                    r.Set(rr, index);
-                    return r.Get();
+                    r.set(rr, index);
+                    return r.get();
                 }
                 case "coils": {
                     boolean[] rr = oClient.ReadCoils(index, size);
                     InputDiscrete r = new InputDiscrete();
-                    r.Set(rr, index);
-                    return r.Get();
+                    r.set(rr, index);
+                    return r.get();
                 }
                 default:
-                    throw new VantiqEasymodbusException(
+                    throw new VantiqEasyModbusException(
                             String.format("Unsupported Query Field target %s Code %d", s[3], 1006));
             }
         } catch (Exception e) {
-            throw new VantiqEasymodbusException(e.getMessage());
+            throw new VantiqEasyModbusException(e.getMessage());
         }
     }
 
@@ -135,9 +135,9 @@ public class EasyModbus {
      * 
      * @param Publish request received from Vantiq
      * @return HashMap contains the result .
-     * @throws VantiqEasymodbusException
+     * @throws VantiqEasyModbusException
      */
-    int hanldeUpdateCommand(Map<String, ?> request) throws VantiqEasymodbusException {
+    int handleUpdateCommand(Map<String, ?> request) throws VantiqEasyModbusException {
         Integer addressInt = 0;
 
         String type = (String) request.get("type");
@@ -175,37 +175,34 @@ public class EasyModbus {
                     return 0;
                 }
                 default: {
-                    throw new VantiqEasymodbusException(
+                    throw new VantiqEasyModbusException(
                             String.format("Unsupported Query target %s Code %d", type, 1002));
                 }
             }
         } catch (Exception ex) {
-            throw new VantiqEasymodbusException(String.format("Exception Raised %s", ex.getMessage(), 1001));
+            throw new VantiqEasyModbusException(String.format("Exception Raised %s", ex.getMessage(), 1001));
         }
-
     }
 
     /**
-     * mantain the connectivity with the EasyModbus server and Handle Vantiq Publish
+     * maintain the connectivity with the EasyModbus server and handle Vantiq Publish
      * command which converted to update holdingregisters or coils
      * 
      * 
      * @param mPublic message received from Vantiq
      * @return HashMap contains the result .
-     * @throws VantiqEasymodbusException
+     * @throws VantiqEasyModbusException
      */
-    int hanldeUpdateCommand(ExtensionServiceMessage message) throws VantiqEasymodbusException {
+    int handleUpdateCommand(ExtensionServiceMessage message) throws VantiqEasyModbusException {
         try {
             if (!oClient.isConnected()) {
-                throw new VantiqEasymodbusException(String.format("EasyDombus is not connected Code %d", 1000));
+                throw new VantiqEasyModbusException(String.format("EasyDombus is not connected Code %d", 1000));
             }
-
             Map<String, ?> request = (Map<String, ?>) message.getObject();
-            return hanldeUpdateCommand(request);
+            return handleUpdateCommand(request);
         } catch (Exception ex) {
-            throw new VantiqEasymodbusException(String.format("Exception Raised %s", ex.getMessage(), 1001));
+            throw new VantiqEasyModbusException(String.format("Exception Raised %s", ex.getMessage(), 1001));
         }
-
     }
 
     /**
@@ -213,25 +210,24 @@ public class EasyModbus {
      * 
      * @param select statment received from Vantiq
      * @return HashMap contains the result .
-     * @throws VantiqEasymodbusException
+     * @throws VantiqEasyModbusException
      */
-    public HashMap[] HandleQuery(String query) throws VantiqEasymodbusException {
+    public HashMap[] handleQuery(String query) throws VantiqEasyModbusException {
         String[] s = query.split(" ");
         if (s[0].toLowerCase().equals("select")) {
             return hanldeSelectCommand(s);
         } else
-            throw new VantiqEasymodbusException(String.format("Unsupported Query Syntax %s Code %d", s[0], 1005));
-
+            throw new VantiqEasyModbusException(String.format("Unsupported Query Syntax %s Code %d", s[0], 1005));
     }
 
     /**
      * Handle Vantiq commands
      * 
-     * @param select statment received from Vantiq
+     * @param select statement received from Vantiq
      * @return HashMap contains the result .
-     * @throws VantiqEasymodbusException
+     * @throws VantiqEasyModbusException
      */
-    public HashMap[] HandleQuery(ExtensionServiceMessage message) throws VantiqEasymodbusException {
+    public HashMap[] handleQuery(ExtensionServiceMessage message) throws VantiqEasyModbusException {
         Map<String, ?> request = (Map<String, ?>) message.getObject();
 
         String op = message.getOp();
@@ -241,11 +237,11 @@ public class EasyModbus {
                 return hanldeSelectCommand(s);
             }
             case "publish": {
-                hanldeUpdateCommand(message);
+                handleUpdateCommand(message);
                 return null;
             }
             default: {
-                throw new VantiqEasymodbusException(
+                throw new VantiqEasyModbusException(
                         String.format("Unsupported operation command %s Code %d", op, 1003));
             }
         }
@@ -261,9 +257,9 @@ public class EasyModbus {
      *         (empty HashMap Array if nothing was returned)
      * @throws VantiqSQLException
      */
-    public HashMap[] processQuery(String query) throws VantiqEasymodbusException {
+    public HashMap[] processQuery(String query) throws VantiqEasyModbusException {
         HashMap[] rsArray = null;
-        rsArray = HandleQuery(query);
+        rsArray = handleQuery(query);
         return rsArray;
     }
 
@@ -274,14 +270,14 @@ public class EasyModbus {
      * @param message
      * @return A HashMap Array containing all of the data retrieved by the query,
      *         (empty HashMap Array if nothing was returned)
-     * @throws VantiqEasymodbusException
+     * @throws VantiqEasyModbusException
      */
-    public HashMap[] processQuery(ExtensionServiceMessage message) throws VantiqEasymodbusException {
+    public HashMap[] processQuery(ExtensionServiceMessage message) throws VantiqEasyModbusException {
         HashMap[] rsArray = null;
         Map<String, ?> request = (Map<String, ?>) message.getObject();
 
         String sqlQuery = (String) request.get("query");
-        rsArray = HandleQuery(message);
+        rsArray = handleQuery(message);
         return rsArray;
     }
 
@@ -293,14 +289,14 @@ public class EasyModbus {
      *                 PUBLISH message.
      * @return The integer value that is returned by the executeUpdate() method
      *         representing the row count.
-     * @throws VantiqEasymodbusException
+     * @throws VantiqEasyModbusException
      */
-    public int processPublish(ExtensionServiceMessage message) throws VantiqEasymodbusException {
+    public int processPublish(ExtensionServiceMessage message) throws VantiqEasyModbusException {
         int publishSuccess = -1;
 
         Map<String, ?> request = (Map<String, ?>) message.getObject();
 
-        publishSuccess = hanldeUpdateCommand(message);
+        publishSuccess = handleUpdateCommand(message);
         return publishSuccess;
     }
 
@@ -312,9 +308,8 @@ public class EasyModbus {
      * @param queryList The list of queries to be processed as a batch.
      * @return
      * @throws VantiqSQLException
-     * @throws ClassCastException
      */
-    public int[] processBatchPublish(List queryList) throws VantiqEasymodbusException, ClassCastException {
+    public int[] processBatchPublish(List queryList) throws VantiqEasyModbusException {
         int[] publishSuccess = null;
 
         if (isAsync) {
@@ -357,7 +352,7 @@ public class EasyModbus {
      * 
      * @throws VantiqSQLException
      */
-    public void diagnoseConnection() throws VantiqEasymodbusException {
+    public void diagnoseConnection() throws VantiqEasyModbusException {
         try {
             if (!oClient.isConnected()) {
                 oClient.Connect();
@@ -372,12 +367,12 @@ public class EasyModbus {
      * Generaete log entry based on Easymodbus exception
      * 
      * @param e
-     * @throws VantiqEasymodbusException
+     * @throws VantiqEasyModbusException
      */
-    public void reportEasyModbusError(Exception e) throws VantiqEasymodbusException {
+    public void reportEasyModbusError(Exception e) throws VantiqEasyModbusException {
         String message = this.getClass().getCanonicalName() + ": A EasyModbus error occurred: " + e.getMessage()
                 + ", Error Code: " + e.getCause();
-        throw new VantiqEasymodbusException(message);
+        throw new VantiqEasyModbusException(message);
     }
 
     /**

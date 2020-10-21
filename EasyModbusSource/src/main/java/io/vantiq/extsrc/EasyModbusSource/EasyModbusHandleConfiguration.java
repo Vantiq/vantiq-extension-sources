@@ -28,15 +28,16 @@ import io.vantiq.extjsdk.Handler;
  * 
  * <pre>
  *  {
- *      EasyModbusConfig: {
-            "TCPAddress": "127.0.0.1",
-            "TCPPort": 502,
-            "Size": 20,
-            "pollTime": 1000,
-            "pollQuery": "select * from coils"
-}
- *      }
- * }
+ *      "easyModbusConfig":{
+ *   	    "general": {
+ *               "TCPAddress": "127.0.0.1",
+ *               "TCPPort": 502,
+ *               "Size": 20,
+ *               "pollTime": 1000,
+ *               "pollQuery": "select * from coils"
+ *           }
+ *	    }
+ *  }
  * </pre>
  */
 public class EasyModbusHandleConfiguration extends Handler<ExtensionServiceMessage> {
@@ -55,6 +56,8 @@ public class EasyModbusHandleConfiguration extends Handler<ExtensionServiceMessa
     // Constants for getting config options
     private static final String CONFIG = "config";
 
+    private static final String EASYMODBUS_CONFIG = "easyModBus";
+    private static final String GENERAL_CONFIG = "general";
     private static final String TCPADDRESS_CONFIG = "TCPAddress";
     private static final String TCPPORT_CONFIG = "TCPPort";
     private static final String BUFFER_SIZE = "Size";
@@ -79,7 +82,7 @@ public class EasyModbusHandleConfiguration extends Handler<ExtensionServiceMessa
         Map<String, Object> configObject = (Map) message.getObject();
         Map<String, Object> config;
         Map<String, Object> vantiq;
-        Map<String, Object> EasyModbusConfig;
+        Map<String, Object> easyModbusConfig;
         Map<String, Object> general;
         String tcpAddress;
         int tcpPort;
@@ -92,24 +95,24 @@ public class EasyModbusHandleConfiguration extends Handler<ExtensionServiceMessa
         }
         config = (Map) configObject.get(CONFIG);
 
-        if (!(config.get("easyModbusConfig") instanceof Map)) {
+        if (!(config.get(EASYMODBUS_CONFIG) instanceof Map)) {
             log.error("Configuration failed. No configuration suitable for EasyModbus Source.(easyModbusConfig)");
             failConfig();
             return;
         }
-        EasyModbusConfig = (Map) config.get("easyModbusConfig");
+        easyModbusConfig = (Map) config.get(EASYMODBUS_CONFIG);
 
-        if (!(EasyModbusConfig.get("general") instanceof Map)) {
+        if (!(easyModbusConfig.get(GENERAL_CONFIG) instanceof Map)) {
             log.error("Configuration failed. No configuration suitable for EasyModbus Source.(general)");
             failConfig();
             return;
         }
-        general = (Map) EasyModbusConfig.get("general");
+        general = (Map) easyModbusConfig.get(GENERAL_CONFIG);
 
-        // Retrieve the EasyModbusConfig and the vantiq config
+        // Retrieve the easyModbusConfig and the vantiq config
         if (!(general.get(TCPADDRESS_CONFIG) instanceof String && general.get(TCPPORT_CONFIG) instanceof Integer)) {
             log.error(
-                    "Configuration failed. Configuration (EasyModbusConfig) must contain 'TCPAddress' and 'TCPPort' fields.");
+                    "Configuration failed. Configuration (easyModbusConfig.general) must contain 'TCPAddress' and 'TCPPort' fields.");
             failConfig();
             return;
         }
@@ -136,7 +139,7 @@ public class EasyModbusHandleConfiguration extends Handler<ExtensionServiceMessa
      * @return true if the EasyModbus source could be created, false otherwise
      */
     boolean createEasyModbusConnection(Map<String, Object> config, String tcpAddress, int TcpPort) {
-        int size = 20;
+        int size ;
 
         if (config.get(BUFFER_SIZE) instanceof Integer) {
             size = (int) config.get(BUFFER_SIZE);
@@ -190,7 +193,7 @@ public class EasyModbusHandleConfiguration extends Handler<ExtensionServiceMessa
         source.client.setQueryHandler(queryHandler);
         source.client.setPublishHandler(publishHandler);
 
-        log.trace("EASYModbus source created");
+        log.trace("EasyModbus source created");
         return true;
     }
 
@@ -220,7 +223,7 @@ public class EasyModbusHandleConfiguration extends Handler<ExtensionServiceMessa
             }
 
             // Used to set the max pool size for connection pool
-            maxPoolSize = 2 * maxActiveTasks;
+            maxPoolSize = maxActiveTasks;
 
             // Creating the thread pool executors with Queue
             source.queryPool = new ThreadPoolExecutor(maxActiveTasks, maxActiveTasks, 0l, TimeUnit.MILLISECONDS,

@@ -26,7 +26,7 @@ import org.slf4j.LoggerFactory;
 import io.vantiq.extjsdk.ExtensionServiceMessage;
 import io.vantiq.extjsdk.ExtensionWebSocketClient;
 import io.vantiq.extjsdk.Handler;
-import io.vantiq.extsrc.EasyModbusSource.exception.VantiqEasymodbusException;
+import io.vantiq.extsrc.EasyModbusSource.exception.VantiqEasyModbusException;
 
 /**
  * Controls the connection and interaction with the Vantiq server. Initialize it
@@ -243,10 +243,10 @@ public class EasyModbusCore {
                         "The Query Request could not be executed because the query property is " + "not a string.",
                         null);
             }
-        } catch (VantiqEasymodbusException e) {
+        } catch (VantiqEasyModbusException e) {
             log.error("Could not execute requested query.", e);
             log.error("Request was: {}", request);
-            client.sendQueryError(replyAddress, VantiqEasymodbusException.class.getCanonicalName(),
+            client.sendQueryError(replyAddress, VantiqEasyModbusException.class.getCanonicalName(),
                     "Failed to execute query for reason: " + e.getMessage() + ". Exception was: "
                             + e.getClass().getName() + ". Request was: " + request.get("query"),
                     null);
@@ -282,9 +282,9 @@ public class EasyModbusCore {
 
         // Gather query results, or send a query error if an exception is caught
         try {
-            int data = localEasyModbus.hanldeUpdateCommand(message);
+            int data = localEasyModbus.handleUpdateCommand(message);
 
-        } catch (VantiqEasymodbusException e) {
+        } catch (VantiqEasyModbusException e) {
             log.error("Could not execute requested query.", e);
             log.error("Request was: {}", request);
         } catch (ClassCastException e) {
@@ -325,7 +325,7 @@ public class EasyModbusCore {
                     client.sendNotification(h);
                 }
             }
-        } catch (VantiqEasymodbusException e) {
+        } catch (VantiqEasyModbusException e) {
             log.error("Could not execute polling query.", e);
             log.error("The pollQuery was: " + pollQuery);
         } catch (Exception e) {

@@ -46,6 +46,4 @@ trace.db/
 lib/
 windows/
 *.dll
-*.csv
-CSVSource/
-.vscode/settings.json
+.vscode/

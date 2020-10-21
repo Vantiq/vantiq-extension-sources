@@ -10,17 +10,17 @@ package io.vantiq.extsrc.EasyModbusSource.exception;
 /**
  * A custom exception used to extract the useful information from a SQLException
  */
-public class VantiqEasymodbusException extends Exception {
+public class VantiqEasyModbusException extends Exception {
 
-    public VantiqEasymodbusException() {
+    public VantiqEasyModbusException() {
         super();
     }
 
-    public VantiqEasymodbusException(String message) {
+    public VantiqEasyModbusException(String message) {
         super(message);
     }
 
-    public VantiqEasymodbusException(String message, Throwable cause) {
+    public VantiqEasyModbusException(String message, Throwable cause) {
         super(message, cause);
     }
 }

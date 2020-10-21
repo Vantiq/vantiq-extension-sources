@@ -29,7 +29,7 @@ import org.junit.Test;
 
 import io.vantiq.extjsdk.ExtensionServiceMessage;
 import io.vantiq.extjsdk.FalseClient;
-import io.vantiq.extsrc.EasyModbusSource.exception.VantiqEasymodbusException;
+import io.vantiq.extsrc.EasyModbusSource.exception.VantiqEasyModbusException;
 
 public class TestEasyModbusCore extends TestEasyModbusBase {
 
@@ -60,7 +60,7 @@ public class TestEasyModbusCore extends TestEasyModbusBase {
     }
 
     @Test
-    public void testPublishQuery() throws VantiqEasymodbusException {
+    public void testPublishQuery() throws VantiqEasyModbusException {
         assumeTrue(testIPAddress != null && testIPPort != 0);
         easyModbus.setupEasyModbus(testIPAddress, testIPPort, false, 0);
 
@@ -83,7 +83,7 @@ public class TestEasyModbusCore extends TestEasyModbusBase {
     }
 
     @Test
-    public void testExecuteQuery() throws VantiqEasymodbusException {
+    public void testExecuteQuery() throws VantiqEasyModbusException {
 
         assumeTrue(testIPAddress != null && testIPPort != 0);
         easyModbus.setupEasyModbus(testIPAddress, testIPPort, false, 0);
@@ -107,7 +107,7 @@ public class TestEasyModbusCore extends TestEasyModbusBase {
     }
 
     @Test
-    public void testExitIfConnectionFails() throws VantiqEasymodbusException {
+    public void testExitIfConnectionFails() throws VantiqEasyModbusException {
         assumeTrue(testIPAddress != null && testIPPort != 0);
         easyModbus.setupEasyModbus(testIPAddress, testIPPort, false, 0);
 

@@ -6,17 +6,17 @@
  * SPDX: MIT
  */
 package io.vantiq.extsrc.EasyModbusSource;
+
 /**
  * Helper class for convertion between Vantiq and EasyModbus
  */
-public class Register{
+public class Register {
 
-    public Register(int index , int value)    {
+    public Register(int index, int value) {
         this.index = index;
-        this.value = value; 
+        this.value = value;
     }
 
-    public int index ;
-    public int value ;
-};
-
+    public int index;
+    public int value;
+}

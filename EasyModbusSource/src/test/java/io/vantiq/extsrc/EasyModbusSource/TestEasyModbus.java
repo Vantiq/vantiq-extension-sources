@@ -23,7 +23,7 @@ import org.junit.Test;
 
 import io.vantiq.client.Vantiq;
 import io.vantiq.client.VantiqResponse;
-import io.vantiq.extsrc.EasyModbusSource.exception.VantiqEasymodbusException;
+import io.vantiq.extsrc.EasyModbusSource.exception.VantiqEasyModbusException;
 
 public class TestEasyModbus extends TestEasyModbusBase {
 
@@ -52,20 +52,20 @@ public class TestEasyModbus extends TestEasyModbusBase {
     }
 
     @Test
-    public void testProcessCoilsQuery() throws VantiqEasymodbusException {
+    public void testProcessCoilsQuery() throws VantiqEasyModbusException {
         assumeTrue(testIPAddress != null && testIPPort != 0);
         easyModbus.setupEasyModbus(testIPAddress, testIPPort, false, 0);
 
         HashMap[] queryResult;
 
-        Map<String, Object> request = CreateFalseCoilsRequest();
-        easyModbus.hanldeUpdateCommand(request);
+        Map<String, Object> request = createFalseCoilsRequest();
+        easyModbus.handleUpdateCommand(request);
 
         // Try processQuery with a nonsense query
         try {
             queryResult = easyModbus.processQuery("jibberish");
             fail("Should have thrown exception.");
-        } catch (VantiqEasymodbusException e) {
+        } catch (VantiqEasyModbusException e) {
             // Expected behavior
         }
 
@@ -82,10 +82,10 @@ public class TestEasyModbus extends TestEasyModbusBase {
             }
 
             request = SetValue(request, 0, true);
-            int rc = easyModbus.hanldeUpdateCommand(request);
+            int rc = easyModbus.handleUpdateCommand(request);
             assert rc == 0;
 
-        } catch (VantiqEasymodbusException e) {
+        } catch (VantiqEasyModbusException e) {
             fail("Should not throw an exception: " + e.getMessage());
         }
 
@@ -103,7 +103,7 @@ public class TestEasyModbus extends TestEasyModbusBase {
                 assert v.index == i;
                 assertFalse("illegal value on Index : " + v.index, v.value); // all fields should be false.
             }
-        } catch (VantiqEasymodbusException e) {
+        } catch (VantiqEasyModbusException e) {
             fail("Should not throw an exception: " + e.getMessage());
         }
 
@@ -111,14 +111,14 @@ public class TestEasyModbus extends TestEasyModbusBase {
     }
 
     @Test
-    public void testProcessHoldingRegistersQuery() throws VantiqEasymodbusException {
+    public void testProcessHoldingRegistersQuery() throws VantiqEasyModbusException {
         assumeTrue(testIPAddress != null && testIPPort != 0);
         easyModbus.setupEasyModbus(testIPAddress, testIPPort, false, 0);
 
         HashMap[] queryResult;
 
         Map<String, Object> request = CreateResetRegistersRequest();
-        easyModbus.hanldeUpdateCommand(request);
+        easyModbus.handleUpdateCommand(request);
 
         // Select the row that we previously inserted
         try {
@@ -133,10 +133,10 @@ public class TestEasyModbus extends TestEasyModbusBase {
             }
 
             request = SetValue(request, 0, 1);
-            int rc = easyModbus.hanldeUpdateCommand(request);
+            int rc = easyModbus.handleUpdateCommand(request);
             assert rc == 0;
 
-        } catch (VantiqEasymodbusException e) {
+        } catch (VantiqEasyModbusException e) {
             fail("Should not throw an exception: " + e.getMessage());
         }
 
@@ -154,7 +154,7 @@ public class TestEasyModbus extends TestEasyModbusBase {
                 assert v.index == i;
                 assertTrue("illegal value on Index : " + v.index, v.value == 0); // all fields should be false.
             }
-        } catch (VantiqEasymodbusException e) {
+        } catch (VantiqEasyModbusException e) {
             fail("Should not throw an exception: " + e.getMessage());
         }
 
@@ -162,7 +162,7 @@ public class TestEasyModbus extends TestEasyModbusBase {
     }
 
     @Test
-    public void testCorrectErrors() throws VantiqEasymodbusException {
+    public void testCorrectErrors() throws VantiqEasyModbusException {
         assumeTrue(testIPAddress != null && testIPPort != 0);
         easyModbus.setupEasyModbus(testIPAddress, testIPPort, false, 0);
         HashMap[] queryResult;
@@ -172,7 +172,7 @@ public class TestEasyModbus extends TestEasyModbusBase {
         try {
             queryResult = easyModbus.processQuery(NO_TABLE);
             fail("Should have thrown an exception.");
-        } catch (VantiqEasymodbusException e) {
+        } catch (VantiqEasyModbusException e) {
             String message = e.getMessage();
             assert message.contains("1006");
         }
@@ -181,7 +181,7 @@ public class TestEasyModbus extends TestEasyModbusBase {
         try {
             queryResult = easyModbus.processQuery(NO_FIELD);
             fail("Should have thrown an exception.");
-        } catch (VantiqEasymodbusException e) {
+        } catch (VantiqEasyModbusException e) {
             String message = e.getMessage();
             assert message.contains("1007");
         }
@@ -189,7 +189,7 @@ public class TestEasyModbus extends TestEasyModbusBase {
         try {
             queryResult = easyModbus.processQuery(NO_FIELD_ITEM_INDEX);
             fail("Should have thrown an exception.");
-        } catch (VantiqEasymodbusException e) {
+        } catch (VantiqEasyModbusException e) {
             String message = e.getMessage();
             assert message.contains("1004");
         }
@@ -198,15 +198,14 @@ public class TestEasyModbus extends TestEasyModbusBase {
         try {
             queryResult = easyModbus.processQuery(SYNTAX_ERROR);
             fail("Should have thrown an exception.");
-        } catch (VantiqEasymodbusException e) {
+        } catch (VantiqEasyModbusException e) {
             String message = e.getMessage();
             assert message.contains("1005");
         }
-
     }
 
     // ================================================= Helper functions
-    private Map<String, Object> CreateFalseCoilsRequest() {
+    private Map<String, Object> createFalseCoilsRequest() {
         Map<String, Object> request = new HashMap<String, Object>();
         Map<String, Object> b = new HashMap<String, Object>();
         ArrayList<Map<String, Object>> l = new ArrayList<Map<String, Object>>(); // request.get("body");

@@ -6,15 +6,16 @@
  * SPDX: MIT
  */
 package io.vantiq.extsrc.EasyModbusSource;
+
 /**
  * Helper class for convertion between Vantiq and EasyModbus
  */
 public class Value {
-    public Value(int index , boolean value) {
+    public Value(int index, boolean value) {
         this.index = index;
-        this.value = value; 
+        this.value = value;
     }
-    public int index ;
-    public boolean value ;
-};
 
+    public int index;
+    public boolean value;
+}

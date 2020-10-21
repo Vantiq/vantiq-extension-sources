@@ -3,5 +3,5 @@
    "baseType" : "EXTENSION",
    "verticle" : "service:extensionSource",
    "config" : {},
-   "operations": [ "select","notification" ]
+   "operations": [ "select","publish","notification" ]
 }
