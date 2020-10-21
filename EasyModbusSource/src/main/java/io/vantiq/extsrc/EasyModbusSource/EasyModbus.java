@@ -28,7 +28,7 @@ import io.vantiq.extjsdk.ExtensionServiceMessage;
 import io.vantiq.extsrc.EasyModbusSource.exception.VantiqEasymodbusException;
 
 /**
- * Responsile for the connection with the EasyModbus server and triggering it
+ * Responsible for the connection with the EasyModbus server and triggering it
  * with queries and updates accepted from Vantiq or polling as defind in the
  * extension source configuration
  * 
@@ -45,7 +45,7 @@ public class EasyModbus {
     // or asynchronously
     boolean isAsync;
 
-    int VectorSize = 20;
+    int vectorSize = 20;
 
     // Used if asynchronous publish/query handling has been specified
     private HikariDataSource ds = null;
