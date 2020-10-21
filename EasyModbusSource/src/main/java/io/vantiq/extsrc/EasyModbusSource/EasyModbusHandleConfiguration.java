@@ -56,7 +56,7 @@ public class EasyModbusHandleConfiguration extends Handler<ExtensionServiceMessa
     // Constants for getting config options
     private static final String CONFIG = "config";
 
-    private static final String EASYMODBUS_CONFIG = "easyModBus";
+    private static final String EASYMODBUS_CONFIG = "easyModbusConfig";
     private static final String GENERAL_CONFIG = "general";
     private static final String TCPADDRESS_CONFIG = "TCPAddress";
     private static final String TCPPORT_CONFIG = "TCPPort";
