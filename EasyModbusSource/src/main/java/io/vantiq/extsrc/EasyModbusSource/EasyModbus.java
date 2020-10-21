@@ -138,12 +138,12 @@ public class EasyModbus {
      * @throws VantiqEasymodbusException
      */
     int hanldeUpdateCommand(Map<String, ?> request) throws VantiqEasymodbusException {
-        int addressInt = 0;
+        Integer addressInt = 0;
 
         String type = (String) request.get("type");
 
         if (!(request.get("address") == null)) {
-            addressInt = (int) request.get("address");
+            addressInt = (Integer) request.get("address");
         }
 
         List<Map<String, Object>> l = (List<Map<String, Object>>) request.get("body");
