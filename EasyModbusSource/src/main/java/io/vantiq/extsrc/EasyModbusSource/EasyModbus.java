@@ -68,7 +68,7 @@ public class EasyModbus {
      * @return HashMap contains the result .
      * @throws VantiqEasyModbusException
      */
-    HashMap[] hanldeSelectCommand(String[] s) throws VantiqEasyModbusException {
+    HashMap[] handleSelectCommand(String[] s) throws VantiqEasyModbusException {
         if (!oClient.isConnected()) {
             throw new VantiqEasyModbusException(String.format("EasyModbus is not connected Code %d", 1000));
         }
@@ -77,9 +77,10 @@ public class EasyModbus {
         int index = 0;
         int size = vectorSize;
         if (!s[1].equals("*")) {
-            if (!s[1].substring(0, 4).toLowerCase().equals("item"))
+            if (!s[1].substring(0, 4).toLowerCase().equals("item")) {
                 throw new VantiqEasyModbusException(String
                         .format("Unsupported Query Field %s  must start with item (ex. item0)  Code %d", s[1], 1007));
+            }
 
             try {
                 index = Integer.parseInt(s[1].substring(4));
@@ -116,9 +117,10 @@ public class EasyModbus {
                     r.set(rr, index);
                     return r.get();
                 }
-                default:
+                default: {
                     throw new VantiqEasyModbusException(
                             String.format("Unsupported Query Field target %s Code %d", s[3], 1006));
+                }
             }
         } catch (Exception e) {
             throw new VantiqEasyModbusException(e.getMessage());
@@ -181,8 +183,8 @@ public class EasyModbus {
     }
 
     /**
-     * maintain the connectivity with the EasyModbus server and handle Vantiq Publish
-     * command which converted to update holdingregisters or coils
+     * maintain the connectivity with the EasyModbus server and handle Vantiq
+     * Publish command which converted to update holdingregisters or coils
      * 
      * 
      * @param mPublic message received from Vantiq
@@ -211,7 +213,7 @@ public class EasyModbus {
     public HashMap[] handleQuery(String query) throws VantiqEasyModbusException {
         String[] s = query.split(" ");
         if (s[0].toLowerCase().equals("select")) {
-            return hanldeSelectCommand(s);
+            return handleSelectCommand(s);
         } else
             throw new VantiqEasyModbusException(String.format("Unsupported Query Syntax %s Code %d", s[0], 1005));
     }
@@ -230,7 +232,7 @@ public class EasyModbus {
         switch (op) {
             case "query": {
                 String[] s = ((String) request.get("query")).split(" ");
-                return hanldeSelectCommand(s);
+                return handleSelectCommand(s);
             }
             case "publish": {
                 handleUpdateCommand(message);
@@ -296,12 +298,11 @@ public class EasyModbus {
         return publishSuccess;
     }
 
-
     /**
-     * Method used to try and reconnect if database connection was lost. Used for
-     * synchronous processing (connection pool handles this internally).
+     * Method used to try and reconnect if EasyModbus server connection was lost.
+     * Used for synchronous processing (connection pool handles this internally).
      * 
-     * @throws VantiqSQLException
+     * @throws VantiqEasyModbusException
      */
     public void diagnoseConnection() throws VantiqEasyModbusException {
         try {
@@ -315,7 +316,7 @@ public class EasyModbus {
     }
 
     /**
-     * Generaete log entry based on Easymodbus exception
+     * Generaete log entry based on EasyModbus exception
      * 
      * @param e
      * @throws VantiqEasyModbusException
