@@ -41,10 +41,6 @@ public class EasyModbus {
     ModbusClient oClient = new ModbusClient();
     private Connection conn = null;
 
-    // Boolean flag specifying if publish/query requests are handled synchronously,
-    // or asynchronously
-    boolean isAsync;
-
     int vectorSize = 20;
 
     // Used if asynchronous publish/query handling has been specified
@@ -300,51 +296,6 @@ public class EasyModbus {
         return publishSuccess;
     }
 
-    /**
-     * The method used to execute the provided list of queries, triggered by a
-     * PUBLISH on the respective VANTIQ source. These queries are processed as a
-     * batch.
-     * 
-     * @param queryList The list of queries to be processed as a batch.
-     * @return
-     * @throws VantiqSQLException
-     */
-    public int[] processBatchPublish(List queryList) throws VantiqEasyModbusException {
-        int[] publishSuccess = null;
-
-        if (isAsync) {
-            try (Connection conn = ds.getConnection(); Statement stmt = conn.createStatement()) {
-
-                // Adding queries into batch
-                for (int i = 0; i < queryList.size(); i++) {
-                    stmt.addBatch((String) queryList.get(i));
-                }
-
-                // Executing the batch
-                publishSuccess = stmt.executeBatch();
-            } catch (SQLException e) {
-                // Handle errors for EasyModbus
-                reportEasyModbusError(e);
-            }
-        } else {
-            // Check that connection hasn't closed
-            diagnoseConnection();
-
-            try (Statement stmt = conn.createStatement()) {
-                // Adding queries into batch
-                for (int i = 0; i < queryList.size(); i++) {
-                    stmt.addBatch((String) queryList.get(i));
-                }
-
-                // Executing the batch
-                publishSuccess = stmt.executeBatch();
-            } catch (SQLException e) {
-                // Handle errors for EasyModbus
-                reportEasyModbusError(e);
-            }
-        }
-        return publishSuccess;
-    }
 
     /**
      * Method used to try and reconnect if database connection was lost. Used for

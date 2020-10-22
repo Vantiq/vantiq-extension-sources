@@ -70,6 +70,7 @@ tasks.withType(Test) {
     if (rootProject.hasProperty("EntConTestSourceName")) {
         systemProperty "EntConTestSourceName", rootProject.findProperty("EntConTestSourceName")
     }
+
     if (rootProject.hasProperty("TestAuthToken")) {
         systemProperty "TestAuthToken", rootProject.findProperty("TestAuthToken") ?: "empty"
     }
@@ -77,8 +78,11 @@ tasks.withType(Test) {
         systemProperty "TestVantiqServer", rootProject.findProperty("TestVantiqServer") ?: "empty"
     }
     if (rootProject.hasProperty("EntConIPAddress")) {
-        systemProperty "EntConIPAddress", rootProject.findProperty("EntConIPAddress") ?: "127.0.0.1"
-    }
+                println "after" 
+        println systemProperties['EntConIPAddress'] 
+        systemProperty 'EntConIPAddress', rootProject.findProperty('EntConIPAddress') //?: "127.0.0.1"
+        println systemProperties['EntConIPAddress'] 
+    } 
     if (rootProject.hasProperty("EntConIPPort")) {
         systemProperty "EntConIPPort", rootProject.findProperty("EntConIPPort") ?: "502"
     }

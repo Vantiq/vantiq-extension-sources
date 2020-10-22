@@ -220,23 +220,6 @@ public class EasyModbusCore {
                     // Send empty response back
                     client.sendQueryResponse(204, replyAddress, new LinkedHashMap<>());
                 }
-            } else if (request.get("query") instanceof List) {
-                List queryArray = (List) request.get("query");
-                // Check that each batch element is an Update Statement
-                for (int i = 0; i < queryArray.size(); i++) {
-                    if (queryArray.get(i).toString().trim().toLowerCase().startsWith(SELECT_STATEMENT_IDENTIFIER)) {
-                        client.sendQueryError(replyAddress, this.getClass().getName() + ".invalidBatchElement",
-                                "The Query Request could not be executed because at least one batch element "
-                                        + "was not a string representation of an Update Statement.",
-                                null);
-                        return;
-                    }
-                }
-                int[] data = localEasyModbus.processBatchPublish(queryArray);
-                log.trace("The returned integer array from Publish Query is the following: ", data);
-
-                // Send empty response back
-                client.sendQueryResponse(204, replyAddress, new LinkedHashMap<>());
             } else {
                 log.error("Query could not be executed because query was not a String.");
                 client.sendQueryError(replyAddress, this.getClass().getName() + ".queryNotString",
