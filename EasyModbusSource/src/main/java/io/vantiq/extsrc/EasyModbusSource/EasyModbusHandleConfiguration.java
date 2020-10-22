@@ -139,7 +139,7 @@ public class EasyModbusHandleConfiguration extends Handler<ExtensionServiceMessa
      * @return true if the EasyModbus source could be created, false otherwise
      */
     boolean createEasyModbusConnection(Map<String, Object> config, String tcpAddress, int TcpPort) {
-        int size ;
+        int size;
 
         if (config.get(BUFFER_SIZE) instanceof Integer) {
             size = (int) config.get(BUFFER_SIZE);
