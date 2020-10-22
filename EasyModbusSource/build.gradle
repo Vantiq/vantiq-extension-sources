@@ -48,8 +48,8 @@ dependencies {
     compile "org.slf4j:slf4j-api:1.7.25"
     compile "org.apache.logging.log4j:log4j-slf4j-impl:2.11.0"
     
-//    compile files("${System.env.EASY_MODBUS_LOC}/EasyModbusJava.jar")
-    compile files("${System.env.EASY_MODBUS_LOC}")
+    compile files("${System.env.EASY_MODBUS_LOC}/EasyModbusJava.jar")
+//    compile files("${System.env.EASY_MODBUS_LOC}")
     
     // Used for checking VANTIQ date format behavior with VANTIQ SDK
     compile 'io.vantiq:vantiq-sdk:1.0.27'
