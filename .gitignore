@@ -45,5 +45,4 @@ trace.db/
 *.pb
 lib/
 windows/
-*.dll
 .vscode/

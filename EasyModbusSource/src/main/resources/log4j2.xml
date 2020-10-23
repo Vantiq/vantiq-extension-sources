@@ -6,7 +6,7 @@
     </Console>
   </Appenders>
   <Loggers>
-    <Logger name="io.vantiq.extsrc.jdbcSource" level="debug"/>
+    <Logger name="io.vantiq.extsrc.EasyModbusSource" level="debug"/>
     <Logger name="io.vantiq.extjsdk" level="debug"/>
     <Root level="error">
       <AppenderRef ref="Console"/>

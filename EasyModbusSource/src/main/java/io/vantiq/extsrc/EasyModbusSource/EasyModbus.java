@@ -316,7 +316,7 @@ public class EasyModbus {
     }
 
     /**
-     * Generaete log entry based on EasyModbus exception
+     * Generate log entry based on EasyModbus exception
      * 
      * @param e
      * @throws VantiqEasyModbusException
