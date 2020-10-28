@@ -14,8 +14,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.io.IOException;
 import java.sql.Connection;
-import java.sql.SQLException;
-import java.sql.Statement;
+
 
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
@@ -64,7 +63,7 @@ public class EasyModbus {
     /**
      * Handling select statement received from Vantiq or from polling configuration
      * 
-     * @param select statment .
+     * @param s statment .
      * @return HashMap contains the result .
      * @throws VantiqEasyModbusException
      */
@@ -131,7 +130,7 @@ public class EasyModbus {
      * Handle Vantiq Publish command which converted to update holdingregisters or
      * coils
      * 
-     * @param Publish request received from Vantiq
+     * @param request request received from Vantiq
      * @return HashMap contains the result .
      * @throws VantiqEasyModbusException
      */
@@ -141,7 +140,7 @@ public class EasyModbus {
         String type = (String) request.get("type");
 
         if (!(request.get("address") == null)) {
-            addressInt = (int) request.get("address");
+            addressInt = (Integer) request.get("address");
         }
 
         List<Map<String, Object>> l = (List<Map<String, Object>>) request.get("body");
@@ -187,7 +186,7 @@ public class EasyModbus {
      * Publish command which converted to update holdingregisters or coils
      * 
      * 
-     * @param mPublic message received from Vantiq
+     * @param message message received from Vantiq
      * @return HashMap contains the result .
      * @throws VantiqEasyModbusException
      */
@@ -206,7 +205,7 @@ public class EasyModbus {
     /**
      * Handle Vantiq select command
      * 
-     * @param select statment received from Vantiq
+     * @param query statement received from Vantiq
      * @return HashMap contains the result .
      * @throws VantiqEasyModbusException
      */
@@ -221,7 +220,7 @@ public class EasyModbus {
     /**
      * Handle Vantiq commands
      * 
-     * @param select statement received from Vantiq
+     * @param message statement received from Vantiq
      * @return HashMap contains the result .
      * @throws VantiqEasyModbusException
      */
@@ -249,11 +248,11 @@ public class EasyModbus {
      * The method used to execute the provided query, triggered by a SELECT on the
      * respective source from VANTIQ.
      * 
-     * @param processQuery A String representation of the query, retrieved from the
+     * @param query A String representation of the query, retrieved from the
      *                     WITH clause from VANTIQ.
      * @return A HashMap Array containing all of the data retrieved by the query,
      *         (empty HashMap Array if nothing was returned)
-     * @throws VantiqSQLException
+     * @throws VantiqEasyModbusException
      */
     public HashMap[] processQuery(String query) throws VantiqEasyModbusException {
         HashMap[] rsArray = null;
@@ -283,7 +282,7 @@ public class EasyModbus {
      * The method used to execute the provided query, triggered by a PUBLISH on the
      * respective VANTIQ source.
      * 
-     * @param sqlQuery A String representation of the query, retrieved from the
+     * @param message A String representation of the query, retrieved from the
      *                 PUBLISH message.
      * @return The integer value that is returned by the executeUpdate() method
      *         representing the row count.
