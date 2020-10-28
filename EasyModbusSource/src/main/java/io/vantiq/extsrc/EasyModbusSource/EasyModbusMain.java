@@ -80,7 +80,6 @@ public class EasyModbusMain {
             new Thread(() -> {
                 source.start(10);
             }).start();
-            ;
         }
     }
 
