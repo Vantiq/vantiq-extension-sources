@@ -1,13 +1,13 @@
 # Overview
 
-The following documentation outlines how to incorporate a EasyModbus Source as part of your project. This allows a user to construct applications that interact with a PLC using the EasyModbus layer, thus being able to get coils, descreets, registry or holdingregistry information, and able to update coils and holdingregistry. 
+The following documentation outlines how to incorporate a EasyModbus Source as part of your project. This allows a user to construct applications that interact with a PLC using the EasyModbus layer, thus being able to get coils, discretes, registry or holdingregistry information, and able to update coils and holdingregistry. 
 
 In order to incorporate this Extension Source, you will need to set up your local machine with a client JRE that can connect implement to your EasyModbus server. Once you have done this, you will need to create the Source in the VANTIQ Modelo IDE. The documentation 
 has been split into two parts, [Setting Up Your Machine](#machine) and [Setting Up Your VANTIQ](#vantiq).
 
 # Prerequisites <a name="pre" id="pre"></a>
 
-In order to compile correctly, one must download the EasyModbus Java Version and locate the EasyModbusJava.jar in one of the path folder. You can access the download it [*here*](http://easymodbustcp.net/en), you can download from the site simulated server as well.
+In order to compile correctly, you must download the EasyModbus Java Version and locate the EasyModbusJava.jar in one of the path folder. You can access the download it [*here*](http://easymodbustcp.net/en),and you can download from the site simulated server as well.
 Make certain to use the correct implementation for the environment within which you are running.
 
 
@@ -30,7 +30,7 @@ for validating the solution tests included in the extension source one must acti
 
 
 ## Prerequisite 
-download from [*here*](http://easymodbustcp.net/en/) the Java version, you can download the simulated server from the site as well. Pick the one appropriate for your environment. 
+Download the Java version from [*here*](http://easymodbustcp.net/en/) the Java version, Note that you can download the simulated server from the site as well. Pick the one appropriate for your environment. The simulated server is useful for testing things.
 
 Define the environment variable **EASY_MODBUS_LOC**.
 This should be the directory where the EasyModbusJava.jar file is located.
@@ -173,18 +173,19 @@ select * from source EasyModbus1 as r with query : "select item0 from coils"
 
 ## Publish Statements
 
-Using Publish statmet one can updates values in the PLC, EasyModbus server accept update request only for
+Using Publish statements one can update values in the PLC, EasyModbus server accept update request only for
 the holdingregisters and the coils list . 
-
+```
 publish {"type":"holdingregisters"} to SOURCE EasyModbus1 using {body=r}
+```
 
-where r is a json object similar to the result of the select statment , that above publish statement will update the entire list, one can use the property `address` in order to be able to update a specific value in the list, for example:
+where r is a json object similar to the result of the select statement. The above publish statement will update the entire list; one can use the property `address` in order to be able to update a specific value in the list, for example:
 ```
 publish {"type":"holdingregisters",address:3} to SOURCE EasyModbus1 using {body=r}
 ```
 will update only the 4th element using the value in the r json object, expecting the correct element with the right index value to exists - in this case 3. 
 
-the following statement will select the 4th value and update it with a different value, this can be shown using the server side simulator 
+The following statement will select the 4th value and update it with a different value, this can be shown using the server side simulator 
 ```
     select * from source EasyModbus1 as r with query : "select item3 from holdingregisters"
 	r[0].registers[0].value =r[0].registers[0].value+1 // 700  //r.registers[0]+1 
@@ -202,7 +203,7 @@ a similar example on coils will be as follows
 
 ## Messages from the Source
 
-Messages that are sent to the source as Notifications from the pollQuery are JSON objects with a similar format as the example above. The example below is the result of query values from registers,
+Messages that are sent to the source as Notifications from the pollQuery. These are JSON objects with a similar format to the example above. The example below is the result of query values from registers,
 the event in case of query from coils is a bit different and apears after the above example .
 
 result of select * from registers 
@@ -274,7 +275,7 @@ Error Code      Description
 1003            Unsupported operation command ( only select and publish are supported )
 1004            Unsupported Query Field, must contains offeset (ex. Coil0)
 1005            Unsupported Query Syntax , no select statment. 
-1006            Unexpected QUery entoty, check the from statment 
+1006            Unexpected Query entity, check the from statment 
 1007            Unsupported Query Field, must start with item (ex. item0)
 
 ## Licensing
