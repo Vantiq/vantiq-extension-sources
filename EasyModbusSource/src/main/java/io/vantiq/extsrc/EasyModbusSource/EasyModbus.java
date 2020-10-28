@@ -56,7 +56,7 @@ public class EasyModbus {
             log.info("EasyModsub trying to connect on {}:{}", tcpAddress, tcpPort);
         } catch (Exception e) {
             log.error("EasyModsub failed to connect on {}:{} - {}", tcpAddress, tcpPort, e);
-            reportEasyModbusError(e);
+            reportEasyModbusError(e,1000);
         }
     }
 
@@ -310,7 +310,7 @@ public class EasyModbus {
             }
         } catch (Exception e) {
             // Handle errors for EasyModbus
-            reportEasyModbusError(e);
+            reportEasyModbusError(e,1000);
         }
     }
 
@@ -323,6 +323,19 @@ public class EasyModbus {
     public void reportEasyModbusError(Exception e) throws VantiqEasyModbusException {
         String message = this.getClass().getCanonicalName() + ": A EasyModbus error occurred: " + e.getMessage()
                 + ", Error Code: " + e.getCause();
+        throw new VantiqEasyModbusException(message);
+    }
+
+    /**
+     * Generate log entry based on EasyModbus exception and supplied error code. 
+     * 
+     * @param e
+     * @param errorCode
+     * @throws VantiqEasyModbusException
+     */
+    public void reportEasyModbusError(Exception e,int errorCode) throws VantiqEasyModbusException {
+        String message = this.getClass().getCanonicalName() + ": A EasyModbus error occurred: " + e.getMessage()
+                + ", Error Code: " + errorCode;
         throw new VantiqEasyModbusException(message);
     }
 
