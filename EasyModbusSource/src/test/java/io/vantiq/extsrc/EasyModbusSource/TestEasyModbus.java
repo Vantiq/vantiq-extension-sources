@@ -45,7 +45,9 @@ public class TestEasyModbus extends TestEasyModbusBase {
 
     @Before
     public void setup() {
-        assumeTrue("Simulation is not running", TestEasyModbusBase.isSimulationRunning());
+        assumeTrue(testIPAddress != null && testIPPort != 0);
+
+//        assumeTrue("Simulation is not running", TestEasyModbusBase.isSimulationRunning());
         easyModbus = new EasyModbus();
         vantiq = new io.vantiq.client.Vantiq(testVantiqServer);
         vantiq.setAccessToken(testAuthToken);

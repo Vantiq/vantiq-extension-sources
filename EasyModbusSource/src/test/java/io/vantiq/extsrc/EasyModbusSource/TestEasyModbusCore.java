@@ -51,7 +51,7 @@ public class TestEasyModbusCore extends TestEasyModbusBase {
         core = new NoSendEasyModbusCore(sourceName, authToken, targetVantiqServer);
         core.easyModbus = easyModbus;
         core.start(10);
-        assumeTrue("Simulation is not running", TestEasyModbusBase.isSimulationRunning());
+//        assumeTrue("Simulation is not running", TestEasyModbusBase.isSimulationRunning());
     }
 
     @After
