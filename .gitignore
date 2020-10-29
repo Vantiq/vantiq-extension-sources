@@ -45,7 +45,6 @@ trace.db/
 *.pb
 lib/
 windows/
-*.dll
 *.csv
 */.vscode/
 .vscode/settings.json

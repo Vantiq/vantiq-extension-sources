@@ -2,6 +2,9 @@ rootProject.name = 'vantiq-extension-source'
 include 'opcuaSource'
 include 'extjsdk'
 include 'udpSource'
+if (System.env.EASY_MODBUS_LOC) {
+    include 'EasyModbusSource' 
+}
 include 'CSVSource'
 if (System.env.OPENCV_LOC) {
     include 'objectRecognitionSource'
