@@ -120,19 +120,19 @@ The Configuration document may look similar to the following example:
 
 In order to interact with the EasyModbus Source, one option is to use VAIL to select from the source. To do this, you will need to specify the SQL liked Query you wish to execute against your EasyModbus source. The data will be returned to Vantiq as a json buffer , which contains all fields of the different storages.
 
-used here would be **SELECT STATEMENTS**. The data will be returned to VANTIQ as a set of messages, where each message 
+**SELECT STATEMENTS** are used here. The data will be returned to VANTIQ as a set of messages, where each message 
 contains some number of rows.
 
 There are 4 types of information you can select from the EasyModbusServer:  registers and holdingRegisters which return a list of integers , and discrete and coils which return a list of booleans. 
 
 you can use 1 of the 4 available select statments :
 ```
-     select * from source EasyModbus1 as r with query : "select * from registers"
+      select * from source EasyModbus1 as r with query : "select * from registers"
  	select * from source EasyModbus1 as r with query : "select * from holdingregisters"
  	select * from source EasyModbus1 as r with query : "select * from discrete"
  	select * from source EasyModbus1 as r with query : "select * from coils"
 ```
-those select statments will return the entire list of registers, holdingRegisters, discrete or coils 
+those select statements will return the entire list of registers, holdingRegisters, discrete or coils, respectively.
 ```
     select * from source EasyModbus1 as r with query : "select item3 from holdingregisters"
 ```
@@ -152,7 +152,7 @@ the following select statment will return a specific value from the requested li
    }
 ]
 ```
-the following select statement will return a specific value from the requested list, actualy the first value in the colis list, noticed that the returned value is boolean and not integer as the previos example
+The following select statement will return a specific value from the requested list, actualy the first value in the coils list.  Notice that the returned value is boolean and not integer as the previous example
 
 ```
 select * from source EasyModbus1 as r with query : "select item0 from coils" 
