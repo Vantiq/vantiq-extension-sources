@@ -1,11 +1,17 @@
+/*
+ * Copyright (c) 2020 Vantiq, Inc.
+ *
+ * All rights reserved.
+ *
+ * SPDX: MIT
+ */
 package io.vantiq.extsrc.HikVisionSource.exception;
-
 
 /**
  * A custom exception used to extract the useful information from a SQLException
  */
 public class VantiqHikVisionException extends Exception {
-    
+
     public VantiqHikVisionException() {
         super();
     }
@@ -13,7 +19,7 @@ public class VantiqHikVisionException extends Exception {
     public VantiqHikVisionException(String message) {
         super(message);
     }
-    
+
     public VantiqHikVisionException(String message, Throwable cause) {
         super(message, cause);
     }

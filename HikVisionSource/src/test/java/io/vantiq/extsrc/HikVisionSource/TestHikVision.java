@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018 Vantiq, Inc.
+ * Copyright (c) 2020 Vantiq, Inc.
  *
  * All rights reserved.
  * 
@@ -31,12 +31,12 @@ public class TestHikVision extends TestHikVisionBase {
     static final String DELETE_TABLE = "DROP TABLE Test;";
     
     // Date values used to test oddball types
-    static final String TIMESTAMP = "2018-08-15 9:24:18";
-    static final String DATE = "2018-08-15";
+    static final String TIMESTAMP = "2020-08-15 9:24:18";
+    static final String DATE = "2020-08-15";
     static final String TIME = "9:24:18";
-    static final String FORMATTED_TIMESTAMP = "2018-08-15T09:24:18.000-0700";
+    static final String FORMATTED_TIMESTAMP = "2020-08-15T09:24:18.000-0700";
     static final String FORMATTED_TIME = "09:24:18.000-0800";
-    static final String VANTIQ_FORMATTED_TIMESTAMP = "2018-08-15T16:24:18Z";
+    static final String VANTIQ_FORMATTED_TIMESTAMP = "2020-08-15T16:24:18Z";
     
     // Queries to test oddball types
     static final String CREATE_TABLE_EXTENDED_TYPES = "create table TestTypes(id int, ts TIMESTAMP, testDate DATE, "
