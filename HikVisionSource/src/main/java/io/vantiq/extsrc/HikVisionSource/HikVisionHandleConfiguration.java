@@ -59,8 +59,10 @@ public class HikVisionHandleConfiguration extends Handler<ExtensionServiceMessag
     private static final int MAX_QUEUED_TASKS = 10;
 
     // Constants for getting config options
+    private static final String OPTIONS = "options";
     private static final String CONFIG = "config";
     private static final String CAMERAS = "cameras";
+    private static final String GENERAL = "general";
 
     private static final String SDK_LOG_FOLDER_PATH = "sdkLogPath";
     String sdkLogPath = "c:/tmp";
@@ -89,14 +91,10 @@ public class HikVisionHandleConfiguration extends Handler<ExtensionServiceMessag
     public void handleMessage(ExtensionServiceMessage message) {
         Map<String, Object> configObject = (Map) message.getObject();
         Map<String, Object> config;
-        Map<String, String> schema;
-        Map<String, Object> hikVisionConfig;
-        Map<String, Object> general;
+        Map<String, String> general;
+        Map<String, Object> options;
         List<Map<String, Object>> cameras;
         List<CameraEntry> cameraList;
-        String fileFolderPath;
-        String filePrefix;
-        String fileExtension;
 
         // Obtain entire config from the message object
         if (!(configObject.get(CONFIG) instanceof Map)) {
@@ -105,6 +103,19 @@ public class HikVisionHandleConfiguration extends Handler<ExtensionServiceMessag
             return;
         }
         config = (Map) configObject.get(CONFIG);
+
+        if (!(config.get(OPTIONS) instanceof Map)) {
+            log.error("Configuration failed. No OPTIONS in configuration for HikVision Source.");
+            failConfig();
+            return;
+        }
+
+        options = (Map) config.get(OPTIONS);
+        if (options.size() == 0) {
+            log.error("Configuration failed. No 'options' in configuration for HikVision Source.");
+            failConfig();
+            return;
+        }
 
         if (config.get(CAMERAS) == null) {
             log.error("Configuration failed. Configuration must contain 'cameras' for list of cameras");
@@ -134,6 +145,12 @@ public class HikVisionHandleConfiguration extends Handler<ExtensionServiceMessag
             }
         }
 
+        if (numEnabledCamera == 0) {
+            log.error("Configuration failed. Atleast One camera in 'enable' in 'cameras'");
+            failConfig();
+            return;
+
+        }
         /*
          * private static final String SDK_LOG_FOLDER_PATH = "sdkLogPath"; String
          * sdkLogPath = "c:/tmp";
@@ -142,11 +159,21 @@ public class HikVisionHandleConfiguration extends Handler<ExtensionServiceMessag
          * private static final String VANTIQ_DOCUMENT_PATH = "VantiqDocumentPath";
          */
         // Retrieve the hikVisionConfig and the vantiq config
-        if (!(config.get(SDK_LOG_FOLDER_PATH) instanceof String)) {
+
+        if (!(config.get(GENERAL) instanceof Map)) {
+            log.error(
+                    "Configuration failed. Configuration must contain 'general' for infiormation about the extension source");
+            failConfig();
+            return;
+        }
+
+        general = (Map) config.get(GENERAL);
+
+        if (!(general.get(SDK_LOG_FOLDER_PATH) instanceof String)) {
             log.warn("Configuration doesn't include {} . User default value {}", SDK_LOG_FOLDER_PATH, sdkLogPath);
-            config.put(SDK_LOG_FOLDER_PATH, sdkLogPath);
+            general.put(SDK_LOG_FOLDER_PATH, sdkLogPath);
         } else
-            sdkLogPath = (String) config.get(SDK_LOG_FOLDER_PATH);
+            sdkLogPath = (String) general.get(SDK_LOG_FOLDER_PATH);
 
         File f = new File(sdkLogPath);
         if (!f.isDirectory()) {
@@ -155,12 +182,12 @@ public class HikVisionHandleConfiguration extends Handler<ExtensionServiceMessag
             return;
         }
 
-        if (!(config.get(DRV_IMAGE_FOLDER_PATH) instanceof String)) {
+        if (!(general.get(DRV_IMAGE_FOLDER_PATH) instanceof String)) {
             log.warn("Configuration doesn't include {} . User default value {}", DRV_IMAGE_FOLDER_PATH,
                     dvrImageFolderPath);
-            config.put(DRV_IMAGE_FOLDER_PATH, dvrImageFolderPath);
+            general.put(DRV_IMAGE_FOLDER_PATH, dvrImageFolderPath);
         } else
-            dvrImageFolderPath = (String) config.get(DRV_IMAGE_FOLDER_PATH);
+            dvrImageFolderPath = (String) general.get(DRV_IMAGE_FOLDER_PATH);
 
         File f1 = new File(sdkLogPath);
         if (!f1.isDirectory()) {
@@ -169,19 +196,19 @@ public class HikVisionHandleConfiguration extends Handler<ExtensionServiceMessag
             return;
         }
 
-        if (!(config.get(VANTIQ_DOCUMENT_PATH) instanceof String)) {
+        if (!(general.get(VANTIQ_DOCUMENT_PATH) instanceof String)) {
             log.warn("Configuration doesn't include {} . User default value {}", VANTIQ_DOCUMENT_PATH,
                     vantiqDocumentPath);
-            config.put(VANTIQ_DOCUMENT_PATH, vantiqDocumentPath);
+            general.put(VANTIQ_DOCUMENT_PATH, vantiqDocumentPath);
         } else
-            vantiqDocumentPath = (String) config.get(VANTIQ_DOCUMENT_PATH);
+            vantiqDocumentPath = (String) general.get(VANTIQ_DOCUMENT_PATH);
 
-        if (!(config.get(VANTIQ_RESOURCE_PATH) instanceof String)) {
+        if (!(general.get(VANTIQ_RESOURCE_PATH) instanceof String)) {
             log.warn("Configuration doesn't include {} . User default value {}", VANTIQ_RESOURCE_PATH,
                     vantiqResourcePath);
-            config.put(VANTIQ_RESOURCE_PATH, vantiqResourcePath);
+            general.put(VANTIQ_RESOURCE_PATH, vantiqResourcePath);
         } else
-            vantiqResourcePath = (String) config.get(VANTIQ_RESOURCE_PATH);
+            vantiqResourcePath = (String) general.get(VANTIQ_RESOURCE_PATH);
 
         config.put("vantiqServer", source.targetVantiqServer);
         config.put("authToken", source.authToken);
@@ -260,8 +287,14 @@ public class HikVisionHandleConfiguration extends Handler<ExtensionServiceMessag
 
     boolean createHikVisionConnection(Map<String, Object> config, ExtensionWebSocketClient oClient) {
 
-        // Creating the publish and query handlers
-        int maxPoolSize = createQueryAndPublishHandlers(config, oClient);
+        Map<String,Object> general = (Map) config.get(OPTIONS);
+
+        Boolean isInTest = false;
+        if (general.get("IsInTest") != null) {
+            isInTest = Boolean.parseBoolean((String) general.get("IsInTest"));
+        }
+
+        int maxPoolSize = createQueryAndPublishHandlers(general, oClient);
 
         // Initialize HikVision Source with config values
         try {
@@ -270,7 +303,7 @@ public class HikVisionHandleConfiguration extends Handler<ExtensionServiceMessag
             }
             HikVision hikVision = new HikVision();
 
-            hikVision.setupHikVision(oClient, config, asynchronousProcessing);
+            hikVision.setupHikVision(oClient, config, asynchronousProcessing, isInTest);
 
             source.hikVision = hikVision;
         } catch (Exception e) {
@@ -278,7 +311,13 @@ public class HikVisionHandleConfiguration extends Handler<ExtensionServiceMessag
             return false;
         }
 
-        source.client.setPublishHandler(publishHandler);
+        if (source.client != null) {
+            source.client.setPublishHandler(publishHandler);
+        } else {
+            log.error(
+                    "Configuration failed. Exception occurred while setting up HikVision Source: source.client == null");
+        }
+
         log.trace("HikVision source created");
         return true;
     }
@@ -290,7 +329,7 @@ public class HikVisionHandleConfiguration extends Handler<ExtensionServiceMessag
      * configuration document) or to the WebSocket connection crashing momentarily.
      */
     private void failConfig() {
-        // source.close();
+        source.close();
         configComplete = true;
     }
 

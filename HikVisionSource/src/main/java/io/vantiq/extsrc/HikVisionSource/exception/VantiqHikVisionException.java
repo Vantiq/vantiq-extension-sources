@@ -8,7 +8,7 @@
 package io.vantiq.extsrc.HikVisionSource.exception;
 
 /**
- * A custom exception used to extract the useful information from a SQLException
+ * A custom exception used to extract the useful information from a Exception
  */
 public class VantiqHikVisionException extends Exception {
 

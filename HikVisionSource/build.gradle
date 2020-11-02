@@ -48,6 +48,9 @@ tasks.withType(Test) {
         systemProperty "TestVantiqServer", rootProject.findProperty("TestVantiqServer") ?: "empty"
     }
 }
+if (System.env.HIKVISION_LOC == null ) {
+    throw new IllegalArgumentException("Required environment variable HIKVISION_LOC not found.")
+}
 
 dependencies {
     // This dependency is used internally, and not exposed to consumers on their own compile classpath.
@@ -69,8 +72,8 @@ dependencies {
     // Used to create a connection pool if asynchronous processing has been specified for publish/query handlers
     compile group: 'com.zaxxer', name: 'HikariCP', version: '3.3.1'
 
-	implementation  files('lib/jna.jar','lib/examples.jar')
-    //runtime files('lib/jna.jar')
-    //runtime files('lib/examples.jar')
+    // https://mvnrepository.com/artifact/net.java.dev.jna/jna
+    //compile group: 'net.java.dev.jna', name: 'jna', version: '5.6.0'
 
+	implementation  files("${System.env.HIKVISION_LOC}/jna.jar","${System.env.HIKVISION_LOC}/examples.jar")
 }

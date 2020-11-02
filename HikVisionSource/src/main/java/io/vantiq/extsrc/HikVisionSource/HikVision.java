@@ -28,6 +28,7 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Stream;
 
 import com.sun.jna.NativeLong;
 import com.sun.jna.Pointer;
@@ -37,12 +38,10 @@ import com.sun.jna.ptr.IntByReference;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import io.vantiq.client.BaseResponseHandler;
 import io.vantiq.client.ResponseHandler;
 import io.vantiq.client.Vantiq;
 import io.vantiq.client.VantiqError;
 import io.vantiq.extjsdk.ExtensionWebSocketClient;
-import io.vantiq.extjsdk.Response;
 import io.vantiq.extsrc.HikVisionSource.HCNetSDK.FMSGCallBack;
 import io.vantiq.extsrc.HikVisionSource.HCNetSDK.NET_DVR_ALARMER;
 import io.vantiq.extsrc.HikVisionSource.HCNetSDK.NET_DVR_DEVICEINFO_V30;
@@ -50,6 +49,11 @@ import io.vantiq.extsrc.HikVisionSource.HCNetSDK.NET_DVR_SETUPALARM_PARAM;
 import io.vantiq.extsrc.HikVisionSource.exception.VantiqHikVisionException;
 import io.vantiq.extjsdk.ExtensionServiceMessage;
 
+/**
+ * Thie class implememnt the SDK with HikVision Cameras , from one hand it
+ * activate the different cameras and from the other hand it hanldes the
+ * different notifications accpeted by the different cameras.
+ */
 public class HikVision {
     /*
      * public class RealDataCallBack implements HCNetSDK.FRealDataCallBack_V30 {
@@ -72,10 +76,6 @@ public class HikVision {
 
     Logger log = LoggerFactory.getLogger(this.getClass().getCanonicalName());
 
-    // Boolean flag specifying if publish/query requests are handled synchronously,
-    // or asynchronously
-    boolean isAsync;
-
     static HCNetSDK hCNetSDK = HCNetSDK.INSTANCE;
     FMSGCallBack m_falarmData_V31 = null;
     ExtensionWebSocketClient oClient;
@@ -94,6 +94,9 @@ public class HikVision {
     String m_ListenIP;
     String VantiqDocumentPath = "public/image";
     String vantiqResourcePath = "documants";
+
+    NativeLong lUserID;
+    int iLastErr;
 
     private boolean DumpToFile(String filePath, Pointer pBuffer, int size) {
         try {
@@ -390,14 +393,6 @@ public class HikVision {
         o.ThermalImageName = "b";
 
         if (0 == struThermometryAlarm.byRuleCalibType) {
-            // stringAlarm = String.format("{0}: Channel:{1},
-            // RuleID:{2},TemperatureSuddenChangeCycle:{3};
-            // TemperatureSuddenChangeValue:{4}; ToleranceTemperature:{5},
-            // AlertFilteringTime:{6}, AlarmFilteringTime:{7},ThermometryUnit:{8},
-            // PresetNo:{9}, RuleTemperature:{10}, CurrTemperature:{11}, PTZ Info[Pan:{12},
-            // Tilt:{13}, Zoom:{14}], AlarmLevel:{15}, AlarmType:{16}, AlarmRule:{17},
-            // RuleCalibType:{18}, Point[x:{19}, y:{20}], PicLen:{21}, ThermalPicLen:{22},
-            // ThermalInfoLen:{23}",
             stringAlarm = String.format(
                     "%d: Channel:%d, RuleID:%d,TemperatureSuddenChangeCycle:%d; TemperatureSuddenChangeValue:%f;  ToleranceTemperature:%f, AlertFilteringTime:%s, AlarmFilteringTime:%s,ThermometryUnit:%d, PresetNo:%d, RuleTemperature:%f, CurrTemperature:%f, PTZ Info[Pan:%f, Tilt:%f, Zoom:%d], AlarmLevel:%d,   AlarmType:%s, AlarmRule:%d, RuleCalibType:%d, Point[x:%f, y:%f], PicLen:%d, ThermalPicLen:%d, ThermalInfoLen:%d",
                     dwSize, struThermometryAlarm.dwChannel, struThermometryAlarm.byRuleID,
@@ -422,14 +417,6 @@ public class HikVision {
                 float fY = struThermometryAlarm.struRegion.struPos[j].fY;
                 szRegionInfo += String.format("%sX%d:%f,Y%d:%f;\n", szRegionInfo, j + 1, fX, j + 1, fY);
             }
-            // stringAlarm = string.Format("{0}: Channel:{1},
-            // RuleID:{2},TemperatureSuddenChangeCycle:{3};
-            // TemperatureSuddenChangeValue:{4}; ToleranceTemperature:{5},
-            // AlertFilteringTime:{6}, AlarmFilteringTime:{7},ThermometryUnit:{8},
-            // PresetNo:{9}, RuleTemperature:{10}, CurrTemperature:{11}, PTZ Info[Pan:{12},
-            // Tilt:{13}, Zoom:{14}], AlarmLevel:{15}, AlarmType:{16}, AlarmRule:{17},
-            // RuleCalibType:{18}, Point[x:{19}, y:{20}], PicLen:{21}, ThermalPicLen:{22},
-            // ThermalInfoLen:{23}",
 
             stringAlarm = String.format("%d: Channel:%d, RuleID:%d,TemperatureSuddenChangeCycle:%d", dwSize,
                     struThermometryAlarm.dwChannel, struThermometryAlarm.byRuleID,
@@ -579,6 +566,12 @@ public class HikVision {
 
     }
 
+    /**
+     * Procudure responsible for uploading images accpeted by notificatio from
+     * Camera .
+     * 
+     * @param notification
+     */
     private void sendNotificationWithUpload(ThermalNotification notification) {
         ImageUtil iu = new ImageUtil();
         iu.vantiq = new Vantiq((String) config.get("vantiqServer"));
@@ -609,6 +602,14 @@ public class HikVision {
          */
     }
 
+    /**
+     * Hanlde all type oc communication probelm raised by the Camera
+     * 
+     * @param pAlarmer
+     * @param pAlarmInfo
+     * @param dwBufLen
+     * @param pUser
+     */
     public void ProcessCommAlarm(HCNetSDK.NET_DVR_ALARMER pAlarmer, HCNetSDK.RECV_ALARM pAlarmInfo, int dwBufLen,
             Pointer pUser) {
         HCNetSDK.NET_DVR_ALARMINFO struAlarmInfo = new HCNetSDK.NET_DVR_ALARMINFO();
@@ -700,6 +701,14 @@ public class HikVision {
 
     }
 
+    /**
+     * Managing Equipment level notifications received by Camera
+     * 
+     * @param pAlarmer
+     * @param pAlarmInfo
+     * @param dwBufLen
+     * @param pUser
+     */
     private void ProcessCommAlarm_V30(HCNetSDK.NET_DVR_ALARMER pAlarmer, HCNetSDK.RECV_ALARM pAlarmInfo, int dwBufLen,
             Pointer pUser) {
 
@@ -851,6 +860,18 @@ public class HikVision {
         return null;
     }
 
+    /**
+     * Basic Face recognition notification , can contans IR imgae and a regular
+     * optic image . those are being loaded to vantiq , once its uploaded
+     * successfully, it send notificatio to the source topic which contains all the
+     * information received from the camera includiong the accepted path in the
+     * vantiq document sectio .
+     *
+     * @param pAlarmer
+     * @param pAlarmInfo
+     * @param dwBufLen
+     * @param pUser
+     */
     private void ProcessCommAlarm_RULE(HCNetSDK.NET_DVR_ALARMER pAlarmer, HCNetSDK.RECV_ALARM pAlarmInfo, int dwBufLen,
             Pointer pUser) {
         HCNetSDK.NET_VCA_RULE_ALARM struRuleAlarmInfo = new HCNetSDK.NET_VCA_RULE_ALARM();
@@ -873,39 +894,13 @@ public class HikVision {
 
         switch (struRuleAlarmInfo.struRuleInfo.wEventTypeEx) {
             case 1: // (ushort)CHCNetSDK.VCA_RULE_EVENT_TYPE_EX.ENUM_VCA_EVENT_TRAVERSE_PLANE:
-                /*
-                 * NET_VCA_TRAVERSE_PLANE m_struTraversePlane = new NET_VCA_TRAVERSE_PLANE();
-                 * m_struTraversePlane.write(); Pointer pInfot = struRuleAlarmInfo.getPointer();
-                 * pInfot.write(0, struRuleAlarmInfo.struRuleInfo.uEventParam, 0,
-                 * m_struTraversePlane.size()); m_struTraversePlane.read();
-                 */
                 stringAlarm = "Line crossing,Object ID:" + struRuleAlarmInfo.struTargetInfo.dwID;
-                // ?????????: (m_struTraversePlane.struPlaneBottom.struStart.fX,
-                // m_struTraversePlane.struPlaneBottom.struStart.fY)
-                // ?????????: (m_struTraversePlane.struPlaneBottom.struEnd.fX,
-                // m_struTraversePlane.struPlaneBottom.struEnd.fY)
                 break;
             case 2: // (ushort)CHCNetSDK.VCA_RULE_EVENT_TYPE_EX.ENUM_VCA_EVENT_ENTER_AREA:
-                /*
-                 * IntPtr ptrEnterInfo = Marshal.AllocHGlobal((Int32)dwSize);
-                 * Marshal.StructureToPtr(struRuleAlarmInfo.struRuleInfo.uEventParam,
-                 * ptrEnterInfo, false); m_struVcaArea =
-                 * (CHCNetSDK.NET_VCA_AREA)Marshal.PtrToStructure(ptrEnterInfo,
-                 * typeof(CHCNetSDK.NET_VCA_AREA));
-                 */
                 stringAlarm = "Target entering area,Object ID:" + struRuleAlarmInfo.struTargetInfo.dwID;
-                // m_struVcaArea.struRegion ???????
                 break;
             case 3:// (ushort)CHCNetSDK.VCA_RULE_EVENT_TYPE_EX.ENUM_VCA_EVENT_EXIT_AREA:
-                /*
-                 * IntPtr ptrExitInfo = Marshal.AllocHGlobal((Int32)dwSize);
-                 * Marshal.StructureToPtr(struRuleAlarmInfo.struRuleInfo.uEventParam,
-                 * ptrExitInfo, false); m_struVcaArea =
-                 * (CHCNetSDK.NET_VCA_AREA)Marshal.PtrToStructure(ptrExitInfo,
-                 * typeof(CHCNetSDK.NET_VCA_AREA));
-                 */
                 stringAlarm = "Target leaving area,Object ID:" + struRuleAlarmInfo.struTargetInfo.dwID;
-                // m_struVcaArea.struRegion ???????
                 break;
             case 4:// (ushort)CHCNetSDK.VCA_RULE_EVENT_TYPE_EX.ENUM_VCA_EVENT_INTRUSION:
             {
@@ -971,9 +966,7 @@ public class HikVision {
         String strTimeSecond = Integer.toString((struRuleAlarmInfo.dwAbsTime >> 0) & 63);
         String strTime = strTimeYear + "-" + strTimeMonth + "-" + strTimeDay + " " + strTimeHour + ":" + strTimeMinute
                 + ":" + strTimeSecond;
-        // ????IP??
 
-        // ??????????
         log.info("Camera {} : {}", camera.CameraId, stringAlarm);
 
         ThermalNotification o = new ThermalNotification();
@@ -988,6 +981,16 @@ public class HikVision {
 
     }
 
+    /**
+     * the callback registed to the SDK , based on the commanbd type its activate
+     * the relavent procedure
+     * 
+     * @param lCommand
+     * @param pAlarmer
+     * @param pAlarmInfo
+     * @param dwBufLen
+     * @param pUser
+     */
     public void AlarmMessageHandle(int lCommand, NET_DVR_ALARMER pAlarmer, HCNetSDK.RECV_ALARM pAlarmInfo, int dwBufLen,
             Pointer pUser) {
         // ??lCommand?????????????,???lCommand?????pAlarmInfo??
@@ -1053,76 +1056,6 @@ public class HikVision {
         }
     }
 
-    void testDumpObjToBin(Object obj, String filename) {
-        try {
-            OutputStream outputStream = new FileOutputStream(filename); // "D:/TMP/Thermo/buffer.bin") ;
-            ByteArrayOutputStream bos = new ByteArrayOutputStream();
-            ObjectOutputStream oos = new ObjectOutputStream(bos);
-            oos.writeObject(obj);
-            oos.flush();
-            byte[] data = bos.toByteArray();
-
-            outputStream.write(data, 0, data.length);
-            outputStream.close();
-        } catch (IOException ex) {
-            log.error("failed to write binary code {}", ex);
-        }
-
-    }
-
-    Object testReadFromBinary(String fileName) {
-        Object obj = null;
-        try {
-            // Reading the object from a file
-            FileInputStream file = new FileInputStream(fileName);
-            ObjectInputStream in = new ObjectInputStream(file);
-
-            // Method for deserialization of object
-            try {
-                // obj = (HCNetSDK.NET_VCA_RULE_ALARM)in.readObject();
-                obj = in.readObject();
-                System.out.println("Object has been deserialized ");
-            } catch (ClassNotFoundException ex1) {
-
-            }
-
-            in.close();
-            file.close();
-
-        } catch (IOException ex) {
-            System.out.println("IOException is caught");
-        }
-        return obj;
-
-    }
-
-    void testVantiq() {
-        // HCNetSDK.NET_VCA_RULE_ALARM struRuleAlarmInfo = new
-        // HCNetSDK.NET_VCA_RULE_ALARM();
-        HCNetSDK.NET_DVR_THERMOMETRY_ALARM struThermometryAlarm = new HCNetSDK.NET_DVR_THERMOMETRY_ALARM();
-        int dwSize = struThermometryAlarm.size();
-
-        struThermometryAlarm.dwSize = dwSize;
-
-        ThermalNotification o = new ThermalNotification();
-        o.CameraId = "test";
-        o.EventType = "Test";
-        // o.ThermalImageName =
-        // "D:/TMP/Thermo/Device_ID_ThermoPic_[92.200.245.81]_lUerID_[0]_1718124008.jpg";
-        // o.ImageName =
-        // "D:/TMP/Thermo/Device_ID_Pic_[211.140.29.11]_lUerID_[0]_0100014302.jpg";
-        o.ThermalImageName = "Device_ID_ThermoPic_[92.200.217.162]_lUerID_[0]_1335121507.jpg";
-        o.ImageName = "Device_ID_Pic_[92.200.217.162]_lUerID_[0]_1335138206.jpg";
-
-        HCNetSDK.NET_VCA_RULE_ALARM o1 = (HCNetSDK.NET_VCA_RULE_ALARM) testReadFromBinary("d:/tmp/thermo/rule.bin");
-        o.Extended = struThermometryAlarm;
-
-        // testDumpObjToBin(struThermometryAlarm,"d:/tmp/thermo/thermo.bin");
-
-        sendNotificationWithUpload(o);
-
-    }
-
     boolean initCamera() {
 
         boolean m_bInitSDK = hCNetSDK.NET_DVR_Init();
@@ -1171,9 +1104,6 @@ public class HikVision {
         return true;
     }
 
-    NativeLong lUserID;
-    int iLastErr;
-
     private boolean LoginV40(CameraEntry camera) {
         if (camera.DVRIPAddress == "" || camera.DVRPortNumber == 0 || camera.DVRUserName == ""
                 || camera.DVRPassword == "") {
@@ -1186,6 +1116,7 @@ public class HikVision {
 
         log.warn("Trying to loginV40 to camera {} {}:{}", camera.CameraId, camera.DVRIPAddress, camera.DVRPortNumber);
 
+        // TODO: Remove once login mode will finilized as version 4.0
         // lUserID = hCNetSDK.NET_DVR_Login_V30(camera.DVRIPAddress,
         // camera.DVRPortNumber, camera.DVRUserName, camera.DVRPassword, DeviceInfo);
 
@@ -1253,8 +1184,6 @@ public class HikVision {
     }
 
     private boolean SetAlarm(CameraEntry camera) {
-        // NativeLong lAlarmHandle = hCNetSDK.NET_DVR_SetupAlarmChan_V30(lUserID);
-
         NET_DVR_SETUPALARM_PARAM struAlarmParam = new NET_DVR_SETUPALARM_PARAM();
 
         struAlarmParam.dwSize = struAlarmParam.size(); // (uint)Marshal.SizeOf(struAlarmParam);
@@ -1338,11 +1267,6 @@ public class HikVision {
         lpPreviewInfo.byProtoType = 0;
         lpPreviewInfo.byPreviewMode = 0;
 
-        // if (camera.RealData == null)
-        // {
-        // camera.RealData = new hCNetSDK.REALDATACALLBACK(RealDataCallBack);
-        // }
-
         Pointer pUser;
         pUser = null;
 
@@ -1360,6 +1284,13 @@ public class HikVision {
 
     }
 
+    public void setupHikVision(ExtensionWebSocketClient oClient, Map<String, Object> config, boolean asyncProcessing,
+            boolean IsInTest) throws VantiqHikVisionException {
+        if (!IsInTest) {
+            setupHikVision(oClient, config, asyncProcessing);
+        }
+    }
+
     public void setupHikVision(ExtensionWebSocketClient oClient, Map<String, Object> config, boolean asyncProcessing)
             throws VantiqHikVisionException {
         boolean bValid = true;
@@ -1373,6 +1304,8 @@ public class HikVision {
 
         try {
 
+            // TODO: Remove that once unitest are working properly on incoming
+            // notifications.
             // testVantiq();
 
             if (!initCamera())
@@ -1389,7 +1322,7 @@ public class HikVision {
                             bValid = Login(camera);
 
                         if (bValid) {
-                            // bValid = StartRealPlayer(camera);
+                            bValid = StartRealPlayer(camera);
                         }
 
                         if (bValid) {
@@ -1399,7 +1332,6 @@ public class HikVision {
                         if (!bValid)
                             break;
                     }
-
                 }
             }
 
@@ -1414,12 +1346,14 @@ public class HikVision {
         }
     }
 
-    public void reportHikVisionError(Exception e) throws VantiqHikVisionException {
-        String message = this.getClass().getCanonicalName() + ": A HikVision error occurred: " + e.getMessage()
-                + ", Error Code: " + e.getCause();
-        throw new VantiqHikVisionException(message);
-    }
-
+    /**
+     * function responsible for activating the command based of the publish from 
+     * Vantiq , mainy for changing the andle and the zoom of the camera. 
+     * 
+     * @param message
+     * @return
+     * @throws VantiqHikVisionException
+     */
     int hanldeUpdateCommand(ExtensionServiceMessage message) throws VantiqHikVisionException {
         if (!oClient.isConnected()) {
             throw new VantiqHikVisionException(String.format("EasyDombus is not connected Code %d", 10));
@@ -1436,13 +1370,14 @@ public class HikVision {
                 .findFirst().orElseGet(null);
 
         if (CE == null) {
+            iLastErr = -2;
             throw new VantiqHikVisionException(String.format("Camera Id %s not found", cameraId));
 
         }
 
         if (!CE.Enable) {
+            iLastErr = -1 ; 
             throw new VantiqHikVisionException(String.format("Camera Id %s is not enabled", cameraId));
-
         }
 
         NativeLong userId = new NativeLong(CE.lUserID);
@@ -1450,8 +1385,7 @@ public class HikVision {
 
         if (!rc) {
             int errorCode = hCNetSDK.NET_DVR_GetLastError();
-            // throw new VantiqHikVisionException(String.format("commad on camera Id %s
-            // failed error %d",cameraId,errorCode)) ;
+            iLastErr = errorCode;             
             log.error("HikVision::hanldeUpdateCommand failed on camera id {} error {}", cameraId, errorCode);
 
         }
@@ -1459,14 +1393,17 @@ public class HikVision {
         return 0;
     }
 
+    /// --------------------------- Helper fucntions
     public void close() {
         // Close single connection if open
 
         bContinue = false;
 
-        for (CameraEntry camera : cameras) {
-            if (camera.Enable) {
-                logout(camera);
+        if (cameras != null) {
+            for (CameraEntry camera : cameras) {
+                if (camera.Enable) {
+                    logout(camera);
+                }
             }
         }
 
@@ -1476,4 +1413,81 @@ public class HikVision {
         }
 
     }
+
+    public void reportHikVisionError(Exception e) throws VantiqHikVisionException {
+        String message = this.getClass().getCanonicalName() + ": A HikVision error occurred: " + e.getMessage()
+                + ", Error Code: " + e.getCause();
+        throw new VantiqHikVisionException(message);
+    }
+
+    void testVantiq() {
+        // HCNetSDK.NET_VCA_RULE_ALARM struRuleAlarmInfo = new
+        // HCNetSDK.NET_VCA_RULE_ALARM();
+        HCNetSDK.NET_DVR_THERMOMETRY_ALARM struThermometryAlarm = new HCNetSDK.NET_DVR_THERMOMETRY_ALARM();
+        int dwSize = struThermometryAlarm.size();
+
+        struThermometryAlarm.dwSize = dwSize;
+
+        ThermalNotification o = new ThermalNotification();
+        o.CameraId = "test";
+        o.EventType = "Test";
+        // o.ThermalImageName =
+        // "D:/TMP/Thermo/Device_ID_ThermoPic_[92.200.245.81]_lUerID_[0]_1718124008.jpg";
+        // o.ImageName =
+        // "D:/TMP/Thermo/Device_ID_Pic_[211.140.29.11]_lUerID_[0]_0100014302.jpg";
+        o.ThermalImageName = "Device_ID_ThermoPic_[92.200.217.162]_lUerID_[0]_1335121507.jpg";
+        o.ImageName = "Device_ID_Pic_[92.200.217.162]_lUerID_[0]_1335138206.jpg";
+
+        HCNetSDK.NET_VCA_RULE_ALARM o1 = (HCNetSDK.NET_VCA_RULE_ALARM) testReadFromBinary("d:/tmp/thermo/rule.bin");
+        o.Extended = struThermometryAlarm;
+
+        // testDumpObjToBin(struThermometryAlarm,"d:/tmp/thermo/thermo.bin");
+
+        sendNotificationWithUpload(o);
+
+    }
+
+    void testDumpObjToBin(Object obj, String filename) {
+        try {
+            OutputStream outputStream = new FileOutputStream(filename); // "D:/TMP/Thermo/buffer.bin") ;
+            ByteArrayOutputStream bos = new ByteArrayOutputStream();
+            ObjectOutputStream oos = new ObjectOutputStream(bos);
+            oos.writeObject(obj);
+            oos.flush();
+            byte[] data = bos.toByteArray();
+
+            outputStream.write(data, 0, data.length);
+            outputStream.close();
+        } catch (IOException ex) {
+            log.error("failed to write binary code {}", ex);
+        }
+
+    }
+
+    Object testReadFromBinary(String fileName) {
+        Object obj = null;
+        try {
+            // Reading the object from a file
+            FileInputStream file = new FileInputStream(fileName);
+            ObjectInputStream in = new ObjectInputStream(file);
+
+            // Method for deserialization of object
+            try {
+                // obj = (HCNetSDK.NET_VCA_RULE_ALARM)in.readObject();
+                obj = in.readObject();
+                System.out.println("Object has been deserialized ");
+            } catch (ClassNotFoundException ex1) {
+
+            }
+
+            in.close();
+            file.close();
+
+        } catch (IOException ex) {
+            System.out.println("IOException is caught");
+        }
+        return obj;
+
+    }
+
 }

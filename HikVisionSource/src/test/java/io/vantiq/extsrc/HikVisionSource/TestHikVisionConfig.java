@@ -12,8 +12,11 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeTrue;
 
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.HashMap;
 
 import org.junit.After;
 import org.junit.Before;
@@ -31,7 +34,7 @@ public class TestHikVisionConfig extends TestHikVisionBase {
     String authToken;
     String targetVantiqServer;
     
-    Map<String, Object> general;
+    Map<String, String> general;
     
     @Before
     public void setup() {
@@ -46,54 +49,39 @@ public class TestHikVisionConfig extends TestHikVisionBase {
     public void tearDown() {
         nCore.stop();
     }
-    /*
+    
     @Test
     public void testEmptyConfig() {
         Map conf = new LinkedHashMap<>();
         Map vantiqConf = new LinkedHashMap<>();
-        sendConfig(conf, vantiqConf);
+        ArrayList list = new ArrayList();
+        sendConfig(conf, vantiqConf,list);
         assertTrue("Should fail on empty configuration", configIsFailed());
     }
-    */
-    /*
+    
+    
     @Test
     public void testMissingGeneral() {
         Map conf = minimalConfig();
         Map vantiqConf = createMinimalVantiq();
+        ArrayList<Object> cameras = minimalCameraList();
+
         conf.remove("general");
-        sendConfig(conf, vantiqConf);
-        assertTrue("Should fail when missing 'general' configuration", configIsFailed());
+        conf.clear();
+        sendConfig(conf, vantiqConf,cameras);
+        assertTrue("Should not fail when missing 'general' configuration", !configIsFailed());
     }
-    */
-    /*
+    
+    
     @Test 
-    public void testMissingVantiq() {
+    public void testMissingOptions() {
         Map conf = minimalConfig();
         Map vantiqConf = new LinkedHashMap<>();
-        sendConfig(conf, vantiqConf);
-        assertTrue("Should fail when missing 'vantiq' configuration", configIsFailed());
+        ArrayList<Object> cameras = minimalCameraList();
+        sendConfig(conf, vantiqConf,cameras);
+        assertTrue("Should fail when missing 'options' configuration", configIsFailed());
     }
-    */
-    /*
-    @Test 
-    public void testMissingPackageRows() {
-        Map conf = minimalConfig();
-        Map vantiqConf = createMinimalVantiq();
-        vantiqConf.remove("packageRows");
-        sendConfig(conf, vantiqConf);
-        assertTrue("Should fail when missing 'packageRows' configuration", configIsFailed());
-    }
-    */
-    /*
-    @Test
-    public void testPackageRowsFalse() {
-        Map conf = minimalConfig();
-        Map vantiqConf = createMinimalVantiq();
-        vantiqConf.put("packageRows","false");
-        sendConfig(conf, vantiqConf);
-        assertTrue("Should fail when 'packageRows' is set to 'false'", configIsFailed());
-    }
-    */
+    
 
     @Test
     public void testMinimalConfig() {
@@ -101,100 +89,160 @@ public class TestHikVisionConfig extends TestHikVisionBase {
         
         Map conf = minimalConfig();
         Map vantiqConf = createMinimalVantiq();
-        sendConfig(conf, vantiqConf);
+        ArrayList<Object> cameras = minimalCameraList();
+
+        sendConfig(conf, vantiqConf,cameras);
         assertFalse("Should not fail with minimal configuration", configIsFailed());
     }
-    
     @Test
-    public void testPollingConfig() {
+    public void testAsynchronousProcessingNoCameras() {
         nCore.start(5);
-        
         Map conf = minimalConfig();
-        conf.put("pollTime", 3000);
-        conf.put("pollQuery", "SELECT * FROM Test");
         Map vantiqConf = createMinimalVantiq();
-        sendConfig(conf, vantiqConf);
-        assertFalse("Should not fail with polling configuration", configIsFailed());
-        
-        conf.remove("pollQuery");
-        sendConfig(conf, vantiqConf);
-        assertFalse("Should not fail with missing pollQuery configuration", configIsFailed());
-        
-        conf.remove("pollTime");
-        conf.put("pollQuery", "SELECT * FROM Test");
-        sendConfig(conf, vantiqConf);
-        assertFalse("Should not fail with missing pollTime configuration", configIsFailed());
-    }
+        ArrayList<Object> cameras = minimalCameraList();
+        cameras.clear();
 
+        sendConfig(conf, vantiqConf,cameras);
+        assertFalse("Should fail when No cameras is set correctly", !configIsFailed());
+    }
+    @Test
+    public void testAsynchronousProcessingNoCamerasInEnable() {
+        nCore.start(5);
+        Map conf = minimalConfig();
+        Map vantiqConf = createMinimalVantiq();
+        ArrayList<Object> cameras = minimalCameraList();
+        ((Map)cameras.get(0)).put("Enable","false");
+
+        sendConfig(conf, vantiqConf,cameras);
+        assertFalse("Should fail when No cameras is set correctly", !configIsFailed());
+    }
+    @Test
+    public void testAsynchronousProcessingIllegalValidValues() {
+        nCore.start(5);
+        Map conf = minimalConfig();
+        Map vantiqConf = createMinimalVantiq();
+        vantiqConf.put("asynchronousProcessing", "jibberish");
+        ArrayList<Object> cameras = minimalCameraList();
+
+
+        vantiqConf.put("asynchronousProcessing", true);
+        // Setting maxRunningThreads and maxQueuedTasks incorrectly
+        vantiqConf.put("maxActiveTasks", "jibberish");
+        vantiqConf.put("maxQueuedTasks", "moreJibberish");
+        sendConfig(conf, vantiqConf,cameras);
+        assertFalse("Should fail when maxActiveTasks and maxQueuedTasks are set correctly", configIsFailed());
+    }
+    @Test
+    public void testAsynchronousProcessingValidValues() {
+        nCore.start(5);
+        Map conf = minimalConfig();
+        Map vantiqConf = createMinimalVantiq();
+        vantiqConf.put("asynchronousProcessing", "jibberish");
+        ArrayList<Object> cameras = minimalCameraList();
+
+
+        vantiqConf.put("asynchronousProcessing", true);
+        vantiqConf.put("maxActiveTasks", 10);
+        vantiqConf.put("maxQueuedTasks", 20);
+        sendConfig(conf, vantiqConf,cameras);
+        assertFalse("Should not fail when maxActiveTasks and maxQueuedTasks are set correctly", configIsFailed());
+    }
+    
     @Test
     public void testAsynchronousProcessing() {
         nCore.start(5);
 
         // Setting asynchronousProcessing incorrectly
+        
         Map conf = minimalConfig();
-        conf.put("asynchronousProcessing", "jibberish");
         Map vantiqConf = createMinimalVantiq();
-        sendConfig(conf, vantiqConf);
+        vantiqConf.put("asynchronousProcessing", "jibberish");
+        ArrayList<Object> cameras = minimalCameraList();
+
+        sendConfig(conf, vantiqConf,cameras);
         assertFalse("Should not fail with invalid asynchronousProcessing value", configIsFailed());
 
         // Setting asynchronousProcessing to false (same as not including it)
-        conf.put("asynchronousProcessing", false);
-        sendConfig(conf, vantiqConf);
+        vantiqConf.put("asynchronousProcessing", false);
+        sendConfig(conf, vantiqConf,cameras);
         assertFalse("Should not fail with asynchronousProcessing set to false", configIsFailed());
 
         // Setting asynchronousProcessing to true
-        conf.put("asynchronousProcessing", true);
-        sendConfig(conf, vantiqConf);
+        vantiqConf.put("asynchronousProcessing", true);
+        sendConfig(conf, vantiqConf,cameras);
         assertFalse("Should not fail with asynchronousProcessing set to true", configIsFailed());
 
         // Setting maxRunningThreads and maxQueuedTasks incorrectly
-        conf.put("maxActiveTasks", "jibberish");
-        conf.put("maxQueuedTasks", "moreJibberish");
-        sendConfig(conf, vantiqConf);
+        /*
+        vantiqConf.put("maxActiveTasks", "jibberish");
+        vantiqConf.put("maxQueuedTasks", "moreJibberish");
+        sendConfig(conf, vantiqConf,cameras);
         assertFalse("Should not fail when maxActiveTasks and maxQueuedTasks are set incorrectly", configIsFailed());
 
         // Setting maxRunningThreads and maxQueuedTasks correctly
-        conf.put("maxActiveTasks", 10);
-        conf.put("maxQueuedTasks", 20);
-        sendConfig(conf, vantiqConf);
+        vantiqConf.put("asynchronousProcessing", true);
+        vantiqConf.put("maxActiveTasks", 10);
+        vantiqConf.put("maxQueuedTasks", 20);
+        sendConfig(conf, vantiqConf,cameras);
         assertFalse("Should not fail when maxActiveTasks and maxQueuedTasks are set correctly", configIsFailed());
+        */
     }
     
 // ================================================= Helper functions =================================================
     
-    public void sendConfig(Map<String, ?> csvConfig, Map<String, ?> vantiqConfig) {
+    public void sendConfig(Map<String, String> generalConfig, Map<String, ?> vantiqConfig, ArrayList cameras) {
         ExtensionServiceMessage m = new ExtensionServiceMessage("");
         
         Map<String, Object> obj = new LinkedHashMap<>();
         Map<String, Object> config = new LinkedHashMap<>();
-        config.put("csvConfig", csvConfig);
-        config.put("vantiq", vantiqConfig);
+        config.put("general", generalConfig);
+        config.put("cameras", cameras);
+        config.put("options", vantiqConfig);
         obj.put("config", config);
         m.object = obj;
         
         handler.handleMessage(m);
     }
-    
-    public Map<String, Object> minimalConfig() {
-        createMinimalGeneral();
-        Map<String, Object> ret = new LinkedHashMap<>();
-        ret.put("general", general);
+    public ArrayList<Object> minimalCameraList() {
         
-        return ret;
+        ArrayList<Object> list = new ArrayList<Object>();
+        Map<String, Object> camera = new LinkedHashMap<>();
+        camera.put("CameraId","TestId"); 
+        camera.put("Enable","true"); 
+        camera.put("DVRIP","127.0.0.1"); 
+        camera.put("DVRPort","8000"); 
+        camera.put("DVRUserName","admin"); 
+        camera.put("DVRPassword","password"); 
+
+        list.add(camera);
+
+        return list;
+
+    }
+    
+    public Map<String, String> minimalConfig() {
+        createMinimalGeneral();
+       // Map<String, Object> ret = new LinkedHashMap<>();
+       // ret.put("general", general);
+        
+        return general;
     }
     
     public void createMinimalGeneral() {
         general = new LinkedHashMap<>();
-        general.put("fileFolderPath", testFileFolderPath);
-        general.put("filePrefix", testFilePrefix);
-        general.put("fileExtension", testFileExtension);
+        general.put("sdkLogPath", testSdkLogPath);
+        general.put("DVRImageFolderPath", testDVRImageFolderPath);
+        general.put("VantiqDocumentPath", testVantiqDocumentPath);
+        general.put("VantiqResourcePath", testVantiqResourcePath);
 
 
     }
     
-    public Map<String, String> createMinimalVantiq() {
-        Map<String, String> vantiq = new LinkedHashMap<>();
-        vantiq.put("packageRows", "true");
+    public Map<String, Object> createMinimalVantiq() {
+        Map<String, Object> vantiq = new LinkedHashMap<>();
+        vantiq.put("maxActiveTasks", 3);
+        vantiq.put("maxQueuedTasks", 20);
+        vantiq.put("IsInTest","true");
         return vantiq;
     }
     

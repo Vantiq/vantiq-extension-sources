@@ -2,5 +2,5 @@
    "name" : "HikVision",
    "baseType" : "EXTENSION",
    "verticle" : "service:extensionSource",
-   "config" : {}
+   "config" : ["publish","notification"]
 }
