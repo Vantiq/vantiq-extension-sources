@@ -133,8 +133,8 @@ public class HikVisionHandleConfiguration extends Handler<ExtensionServiceMessag
         int numEnabledCamera = 0;
         for (int i = 0; i < cameras.size(); i++) {
             Map<String, Object> o = cameras.get(i);
-            Boolean anable = Boolean.parseBoolean((String) o.get("Enable"));
-            if (anable) {
+            Boolean enable = Boolean.parseBoolean((String) o.get("Enable"));
+            if (enable) {
                 numEnabledCamera++;
                 cameraList.add(new CameraEntry(cameras.get(i), numEnabledCamera));
             }
