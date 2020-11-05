@@ -33,9 +33,8 @@ Make certain to use the correct implementation for the environment within which 
 
 * **HikVisionMain** -- The main function for the program. Connects to sources as specified in the configuration file.
 * **HikVisionCore** -- Coordinates the connections to Vantiq, responsible for recovery the connection with Vantiq Server
-* **HikVisionHandleConfiguration** -- Sets up the trigger to the file system for detect and processed new HikVision file
-* **HikVision** -- The class that directly interacts with the file system watch service , detect the file and process it .
-
+* **HikVisionHandleConfiguration** -- Sets up the source based on Vantiq configuration.
+* **HikVision** -- Thie class implememnts the SDK of HikVision Cameras. Supporting multiple cameras, allwoing publish commands and manages the camera notifications.
 * **HCNetSDK** -- The implementation of the HikVision jna interface.
 
 ## Prerequisite
@@ -70,7 +69,6 @@ The server config file is written as `property=value` , with each property on it
 own line. The following is an example of a valid server.config file:
 
 ``` 
-
 authToken=XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 sources=HikVision1
 targetServer=https://dev.vantiq.com/
@@ -79,10 +77,7 @@ targetServer=https://dev.vantiq.com/
 ### Vantiq Options
 
 * **authToken**: Required. The authentication token to connect with. These can be obtained from the namespace admin.
-* **sources**: Required. A comma separated list of the sources to which you wish to connect. Any whitespace will be
-
-    removed when read.
-
+* **sources**: Required. A comma separated list of the sources to which you wish to connect. Any whitespace will be removed when read.
 * **targetServer**: Required. The Vantiq server hosting the sources.
 
 # Setting Up Your Vantiq Environment<a name="vantiq" id="vantiq"></a>
@@ -96,7 +91,6 @@ In order to incorporate this Extension Source, you will need to create the Sourc
 When creating a HikVision Extension source, you must first create the source implementation. This is done by using the [*HikVisionImpl.json*](src/test/resources/HikVisionImpl.json) file found in src/test/resources/HikVisionImpl.json. To make the source type known to Vantiq, use the vantiq cli command
 
 ```
-
 vantiq -s <profileName> load sourceimpls <fileName>
 ```
 
@@ -120,7 +114,6 @@ please see the [*hikVisionImpl.json*](src/test/resources/hikVisionImpl.json) fil
 Additionally, an example project named *HikVisionExample.zip* can be found in the *src/test/resources* directory.
 
 ``` 
-
 {
    "general":{
    		"sdkLogPath": "c:/tmp/log",
@@ -176,7 +169,6 @@ For each camera the following properties must be included - all properties are m
 Using Publish statements one can change the direction and zoom of the Hikvision camera. 
 
 ``` 
-
 PROCEDURE TestHikvisionCommands()
 var r = {}
 var zoomIn = 11 
@@ -211,7 +203,7 @@ The exception thrown by the HikVision Class will always be a VantiqHikVisionExce
 
 The source code uses the [MIT License](https://opensource.org/licenses/MIT).  
 
-HikariCP, okhttp3, log4j, and jackson-databind are licensed under
+okhttp3, log4j, and jackson-databind are licensed under
 [Apache Version 2.0 License](http://www.apache.org/licenses/LICENSE-2.0).  
 
 slf4j is licensed under the [MIT License](https://opensource.org/licenses/MIT).  

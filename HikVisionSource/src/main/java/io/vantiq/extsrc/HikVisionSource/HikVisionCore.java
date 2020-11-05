@@ -8,10 +8,6 @@
 
 package io.vantiq.extsrc.HikVisionSource;
 
-import java.util.Arrays;
-import java.util.List;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Timer;
 import java.util.concurrent.CompletableFuture;
@@ -26,7 +22,7 @@ import org.slf4j.LoggerFactory;
 import io.vantiq.extjsdk.ExtensionServiceMessage;
 import io.vantiq.extjsdk.ExtensionWebSocketClient;
 import io.vantiq.extjsdk.Handler;
-import io.vantiq.extsrc.HikVisionSource.exception.*;
+import io.vantiq.extsrc.HikVisionSource.exception.VantiqHikVisionException;
 
 /**
  * Controls the connection and interaction with the Vantiq server. Initialize it
@@ -76,6 +72,9 @@ public class HikVisionCore {
         // Gather query results, or send a query error if an exception is caught
         try {
             int data = localHikVision.hanldeUpdateCommand(message);
+            if (data != 0) {
+                log.error("failed to execute publish command , error {}.", data);
+            }
 
         } catch (VantiqHikVisionException e) {
             log.error("Could not execute requested query.", e);
@@ -213,7 +212,7 @@ public class HikVisionCore {
     }
 
     public void close() {
-        // stop();
+        stop();
 
         if (hikVision != null)
             hikVision.close();

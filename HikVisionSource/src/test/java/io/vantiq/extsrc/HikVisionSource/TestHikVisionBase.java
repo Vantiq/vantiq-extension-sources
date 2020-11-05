@@ -17,7 +17,7 @@ import org.junit.BeforeClass;
 public class TestHikVisionBase {
     static String testVantiqServer;
     static String testAuthToken;
-    static String testSourceName ; 
+    static String testSourceName;
     static String testDVRImageFolderPath;
     static String testVantiqDocumentPath;
     static String testVantiqResourcePath;
@@ -26,7 +26,6 @@ public class TestHikVisionBase {
     static int testIPPort;
     static int testSize;
 
-    
     @BeforeClass
     public static void getProps() {
         testIPAddress = System.getProperty("EntConIPAddress");
@@ -41,76 +40,53 @@ public class TestHikVisionBase {
         testAuthToken = System.getProperty("TestAuthToken", null);
         testVantiqServer = System.getProperty("TestVantiqServer", null);
         testSourceName = System.getProperty("EntConTestSourceName", "testSourceName");
-    
+
         testSdkLogPath = System.getProperty("TestSdkLogPath", "c:/tmp");
         testDVRImageFolderPath = System.getProperty("TestDVRImageFolderPath", "c:/tmp");
         testVantiqDocumentPath = System.getProperty("TestVantiqDocumentPath", "public/image");
         testVantiqResourcePath = System.getProperty("TestVantiqResourcePath", "/resources/documents");
-            
     }
 
     Map<String, String> general;
-    /*
-    public ArrayList<Object> minimalCameraList() {
-        
-        ArrayList<Object> list = new ArrayList<Object>();
-        Map<String, Object> camera = new LinkedHashMap<>();
-        camera.put("CameraId","TestId"); 
-        camera.put("Enable","true"); 
-        camera.put("DVRIP","127.0.0.1"); 
-        camera.put("DVRPort","8000"); 
-        camera.put("DVRUserName","admin"); 
-        camera.put("DVRPassword","password"); 
 
-        list.add(camera);
-
-        return list;
-
-    }
-    */
     public Map<String, String> minimalConfig() {
         createMinimalGeneral();
-       // Map<String, Object> ret = new LinkedHashMap<>();
-       // ret.put("general", general);
-        
         return general;
     }
-    
+
     public void createMinimalGeneral() {
         general = new LinkedHashMap<>();
         general.put("sdkLogPath", testSdkLogPath);
         general.put("DVRImageFolderPath", testDVRImageFolderPath);
         general.put("VantiqDocumentPath", testVantiqDocumentPath);
         general.put("VantiqResourcePath", testVantiqResourcePath);
-
-
     }
+
     public Map<String, Object> createMinimalVantiq() {
         Map<String, Object> vantiq = new LinkedHashMap<>();
         vantiq.put("maxActiveTasks", 3);
         vantiq.put("maxQueuedTasks", 20);
-        vantiq.put("IsInTest","true");
+        vantiq.put("IsInTest", "true");
         return vantiq;
     }
+
     public ArrayList<Object> minimalCameraList() {
-        
+
         ArrayList<Object> list = new ArrayList<Object>();
         Map<String, Object> camera = new LinkedHashMap<>();
-        camera.put("CameraId","TestId"); 
-        camera.put("Enable","true"); 
-        camera.put("DVRIP","127.0.0.1"); 
-        camera.put("DVRPort","8000"); 
-        camera.put("DVRUserName","admin"); 
-        camera.put("DVRPassword","password"); 
+        camera.put("CameraId", "TestId");
+        camera.put("Enable", "true");
+        camera.put("DVRIP", "127.0.0.1");
+        camera.put("DVRPort", "8000");
+        camera.put("DVRUserName", "admin");
+        camera.put("DVRPassword", "password");
 
         list.add(camera);
 
         return list;
-
     }
 
-    public Map<String,Object> createConfigurationSection()
-    {
+    public Map<String, Object> createConfigurationSection() {
         Map generalConfig = minimalConfig();
         Map vantiqConfig = createMinimalVantiq();
         ArrayList<Object> cameras = minimalCameraList();
@@ -122,7 +98,6 @@ public class TestHikVisionBase {
         config.put("options", vantiqConfig);
         obj.put("config", config);
 
-        return obj ; 
+        return obj;
     }
-
 }

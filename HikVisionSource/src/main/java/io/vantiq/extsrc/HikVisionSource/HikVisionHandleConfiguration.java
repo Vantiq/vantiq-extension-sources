@@ -31,20 +31,17 @@ import io.vantiq.extjsdk.Handler;
  *      hikVisionConfig: {
  *          general: {
  *              &lt;general options&gt;
+ *          },
+ *          camers:[
+ *              &lt;list of cameras entriess&gt;
+ *          ],
+ *          options:{
+ *              &lt;options&gt;
  *          }
  *      }
  * }
  * </pre>
- * 
- * The options for general are as follows. At least one must be valid for the
- * source to function:
- * <ul>
- * <li>{@code username}: The username to log into the SQL Database.
- * <li>{@code password}: The password to log into the SQL Database.
- * <li>{@code dbURL}: The URL of the SQL Database to be used. *
- * </ul>
  */
-
 public class HikVisionHandleConfiguration extends Handler<ExtensionServiceMessage> {
     Logger log;
     String sourceName;
@@ -66,7 +63,7 @@ public class HikVisionHandleConfiguration extends Handler<ExtensionServiceMessag
 
     private static final String SDK_LOG_FOLDER_PATH = "sdkLogPath";
     String sdkLogPath = "c:/tmp";
-    private static final String DRV_IMAGE_FOLDER_PATH = "DVRImageFolderPath";
+    private static final String DVR_IMAGE_FOLDER_PATH = "DVRImageFolderPath";
     String dvrImageFolderPath = "c:/tmp";
     private static final String VANTIQ_DOCUMENT_PATH = "VantiqDocumentPath";
     String vantiqDocumentPath = "public/image";
@@ -133,13 +130,11 @@ public class HikVisionHandleConfiguration extends Handler<ExtensionServiceMessag
 
         cameraList = new ArrayList<>();
 
-        // cameraList = (List<CameraEntry>) cameras.toArray();
-
         int numEnabledCamera = 0;
         for (int i = 0; i < cameras.size(); i++) {
             Map<String, Object> o = cameras.get(i);
-            Boolean Enable = Boolean.parseBoolean((String) o.get("Enable"));
-            if (Enable) {
+            Boolean anable = Boolean.parseBoolean((String) o.get("Enable"));
+            if (anable) {
                 numEnabledCamera++;
                 cameraList.add(new CameraEntry(cameras.get(i), numEnabledCamera));
             }
@@ -151,15 +146,7 @@ public class HikVisionHandleConfiguration extends Handler<ExtensionServiceMessag
             return;
 
         }
-        /*
-         * private static final String SDK_LOG_FOLDER_PATH = "sdkLogPath"; String
-         * sdkLogPath = "c:/tmp";
-         * 
-         * private static final String DRV_IMAGE_FOLDER_PATH = "DVRImageFolderPath";
-         * private static final String VANTIQ_DOCUMENT_PATH = "VantiqDocumentPath";
-         */
         // Retrieve the hikVisionConfig and the vantiq config
-
         if (!(config.get(GENERAL) instanceof Map)) {
             log.error(
                     "Configuration failed. Configuration must contain 'general' for infiormation about the extension source");
@@ -182,12 +169,12 @@ public class HikVisionHandleConfiguration extends Handler<ExtensionServiceMessag
             return;
         }
 
-        if (!(general.get(DRV_IMAGE_FOLDER_PATH) instanceof String)) {
-            log.warn("Configuration doesn't include {} . User default value {}", DRV_IMAGE_FOLDER_PATH,
+        if (!(general.get(DVR_IMAGE_FOLDER_PATH) instanceof String)) {
+            log.warn("Configuration doesn't include {} . User default value {}", DVR_IMAGE_FOLDER_PATH,
                     dvrImageFolderPath);
-            general.put(DRV_IMAGE_FOLDER_PATH, dvrImageFolderPath);
+            general.put(DVR_IMAGE_FOLDER_PATH, dvrImageFolderPath);
         } else
-            dvrImageFolderPath = (String) general.get(DRV_IMAGE_FOLDER_PATH);
+            dvrImageFolderPath = (String) general.get(DVR_IMAGE_FOLDER_PATH);
 
         File f1 = new File(sdkLogPath);
         if (!f1.isDirectory()) {

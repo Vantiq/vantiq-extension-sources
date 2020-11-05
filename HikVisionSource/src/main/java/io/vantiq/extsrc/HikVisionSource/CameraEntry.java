@@ -8,7 +8,10 @@
 package io.vantiq.extsrc.HikVisionSource;
 
 import java.util.Map;
-
+/**
+ * Hold the information gatherd from the configuration and the actual activation of a camera.
+ * Class holds the hanldes which are created as part of working process of a camera .
+ */
 public class CameraEntry {
 
     public String CameraId;
