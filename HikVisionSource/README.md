@@ -1,13 +1,24 @@
 # Overview
 
-The following documentation outlines how to incorporate a HikVision Source as part of your project. This allows a user to construct applications that integrate with an HikVision camera and able to detect notifications which contains images and information about face , movement , heat . the HikExtension sourec enable sending zoom and movment connands to the camera as support for all kind of senario such as monitoing application etc. The extension creates , as part of hanlde incoming notification from the camera, files in pre defined folder and upload the file content as events to vantiq. the extension source enable control on the names of the different attributes base on the order in the hikVision file and change the name or delete after processing the file. The extension source can handle multiple files parralel , this can be controled by parameters in the config section. The extension source can support mutiple cameras parralel , based on configuartion .  
+The following documentation outlines how to incorporate a HikVision source as part of your project.
+This allows a user to construct applications that integrate with a HikVision camera and are able to detect notifications which contains images and information about face, movement, and heat.
+The HikExtension source enables sending zoom and movement commands to the camera along with support for other scenarios such as monitoring applications. etc.
+The extension creates, as part of handling incoming notification from the camera,
+files in a defined folder and the uploading of the file content as events to Vantiq.
+The extension source enables control on the names of the different attributes based on their order in the HikVision file and changing the name of or deleting after processing the file.
+The extension source can handle multiple files in parallel;
+this can be controlled by parameters outlined in the config section.
+The extension source can support mutiple cameras in parallel, based on configuration.  
 
-In order to incorporate this Extension Source, you will need to set up your local machine with a client JRE that can connect implement to your HikVision camera. Once you have done this, you will need to create the Source in the VANTIQ Modelo IDE. The documentation
+In order to incorporate this Extension Source, you will need to set up your local machine with a client JRE that can connect to your HikVision camera.
+Once you have done this, you will need to create the Source in Vantiq.
+The documentation
 has been split into two parts, [Setting Up Your Machine](#machine) and [Setting Up Your VANTIQ](#vantiq).
 
 # Prerequisites <a name="pre" id="pre"></a>
 
-In order to compile correctly, you must download the Hikvision SDK from [*here*](https://www.hikvision.com/en/support/download/sdk/) , Device Network SDK (for Linux 64 bit). For windows based system , you should download the Device Network SDK (for Windoes 64 bit) as well from the same location.
+In order to compile correctly, you must download the Hikvision SDK from [*here*](https://www.hikvision.com/en/support/download/sdk/), choosing the Device Network SDK (for Linux 64 bit).
+For windows based system, you should download the Device Network SDK (for Windoes 64 bit) as well from the same location.
 Make certain to use the correct implementation for the environment within which you are running.
 
 **IMPORTANT:** Read the [Testing](#testing) section before building this project.
@@ -21,21 +32,22 @@ Make certain to use the correct implementation for the environment within which 
 ## Repository Contents
 
 * **HikVisionMain** -- The main function for the program. Connects to sources as specified in the configuration file.
-* **HikVisionCore** -- Coordinates the connections to Vantiq , responsible for recovery the connection with Vantiq Server
-* **HikVisionHandleConfiguration** -- Sets up the trigger to the file system for detect and processed new hikVision file
+* **HikVisionCore** -- Coordinates the connections to Vantiq, responsible for recovery the connection with Vantiq Server
+* **HikVisionHandleConfiguration** -- Sets up the trigger to the file system for detect and processed new HikVision file
 * **HikVision** -- The class that directly interacts with the file system watch service , detect the file and process it .
 
-* **HCNetSDK** -- The implemetation of the hikVoision jna interface.
+* **HCNetSDK** -- The implementation of the HikVision jna interface.
 
 ## Prerequisite
 
-for windows based systems one should download the Device Network SDK (for Windoes 64 bit) from [*here*](https://www.hikvision.com/en/support/download/sdk/) extract the lib folder and set it access usinf path envrioment parameter. 
+For windows based systems, one should download the Device Network SDK (for Windows 64 bit) from [*here*](https://www.hikvision.com/en/support/download/sdk/), extract the lib folder, set it access using an environment parameter. 
 please refer to `How to run for distribution` section
 
 * **NOTE** -- for Unix based system , please use `HikVisionSource_wLinux.tgz`
 
 Define the environment variable **HIKVISION_LOC**.
-This should be the directory where the jni.jar, example.jni , those need to be extracted from the Device Network SDK (for Linux 64 bit) from [*here*](https://www.hikvision.com/en/support/download/sdk/)
+This should be the directory where the jna.jar and example.jar files are found.
+Those need to be extracted from the Device Network SDK (for Linux 64 bit) available as outlined above.
 **NOTE** the above jar files are relevant to windows based system as well. 
 
 ## How to Run the Program
@@ -96,11 +108,13 @@ That completed, you will need to create the Source in the Vantiq system.
 
 ## Source Configuration
 
-To set up the Source in the Vantiq system, you will need to add a Source to your project.  Make sure you have properly added a Source Implementation to Vantiq. Once this is complete, you can select EasyModbus (or whatever you named your Source Definition) as the Source Type. You will then need to fill out the Source Configuration Document.
+To set up the Source in the Vantiq system, you will need to add a Source to your project.  Make sure you have properly added a Source Implementation to Vantiq. Once this is complete, you can select HikVision (or whatever you named your Source Definition) as the Source Type.
+You will then need to fill out the Source Configuration Document.
 
 The Configuration document may look similar to the following example:
 
-The user must [define the HikVision Source implementation](../README.md#-defining-a-typeimplementation) in the VANTIQ Modelo IDE. For an example of the definition, 
+The user must [define the HikVision Source implementation](../README.md#-defining-a-typeimplementation) in Vantiq.
+For an example of the definition,
 please see the [*hikVisionImpl.json*](src/test/resources/hikVisionImpl.json) file located in the *src/test/resources* directory.
 
 Additionally, an example project named *HikVisionExample.zip* can be found in the *src/test/resources* directory.
@@ -140,18 +154,18 @@ Additionally, an example project named *HikVisionExample.zip* can be found in th
 
 ### Configuration
 
-*   **sdkLogPath**: Optional. the folder where the HikVision sdk log files are going to be created , default value `c:\tmp\log`
-*   **DVRImageFolderPath**: Optional . The prefix of the file pattern to look for , if not set an empty string will be used as default value `c:/tmp/Thermo`
+*   **sdkLogPath**: Optional. The folder where the HikVision sdk log files are to be created. Default value `c:\tmp\log`
+*   **DVRImageFolderPath**: Optional . The prefix of the file pattern to look for. if not set an empty string will be used as default value `c:/tmp/Thermo`
 *   **VantiqDocumentPath**: Optional. Location in Vantiq Document , default is `public/image`
-*   **VantiqResourcePath**: Optional. define the vantiq resource to be use for the upload (currently documents or images-`/resource/images`) default value : `/resource/documents`
+*   **VantiqResourcePath**: Optional. Define the Vantiq resource to be use for the upload (currently documents or images-`/resource/images`) default value : `/resource/documents`
 *   **cameras**: list of cameras as source for notifications
 
 ### Options Available for camera
 
-for each camera the following properties must be included - all fieds are mandatory 
+For each camera the following properties must be included - all properties are mandatory.
 
-*   **CameraId**: Camera Name to be use for identify event source .
-*   **Enable**: "True"|"False" , disabled camera will not included in the active camera list .  
+*   **CameraId**: Camera Name to be use for identify event source
+*   **Enable**: "True"|"False" -- Disabled cameras will not included in the active camera list  
 *   **DVRIP**: TCP address of the current camera
 *   **DVRPort**: TCP port of the ucrrent camera
 *   **DVRUserName**: username for authentication with the current camera
