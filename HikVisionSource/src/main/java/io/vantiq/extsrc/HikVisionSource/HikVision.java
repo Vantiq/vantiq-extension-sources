@@ -28,7 +28,6 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
-import java.util.stream.Stream;
 
 import com.sun.jna.NativeLong;
 import com.sun.jna.Pointer;
@@ -41,13 +40,13 @@ import org.slf4j.LoggerFactory;
 import io.vantiq.client.ResponseHandler;
 import io.vantiq.client.Vantiq;
 import io.vantiq.client.VantiqError;
+import io.vantiq.extjsdk.ExtensionServiceMessage;
 import io.vantiq.extjsdk.ExtensionWebSocketClient;
 import io.vantiq.extsrc.HikVisionSource.HCNetSDK.FMSGCallBack;
 import io.vantiq.extsrc.HikVisionSource.HCNetSDK.NET_DVR_ALARMER;
 import io.vantiq.extsrc.HikVisionSource.HCNetSDK.NET_DVR_DEVICEINFO_V30;
 import io.vantiq.extsrc.HikVisionSource.HCNetSDK.NET_DVR_SETUPALARM_PARAM;
 import io.vantiq.extsrc.HikVisionSource.exception.VantiqHikVisionException;
-import io.vantiq.extjsdk.ExtensionServiceMessage;
 
 /**
  * Thie class implememnt the SDK with HikVision Cameras , from one hand it
@@ -55,13 +54,9 @@ import io.vantiq.extjsdk.ExtensionServiceMessage;
  * different notifications accpeted by the different cameras.
  */
 public class HikVision {
-    /*
-     * public class RealDataCallBack implements HCNetSDK.FRealDataCallBack_V30 {
-     * public void invoke(NativeLong lRealHandle, int dwDataType, ByteByReference
-     * pBuffer, int dwBufSize, Pointer pUser) {
-     * System.out.println("Receive notification on class RealDataCallBack");
-     * 
-     * } }
+
+    /**
+     * Call back inteface used to receive alarm from the camera using the call back inteface in the SDK
      */
     public class FMSGCallBack_V31 implements HCNetSDK.FMSGCallBack {
         // alarm info call back function
@@ -77,7 +72,7 @@ public class HikVision {
     Logger log = LoggerFactory.getLogger(this.getClass().getCanonicalName());
 
     static HCNetSDK hCNetSDK = HCNetSDK.INSTANCE;
-    FMSGCallBack m_falarmData_V31 = null;
+    FMSGCallBack falarmData_V31 = null;
     ExtensionWebSocketClient oClient;
     List<CameraEntry> cameras;
     Map<String, Object> config;
@@ -99,10 +94,10 @@ public class HikVision {
     int iLastErr;
 
     private boolean DumpToFile(String filePath, Pointer pBuffer, int size) {
-        try {
+        try (FileOutputStream fos = new FileOutputStream(filePath);){
             // log.error("Size {}",pBuffer.SIZE);
             byte[] buffer = pBuffer.getByteArray(0, size);
-            FileOutputStream fos = new FileOutputStream(filePath);
+            
             fos.write(buffer);
             fos.close();
 
@@ -205,7 +200,7 @@ public class HikVision {
         if ((struFaceDetectInfo.dwBackgroundPicLen != 0)
                 && (struFaceDetectInfo.pBackgroundPicpBuffer != Pointer.NULL)) {
             String str = String.format("Device_Background_Pic_[%s]_lUerID_[%d]_%s.%s", strIP,
-                    pAlarmer.lUserID.intValue(), time, (struFaceDetectInfo.dwBackgroundPicLen != 0) ? "data" : "jpg");
+                    pAlarmer.lUserID.intValue(), time, (struFaceDetectInfo.dwBackgroundPicLen != 0)? "data" : "jpg");
             String fullFileName = String.format("%s/%s", DVRImageFolderPath, str);
 
             DumpToFile(fullFileName, struFaceDetectInfo.pBackgroundPicpBuffer, struFaceDetectInfo.dwBackgroundPicLen);
@@ -450,7 +445,7 @@ public class HikVision {
 
         if ((struThermometryAlarm.dwPicLen != 0) && (struThermometryAlarm.pPicBuff != Pointer.NULL)) {
             String str = String.format("Device_ID_Pic_[%s]_lUerID_[%d]_%s.%s", strIP, pAlarmer.lUserID.intValue(), time,
-                    (struThermometryAlarm.byPicTransType != 0) ? "data" : "jpg");
+                    (struThermometryAlarm.byPicTransType != 0)?     "data" : "jpg");
             String fullFileName = String.format("%s/%s", DVRImageFolderPath, str);
 
             DumpToFile(fullFileName, struThermometryAlarm.pPicBuff, struThermometryAlarm.dwPicLen);
@@ -459,7 +454,7 @@ public class HikVision {
 
         if ((struThermometryAlarm.dwThermalPicLen != 0) && (struThermometryAlarm.pThermalPicBuff != Pointer.NULL)) {
             String str = String.format("Device_ID_ThermoPic_[%s]_lUerID_[%d]_%s.%s", strIP, pAlarmer.lUserID.intValue(),
-                    time, (struThermometryAlarm.byPicTransType != 0) ? "data" : "jpg");
+                    time, (struThermometryAlarm.byPicTransType != 0) ?    "data" : "jpg");
 
             String fullFileName = String.format("%s/%s", DVRImageFolderPath, str);
 
@@ -520,7 +515,7 @@ public class HikVision {
 
             @Override
             public void onError(List<VantiqError> errors, okhttp3.Response response) {
-
+                log.error("uploadImage failed {}",errors);
             }
         };
 
@@ -548,7 +543,7 @@ public class HikVision {
     /// ImageUtil . using preexisting interface which is well known in the class
     /// heirarchy .
     ///
-    public class HikUploadHelper implements ResponseHandler {
+    public abstract  class HikUploadHelper implements ResponseHandler {
 
         @Override
         public void onSuccess(Object body, okhttp3.Response response) {
@@ -925,7 +920,7 @@ public class HikVision {
                 }
                 stringAlarm = "Intrusion detection,Object ID:" + struRuleAlarmInfo.struTargetInfo.dwID
                         + ",Region range:" + strRegion;
-                // m_struIntrusion.struRegion ???????
+                // m_struIntrusion.struRegion          
             }
                 break;
             default:
@@ -933,7 +928,7 @@ public class HikVision {
                 break;
         }
 
-        // ??????
+        //       
         if (struRuleAlarmInfo.dwPicDataLen > 0) {
             String time = new SimpleDateFormat("HHmmssSSS").format(new Date()); // DateTime.Now.ToString("HHmmssffff");
 
@@ -946,7 +941,7 @@ public class HikVision {
                 log.error("ProcessCommAlarm_RULE receive size for image but pImgae is null");
         }
 
-        // ????:??????
+        //       :      
         /*
          * string strTimeYear = ((struRuleAlarmInfo.dwAbsTime >> 26) + 2000).ToString();
          * string strTimeMonth = ((struRuleAlarmInfo.dwAbsTime >> 22) &
@@ -971,7 +966,7 @@ public class HikVision {
 
         ThermalNotification o = new ThermalNotification();
 
-        o.CameraId = (camera == null) ? "Unknown" : camera.CameraId;
+        o.CameraId = (camera == null)  ?   "Unknown" : camera.CameraId;
         o.EventType = "RuleAlarm";
         o.ImageName = "";
         o.ThermalImageName = "";
@@ -985,55 +980,31 @@ public class HikVision {
      * the callback registed to the SDK , based on the commanbd type its activate
      * the relavent procedure
      * 
-     * @param lCommand
-     * @param pAlarmer
-     * @param pAlarmInfo
-     * @param dwBufLen
-     * @param pUser
+     * @param lCommand - command enumeration 
+     * @param pAlarmer - memory block contans general information 
+     * @param pAlarmInfo    - memory block with different structure per error code
+     * @param dwBufLen - the size of the dynamic buffer
+     * @param pUser - user id 
      */
     public void AlarmMessageHandle(int lCommand, NET_DVR_ALARMER pAlarmer, HCNetSDK.RECV_ALARM pAlarmInfo, int dwBufLen,
             Pointer pUser) {
-        // ??lCommand?????????????,???lCommand?????pAlarmInfo??
+        //    lCommand               ,   lCommand      pAlarmInfo   
         switch (lCommand) {
-            case HCNetSDK.COMM_ALARM: // (DS-8000???)?????????????IO????????
+            case HCNetSDK.COMM_ALARM: // (DS-8000   )               IO         
                 ProcessCommAlarm(pAlarmer, pAlarmInfo, dwBufLen, pUser);
                 break;
-            case HCNetSDK.COMM_ALARM_V30:// ?????????????IO????????
+            case HCNetSDK.COMM_ALARM_V30://                IO         
                 ProcessCommAlarm_V30(pAlarmer, pAlarmInfo, dwBufLen, pUser);
                 break;
-
-            case HCNetSDK.COMM_ALARM_RULE:// ????????????????????????
+            case HCNetSDK.COMM_ALARM_RULE://                         
                 ProcessCommAlarm_RULE(pAlarmer, pAlarmInfo, dwBufLen, pUser);
                 break;
-            /*
-             * case HCNetSDK.COMM_UPLOAD_PLATE_RESULT://????????(???????)
-             * ProcessCommAlarm_Plate(ref pAlarmer, pAlarmInfo, dwBufLen, pUser); break;
-             * case HCNetSDK.COMM_ITS_PLATE_RESULT://????????(???????)
-             * ProcessCommAlarm_ITSPlate(ref pAlarmer, pAlarmInfo, dwBufLen, pUser); break;
-             */
-            case HCNetSDK.COMM_ALARM_PDC:// ?????????
+            case HCNetSDK.COMM_ALARM_PDC://          
                 ProcessCommAlarm_PDC(pAlarmer, pAlarmInfo, dwBufLen, pUser);
-                break;/*
-                       * case HCNetSDK.COMM_ITS_PARK_VEHICLE://????????? ProcessCommAlarm_PARK(ref
-                       * pAlarmer, pAlarmInfo, dwBufLen, pUser); break; case
-                       * HCNetSDK.COMM_DIAGNOSIS_UPLOAD://VQD???? ProcessCommAlarm_VQD(ref pAlarmer,
-                       * pAlarmInfo, dwBufLen, pUser); break; case
-                       * HCNetSDK.COMM_UPLOAD_FACESNAP_RESULT://???????? ProcessCommAlarm_FaceSnap(ref
-                       * pAlarmer, pAlarmInfo, dwBufLen, pUser); break; case
-                       * HCNetSDK.COMM_SNAP_MATCH_ALARM://???????? ProcessCommAlarm_FaceMatch(ref
-                       * pAlarmer, pAlarmInfo, dwBufLen, pUser); break;
-                       */
-            case HCNetSDK.COMM_ALARM_FACE_DETECTION:// ????????
+                break;
+            case HCNetSDK.COMM_ALARM_FACE_DETECTION://          
                 ProcessCommAlarm_FaceDetect(pAlarmer, pAlarmInfo, dwBufLen, pUser);
                 break;
-            /*
-             * case HCNetSDK.COMM_ALARMHOST_CID_ALARM://????CID????
-             * ProcessCommAlarm_CIDAlarm(ref pAlarmer, pAlarmInfo, dwBufLen, pUser); break;
-             * case HCNetSDK.COMM_ALARM_ACS://???????? ProcessCommAlarm_AcsAlarm(ref
-             * pAlarmer, pAlarmInfo, dwBufLen, pUser); break; case
-             * HCNetSDK.COMM_ID_INFO_ALARM://????????? ProcessCommAlarm_IDInfoAlarm(ref
-             * pAlarmer, pAlarmInfo, dwBufLen, pUser); break;
-             */
             case HCNetSDK.COMM_THERMOMETRY_ALARM:// sagi^^^^
                 ProcessCommAlarm_ThermoetryAlarm(pAlarmer, pAlarmInfo, dwBufLen, pUser);
                 break;
@@ -1043,12 +1014,7 @@ public class HikVision {
             case HCNetSDK.COMM_UPLOAD_FACESNAP_RESULT:// sagi^^^^
                 ProcessCommAlarm_UploadFaceSnapResult(pAlarmer, pAlarmInfo, dwBufLen, pUser);
                 break;
-
             default: {
-                // ????IP??
-                // String strIP = pAlarmer.sDeviceIP;
-
-                // ??????
                 String stringAlarm = "upload alarm,alarm message type:" + lCommand;
                 log.error("upload alarm,alarm message type:" + lCommand);
                 break;
@@ -1068,8 +1034,11 @@ public class HikVision {
             IntByReference pdwValidNum = new IntByReference((Integer) dwValidNum);
             ByteByReference pbEnableBind = new ByteByReference();
 
-            // ????PC??IP??
             /*
+            This portion was remorked as it created isue when server had two ethernet card 
+            as we are using callback and not listenung mnode for accepting notification , remarking it it didnt effect badly
+            however , you can never know 
+            
              * if (hCNetSDK.NET_DVR_GetLocalIP(strIP, pdwValidNum, pbEnableBind)) {
              * dwValidNum = pdwValidNum.getValue(); int b = pbEnableBind.getValue();
              * 
@@ -1077,21 +1046,21 @@ public class HikVision {
              * StandardCharsets.US_ASCII);
              * 
              * log.info("Listen IP {}", m_ListenIP); hCNetSDK.NET_DVR_SetValidIP(0, true);
-             * //??????? }
+             * //          }
              * 
              * }
              */
 
-            // ??SDK?? To save the SDK log
+            //  To save the SDK log
             if (!hCNetSDK.NET_DVR_SetLogToFile(true, sdkLogPath, true)) {
                 log.error("hCNetSDK.NET_DVR_SetLogToFile failed");
             }
 
-            if (m_falarmData_V31 == null) {
-                m_falarmData_V31 = new FMSGCallBack_V31(); // hCNetSDK.MSGCallBack_V31(MsgCallback_V31);
+            if (falarmData_V31 == null) {
+                falarmData_V31 = new FMSGCallBack_V31(); 
             }
             Pointer pUser = null;
-            if (!hCNetSDK.NET_DVR_SetDVRMessageCallBack_V31(m_falarmData_V31, pUser)) {
+            if (!hCNetSDK.NET_DVR_SetDVRMessageCallBack_V31(falarmData_V31, pUser)) {
                 iLastErr = hCNetSDK.NET_DVR_GetLastError();
                 log.error("NET_DVR_SetDVRMessageCallBack_V31 failed, error code= {} ", iLastErr);
                 return false;
@@ -1104,6 +1073,11 @@ public class HikVision {
         return true;
     }
 
+    /**
+     * Login Camera using extened verion
+     * @param camera camera entry to login to
+     * @return
+     */
     private boolean LoginV40(CameraEntry camera) {
         if (camera.DVRIPAddress == "" || camera.DVRPortNumber == 0 || camera.DVRUserName == ""
                 || camera.DVRPassword == "") {
@@ -1115,10 +1089,6 @@ public class HikVision {
         HCNetSDK.NET_DVR_USER_LOGIN_INFO struLoginInfo = new HCNetSDK.NET_DVR_USER_LOGIN_INFO();
 
         log.warn("Trying to loginV40 to camera {} {}:{}", camera.CameraId, camera.DVRIPAddress, camera.DVRPortNumber);
-
-        // TODO: Remove once login mode will finilized as version 4.0
-        // lUserID = hCNetSDK.NET_DVR_Login_V30(camera.DVRIPAddress,
-        // camera.DVRPortNumber, camera.DVRUserName, camera.DVRPassword, DeviceInfo);
 
         struLoginInfo.bUseAsynLogin = 0;
         struLoginInfo.wPort = Integer.valueOf(camera.DVRPortNumber).shortValue();
@@ -1142,6 +1112,11 @@ public class HikVision {
 
     }
 
+    /**
+     * login using version 30 
+     * @param camera - camera entry to login to . 
+     * @return
+     */
     private boolean Login(CameraEntry camera) {
         if (camera.DVRIPAddress == "" || camera.DVRPortNumber == 0 || camera.DVRUserName == ""
                 || camera.DVRPassword == "") {
@@ -1187,9 +1162,9 @@ public class HikVision {
         NET_DVR_SETUPALARM_PARAM struAlarmParam = new NET_DVR_SETUPALARM_PARAM();
 
         struAlarmParam.dwSize = struAlarmParam.size(); // (uint)Marshal.SizeOf(struAlarmParam);
-        struAlarmParam.byLevel = 1; // 0- ????,1- ????
-        struAlarmParam.byAlarmInfoType = 1;// ????????,???????
-        struAlarmParam.byFaceAlarmDetection = 1;// 1-????
+        struAlarmParam.byLevel = 1; // 0-       ,1-       
+        struAlarmParam.byAlarmInfoType = 1;//          ,         
+        struAlarmParam.byFaceAlarmDetection = 1;// 1-      
 
         NativeLong m_lAlarmHandle1 = hCNetSDK.NET_DVR_SetupAlarmChan_V41(new NativeLong(camera.lUserID),
                 struAlarmParam);
@@ -1359,7 +1334,7 @@ public class HikVision {
             throw new VantiqHikVisionException(String.format("EasyDombus is not connected Code %d", 10));
 
         }
-        Map<String, ?> request = (Map<String, ?>) message.getObject();
+        Map<String,  ?  > request = (Map<String, ?   >) message.getObject();
         String cameraId = (String) request.get("cameraId");
         int command = (Integer) request.get("command");
         int state = (Integer) request.get("state");
@@ -1448,8 +1423,7 @@ public class HikVision {
     }
 
     void testDumpObjToBin(Object obj, String filename) {
-        try {
-            OutputStream outputStream = new FileOutputStream(filename); // "D:/TMP/Thermo/buffer.bin") ;
+        try (OutputStream outputStream = new FileOutputStream(filename);) {
             ByteArrayOutputStream bos = new ByteArrayOutputStream();
             ObjectOutputStream oos = new ObjectOutputStream(bos);
             oos.writeObject(obj);
@@ -1457,7 +1431,6 @@ public class HikVision {
             byte[] data = bos.toByteArray();
 
             outputStream.write(data, 0, data.length);
-            outputStream.close();
         } catch (IOException ex) {
             log.error("failed to write binary code {}", ex);
         }
@@ -1466,23 +1439,17 @@ public class HikVision {
 
     Object testReadFromBinary(String fileName) {
         Object obj = null;
-        try {
+        try (
             // Reading the object from a file
             FileInputStream file = new FileInputStream(fileName);
-            ObjectInputStream in = new ObjectInputStream(file);
-
+            ObjectInputStream in = new ObjectInputStream(file); ){
             // Method for deserialization of object
             try {
-                // obj = (HCNetSDK.NET_VCA_RULE_ALARM)in.readObject();
                 obj = in.readObject();
                 System.out.println("Object has been deserialized ");
             } catch (ClassNotFoundException ex1) {
 
             }
-
-            in.close();
-            file.close();
-
         } catch (IOException ex) {
             System.out.println("IOException is caught");
         }
