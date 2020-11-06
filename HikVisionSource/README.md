@@ -42,12 +42,20 @@ Make certain to use the correct implementation for the environment within which 
 For windows based systems, one should download the Device Network SDK (for Windows 64 bit) from [*here*](https://www.hikvision.com/en/support/download/sdk/), extract the lib folder, set it access using an environment parameter. 
 please refer to `How to run for distribution` section
 
-* **NOTE** -- for Unix based system , please use `HikVisionSource_wLinux.tgz`
-
 Define the environment variable **HIKVISION_LOC**.
 This should be the directory where the jna.jar and example.jar files are found.
-Those need to be extracted from the Device Network SDK (for Linux 64 bit) available as outlined above.
+Those need to be extracted from the Device Network SDK (for Linux 64 bit) available as outlined above, under the folder LinuxJavaDemo direcory which included in the downloaded archive.
+
 **NOTE** the above jar files are relevant to windows based system as well. 
+
+The Linux version required the follwong files as well:
+
+* **libhcnetsdk.so**
+* **libhpr.so**
+* **libHCCore.so**
+* **libHCPreview.so** which is in the HCNetSDKCom directory of the lib path of the Device Network SDK (for Linux 64 bit)
+
+**NOTE**  For easier soluiton one might include all the content of the lib directory from Hikvision SDK to the lib directory of extension source, including the subdirectories HCNetSDKCom content in that lib directory
 
 ## How to Run the Program
 
