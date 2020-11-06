@@ -72,5 +72,8 @@ dependencies {
     // https://mvnrepository.com/artifact/net.java.dev.jna/jna
     //compile group: 'net.java.dev.jna', name: 'jna', version: '5.6.0'
 
-	implementation  files("${System.env.HIKVISION_LOC}/jna.jar","${System.env.HIKVISION_LOC}/examples.jar")
+
+        implementation files("${System.env.HIKVISION_LOC}/LinuxJavaDemo/jna.jar","${System.env.HIKVISION_LOC}/LinuxJavaDemo/examples.jar")
+        implementation fileTree(dir: "${System.env.HIKVISION_LOC}/lib/", include: "*")
+        implementation fileTree(dir: "${System.env.HIKVISION_LOC}/lib/HCNetSDKCom/", include: "*")
 }
