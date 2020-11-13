@@ -174,8 +174,9 @@ public class HikVision {
             o.CameraId = "Unknown";
             camera = new CameraEntry();
             camera.CameraId = "Unknown";
-        } else
+        } else {
             o.CameraId = camera.CameraId;
+        }
 
         o.EventType = "FaceAlarm";
         o.ImageName = "a";
@@ -237,8 +238,9 @@ public class HikVision {
             o.CameraId = "Unknown";
             camera = new CameraEntry();
             camera.CameraId = "Unknown";
-        } else
+        } else {
             o.CameraId = camera.CameraId;
+        }
 
         o.EventType = "UploadFaceSnapResult";
         o.ImageName = "";

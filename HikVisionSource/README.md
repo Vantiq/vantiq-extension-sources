@@ -21,8 +21,6 @@ In order to compile correctly, you must download the Hikvision SDK from [*here*]
 For windows based system, you should download the Device Network SDK (for Windoes 64 bit) as well from the same location.
 Make certain to use the correct implementation for the environment within which you are running.
 
-**IMPORTANT:** Read the [Testing](#testing) section before building this project.
-
 # Setting Up Your Machine <a name="machine" id="machine"></a>
 
 ## Repository Contents
@@ -63,6 +61,7 @@ The Linux version required the follwong files as well:
 2. Run `./gradlew HikVisionSource:assemble`.
 3. Navigate to `<repo location>/vantiq-extension-sources/HikVisionSource/build/distributions`. The zip and tar files both contain the same files, so choose whichever you prefer.
 4. Uncompress the file in the location that you would like to install the program.
+5. define the  **HIKVISION_LOC** to a floder and copy the relevant artifact to the folder [Prerequisite](#Prerequisite)
 5. Run `<install location>/HikVisionSource/bin/HikVisionSource` with a local server.config file or specifying the [server config file](#serverConfig) as the first argument.
 
 ## Logging
@@ -113,14 +112,13 @@ That completed, you will need to create the Source in the Vantiq system.
 To set up the Source in the Vantiq system, you will need to add a Source to your project.  Make sure you have properly added a Source Implementation to Vantiq. Once this is complete, you can select HikVision (or whatever you named your Source Definition) as the Source Type.
 You will then need to fill out the Source Configuration Document.
 
-The Configuration document may look similar to the following example:
-
 The user must [define the HikVision Source implementation](../README.md#-defining-a-typeimplementation) in Vantiq.
 For an example of the definition,
 please see the [*hikVisionImpl.json*](src/test/resources/hikVisionImpl.json) file located in the *src/test/resources* directory.
 
 Additionally, an example project named *HikVisionExample.zip* can be found in the *src/test/resources* directory.
 
+The Configuration document may look similar to the following example:
 ``` 
 {
    "general":{
