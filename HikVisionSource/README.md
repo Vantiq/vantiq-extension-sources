@@ -55,7 +55,7 @@ The Linux version required the follwong files as well:
 * **libHCCore.so**
 * **libHCPreview.so** which is in the HCNetSDKCom directory of the lib path of the Device Network SDK (for Linux 64 bit)
 
-**NOTE**  For easier soluiton one might include all the content of the lib directory from Hikvision SDK to the lib directory of extension source, including the subdirectories HCNetSDKCom content in that lib directory
+**NOTE**  For an easier solution, one might include all the content of the lib directory from Hikvision SDK to the lib directory of extension source, including the subdirectories HCNetSDKCom content in that lib directory
 
 ## How to Run the Program
 
@@ -67,13 +67,13 @@ The Linux version required the follwong files as well:
 
 ## Logging
 
-To change the logging settings, edit the logging config file `<install location>/HikVisionSource/src/main/resources/log4j2.xml` , 
+To change the logging settings, edit the logging config file `<install location>/HikVisionSource/src/main/resources/log4j2.xml`, 
 which is an [Apache Log4j configuration file.](https://logging.apache.org/log4j/2.x/manual/configuration.html). The logger 
 name for each class is the class's fully qualified class name, *e.g.* "io.vantiq.extjsdk. ExtensionWebSocketClient".  
 
 ## Server Config File
 
-The server config file is written as `property=value` , with each property on its
+The server config file is written as `property=value`, with each property on its
 own line. The following is an example of a valid server.config file:
 
 ``` 
@@ -90,7 +90,7 @@ targetServer=https://dev.vantiq.com/
 
 # Setting Up Your Vantiq Environment<a name="vantiq" id="vantiq"></a>
 
-An understanding of the VANTIQ Extension Source SDK is assumed. Please read the [Extension Source README.md](../README.md) for more information.
+An understanding of the Vantiq Extension Source SDK is assumed. Please read the [Extension Source README.md](../README.md) for more information.
 
 In order to incorporate this Extension Source, you will need to create the Source Implementation in the Vantiq system.
 
