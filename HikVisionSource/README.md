@@ -44,9 +44,13 @@ Define the environment variable **HIKVISION_LOC**.
 This should be the directory where you extracted the Device Network SDK. This directory should include a _lib_ directory for the libraries and a LinuxJavaDemo containing the java archives : _jna.jar_ and _examples.jar_.
 Those need to be extracted from the Device Network SDK (for Windows 64 bits or Linux 64 bit) available as outlined above, under the folder LinuxJavaDemo direcory which included in the downloaded archive.
 
+In addition the Linux version requires all the files located in the lib directory of the Device Network SDK as well, so one might include all the content from that lib directory to the lib directory of extension source, including the content in the HCNetSDKCom subdirectory of that lib directory.
+
+Regardless the Operating system type , the files `jna.jar` and `example.jar`, which exists in the Device Network SDK (Linux 64 bit) must exist at that location as well.
+Regardless the Operating system type , the files `jna.jar` and `example.jar`, which exists in the Device Network SDK (Linux 64 bit) must exist at that location as well.
+
 **NOTE** the above jar files are relevant to windows based system as well. 
 
-In addition the Linux version requires all the files located in the lib directory of the Device Network SDK as well, so one might include all the content from that lib directory to the lib directory of extension source, including the content in the HCNetSDKCom subdirectory of that lib directory.
 
 ## How to Run the Program
 
