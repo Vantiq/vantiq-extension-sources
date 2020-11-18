@@ -47,10 +47,6 @@ Those need to be extracted from the Device Network SDK (for Windows 64 bits or L
 In addition the Linux version requires all the files located in the lib directory of the Device Network SDK as well, so one might include all the content from that lib directory to the lib directory of extension source, including the content in the HCNetSDKCom subdirectory of that lib directory.
 
 Regardless the Operating system type , the files `jna.jar` and `example.jar`, which exists in the Device Network SDK (Linux 64 bit) must exist at that location as well.
-Regardless the Operating system type , the files `jna.jar` and `example.jar`, which exists in the Device Network SDK (Linux 64 bit) must exist at that location as well.
-
-**NOTE** the above jar files are relevant to windows based system as well. 
-
 
 ## How to Run the Program
 
