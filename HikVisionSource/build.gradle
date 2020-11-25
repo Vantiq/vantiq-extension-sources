@@ -70,8 +70,8 @@ dependencies {
     testCompile project(path:":extjsdk", configuration:"testArtifacts")
 
     // https://mvnrepository.com/artifact/net.java.dev.jna/jna
-    compile group: 'net.java.dev.jna', name: 'jna', version: '5.6.0'
+    //compile group: 'net.java.dev.jna', name: 'jna', version: '5.6.0'
 
-//	implementation  files("${System.env.HIKVISION_LOC}/jna.jar","${System.env.HIKVISION_LOC}/examples.jar")
-	implementation  files("${System.env.HIKVISION_LOC}/examples.jar")
+	implementation  files("${System.env.HIKVISION_LOC}/jna.jar","${System.env.HIKVISION_LOC}/examples.jar")
+//	implementation  files("${System.env.HIKVISION_LOC}/examples.jar")
 }
