@@ -55,7 +55,7 @@ Regardless the Operating system type , the files `jna.jar` and `example.jar`, wh
 3. Navigate to `<repo location>/vantiq-extension-sources/HikVisionSource/build/distributions`. The zip and tar files both contain the same files, so choose whichever you prefer.
 4. Uncompress the file in the location that you would like to install the program.
 5. define the  **HIKVISION_LOC** to a floder and copy the relevant artifact to the folder [Prerequisite](#Prerequisite)
-5. Run `<install location>/HikVisionSource/bin/HikVisionSource` with a local server.config file or specifying the [server config file](#serverConfig) as the first argument.
+6. Run `<install location>/HikVisionSource/bin/HikVisionSource` with a local server.config file or specifying the [server config file](#serverConfig) as the first argument.
 
 ## Logging
 
@@ -112,13 +112,14 @@ please see the [*hikVisionImpl.json*](src/test/resources/hikVisionImpl.json) fil
 Additionally, an example project named *HikVisionExample.zip* can be found in the *src/test/resources* directory.
 
 The Configuration document may look similar to the following example:
-``` 
+
+```
 {
    "general":{
-   		"sdkLogPath": "c:/tmp/log",
-   		"DVRImageFolderPath": "c:/tmp/Thermo",
-   		"VantiqDocumentPath": "public/image",
-   		"VantiqResourcePath": "/resources/documents"},
+     "sdkLogPath": "c:/tmp/log",
+     "DVRImageFolderPath": "c:/tmp/Thermo",
+     "VantiqDocumentPath": "public/image",
+     "VantiqResourcePath": "/resources/documents"},
    "cameras": [
       {
          "CameraId": "C1",

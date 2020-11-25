@@ -3049,7 +3049,24 @@ public interface HCNetSDK extends Library {
 		public byte byStartChan; // , DVS-1,DVR - 1
 		public byte byAudioChanNum; //
 		public byte byIPChanNum; //
-		public byte[] byRes1 = new byte[24]; //
+
+		public byte byZeroChanNum;			
+		public byte byMainProto;			
+		public byte bySubProto;			
+		public byte bySupport;        
+		public byte bySupport1;       
+		public byte bySupport2; 
+            public short wDevType;            
+            public byte bySupport3; 
+            public byte byMultiStreamProto;
+            public byte byStartDChan;		
+            public byte byStartDTalkChan;	
+            public byte byHighDChanNum;		
+            public byte bySupport4;
+            public byte byLanguageType;
+
+
+		public byte[] byRes2 = new byte[9]; //
 	}
 
 	// NET_DVR_Login_V40()
