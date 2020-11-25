@@ -49,3 +49,4 @@ windows/
 */.vscode/
 .vscode/settings.json
 .vscode/launch.json
+gradle.properties
