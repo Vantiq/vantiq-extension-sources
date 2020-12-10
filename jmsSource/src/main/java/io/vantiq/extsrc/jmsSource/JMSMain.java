@@ -8,6 +8,7 @@
 
 package io.vantiq.extsrc.jmsSource;
 
+import io.vantiq.extjsdk.Utils;
 import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
@@ -53,9 +54,9 @@ public class JMSMain {
     public static void main(String[] args) {
         Properties config = null;
         if (args == null || args.length < 1) {
-            config = obtainServerConfig("server.config");
+            config = Utils.obtainServerConfig();
         } else if (args != null && args.length == 1) {
-            config = obtainServerConfig(args[0]);
+            config = Utils.obtainServerConfig(args[0]);
         } else {
             log.error("Wrong number of arguments\n" + "Usage: <yourProgramInvocation> [localConfigFile]");
             exit(NO_CONFIG_EXIT);
@@ -77,29 +78,6 @@ public class JMSMain {
             // Starting in threads so they can all connect at once
             new Thread( () -> {source.start(10);} ).start();;
         }
-    }
-
-    /**
-     * Turn the given configuration file into a {@link Map}.
-     *
-     * @param fileName  The name of the configuration file holding the server configuration.
-     * @return          The properties specified in the file.
-     */
-    static Properties obtainServerConfig(String fileName) {
-        File configFile = new File(fileName);
-        Properties properties = new Properties();
-
-        try {
-            properties.load(new FileReader(fileName));
-        } catch (IOException e) {
-            throw new RuntimeException("Could not find valid server configuration file. Expected location: '"
-                    + configFile.getAbsolutePath() + "'", e);
-        } catch (Exception e) {
-            throw new RuntimeException("Error occurred when trying to read the server configuration file. "
-                    + "Please ensure it is formatted properly.", e);
-        }
-
-        return properties;
     }
 
     /**

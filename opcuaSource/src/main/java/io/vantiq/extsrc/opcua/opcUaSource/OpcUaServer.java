@@ -8,6 +8,7 @@
 
 package io.vantiq.extsrc.opcua.opcUaSource;
 
+import io.vantiq.extjsdk.Utils;
 import io.vantiq.extsrc.opcua.uaOperations.OpcConstants;
 import io.vantiq.extsrc.opcua.uaOperations.OpcUaESClient;
 import org.apache.commons.cli.*;
@@ -25,6 +26,9 @@ import java.util.Properties;
 @Slf4j
 public class OpcUaServer {
 
+    // Note that this is deprecated in favor of using the extjsdk obtainServerConfig() methods
+    // to get things from a standard place.  We will continue support here for backward compatibility.
+    
     public static final String LOCAL_CONFIG_FILE_NAME = "sourceconfig.properties";
 
     public static void main(String[] argv) {
@@ -108,11 +112,17 @@ public class OpcUaServer {
         InputStream cfr = null;
         Properties props = null;
         try {
-            cfr = new FileInputStream(configFileName);
+            File configFile = new File(configFileName);
 
-            props = new Properties();
-            props.load(cfr);
+            if (configFile.exists()) {
+                cfr = new FileInputStream(configFileName);
 
+                props = new Properties();
+                props.load(cfr);
+            } else {
+                props = Utils.obtainServerConfig();
+            }
+            
             String url = props.getProperty(OpcConstants.VANTIQ_URL);
             String username = props.getProperty(OpcConstants.VANTIQ_USERNAME);
             String password = props.getProperty(OpcConstants.VANTIQ_PASSWORD);
