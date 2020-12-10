@@ -21,16 +21,14 @@ public class Utils {
      * @return          The properties specified in the file.
      */
     public static Properties obtainServerConfig(String fileName) {
-        File configFile = new File(fileName);
+        File configFile = new File(SERVER_CONFIG_DIR, fileName);
         Properties properties = new Properties();
 
         try {
-            if (configFile.exists()) {
-                properties.load(new FileReader(configFile));
-            } else {
-                configFile = new File(SERVER_CONFIG_DIR, fileName);
-                properties.load(new FileReader(configFile));
+            if (!configFile.exists()) {
+                configFile = new File(fileName);
             }
+            properties.load(new FileReader(configFile));
         } catch (IOException e) {
             throw new RuntimeException("Could not find valid server configuration file. Expected location: '"
                     + configFile.getAbsolutePath() + "'", e);
