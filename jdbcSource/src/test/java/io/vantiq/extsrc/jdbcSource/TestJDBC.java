@@ -12,6 +12,7 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeTrue;
+import static org.junit.Assert.assertEquals;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
@@ -776,7 +777,7 @@ public class TestJDBC extends TestJDBCBase {
         // Select from the type and make sure all of our results are there as expected
         response = vantiq.select(testTypeName, null, null, null);
         ArrayList responseBody = (ArrayList) response.getBody();
-        assert responseBody.size() == 500;
+        assertEquals (500, responseBody.size());
 
         // Delete the table for next test
         Map<String,Object> delete_params = new LinkedHashMap<String,Object>();
