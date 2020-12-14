@@ -35,7 +35,7 @@ public class OpcUaServer {
         Options options = new Options();
 
         Option input = new Option("d", "directory", true, "home directory for this source");
-        input.setRequired(true);
+        input.setRequired(false);
         options.addOption(input);
 
         Option urlOpt = new Option("v", "vantiq", true, "VANTIQ server URL");
@@ -71,6 +71,9 @@ public class OpcUaServer {
         }
 
         String homeDir = cmd.getOptionValue("directory");
+        if (homeDir == null) {
+            homeDir = "storage";
+        }
         String user = cmd.getOptionValue("username");
         String vantiqUrl = cmd.getOptionValue("vantiq");
         String pw = cmd.getOptionValue("password");
