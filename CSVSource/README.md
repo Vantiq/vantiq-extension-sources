@@ -36,7 +36,7 @@ The documentation has been split into two parts, [Setting Up Your Machine](#mach
 4.  Navigate to `<repo location>/vantiq-extension-sources/CSVSource/build/distributions`. The zip and tar files both contain 
     the same files, so choose whichever you prefer.
 5.  Uncompress the file in the location that you would like to install the program.
-6.  Run `<install location>/CSVSource/bin/CSVSource` with a local server.config file or specifying the [server config file](#serverConfig) as the first argument.
+6.  Run `<install location>/CSVSource/bin/CSVSource` with a local server.config file or specifying the [server config file](#serverConfig) as the first argument. Note that the `server.config` file can be placed in the `<install location>/CSVSource/serverConfig/server.config` or `<install location>/CSVSource/server.config` locations.
 
 ## Logging
 To change the logging settings, edit the logging config file `<install location>/CSVSource/src/main/resources/log4j2.xml`,

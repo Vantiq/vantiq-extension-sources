@@ -9,6 +9,7 @@
 
 package io.vantiq.extsrc.objectRecognition.imageRetriever;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeTrue;
@@ -64,7 +65,7 @@ public class TestFileRetriever extends ObjRecTestBase {
             results = fr.getImage();
             byte[] data = results.getImage();
             assert data != null;
-            assert data.length == 64585;
+            assert data.length >= 64000 && data.length < 66000;
         } catch (ImageAcquisitionException e) {
             fail("Exception occurred when obtaining image " + e.toString());
         }
@@ -84,7 +85,7 @@ public class TestFileRetriever extends ObjRecTestBase {
             results = fr.getImage();
             byte[] data = results.getImage();
             assert data != null;
-            assert data.length == 123383;
+            assert data.length >= 120000 && data.length <= 130000;
         } catch (ImageAcquisitionException e) {
             fail("Exception occurred when obtaining image " + e.toString());
         }
@@ -135,7 +136,7 @@ public class TestFileRetriever extends ObjRecTestBase {
                 results = fr.getImage();
                 byte[] data = results.getImage();
                 assert data != null;
-                assert data.length == 64585;
+                assert data.length >= 64000 && data.length < 66000;
             } catch (ImageAcquisitionException e) {
                 fail("Exception occurred when obtaining image after creating it " + e.toString());
             }
@@ -160,7 +161,7 @@ public class TestFileRetriever extends ObjRecTestBase {
             results = fr.getImage(message);
             byte[] data = results.getImage();
             assert data != null;
-            assert data.length == 64585;
+            assert data.length >= 64000 && data.length < 66000;
         } catch (ImageAcquisitionException e) {
             fail("Exception occurred when obtaining image " + e.toString());
         }
@@ -201,7 +202,7 @@ public class TestFileRetriever extends ObjRecTestBase {
             results = fr.getImage(message);
             byte[] data = results.getImage();
             assert data != null;
-            assert data.length == 64585;
+            assert data.length >= 64000 && data.length < 66000;
         } catch (ImageAcquisitionException e) {
             fail("Exception occurred when obtaining image: " + e.toString());
         }
@@ -222,7 +223,7 @@ public class TestFileRetriever extends ObjRecTestBase {
             results = fr.getImage();
             byte[] data = results.getImage();
             assert data != null;
-            assert data.length == 652762;
+            assert data.length >= 640000 && data.length <= 660000;
         } catch (ImageAcquisitionException e) {
             fail("Exception occurred when obtaining image: " + e.toString());
         }
@@ -259,7 +260,7 @@ public class TestFileRetriever extends ObjRecTestBase {
             results = fr.getImage(request);
             byte[] data = results.getImage();
             assert data != null;
-            assert data.length == 632148;
+            assert data.length >= 620000 && data.length <= 650000;
         } catch (ImageAcquisitionException e) {
             fail("Exception occurred when requesting frame 4 of video: " + e.toString());
         }

@@ -8,6 +8,7 @@
 
 package io.vantiq.extsrc.EasyModbusSource;
 
+import io.vantiq.extjsdk.Utils;
 import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
@@ -55,9 +56,9 @@ public class EasyModbusMain {
     public static void main(String[] args) {
         Properties config;
         if (args != null && args.length > 0) {
-            config = obtainServerConfig(args[0]);
+            config = Utils.obtainServerConfig(args[0]);
         } else {
-            config = obtainServerConfig("server.config");
+            config = Utils.obtainServerConfig("server.config");
         }
 
         sources = createSources(config);
@@ -81,30 +82,6 @@ public class EasyModbusMain {
                 source.start(10);
             }).start();
         }
-    }
-
-    /**
-     * Turn the given configuration file into a {@link Map}.
-     * 
-     * @param fileName The name of the configuration file holding the server
-     *                 configuration.
-     * @return The properties specified in the file.
-     */
-    static Properties obtainServerConfig(String fileName) {
-        File configFile = new File(fileName);
-        Properties properties = new Properties();
-
-        try {
-            properties.load(new FileReader(fileName));
-        } catch (IOException e) {
-            throw new RuntimeException("Could not find valid server configuration file. Expected location: '"
-                    + configFile.getAbsolutePath() + "'", e);
-        } catch (Exception e) {
-            throw new RuntimeException("Error occurred when trying to read the server configuration file. "
-                    + "Please ensure it is formatted properly.", e);
-        }
-
-        return properties;
     }
 
     /**

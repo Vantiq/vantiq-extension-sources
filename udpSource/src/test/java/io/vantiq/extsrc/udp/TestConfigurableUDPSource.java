@@ -11,15 +11,23 @@ package io.vantiq.extsrc.udp;
 
 import static org.junit.Assume.assumeTrue;
 
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Properties;
 
+import io.vantiq.extjsdk.Utils;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -309,6 +317,7 @@ public class TestConfigurableUDPSource extends UDPTestBase {
     }
     
     @Test
+    @SuppressWarnings({"unchecked", "rawtypes"})
     public void testSetupServer() throws UnknownHostException {
         Map config = new LinkedHashMap<>();
         
@@ -352,7 +361,104 @@ public class TestConfigurableUDPSource extends UDPTestBase {
         
         ConfigurableUDPSource.setupServer(config);
     }
-    
+
+    /**
+     * This test verifies that properties provided via server.config files work
+     * just as well as the old-style config.json tested above. Here, we use 
+     * the Utils.obtainServerConfig() to get the properties (which are provided),
+     * and convert those properties to a Map.  Then, the map is passed into the
+     * connector setup method & the results verified.
+     * 
+     * @throws UnknownHostException when the target's host is invalid
+     * @throws IOException if the configuration file cannot be found.  This would be a test error.
+     */
+    @Test
+    public void testSetupServerViaProps() throws UnknownHostException, IOException {
+
+        BufferedWriter bw = null;
+        File f = null;
+        File dir = null;
+        try {
+            dir = new File("serverConfig");
+            //noinspection ResultOfMethodCallIgnored
+            dir.mkdir();
+            dir.deleteOnExit();
+            Path p = Files.createFile(Paths.get("serverConfig/server.config"));
+            f = new File(p.toString());
+            f.deleteOnExit();
+            bw = Files.newBufferedWriter(p);
+            bw.append("authToken = token\n");
+            bw.append("targetServer=ws://localhost:8080\n");
+            bw.close();
+            
+            //noinspection unchecked 
+            Map<String, Object> config = (Map) Utils.obtainServerConfig();
+            ConfigurableUDPSource.setupServer(config); // Should not throw RTE
+
+            // check defaults
+            assert ConfigurableUDPSource.targetVantiqServer.equals("ws://localhost:8080");
+            assert ConfigurableUDPSource.MAX_UDP_DATA == 1024;
+            assert ConfigurableUDPSource.LISTENING_PORT == 3141;
+            assert ConfigurableUDPSource.LISTENING_ADDRESS.equals(InetAddress.getLocalHost());
+            assert ConfigurableUDPSource.authToken.equals("token");
+
+            bw = Files.newBufferedWriter(p);
+            bw.append("maxPacketSize = 2048\n");
+            bw.append("defaultBindPort = 10213\n");
+            bw.append("defaultBindAddress = localhost\n");
+            bw.append("authToken=new token\n");
+            bw.append("targetServer=ws://localhost:8080\n");
+
+            bw.close();
+            //noinspection unchecked
+            config = (Map) Utils.obtainServerConfig();
+
+            ConfigurableUDPSource.setupServer(config);
+
+            assert ConfigurableUDPSource.targetVantiqServer.equals("ws://localhost:8080");
+            assert ConfigurableUDPSource.MAX_UDP_DATA == 2048;
+            assert ConfigurableUDPSource.LISTENING_PORT == 10213;
+            assert ConfigurableUDPSource.LISTENING_ADDRESS.equals(InetAddress.getByName("localhost"));
+            assert ConfigurableUDPSource.authToken.equals("new token");
+        } finally {
+            if (bw != null) {
+                bw.close();
+            }
+            if (f != null) {
+                //noinspection ResultOfMethodCallIgnored
+                f.delete();
+            }
+            if (dir != null) {
+                //noinspection ResultOfMethodCallIgnored
+                dir.delete();
+            }
+        }
+    }
+
 // ====================================================================================================================
 // --------------------------------------------------- Test Helpers ---------------------------------------------------
+
+    /**
+     * If there are these test files laying around, clean up before tests
+     */
+    @Before
+    public void cleanupFiles() {
+        Path p = Paths.get("server.config");
+        File f = new File(p.toString());
+        if (f.exists()) {
+            //noinspection ResultOfMethodCallIgnored
+            f.delete();
+        }
+
+        File dir = new File("serverConfig");
+        f = new File("serverConfig/server.config");
+        if (f.exists()) {
+            //noinspection ResultOfMethodCallIgnored
+            f.delete();
+        }
+        if (dir.exists()) {
+            //noinspection ResultOfMethodCallIgnored
+            f.delete();
+        }
+    }
 }
