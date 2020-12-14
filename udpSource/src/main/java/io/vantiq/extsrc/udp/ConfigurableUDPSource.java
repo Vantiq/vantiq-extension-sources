@@ -602,17 +602,21 @@ public class ConfigurableUDPSource {
          * connect. For target, replace "ws" with "wss" to access the secure connection, and "localhost:8080" with
          * your Vantiq deployment's address, typically "dev.vantiq.com"
          */
-        if (!(config.get("sources") instanceof List)) {
+        List<String> sources;
+        if (config.get("sources") instanceof List) {
+            ((List<Object>) config.get("sources")).removeIf((obj) -> !(obj instanceof String));
+            sources = ((List<String>) config.get("sources"));
+        } else if (config.get("sources") instanceof String) {
+            sources = new ArrayList<>();
+            sources.add((String) config.get("sources"));
+        } else {
             throw new RuntimeException("No source names given in server config file.");
         }
-        ((List<Object>) config.get("sources")).removeIf((obj) -> !(obj instanceof String));
-        List<String> sources = ((List<String>) config.get("sources"));
         
         if (sources.isEmpty()) {
             throw new RuntimeException("No source names given.");
         }
-
-
+        
         /*
          * 1) Sets up the WebSocket connection through ExtensionWebSocketClient and sets up the UDP socket.
          *
