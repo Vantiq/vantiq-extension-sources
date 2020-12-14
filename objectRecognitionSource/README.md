@@ -66,7 +66,7 @@ folder. Some features may depend on additional .dll/.so/.dylib files, such as FF
     files both contain the same files, so choose whichever you prefer.
 5.  Uncompress the file in the location that you would like to install the program.
 6.  Run `<install location>/objectRecognitionSource/bin/objectRecognitionSource` with a local server.config file or
-    specifying the [server config file](#serverConfig) as the first argument.
+specifying the [server config file](#serverConfig) as the first argument. Note that the `server.config` file can be placed in the `<install location>/objectRecognitionSource/serverConfig/server.config` or `<install location>/objectRecognitionSource/server.config` locations.
 
 ## Logging
 To change the logging settings, edit `<install location>/objectRecognitionSource/logConfig/log4j2.xml`. Here is

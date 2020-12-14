@@ -43,7 +43,7 @@ Note: To use gradle builds in your IDE, you will need to define this variable ap
 3.  Navigate to `<repo location>/vantiq-extension-sources/easyModbusSource/build/distributions`. The zip and tar files both contain 
     the same files, so choose whichever you prefer.
 4.  Uncompress the file in the location that you would like to install the program.
-5.  Run `<install location>/easyModbusSource/bin/easyModbusSource` with a local server.config file or specifying the [server config file](#serverConfig) as the first argument.
+5.  Run `<install location>/easyModbusSource/bin/easyModbusSource` with a local server.config file or specifying the [server config file](#serverConfig) as the first argument. Note that the `server.config` file can be placed in the `<install location>/easyModbusSource/serverConfig/server.config` or `<install location>/easyModbusSource/server.config` locations.
 
 ## Logging
 To change the logging settings, edit the logging config file `<install location>/easyModbusSource/src/main/resources/log4j2.xml`,

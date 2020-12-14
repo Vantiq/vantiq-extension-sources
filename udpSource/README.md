@@ -16,8 +16,7 @@ Notification handlers.
 3.	Then navigate to `<repo location>/vantiq-extension-sources/udpSource/build/distributions`. The zip and tar files both
     contain the same files, so choose whichever you prefer.
 4. Uncompress the zip or tar in the location that you would like to install the program.
-5. Run `<install location>/udpSource/bin/udpSource` with a local config.json file or specifying the server config file
-    as the first argument.
+5. Run `<install location>/udpSource/bin/udpSource` with a local `server.config` file or specifying the server config file as the first argument.  Note that the `server.config` file can be placed in the `<install location>/udpSource/serverConfig/server.config` or `<install location>/udpSource/server.config` locations.
 
 ## Logging
 To change the logging settings, edit `<install location>/udpSource/logConfig/log4j2.xml`. Here is its
@@ -29,8 +28,8 @@ be included in future distributions produced through gradle.
 
 ## Server Config File<a name="serverConfig" id="serverConfig"></a>
 
-The server config file must be in JSON format. ConfigurableUDPSource runs using either the config file specified as the
-first argument or the file 'config.json' in the working directory.
+The server config file must be in properties file format. ConfigurableUDPSource runs using either the config file specified as the
+first argument or the file `server.config` in the `serverConfig` directory or in the working directory.
 
 ### Vantiq Options
 *	targetServer -- Optional. The Vantiq site that hosts the projects to which the sources will connect.
