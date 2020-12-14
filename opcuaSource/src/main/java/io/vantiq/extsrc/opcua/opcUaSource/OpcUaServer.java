@@ -111,6 +111,7 @@ public class OpcUaServer {
         String configFileName = locDir.getAbsolutePath() + File.separator + LOCAL_CONFIG_FILE_NAME;
         InputStream cfr = null;
         Properties props = null;
+        
         try {
             File configFile = new File(configFileName);
 
@@ -123,11 +124,27 @@ public class OpcUaServer {
                 props = Utils.obtainServerConfig();
             }
             
-            String url = props.getProperty(OpcConstants.VANTIQ_URL);
+            // In the effort to commonize the fetching of startup props,
+            // we try the common versions first.  When that fails, we walk
+            // back through old versions to maintain backward compatibility support.
+            
+            String url = props.getProperty(OpcConstants.TARGET_SERVER);
+            if (url == null) {
+                url = props.getProperty(OpcConstants.VANTIQ_URL);
+            }
             String username = props.getProperty(OpcConstants.VANTIQ_USERNAME);
             String password = props.getProperty(OpcConstants.VANTIQ_PASSWORD);
-            String token = props.getProperty(OpcConstants.VANTIQ_TOKEN);
-            String sourceName = props.getProperty(OpcConstants.VANTIQ_SOURCENAME);
+            String token = props.getProperty(OpcConstants.VANTIQ_AUTHTOKEN);
+            if (token == null) {
+                token = props.getProperty(OpcConstants.VANTIQ_TOKEN);
+            }
+            String sourceName = props.getProperty(OpcConstants.VANTIQ_SOURCE);
+            if (sourceName == null) {
+                sourceName = props.getProperty(OpcConstants.VANTIQ_SOURCES);
+                if (sourceName == null) {
+                    sourceName = props.getProperty(OpcConstants.VANTIQ_SOURCENAME);
+                }
+            }
 
             if (url != null) {
                 configMap.put(OpcConstants.VANTIQ_URL, url);
