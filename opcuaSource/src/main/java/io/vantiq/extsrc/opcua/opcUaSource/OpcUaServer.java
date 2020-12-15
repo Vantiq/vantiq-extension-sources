@@ -8,6 +8,7 @@
 
 package io.vantiq.extsrc.opcua.opcUaSource;
 
+import io.vantiq.extjsdk.Utils;
 import io.vantiq.extsrc.opcua.uaOperations.OpcConstants;
 import io.vantiq.extsrc.opcua.uaOperations.OpcUaESClient;
 import org.apache.commons.cli.*;
@@ -25,13 +26,16 @@ import java.util.Properties;
 @Slf4j
 public class OpcUaServer {
 
+    // Note that this is deprecated in favor of using the extjsdk obtainServerConfig() methods
+    // to get things from a standard place.  We will continue support here for backward compatibility.
+    
     public static final String LOCAL_CONFIG_FILE_NAME = "sourceconfig.properties";
 
     public static void main(String[] argv) {
         Options options = new Options();
 
         Option input = new Option("d", "directory", true, "home directory for this source");
-        input.setRequired(true);
+        input.setRequired(false);
         options.addOption(input);
 
         Option urlOpt = new Option("v", "vantiq", true, "VANTIQ server URL");
@@ -67,6 +71,9 @@ public class OpcUaServer {
         }
 
         String homeDir = cmd.getOptionValue("directory");
+        if (homeDir == null) {
+            homeDir = "storage";
+        }
         String user = cmd.getOptionValue("username");
         String vantiqUrl = cmd.getOptionValue("vantiq");
         String pw = cmd.getOptionValue("password");
@@ -107,17 +114,40 @@ public class OpcUaServer {
         String configFileName = locDir.getAbsolutePath() + File.separator + LOCAL_CONFIG_FILE_NAME;
         InputStream cfr = null;
         Properties props = null;
+        
         try {
-            cfr = new FileInputStream(configFileName);
+            File configFile = new File(configFileName);
 
-            props = new Properties();
-            props.load(cfr);
+            if (configFile.exists()) {
+                cfr = new FileInputStream(configFileName);
 
-            String url = props.getProperty(OpcConstants.VANTIQ_URL);
+                props = new Properties();
+                props.load(cfr);
+            } else {
+                props = Utils.obtainServerConfig();
+            }
+            
+            // In the effort to commonize the fetching of startup props,
+            // we try the common versions first.  When that fails, we walk
+            // back through old versions to maintain backward compatibility support.
+            
+            String url = props.getProperty(OpcConstants.TARGET_SERVER);
+            if (url == null) {
+                url = props.getProperty(OpcConstants.VANTIQ_URL);
+            }
             String username = props.getProperty(OpcConstants.VANTIQ_USERNAME);
             String password = props.getProperty(OpcConstants.VANTIQ_PASSWORD);
-            String token = props.getProperty(OpcConstants.VANTIQ_TOKEN);
-            String sourceName = props.getProperty(OpcConstants.VANTIQ_SOURCENAME);
+            String token = props.getProperty(OpcConstants.VANTIQ_AUTHTOKEN);
+            if (token == null) {
+                token = props.getProperty(OpcConstants.VANTIQ_TOKEN);
+            }
+            String sourceName = props.getProperty(OpcConstants.VANTIQ_SOURCE);
+            if (sourceName == null) {
+                sourceName = props.getProperty(OpcConstants.VANTIQ_SOURCES);
+                if (sourceName == null) {
+                    sourceName = props.getProperty(OpcConstants.VANTIQ_SOURCENAME);
+                }
+            }
 
             if (url != null) {
                 configMap.put(OpcConstants.VANTIQ_URL, url);

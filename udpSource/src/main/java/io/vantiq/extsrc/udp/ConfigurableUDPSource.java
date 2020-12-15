@@ -22,9 +22,11 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Properties;
 import java.util.concurrent.*;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.vantiq.extjsdk.Utils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -472,11 +474,41 @@ public class ConfigurableUDPSource {
      * @return          A {@link Map} that holds the contents of the JSON file.
      */
     static Map<String, Object> obtainServerConfig(String fileName) {
+        Map <String, Object> config;
+        // First, try and fetch the properties from the "normal" place
+        try {
+            Properties props = Utils.obtainServerConfig();
+
+            // Properties is, eventually, a raw Map.  So we'll just convert the type...
+            //noinspection unchecked
+            config = (Map) props;
+            return config;
+        } catch (Exception e) {
+            // This probably means that this is an old-style file which is JSON.
+            // So we'll let the area below handle things.
+        }
+        
+        // If that fails, try with the named file, treating it as a properties file
+        
+        try {
+            Properties props = Utils.obtainServerConfig(fileName);
+
+            // Properties is, eventually, a raw Map.  So we'll just convert the type...
+            //noinspection unchecked
+            config = (Map) props;
+            return config;
+        } catch (Exception e) {
+            // This probably means that this is an old-style file which is JSON.
+            // So we'll let the area below handle things.
+        }
+        
+        // And if that fails, fall back the the json  file model...
+        
         File configFile = new File(fileName);
         log.debug("{}", configFile.getAbsolutePath());
-        Map<String, Object>  config = new LinkedHashMap();
         ObjectMapper mapper = new ObjectMapper();
         try {
+            //noinspection unchecked
             config = mapper.readValue(configFile, Map.class);
         } catch (IOException e) {
             throw new RuntimeException("Could not find valid server config file. Expected location: '" 
@@ -496,9 +528,8 @@ public class ConfigurableUDPSource {
      * @param config    The {@link Map} obtained from the config file
      */
     static void setupServer(Map config) {
-        MAX_UDP_DATA = config.get("maxPacketSize") instanceof Integer ? (int) config.get("maxPacketSize") : 1024;
-        LISTENING_PORT = config.get("defaultBindPort") instanceof Integer ? (int) config.get("defaultBindPort") :
-                3141;
+        MAX_UDP_DATA = fetchIntProp(config.get("maxPacketSize"), 1024);
+        LISTENING_PORT = fetchIntProp(config.get("defaultBindPort"), 3141);
         
         if (config.get("targetServer") instanceof String) {
             targetVantiqServer = (String) config.get("targetServer") ;
@@ -529,6 +560,22 @@ public class ConfigurableUDPSource {
             }
         }
     }
+    
+    private static int fetchIntProp(Object value, int defaultValue) throws RuntimeException {
+        if (value == null) {
+            return defaultValue;
+        } else if (value instanceof Integer) {
+            return (int) value;
+        } else if (value instanceof String) {
+            try {
+                return Integer.parseInt((String) value);
+            } catch (NumberFormatException nfe) {
+                throw new RuntimeException("Invalid integer value " + value, nfe);
+            }
+        } else {
+            throw new RuntimeException("Unexpected type " + value.getClass().getName() + " for value " + value);
+        }
+    }
 
     /**
      * The main function of the app. Here it: <br>
@@ -543,10 +590,10 @@ public class ConfigurableUDPSource {
      */
     public static void main(String[] args) {
         Map config;
+        
         if (args != null && args.length != 0) {
             config = obtainServerConfig(args[0]);
-        }
-        else {
+        } else {
             config = obtainServerConfig("config.json");
         }
         setupServer(config);
@@ -555,17 +602,21 @@ public class ConfigurableUDPSource {
          * connect. For target, replace "ws" with "wss" to access the secure connection, and "localhost:8080" with
          * your Vantiq deployment's address, typically "dev.vantiq.com"
          */
-        if (!(config.get("sources") instanceof List)) {
+        List<String> sources;
+        if (config.get("sources") instanceof List) {
+            ((List<Object>) config.get("sources")).removeIf((obj) -> !(obj instanceof String));
+            sources = ((List<String>) config.get("sources"));
+        } else if (config.get("sources") instanceof String) {
+            sources = new ArrayList<>();
+            sources.add((String) config.get("sources"));
+        } else {
             throw new RuntimeException("No source names given in server config file.");
         }
-        ((List<Object>) config.get("sources")).removeIf((obj) -> !(obj instanceof String));
-        List<String> sources = ((List<String>) config.get("sources"));
         
         if (sources.isEmpty()) {
             throw new RuntimeException("No source names given.");
         }
-
-
+        
         /*
          * 1) Sets up the WebSocket connection through ExtensionWebSocketClient and sets up the UDP socket.
          *

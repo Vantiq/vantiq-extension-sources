@@ -256,14 +256,14 @@ where
 
 Alternatively,
 the connection information be provided in a *properties* file.
-Specifically, within the *storage directory*,
-create a file named `sourceconfig.properties`.
+Specifically, create a file named `server.config`.
+Note that the `server.config` file can be placed in the `<install location>/opcuaSource/serverConfig/server.config` or `<install location>/opcuaSource/server.config` locations.
 The information required is placed in that file as follows:
 
 ```
-vantiqUrl = ...
-token = ...
-sourceName = ...
+targetServer = ...
+authToken = ...
+source = ...
 ```
 
 Again, alternatively, but not recommended, you can provide `username` and `password` as
@@ -276,9 +276,9 @@ password = somePassword
 An example file might be
 
 ```
-vantiqUrl = https://dev.vantiq.com
-token = _cDWBfZLNO9FkXd-twjwKnVIBZSGwns35nF4nQFV_ps=
-sourceName = opcuaExample
+targetServer = https://dev.vantiq.com
+authToken = _cDWBfZLNO9FkXd-twjwKnVIBZSGwns35nF4nQFV_ps=
+source = opcuaExample
 ```
 
 > Note that this token will not work -- you will need to create your own

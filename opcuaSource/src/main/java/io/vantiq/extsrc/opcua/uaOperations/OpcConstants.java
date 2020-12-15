@@ -33,9 +33,13 @@ public class OpcConstants {
     // Some config constants are used there for consistency.
 
     public static final String VANTIQ_URL = "vantiqUrl";
+    public static final String TARGET_SERVER = "targetServer";
     public static final String VANTIQ_USERNAME = "username";
     public static final String VANTIQ_PASSWORD = "password";
     public static final String VANTIQ_TOKEN = "token";
+    public static final String VANTIQ_AUTHTOKEN = "authToken";
+    public static final String VANTIQ_SOURCE = "source";
+    public static final String VANTIQ_SOURCES = "sources";
     public static final String VANTIQ_SOURCENAME = "sourceName";
     public static final String OPC_VALUE_IN_VANTIQ = "dataValue";
 
