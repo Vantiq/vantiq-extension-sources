@@ -12,6 +12,7 @@ plugins {
     id 'io.franzbecker.gradle-lombok' version '1.14' apply false
     id 'pl.allegro.tech.build.axion-release' version '1.6.0'
     id 'jacoco'
+    id 'com.chrisgahlert.gradle-dcompose-plugin' version '0.17.1' apply false
 }
 
 wrapper {
@@ -71,6 +72,7 @@ subprojects {
     apply plugin: 'idea'
     apply plugin: 'eclipse'
     apply plugin: 'java'
+    apply plugin: 'com.chrisgahlert.gradle-dcompose-plugin'
 
     // only run with code-coverage metrics if property is explicitly specified
     if (rootProject.hasProperty('jacocoReport')) {
