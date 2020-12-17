@@ -94,9 +94,9 @@ dcompose {
             from "$projectDir/build/distributions/jdbcSource.tar"
         }
         if (rootProject.hasProperty('dockerRegistry')) {
-            repository = rootProject.getProperty('dockerRegistry') + '/jdbcSource'
+            repository = rootProject.getProperty('dockerRegistry') + '/jdbcsource'
         } else {
-            repository = 'jdbcSource'
+            repository = 'jdbcsource'
         }
         logBuildStatus = true
         buildLogFile = file("$buildDir/jdbcDockerBuildLog.file")
