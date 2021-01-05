@@ -11,6 +11,8 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Properties;
 
+import static org.junit.Assume.assumeTrue;
+
 
 public class TestUtils  {
 
@@ -21,6 +23,15 @@ public class TestUtils  {
     public static final String AUTH_TOKEN_PROP = "authToken";
     public static final String OTHER_PROP = "otherProperty";
 
+    public static String FAKE_TOKEN2 = "xxxx====xxxx";
+    public static String SECRET_CREDENTIALS = "CONNECTOR_AUTH_TOKEN";
+    String envVarAuthToken;
+
+    @Before
+    public void setup() {
+        envVarAuthToken = System.getenv(SECRET_CREDENTIALS);
+    }
+
     @Test
     public void testGetConfigAlone() throws Exception {
         BufferedWriter bw = null;
@@ -30,9 +41,9 @@ public class TestUtils  {
             f = new File(p.toString());
             f.deleteOnExit();
             
-            bw = fillProps(p);
+            bw = fillProps(p, true);
            
-            checkProps();
+            checkProps(false);
         } finally {
             if (bw != null) {
                 bw.close();
@@ -57,9 +68,53 @@ public class TestUtils  {
             Path p = Files.createFile(Paths.get("serverConfig/server.config"));
             f = new File(p.toString());
             f.deleteOnExit();
-            bw = fillProps(p);
+            bw = fillProps(p, true);
             
-            checkProps();
+            checkProps(false);
+        } finally {
+            if (bw != null) {
+                bw.close();
+            }
+            if (f != null) {
+                //noinspection ResultOfMethodCallIgnored
+                f.delete();
+            }
+            if (dir != null) {
+                //noinspection ResultOfMethodCallIgnored
+                dir.delete();
+            }
+        }
+    }
+
+    @Test
+    public void testGetEnvVar() throws Exception {
+        assumeTrue("\"CONNECTOR_AUTH_TOKEN\" environment variable must be set equal to \"xxxx====\"",
+                envVarAuthToken != null && envVarAuthToken.equals(FAKE_TOKEN));
+        doEnvVarTests(false);
+    }
+
+    @Test
+    public void testGetEnvVarOverwrite() throws Exception {
+        assumeTrue("\"CONNECTOR_AUTH_TOKEN\" environment variable must be set equal to \"xxxx====xxxx\"",
+                envVarAuthToken != null && envVarAuthToken.equals(FAKE_TOKEN2));
+        doEnvVarTests(true);
+    }
+
+    private void doEnvVarTests(boolean includeAuthToken) throws Exception {
+        BufferedWriter bw = null;
+        File f = null;
+        File dir = null;
+        try {
+            dir = new File("serverConfig");
+            //noinspection ResultOfMethodCallIgnored
+            dir.mkdir();
+            dir.deleteOnExit();
+            Path p = Files.createFile(Paths.get("serverConfig/server.config"));
+            f = new File(p.toString());
+            f.deleteOnExit();
+            bw = fillProps(p, includeAuthToken);
+
+            checkProps(includeAuthToken);
         } finally {
             if (bw != null) {
                 bw.close();
@@ -75,21 +130,27 @@ public class TestUtils  {
         }
     }
     
-    private BufferedWriter fillProps(Path p) throws IOException {
+    private BufferedWriter fillProps(Path p, boolean includeAuthToken) throws IOException {
         BufferedWriter bw = Files.newBufferedWriter(p);
         bw.append(TARGET_SERVER_PROP + " = " + FAKE_URL + "\n");
-        bw.append(AUTH_TOKEN_PROP + " = " + FAKE_TOKEN + "\n");
+        if (includeAuthToken) {
+            bw.append(AUTH_TOKEN_PROP + " = " + FAKE_TOKEN + "\n");
+        }
         bw.append(OTHER_PROP + " = " + FAKE_SOURCE + "\n");
         bw.close();
         return bw;
     }
     
-    private void checkProps() {
+    private void checkProps(boolean isOverwrite) {
         Properties props = Utils.obtainServerConfig();
         assert props.getProperty(TARGET_SERVER_PROP) != null;
         assert props.getProperty(TARGET_SERVER_PROP).contains(FAKE_URL);
         assert props.getProperty(AUTH_TOKEN_PROP) != null;
-        assert props.getProperty(AUTH_TOKEN_PROP).contains(FAKE_TOKEN);
+        if (isOverwrite) {
+            assert props.getProperty(AUTH_TOKEN_PROP).contains(FAKE_TOKEN2);
+        } else {
+            assert props.getProperty(AUTH_TOKEN_PROP).contains(FAKE_TOKEN);
+        }
         assert props.getProperty(OTHER_PROP) != null;
         assert props.getProperty(OTHER_PROP).contains(FAKE_SOURCE);
     }

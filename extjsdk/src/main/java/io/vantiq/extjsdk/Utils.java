@@ -9,6 +9,7 @@ public class Utils {
     
     public static String SERVER_CONFIG_DIR = "serverConfig";
     public static String SERVER_CONFIG_FILENAME = "server.config";
+    public static String SECRET_CREDENTIALS = "CONNECTOR_AUTH_TOKEN";
 
     public static Properties obtainServerConfig() {
         return obtainServerConfig(SERVER_CONFIG_FILENAME);
@@ -29,6 +30,12 @@ public class Utils {
                 configFile = new File(fileName);
             }
             properties.load(new FileReader(configFile));
+
+            // Next we check for the existence of an environment variable containing a secret reference to the authToken
+            String secretAuthToken = System.getenv(SECRET_CREDENTIALS);
+            if (secretAuthToken != null && !secretAuthToken.trim().isEmpty()) {
+                properties.setProperty("authToken", secretAuthToken);
+            }
         } catch (IOException e) {
             throw new RuntimeException("Could not find valid server configuration file. Expected location: '"
                     + configFile.getAbsolutePath() + "'", e);
