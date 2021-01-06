@@ -44,6 +44,7 @@ configurations {
 
 test {
     useJUnit()
+    environment "CONNECTOR_AUTH_TOKEN", "xxxx===="
 }
 
 tasks.withType(Test) {
