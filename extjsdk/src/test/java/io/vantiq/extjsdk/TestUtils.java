@@ -13,7 +13,6 @@ import java.util.Properties;
 
 import static org.junit.Assume.assumeTrue;
 
-
 public class TestUtils  {
 
     private static final String FAKE_URL = "http://somewhere/else";
@@ -23,7 +22,6 @@ public class TestUtils  {
     public static final String AUTH_TOKEN_PROP = "authToken";
     public static final String OTHER_PROP = "otherProperty";
 
-    public static String FAKE_TOKEN2 = "xxxx====xxxx";
     public static String SECRET_CREDENTIALS = "CONNECTOR_AUTH_TOKEN";
     String envVarAuthToken;
 
@@ -43,7 +41,7 @@ public class TestUtils  {
             
             bw = fillProps(p, true);
            
-            checkProps(false);
+            checkProps();
         } finally {
             if (bw != null) {
                 bw.close();
@@ -70,7 +68,7 @@ public class TestUtils  {
             f.deleteOnExit();
             bw = fillProps(p, true);
             
-            checkProps(false);
+            checkProps();
         } finally {
             if (bw != null) {
                 bw.close();
@@ -93,13 +91,6 @@ public class TestUtils  {
         doEnvVarTests(false);
     }
 
-    @Test
-    public void testGetEnvVarOverwrite() throws Exception {
-        assumeTrue("\"CONNECTOR_AUTH_TOKEN\" environment variable must be set equal to \"xxxx====xxxx\"",
-                envVarAuthToken != null && envVarAuthToken.equals(FAKE_TOKEN2));
-        doEnvVarTests(true);
-    }
-
     private void doEnvVarTests(boolean includeAuthToken) throws Exception {
         BufferedWriter bw = null;
         File f = null;
@@ -114,7 +105,7 @@ public class TestUtils  {
             f.deleteOnExit();
             bw = fillProps(p, includeAuthToken);
 
-            checkProps(includeAuthToken);
+            checkProps();
         } finally {
             if (bw != null) {
                 bw.close();
@@ -141,16 +132,12 @@ public class TestUtils  {
         return bw;
     }
     
-    private void checkProps(boolean isOverwrite) {
+    private void checkProps() {
         Properties props = Utils.obtainServerConfig();
         assert props.getProperty(TARGET_SERVER_PROP) != null;
         assert props.getProperty(TARGET_SERVER_PROP).contains(FAKE_URL);
         assert props.getProperty(AUTH_TOKEN_PROP) != null;
-        if (isOverwrite) {
-            assert props.getProperty(AUTH_TOKEN_PROP).contains(FAKE_TOKEN2);
-        } else {
-            assert props.getProperty(AUTH_TOKEN_PROP).contains(FAKE_TOKEN);
-        }
+        assert props.getProperty(AUTH_TOKEN_PROP).contains(FAKE_TOKEN);
         assert props.getProperty(OTHER_PROP) != null;
         assert props.getProperty(OTHER_PROP).contains(FAKE_SOURCE);
     }

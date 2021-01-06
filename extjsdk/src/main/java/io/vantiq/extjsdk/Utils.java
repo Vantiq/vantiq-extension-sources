@@ -32,8 +32,11 @@ public class Utils {
             properties.load(new FileReader(configFile));
 
             // Next we check for the existence of an environment variable containing a secret reference to the authToken
+            // We only set it if the value is not empty and if the authToken wasn't already specified in the
+            // server.config
             String secretAuthToken = System.getenv(SECRET_CREDENTIALS);
-            if (secretAuthToken != null && !secretAuthToken.trim().isEmpty()) {
+            if (secretAuthToken != null && !secretAuthToken.trim().isEmpty()
+                    && properties.getProperty("authToken") == null) {
                 properties.setProperty("authToken", secretAuthToken);
             }
         } catch (IOException e) {
