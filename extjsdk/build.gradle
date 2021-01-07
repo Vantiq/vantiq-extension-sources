@@ -44,6 +44,9 @@ configurations {
 
 test {
     useJUnit()
+    if (System.getenv("CONNECTOR_AUTH_TOKEN") == null) {
+        environment "CONNECTOR_AUTH_TOKEN", "xxxx===="
+    }
 }
 
 tasks.withType(Test) {

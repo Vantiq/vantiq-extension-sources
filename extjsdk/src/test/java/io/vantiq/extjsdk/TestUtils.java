@@ -11,6 +11,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Properties;
 
+import static org.junit.Assume.assumeTrue;
 
 public class TestUtils  {
 
@@ -21,6 +22,14 @@ public class TestUtils  {
     public static final String AUTH_TOKEN_PROP = "authToken";
     public static final String OTHER_PROP = "otherProperty";
 
+    public static String SECRET_CREDENTIALS = "CONNECTOR_AUTH_TOKEN";
+    String envVarAuthToken;
+
+    @Before
+    public void setup() {
+        envVarAuthToken = System.getenv(SECRET_CREDENTIALS);
+    }
+
     @Test
     public void testGetConfigAlone() throws Exception {
         BufferedWriter bw = null;
@@ -30,7 +39,7 @@ public class TestUtils  {
             f = new File(p.toString());
             f.deleteOnExit();
             
-            bw = fillProps(p);
+            bw = fillProps(p, true);
            
             checkProps();
         } finally {
@@ -57,7 +66,7 @@ public class TestUtils  {
             Path p = Files.createFile(Paths.get("serverConfig/server.config"));
             f = new File(p.toString());
             f.deleteOnExit();
-            bw = fillProps(p);
+            bw = fillProps(p, true);
             
             checkProps();
         } finally {
@@ -74,11 +83,50 @@ public class TestUtils  {
             }
         }
     }
+
+    @Test
+    public void testGetEnvVar() throws Exception {
+        assumeTrue("\"CONNECTOR_AUTH_TOKEN\" environment variable must be set equal to \"xxxx====\"",
+                envVarAuthToken != null && envVarAuthToken.equals(FAKE_TOKEN));
+        doEnvVarTests(false);
+    }
+
+    private void doEnvVarTests(boolean includeAuthToken) throws Exception {
+        BufferedWriter bw = null;
+        File f = null;
+        File dir = null;
+        try {
+            dir = new File("serverConfig");
+            //noinspection ResultOfMethodCallIgnored
+            dir.mkdir();
+            dir.deleteOnExit();
+            Path p = Files.createFile(Paths.get("serverConfig/server.config"));
+            f = new File(p.toString());
+            f.deleteOnExit();
+            bw = fillProps(p, includeAuthToken);
+
+            checkProps();
+        } finally {
+            if (bw != null) {
+                bw.close();
+            }
+            if (f != null) {
+                //noinspection ResultOfMethodCallIgnored
+                f.delete();
+            }
+            if (dir != null) {
+                //noinspection ResultOfMethodCallIgnored
+                dir.delete();
+            }
+        }
+    }
     
-    private BufferedWriter fillProps(Path p) throws IOException {
+    private BufferedWriter fillProps(Path p, boolean includeAuthToken) throws IOException {
         BufferedWriter bw = Files.newBufferedWriter(p);
         bw.append(TARGET_SERVER_PROP + " = " + FAKE_URL + "\n");
-        bw.append(AUTH_TOKEN_PROP + " = " + FAKE_TOKEN + "\n");
+        if (includeAuthToken) {
+            bw.append(AUTH_TOKEN_PROP + " = " + FAKE_TOKEN + "\n");
+        }
         bw.append(OTHER_PROP + " = " + FAKE_SOURCE + "\n");
         bw.close();
         return bw;
