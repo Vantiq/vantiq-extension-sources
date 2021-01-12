@@ -34,6 +34,25 @@ dependencies on mvnrepository.com are included.
 The SDK uses the Slf4j logging interface with no implementation provided. The names of the loggers are the fully
 qualified class name, appended by a '#' and the name of the source they are associated with.
 
+## <a name="serverConfig" id="serverConfig"></a>Connector Startup Configuration
+Generally, connectors need a minimum of three configuration properties at startup:
+*   `targetServer`: The URL of the Vantiq server to which the connector should connect.
+*   `authToken`: The access token that the connector will use to authenticate to the desired namespace.
+*   `source(s)`: The name of the source in the namespace (or in some cases a list of comma-separated source names) 
+    that the connector will connect to
+    
+The SDK includes a utility method to retrieve the startup configuration document and parse its contents into a 
+`Properties` object: `Utils.obtainServerConfig()`. By default, this method will look for those values in a file named 
+`server.config`. That file is expected to be included in the running connector directory as follows: 
+`<connectorRunningDirector>/serverConfig/server.config`. The SDK will also look for the file in the running connector 
+directory if it is not found in the `serverConfig` subdirectory (i.e. `<connectorRunningDirector>/server.config`).
+
+For users who may not want to write the `authToken` property to a file because of its sensitive nature, the 
+`Utils.obtainServerConfig()` method will also search for this value in an environment variable named 
+`CONNECTOR_AUTH_TOKEN`. If the `authToken` is specified in the `server.config` document, that value will take precedent.
+Otherwise, if the `authToken` is not set in the configuration file, the utility method will retrieve whatever value is 
+provided in the environment variable.
+
 ## Program Flow
 1.	A new ExtensionWebSocketClient is created.
 2.	Setup and add any handlers through `client.set<type>Handler()`. See the [Receiving Messages](#handler) section for
