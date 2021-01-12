@@ -45,7 +45,7 @@ name for each class is the class's fully qualified class name, *e.g.* "io.vantiq
 
 ## Server Config File
 
-(Please read to the [SDK's server config documentation](../README.md#serverConfig) first.)
+(Please read to the [SDK's server config documentation](../extjsdk/README.md#serverConfig) first.)
 
 The server config file is written as `property=value`, with each property on its
 own line. 

@@ -256,7 +256,7 @@ where
 
 Alternatively,
 the connection information be provided in a *properties* file. 
-(Please read to the [SDK's server config documentation](../README.md#serverConfig) first.)
+(Please read to the [SDK's server config documentation](../extjsdk/README.md#serverConfig) first.)
 Specifically, create a file named `server.config`.
 Note that the `server.config` file can be placed in the `<install location>/opcuaSource/serverConfig/server.config` or `<install location>/opcuaSource/server.config` locations.
 The information required is placed in that file as follows:

@@ -60,7 +60,7 @@ named "output.log".
 
 ## Server Config File
 
-(Please read to the [SDK's server config documentation](../README.md#serverConfig) first.)
+(Please read to the [SDK's server config documentation](../extjsdk/README.md#serverConfig) first.)
 
 The server config file is written as `property=value`, with each property on its
 own line. The following is an example of a valid server.config file:
