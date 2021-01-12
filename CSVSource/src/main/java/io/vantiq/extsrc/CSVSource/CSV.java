@@ -34,10 +34,13 @@ import org.slf4j.LoggerFactory;
 
 import io.vantiq.extjsdk.ExtensionWebSocketClient;
 import io.vantiq.extsrc.CSVSource.exception.VantiqCSVException;
+
 /**
- * Implementing WatchService based on configuration given in csvConfig in extension configuration.   
- * Sets up the source using the configuration document, which looks as below.
- *<pre>
+ * Implementing WatchService based on configuration given in csvConfig in
+ * extension configuration. Sets up the source using the configuration document,
+ * which looks as below.
+ * 
+ * <pre>
  * "csvConfig": {
  *     "fileFolderPath": "d:/tmp/csv",
  *     "filePrefix": "eje",
@@ -48,75 +51,82 @@ import io.vantiq.extsrc.CSVSource.exception.VantiqCSVException;
  *   	  "field2": "flag",
  *     	"field1": "YScale"
  *  	}
- *  }</pre>
+ *  }
+ * </pre>
  * 
- * The class enable multiple activites using thread pool based on the attached configuration
- * <pre> "options": {
+ * The class enable multiple activites using thread pool based on the attached
+ * configuration
+ * 
+ * <pre>
+ *  "options": {
  *     "maxActiveTasks": 2,
  *     "maxQueuedTasks": 4,
  *     "processExistingFiles": true,
  *     "extensionAfterProcessing": "csv.done",
  *     "deleteAfterProcessing": false
- *  }</pre>
+ *  }
+ * </pre>
  *
  */
 public class CSV {
     Logger log = LoggerFactory.getLogger(this.getClass().getCanonicalName());
-    // Used to receive configuration informatio . 
-    Map<String, Object>  config;
-    Map<String, Object>  options ;
+    // Used to receive configuration informatio .
+    Map<String, Object> config;
+    Map<String, Object> options;
 
-    // Control of thread should continue to work , set to false in Stop. 
+    // Control of thread should continue to work , set to false in Stop.
     boolean bContinue = true;
 
-    // Components used 
+    // Components used
     WatchService serviceWatcher;
     ExecutorService executionPool = null;
-    ExtensionWebSocketClient oClient ; 
+    ExtensionWebSocketClient oClient;
 
     String fullFilePath;
-    String extension = ".csv"; 
-    String filePrefix = ""; 
-    FilenameFilter fileFilter ; 
+    String extension = ".csv";
+    String filePrefix = "";
+    FilenameFilter fileFilter;
     String extensionAfterProcessing = ".done";
-    boolean deleteAfterProcessing = false; 
+    boolean deleteAfterProcessing = false;
+
+    Thread currThread;
 
     private static final int MAX_ACTIVE_TASKS = 5;
     private static final int MAX_QUEUED_TASKS = 10;
 
     private static final String MAX_ACTIVE_TASKS_LABEL = "maxActiveTasks";
     private static final String MAX_QUEUED_TASKS_LABEL = "maxQueuedTasks";
-    
+
     /**
-     * Create resource which will requiered by the extension activity 
+     * Create resource which will requiered by the extension activity
      */
-    void prepareConfigurationData()    {
-        extension  = "csv"; 
-        
+    void prepareConfigurationData() {
+        extension = "csv";
+
         if (config.get("fileExtension") != null) {
-            extension  = (String) config.get("fileExtension"); 
+            extension = (String) config.get("fileExtension");
         }
-        if (!extension .startsWith(".")) {
-            extension  = "." + extension ; 
+        if (!extension.startsWith(".")) {
+            extension = "." + extension;
         }
-        if (config.get("filePrefix")!=null) {
-            filePrefix = (String) config.get("filePrefix"); 
+        if (config.get("filePrefix") != null) {
+            filePrefix = (String) config.get("filePrefix");
         }
         if (options.get("extensionAfterProcessing") != null) {
-            extensionAfterProcessing = (String) options.get("extensionAfterProcessing"); 
+            extensionAfterProcessing = (String) options.get("extensionAfterProcessing");
         } else {
             extensionAfterProcessing = extension + extensionAfterProcessing;
         }
 
         if (!extensionAfterProcessing.startsWith(".")) {
-            extensionAfterProcessing = "." + extensionAfterProcessing; 
+            extensionAfterProcessing = "." + extensionAfterProcessing;
         }
         if (options.get("deleteAfterProcessing") != null) {
-            deleteAfterProcessing = (boolean) options.get("deleteAfterProcessing"); 
+            deleteAfterProcessing = (boolean) options.get("deleteAfterProcessing");
         }
-        
-        int maxActiveTasks = MAX_ACTIVE_TASKS; 
-        int maxQueuedTasks = MAX_QUEUED_TASKS; 
+
+        int maxActiveTasks = MAX_ACTIVE_TASKS;
+        int maxQueuedTasks = MAX_QUEUED_TASKS;
 
         if (options.get(MAX_ACTIVE_TASKS_LABEL) != null) {
             maxActiveTasks = (int) options.get(MAX_ACTIVE_TASKS_LABEL);
@@ -125,19 +135,20 @@ public class CSV {
             maxQueuedTasks = (int) options.get(MAX_QUEUED_TASKS_LABEL);
         }
 
-        executionPool = new ThreadPoolExecutor(maxActiveTasks, maxActiveTasks, 0l, TimeUnit.MILLISECONDS,
-            new LinkedBlockingQueue<Runnable>(maxQueuedTasks));
-
         fileFilter = (dir, name) -> {
             String lowercaseName = name.toLowerCase();
-    
+
             return lowercaseName.endsWith(extension) && lowercaseName.startsWith(filePrefix);
         };
+
+        executionPool = new ThreadPoolExecutor(maxActiveTasks, maxActiveTasks, 0l, TimeUnit.MILLISECONDS,
+                new LinkedBlockingQueue<Runnable>(maxQueuedTasks));
+
     }
-    
+
     /**
-     * function set the watcher service on the folder where files created . 
-     * its olso clean existing files which havnt been processed yet . 
+     * function set the watcher service on the folder where files created . its olso
+     * clean existing files which havnt been processed yet .
      * 
      * @param oClient
      * @param fileFolderPath
@@ -146,27 +157,28 @@ public class CSV {
      * @param options
      * @throws VantiqCSVException
      */
-    public void setupCSV(ExtensionWebSocketClient oClient ,String fileFolderPath ,String fullFilePath ,Map<String, Object>  config ,Map<String, Object>  options  ) throws VantiqCSVException {
+    public void setupCSV(ExtensionWebSocketClient oClient, String fileFolderPath, String fullFilePath,
+            Map<String, Object> config, Map<String, Object> options) throws VantiqCSVException {
         try {
             this.fullFilePath = fullFilePath;
-            this.config = config; 
-            this.options = options; 
+            this.config = config;
+            this.options = options;
             this.oClient = oClient;
 
-            serviceWatcher = FileSystems.getDefault().newWatchService(); 
+            serviceWatcher = FileSystems.getDefault().newWatchService();
             Path path = Paths.get(fileFolderPath);
             path.register(serviceWatcher, ENTRY_CREATE);
             log.info("CSV trying to subscribe to {}", fileFolderPath);
-           
-            prepareConfigurationData(); 
+
+            prepareConfigurationData();
 
             new Thread(() -> processThread(fileFolderPath)).start();
 
-            // working on files already exists in folder. 
+            // working on files already exists in folder.
             if (options.get("processExistingFiles") != null) {
                 Object processExistingFiles = options.get("processExistingFiles");
                 if (processExistingFiles instanceof Boolean)
-                    if ((boolean)processExistingFiles) {
+                    if ((boolean) processExistingFiles) {
                         log.info("Start working on existing file in folder {}", fileFolderPath);
                         handleExistingFiles(fileFolderPath);
                     }
@@ -176,17 +188,18 @@ public class CSV {
             reportCSVError(e);
         }
     }
-    
+
     /**
-     * Handling accepted file , work only in case the file name is match the file name pattern . 
-     * the input file can be renamed and stay in the folder (usually for debug purposes) or can be deleted . 
+     * Handling accepted file , work only in case the file name is match the file
+     * name pattern . the input file can be renamed and stay in the folder (usually
+     * for debug purposes) or can be deleted .
      * 
      * @param fileFolderPath - the path where the file is ocated
-     * @param filename - the file name to be procesed. 
+     * @param filename       - the file name to be procesed.
      */
-    void executeInPool(String fileFolderPath, String filename){
+    void executeInPool(String fileFolderPath, String filename) {
         String fullFileName = String.format("%s/%s", fileFolderPath, filename);
-        File path = new File (fileFolderPath);
+        File path = new File(fileFolderPath);
 
         if (fileFilter.accept(path, filename)) {
             executionPool.execute(new Runnable() {
@@ -194,19 +207,27 @@ public class CSV {
                 public void run() {
                     log.info("start executing {}", fullFileName);
                     try {
-                        CSVReader.execute(fullFileName, config, oClient);
+                        String configType = (String) config.get("FileType");
 
-                        File file = new File (fullFileName);
+                        if (configType.toLowerCase().equals("fixedlength")) {
+                            CSVReader.executeFixedRecord(fullFileName, config, oClient);
+                        } else {
+                            CSVReader.execute(fullFileName, config, oClient);
+                        }
+
+                        File file = new File(fullFileName);
                         if (deleteAfterProcessing) {
                             log.info("File {} deleted", fullFileName);
                             file.delete();
                         } else if (extensionAfterProcessing != "") {
-                            File newfullFileName = new File( fullFileName.replace(extension, extensionAfterProcessing));
-                            log.info("File {} renamed to {}", fullFileName,newfullFileName);
+                            File newfullFileName = new File(fullFileName.replace(extension, extensionAfterProcessing));
+                            log.info("File {} renamed to {}", fullFileName, newfullFileName);
                             file.renameTo(newfullFileName);
                         }
                     } catch (RejectedExecutionException e) {
-                        log.error("The queue of tasks has filled, and as a result the request was unable to be processed.", e);
+                        log.error(
+                                "The queue of tasks has filled, and as a result the request was unable to be processed.",
+                                e);
                     } catch (Exception ex) {
                         log.error("Failure in executing Task", ex);
                     }
@@ -214,14 +235,14 @@ public class CSV {
             });
         }
     }
-    
+
     /**
-     * Responsible for handling files whihc already exist in folder and will not be notified by the 
-     * WatchService
+     * Responsible for handling files whihc already exist in folder and will not be
+     * notified by the WatchService
      * 
-     * @param fileFolderPath - the path of the files waiting to be processed . 
+     * @param fileFolderPath - the path of the files waiting to be processed .
      */
-    void handleExistingFiles(String fileFolderPath){
+    void handleExistingFiles(String fileFolderPath) {
         File folder = new File(fileFolderPath);
 
         String[] listOfFiles = folder.list(fileFilter);
@@ -229,64 +250,68 @@ public class CSV {
             executeInPool(fileFolderPath, fileName);
         }
     }
-    
+
     /**
-     * function hanled the watcher service notifications.
-     * currently , only new entries are being handled , however , it logs rename files as well 
-     * without any processing , just to understand if it will be requiered in the future 
+     * function hanled the watcher service notifications. currently , only new
+     * entries are being handled , however , it logs rename files as well without
+     * any processing , just to understand if it will be requiered in the future
      *
      * @param fileFolderPath - path to the watched folder
      */
-    void processThread(String fileFolderPath)  {
+    void processThread(String fileFolderPath) {
         WatchKey key = null;
         bContinue = true;
 
         while (bContinue) {
             try {
-                key = serviceWatcher.take();
-                // Dequeue events
-                Kind<?> kind = null;
-                for (WatchEvent<?> watchEvent : key.pollEvents()) {
-                    // Get the type of the event
-                    kind = watchEvent.kind();
+                key = serviceWatcher.poll(100, TimeUnit.MILLISECONDS);
+                if (key != null) {
+                    // Dequeue events
+                    Kind<?> kind = null;
+                    for (WatchEvent<?> watchEvent : key.pollEvents()) {
+                        // Get the type of the event
+                        kind = watchEvent.kind();
 
-                    if (OVERFLOW == kind) {
-                        continue; // loop
-                    } else if (ENTRY_CREATE == kind) {
-                        // A new Path was created
-                        @SuppressWarnings("unchecked")
-                        Path newPath = ((WatchEvent<Path>) watchEvent)
-                                .context();
-                        log.info("New path created: {}" , newPath.toString());
-                        executeInPool(fileFolderPath, newPath.toString());
-                    } else if (ENTRY_MODIFY == kind) {
-                        // modified
-                        @SuppressWarnings("unchecked")
-                        Path newPath = ((WatchEvent<Path>) watchEvent)
-                                .context();
-                        log.debug("Ignored path modified: {}" ,newPath.toString());
+                        if (OVERFLOW == kind) {
+                            continue; // loop
+                        } else if (ENTRY_CREATE == kind) {
+                            // A new Path was created
+                            @SuppressWarnings("unchecked")
+                            Path newPath = ((WatchEvent<Path>) watchEvent).context();
+                            log.info("New path created: {}", newPath.toString());
+                            executeInPool(fileFolderPath, newPath.toString());
+                        } else if (ENTRY_MODIFY == kind) {
+                            // modified
+                            @SuppressWarnings("unchecked")
+                            Path newPath = ((WatchEvent<Path>) watchEvent).context();
+                            log.debug("Ignored path modified: {}", newPath.toString());
+                        }
                     }
+                    key.reset();
                 }
-                key.reset();
             } catch (InterruptedException ex1) {
                 log.error("processThread inloop failure", ex1);
             }
         }
         log.info("Process thread exited");
     }
-    
+
     public void reportCSVError(Exception e) throws VantiqCSVException {
-        String message = this.getClass().getCanonicalName() + ": A CSV error occurred: " + e.getMessage() +
-                ", Error Code: " + e.getCause().getClass().getSimpleName();
+        String message = this.getClass().getCanonicalName() + ": A CSV error occurred: " + e.getMessage()
+                + ", Error Code: " + e.getCause().getClass().getSimpleName();
         throw new VantiqCSVException(message, e);
     }
 
     public void close() {
         // Close single connection if open
-        bContinue = false; 
-
+        try {
+            bContinue = false;
+            wait(1000);
+        } catch (Exception ex) {
+        }
+        log.info("*******************Process thread exited");
         executionPool.shutdownNow();
-        try{
+        try {
             serviceWatcher.close();
         } catch (IOException ioex) {
         }

@@ -53,6 +53,10 @@ public class CSVCore {
                 pollTimer.cancel();
                 pollTimer = null;
             }
+
+            if (csv != null){
+                csv.close();
+            }
             
             oConfigHandler.configComplete = false;
                         
@@ -142,6 +146,7 @@ public class CSVCore {
             client.setConfigHandler(oConfigHandler);
             client.setReconnectHandler(reconnectHandler);
             client.setCloseHandler(closeHandler);
+//            client.setAutoReconnect(true);
             client.initiateFullConnection(targetVantiqServer, authToken);
             
             sourcesSucceeded = exitIfConnectionFails(client, timeout);
@@ -157,13 +162,14 @@ public class CSVCore {
     }
 
     public void close() {
-        stop(); 
+      
     }
 
     /**
      * Closes all resources held by this program and then closes the connection. 
      */
     public void stop() {
+        close(); 
         if (client != null && client.isOpen()) {
             client.stop();
             client = null;

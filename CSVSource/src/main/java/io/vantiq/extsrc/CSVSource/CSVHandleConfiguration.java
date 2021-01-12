@@ -131,6 +131,9 @@ public class CSVHandleConfiguration extends Handler<ExtensionServiceMessage> {
      * @return
      */
     boolean createCSVConnection(Map<String, Object> config, Map<String, Object> options , String FileFolderPath, String fullFilePath, ExtensionWebSocketClient oClient) {
+
+        log.error("Enter createCSVConnection");
+
         if ( !(config.get(MAX_LINES_IN_EVENT) instanceof Integer)) {
             log.error("Configuration failed. No maxLinesInEvents was specified or it is not Integer");
             return false;

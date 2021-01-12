@@ -137,6 +137,71 @@ So instead of loading event:
 `{ field0:1, field1:true, field2:"there"}` it will upload `{ field0:1, field1:true, address:"there"}`
 this can save conversion processing on the server.
 
+### fixed lentgh record
+CSV Reader no support fixed lenth record with support of different characher sets.
+in order to use Fixed length suport the configuration 
+additional key `FileType` is added , its value must be `FixedLength` , any different value will configure as the default behavior which is character delimited.
+
+the schema part changed accordingly and contains the follwoing attributes 
+
+attribute name which contain the name of the field to be used in the json. for exampe code ,name ,price in the above example
+for each attribute:
+* **offset** : the offset of the field from the beginning of the record
+* **length** : the size of the field
+* **type** : the type of the field : string , int etc 
+* **charset** : optional ,which charset to use when reading the field. 
+* **reveresed** : Optioal, reversed the attribute value , maily for support RTL names
+
+
+
+the configuration should be similar to
+```
+   "csvConfig": {
+      "fileFolderPath": "d:/tmp/csv",
+      "filePrefix": "plu",
+      "fileExtension": "txt",
+      "maxLinesInEvent": 50,
+      "waitBetweenTx": 10,
+      "delimiter": ",",
+      "FileType": "FixedLength",
+      "schema": {
+         "code": {
+            "offset": 0,
+            "length": 13,
+            "type": "string"
+         },
+         "name": {
+            "offset": 14,
+            "length": 20,
+            "type": "string",
+            "charset": "Cp862",
+            "reveresed": true
+         },
+         "weighted": {
+            "offset": 35,
+            "length": 1,
+            "type": "string"
+         },
+         "price": {
+            "offset": 37,
+            "length": 6,
+            "type": "string"
+         },
+         "cost": {
+            "offset": 44,
+            "length": 6,
+            "type": "string"
+         },
+         "department": {
+            "offset": 51,
+            "length": 3,
+            "type": "string"
+         }
+      }
+   },
+```
+
+
 ### Execution Options
 
 * **maxActiveTasks**: Optional. The maximum number of threads running at any given point. This is the number of CSV files being processed simultaneously. This value must be a positive integer. Default value is 5.
