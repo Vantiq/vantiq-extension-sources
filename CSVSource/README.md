@@ -44,7 +44,7 @@ which is an [Apache Log4j configuration file.](https://logging.apache.org/log4j/
 name for each class is the class's fully qualified class name, *e.g.* "io.vantiq.extjsdk.ExtensionWebSocketClient".  
 
 ## Server Config File
-(Please read to the [SDK's server config documentation](../extjsdk/README.md#serverConfig) first.)
+(Please read the [SDK's server config documentation](../extjsdk/README.md#serverConfig) first.)
 
 ### Vantiq Options
 
