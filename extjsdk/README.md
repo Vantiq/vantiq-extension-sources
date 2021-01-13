@@ -43,15 +43,24 @@ Generally, connectors need a minimum of three configuration properties at startu
     
 The SDK includes a utility method to retrieve the startup configuration document and parse its contents into a 
 `Properties` object: `Utils.obtainServerConfig()`. By default, this method will look for those values in a file named 
-`server.config`. That file is expected to be included in the running connector directory as follows: 
-`<connectorRunningDirector>/serverConfig/server.config`. The SDK will also look for the file in the running connector 
-directory if it is not found in the `serverConfig` subdirectory (i.e. `<connectorRunningDirector>/server.config`).
+`server.config`. That file is expected to be included in the connector's working directory as follows: 
+`<connectorWorkingDirector>/serverConfig/server.config`. The SDK will also look for the file in the working connector 
+directory if it is not found in the `serverConfig` subdirectory (i.e. `<connectorWorkingDirector>/server.config`).
 
 For users who may not want to write the `authToken` property to a file because of its sensitive nature, the 
 `Utils.obtainServerConfig()` method will also search for this value in an environment variable named 
-`CONNECTOR_AUTH_TOKEN`. If the `authToken` is specified in the `server.config` document, that value will take precedent.
+`CONNECTOR_AUTH_TOKEN`. If the `authToken` is specified in the `server.config` document, that value will take precedence.
 Otherwise, if the `authToken` is not set in the configuration file, the utility method will retrieve whatever value is 
 provided in the environment variable.
+
+The server config file is written as `property=value`, with each property on its own line. The following is an example 
+of a valid `server.config` file (including the `authToken`, but that can be omitted and specified as an environment 
+variable instead):
+```
+authToken=XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+sources=MySourceName
+targetServer=https://dev.vantiq.com/
+```
 
 ## Program Flow
 1.	A new ExtensionWebSocketClient is created.

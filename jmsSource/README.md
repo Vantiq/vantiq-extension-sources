@@ -59,16 +59,7 @@ name for each class is the class's fully qualified class name, *e.g.* "io.vantiq
 named "output.log".
 
 ## Server Config File
-
 (Please read to the [SDK's server config documentation](../extjsdk/README.md#serverConfig) first.)
-
-The server config file is written as `property=value`, with each property on its
-own line. The following is an example of a valid server.config file:
-```
-authToken=vadfEarscQadfagdfjrKt7Fj1xjfjzBxliahO9adliiH-Dj--gNM=
-sources=JMS1
-targetServer=https://dev.vantiq.com/
-```
 
 ### Vantiq Options
 *   **authToken**: Required. The authentication token to connect with. These can be obtained from the namespace admin.
