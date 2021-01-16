@@ -72,24 +72,27 @@ public class JDBCCore {
             }
             
             jdbcConfigHandler.configComplete = false;
-                        
-            CompletableFuture<Boolean> success = client.connectToSource();
-            
-            try {
-                if ( !success.get(10, TimeUnit.SECONDS) ) {
-                    if (!client.isOpen()) {
-                        log.error("Failed to connect to server url '" + targetVantiqServer + "'.");
-                    } else if (!client.isAuthed()) {
-                        log.error("Failed to authenticate within 10 seconds using the given authentication data.");
-                    } else {
-                        log.error("Failed to connect within 10 seconds");
+
+            // Spin off a thread to handle doing the reconnect and error/log handling, this way the handler doesn't
+            // block the onMessage() handler in the ExtensionWebSocketListener from processing future messages
+            new Thread( () -> {
+                CompletableFuture<Boolean> success = client.connectToSource();
+                try {
+                    if ( !success.get(10, TimeUnit.SECONDS) ) {
+                        if (!client.isOpen()) {
+                            log.error("Failed to connect to server url '" + targetVantiqServer + "'.");
+                        } else if (!client.isAuthed()) {
+                            log.error("Failed to authenticate within 10 seconds using the given authentication data.");
+                        } else {
+                            log.error("Failed to connect within 10 seconds");
+                        }
+                        close();
                     }
+                } catch (InterruptedException | ExecutionException | TimeoutException e) {
+                    log.error("Could not reconnect to source within 10 seconds: ", e);
                     close();
                 }
-            } catch (InterruptedException | ExecutionException | TimeoutException e) {
-                log.error("Could not reconnect to source within 10 seconds: ", e);
-                close();
-            }
+            }).start();
         }
     };
     
@@ -309,7 +312,12 @@ public class JDBCCore {
             HashMap[] queryMap = localJDBC.processQuery(pollQuery);
             if (queryMap != null) {
                 for (HashMap h : queryMap) {
-                    client.sendNotification(h);
+                    if (client.isConnected()) {
+                        client.sendNotification(h);
+                    } else {
+                        log.warn("The connection to Vantiq is not active, so the pollQuery response was unable to be " +
+                                "sent.");
+                    }
                 }
             }
         } catch (VantiqSQLException e) {

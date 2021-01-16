@@ -29,6 +29,9 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 
+import java.util.Queue;
+import com.google.common.collect.EvictingQueue;
+
 // Logging
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -50,6 +53,10 @@ public class ExtensionWebSocketClient {
      * The code for a query response where no data is sent and no more is coming.
      */
     public static final int QUERY_NODATA_CODE   = 204;
+    /**
+     * The default max queue size of the failedMessageQueue
+     */
+    private static final int DEFAULT_FAILED_MESSAGE_QUEUE_SIZE = 25;
     
     /**
      * An {@link ObjectMapper} used to transform objects into JSON before sending
@@ -101,6 +108,11 @@ public class ExtensionWebSocketClient {
      * An {@link Handler} that is called when the websocket connection is closed
      */
     Handler<ExtensionWebSocketClient> closeHandler;
+    /**
+     * A {@link Queue} that is used as an internal queue to store messages that failed to send to Vantiq because
+     * of a dropped connection. Once a reconnect is successful, the queued messages will be resent.
+     */
+    Queue<Object> failedMessageQueue;
 
     /**
      * Obtain the {@link ExtensionWebSocketListener} listening to this client's source on Vantiq. Necessary to set
@@ -126,10 +138,20 @@ public class ExtensionWebSocketClient {
      * @param sourceName    The name of the source to which this client will be connected
      */
     public ExtensionWebSocketClient (String sourceName) {
+        this(sourceName, DEFAULT_FAILED_MESSAGE_QUEUE_SIZE);
+    }
+
+    /**
+     * Creates an {@link ExtensionWebSocketClient} that will connect to the source {@code sourceName}.
+     * @param sourceName                The name of the source to which this client will be connected
+     * @param failedMessageQueueSize    The max size of the failedMessageQueue
+     */
+    public ExtensionWebSocketClient (String sourceName, int failedMessageQueueSize) {
         this.sourceName = sourceName;
         outstandingNotifications = new Semaphore(5, true);
         log = LoggerFactory.getLogger(this.getClass().getCanonicalName() + "#" + sourceName);
         listener = new ExtensionWebSocketListener(this);
+        failedMessageQueue = EvictingQueue.create(failedMessageQueueSize);
     }
 
     /**
@@ -238,14 +260,15 @@ public class ExtensionWebSocketClient {
         if (data != null && (data.getClass().isArray() || data instanceof List)) {
             throw new IllegalArgumentException("Notifications cannot be lists or arrays.");
         }
+//        if (isConnected()) {
+        Map<String,Object> m = new LinkedHashMap<>();
+        m.put("op", ExtensionServiceMessage.OP_NOTIFICATION);
+        m.put("resourceId", sourceName);
+        m.put("resourceName", ExtensionServiceMessage.RESOURCE_NAME_SOURCES);
+        m.put("object", data);
+        ExtensionServiceMessage msg = new ExtensionServiceMessage("");
+        msg.fromMap(m);
         if (isConnected()) {
-            Map<String,Object> m = new LinkedHashMap<>();
-            m.put("op", ExtensionServiceMessage.OP_NOTIFICATION);
-            m.put("resourceId", sourceName);
-            m.put("resourceName", ExtensionServiceMessage.RESOURCE_NAME_SOURCES);
-            m.put("object", data);
-            ExtensionServiceMessage msg = new ExtensionServiceMessage("");
-            msg.fromMap(m);
             try {
                 outstandingNotifications.acquire();
                 this.send(msg);
@@ -256,7 +279,10 @@ public class ExtensionWebSocketClient {
                 outstandingNotifications.release();
                 throw e;
             }
+        } else {
+            failedMessageQueue.add(msg);
         }
+//        }
     }
 
     /**
@@ -280,7 +306,11 @@ public class ExtensionWebSocketClient {
         Response response = new Response()
                 .status(QUERY_NODATA_CODE)
                 .addHeader(ExtensionServiceMessage.RESPONSE_ADDRESS_HEADER, replyAddress);
-        send(response);
+        if (isConnected()) {
+            send(response);
+        } else {
+            failedMessageQueue.add(response);
+        }
     }
     
     /**
@@ -298,7 +328,11 @@ public class ExtensionWebSocketClient {
                 .status(httpCode)
                 .addHeader(ExtensionServiceMessage.RESPONSE_ADDRESS_HEADER, replyAddress)
                 .body(body);
-        send(response);
+        if (isConnected()) {
+            send(response);
+        } else {
+            failedMessageQueue.add(response);
+        }
     }
 
     /**
@@ -316,7 +350,11 @@ public class ExtensionWebSocketClient {
                 .status(httpCode)
                 .addHeader(ExtensionServiceMessage.RESPONSE_ADDRESS_HEADER, replyAddress)
                 .body(body);
-        send(response);
+        if (isConnected()) {
+            send(response);
+        } else {
+            failedMessageQueue.add(response);
+        }
     }
 
     /**
@@ -366,6 +404,17 @@ public class ExtensionWebSocketClient {
         }
         catch (Exception e) {
             log.warn("Error sending to WebSocket", e);
+        }
+    }
+
+    /**
+     * Method used to resend all messages in failedMessageQueue after a successful reconnection
+     */
+    public void flushQueue() {
+        int currentQueueSize = failedMessageQueue.size();
+        for (int i = 0; i < currentQueueSize; i++) {
+            Object obj = failedMessageQueue.poll();
+            send(obj);
         }
     }
 
