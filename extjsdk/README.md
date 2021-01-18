@@ -154,6 +154,14 @@ Query errors are sent when a Query cannot be completed successfully. To send a Q
 *	The parameters are an Object array of that will be translated into strings and inserted into the message template
     based anywhere that `{<array index>}` is located.
 
+#### Sending Messages when Vantiq connection drops
+Over the lifetime of a connector, it is possible for the connection between itself and the Vantiq server to drop or get 
+restarted at any point. This can be the result of normal network connectivity issues, or can be initiated by the Vantiq 
+server (if, for example, the connector's source configuration is modified, which would trigger a reconnect). In these 
+circumstances, the SDK will queue up any messages that would have failed to send while waiting for the connection to get
+reestablished. Once the connection is back up and running, the queue of messages will be flushed and sent to Vantiq. The
+queue will only hold onto 25 such messages to avoid filling up memory if the connection is down for an extended period.
+
 
 ### <a name="handler" id="handler"></a>Receiving Messages
 All messages received from the Vantiq server are dealt with using handlers attached to the ExtensionWebSocketListener,
