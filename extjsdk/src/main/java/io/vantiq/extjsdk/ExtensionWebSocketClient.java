@@ -20,16 +20,13 @@ import okhttp3.*;
 import okhttp3.ws.WebSocket;
 import okhttp3.ws.WebSocketCall;
 
-import java.lang.reflect.Array;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.Semaphore;
-import java.util.concurrent.TimeUnit;
-
+import java.util.concurrent.*;
 import java.util.Queue;
+
 import com.google.common.collect.EvictingQueue;
 
 // Logging
@@ -553,6 +550,30 @@ public class ExtensionWebSocketClient {
                     );
         }
         return sourceFuture;
+    }
+
+    public CompletableFuture<Boolean> doCoreReconnect() {
+        return CompletableFuture.supplyAsync(() -> {
+            CompletableFuture<Boolean> success = connectToSource();
+            boolean isReconnected = false;
+            try {
+                if ( !success.get(10, TimeUnit.SECONDS) ) {
+                    if (!isOpen()) {
+                        log.error("Failed to connect to server url .");
+                    } else if (!isAuthed()) {
+                        log.error("Failed to authenticate within 10 seconds using the given authentication data.");
+                    } else {
+                        log.error("Failed to connect within 10 seconds");
+                    }
+                } else {
+                    isReconnected = true;
+                }
+            } catch (InterruptedException | ExecutionException | TimeoutException e) {
+                log.error("Could not reconnect to source within 10 seconds: ", e);
+            }
+
+            return isReconnected;
+        });
     }
     
     /**

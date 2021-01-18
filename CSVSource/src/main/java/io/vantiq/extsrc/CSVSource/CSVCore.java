@@ -53,29 +53,17 @@ public class CSVCore {
                 pollTimer.cancel();
                 pollTimer = null;
             }
-            
+
+            // Do connector-specific stuff here
             oConfigHandler.configComplete = false;
 
-            // Spin off a thread to handle doing the reconnect and error/log handling, this way the handler doesn't
-            // block the onMessage() handler in the ExtensionWebSocketListener from processing future messages
-            new Thread( () -> {
-                CompletableFuture<Boolean> success = client.connectToSource();
-                try {
-                    if ( !success.get(10, TimeUnit.SECONDS) ) {
-                        if (!client.isOpen()) {
-                            log.error("Failed to connect to server url '" + targetVantiqServer + "'.");
-                        } else if (!client.isAuthed()) {
-                            log.error("Failed to authenticate within 10 seconds using the given authentication data.");
-                        } else {
-                            log.error("Failed to connect within 10 seconds");
-                        }
-                        close();
-                    }
-                } catch (InterruptedException | ExecutionException | TimeoutException e) {
-                    log.error("Could not reconnect to source within 10 seconds: ", e);
+            // Boiler-plate reconnect method, if reconnect fails then we call close()
+            CompletableFuture<Boolean> reconnectResult = client.doCoreReconnect();
+            reconnectResult.thenAccept(success -> {
+                if (!success) {
                     close();
                 }
-            }).start();
+            });
         }
     };
     
