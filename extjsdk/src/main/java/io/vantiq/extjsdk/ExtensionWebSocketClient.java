@@ -552,6 +552,10 @@ public class ExtensionWebSocketClient {
         return sourceFuture;
     }
 
+    /**
+     * Method called by reconnectHandlers that actually does the reconnect work.
+     * @return  Returns boolean completable indicating if the reconnect was successful, used by the caller
+     */
     public CompletableFuture<Boolean> doCoreReconnect() {
         return CompletableFuture.supplyAsync(() -> {
             CompletableFuture<Boolean> success = connectToSource();
