@@ -159,8 +159,10 @@ public class TestExtensionWebSocketClient extends ExtjsdkTestBase{
         Map<String, Object> queryData = new LinkedHashMap<>();
         queryData.put("msg", "val");
         queryData.put("val", "msg");
-        
-        client.webSocketFuture = CompletableFuture.completedFuture(true);
+
+        markWsConnected(true);
+        markAuthSuccess(true);
+        markSourceConnected(true);
         client.sendQueryResponse(200, queryAddress, queryData);
         
         assert socket.compareData("body", queryData);
@@ -177,8 +179,10 @@ public class TestExtensionWebSocketClient extends ExtjsdkTestBase{
         queryData[1] = new LinkedHashMap<>();
         queryData[1].put("message", "value");
         queryData[1].put("value", "message");
-        
+
         markWsConnected(true);
+        markAuthSuccess(true);
+        markSourceConnected(true);
         client.sendQueryResponse(200, queryAddress, queryData);
         
         // The ArrayList creation is necessary since JSON interprets arrays as ArrayList
@@ -194,6 +198,8 @@ public class TestExtensionWebSocketClient extends ExtjsdkTestBase{
         String errorCode = "io.vantiq.extjsdk.ExampleErrorName";
         
         markWsConnected(true);
+        markAuthSuccess(true);
+        markSourceConnected(true);
         client.sendQueryError(queryAddress, errorCode, errorMessage, params);
         
         assert socket.compareData("headers." + ExtensionServiceMessage.RESPONSE_ADDRESS_HEADER, queryAddress);

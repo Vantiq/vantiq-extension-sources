@@ -260,7 +260,6 @@ public class ExtensionWebSocketClient {
         if (data != null && (data.getClass().isArray() || data instanceof List)) {
             throw new IllegalArgumentException("Notifications cannot be lists or arrays.");
         }
-//        if (isConnected()) {
         Map<String,Object> m = new LinkedHashMap<>();
         m.put("op", ExtensionServiceMessage.OP_NOTIFICATION);
         m.put("resourceId", sourceName);
@@ -282,7 +281,6 @@ public class ExtensionWebSocketClient {
         } else {
             failedMessageQueue.add(msg);
         }
-//        }
     }
 
     /**
