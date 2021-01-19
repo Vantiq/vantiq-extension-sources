@@ -70,26 +70,19 @@ public class JDBCCore {
                 pollTimer.cancel();
                 pollTimer = null;
             }
-            
+
+            // Do connector-specific stuff here
             jdbcConfigHandler.configComplete = false;
-                        
-            CompletableFuture<Boolean> success = client.connectToSource();
-            
-            try {
-                if ( !success.get(10, TimeUnit.SECONDS) ) {
-                    if (!client.isOpen()) {
-                        log.error("Failed to connect to server url '" + targetVantiqServer + "'.");
-                    } else if (!client.isAuthed()) {
-                        log.error("Failed to authenticate within 10 seconds using the given authentication data.");
-                    } else {
-                        log.error("Failed to connect within 10 seconds");
-                    }
+
+            // Boiler-plate reconnect method- if reconnect fails then we call close(). The code in this reconnect
+            // handler must finish executing before we can process another message from Vantiq, meaning the
+            // reconnectResult will not complete until after we have exited the handler.
+            CompletableFuture<Boolean> reconnectResult = client.doCoreReconnect();
+            reconnectResult.thenAccept(success -> {
+                if (!success) {
                     close();
                 }
-            } catch (InterruptedException | ExecutionException | TimeoutException e) {
-                log.error("Could not reconnect to source within 10 seconds: ", e);
-                close();
-            }
+            });
         }
     };
     
@@ -309,7 +302,12 @@ public class JDBCCore {
             HashMap[] queryMap = localJDBC.processQuery(pollQuery);
             if (queryMap != null) {
                 for (HashMap h : queryMap) {
-                    client.sendNotification(h);
+                    if (client.isConnected()) {
+                        client.sendNotification(h);
+                    } else {
+                        log.warn("The connection to Vantiq is not active, so the pollQuery response was unable to be " +
+                                "sent.");
+                    }
                 }
             }
         } catch (VantiqSQLException e) {

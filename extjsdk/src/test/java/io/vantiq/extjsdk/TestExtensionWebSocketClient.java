@@ -159,8 +159,10 @@ public class TestExtensionWebSocketClient extends ExtjsdkTestBase{
         Map<String, Object> queryData = new LinkedHashMap<>();
         queryData.put("msg", "val");
         queryData.put("val", "msg");
-        
-        client.webSocketFuture = CompletableFuture.completedFuture(true);
+
+        markWsConnected(true);
+        markAuthSuccess(true);
+        markSourceConnected(true);
         client.sendQueryResponse(200, queryAddress, queryData);
         
         assert socket.compareData("body", queryData);
@@ -177,8 +179,10 @@ public class TestExtensionWebSocketClient extends ExtjsdkTestBase{
         queryData[1] = new LinkedHashMap<>();
         queryData[1].put("message", "value");
         queryData[1].put("value", "message");
-        
+
         markWsConnected(true);
+        markAuthSuccess(true);
+        markSourceConnected(true);
         client.sendQueryResponse(200, queryAddress, queryData);
         
         // The ArrayList creation is necessary since JSON interprets arrays as ArrayList
@@ -194,6 +198,8 @@ public class TestExtensionWebSocketClient extends ExtjsdkTestBase{
         String errorCode = "io.vantiq.extjsdk.ExampleErrorName";
         
         markWsConnected(true);
+        markAuthSuccess(true);
+        markSourceConnected(true);
         client.sendQueryError(queryAddress, errorCode, errorMessage, params);
         
         assert socket.compareData("headers." + ExtensionServiceMessage.RESPONSE_ADDRESS_HEADER, queryAddress);
@@ -320,7 +326,73 @@ public class TestExtensionWebSocketClient extends ExtjsdkTestBase{
             // Expected
         } // Other invalid exceptions will escape & cause failure.
     }
-    
+
+    @Test
+    public void testFailedMessageQueue() {
+        // Setup a client and listener and mark things "connected"
+        FalseClient newClient = new FalseClient(srcName);
+        TestListener testListener = new TestListener(newClient);
+        newClient.listener = testListener;
+
+        newClient.initiateWebsocketConnection("unused");
+        newClient.authenticate("");
+        newClient.connectToSource();
+
+        markSourceConnected(true);
+        Map<String,Object> m = new LinkedHashMap<>();
+        m.put("msg", "str");
+
+        // Now break the connection, and while it's down lets try to send a notification
+        newClient.close();
+        assert !newClient.isOpen();
+        assert !newClient.isAuthed();
+        assert !newClient.isConnected();
+
+        // We should see it get put in the queue
+        newClient.sendNotification(m);
+        assert newClient.failedMessageQueue.size() == 1;
+
+        // Upon a "reconnection" (here we're just forcing the issue by sending a connectExtension message), we should
+        // see that the queue was flushed
+        newClient.webSocketFuture = CompletableFuture.completedFuture(true);
+        newClient.authFuture = CompletableFuture.completedFuture(true);
+        newClient.sourceFuture = CompletableFuture.completedFuture(false);
+        newClient.listener.onMessage(testListener.createConfigResponse(new LinkedHashMap<>(), srcName));
+        assert newClient.failedMessageQueue.size() == 0;
+
+        // Now lets do the same thing with a query
+        newClient.close();
+        assert !newClient.isOpen();
+        assert !newClient.isAuthed();
+        assert !newClient.isConnected();
+
+        Map<String, Object> queryData = new LinkedHashMap<>();
+        queryData.put("msg", "val");
+        queryData.put("val", "msg");
+        newClient.sendQueryResponse(200, queryAddress, queryData);
+        assert newClient.failedMessageQueue.size() == 1;
+
+        newClient.webSocketFuture = CompletableFuture.completedFuture(true);
+        newClient.authFuture = CompletableFuture.completedFuture(true);
+        newClient.sourceFuture = CompletableFuture.completedFuture(false);
+        newClient.listener.onMessage(testListener.createConfigResponse(new LinkedHashMap<>(), srcName));
+        assert newClient.failedMessageQueue.size() == 0;
+    }
+
+    @Test
+    public void testReconnect() {
+        client.webSocketFuture = CompletableFuture.completedFuture(true);
+        client.authFuture = CompletableFuture.completedFuture(true);
+
+        client.doCoreReconnect();
+        // Wait up to 5 seconds for asynchronous action to complete
+        waitUntilTrue(5 * 1000, () -> socket.receivedMessage());
+
+        assert socket.compareData("op", ExtensionServiceMessage.OP_CONNECT_EXTENSION);
+        assert socket.compareData("resourceName", ExtensionServiceMessage.RESOURCE_NAME_SOURCES);
+        assert socket.compareData("resourceId", srcName);
+    }
+
 // ============================== Helper functions ==============================
     private void markWsConnected(boolean success) {
         client.webSocketFuture = CompletableFuture.completedFuture(success);

@@ -392,6 +392,10 @@ public class ExtensionWebSocketListener implements WebSocketListener{
 
                     client.sourceFuture.complete(true);
                     log.info("Successful connection to {}", msg.get("resourceId").toString());
+
+                    // Since we've connected successfully, we'll flush the queue if there was anything left behind after
+                    // a dropped connection
+                    client.flushQueue();
                 }
                 if (this.configHandler != null) {
                     try {

@@ -55,14 +55,7 @@ which is an [Apache Log4j configuration file.](https://logging.apache.org/log4j/
 name for each class is the class's fully qualified class name, *e.g.* "io.vantiq.extjsdk.ExtensionWebSocketClient".  
 
 ## Server Config File
-
-The server config file is written as `property=value`, with each property on its
-own line. The following is an example of a valid server.config file:
-```
-authToken=vadfEarscQadfagdfjrKt7Fj1xjfjzBxliahO9adliiH-Dj--gNM=
-sources=JDBC1
-targetServer=https://dev.vantiq.com/
-```
+(Please read the [SDK's server config documentation](../extjsdk/README.md#serverConfig) first.)
 
 ### Vantiq Options
 *   **authToken**: Required. The authentication token to connect with. These can be obtained from the namespace admin.
