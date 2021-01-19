@@ -57,7 +57,9 @@ public class CSVCore {
             // Do connector-specific stuff here
             oConfigHandler.configComplete = false;
 
-            // Boiler-plate reconnect method, if reconnect fails then we call close()
+            // Boiler-plate reconnect method- if reconnect fails then we call close(). The code in this reconnect
+            // handler must finish executing before we can process another message from Vantiq, meaning the
+            // reconnectResult will not complete until after we have exited the handler.
             CompletableFuture<Boolean> reconnectResult = client.doCoreReconnect();
             reconnectResult.thenAccept(success -> {
                 if (!success) {
