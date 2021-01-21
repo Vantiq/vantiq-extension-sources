@@ -162,7 +162,9 @@ public class CSVCore {
     }
 
     public void close() {
-      
+        if (csv != null){
+            csv.close();
+        }
     }
 
     /**
