@@ -305,3 +305,38 @@ task copyTestResources(type: Copy, dependsOn: [configurations.testRuntime, confi
 }
 
 test.dependsOn copyModels, copyTestResources
+
+// Using gradle-dcompose-plugin to build objectRecognitionSource docker image
+dcompose {
+    if (rootProject.hasProperty('dockerRegistry')) {
+        def registryName = rootProject.getProperty('dockerRegistry')
+        objectRecognitionSource {
+            buildFiles = project.copySpec {
+                from "$projectDir/src/main/docker/"
+                from "$projectDir/build/distributions/objectRecognitionSource.tar"
+                if (rootProject.hasProperty('objectRecognitionModelFiles')) {
+                    def modelLocation = rootProject.getProperty('objectRecognitionModelFiles')
+                    from "$modelLocation"
+                } else {
+                    from "$projectDir/build/models"
+                }
+            }
+            if (rootProject.hasProperty('objectRecognitionImageTag')) {
+                repository = registryName + '/object-recognition-source' + rootProject.getProperty('objectRecognitionImageTag')
+            } else {
+                repository = registryName + '/object-recognition-source'
+            }
+            logBuildStatus = true
+            buildLogFile = file("$buildDir/objectRecognitionDockerBuildLog.file")
+        }
+
+        // The credentials here should be stored in gradle.properties.
+        dockerClientConfig = {
+            withRegistryUsername dockerRegistryUser
+            withRegistryPassword dockerRegistryPassword
+        }
+    }
+}
+
+buildObjectRecognitionSourceImage.dependsOn assemble
+buildObjectRecognitionSourceImage.dependsOn copyModels

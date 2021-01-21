@@ -72,3 +72,30 @@ dependencies {
     testCompile project(path:":extjsdk", configuration:"testArtifacts")
 }
 
+// Using gradle-dcompose-plugin to build udpSource docker image
+dcompose {
+    if (rootProject.hasProperty('dockerRegistry')) {
+        def registryName = rootProject.getProperty('dockerRegistry')
+        udpSource {
+            buildFiles = project.copySpec {
+                from "$projectDir/src/main/docker/"
+                from "$projectDir/build/distributions/udpSource.tar"
+            }
+            if (rootProject.hasProperty('udpImageTag')) {
+                repository = registryName + '/udp-source' + rootProject.getProperty('udpImageTag')
+            } else {
+                repository = registryName + '/udp-source'
+            }
+            logBuildStatus = true
+            buildLogFile = file("$buildDir/udpDockerBuildLog.file")
+        }
+
+        // The credentials here should be stored in gradle.properties.
+        dockerClientConfig = {
+            withRegistryUsername dockerRegistryUser
+            withRegistryPassword dockerRegistryPassword
+        }
+    }
+}
+
+buildUdpSourceImage.dependsOn assemble

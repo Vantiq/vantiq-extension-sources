@@ -86,3 +86,31 @@ tasks.withType(Test) {
         systemProperty "EntBufferSize", rootProject.findProperty("EntBufferSize") ?: "20"
     }
 }
+
+// Using gradle-dcompose-plugin to build EasyModbusSource docker image
+dcompose {
+    if (rootProject.hasProperty('dockerRegistry')) {
+        def registryName = rootProject.getProperty('dockerRegistry')
+        easyModbusSource {
+            buildFiles = project.copySpec {
+                from "$projectDir/src/main/docker/"
+                from "$projectDir/build/distributions/EasyModbusSource.tar"
+            }
+            if (rootProject.hasProperty('easyModbusImageTag')) {
+                repository = registryName + '/easymodbus-source' + rootProject.getProperty('easyModbusImageTag')
+            } else {
+                repository = registryName + '/easymodbus-source'
+            }
+            logBuildStatus = true
+            buildLogFile = file("$buildDir/easyModbusDockerBuildLog.file")
+        }
+
+        // The credentials here should be stored in gradle.properties.
+        dockerClientConfig = {
+            withRegistryUsername dockerRegistryUser
+            withRegistryPassword dockerRegistryPassword
+        }
+    }
+}
+
+buildEasyModbusSourceImage.dependsOn assemble
