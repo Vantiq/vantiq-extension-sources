@@ -140,7 +140,11 @@ public class CSVReader {
         int recordSize = fixedRecordLength(recordMetaData);
 
         int MaxLinesInEvent = (int) config.get(MAX_LINES_IN_EVENT);
-        int SleepBetweenPackets = (int) config.get("waitBetweenTx");
+
+        int SleepBetweenPackets = 0 ;
+        if (config.get("waitBetweenTx") != null)
+          SleepBetweenPackets = (int) config.get("waitBetweenTx");
+          
         ArrayList<Map<String, String>> file = new ArrayList<Map<String, String>>();
 
         try (RandomAccessFile f = new RandomAccessFile(csvFile, "r")) {

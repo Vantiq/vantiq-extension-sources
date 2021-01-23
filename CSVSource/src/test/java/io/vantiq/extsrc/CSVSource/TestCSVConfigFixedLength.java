@@ -21,7 +21,7 @@ import org.junit.Test;
 
 import io.vantiq.extjsdk.ExtensionServiceMessage;
 
-public class TestCSVConfig extends TestCSVBase {
+public class TestCSVConfigFixedLength extends TestCSVBase {
 
     CSVHandleConfiguration handler;
     
@@ -101,9 +101,13 @@ public class TestCSVConfig extends TestCSVBase {
     
     public void createTestSchema() {
         schema = new LinkedHashMap<>();
-        schema.put("field0", "value");
-        schema.put("field1", "YScale");
-        schema.put("field2", "flag");
+        schema.put("code", createFixedLengthTestSchemaField(0,13,"string"));
+        schema.put("name", createFixedLengthTestSchemaField(14,20,"string","Cp862",true));
+        schema.put("weighted", createFixedLengthTestSchemaField(35,1,"string"));
+        schema.put("price", createFixedLengthTestSchemaField(37,6,"string"));
+        schema.put("cost", createFixedLengthTestSchemaField(44,6,"string"));
+        schema.put("department", createFixedLengthTestSchemaField(51,2,"string"));
+
     }
     public void createMinimalConfig(Map<String, Object> config) {
         config.put("fileFolderPath", testFileFolderPath);
@@ -111,6 +115,7 @@ public class TestCSVConfig extends TestCSVBase {
         config.put("fileExtension", testFileExtension);
         config.put("maxLinesInEvent", testMaxLinesInEvent);
         config.put("delimiter", testDelimiter);
+        config.put("FileType", "FixedLength");
     }
      
     public Map<String, Object> createMinimalOptions() {
@@ -145,7 +150,7 @@ public class TestCSVConfig extends TestCSVBase {
         fieldAttr.put("reveresed", reversed);
       return fieldAttr;
     }
-
+/*
     public void createFixedLengthTestSchema() {
         schema = new LinkedHashMap<>();
         schema.put("code", createFixedLengthTestSchemaField(0,13,"string"));
@@ -156,6 +161,7 @@ public class TestCSVConfig extends TestCSVBase {
         schema.put("department", createFixedLengthTestSchemaField(51,3,"string"));
 
     }
+  
     public void createFixedLengthMinimalConfig(Map<String, Object> config) {
         config.put("fileFolderPath", testFileFolderPath);
         config.put("filePrefix", testFilePrefix);
@@ -176,5 +182,5 @@ public class TestCSVConfig extends TestCSVBase {
         
         return vantiq;
     }
-
+*/
 }
