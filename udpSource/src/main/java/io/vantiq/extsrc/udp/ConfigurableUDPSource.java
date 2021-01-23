@@ -150,15 +150,11 @@ public class ConfigurableUDPSource {
             clearSourceHandlers(message.getSourceName());
             
             ExtensionWebSocketClient client = clients.get(message.getSourceName());
-            client.connectToSource();
-            try {
-                if (client.getSourceConnectionFuture().get(10, TimeUnit.SECONDS) == false) {
-                    client.stop();
-                }
-            } catch (InterruptedException | ExecutionException | TimeoutException e) {
-                client.stop();
-                e.printStackTrace();
-            }
+
+            // Boiler-plate reconnect method- if reconnect fails then we call close(). The code in this reconnect
+            // handler must finish executing before we can process another message from Vantiq, meaning the
+            // reconnectResult will not complete until after we have exited the handler.
+            client.doCoreReconnect();
         }
         
     };

@@ -77,16 +77,7 @@ To edit the logging for an IDE, change `<repo location>/objectRecognitionSource/
 to this will be included in future distributions produced through gradle.
 
 ## Server Config File<a name="serverConfig" id="serverConfig"></a>
-
-The server config file is written as `property=value`, with each property on its
-own line. The following is an example of a valid server.config file:
-
-```
-authToken=vadfEarscQadfagdfjrKt7Fj1xjfjzBxliahO9adliiH-Dj--gNM=
-sources=Camera1
-targetServer=https://dev.vantiq.com/
-modelDirectory=<path_to_your_pb_file>
-```
+(Please read the [SDK's server config documentation](../extjsdk/README.md#serverConfig) first.)
 
 ### Vantiq Options
 *   authToken: Required. The authentication token to connect with. These can be obtained from the namespace admin.

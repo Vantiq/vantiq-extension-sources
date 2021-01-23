@@ -98,22 +98,19 @@ public class ObjectRecognitionCore {
                 pollTimer.cancel();
                 pollTimer = null;
             }
-            
+
+            // Do connector-specific stuff here
             objRecConfigHandler.configComplete = false;
-            
-            client.setQueryHandler(defaultQueryHandler);
-            
-            CompletableFuture<Boolean> success = client.connectToSource();
-            
-            try {
-                if ( !success.get(10, TimeUnit.SECONDS) ) {
-                    log.error("Source reconnection failed");
+
+            // Boiler-plate reconnect method- if reconnect fails then we call close(). The code in this reconnect
+            // handler must finish executing before we can process another message from Vantiq, meaning the
+            // reconnectResult will not complete until after we have exited the handler.
+            CompletableFuture<Boolean> reconnectResult = client.doCoreReconnect();
+            reconnectResult.thenAccept(success -> {
+                if (!success) {
                     close();
                 }
-            } catch (InterruptedException | ExecutionException | TimeoutException e) {
-                log.error("Could not reconnect to source within 10 seconds");
-                close();
-            }
+            });
         }
     };
 

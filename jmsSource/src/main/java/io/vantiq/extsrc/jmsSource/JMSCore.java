@@ -64,25 +64,18 @@ public class JMSCore {
         public void handleMessage(ExtensionServiceMessage message) {
             log.trace("Reconnect message received. Reinitializing configuration");
 
+            // Do connector-specific stuff here
             jmsConfigHandler.configComplete = false;
 
-            CompletableFuture<Boolean> success = client.connectToSource();
-
-            try {
-                if ( !success.get(CONNECTION_TIMEOUT, TimeUnit.SECONDS) ) {
-                    if (!client.isOpen()) {
-                        log.error("Failed to connect to server url '" + targetVantiqServer + "'.");
-                    } else if (!client.isAuthed()) {
-                        log.error("Failed to authenticate within 10 seconds using the given authentication data.");
-                    } else {
-                        log.error("Failed to connect within 10 seconds");
-                    }
+            // Boiler-plate reconnect method- if reconnect fails then we call close(). The code in this reconnect
+            // handler must finish executing before we can process another message from Vantiq, meaning the
+            // reconnectResult will not complete until after we have exited the handler.
+            CompletableFuture<Boolean> reconnectResult = client.doCoreReconnect();
+            reconnectResult.thenAccept(success -> {
+                if (!success) {
                     close();
                 }
-            } catch (InterruptedException | ExecutionException | TimeoutException e) {
-                log.error("Could not reconnect to source within 10 seconds: ", e);
-                close();
-            }
+            });
         }
     };
 

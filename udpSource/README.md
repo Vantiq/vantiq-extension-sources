@@ -28,6 +28,8 @@ be included in future distributions produced through gradle.
 
 ## Server Config File<a name="serverConfig" id="serverConfig"></a>
 
+(Please read the [SDK's server config documentation](../extjsdk/README.md#serverConfig) first.)
+
 The server config file must be in properties file format. ConfigurableUDPSource runs using either the config file specified as the
 first argument or the file `server.config` in the `serverConfig` directory or in the working directory.
 
