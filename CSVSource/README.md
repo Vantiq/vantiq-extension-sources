@@ -13,6 +13,14 @@ When the process starts, based on configuration,
 the extension can process all files exist in the input folder which support the name file pattern.
 In this way, in cases where the extension is not running during file updates, it will resend all accumulated files once it restarted. 
 
+Ability to read from fixed length offset record typp was added , a schema has been added and an idetifier `FileType` was 
+added , if not exists, works as delimited format, value must be  `"FileType": "FixedLength"` for working in the fixed length mode
+
+ability to write CSV files from server was added , no addtional configuration was added , the text will be UTF8 and
+the assumption is that the line to write will be manipulated by the server . a
+the relevant meta dat is inject by the with part of the vail select statmet. every call create a POST request 
+the value is a json buffer which describe the result status of the request. 
+
 The documentation has been split into two parts, [Setting Up Your Machine](#machine) and [Setting Up Your Vantiq](#vantiq).
 
 # Prerequisites <a name="pre" id="pre"></a>
@@ -268,6 +276,48 @@ The file the `/src/test/resource/ejesmall.csv` is aligned with the sample applic
 Once you copy it to the input folder (default is `d:/tmp/csv`),
 the extension source will send the file in multiple segments,
 with the app will saving those in a type. 
+
+## writing CSV files. 
+
+creating , apending to or deleting a csv file is done by a select statment.
+
+assuming json buffer with the follwoing structure 
+```
+m = {
+   path:"c:\tmp",
+   file:"output.txt",
+   content:[
+      {"text","this,is,first,line"},
+      {"text","this,is,second,line"}
+   ]
+}
+```
+
+running the follwoing select statment will create output.txt file at folder c:\tmp contains 2 lines
+```
+select * from source CSV1 with body= m , op="create"
+```
+for adding additonal lines to the file one can use the follwoing command 
+```
+select * from source CSV1 with body= m , op="append"
+```
+for deleting a file , the following select statment can be handy 
+```
+select * from source CSV1 with body= m , op="delete"
+```
+for all select type a response will be returned with the following structure:
+```
+   {
+      "message": "File Appended Succeesfully",
+      "value": "c:\\tmp\\output.txt",
+      "code": "0"
+   }
+```
+code table is
+0 - success .
+1 - File already exists
+2 - folder not exists 
+3 - File not exists 
 
 ## Error Messages
 

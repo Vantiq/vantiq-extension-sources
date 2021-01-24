@@ -195,23 +195,6 @@ public class CSVHandleConfiguration extends Handler<ExtensionServiceMessage> {
                     }
                 }
             };
-            publishHandler = new Handler<ExtensionServiceMessage>() {
-                @Override
-                public void handleMessage(ExtensionServiceMessage message) {
-                    try {
-                        source.publishPool.execute(new Runnable() {
-                            @Override
-                            public void run() {
-                                source.executePublish(message);
-                            }
-                        });
-                    } catch (RejectedExecutionException e) {
-                        log.error(
-                                "The queue of tasks has filled, and as a result the request was unable to be processed.",
-                                e);
-                    }
-                }
-            };
         } else {
             // Otherwise, creating query/publish handlers with synchronous processing
             queryHandler = new Handler<ExtensionServiceMessage>() {
@@ -220,12 +203,7 @@ public class CSVHandleConfiguration extends Handler<ExtensionServiceMessage> {
                     handleQueryRequest(source.client, message);
                 }
             };
-            publishHandler = new Handler<ExtensionServiceMessage>() {
-                @Override
-                public void handleMessage(ExtensionServiceMessage message) {
-                    source.executePublish(message);
-                }
-            };
+       
         }
 
         return maxPoolSize;

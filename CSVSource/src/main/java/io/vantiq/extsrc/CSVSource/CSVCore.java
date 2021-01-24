@@ -311,42 +311,8 @@ public class CSVCore {
     }
 
     /**
-     * Executes the query that is provided in the Publish Message. If query is an
-     * Array of Strings, then it is executed as a Batch request. If the query is a
-     * single String, then it is executed normally.
-     * 
-     * @param message The Query message.
+     * Closes all resources held by this program 
      */
-    public void executePublish(ExtensionServiceMessage message) {
-        Map<String, ?> request = (Map<String, ?>) message.getObject();
-
-        // Getting local copy of EasyModbus class
-        CSV localCsv = null;
-        synchronized (SYNCH_LOCK) {
-            localCsv = csv;
-        }
-
-        if (localCsv == null) {
-            log.error("Csv connection closed before operation could complete");
-        }
-
-        // Gather query results, or send a query error if an exception is caught
-        try {
-            int data = 0;// localCsv.handleUpdateCommand(message);
-            /*
-             * } catch (VantiqCSVException e) {
-             * log.error("Could not execute requested query.", e);
-             * log.error("Request was: {}", request); } catch (ClassCastException e) {
-             * log.error(
-             * "Could not execute requested query. This is most likely because the query list did not contain Strings."
-             * , e); log.error("Request was: {}", request);
-             */
-        } catch (Exception e) {
-            log.error("An unexpected error occurred when executing the requested query.", e);
-            log.error("Request was: {}", request);
-        }
-    }
-
     public void close() {
         if (csv != null) {
             csv.close();
