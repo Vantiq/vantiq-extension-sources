@@ -12,16 +12,24 @@ import static java.nio.file.StandardWatchEventKinds.ENTRY_CREATE;
 import static java.nio.file.StandardWatchEventKinds.ENTRY_MODIFY;
 import static java.nio.file.StandardWatchEventKinds.OVERFLOW;
 
+import java.io.BufferedWriter;
 import java.io.File;
+import java.io.FileOutputStream;
+import java.io.FileWriter;
 import java.io.FilenameFilter;
 import java.io.IOException;
+import java.io.OutputStreamWriter;
 import java.nio.file.FileSystems;
+import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.WatchEvent;
 import java.nio.file.WatchEvent.Kind;
 import java.nio.file.WatchKey;
 import java.nio.file.WatchService;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -29,9 +37,15 @@ import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
+import javax.annotation.processing.Filer;
+
+import com.fasterxml.jackson.databind.ser.std.RawSerializer;
+import com.google.common.io.Files;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import io.vantiq.extjsdk.ExtensionServiceMessage;
 import io.vantiq.extjsdk.ExtensionWebSocketClient;
 import io.vantiq.extsrc.CSVSource.exception.VantiqCSVException;
 
@@ -67,6 +81,19 @@ import io.vantiq.extsrc.CSVSource.exception.VantiqCSVException;
  *  }
  * </pre>
  *
+ * 
+ * Later version added support for fixed lenght record where schema
+ * configuration is similar to above "csvConfig": { "fileFolderPath":
+ * "d:/tmp/csv", "filePrefix": "plu", "fileExtension": "txt", "maxLinesInEvent":
+ * 50, "waitBetweenTx": 0, "delimiter": ",", "FileType": "FixedLength",
+ * "schema": { "code": { "offset": 0, "length": 13, "type": "string" }, "name":
+ * { "offset": 14, "length": 20, "type": "string", "charset": "Cp862",
+ * "reveresed": true }, "weighted": { "offset": 35, "length": 1, "type":
+ * "string" }, "price": { "offset": 37, "length": 6, "type": "string" }, "cost":
+ * { "offset": 44, "length": 6, "type": "string" }, "department": { "offset":
+ * 51, "length": 3, "type": "string" } } },
+ *
+ * 
  */
 public class CSV {
     Logger log = LoggerFactory.getLogger(this.getClass().getCanonicalName());
@@ -249,6 +276,329 @@ public class CSV {
         for (String fileName : listOfFiles) {
             executeInPool(fileFolderPath, fileName);
         }
+    }
+
+    /**
+     * Create standard vantiq respone for the different suceess or failures as part of the select
+     * operations, those are being repliyed to vail. 
+     * 
+     * @param code : number code of the error ( 0 is success otherwise failure)
+     * @param message : description of the operation results
+     * @param value : the actual artifact the operation was activate on.
+     * @return map which represent the values fo the error , to be sent as Json to the server 
+     */
+    HashMap[] CreateResponse(String code, String message, String value) {
+        ArrayList<HashMap> rows = new ArrayList<HashMap>();
+
+        HashMap row = new HashMap(3);
+        row.put("code", code);
+        row.put("message", message);
+        row.put("value", value);
+        rows.add(row);
+
+        HashMap[] rowsArray = rows.toArray(new HashMap[rows.size()]);
+
+        if (code.equals("0")) {
+            log.info(String.format("Response : %s (%s) code %s", message, value, code));
+        } else {
+            log.error(String.format("Response : %s (%s) code %s", message, value, code));
+        }
+
+        return rowsArray;
+    }
+
+    /**
+     * The method used to execute a delete file command, triggered by a SELECT on
+     * the respective source from VANTIQ.
+     * 
+     * @param message
+     * @return
+     * @throws VantiqCSVException
+     */
+    public HashMap[] processDelete(ExtensionServiceMessage message) throws VantiqCSVException {
+        HashMap[] rsArray = null;
+        String chackedAttribute = "Body";
+        String pathStr = "";
+        String fileStr = "";
+        try {
+            Map<String, ?> request = (Map<String, ?>) message.getObject();
+            Map<String, Object> body = (Map<String, Object>) request.get("body");
+            chackedAttribute = "path";
+            pathStr = (String) body.get("path");
+            Path path = Paths.get(pathStr);
+            if (!path.toFile().exists()) {
+                rsArray = CreateResponse("2", "Folder Not Exists", pathStr);
+            }
+
+            chackedAttribute = "file";
+            fileStr = (String) body.get("file");
+            String fullFilePath = path.toString() + "\\" + fileStr;
+            File file = new File(fullFilePath);
+            if (file.exists()) {
+                file.delete();
+                rsArray = CreateResponse("0", "File Deleted Succeesfully", file.toString());
+                // file already created.
+            } else {
+                rsArray = CreateResponse("3", "File Not Exists", file.toString());
+
+            }
+            return rsArray;
+        } catch (InvalidPathException exp) {
+            throw new VantiqCSVException(String.format("Path %s not exist", pathStr, exp));
+        } catch (Exception ex) {
+            throw new VantiqCSVException(
+                    String.format("Illegal request structure , attribute %s doesn't exists", chackedAttribute));
+        }
+    }
+
+    /**
+     * The method used to execute a create file command, triggered by a SELECT on
+     * the respective source from VANTIQ.
+     * 
+     * @param message
+     * @return
+     * @throws VantiqCSVException
+     */
+    public HashMap[] processCreate(ExtensionServiceMessage message) throws VantiqCSVException {
+        HashMap[] rsArray = null;
+        String chackedAttribute = "Body";
+        String pathStr = "";
+        String fileStr = "";
+        try {
+            Map<String, ?> request = (Map<String, ?>) message.getObject();
+            Map<String, Object> body = (Map<String, Object>) request.get("body");
+            chackedAttribute = "path";
+            pathStr = (String) body.get("path");
+            Path path = Paths.get(pathStr);
+            if (!path.toFile().exists()) {
+                java.nio.file.Files.createDirectories(path);
+                log.info("Folder created: {}", path.toString());
+            }
+
+            chackedAttribute = "file";
+            fileStr = (String) body.get("file");
+            String fullFilePath = path.toString() + "\\" + fileStr;
+            File file = new File(fullFilePath);
+            if (file.exists()) {
+                // file already created.
+                rsArray = CreateResponse("1", "File Already Exists", file.toString());
+            } else {
+                file.createNewFile();
+
+                FileOutputStream fos = new FileOutputStream(file);
+
+                BufferedWriter bw = new BufferedWriter(new OutputStreamWriter(fos));
+
+                chackedAttribute = "content";
+                List<Map<String, Object>> content = (List<Map<String, Object>>) body.get("content");
+
+                for (int i = 0; i < content.size(); i++) {
+
+                    String line = (String) content.get(0).get("text");
+                    bw.write(line);
+                    bw.newLine();
+                }
+
+                bw.close();
+                rsArray = CreateResponse("0", "File Created Succeesfully", file.toString());
+
+            }
+            return rsArray;
+        } catch (InvalidPathException exp) {
+            throw new VantiqCSVException(String.format("Path %s not exist", pathStr, exp));
+        } catch (Exception ex) {
+            throw new VantiqCSVException(
+                    String.format("Illegal request structure , attribute %s doesn't exists", chackedAttribute));
+        }
+    }
+
+    /**
+     * The method used to execute an append command to an existing file , triggered by a SELECT on
+     * the respective source from VANTIQ.
+     * 
+     * @param message
+     * @return
+     * @throws VantiqCSVException
+     */
+    public HashMap[] processAppend(ExtensionServiceMessage message) throws VantiqCSVException {
+        HashMap[] rsArray = null;
+        String chackedAttribute = "Body";
+        String pathStr = "";
+        String fileStr = "";
+
+        try {
+            Map<String, ?> request = (Map<String, ?>) message.getObject();
+            Map<String, Object> body = (Map<String, Object>) request.get("body");
+            chackedAttribute = "path";
+            pathStr = (String) body.get("path");
+            Path path = Paths.get(pathStr);
+            if (!path.toFile().exists()) {
+                rsArray = CreateResponse("2", "Folder Not Exists", pathStr);
+            }
+
+            chackedAttribute = "file";
+            fileStr = (String) body.get("file");
+            String fullFilePath = path.toString() + "\\" + fileStr;
+            File file = new File(fullFilePath);
+            if (file.exists()) {
+                FileWriter fw = new FileWriter(file, true);
+
+                // FileOutputStream fos = new FileOutputStream(file);
+
+                BufferedWriter bw = new BufferedWriter(fw);
+
+                chackedAttribute = "content";
+                List<Map<String, Object>> content = (List<Map<String, Object>>) body.get("content");
+
+                for (int i = 0; i < content.size(); i++) {
+
+                    String line = (String) content.get(0).get("text");
+                    bw.append(line);
+                    bw.newLine();
+                }
+
+                bw.close();
+                fw.close();
+                // fos.close();
+                rsArray = CreateResponse("0", "File Appended Succeesfully", file.toString());
+                // file already created.
+            } else {
+                rsArray = CreateResponse("3", "File Not Exists", file.toString());
+
+            }
+
+            return rsArray;
+        } catch (InvalidPathException exp) {
+            throw new VantiqCSVException(String.format("Path %s not exist", pathStr, exp));
+        } catch (Exception ex) {
+            throw new VantiqCSVException(
+                    String.format("Illegal request structure , attribute %s doesn't exists", chackedAttribute));
+        }
+    }
+    /**
+     * The method used to execute the provided query, triggered by a PUBLISH on the
+     * respective VANTIQ source.
+     * 
+     * @param message A String representation of the query, retrieved from the
+     *                PUBLISH message.
+     * @return The integer value that is returned by the executeUpdate() method
+     *         representing the row count.
+     * @throws VantiqCSVException
+     */
+    public int processPublish(ExtensionServiceMessage message) throws VantiqCSVException {
+        int publishSuccess = -1;
+
+        Map<String, ?> request = (Map<String, ?>) message.getObject();
+
+        publishSuccess = handleUpdateCommand(message);
+        return publishSuccess;
+    }
+
+    /**
+     * Handle Vantiq Publish command which converted to update holdingregisters or
+     * coils
+     * 
+     * @param request request received from Vantiq
+     * @return HashMap contains the result .
+     * @throws VantiqCSVException
+     */
+    int handleUpdateCommand(Map<String, ?> request) throws VantiqCSVException {
+        int addressInt = 0;
+
+        String type = (String) request.get("query");
+
+        List<Map<String, Object>> l = (List<Map<String, Object>>) request.get("body");
+        return 0;
+
+        /*
+         * try { switch (type) { case "holdingregisters": { List<Map<String, Object>> m1
+         * = (List<Map<String, Object>>) l.get(0).get("registers");
+         * 
+         * int[] buffer = new int[m1.size()]; for (int i = 0; i < m1.size(); i++) {
+         * Map<String, Object> m = m1.get(i); buffer[i] = (int) m.get("value"); }
+         * 
+         * oClient.WriteMultipleRegisters(addressInt, buffer); return 0; } case "coils":
+         * { List<Map<String, Object>> m1 = (List<Map<String, Object>>)
+         * l.get(0).get("values");
+         * 
+         * boolean[] buffer = new boolean[m1.size()]; for (int i = 0; i < m1.size();
+         * i++) { Map<String, Object> m = m1.get(i); buffer[i] = (boolean)
+         * m.get("value"); }
+         * 
+         * oClient.WriteMultipleCoils(addressInt, buffer); return 0; } default: { throw
+         * new VantiqCSVException( String.format("Unsupported Query target %s Code %d",
+         * type, 1002)); } } } catch (Exception ex) { throw new
+         * VantiqCSVException(String.format("Exception Raised %s", ex.getMessage(),
+         * 1001)); }
+         */
+    }
+
+    /**
+     * maintain the connectivity with the EasyModbus server and handle Vantiq
+     * Publish command which converted to update holdingregisters or coils
+     * 
+     * 
+     * @param message message received from Vantiq
+     * @return HashMap contains the result .
+     * @throws VantiqCSVException
+     */
+    int handleUpdateCommand(ExtensionServiceMessage message) throws VantiqCSVException {
+        try {/*
+              * if (!oClient.isConnected()) { throw new
+              * VantiqCSVException(String.format("CSV is not connected Code %d", 1000)); }
+              */
+            Map<String, ?> request = (Map<String, ?>) message.getObject();
+            return handleUpdateCommand(request);
+        } catch (Exception ex) {
+            throw new VantiqCSVException(String.format("Exception Raised %s", ex.getMessage(), 1001));
+        }
+    }
+
+    /**
+     * Handling select statement received from Vantiq or from polling configuration
+     * 
+     * @param s statment .
+     * @return HashMap contains the result .
+     * @throws VantiqEasyModbusException
+     */
+    HashMap[] handleSelectCommand(String[] s) throws VantiqCSVException {
+        if (!oClient.isConnected()) {
+            throw new VantiqCSVException(String.format("CSV is not connected Code %d", 1000));
+        }
+        String w = s[3].toLowerCase();
+
+        int index = 0;
+        int size = 20;
+        if (!s[1].equals("*")) {
+            if (!s[1].substring(0, 4).toLowerCase().equals("item")) {
+                throw new VantiqCSVException(String
+                        .format("Unsupported Query Field %s  must start with item (ex. item0)  Code %d", s[1], 1007));
+            }
+
+            try {
+                index = Integer.parseInt(s[1].substring(4));
+            } catch (Exception ex) {
+                throw new VantiqCSVException(String
+                        .format("Unsupported Query Field %s  must contain offeset (ex. Coil0)  Code %d", s[1], 1004));
+            }
+            size = 1;
+        }
+        return null;
+        /*
+         * try { switch (w) { case "registers": { int[] rr =
+         * oClient.ReadInputRegisters(index, size); InputRegisters r = new
+         * InputRegisters(); r.set(rr, index); return r.get(); } case
+         * "holdingregisters": { int[] rr = oClient.ReadHoldingRegisters(index, size);
+         * InputRegisters r = new InputRegisters(); r.set(rr, index); return r.get(); }
+         * case "discrete": { boolean[] rr = oClient.ReadDiscreteInputs(index, size);
+         * InputDiscrete r = new InputDiscrete(); r.set(rr, index); return r.get(); }
+         * case "coils": { boolean[] rr = oClient.ReadCoils(index, size); InputDiscrete
+         * r = new InputDiscrete(); r.set(rr, index); return r.get(); } default: { throw
+         * new VantiqEasyModbusException(
+         * String.format("Unsupported Query Field target %s Code %d", s[3], 1006)); } }
+         * } catch (Exception e) { throw new VantiqEasyModbusException(e.getMessage());
+         * }
+         */
     }
 
     /**

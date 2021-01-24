@@ -9,6 +9,10 @@
 package io.vantiq.extsrc.CSVSource;
 
 import java.util.Map;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.RejectedExecutionException;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -16,6 +20,9 @@ import org.slf4j.LoggerFactory;
 import io.vantiq.extjsdk.ExtensionServiceMessage;
 import io.vantiq.extjsdk.ExtensionWebSocketClient;
 import io.vantiq.extjsdk.Handler;
+
+
+
 
 /**
  * Sets up the source using the configuration document, which looks as below.
@@ -32,7 +39,14 @@ public class CSVHandleConfiguration extends Handler<ExtensionServiceMessage> {
     String                  sourceName;
     CSVCore                 source;
     boolean                 configComplete = false; // Used for autotestign support.
-        
+    boolean asynchronousProcessing = false;
+
+    Handler<ExtensionServiceMessage> queryHandler;
+    Handler<ExtensionServiceMessage> publishHandler;
+
+    private static final int MAX_ACTIVE_TASKS = 5;
+    private static final int MAX_QUEUED_TASKS = 10;
+
     // Constants for getting config options
     private static final String CONFIG = "config";
     private static final String CSVCONFIG = "csvConfig";
@@ -43,7 +57,10 @@ public class CSVHandleConfiguration extends Handler<ExtensionServiceMessage> {
     private static final String FILE_PREFIX = "filePrefix";
     private static final String FILE_EXTENSION = "fileExtension";
     private static final String MAX_LINES_IN_EVENT = "maxLinesInEvent";
-
+    private static final String ASYNCH_PROCESSING = "asynchronousProcessing";
+    private static final String MAX_ACTIVE = "maxActiveTasks";
+    private static final String MAX_QUEUED = "maxQueuedTasks";
+    
     public CSVHandleConfiguration(CSVCore source) {
         this.source = source;
         this.sourceName = source.getSourceName();
@@ -122,6 +139,99 @@ public class CSVHandleConfiguration extends Handler<ExtensionServiceMessage> {
     }
 
     /**
+     * Method used to create the query and publish handlers
+     * 
+     * @param generalConfig The general configuration of the EasyModbus Source
+     * @return Returns the maximum pool size, equal to twice the number of active
+     *         tasks. If default active tasks is used, then returns 0.
+     */
+    private int createQueryAndPublishHandlers(Map<String, ?> generalConfig) {
+        int maxPoolSize = 0;
+
+        // Checking if asynchronous processing was specified in the general
+        // configuration
+        if (generalConfig.get(ASYNCH_PROCESSING) instanceof Boolean && (Boolean) generalConfig.get(ASYNCH_PROCESSING)) {
+            asynchronousProcessing = true;
+            int maxActiveTasks = MAX_ACTIVE_TASKS;
+            int maxQueuedTasks = MAX_QUEUED_TASKS;
+
+            if (generalConfig.get(MAX_ACTIVE) instanceof Integer && (Integer) generalConfig.get(MAX_ACTIVE) > 0) {
+                maxActiveTasks = (Integer) generalConfig.get(MAX_ACTIVE);
+            }
+
+            if (generalConfig.get(MAX_QUEUED) instanceof Integer && (Integer) generalConfig.get(MAX_QUEUED) > 0) {
+                maxQueuedTasks = (Integer) generalConfig.get(MAX_QUEUED);
+            }
+
+            // Used to set the max pool size for connection pool
+            maxPoolSize = maxActiveTasks;
+
+            // Creating the thread pool executors with Queue
+            source.queryPool = new ThreadPoolExecutor(maxActiveTasks, maxActiveTasks, 0l, TimeUnit.MILLISECONDS,
+                    new LinkedBlockingQueue<Runnable>(maxQueuedTasks));
+            source.publishPool = new ThreadPoolExecutor(maxActiveTasks, maxActiveTasks, 0l, TimeUnit.MILLISECONDS,
+                    new LinkedBlockingQueue<Runnable>(maxQueuedTasks));
+
+            // Creating query/publish handlers with asynchronous processing
+            queryHandler = new Handler<ExtensionServiceMessage>() {
+                @Override
+                public void handleMessage(ExtensionServiceMessage message) {
+                    try {
+                        source.queryPool.execute(new Runnable() {
+                            @Override
+                            public void run() {
+                                handleQueryRequest(source.client, message);
+                            }
+                        });
+                    } catch (RejectedExecutionException e) {
+                        log.error(
+                                "The queue of tasks has filled, and as a result the request was unable to be processed.",
+                                e);
+                        String replyAddress = ExtensionServiceMessage.extractReplyAddress(message);
+                        source.client.sendQueryError(replyAddress,
+                                "io.vantiq.extsrc.EasyModbusHandleConfiguration.queryHandler.queuedTasksFull",
+                                "The queue of tasks has filled, and as a result the request was unable to be processed.",
+                                null);
+                    }
+                }
+            };
+            publishHandler = new Handler<ExtensionServiceMessage>() {
+                @Override
+                public void handleMessage(ExtensionServiceMessage message) {
+                    try {
+                        source.publishPool.execute(new Runnable() {
+                            @Override
+                            public void run() {
+                                source.executePublish(message);
+                            }
+                        });
+                    } catch (RejectedExecutionException e) {
+                        log.error(
+                                "The queue of tasks has filled, and as a result the request was unable to be processed.",
+                                e);
+                    }
+                }
+            };
+        } else {
+            // Otherwise, creating query/publish handlers with synchronous processing
+            queryHandler = new Handler<ExtensionServiceMessage>() {
+                @Override
+                public void handleMessage(ExtensionServiceMessage message) {
+                    handleQueryRequest(source.client, message);
+                }
+            };
+            publishHandler = new Handler<ExtensionServiceMessage>() {
+                @Override
+                public void handleMessage(ExtensionServiceMessage message) {
+                    source.executePublish(message);
+                }
+            };
+        }
+
+        return maxPoolSize;
+    }
+
+    /**
      * implement Singleton for CSV class
      * @param config
      * @param options
@@ -139,6 +249,9 @@ public class CSVHandleConfiguration extends Handler<ExtensionServiceMessage> {
             return false;
         }
 
+        // Creating the publish and query handlers
+        int maxPoolSize = createQueryAndPublishHandlers(config);
+
         // Initialize CSV Source with config values
         try {
             if (source.csv != null) {
@@ -152,9 +265,31 @@ public class CSVHandleConfiguration extends Handler<ExtensionServiceMessage> {
             log.error("Configuration failed. Exception occurred while setting up CSV Source: ", e);
             return false;
         }
+
+        // Start listening for queries and publishes
+        source.client.setQueryHandler(queryHandler);
+        source.client.setPublishHandler(publishHandler);
         
         log.trace("CSV source created");
         return true;
+    }
+    /**
+     * Method called by the query handler to process the request
+     * 
+     * @param client  The ExtensionWebSocketClient used to send a query response
+     *                error if necessary
+     * @param message The message sent to the Extension Source
+     */
+    private void handleQueryRequest(ExtensionWebSocketClient client, ExtensionServiceMessage message) {
+        // Should never happen, but just in case something changes in the backend
+        if (!(message.getObject() instanceof Map)) {
+            String replyAddress = ExtensionServiceMessage.extractReplyAddress(message);
+            client.sendQueryError(replyAddress, "io.vantiq.extsrc.EasyModbusHandleConfiguration.invalidQueryRequest",
+                    "Request must be a map", null);
+        }
+
+        // Process query and send the results
+        source.executeQuery(message);
     }
 
     /**
