@@ -71,31 +71,3 @@ dependencies {
     testCompile 'junit:junit:4.12'
     testCompile project(path:":extjsdk", configuration:"testArtifacts")
 }
-
-// Using gradle-dcompose-plugin to build jmsSource docker image
-dcompose {
-    if (rootProject.hasProperty('dockerRegistry')) {
-        def registryName = rootProject.getProperty('dockerRegistry')
-        jmsSource {
-            buildFiles = project.copySpec {
-                from "$projectDir/src/main/docker/"
-                from "$projectDir/build/distributions/jmsSource.tar"
-            }
-            if (rootProject.hasProperty('jmsImageTag')) {
-                repository = registryName + '/jms-source' + rootProject.getProperty('jmsImageTag')
-            } else {
-                repository = registryName + '/jms-source'
-            }
-            logBuildStatus = true
-            buildLogFile = file("$buildDir/jmsDockerBuildLog.file")
-        }
-
-        // The credentials here should be stored in gradle.properties.
-        dockerClientConfig = {
-            withRegistryUsername dockerRegistryUser
-            withRegistryPassword dockerRegistryPassword
-        }
-    }
-}
-
-buildJmsSourceImage.dependsOn assemble

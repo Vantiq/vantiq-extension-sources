@@ -352,3 +352,60 @@ we have parameterized the top-level `settings.gradle` file.
 The `settings.gradle` file determines the scope of the build.
 Connectors requiring a driver are included in the overall build *only if* the associated driver location environment variable is present.
 Otherwise, the connector is ignored for the build.
+
+## Building Docker Images
+
+The connectors in this repository contain `gradle` tasks that can be used to build Docker Images for each connector and 
+push those images to the developer's Docker Registry. In order to use these tasks, the developer must include the 
+following configuration option in their `gradle.properties` file, along with some optional parameters:
+
+*   `dockerRegistry`: Required. The name of the registry to which the image should be pushed.
+*   `dockerRegistryUsername`: Optional. The username used for authenticating with the given docker registry.
+*   `dockerRegistryPassword`: Optional. The password used for authenticating with the given docker registry.
+*   `imageTag`: Optional. The tag used when pushing the image. If not specified, the tag will default to "latest".
+*   `repositoryName`: Optional. The name of the repository in the registry to which the image should be pushed. If not
+specified, the default repository will be the connector's name (i.e. "jdbc-source", "jms-source", 
+"objectrecognition-source", etc.).
+*   `notDockerHub`: Optional. A boolean flag that must be set to true if the docker registry is not Docker Hub. This is 
+necessary in order to properly authenticate with the given registry. If the repositories are public, then this can be 
+ignored.
+
+With the required properties in place, the tasks can then be executed as follows:
+
+### Build Image
+
+From the root directory of this repo, run the following command (this example builds the JDBC Connector)
+```
+./gradlew jdbcSource:buildConnectorImage
+```
+
+You can also use the camel-cased version:
+```
+./gradlew jdbcSource:bCI
+```
+
+Or, you can just run the following task:
+```
+./gradlew jdbcSource:buildImages
+```
+*   **NOTE:** This last option will build all images configured for a given subproject. Currently, each subproject 
+(connector) is only configured to build one image. If the developer modifies any of the `build.gradle` to configure more
+than one image, this command will build them all.
+
+### Push Image
+
+From the root directory of this repo, run the following command (this example pushes the JDBC Connector image)
+```
+./gradlew jdbcSource:pushConnectorImage
+```
+
+You can also use the camel-cased version:
+```
+./gradlew jdbcSource:pCI
+```
+
+Or, you can just run the following task:
+```
+./gradlew jdbcSource:pushImages
+```
+*   **NOTE:** Same note as the one above.

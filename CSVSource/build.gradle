@@ -78,31 +78,3 @@ tasks.withType(Test) {
         systemProperty 'EntFullFilePath', rootProject.findProperty('EntFullFilePath')?:"b.csv"
     }
 }
-
-// Using gradle-dcompose-plugin to build CSVSource docker image
-dcompose {
-    if (rootProject.hasProperty('dockerRegistry')) {
-        def registryName = rootProject.getProperty('dockerRegistry')
-        csvSource {
-            buildFiles = project.copySpec {
-                from "$projectDir/src/main/docker/"
-                from "$projectDir/build/distributions/CSVSource.tar"
-            }
-            if (rootProject.hasProperty('csvImageTag')) {
-                repository = registryName + '/csv-source' + rootProject.getProperty('csvImageTag')
-            } else {
-                repository = registryName + '/csv-source'
-            }
-            logBuildStatus = true
-            buildLogFile = file("$buildDir/csvDockerBuildLog.file")
-        }
-
-        // The credentials here should be stored in gradle.properties.
-        dockerClientConfig = {
-            withRegistryUsername dockerRegistryUser
-            withRegistryPassword dockerRegistryPassword
-        }
-    }
-}
-
-buildCsvSourceImage.dependsOn assemble
