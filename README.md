@@ -369,6 +369,8 @@ specified, the default repository will be the connector's name (i.e. "jdbc-sourc
 *   `notDockerHub`: Optional. A boolean flag that must be set to true if the docker registry is not Docker Hub. This is 
 necessary in order to properly authenticate with the given registry. If the repositories are public, then this can be 
 ignored.
+*   `connectorSpecificInclusions`: Optional. The path to a directory of files that need to be included in the image. 
+This data can then be referenced and used by the Dockerfile.
 
 With the required properties in place, the tasks can then be executed as follows:
 
