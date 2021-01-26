@@ -367,7 +367,7 @@ following configuration option in their `gradle.properties` file, along with som
 specified, the default repository will be the connector's name (i.e. "jdbc-source", "jms-source", 
 "objectrecognition-source", etc.).
 *   `useDockerHub`: Optional. A boolean flag that must be set to true if the docker registry is Docker Hub. This is 
-necessary in order to properly authenticate with Docker Hub. If the repositor in question is public, then this can be 
+necessary in order to properly authenticate with Docker Hub. If the repository in question is public, then this can be 
 ignored.
 *   `connectorSpecificInclusions`: Optional. The path to a directory of files that need to be included in the image. 
 These can then be referenced and used by the Dockerfile.
