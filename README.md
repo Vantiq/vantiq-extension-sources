@@ -359,16 +359,17 @@ The connectors in this repository contain `gradle` tasks that can be used to bui
 push those images to the developer's Docker Registry. In order to use these tasks, the developer must include the 
 following configuration option in their `gradle.properties` file, along with some optional parameters:
 
-*   `dockerRegistry`: Required. The name of the registry to which the image should be pushed.
+*   `dockerRegistry`: Required. The name of the registry to which the image should be pushed (i.e. `docker.io`,
+`quay.io`, etc.).
+*   `pathToRepo`: Required. The path to the docker repository. This is typically the `namespace` portion of registry
+URIs that follow the `registry/namespace/repo:tag` structure, but each registry can very. This value should begin and
+end with "/" (i.e. `pathToRepo=/vantiq/`).
 *   `dockerRegistryUsername`: Optional. The username used for authenticating with the given docker registry.
 *   `dockerRegistryPassword`: Optional. The password used for authenticating with the given docker registry.
 *   `imageTag`: Optional. The tag used when pushing the image. If not specified, the tag will default to "latest".
 *   `repositoryName`: Optional. The name of the repository in the registry to which the image should be pushed. If not
 specified, the default repository will be the connector's name (i.e. "jdbc-source", "jms-source", 
 "objectrecognition-source", etc.).
-*   `useDockerHub`: Optional. A boolean flag that must be set to true if the docker registry is Docker Hub. This is 
-necessary in order to properly authenticate with Docker Hub. If the repository in question is public, then this can be 
-ignored.
 *   `connectorSpecificInclusions`: Optional. The path to a directory of files that need to be included in the image. 
 These can then be referenced and used by the Dockerfile.
 

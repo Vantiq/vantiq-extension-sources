@@ -76,9 +76,9 @@ subprojects {
 
     // Using gradle-dcompose-plugin to build/push docker images
     dcompose {
-        if (rootProject.hasProperty('dockerRegistry')) {
+        if (rootProject.hasProperty('dockerRegistry') && rootProject.hasProperty('pathToRepo')) {
             def registryName = rootProject.getProperty('dockerRegistry')
-            def isDockerHub = rootProject.hasProperty('useDockerHub') ? rootProject.getProperty('useDockerHub') : false
+            def pathToRepo = rootProject.getProperty('pathToRepo')
 
             def repositoryName = "${project.name - 'Source' + '-source'}".toLowerCase()
             if (rootProject.hasProperty('repositoryName')) {
@@ -95,25 +95,18 @@ subprojects {
                     }
                 }
 
-                repository = registryName + repositoryName
+                repository = registryName + pathToRepo + repositoryName
                 if (rootProject.hasProperty('imageTag')) {
-                    repository = registryName + repositoryName + rootProject.getProperty('imageTag')
+                    repository += rootProject.getProperty('imageTag')
                 }
                 logBuildStatus = true
                 buildLogFile = file("$buildDir/dockerBuildLog.txt")
             }
 
             // The credentials here should be stored in gradle.properties.
-            if (isDockerHub) {
-                dockerClientConfig = {
-                    withRegistryUsername dockerRegistryUser
-                    withRegistryPassword dockerRegistryPassword
-                }
-            } else {
-                registry(registryName) {
-                    withUsername dockerRegistryUser
-                    withPassword dockerRegistryPassword
-                }
+            registry(registryName) {
+                withUsername dockerRegistryUser
+                withPassword dockerRegistryPassword
             }
         }
     }
