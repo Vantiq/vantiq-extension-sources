@@ -78,6 +78,7 @@ subprojects {
     dcompose {
         if (rootProject.hasProperty('dockerRegistry')) {
             def registryName = rootProject.getProperty('dockerRegistry')
+            def isDockerHub = rootProject.hasProperty('useDockerHub') ? rootProject.getProperty('useDockerHub') : false
 
             def repositoryName = "${project.name - 'Source' + '-source'}".toLowerCase()
             if (rootProject.hasProperty('repositoryName')) {
@@ -103,15 +104,15 @@ subprojects {
             }
 
             // The credentials here should be stored in gradle.properties.
-            if (rootProject.hasProperty('notDockerHub') && rootProject.getProperty('notDockerHub') as boolean) {
-                registry(registryName) {
-                    withUsername dockerRegistryUser
-                    withPassword dockerRegistryPassword
-                }
-            } else {
+            if (isDockerHub) {
                 dockerClientConfig = {
                     withRegistryUsername dockerRegistryUser
                     withRegistryPassword dockerRegistryPassword
+                }
+            } else {
+                registry(registryName) {
+                    withUsername dockerRegistryUser
+                    withPassword dockerRegistryPassword
                 }
             }
         }

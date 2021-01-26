@@ -88,6 +88,10 @@ to this will be included in future distributions produced through gradle.
 ### Local Options
 *   modelDirectory: Optional. The directory in which the files for your neural networks will be. Defaults to the current
     working directory.
+    
+**NOTE:** If using gradle to build a docker image for this connector, the modelDirectory must be specified as the value
+for `connectorSpecificInclusions` in the `gradle.properties` file. The default Dockerfile for this connector will place
+the modelDirectory files in the `/app/models` directory within the docker image.
 
 ## Running Inside Your Own Code<a name="core" id="core"></a>
 
