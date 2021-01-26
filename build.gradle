@@ -79,7 +79,6 @@ subprojects {
         if (rootProject.hasProperty('dockerRegistry') && rootProject.hasProperty('pathToRepo')) {
             def registryName = rootProject.getProperty('dockerRegistry')
             def pathToRepo = rootProject.getProperty('pathToRepo')
-
             def repositoryName = "${project.name - 'Source' + '-source'}".toLowerCase()
             if (rootProject.hasProperty('repositoryName')) {
                 repositoryName = rootProject.getProperty('repositoryName')
@@ -95,10 +94,9 @@ subprojects {
                     }
                 }
 
-                repository = registryName + pathToRepo + repositoryName
-                if (rootProject.hasProperty('imageTag')) {
-                    repository += rootProject.getProperty('imageTag')
-                }
+                def repositoryBase = registryName + '/' + pathToRepo + '/' + repositoryName
+                repositoryBase = repositoryBase.replace('//', '/')
+                repository = rootProject.hasProperty('imageTag') ? repositoryBase + ":${rootProject.getProperty('imageTag')}" : repositoryBase
                 logBuildStatus = true
                 buildLogFile = file("$buildDir/dockerBuildLog.txt")
             }
