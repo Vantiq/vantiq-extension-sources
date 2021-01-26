@@ -362,8 +362,7 @@ following configuration option in their `gradle.properties` file, along with som
 *   `dockerRegistry`: Required. The name of the registry to which the image should be pushed (i.e. `docker.io`,
 `quay.io`, etc.).
 *   `pathToRepo`: Required. The path to the docker repository. This is typically the `namespace` portion of registry
-URIs that follow the `registry/namespace/repo:tag` structure, but each registry can very. This value should begin and
-end with "/" (i.e. `pathToRepo=/vantiq/`).
+URIs that follow the `registry/namespace/repo:tag` structure, but each registry can vary, (i.e. `pathToRepo=/vantiq/`).
 *   `dockerRegistryUsername`: Optional. The username used for authenticating with the given docker registry.
 *   `dockerRegistryPassword`: Optional. The password used for authenticating with the given docker registry.
 *   `imageTag`: Optional. The tag used when pushing the image. If not specified, the tag will default to "latest".
