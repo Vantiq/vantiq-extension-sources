@@ -54,7 +54,10 @@ public class ExtensionWebSocketClient {
      * The default max queue size of the failedMessageQueue
      */
     private static final int DEFAULT_FAILED_MESSAGE_QUEUE_SIZE = 25;
-    
+    /**
+     * The env var used to overwrite default queue size
+     */
+    private static final String FAILED_MESAGE_QUEUE_SIZE = "FAILED_MESSAGE_QUEUE_SIZE";
     /**
      * An {@link ObjectMapper} used to transform objects into JSON before sending
      */
@@ -148,7 +151,14 @@ public class ExtensionWebSocketClient {
         outstandingNotifications = new Semaphore(5, true);
         log = LoggerFactory.getLogger(this.getClass().getCanonicalName() + "#" + sourceName);
         listener = new ExtensionWebSocketListener(this);
-        failedMessageQueue = EvictingQueue.create(failedMessageQueueSize);
+
+        // Check for Environment Variable to overwrite failedMessageQueue size, otherwise use default
+        if (System.getenv(FAILED_MESAGE_QUEUE_SIZE) != null) {
+            int customQueueSize = new Integer(System.getenv(FAILED_MESAGE_QUEUE_SIZE));
+            failedMessageQueue = EvictingQueue.create(customQueueSize);
+        } else {
+            failedMessageQueue = EvictingQueue.create(failedMessageQueueSize);
+        }
     }
 
     /**
