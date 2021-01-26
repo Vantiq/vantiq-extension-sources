@@ -78,17 +78,11 @@ subprojects {
     dcompose {
         if (rootProject.hasProperty('dockerRegistry') && rootProject.hasProperty('pathToRepo')) {
             def registryName = rootProject.getProperty('dockerRegistry')
-            registryName = registryName.endsWith('/') ? registryName - '/': registryName
-
             def pathToRepo = rootProject.getProperty('pathToRepo')
-            pathToRepo = pathToRepo.startsWith('/') ? pathToRepo : '/' + pathToRepo
-            pathToRepo = pathToRepo.endsWith('/') ? pathToRepo : pathToRepo + '/'
-
             def repositoryName = "${project.name - 'Source' + '-source'}".toLowerCase()
             if (rootProject.hasProperty('repositoryName')) {
                 repositoryName = rootProject.getProperty('repositoryName')
             }
-            repositoryName = repositoryName.startsWith('/') ? repositoryName - '/' : repositoryName
 
             connector {
                 buildFiles = project.copySpec {
@@ -100,7 +94,8 @@ subprojects {
                     }
                 }
 
-                def repositoryBase = registryName + pathToRepo + repositoryName
+                def repositoryBase = registryName + '/' + pathToRepo + '/' + repositoryName
+                repositoryBase = repositoryBase.replace('//', '/')
                 repository = rootProject.hasProperty('imageTag') ? repositoryBase + ":${rootProject.getProperty('imageTag')}" : repositoryBase
                 logBuildStatus = true
                 buildLogFile = file("$buildDir/dockerBuildLog.txt")
