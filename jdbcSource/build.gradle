@@ -83,5 +83,4 @@ dependencies {
 
     // Used to create a connection pool if asynchronous processing has been specified for publish/query handlers
     compile group: 'com.zaxxer', name: 'HikariCP', version: '3.3.1'
-
 }

@@ -12,6 +12,7 @@ plugins {
     id 'io.franzbecker.gradle-lombok' version '1.14' apply false
     id 'pl.allegro.tech.build.axion-release' version '1.6.0'
     id 'jacoco'
+    id 'com.chrisgahlert.gradle-dcompose-plugin' version '0.17.1' apply false
 }
 
 wrapper {
@@ -71,6 +72,45 @@ subprojects {
     apply plugin: 'idea'
     apply plugin: 'eclipse'
     apply plugin: 'java'
+    apply plugin: 'com.chrisgahlert.gradle-dcompose-plugin'
+
+    // Using gradle-dcompose-plugin to build/push docker images
+    dcompose {
+        if (rootProject.hasProperty('dockerRegistry') && rootProject.hasProperty('pathToRepo')) {
+            def registryName = rootProject.getProperty('dockerRegistry')
+            def pathToRepo = rootProject.getProperty('pathToRepo')
+
+            def repositoryName = "${project.name - 'Source' + '-source'}".toLowerCase()
+            if (rootProject.hasProperty('repositoryName')) {
+                repositoryName = rootProject.getProperty('repositoryName')
+            }
+
+            connector {
+                buildFiles = project.copySpec {
+                    from "$projectDir/src/main/docker/"
+                    from "$projectDir/build/distributions/${project.name}.tar"
+                    if (rootProject.hasProperty('connectorSpecificInclusions')) {
+                        def inclusionsDir = rootProject.getProperty('connectorSpecificInclusions')
+                        from "$inclusionsDir"
+                    }
+                }
+
+                repository = registryName + pathToRepo + repositoryName
+                if (rootProject.hasProperty('imageTag')) {
+                    repository += rootProject.getProperty('imageTag')
+                }
+                logBuildStatus = true
+                buildLogFile = file("$buildDir/dockerBuildLog.txt")
+            }
+
+            // The credentials here should be stored in gradle.properties.
+            registry(registryName) {
+                withUsername dockerRegistryUser
+                withPassword dockerRegistryPassword
+            }
+        }
+    }
+    buildConnectorImage.dependsOn assemble
 
     // only run with code-coverage metrics if property is explicitly specified
     if (rootProject.hasProperty('jacocoReport')) {
@@ -151,13 +191,10 @@ subprojects {
             }
         }
     }
-
 }
+
 apply plugin: 'java'
-//dependencies {
-//    compile 'org.codehaus.groovy:groovy-all:2.4.11'
-//    compile "org.slf4j:slf4j-api:1.7.5"
-//}
+
 repositories {
     mavenCentral()
     jcenter()

@@ -71,4 +71,3 @@ dependencies {
     testCompile 'junit:junit:4.12'
     testCompile project(path:":extjsdk", configuration:"testArtifacts")
 }
-
