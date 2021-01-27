@@ -327,10 +327,10 @@ For all select statements, a response will be returned with the following struct
    }
 ```
 code table is
-0 - success .
-1 - File already exists
-2 - Folder does not exist 
-3 - File does not exist 
+io.vantiq.csvsource.success - success .
+io.vantiq.csvsource.fileexist - File already exists
+io.vantiq.csvsource.nofolder - Folder does not exist 
+io.vantiq.csvsource.nofile - File does not exist 
 
 ## Error Messages
 
