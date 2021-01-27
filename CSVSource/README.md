@@ -13,7 +13,8 @@ When the process starts, based on configuration,
 the extension can process all files exist in the input folder which support the name file pattern.
 In this way, in cases where the extension is not running during file updates, it will resend all accumulated files once it restarted. 
 
-Ability to read from fixed length offset record typp was added , a schema has been added and an idetifier `FileType` was 
+In addition to handling delimiter-separated fields, this connector can extract fields from fixed positions in the record.
+This is configured as described below.
 added , if not exists, works as delimited format, value must be  `"FileType": "FixedLength"` for working in the fixed length mode
 
 ability to write CSV files from server was added , no addtional configuration was added , the text will be UTF8 and
@@ -136,20 +137,24 @@ So instead of loading event:
 `{ field0:1, field1:true, field2:"there"}` it will upload `{ field0:1, field1:true, address:"there"}`
 this can save conversion processing on the server.
 
-### fixed lentgh record
-CSV Reader no support fixed lenth record with support of different characher sets.
-in order to use Fixed length suport the configuration 
-additional key `FileType` is added , its value must be `FixedLength` , any different value will configure as the default behavior which is character delimited.
+### Fixed Length Records
+CSV Reader supports extracting fields based on fixed length positions in each record.
+To specify extraction based on fixed positions, specificities the configuration 
+key `FileType`, with the value: `FixedLength`
+If this key is missing, it will default to `DelimitedFields`.
 
-the schema part changed accordingly and contains the follwoing attributes 
+The schema for a `FixedLength` file type is as follows:
 
-attribute name which contain the name of the field to be used in the json. for exampe code ,name ,price in the above example
-for each attribute:
+For each attribute, specify the name of the attribute and the positional information.
+For example using the `code`, `name`, and `price` from the above example,
+each attribute is defined as follows:
 * **offset** : the offset of the field from the beginning of the record
 * **length** : the size of the field
-* **type** : the type of the field : string , int etc 
-* **charset** : optional ,which charset to use when reading the field. 
-* **reveresed** : Optioal, reversed the attribute value , maily for support RTL names
+* **type** : the type of the field : string, int, etc 
+* **charset** : optional -- the character set charset to use when reading the field. 
+* **reversed** : Optional, reversed the attribute value , mainly for support RTL names.
+If `true`, this causes the String attribute read from the file to be reversed.
+So _value_ would become _eulav_ if `reversed` is set to `true`.
 
 
 
@@ -174,7 +179,7 @@ the configuration should be similar to
             "length": 20,
             "type": "string",
             "charset": "Cp862",
-            "reveresed": true
+            "reversed": true
          },
          "weighted": {
             "offset": 35,
@@ -277,11 +282,11 @@ Once you copy it to the input folder (default is `d:/tmp/csv`),
 the extension source will send the file in multiple segments,
 with the app will saving those in a type. 
 
-## writing CSV files. 
+## Writing CSV Files
 
-creating , apending to or deleting a csv file is done by a select statment.
+Creating, appending to or deleting a csv file is done via a **select** statement.
 
-assuming json buffer with the follwoing structure 
+Given a VAIL object defined as follows,
 ```
 m = {
    path:"c:\tmp",
@@ -293,19 +298,19 @@ m = {
 }
 ```
 
-running the follwoing select statment will create output.txt file at folder c:\tmp contains 2 lines
+The following select statement will create the `output.txt` file at folder `c:\tmp` containing 2 lines.
 ```
-select * from source CSV1 with body= m , op="create"
+select * from source CSV1 with body= m, op="create"
 ```
-for adding additonal lines to the file one can use the follwoing command 
+To add additional lines to the file one can use the following command 
 ```
 select * from source CSV1 with body= m , op="append"
 ```
-for deleting a file , the following select statment can be handy 
+To delete a file, the following select statement can be used. 
 ```
 select * from source CSV1 with body= m , op="delete"
 ```
-for all select type a response will be returned with the following structure:
+For all select statements, a response will be returned with the following structure:
 ```
    {
       "message": "File Appended Succeesfully",
@@ -316,8 +321,8 @@ for all select type a response will be returned with the following structure:
 code table is
 0 - success .
 1 - File already exists
-2 - folder not exists 
-3 - File not exists 
+2 - Folder does not exist 
+3 - File does not exist 
 
 ## Error Messages
 
