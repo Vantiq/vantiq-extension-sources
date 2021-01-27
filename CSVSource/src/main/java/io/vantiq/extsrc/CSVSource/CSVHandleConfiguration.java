@@ -21,24 +21,24 @@ import io.vantiq.extjsdk.ExtensionServiceMessage;
 import io.vantiq.extjsdk.ExtensionWebSocketClient;
 import io.vantiq.extjsdk.Handler;
 
-
-
-
 /**
  * Sets up the source using the configuration document, which looks as below.
- *<pre> {
+ * 
+ * <pre>
+ *  {
  *      csvConfig: {
  *          general: {
  *              &lt;general options&gt;
  *          }
  *      }
- * }</pre>
+ * }
+ * </pre>
  */
 public class CSVHandleConfiguration extends Handler<ExtensionServiceMessage> {
-    Logger                  log;
-    String                  sourceName;
-    CSVCore                 source;
-    boolean                 configComplete = false; // Used for autotestign support.
+    Logger log;
+    String sourceName;
+    CSVCore source;
+    boolean configComplete = false; // Used for autotestign support.
     boolean asynchronousProcessing = false;
 
     Handler<ExtensionServiceMessage> queryHandler;
@@ -51,7 +51,7 @@ public class CSVHandleConfiguration extends Handler<ExtensionServiceMessage> {
     private static final String CONFIG = "config";
     private static final String CSVCONFIG = "csvConfig";
     private static final String OPTIONS = "options";
-    
+
     private static final String SCHEMA = "schema";
     private static final String FILE_FOLDER_PATH = "fileFolderPath";
     private static final String FILE_PREFIX = "filePrefix";
@@ -60,15 +60,16 @@ public class CSVHandleConfiguration extends Handler<ExtensionServiceMessage> {
     private static final String ASYNCH_PROCESSING = "asynchronousProcessing";
     private static final String MAX_ACTIVE = "maxActiveTasks";
     private static final String MAX_QUEUED = "maxQueuedTasks";
-    
+
     public CSVHandleConfiguration(CSVCore source) {
         this.source = source;
         this.sourceName = source.getSourceName();
         log = LoggerFactory.getLogger(this.getClass().getCanonicalName() + "#" + sourceName);
     }
-    
+
     /**
-     * Interprets the configuration message sent by the Vantiq server and sets up the CSV Source.
+     * Interprets the configuration message sent by the Vantiq server and sets up
+     * the CSV Source.
      */
     @SuppressWarnings("unchecked")
     @Override
@@ -77,39 +78,39 @@ public class CSVHandleConfiguration extends Handler<ExtensionServiceMessage> {
         Map<String, Object> config;
         Map<String, Object> options;
         Map<String, Object> csvConfig;
-        String fileFolderPath ; 
-        String filePrefix; 
+        String fileFolderPath;
+        String filePrefix;
         String fileExtension;
 
         // Obtain entire config from the message object
-        if ( !(configObject.get(CONFIG) instanceof Map)) {
+        if (!(configObject.get(CONFIG) instanceof Map)) {
             log.error("Configuration failed. No configuration suitable for CSV Source.");
             failConfig();
             return;
         }
 
-        config = (Map<String,Object>) configObject.get(CONFIG);
+        config = (Map<String, Object>) configObject.get(CONFIG);
 
-        if ( !(config.get(OPTIONS) instanceof Map)) {
+        if (!(config.get(OPTIONS) instanceof Map)) {
             log.error("Configuration failed. No configuration suitable for CSV Source: No OPTIONS ");
             failConfig();
             return;
         }
-        options = (Map<String,Object>) config.get(OPTIONS);
+        options = (Map<String, Object>) config.get(OPTIONS);
 
-        if ( !(config.get(CSVCONFIG) instanceof Map)) {
+        if (!(config.get(CSVCONFIG) instanceof Map)) {
             log.error("Configuration failed. No configuration suitable for CSV Source: No CSVConfig");
             failConfig();
             return;
         }
 
-        csvConfig = (Map<String,Object>) config.get(CSVCONFIG);
+        csvConfig = (Map<String, Object>) config.get(CSVCONFIG);
 
         // Retrieve the csvConfig and the vantiq config
-        if ( !(csvConfig.get(FILE_FOLDER_PATH) instanceof String 
-                && csvConfig.get(FILE_EXTENSION) instanceof String 
-                && csvConfig.get(FILE_PREFIX) instanceof String) ) {
-                log.error("Configuration failed. Configuration must contain 'fileFolderPath' , 'filePrefix' and 'fileExtension' fields.");
+        if (!(csvConfig.get(FILE_FOLDER_PATH) instanceof String && csvConfig.get(FILE_EXTENSION) instanceof String
+                && csvConfig.get(FILE_PREFIX) instanceof String)) {
+            log.error(
+                    "Configuration failed. Configuration must contain 'fileFolderPath' , 'filePrefix' and 'fileExtension' fields.");
             failConfig();
             return;
         }
@@ -120,7 +121,7 @@ public class CSVHandleConfiguration extends Handler<ExtensionServiceMessage> {
         }
         fileExtension = (String) csvConfig.get(FILE_EXTENSION);
 
-        if ( !(csvConfig.get(SCHEMA) instanceof Map)) {
+        if (!(csvConfig.get(SCHEMA) instanceof Map)) {
             log.error("Configuration failed. No configuration suitable for CSV Source. )NO SCHEMA");
             failConfig();
             return;
@@ -133,7 +134,7 @@ public class CSVHandleConfiguration extends Handler<ExtensionServiceMessage> {
             failConfig();
             return;
         }
-        
+
         log.trace("Setup complete");
         configComplete = true;
     }
@@ -141,7 +142,7 @@ public class CSVHandleConfiguration extends Handler<ExtensionServiceMessage> {
     /**
      * Method used to create the query and publish handlers
      * 
-     * @param generalConfig The general configuration of the EasyModbus Source
+     * @param generalConfig The general configuration of the CSV Source
      * @return Returns the maximum pool size, equal to twice the number of active
      *         tasks. If default active tasks is used, then returns 0.
      */
@@ -189,7 +190,7 @@ public class CSVHandleConfiguration extends Handler<ExtensionServiceMessage> {
                                 e);
                         String replyAddress = ExtensionServiceMessage.extractReplyAddress(message);
                         source.client.sendQueryError(replyAddress,
-                                "io.vantiq.extsrc.EasyModbusHandleConfiguration.queryHandler.queuedTasksFull",
+                                "io.vantiq.extsrc.CSVHandleConfiguration.queryHandler.queuedTasksFull",
                                 "The queue of tasks has filled, and as a result the request was unable to be processed.",
                                 null);
                     }
@@ -203,14 +204,13 @@ public class CSVHandleConfiguration extends Handler<ExtensionServiceMessage> {
                     handleQueryRequest(source.client, message);
                 }
             };
-       
         }
-
         return maxPoolSize;
     }
 
     /**
      * implement Singleton for CSV class
+     * 
      * @param config
      * @param options
      * @param FileFolderPath
@@ -218,11 +218,10 @@ public class CSVHandleConfiguration extends Handler<ExtensionServiceMessage> {
      * @param oClient
      * @return
      */
-    boolean createCSVConnection(Map<String, Object> config, Map<String, Object> options , String FileFolderPath, String fullFilePath, ExtensionWebSocketClient oClient) {
+    boolean createCSVConnection(Map<String, Object> config, Map<String, Object> options, String FileFolderPath,
+            String fullFilePath, ExtensionWebSocketClient oClient) {
 
-        log.error("Enter createCSVConnection");
-
-        if ( !(config.get(MAX_LINES_IN_EVENT) instanceof Integer)) {
+        if (!(config.get(MAX_LINES_IN_EVENT) instanceof Integer)) {
             log.error("Configuration failed. No maxLinesInEvents was specified or it is not Integer");
             return false;
         }
@@ -236,9 +235,9 @@ public class CSVHandleConfiguration extends Handler<ExtensionServiceMessage> {
                 source.csv.close();
             }
             CSV csv = new CSV();
-       
+
             csv.setupCSV(oClient, FileFolderPath, fullFilePath, config, options);
-            source.csv = csv; 
+            source.csv = csv;
         } catch (Exception e) {
             log.error("Configuration failed. Exception occurred while setting up CSV Source: ", e);
             return false;
@@ -247,10 +246,11 @@ public class CSVHandleConfiguration extends Handler<ExtensionServiceMessage> {
         // Start listening for queries and publishes
         source.client.setQueryHandler(queryHandler);
         source.client.setPublishHandler(publishHandler);
-        
+
         log.trace("CSV source created");
         return true;
     }
+
     /**
      * Method called by the query handler to process the request
      * 
@@ -262,7 +262,7 @@ public class CSVHandleConfiguration extends Handler<ExtensionServiceMessage> {
         // Should never happen, but just in case something changes in the backend
         if (!(message.getObject() instanceof Map)) {
             String replyAddress = ExtensionServiceMessage.extractReplyAddress(message);
-            client.sendQueryError(replyAddress, "io.vantiq.extsrc.EasyModbusHandleConfiguration.invalidQueryRequest",
+            client.sendQueryError(replyAddress, "io.vantiq.extsrc.CSVHandleConfiguration.invalidQueryRequest",
                     "Request must be a map", null);
         }
 
@@ -271,19 +271,23 @@ public class CSVHandleConfiguration extends Handler<ExtensionServiceMessage> {
     }
 
     /**
-     * Closes the source {@link CSVCore} and marks the configuration as completed. The source will
-     * be reactivated when the source reconnects, due either to a Reconnect message (likely created by an update to the
-     * configuration document) or to the WebSocket connection crashing momentarily.
+     * Closes the source {@link CSVCore} and marks the configuration as completed.
+     * The source will be reactivated when the source reconnects, due either to a
+     * Reconnect message (likely created by an update to the configuration document)
+     * or to the WebSocket connection crashing momentarily.
      */
     private void failConfig() {
         source.close();
         configComplete = true;
     }
-    
+
     /**
-     * Returns whether the configuration handler has completed. Necessary since the sourceConnectionFuture is completed
-     * before the configuration can complete, so a program may need to wait before using configured resources.
-     * @return  true when the configuration has completed (successfully or not), false otherwise
+     * Returns whether the configuration handler has completed. Necessary since the
+     * sourceConnectionFuture is completed before the configuration can complete, so
+     * a program may need to wait before using configured resources.
+     * 
+     * @return true when the configuration has completed (successfully or not),
+     *         false otherwise
      */
     public boolean isComplete() {
         return configComplete;

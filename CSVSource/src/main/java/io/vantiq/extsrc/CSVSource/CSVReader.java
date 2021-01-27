@@ -113,7 +113,7 @@ public class CSVReader {
     }
 
     /**
-     * Responsible for reading the lines from the file and converting it events to
+     * Responsible for reading records from the file and converting it events to
      * be sent to server. Each line contains fixed record and then, based on the
      * schema object, determine the attribute name.
      * 

@@ -156,7 +156,7 @@ public class CSVCore {
         Map<String, ?> request = (Map<String, ?>) message.getObject();
         String replyAddress = ExtensionServiceMessage.extractReplyAddress(message);
 
-        // Getting local copy of EasyModbus class
+        // Getting local copy of CSV class
         CSV localCsv = null;
         synchronized (SYNCH_LOCK) {
             localCsv = csv;
@@ -164,7 +164,7 @@ public class CSVCore {
         if (localCsv == null) {
             if (client != null) {
                 client.sendQueryError(replyAddress, this.getClass().getName() + ".closed",
-                        "EasyModbus connection closed before operation could complete.", null);
+                        "CSV connection closed before operation could complete.", null);
             }
         }
 

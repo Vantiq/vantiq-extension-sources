@@ -17,10 +17,11 @@ In addition to handling delimiter-separated fields, this connector can extract f
 This is configured as described below.
 added , if not exists, works as delimited format, value must be  `"FileType": "FixedLength"` for working in the fixed length mode
 
-ability to write CSV files from server was added , no addtional configuration was added , the text will be UTF8 and
-the assumption is that the line to write will be manipulated by the server . a
-the relevant meta dat is inject by the with part of the vail select statmet. every call create a POST request 
-the value is a json buffer which describe the result status of the request. 
+It is also possible to have the connector write files.This operation is described below.
+ no addtional configuration is needed , the text will be UTF8 and
+the assumption is that the line to write will be manipulated by the server .
+the relevant meta data is injected by the `with` part of the vail select statment. 
+every call create a POST request whose response is a json buffer which describe the result status of the request. 
 
 The documentation has been split into two parts, [Setting Up Your Machine](#machine) and [Setting Up Your Vantiq](#vantiq).
 
@@ -98,6 +99,7 @@ The Configuration document may look similar to the following example:
             "filePrefix": "eje",
             "fileExtension": "csv",
             "maxLinesInEvent": 200,
+            "skipFirstLine": true,
             "delimiter":",",
             "processNullValues":false,
                 "schema": {
@@ -121,6 +123,7 @@ The Configuration document may look similar to the following example:
 *   **filePrefix**: Optional. The prefix of the file pattern to look for, if not set any file name will be accepted. 
 *   **fileExtension**: Required. The file extension of the files to be processed 
 *   **maxLinesInEvent**: Required. Determine how many lines from the CSV file will be sent in a single message to the server. Depending on the number of the lines of the CSV file, a high value might result in messages too large to process efficiently or a memory exception. 
+*   **skipFirstLine**: Optional , skipping first line avoiding processing it when used as header of the csv file. 
 *   **delimiter**: the delimiter to be used when parse the CSV file, default is ",", the system will step over null values which might be in the result of the split operation. 
 *   **processNullValues**: in case of null value ( means two consecutive delimiters in file) determine if 
 the schema filed index should be incremented or not. For example, for the following line _1,,,f_,
@@ -283,6 +286,11 @@ the extension source will send the file in multiple segments,
 with the app will saving those in a type. 
 
 ## Writing CSV Files
+
+It is also possible to have the connector write files. no addtional configuration is needed , the text will be UTF8 and
+the assumption is that the line to write will be manipulated by the server .
+the relevant meta data is injected by the `with` part of the vail select statment. 
+every call create a POST request whose response is a json buffer which describe the result status of the request. 
 
 Creating, appending to or deleting a csv file is done via a **select** statement.
 
