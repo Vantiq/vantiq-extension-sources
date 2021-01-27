@@ -147,7 +147,7 @@ public class TestCSVConfigFixedLength extends TestCSVBase {
     public Map<String, Object> createFixedLengthTestSchemaField(int offset , int length , String type,String charSet,boolean reversed) {
         Map<String, Object> fieldAttr = createFixedLengthTestSchemaField(offset,length,type);
         fieldAttr.put("charset", charSet);
-        fieldAttr.put("reveresed", reversed);
+        fieldAttr.put("reversed", reversed);
       return fieldAttr;
     }
 /*

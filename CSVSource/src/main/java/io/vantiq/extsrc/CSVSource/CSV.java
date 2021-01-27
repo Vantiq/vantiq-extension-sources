@@ -88,7 +88,7 @@ import io.vantiq.extsrc.CSVSource.exception.VantiqCSVException;
  * 50, "waitBetweenTx": 0, "delimiter": ",", "FileType": "FixedLength",
  * "schema": { "code": { "offset": 0, "length": 13, "type": "string" }, "name":
  * { "offset": 14, "length": 20, "type": "string", "charset": "Cp862",
- * "reveresed": true }, "weighted": { "offset": 35, "length": 1, "type":
+ * "reversed": true }, "weighted": { "offset": 35, "length": 1, "type":
  * "string" }, "price": { "offset": 37, "length": 6, "type": "string" }, "cost":
  * { "offset": 44, "length": 6, "type": "string" }, "department": { "offset":
  * 51, "length": 3, "type": "string" } } },
@@ -165,7 +165,7 @@ public class CSV {
         fileFilter = (dir, name) -> {
             String lowercaseName = name.toLowerCase();
 
-            return lowercaseName.endsWith(extension) && lowercaseName.startsWith(filePrefix);
+            return lowercaseName.endsWith(extension.toLowerCase()) && lowercaseName.startsWith(filePrefix.toLowerCase());
         };
 
         executionPool = new ThreadPoolExecutor(maxActiveTasks, maxActiveTasks, 0l, TimeUnit.MILLISECONDS,
@@ -236,7 +236,7 @@ public class CSV {
                     try {
                         String configType = (String) config.get("FileType");
 
-                        if (configType.toLowerCase().equals("fixedlength")) {
+                        if (configType != null && configType.toLowerCase().equals("fixedlength")) {
                             CSVReader.executeFixedRecord(fullFileName, config, oClient);
                         } else {
                             CSVReader.execute(fullFileName, config, oClient);
@@ -394,8 +394,8 @@ public class CSV {
 
                 for (int i = 0; i < content.size(); i++) {
 
-                    String line = (String) content.get(0).get("text");
-                    bw.write(line);
+                    String line = (String) content.get(i).get("text");
+                    bw.write(line);//.getBytes("Cp862")
                     bw.newLine();
                 }
 

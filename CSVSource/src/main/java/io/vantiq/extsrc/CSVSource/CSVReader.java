@@ -141,10 +141,10 @@ public class CSVReader {
 
         int MaxLinesInEvent = (int) config.get(MAX_LINES_IN_EVENT);
 
-        int SleepBetweenPackets = 0 ;
+        int SleepBetweenPackets = 0;
         if (config.get("waitBetweenTx") != null)
-          SleepBetweenPackets = (int) config.get("waitBetweenTx");
-          
+            SleepBetweenPackets = (int) config.get("waitBetweenTx");
+
         ArrayList<Map<String, String>> file = new ArrayList<Map<String, String>>();
 
         try (RandomAccessFile f = new RandomAccessFile(csvFile, "r")) {
@@ -172,7 +172,7 @@ public class CSVReader {
                         t = new String(tempBuffer, o.offset, o.length).trim();
                     }
 
-                    if (o.reveresed) {
+                    if (o.reversed) {
                         StringBuilder sb = new StringBuilder();
                         sb.append(t);
                         sb = sb.reverse();
@@ -239,6 +239,11 @@ public class CSVReader {
             processNullValues = Boolean.parseBoolean(config.get("processNullValues").toString());
         }
 
+        boolean skipFirstLine = false;
+        if (config.get("skipFirstLine") != null) {
+            skipFirstLine = Boolean.parseBoolean(config.get("skipFirstLine").toString());
+        }
+
         int MaxLinesInEvent = (int) config.get(MAX_LINES_IN_EVENT);
         ArrayList<Map<String, String>> file = new ArrayList<Map<String, String>>();
 
@@ -246,31 +251,40 @@ public class CSVReader {
             numOfRecords = 0;
             while ((line = br.readLine()) != null) {
 
-                // use comma as separator
-                String[] values = line.split(delimiter);
-                Map<String, String> lineValues = new HashMap<String, String>();
+                if (!skipFirstLine) {
+                    // use comma as separator
+                    String[] values = line.split(delimiter);
+                    Map<String, String> lineValues = new HashMap<String, String>();
 
-                int schemaFieldIndex = 0;
-                for (int i = 0; i < values.length; i++) {
-                    if (values[i].length() != 0) {
-                        String currField = setFieldName(schemaFieldIndex, schema);
-                        lineValues.put(currField, values[i]);
-                        schemaFieldIndex++;
-                    } else if (processNullValues) {
-                        schemaFieldIndex++;
+                    int schemaFieldIndex = 0;
+                    for (int i = 0; i < values.length; i++) {
+                        if (values[i].length() != 0) {
+                            String currField = setFieldName(schemaFieldIndex, schema);
+                            lineValues.put(currField, values[i]);
+                            schemaFieldIndex++;
+                        } else if (processNullValues) {
+                            schemaFieldIndex++;
+                        }
                     }
-                }
 
-                file.add(lineValues);
-                numOfRecords++;
+                    file.add(lineValues);
+                    numOfRecords++;
 
-                if (file.size() >= MaxLinesInEvent) {
-                    sendNotification(csvFile, packetIndex, file, oClient);
-                    file = new ArrayList<Map<String, String>>();
-                    packetIndex++;
+                    if (file.size() >= MaxLinesInEvent) {
+                        log.info("TX Packet {} Size {} Total num of Records {}", packetIndex, MaxLinesInEvent,
+                                numOfRecords);
+                        sendNotification(csvFile, packetIndex, file, oClient);
+                        file = new ArrayList<Map<String, String>>();
+                        packetIndex++;
+                    }
+                } else {
+                    skipFirstLine = false;
                 }
             }
             if (file.size() > 0) {
+                log.info("TX Last Packet Packet {} Size {} Total num of Records {}", packetIndex, MaxLinesInEvent,
+                        numOfRecords);
+
                 sendNotification(csvFile, packetIndex, file, oClient);
             }
             return file;

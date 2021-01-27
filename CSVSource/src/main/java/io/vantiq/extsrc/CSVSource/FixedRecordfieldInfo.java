@@ -7,7 +7,7 @@ public class FixedRecordfieldInfo {
     int length ; 
     String type ; 
     String charSet;
-    boolean reveresed ; 
+    boolean reversed ; 
 
 
     public static FixedRecordfieldInfo Create(Map<String,String> field){
@@ -21,11 +21,11 @@ public class FixedRecordfieldInfo {
 
 
         o.charSet = field.get("charset") ;
-        Object v3 = field.get("reveresed") ;
+        Object v3 = field.get("reversed") ;
         if (v3 != null) {
-            o.reveresed = Boolean.parseBoolean(v3.toString());
+            o.reversed = Boolean.parseBoolean(v3.toString());
         } else {
-            o.reveresed = false; 
+            o.reversed = false; 
         }
         
         return o ; 
