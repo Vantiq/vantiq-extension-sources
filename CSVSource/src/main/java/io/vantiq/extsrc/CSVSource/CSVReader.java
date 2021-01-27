@@ -25,7 +25,7 @@ import io.vantiq.extjsdk.ExtensionWebSocketClient;
 
 /**
  * Class responsible for the conversion of a line to a relevant json buffer .
- * its assign the name of the json attributes based on the schema object by
+ * It assigns the name of the json attributes based on the schema object by
  * compering the offset of the field in the line to the value of the schema
  * field attributes name ( field0 , field1 etc). if it doesn't find any match it
  * just used those default vakues as the attribute name in the new jsn buffer .
@@ -66,7 +66,7 @@ public class CSVReader {
      * the field in the line in case no match it used the default attribute "FieldX"
      * where X is the field index
      * 
-     * @param i      - the current index to be assigend
+     * @param i - the current index to be assigned
      * @param schema = schema object
      * @return
      */
