@@ -17,7 +17,7 @@ In addition to handling delimiter-separated fields, this connector can extract f
 This is configured as described below.
 added , if not exists, works as delimited format, value must be  `"FileType": "FixedLength"` for working in the fixed length mode
 
-It is also possible to have the connector write files.This operation is described below.
+It is also possible to have the connector write files. This operation is described below.
  no addtional configuration is needed , the text will be UTF8 and
 the assumption is that the line to write will be manipulated by the server .
 the relevant meta data is injected by the `with` part of the vail select statment. 
@@ -155,7 +155,7 @@ each attribute is defined as follows:
 * **length** : the size of the field
 * **type** : the type of the field : string, int, etc 
 * **charset** : optional -- the character set charset to use when reading the field. 
-* **reversed** : Optional, reversed the attribute value , mainly for support RTL names.
+* **reversed** : Optional, reverse the attribute value , mainly for support RTL names.
 If `true`, this causes the String attribute read from the file to be reversed.
 So _value_ would become _eulav_ if `reversed` is set to `true`.
 
@@ -287,10 +287,10 @@ with the app will saving those in a type.
 
 ## Writing CSV Files
 
-It is also possible to have the connector write files. no addtional configuration is needed , the text will be UTF8 and
-the assumption is that the line to write will be manipulated by the server .
-the relevant meta data is injected by the `with` part of the vail select statment. 
-every call create a POST request whose response is a json buffer which describe the result status of the request. 
+It is also possible to have the connector write files. No addtional configuration is needed, the text will be UTF8 and
+the assumption is that the line to write is produced by the server.
+The VAIL SELECT statement is used to perform this work
+The value returned by the VAIL SELECT statement describes the status of the operation.
 
 Creating, appending to or deleting a csv file is done via a **select** statement.
 
@@ -323,14 +323,14 @@ For all select statements, a response will be returned with the following struct
    {
       "message": "File Appended Succeesfully",
       "value": "c:\\tmp\\output.txt",
-      "code": "0"
+      "code": "io.vantiq.extsrc.csvsource.sucess"
    }
 ```
 code table is
-io.vantiq.csvsource.success - success .
-io.vantiq.csvsource.fileexist - File already exists
-io.vantiq.csvsource.nofolder - Folder does not exist 
-io.vantiq.csvsource.nofile - File does not exist 
+io.vantiq.extsrc.csvsource.success - success .
+io.vantiq.extsrc.csvsource.fileexists - File already exists
+io.vantiq.extsrc.csvsource.nofolder - Folder does not exist 
+io.vantiq.extsrc.csvsource.nofile - File does not exist 
 
 ## Error Messages
 

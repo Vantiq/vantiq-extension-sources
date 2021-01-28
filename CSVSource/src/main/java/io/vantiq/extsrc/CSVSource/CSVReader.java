@@ -26,12 +26,12 @@ import io.vantiq.extjsdk.ExtensionWebSocketClient;
 /**
  * Class responsible for the conversion of a line to a relevant json buffer .
  * It assigns the name of the json attributes based on the schema object by
- * compering the offset of the field in the line to the value of the schema
- * field attributes name ( field0 , field1 etc). if it doesn't find any match it
- * just used those default vakues as the attribute name in the new jsn buffer .
+ * comparing the offset of the field in the line to the value of the schema
+ * field attributes name ( field0, field1, etc). if it doesn't find any match
+ *     (use those default values as the attribute name in the new VAIL object).
  * 
- * each file contnet can be sent to Vatiq using multiple messages , based on the
- * numLinesInEvent
+ * Each file's content can be sent to Vantiq using multiple messages, based on
+ * `numLinesInEvent`
  */
 public class CSVReader {
     private static final String MAX_LINES_IN_EVENT = "maxLinesInEvent";
@@ -113,9 +113,9 @@ public class CSVReader {
     }
 
     /**
-     * Responsible for reading records from the file and converting it events to
-     * be sent to server. Each line contains fixed record and then, based on the
-     * schema object, determine the attribute name.
+     * Responsible for reading records from the file and converting to events to
+     * be sent to server. Each record is a fixed record and, based on the
+     * schema object, we extract the field.
      * 
      * @param csvFile
      * @param config
