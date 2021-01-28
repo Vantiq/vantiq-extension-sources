@@ -323,7 +323,7 @@ For all select statements, a response will be returned with the following struct
    {
       "message": "File Appended Succeesfully",
       "value": "c:\\tmp\\output.txt",
-      "code": "io.vantiq.extsrc.csvsource.sucess"
+      "code": "io.vantiq.extsrc.csvsource.success"
    }
 ```
 code table is

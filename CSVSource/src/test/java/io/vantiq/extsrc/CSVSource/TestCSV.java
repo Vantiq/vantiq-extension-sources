@@ -68,13 +68,13 @@ public class TestCSV extends TestCSVBase {
             f.delete(); // ensore the file not exists 
 
             HashMap[] response = csv.processCreate(message);
-            assertTrue("Action wasn't successful", response[0].get("code").equals("0"));
+            assertTrue("Action wasn't successful", response[0].get("code").equals("io.vantiq.extsrc.csvsource.success"));
 
             response = csv.processAppend(message);
-            assertTrue("Action wasn't successfull", response[0].get("code").equals("0"));
+            assertTrue("Action wasn't successfull", response[0].get("code").equals("io.vantiq.extsrc.csvsource.success"));
 
             response = csv.processDelete(message);
-            assertTrue("Action wasn't successfull", response[0].get("code").equals("0"));
+            assertTrue("Action wasn't successfull", response[0].get("code").equals("io.vantiq.extsrc.csvsource.success"));
 
         } catch (VantiqCSVException ex) {
             assertFalse("Exception",true);
@@ -91,16 +91,16 @@ public class TestCSV extends TestCSVBase {
             f.delete(); // ensore the file not exists 
 
             HashMap[] response = csv.processAppend(message);
-            assertTrue("Action wasn't successfull", response[0].get("code").equals("3"));
+            assertTrue("Action wasn't successfull", response[0].get("code").equals("io.vantiq.extsrc.csvsource.nofile"));
 
             response = csv.processDelete(message);
-            assertTrue("Action wasn't successfull", response[0].get("code").equals("3"));
+            assertTrue("Action wasn't successfull", response[0].get("code").equals("io.vantiq.extsrc.csvsource.nofile"));
 
             response = csv.processCreate(message);
-            assertTrue("Action wasn't successfull", response[0].get("code").equals("0"));
+            assertTrue("Action wasn't successfull", response[0].get("code").equals("io.vantiq.extsrc.csvsource.success"));
 
             response = csv.processCreate(message);
-            assertTrue("Action wasn't successfull", response[0].get("code").equals("1"));
+            assertTrue("Action wasn't successfull", response[0].get("code").equals("io.vantiq.extsrc.csvsource.fileexists"));
 
 
         } catch (Exception ex) {
