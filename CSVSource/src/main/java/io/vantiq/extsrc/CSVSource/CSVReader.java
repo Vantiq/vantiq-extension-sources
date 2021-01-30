@@ -9,8 +9,10 @@ package io.vantiq.extsrc.CSVSource;
 
 import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileReader;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.RandomAccessFile;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -24,11 +26,11 @@ import org.slf4j.LoggerFactory;
 import io.vantiq.extjsdk.ExtensionWebSocketClient;
 
 /**
- * Class responsible for the conversion of a line to a relevant json buffer .
- * It assigns the name of the json attributes based on the schema object by
+ * Class responsible for the conversion of a line to a relevant json buffer . It
+ * assigns the name of the json attributes based on the schema object by
  * comparing the offset of the field in the line to the value of the schema
  * field attributes name ( field0, field1, etc). if it doesn't find any match
- *     (use those default values as the attribute name in the new VAIL object).
+ * (use those default values as the attribute name in the new VAIL object).
  * 
  * Each file's content can be sent to Vantiq using multiple messages, based on
  * `numLinesInEvent`
@@ -66,7 +68,7 @@ public class CSVReader {
      * the field in the line in case no match it used the default attribute "FieldX"
      * where X is the field index
      * 
-     * @param i - the current index to be assigned
+     * @param i      - the current index to be assigned
      * @param schema = schema object
      * @return
      */
@@ -113,9 +115,9 @@ public class CSVReader {
     }
 
     /**
-     * Responsible for reading records from the file and converting to events to
-     * be sent to server. Each record is a fixed record and, based on the
-     * schema object, we extract the field.
+     * Responsible for reading records from the file and converting to events to be
+     * sent to server. Each record is a fixed record and, based on the schema
+     * object, we extract the field.
      * 
      * @param csvFile
      * @param config
@@ -137,7 +139,10 @@ public class CSVReader {
         }
 
         recordMetaData = fixedRecord(schema);
+
         int recordSize = fixedRecordLength(recordMetaData);
+        if (config.get("fixedRecordSize") != null)
+            recordSize = (int) config.get("fixedRecordSize");
 
         int MaxLinesInEvent = (int) config.get(MAX_LINES_IN_EVENT);
 
@@ -146,20 +151,12 @@ public class CSVReader {
             SleepBetweenPackets = (int) config.get("waitBetweenTx");
 
         ArrayList<Map<String, String>> file = new ArrayList<Map<String, String>>();
+        Set<String> fieldList = recordMetaData.keySet();
 
-        try (RandomAccessFile f = new RandomAccessFile(csvFile, "r")) {
+        try (InputStream inputStream = new FileInputStream(csvFile)) {
             numOfRecords = 0;
             byte[] tempBuffer = new byte[recordSize];
-            long fl = f.length();
-            long currOffset = 0;
-
-            Set<String> fieldList = recordMetaData.keySet();
-
-            while (currOffset < fl) {
-                f.read(tempBuffer);
-
-                currOffset += recordSize;
-
+            while (inputStream.read(tempBuffer) != -1) {
                 Map<String, String> lineValues = new HashMap<String, String>();
 
                 for (String key : fieldList) {
@@ -185,7 +182,6 @@ public class CSVReader {
                 file.add(lineValues);
 
                 numOfRecords++;
-                f.seek(recordSize * numOfRecords);
 
                 if (file.size() >= MaxLinesInEvent) {
                     log.info("TX Packet {} Size {} Total num of Records {}", packetIndex, MaxLinesInEvent,
@@ -195,6 +191,7 @@ public class CSVReader {
                     file = new ArrayList<Map<String, String>>();
                     packetIndex++;
                 }
+
             }
             if (file.size() > 0) {
                 log.info("TX Last Packet Packet {} Size {} Total num of Records {}", packetIndex, MaxLinesInEvent,
@@ -202,8 +199,10 @@ public class CSVReader {
                 sendNotification(csvFile, packetIndex, file, oClient);
             }
             return file;
-        } catch (IOException e) {
-            e.printStackTrace();
+
+        } catch (IOException ex) {
+            ex.printStackTrace();
+            log.error("executeFixedRecord - {}",ex);
         }
         return null;
     }

@@ -139,9 +139,6 @@ public class TestCSVReaderFixedLength extends TestCSVConfigFixedLength {
         }
     }
 
-
-
-
     // ================================================= Helper functions
     // =================================================
     void CreateFileForTest(String fileName, String content) {

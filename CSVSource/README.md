@@ -15,13 +15,8 @@ In this way, in cases where the extension is not running during file updates, it
 
 In addition to handling delimiter-separated fields, this connector can extract fields from fixed positions in the record.
 This is configured as described below.
-added , if not exists, works as delimited format, value must be  `"FileType": "FixedLength"` for working in the fixed length mode
 
 It is also possible to have the connector write files. This operation is described below.
- no addtional configuration is needed , the text will be UTF8 and
-the assumption is that the line to write will be manipulated by the server .
-the relevant meta data is injected by the `with` part of the vail select statment. 
-every call create a POST request whose response is a json buffer which describe the result status of the request. 
 
 The documentation has been split into two parts, [Setting Up Your Machine](#machine) and [Setting Up Your Vantiq](#vantiq).
 
@@ -128,6 +123,9 @@ The Configuration document may look similar to the following example:
 *   **processNullValues**: in case of null value ( means two consecutive delimiters in file) determine if 
 the schema filed index should be incremented or not. For example, for the following line _1,,,f_,
 determine if *field1* is "f" or *field3* is "f". 
+*   **fixedRecordSize**: Optional , fixed length record size , default value is the calculated value based on the schema fields. 
+
+
 
 ### Schema Configuration
 Schema can be used to control the field names on the uploaded event. If no name is assigned, 'fieldX' will be used where 'X' is the index of the field in the line.  For example field0, field1, etc. 
@@ -143,7 +141,7 @@ this can save conversion processing on the server.
 ### Fixed Length Records
 CSV Reader supports extracting fields based on fixed length positions in each record.
 To specify extraction based on fixed positions, specificities the configuration 
-key `FileType`, with the value: `FixedLength`
+key `fileType`, with the value: `FixedLength`
 If this key is missing, it will default to `DelimitedFields`.
 
 The schema for a `FixedLength` file type is as follows:
@@ -169,7 +167,6 @@ the configuration should be similar to
       "fileExtension": "txt",
       "maxLinesInEvent": 50,
       "waitBetweenTx": 10,
-      "delimiter": ",",
       "FileType": "FixedLength",
       "schema": {
          "code": {

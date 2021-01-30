@@ -85,7 +85,7 @@ import io.vantiq.extsrc.CSVSource.exception.VantiqCSVException;
  * Later version added support for fixed lenght record where schema
  * configuration is similar to above "csvConfig": { "fileFolderPath":
  * "d:/tmp/csv", "filePrefix": "plu", "fileExtension": "txt", "maxLinesInEvent":
- * 50, "waitBetweenTx": 0, "delimiter": ",", "FileType": "FixedLength",
+ * 50, "waitBetweenTx": 0, "delimiter": ",", "fileType": "FixedLength",
  * "schema": { "code": { "offset": 0, "length": 13, "type": "string" }, "name":
  * { "offset": 14, "length": 20, "type": "string", "charset": "Cp862",
  * "reversed": true }, "weighted": { "offset": 35, "length": 1, "type":
@@ -234,7 +234,7 @@ public class CSV {
                 public void run() {
                     log.info("start executing {}", fullFileName);
                     try {
-                        String configType = (String) config.get("FileType");
+                        String configType = (String) config.get("fileType");
 
                         if (configType != null && configType.toLowerCase().equals("fixedlength")) {
                             CSVReader.executeFixedRecord(fullFileName, config, oClient);
@@ -381,7 +381,7 @@ public class CSV {
             File file = new File(fullFilePath);
             if (file.exists()) {
                 // file already created.
-                rsArray = CreateResponse("io.vantiq.extsrc.csvsource.fileexist", "File Already Exists", file.toString());
+                rsArray = CreateResponse("io.vantiq.extsrc.csvsource.fileexists", "File Already Exists", file.toString());
             } else {
                 file.createNewFile();
 
