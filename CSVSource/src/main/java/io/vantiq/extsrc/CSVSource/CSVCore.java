@@ -201,7 +201,7 @@ public class CSVCore {
             } else {
                 log.error("Query could not be executed because query was not a String.");
                 client.sendQueryError(replyAddress, this.getClass().getName() + ".queryNotString",
-                        "The Query Request could not be executed because the query property is " + "not a string.",
+                        "The Query Request could not be executed because the query property is not a string.",
                         null);
             }
         } catch (VantiqCSVException e) {

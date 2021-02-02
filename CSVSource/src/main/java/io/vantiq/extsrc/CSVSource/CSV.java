@@ -82,7 +82,7 @@ import io.vantiq.extsrc.CSVSource.exception.VantiqCSVException;
  * </pre>
  *
  * 
- * Later version added support for fixed lenght record where schema
+ * Later version added support for fixed length records where schema
  * configuration is similar to above "csvConfig": { "fileFolderPath":
  * "d:/tmp/csv", "filePrefix": "plu", "fileExtension": "txt", "maxLinesInEvent":
  * 50, "waitBetweenTx": 10, "FileType": "FixedLength", "schema": { "code": {
@@ -102,7 +102,7 @@ public class CSV {
     Map<String, Object> config;
     Map<String, Object> options;
 
-    // Control of thread should continue to work , set to false in Stop.
+    // Control of thread should continue to work, set to false in Stop.
     boolean bContinue = true;
 
     // Components used
@@ -126,7 +126,7 @@ public class CSV {
     private static final String MAX_QUEUED_TASKS_LABEL = "maxQueuedTasks";
 
     /**
-     * Create resource which will requiered by the extension activity
+     * Create resource which will required by the extension activity
      */
     void prepareConfigurationData() {
         extension = "csv";
@@ -176,8 +176,8 @@ public class CSV {
     }
 
     /**
-     * function set the watcher service on the folder where files created . its olso
-     * clean existing files which havnt been processed yet .
+     * function set the watcher service on the folder where files created. It also
+     * cleans existing files which haven't been processed yet .
      * 
      * @param oClient
      * @param fileFolderPath
@@ -203,7 +203,7 @@ public class CSV {
 
             new Thread(() -> processThread(fileFolderPath)).start();
 
-            // working on files already exists in folder.
+            // working on files already that exist in folder.
             if (options.get("processExistingFiles") != null) {
                 Object processExistingFiles = options.get("processExistingFiles");
                 if (processExistingFiles instanceof Boolean)
@@ -219,12 +219,12 @@ public class CSV {
     }
 
     /**
-     * Handling accepted file , work only in case the file name is match the file
+     * Handling accepted file, work only in case the file name is match the file
      * name pattern . the input file can be renamed and stay in the folder (usually
      * for debug purposes) or can be deleted .
      * 
      * @param fileFolderPath - the path where the file is ocated
-     * @param filename       - the file name to be procesed.
+     * @param filename - the file name to be procesed.
      */
     void executeInPool(String fileFolderPath, String filename) {
         String fullFileName = String.format("%s/%s", fileFolderPath, filename);
@@ -482,7 +482,7 @@ public class CSV {
     }
 
     /**
-     * function hanled the watcher service notifications. currently , only new
+     * Function handles the watcher service notifications. Currently, only new
      * entries are being handled , however , it logs rename files as well without
      * any processing , just to understand if it will be requiered in the future
      *

@@ -38,7 +38,7 @@ public class CSVHandleConfiguration extends Handler<ExtensionServiceMessage> {
     Logger log;
     String sourceName;
     CSVCore source;
-    boolean configComplete = false; // Used for autotestign support.
+    boolean configComplete = false; // Used for autotesting support.
     boolean asynchronousProcessing = false;
 
     Handler<ExtensionServiceMessage> queryHandler;

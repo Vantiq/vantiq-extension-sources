@@ -139,8 +139,8 @@ this can save conversion processing on the server.
 
 ### Fixed Length Records
 CSV Reader supports extracting fields based on fixed length positions in each record.
-To specify extraction based on fixed positions, specificities the configuration 
-key `fileType`, with the value: `FixedLength`
+To specify extraction based on fixed positions, set the configuration 
+key `fileType` to the value: `FixedLength`
 If this key is missing, it will default to `DelimitedFields`.
 
 The schema for a `FixedLength` file type is as follows:
