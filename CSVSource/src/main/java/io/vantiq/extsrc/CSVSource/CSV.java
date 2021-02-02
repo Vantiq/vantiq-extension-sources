@@ -37,11 +37,6 @@ import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
-import javax.annotation.processing.Filer;
-
-import com.fasterxml.jackson.databind.ser.std.RawSerializer;
-import com.google.common.io.Files;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -124,6 +119,12 @@ public class CSV {
 
     private static final String MAX_ACTIVE_TASKS_LABEL = "maxActiveTasks";
     private static final String MAX_QUEUED_TASKS_LABEL = "maxQueuedTasks";
+
+    private static final String BODY_KEYWORD = "body";
+    private static final String PATH_KEYWORD = "path";
+    private static final String FILE_KEYWORD = "file";
+    private static final String CONTENT_KEYWORD = "content";
+    private static final String TEXT_KEYWORD = "text";
 
     /**
      * Create resource which will required by the extension activity
@@ -321,21 +322,21 @@ public class CSV {
      */
     public HashMap[] processDelete(ExtensionServiceMessage message) throws VantiqCSVException {
         HashMap[] rsArray = null;
-        String checkedAttribute = "Body";
+        String checkedAttribute = BODY_KEYWORD;
         String pathStr = "";
         String fileStr = "";
         try {
             Map<String, ?> request = (Map<String, ?>) message.getObject();
-            Map<String, Object> body = (Map<String, Object>) request.get("body");
-            checkedAttribute = "path";
-            pathStr = (String) body.get("path");
+            Map<String, Object> body = (Map<String, Object>) request.get(BODY_KEYWORD);
+            checkedAttribute = PATH_KEYWORD;
+            pathStr = (String) body.get(PATH_KEYWORD);
             Path path = Paths.get(pathStr);
             if (!path.toFile().exists()) {
                 rsArray = CreateResponse("io.vantiq.extsrc.csvsource.nofolder", "Folder Not Exists", pathStr);
             }
 
-            checkedAttribute = "file";
-            fileStr = (String) body.get("file");
+            checkedAttribute = FILE_KEYWORD;
+            fileStr = (String) body.get(FILE_KEYWORD);
             String fullFilePath = path.toString() + "\\" + fileStr;
             File file = new File(fullFilePath);
             if (file.exists()) {
@@ -366,22 +367,22 @@ public class CSV {
      */
     public HashMap[] processCreate(ExtensionServiceMessage message) throws VantiqCSVException {
         HashMap[] rsArray = null;
-        String checkedAttribute = "Body";
+        String checkedAttribute = BODY_KEYWORD;
         String pathStr = "";
         String fileStr = "";
         try {
             Map<String, ?> request = (Map<String, ?>) message.getObject();
-            Map<String, Object> body = (Map<String, Object>) request.get(checkedAttribute);
-            checkedAttribute = "path";
-            pathStr = (String) body.get(checkedAttribute);
+            Map<String, Object> body = (Map<String, Object>) request.get(BODY_KEYWORD);
+            checkedAttribute = PATH_KEYWORD;
+            pathStr = (String) body.get(PATH_KEYWORD);
             Path path = Paths.get(pathStr);
             if (!path.toFile().exists()) {
                 java.nio.file.Files.createDirectories(path);
                 log.info("Folder created: {}", path.toString());
             }
 
-            checkedAttribute = "file";
-            fileStr = (String) body.get(checkedAttribute);
+            checkedAttribute = FILE_KEYWORD;
+            fileStr = (String) body.get(FILE_KEYWORD);
             String fullFilePath = path.toString() + "\\" + fileStr;
             File file = new File(fullFilePath);
             if (file.exists()) {
@@ -395,12 +396,12 @@ public class CSV {
 
                 BufferedWriter bw = new BufferedWriter(new OutputStreamWriter(fos));
 
-                checkedAttribute = "content";
-                List<Map<String, Object>> content = (List<Map<String, Object>>) body.get(checkedAttribute);
+                checkedAttribute = CONTENT_KEYWORD;
+                List<Map<String, Object>> content = (List<Map<String, Object>>) body.get(CONTENT_KEYWORD);
 
                 for (int i = 0; i < content.size(); i++) {
 
-                    String line = (String) content.get(i).get("text");
+                    String line = (String) content.get(i).get(TEXT_KEYWORD);
                     bw.write(line);
                     bw.newLine();
                 }
@@ -429,34 +430,34 @@ public class CSV {
      */
     public HashMap[] processAppend(ExtensionServiceMessage message) throws VantiqCSVException {
         HashMap[] rsArray = null;
-        String checkedAttribute = "Body";
+        String checkedAttribute = BODY_KEYWORD;
         String pathStr = "";
         String fileStr = "";
 
         try {
             Map<String, ?> request = (Map<String, ?>) message.getObject();
             Map<String, Object> body = (Map<String, Object>) request.get(checkedAttribute);
-            checkedAttribute = "path";
-            pathStr = (String) body.get(checkedAttribute);
+            checkedAttribute = PATH_KEYWORD;
+            pathStr = (String) body.get(PATH_KEYWORD);
             Path path = Paths.get(pathStr);
             if (!path.toFile().exists()) {
                 rsArray = CreateResponse("io.vantiq.extsrc.csvsource.nofolder", "Folder Not Exists", pathStr);
             }
 
-            checkedAttribute = "file";
-            fileStr = (String) body.get(checkedAttribute);
+            checkedAttribute = FILE_KEYWORD;
+            fileStr = (String) body.get(FILE_KEYWORD);
             String fullFilePath = path.toString() + "\\" + fileStr;
             File file = new File(fullFilePath);
             if (file.exists()) {
                 FileWriter fw = new FileWriter(file, true);
                 BufferedWriter bw = new BufferedWriter(fw);
 
-                checkedAttribute = "content";
-                List<Map<String, Object>> content = (List<Map<String, Object>>) body.get(checkedAttribute);
+                checkedAttribute = CONTENT_KEYWORD;
+                List<Map<String, Object>> content = (List<Map<String, Object>>) body.get(CONTENT_KEYWORD);
 
                 for (int i = 0; i < content.size(); i++) {
 
-                    String line = (String) content.get(0).get("text");
+                    String line = (String) content.get(0).get(TEXT_KEYWORD);
                     bw.append(line);
                     bw.newLine();
                 }

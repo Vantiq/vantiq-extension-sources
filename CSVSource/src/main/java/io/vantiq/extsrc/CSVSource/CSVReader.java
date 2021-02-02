@@ -24,6 +24,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import io.vantiq.extjsdk.ExtensionWebSocketClient;
+import io.vantiq.extsrc.CSVSource.exception.VantiqCSVException;
 
 /**
  * Class responsible for the conversion of a line to a relevant json buffer . It
@@ -124,10 +125,11 @@ public class CSVReader {
      * @param oClient
      * @return
      * @throws InterruptedException
+     * @throws VantiqCSVException
      */
     @SuppressWarnings("unchecked")
     static public ArrayList<Map<String, String>> executeFixedRecord(String csvFile, Map<String, Object> config,
-            ExtensionWebSocketClient oClient) throws InterruptedException {
+            ExtensionWebSocketClient oClient) throws InterruptedException, VantiqCSVException {
 
         int numOfRecords; // This is the total number of records/lines processed from the file.
         int packetIndex = 0;
@@ -140,15 +142,32 @@ public class CSVReader {
 
         recordMetaData = fixedRecord(schema);
 
-        int recordSize = fixedRecordLength(recordMetaData);
+        int calculatedRecordSize = fixedRecordLength(recordMetaData);
+        int recordSize = 0;
         if (config.get("fixedRecordSize") != null) {
             recordSize = (int) config.get("fixedRecordSize");
+            if (calculatedRecordSize > recordSize) {
+                String s = String.format("Calculated Record length (%d) is higher then fixedRecord size value (%d)",
+                calculatedRecordSize, recordSize);
+                log.error(s);
+                throw new VantiqCSVException(
+                        String.format("Calculated Record length (%d) is higher then fixedRecord size value (%d)",
+                                calculatedRecordSize, recordSize));
+            }
+
+        } else {
+            recordSize = calculatedRecordSize;
+        }
+
+        boolean extendedLogging = false;
+        if (config.get("extendedLogging") != null) {
+            extendedLogging = Boolean.parseBoolean(config.get("extendedLogging").toString());
         }
 
         int MaxLinesInEvent = (int) config.get(MAX_LINES_IN_EVENT);
 
         int SleepBetweenPackets = 0;
-        if (config.get("waitBetweenTx") != null){
+        if (config.get("waitBetweenTx") != null) {
             SleepBetweenPackets = (int) config.get("waitBetweenTx");
         }
 
@@ -186,10 +205,12 @@ public class CSVReader {
                 numOfRecords++;
 
                 if (file.size() >= MaxLinesInEvent) {
-                    log.info("TX Packet {} Size {} Total num of Records {}", packetIndex, MaxLinesInEvent,
-                            numOfRecords);
+                    if (extendedLogging) {
+                        log.info("TX Packet {} Size {} Total num of Records {}", packetIndex, MaxLinesInEvent,
+                                numOfRecords);
+                    }
                     sendNotification(csvFile, packetIndex, file, oClient);
-                    if (SleepBetweenPackets > 0){
+                    if (SleepBetweenPackets > 0) {
                         Thread.sleep(SleepBetweenPackets);
                     }
                     file = new ArrayList<Map<String, String>>();
@@ -198,14 +219,16 @@ public class CSVReader {
 
             }
             if (file.size() > 0) {
-                log.info("TX Last Packet Packet {} Size {} Total num of Records {}", packetIndex, MaxLinesInEvent,
-                        numOfRecords);
+                if (extendedLogging) {
+                    log.info("TX Last Packet Packet {} Size {} Total num of Records {}", packetIndex, MaxLinesInEvent,
+                            numOfRecords);
+                }
                 sendNotification(csvFile, packetIndex, file, oClient);
             }
             return file;
 
         } catch (IOException ex) {
-            log.error("executeFixedRecord - {}",ex);
+            log.error("executeFixedRecord - {}", ex);
         }
         return null;
     }
@@ -230,6 +253,11 @@ public class CSVReader {
 
         if (config.get("schema") != null) {
             schema = (Map<String, String>) config.get("schema");
+        }
+
+        boolean extendedLogging = false;
+        if (config.get("extendedLogging") != null) {
+            extendedLogging = Boolean.parseBoolean(config.get("extendedLogging").toString());
         }
 
         String delimiter = ",";
@@ -273,8 +301,10 @@ public class CSVReader {
                     numOfRecords++;
 
                     if (file.size() >= MaxLinesInEvent) {
-                        log.info("TX Packet {} Size {} Total num of Records {}", packetIndex, MaxLinesInEvent,
-                                numOfRecords);
+                        if (extendedLogging) {
+                            log.info("TX Packet {} Size {} Total num of Records {}", packetIndex, MaxLinesInEvent,
+                                    numOfRecords);
+                        }
                         sendNotification(csvFile, packetIndex, file, oClient);
                         file = new ArrayList<Map<String, String>>();
                         packetIndex++;
@@ -284,8 +314,10 @@ public class CSVReader {
                 }
             }
             if (file.size() > 0) {
-                log.info("TX Last Packet Packet {} Size {} Total num of Records {}", packetIndex, MaxLinesInEvent,
-                        numOfRecords);
+                if (extendedLogging) {
+                    log.info("TX Last Packet Packet {} Size {} Total num of Records {}", packetIndex, MaxLinesInEvent,
+                            numOfRecords);
+                }
 
                 sendNotification(csvFile, packetIndex, file, oClient);
             }

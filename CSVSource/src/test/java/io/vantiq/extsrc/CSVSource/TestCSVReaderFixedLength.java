@@ -64,8 +64,23 @@ public class TestCSVReaderFixedLength extends TestCSVConfigFixedLength {
                     content.get(0).get("name").equals("432143214321emaNmeti"));
             assertTrue("Unexpected field price in first of line of csv file in array",
                     content.get(0).get("price").equals("100000"));
-        } catch (InterruptedException ex) {
+        } catch (Exception ex) {
             assertTrue("Exception " + ex, false);
+        }
+    }
+
+    @Test
+    public void testIllegalRecordSize() {
+        CreateFileForTest(testFullFilePath, "0000000000006 itemName123412341234 1 100000 200000 01");
+        config.put("fixedRecordSize", 20);
+
+        try {
+
+            ArrayList<Map<String, String>> content = CSVReader.executeFixedRecord(testFullFilePath, config, null);
+            assertTrue("Exception must be raised" , false);
+
+        } catch (Exception ex) {
+            assertTrue("Exception " + ex, true);
         }
     }
 
@@ -110,7 +125,7 @@ public class TestCSVReaderFixedLength extends TestCSVConfigFixedLength {
                     firstSegmentLines.get(0).get("name").equals("432143214321emaNmeti"));
             assertTrue("Unexpected field price in first of line of csv file in array",
                     firstSegmentLines.get(0).get("price").equals("100000"));
-        } catch (InterruptedException ex) {
+        } catch (Exception ex) {
             assertTrue("Exception " + ex, false);
         }
     }
@@ -134,7 +149,7 @@ public class TestCSVReaderFixedLength extends TestCSVConfigFixedLength {
                     content.get(0).get("name").equals("432143214321emaNmeti"));
             assertTrue("Unexpected field price in first of line of csv file in array",
                     content.get(0).get("price").equals("100000"));
-        } catch (InterruptedException ex) {
+        } catch (Exception ex) {
             assertTrue("Exception " + ex, false);
         }
     }

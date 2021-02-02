@@ -96,6 +96,7 @@ The Configuration document may look similar to the following example:
             "maxLinesInEvent": 200,
             "skipFirstLine": true,
             "delimiter":",",
+            "extendedLogging":true,
             "processNullValues":false,
                 "schema": {
                     "field0": "value",
@@ -118,8 +119,9 @@ The Configuration document may look similar to the following example:
 *   **filePrefix**: Optional. The prefix of the file pattern to look for, if not set any file name will be accepted. 
 *   **fileExtension**: Required. The file extension of the files to be processed 
 *   **maxLinesInEvent**: Required. Determine how many lines from the CSV file will be sent in a single message to the server. Depending on the number of the lines of the CSV file, a high value might result in messages too large to process efficiently or a memory exception. 
-*   **skipFirstLine**: Optional , skipping first line avoiding processing it when used as header of the csv file. 
+*   **skipFirstLine**: Optional, skipping first line avoiding processing it when used as header of the csv file. 
 *   **delimiter**: the delimiter to be used when parse the CSV file, default is ",", the system will step over null values which might be in the result of the split operation. 
+*   **extendedLogging**: Optional, write extended information regardign the nuber of records and the segment distribution that where processed during the process, default value is false. 
 *   **processNullValues**: in case of null value ( means two consecutive delimiters in file) determine if 
 the schema filed index should be incremented or not. For example, for the following line _1,,,f_,
 determine if *field1* is "f" or *field3* is "f". 
@@ -164,6 +166,7 @@ the configuration should be similar to
       "fileFolderPath": "d:/tmp/csv",
       "filePrefix": "plu",
       "fileExtension": "txt",
+      "extendedLogging":true,
       "maxLinesInEvent": 50,
       "waitBetweenTx": 10,
       "FileType": "FixedLength",
