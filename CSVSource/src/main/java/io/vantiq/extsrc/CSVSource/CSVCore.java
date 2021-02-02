@@ -197,18 +197,7 @@ public class CSVCore {
                                         + " not supported.",
                                 null);
                 }
-                /*
-                 * // Check if Query is an update statement, or query statement if
-                 * (queryString.trim().toLowerCase().startsWith(SELECT_STATEMENT_IDENTIFIER)) {
-                 * HashMap[] queryArray = localCsv.processQuery(message);
-                 * sendDataFromQuery(queryArray, message); } else { int data =
-                 * localCsv.processPublish(message);
-                 * log.trace("The returned integer value from Publish Query is the following: ",
-                 * data);
-                 * 
-                 * // Send empty response back client.sendQueryResponse(204, replyAddress, new
-                 * LinkedHashMap<>()); }
-                 */
+
             } else {
                 log.error("Query could not be executed because query was not a String.");
                 client.sendQueryError(replyAddress, this.getClass().getName() + ".queryNotString",
@@ -311,7 +300,7 @@ public class CSVCore {
     }
 
     /**
-     * Closes all resources held by this program 
+     * Closes all resources held by this program
      */
     public void close() {
         if (csv != null) {

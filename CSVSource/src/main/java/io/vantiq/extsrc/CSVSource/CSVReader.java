@@ -141,14 +141,16 @@ public class CSVReader {
         recordMetaData = fixedRecord(schema);
 
         int recordSize = fixedRecordLength(recordMetaData);
-        if (config.get("fixedRecordSize") != null)
+        if (config.get("fixedRecordSize") != null) {
             recordSize = (int) config.get("fixedRecordSize");
+        }
 
         int MaxLinesInEvent = (int) config.get(MAX_LINES_IN_EVENT);
 
         int SleepBetweenPackets = 0;
-        if (config.get("waitBetweenTx") != null)
+        if (config.get("waitBetweenTx") != null){
             SleepBetweenPackets = (int) config.get("waitBetweenTx");
+        }
 
         ArrayList<Map<String, String>> file = new ArrayList<Map<String, String>>();
         Set<String> fieldList = recordMetaData.keySet();
@@ -187,7 +189,9 @@ public class CSVReader {
                     log.info("TX Packet {} Size {} Total num of Records {}", packetIndex, MaxLinesInEvent,
                             numOfRecords);
                     sendNotification(csvFile, packetIndex, file, oClient);
-                    Thread.sleep(SleepBetweenPackets);
+                    if (SleepBetweenPackets > 0){
+                        Thread.sleep(SleepBetweenPackets);
+                    }
                     file = new ArrayList<Map<String, String>>();
                     packetIndex++;
                 }
@@ -201,7 +205,6 @@ public class CSVReader {
             return file;
 
         } catch (IOException ex) {
-            ex.printStackTrace();
             log.error("executeFixedRecord - {}",ex);
         }
         return null;

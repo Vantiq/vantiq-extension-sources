@@ -85,15 +85,16 @@ import io.vantiq.extsrc.CSVSource.exception.VantiqCSVException;
  * Later version added support for fixed lenght record where schema
  * configuration is similar to above "csvConfig": { "fileFolderPath":
  * "d:/tmp/csv", "filePrefix": "plu", "fileExtension": "txt", "maxLinesInEvent":
- * 50, "waitBetweenTx": 0, "delimiter": ",", "fileType": "FixedLength",
- * "schema": { "code": { "offset": 0, "length": 13, "type": "string" }, "name":
- * { "offset": 14, "length": 20, "type": "string", "charset": "Cp862",
- * "reversed": true }, "weighted": { "offset": 35, "length": 1, "type":
- * "string" }, "price": { "offset": 37, "length": 6, "type": "string" }, "cost":
- * { "offset": 44, "length": 6, "type": "string" }, "department": { "offset":
- * 51, "length": 3, "type": "string" } } },
+ * 50, "waitBetweenTx": 10, "FileType": "FixedLength", "schema": { "code": {
+ * "offset": 0, "length": 13, "type": "string" }, "name": { "offset": 14,
+ * "length": 20, "type": "string", "charset": "Cp862", "reversed": true },
+ * "weighted": { "offset": 35, "length": 1, "type": "string" }, "price": {
+ * "offset": 37, "length": 6, "type": "string" }, "cost": { "offset": 44,
+ * "length": 6, "type": "string" }, "department": { "offset": 51, "length": 3,
+ * "type": "string" } } },
  *
  * 
+ * and ability to write, append and delete text files to disk .
  */
 public class CSV {
     Logger log = LoggerFactory.getLogger(this.getClass().getCanonicalName());
@@ -165,7 +166,8 @@ public class CSV {
         fileFilter = (dir, name) -> {
             String lowercaseName = name.toLowerCase();
 
-            return lowercaseName.endsWith(extension.toLowerCase()) && lowercaseName.startsWith(filePrefix.toLowerCase());
+            return lowercaseName.endsWith(extension.toLowerCase())
+                    && lowercaseName.startsWith(filePrefix.toLowerCase());
         };
 
         executionPool = new ThreadPoolExecutor(maxActiveTasks, maxActiveTasks, 0l, TimeUnit.MILLISECONDS,
@@ -279,13 +281,15 @@ public class CSV {
     }
 
     /**
-     * Create standard vantiq respone for the different suceess or failures as part of the select
-     * operations, those are being repliyed to vail. 
+     * Create standard vantiq respone for the different suceess or failures as part
+     * of the select operations, those are being repliyed to vail.
      * 
-     * @param code : number code of the error ( 0 is success otherwise failure)
+     * @param code    : code of the error ( io.vantiq.extsrc.csvsource.success is
+     *                success otherwise failure)
      * @param message : description of the operation results
-     * @param value : the actual artifact the operation was activate on.
-     * @return map which represent the values fo the error , to be sent as Json to the server 
+     * @param value   : the actual artifact the operation was activate on.
+     * @return map which represent the values fo the error , to be sent as Json to
+     *         the server
      */
     HashMap[] CreateResponse(String code, String message, String value) {
         ArrayList<HashMap> rows = new ArrayList<HashMap>();
@@ -298,7 +302,7 @@ public class CSV {
 
         HashMap[] rowsArray = rows.toArray(new HashMap[rows.size()]);
 
-        if (code.equals("0")) {
+        if (code.equals("io.vantiq.extsrc.csvsource.success")) {
             log.info(String.format("Response : %s (%s) code %s", message, value, code));
         } else {
             log.error(String.format("Response : %s (%s) code %s", message, value, code));
@@ -317,26 +321,27 @@ public class CSV {
      */
     public HashMap[] processDelete(ExtensionServiceMessage message) throws VantiqCSVException {
         HashMap[] rsArray = null;
-        String chackedAttribute = "Body";
+        String checkedAttribute = "Body";
         String pathStr = "";
         String fileStr = "";
         try {
             Map<String, ?> request = (Map<String, ?>) message.getObject();
             Map<String, Object> body = (Map<String, Object>) request.get("body");
-            chackedAttribute = "path";
+            checkedAttribute = "path";
             pathStr = (String) body.get("path");
             Path path = Paths.get(pathStr);
             if (!path.toFile().exists()) {
                 rsArray = CreateResponse("io.vantiq.extsrc.csvsource.nofolder", "Folder Not Exists", pathStr);
             }
 
-            chackedAttribute = "file";
+            checkedAttribute = "file";
             fileStr = (String) body.get("file");
             String fullFilePath = path.toString() + "\\" + fileStr;
             File file = new File(fullFilePath);
             if (file.exists()) {
                 file.delete();
-                rsArray = CreateResponse("io.vantiq.extsrc.csvsource.success", "File Deleted Succeesfully", file.toString());
+                rsArray = CreateResponse("io.vantiq.extsrc.csvsource.success", "File Deleted Succeesfully",
+                        file.toString());
                 // file already created.
             } else {
                 rsArray = CreateResponse("io.vantiq.extsrc.csvsource.nofile", "File Not Exists", file.toString());
@@ -344,10 +349,10 @@ public class CSV {
             }
             return rsArray;
         } catch (InvalidPathException exp) {
-            throw new VantiqCSVException(String.format("Path %s not exist", pathStr, exp));
+            throw new VantiqCSVException(String.format("Path %s not exist", pathStr), exp);
         } catch (Exception ex) {
             throw new VantiqCSVException(
-                    String.format("Illegal request structure , attribute %s doesn't exists", chackedAttribute));
+                    String.format("Illegal request structure , attribute %s doesn't exists", checkedAttribute), ex);
         }
     }
 
@@ -361,27 +366,28 @@ public class CSV {
      */
     public HashMap[] processCreate(ExtensionServiceMessage message) throws VantiqCSVException {
         HashMap[] rsArray = null;
-        String chackedAttribute = "Body";
+        String checkedAttribute = "Body";
         String pathStr = "";
         String fileStr = "";
         try {
             Map<String, ?> request = (Map<String, ?>) message.getObject();
-            Map<String, Object> body = (Map<String, Object>) request.get("body");
-            chackedAttribute = "path";
-            pathStr = (String) body.get("path");
+            Map<String, Object> body = (Map<String, Object>) request.get(checkedAttribute);
+            checkedAttribute = "path";
+            pathStr = (String) body.get(checkedAttribute);
             Path path = Paths.get(pathStr);
             if (!path.toFile().exists()) {
                 java.nio.file.Files.createDirectories(path);
                 log.info("Folder created: {}", path.toString());
             }
 
-            chackedAttribute = "file";
-            fileStr = (String) body.get("file");
+            checkedAttribute = "file";
+            fileStr = (String) body.get(checkedAttribute);
             String fullFilePath = path.toString() + "\\" + fileStr;
             File file = new File(fullFilePath);
             if (file.exists()) {
                 // file already created.
-                rsArray = CreateResponse("io.vantiq.extsrc.csvsource.fileexists", "File Already Exists", file.toString());
+                rsArray = CreateResponse("io.vantiq.extsrc.csvsource.fileexists", "File Already Exists",
+                        file.toString());
             } else {
                 file.createNewFile();
 
@@ -389,32 +395,33 @@ public class CSV {
 
                 BufferedWriter bw = new BufferedWriter(new OutputStreamWriter(fos));
 
-                chackedAttribute = "content";
-                List<Map<String, Object>> content = (List<Map<String, Object>>) body.get("content");
+                checkedAttribute = "content";
+                List<Map<String, Object>> content = (List<Map<String, Object>>) body.get(checkedAttribute);
 
                 for (int i = 0; i < content.size(); i++) {
 
                     String line = (String) content.get(i).get("text");
-                    bw.write(line);//.getBytes("Cp862")
+                    bw.write(line);
                     bw.newLine();
                 }
 
                 bw.close();
-                rsArray = CreateResponse("io.vantiq.extsrc.csvsource.success", "File Created Succeesfully", file.toString());
+                rsArray = CreateResponse("io.vantiq.extsrc.csvsource.success", "File Created Succeesfully",
+                        file.toString());
 
             }
             return rsArray;
         } catch (InvalidPathException exp) {
-            throw new VantiqCSVException(String.format("Path %s not exist", pathStr, exp));
+            throw new VantiqCSVException(String.format("Path %s not exist", pathStr), exp);
         } catch (Exception ex) {
             throw new VantiqCSVException(
-                    String.format("Illegal request structure , attribute %s doesn't exists", chackedAttribute));
+                    String.format("Illegal request structure , attribute %s doesn't exists", checkedAttribute), ex);
         }
     }
 
     /**
-     * The method used to execute an append command to an existing file , triggered by a SELECT on
-     * the respective source from VANTIQ.
+     * The method used to execute an append command to an existing file , triggered
+     * by a SELECT on the respective source from VANTIQ.
      * 
      * @param message
      * @return
@@ -422,33 +429,30 @@ public class CSV {
      */
     public HashMap[] processAppend(ExtensionServiceMessage message) throws VantiqCSVException {
         HashMap[] rsArray = null;
-        String chackedAttribute = "Body";
+        String checkedAttribute = "Body";
         String pathStr = "";
         String fileStr = "";
 
         try {
             Map<String, ?> request = (Map<String, ?>) message.getObject();
-            Map<String, Object> body = (Map<String, Object>) request.get("body");
-            chackedAttribute = "path";
-            pathStr = (String) body.get("path");
+            Map<String, Object> body = (Map<String, Object>) request.get(checkedAttribute);
+            checkedAttribute = "path";
+            pathStr = (String) body.get(checkedAttribute);
             Path path = Paths.get(pathStr);
             if (!path.toFile().exists()) {
                 rsArray = CreateResponse("io.vantiq.extsrc.csvsource.nofolder", "Folder Not Exists", pathStr);
             }
 
-            chackedAttribute = "file";
-            fileStr = (String) body.get("file");
+            checkedAttribute = "file";
+            fileStr = (String) body.get(checkedAttribute);
             String fullFilePath = path.toString() + "\\" + fileStr;
             File file = new File(fullFilePath);
             if (file.exists()) {
                 FileWriter fw = new FileWriter(file, true);
-
-                // FileOutputStream fos = new FileOutputStream(file);
-
                 BufferedWriter bw = new BufferedWriter(fw);
 
-                chackedAttribute = "content";
-                List<Map<String, Object>> content = (List<Map<String, Object>>) body.get("content");
+                checkedAttribute = "content";
+                List<Map<String, Object>> content = (List<Map<String, Object>>) body.get(checkedAttribute);
 
                 for (int i = 0; i < content.size(); i++) {
 
@@ -460,7 +464,8 @@ public class CSV {
                 bw.close();
                 fw.close();
                 // fos.close();
-                rsArray = CreateResponse("io.vantiq.extsrc.csvsource.success", "File Appended Succeesfully", file.toString());
+                rsArray = CreateResponse("io.vantiq.extsrc.csvsource.success", "File Appended Succeesfully",
+                        file.toString());
                 // file already created.
             } else {
                 rsArray = CreateResponse("io.vantiq.extsrc.csvsource.nofile", "File Not Exists", file.toString());
@@ -469,10 +474,10 @@ public class CSV {
 
             return rsArray;
         } catch (InvalidPathException exp) {
-            throw new VantiqCSVException(String.format("Path %s not exist", pathStr, exp));
+            throw new VantiqCSVException(String.format("Path %s not exist", pathStr), exp);
         } catch (Exception ex) {
             throw new VantiqCSVException(
-                    String.format("Illegal request structure , attribute %s doesn't exists", chackedAttribute));
+                    String.format("Illegal request structure , attribute %s doesn't exists", checkedAttribute),ex);
         }
     }
 

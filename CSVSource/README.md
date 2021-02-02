@@ -123,8 +123,7 @@ The Configuration document may look similar to the following example:
 *   **processNullValues**: in case of null value ( means two consecutive delimiters in file) determine if 
 the schema filed index should be incremented or not. For example, for the following line _1,,,f_,
 determine if *field1* is "f" or *field3* is "f". 
-*   **fixedRecordSize**: Optional , fixed length record size , default value is the calculated value based on the schema fields. 
-
+*   **fixedRecordSize**: Optional , fixed length record size , default value is the calculated value based on the schema fields.unsetting the value means that a field at the end of the record must be specified. If it is not, the record length will be incorrect , the last fiels should include the length of the Eol characters as well, therefor it is most recommanded to set that value which,  must include the Eol charachters as well. 
 
 
 ### Schema Configuration
