@@ -150,13 +150,14 @@ public class CSVReader {
                 String s = String.format("Calculated Record length (%d) is higher then fixedRecord size value (%d)",
                 calculatedRecordSize, recordSize);
                 log.error(s);
-                throw new VantiqCSVException(
-                        String.format("Calculated Record length (%d) is higher then fixedRecord size value (%d)",
-                                calculatedRecordSize, recordSize));
+                throw new VantiqCSVException(s);
             }
 
         } else {
-            recordSize = calculatedRecordSize;
+            String s = String.format("fixedRecord must be set (minimum to size (%d), please verify to include Eol characters",
+            calculatedRecordSize);
+            log.error(s);
+            throw new VantiqCSVException(s);
         }
 
         boolean extendedLogging = false;

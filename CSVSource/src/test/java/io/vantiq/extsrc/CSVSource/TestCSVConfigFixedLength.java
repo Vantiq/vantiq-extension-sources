@@ -118,6 +118,7 @@ public class TestCSVConfigFixedLength extends TestCSVBase {
         config.put("maxLinesInEvent", testMaxLinesInEvent);
         config.put("delimiter", testDelimiter);
         config.put("fileType", "FixedLength");
+        config.put("fixedRecordSize", 54);
     }
 
     public Map<String, Object> createMinimalOptions() {

@@ -70,6 +70,21 @@ public class TestCSVReaderFixedLength extends TestCSVConfigFixedLength {
     }
 
     @Test
+    public void testNoRecordSize() {
+        CreateFileForTest(testFullFilePath, "0000000000006 itemName123412341234 1 100000 200000 01");
+        config.remove("fixedRecordSize");
+
+        try {
+
+            ArrayList<Map<String, String>> content = CSVReader.executeFixedRecord(testFullFilePath, config, null);
+            assertTrue("Exception must be raised" , false);
+
+        } catch (Exception ex) {
+            assertTrue("Exception " + ex, true);
+        }
+    }
+
+    @Test
     public void testIllegalRecordSize() {
         CreateFileForTest(testFullFilePath, "0000000000006 itemName123412341234 1 100000 200000 01");
         config.put("fixedRecordSize", 20);
