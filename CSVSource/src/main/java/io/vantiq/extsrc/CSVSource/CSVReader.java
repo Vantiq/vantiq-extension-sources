@@ -8,18 +8,16 @@
 package io.vantiq.extsrc.CSVSource;
 
 import java.io.BufferedReader;
-import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.RandomAccessFile;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
-import java.util.HashMap;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -147,15 +145,16 @@ public class CSVReader {
         if (config.get("fixedRecordSize") != null) {
             recordSize = (int) config.get("fixedRecordSize");
             if (calculatedRecordSize > recordSize) {
-                String s = String.format("Calculated Record length (%d) is higher then fixedRecord size value (%d)",
-                calculatedRecordSize, recordSize);
+                String s = String.format("Calculated Record length (%d) is higher then fixedRecordSize value (%d)",
+                        calculatedRecordSize, recordSize);
                 log.error(s);
                 throw new VantiqCSVException(s);
             }
 
         } else {
-            String s = String.format("fixedRecord must be set (minimum to size (%d), please verify to include Eol characters",
-            calculatedRecordSize);
+            String s = String.format(
+                    "fixedRecordSize must be set (minimum to size (%d),  Make certain  to include EOL characters",
+                    calculatedRecordSize);
             log.error(s);
             throw new VantiqCSVException(s);
         }

@@ -14,6 +14,7 @@ import static java.nio.file.StandardWatchEventKinds.OVERFLOW;
 
 import java.io.BufferedWriter;
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.FileWriter;
 import java.io.FilenameFilter;
@@ -78,16 +79,50 @@ import io.vantiq.extsrc.CSVSource.exception.VantiqCSVException;
  *
  * 
  * Later version added support for fixed length records where schema
- * configuration is similar to above "csvConfig": { "fileFolderPath":
- * "d:/tmp/csv", "filePrefix": "plu", "fileExtension": "txt", "maxLinesInEvent":
- * 50, "waitBetweenTx": 10, "FileType": "FixedLength", "schema": { "code": {
- * "offset": 0, "length": 13, "type": "string" }, "name": { "offset": 14,
- * "length": 20, "type": "string", "charset": "Cp862", "reversed": true },
- * "weighted": { "offset": 35, "length": 1, "type": "string" }, "price": {
- * "offset": 37, "length": 6, "type": "string" }, "cost": { "offset": 44,
- * "length": 6, "type": "string" }, "department": { "offset": 51, "length": 3,
- * "type": "string" } } },
- *
+ * configuration is similar to above
+ * 
+ * <pre>
+ * "csvConfig": 
+ * { "fileFolderPath":"d:/tmp/csv", 
+ *  "filePrefix": "plu", 
+ *  "fileExtension": "txt", 
+ *  "maxLinesInEvent": 50, 
+*   "fixedRecordSize" : 53,
+ *  "FileType": "FixedLength", 
+ * "schema": 
+ *  { "code": {
+ *      "offset": 0, 
+ *      "length": 13, 
+ *      "type": "string" 
+ *      }, 
+ *  "name": { 
+ *      "offset": 14,
+ *      "length": 20, 
+ *      "type": "string", 
+ *      "charset": "Cp862", 
+ *      "reversed": true },
+ *  "weighted": { 
+ *      "offset": 35, 
+ *      "length": 1, "type": "string" 
+ *      }, 
+ *  "price": {
+ *      "offset": 37, 
+ *      "length": 6, 
+ *      "type": "string" 
+ *      }, 
+ *  "cost": { 
+ *      "offset": 44,
+ *      "length": 6, 
+ *      "type": "string" 
+ *      }, 
+ *  "department": { 
+ *      "offset": 51, 
+ *      "length": 3,
+ *      "type": "string" 
+ *      } 
+ *  } 
+ * }
+ * </pre>
  * 
  * and ability to write, append and delete text files to disk .
  */
@@ -125,6 +160,18 @@ public class CSV {
     private static final String FILE_KEYWORD = "file";
     private static final String CONTENT_KEYWORD = "content";
     private static final String TEXT_KEYWORD = "text";
+
+    public static String CSV_NOFILE_CODE = "io.vantiq.extsrc.csvsource.nofile";
+    public static String CSV_NOFILE_MESSAGE = "File does not exist.";
+    public static String CSV_NOFOLDER_CODE = "io.vantiq.extsrc.csvsource.nofolder";
+    public static String CSV_NOFOLDER_MESSAGE = "Folder does not exist.";
+    public static String CSV_FILEEXIST_CODE = "io.vantiq.extsrc.csvsource.fileexists";
+    public static String CSV_FILEEXIST_MESSAGE = "File already exists.";
+
+    public static String CSV_SUCCESS_CODE = "io.vantiq.extsrc.csvsource.success";
+    public static String CSV_SUCCESS_FILE_CREATED_MESSAGE = "File Created Succeesfully";
+    public static String CSV_SUCCESS_FILE_APPENDED_MESSAGE = "File Appended Succeesfully";
+    public static String CSV_SUCCESS_FILE_DELETED_MESSAGE = "File Deleted Succeesfully.";
 
     /**
      * Create resource which will required by the extension activity
@@ -224,8 +271,8 @@ public class CSV {
      * name pattern . the input file can be renamed and stay in the folder (usually
      * for debug purposes) or can be deleted .
      * 
-     * @param fileFolderPath - the path where the file is ocated
-     * @param filename - the file name to be procesed.
+     * @param fileFolderPath - the path where the file is located
+     * @param filename       - the file name to be procesed.
      */
     void executeInPool(String fileFolderPath, String filename) {
         String fullFileName = String.format("%s/%s", fileFolderPath, filename);
@@ -267,7 +314,7 @@ public class CSV {
     }
 
     /**
-     * Responsible for handling files whihc already exist in folder and will not be
+     * Responsible for handling files which already exist in folder and will not be
      * notified by the WatchService
      * 
      * @param fileFolderPath - the path of the files waiting to be processed .
@@ -332,28 +379,33 @@ public class CSV {
             pathStr = (String) body.get(PATH_KEYWORD);
             Path path = Paths.get(pathStr);
             if (!path.toFile().exists()) {
-                rsArray = CreateResponse("io.vantiq.extsrc.csvsource.nofolder", "Folder Not Exists", pathStr);
+                rsArray = CreateResponse(CSV_NOFOLDER_CODE, CSV_NOFOLDER_MESSAGE, pathStr);
             }
 
             checkedAttribute = FILE_KEYWORD;
             fileStr = (String) body.get(FILE_KEYWORD);
+            checkedAttribute = "";
             String fullFilePath = path.toString() + "\\" + fileStr;
             File file = new File(fullFilePath);
             if (file.exists()) {
                 file.delete();
-                rsArray = CreateResponse("io.vantiq.extsrc.csvsource.success", "File Deleted Succeesfully",
-                        file.toString());
+                rsArray = CreateResponse(CSV_SUCCESS_CODE, CSV_SUCCESS_FILE_DELETED_MESSAGE, file.toString());
                 // file already created.
             } else {
-                rsArray = CreateResponse("io.vantiq.extsrc.csvsource.nofile", "File Not Exists", file.toString());
+                rsArray = CreateResponse(CSV_NOFILE_CODE, CSV_NOFILE_MESSAGE, file.toString());
 
             }
             return rsArray;
         } catch (InvalidPathException exp) {
             throw new VantiqCSVException(String.format("Path %s not exist", pathStr), exp);
         } catch (Exception ex) {
-            throw new VantiqCSVException(
-                    String.format("Illegal request structure , attribute %s doesn't exists", checkedAttribute), ex);
+            if (checkedAttribute != "") {
+                throw new VantiqCSVException(
+                        String.format("Illegal request structure , attribute %s doesn't exist", checkedAttribute), ex);
+            } else {
+                throw new VantiqCSVException("General Error", ex);
+            }
+
         }
     }
 
@@ -383,12 +435,12 @@ public class CSV {
 
             checkedAttribute = FILE_KEYWORD;
             fileStr = (String) body.get(FILE_KEYWORD);
+            checkedAttribute = "";
             String fullFilePath = path.toString() + "\\" + fileStr;
             File file = new File(fullFilePath);
             if (file.exists()) {
                 // file already created.
-                rsArray = CreateResponse("io.vantiq.extsrc.csvsource.fileexists", "File Already Exists",
-                        file.toString());
+                rsArray = CreateResponse(CSV_FILEEXIST_CODE, CSV_FILEEXIST_MESSAGE, file.toString());
             } else {
                 file.createNewFile();
 
@@ -407,16 +459,23 @@ public class CSV {
                 }
 
                 bw.close();
-                rsArray = CreateResponse("io.vantiq.extsrc.csvsource.success", "File Created Succeesfully",
-                        file.toString());
+                rsArray = CreateResponse(CSV_SUCCESS_CODE, CSV_SUCCESS_FILE_CREATED_MESSAGE, file.toString());
 
             }
             return rsArray;
         } catch (InvalidPathException exp) {
             throw new VantiqCSVException(String.format("Path %s not exist", pathStr), exp);
+        } catch (FileNotFoundException exp) {
+            throw new VantiqCSVException(String.format("File %s not exist", fullFilePath), exp);
+        } catch (IOException exp) {
+            throw new VantiqCSVException("IO Exception", exp);
         } catch (Exception ex) {
-            throw new VantiqCSVException(
-                    String.format("Illegal request structure , attribute %s doesn't exists", checkedAttribute), ex);
+            if (checkedAttribute != "") {
+                throw new VantiqCSVException(
+                        String.format("Illegal request structure , attribute %s doesn't exist", checkedAttribute), ex);
+            } else {
+                throw new VantiqCSVException("General Error", ex);
+            }
         }
     }
 
@@ -441,7 +500,7 @@ public class CSV {
             pathStr = (String) body.get(PATH_KEYWORD);
             Path path = Paths.get(pathStr);
             if (!path.toFile().exists()) {
-                rsArray = CreateResponse("io.vantiq.extsrc.csvsource.nofolder", "Folder Not Exists", pathStr);
+                rsArray = CreateResponse(CSV_NOFOLDER_CODE, CSV_NOFOLDER_MESSAGE, pathStr);
             }
 
             checkedAttribute = FILE_KEYWORD;
@@ -454,7 +513,7 @@ public class CSV {
 
                 checkedAttribute = CONTENT_KEYWORD;
                 List<Map<String, Object>> content = (List<Map<String, Object>>) body.get(CONTENT_KEYWORD);
-
+                checkedAttribute = "";
                 for (int i = 0; i < content.size(); i++) {
 
                     String line = (String) content.get(0).get(TEXT_KEYWORD);
@@ -464,12 +523,10 @@ public class CSV {
 
                 bw.close();
                 fw.close();
-                // fos.close();
-                rsArray = CreateResponse("io.vantiq.extsrc.csvsource.success", "File Appended Succeesfully",
-                        file.toString());
+                rsArray = CreateResponse(CSV_SUCCESS_CODE, CSV_SUCCESS_FILE_APPENDED_MESSAGE, file.toString());
                 // file already created.
             } else {
-                rsArray = CreateResponse("io.vantiq.extsrc.csvsource.nofile", "File Not Exists", file.toString());
+                rsArray = CreateResponse(CSV_NOFILE_CODE, CSV_NOFILE_MESSAGE, file.toString());
 
             }
 
@@ -477,8 +534,12 @@ public class CSV {
         } catch (InvalidPathException exp) {
             throw new VantiqCSVException(String.format("Path %s not exist", pathStr), exp);
         } catch (Exception ex) {
-            throw new VantiqCSVException(
-                    String.format("Illegal request structure , attribute %s doesn't exists", checkedAttribute),ex);
+            if (checkedAttribute != "") {
+                throw new VantiqCSVException(
+                        String.format("Illegal request structure , attribute %s doesn't exist", checkedAttribute), ex);
+            } else {
+                throw new VantiqCSVException("General Error", ex);
+            }
         }
     }
 

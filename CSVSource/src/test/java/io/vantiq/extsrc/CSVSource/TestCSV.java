@@ -12,15 +12,11 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeTrue;
 
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.ResourceBundle;
 
 import org.junit.Before;
 import org.junit.Test;
@@ -64,23 +60,23 @@ public class TestCSV extends TestCSVBase {
         createBasicMessage();
         ExtensionServiceMessage message = createBasicMessage();
         try {
-            File f = new File("c:\\tmp\\t.txt");
-            f.delete(); // ensore the file not exists 
+            String tmp = System.getProperty("java.io.tmpdir");
+            File f = new File(tmp, "t.txt");
+            f.delete(); // ensore the file doesn't exist
 
             HashMap[] response = csv.processCreate(message);
-            assertTrue("Action wasn't successful", response[0].get("code").equals("io.vantiq.extsrc.csvsource.success"));
+            assertTrue("Action wasn't successful", response[0].get("code").equals(CSV.CSV_SUCCESS_CODE));
 
             response = csv.processAppend(message);
-            assertTrue("Action wasn't successfull", response[0].get("code").equals("io.vantiq.extsrc.csvsource.success"));
+            assertTrue("Action wasn't successfull", response[0].get("code").equals(CSV.CSV_SUCCESS_CODE));
 
             response = csv.processDelete(message);
-            assertTrue("Action wasn't successfull", response[0].get("code").equals("io.vantiq.extsrc.csvsource.success"));
-
+            assertTrue("Action wasn't successfull", response[0].get("code").equals(CSV.CSV_SUCCESS_CODE));
         } catch (VantiqCSVException ex) {
-            assertFalse("Exception",true);
+            assertFalse("Exception", true);
         }
-
     }
+
     @Test
     public void testAppendFileNotExistFile() {
 
@@ -88,28 +84,25 @@ public class TestCSV extends TestCSVBase {
         ExtensionServiceMessage message = createBasicMessage();
         try {
             File f = new File("c:\\tmp\\t.txt");
-            f.delete(); // ensore the file not exists 
+            f.delete(); // ensore the file not exists
 
             HashMap[] response = csv.processAppend(message);
-            assertTrue("Action wasn't successfull", response[0].get("code").equals("io.vantiq.extsrc.csvsource.nofile"));
+            assertTrue("Action wasn't successfull", response[0].get("code").equals(CSV.CSV_NOFILE_CODE));
 
             response = csv.processDelete(message);
-            assertTrue("Action wasn't successfull", response[0].get("code").equals("io.vantiq.extsrc.csvsource.nofile"));
+            assertTrue("Action wasn't successfull", response[0].get("code").equals(CSV.CSV_NOFILE_CODE));
 
             response = csv.processCreate(message);
-            assertTrue("Action wasn't successfull", response[0].get("code").equals("io.vantiq.extsrc.csvsource.success"));
+            assertTrue("Action wasn't successfull", response[0].get("code").equals(CSV.CSV_SUCCESS_CODE));
 
             response = csv.processCreate(message);
-            assertTrue("Action wasn't successfull", response[0].get("code").equals("io.vantiq.extsrc.csvsource.fileexists"));
-
-
+            assertTrue("Action wasn't successfull", response[0].get("code").equals(CSV.CSV_FILEEXIST_CODE));
         } catch (Exception ex) {
-            assertFalse("Exception",true);
+            assertFalse("Exception", true);
         }
-
     }
 
-    public ExtensionServiceMessage createBasicMessage(){
+    public ExtensionServiceMessage createBasicMessage() {
 
         ExtensionServiceMessage message = new ExtensionServiceMessage("127.0.0.1");
         Map<String, Object> content1 = new HashMap<String, Object>();
@@ -119,7 +112,8 @@ public class TestCSV extends TestCSVBase {
         content.add(content1);
 
         Map<String, Object> body = new HashMap<String, Object>();
-        body.put("path", "c:\\tmp");
+        String tmp = System.getProperty("java.io.tmpdir");
+        body.put("path", tmp);
         body.put("file", "t.txt");
         body.put("content", content);
 
@@ -132,7 +126,7 @@ public class TestCSV extends TestCSVBase {
 
         message.object = request[0];
 
-        return message; 
+        return message;
 
     }
 }

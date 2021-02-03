@@ -168,7 +168,7 @@ the configuration should be similar to
       "fileExtension": "txt",
       "extendedLogging":true,
       "maxLinesInEvent": 50,
-      "waitBetweenTx": 10,
+      "fixedRecordSize": 53,
       "FileType": "FixedLength",
       "schema": {
          "code": {
