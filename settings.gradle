@@ -3,6 +3,7 @@ include 'opcuaSource'
 include 'extjsdk'
 include 'udpSource'
 include 'CSVSource'
+include 'testConnector'
 if (System.env.EASY_MODBUS_LOC) {
     include 'EasyModbusSource' 
 }

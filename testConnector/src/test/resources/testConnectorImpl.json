@@ -1,0 +1,6 @@
+{
+  "name" : "TestConnector",
+  "baseType" : "EXTENSION",
+  "verticle" : "service:extensionSource",
+  "config" : {}
+}
