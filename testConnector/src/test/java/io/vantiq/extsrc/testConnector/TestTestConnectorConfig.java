@@ -89,12 +89,12 @@ public class TestTestConnectorConfig {
 
 // ================================================= Helper functions =================================================
 
-    public void sendConfig(Map<String, ?> jdbcConfig) {
+    public void sendConfig(Map<String, ?> testConfig) {
         ExtensionServiceMessage m = new ExtensionServiceMessage("");
 
         Map<String, Object> obj = new LinkedHashMap<>();
         Map<String, Object> config = new LinkedHashMap<>();
-        config.put("testConfig", jdbcConfig);
+        config.put("testConfig", testConfig);
         obj.put("config", config);
         m.object = obj;
 

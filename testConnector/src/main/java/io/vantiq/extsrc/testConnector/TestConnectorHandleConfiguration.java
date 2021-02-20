@@ -45,7 +45,7 @@ public class TestConnectorHandleConfiguration extends Handler<ExtensionServiceMe
         }
         config = (Map) configObject.get(CONFIG);
 
-        // Retrieve the jdbcConfig and the vantiq config
+        // Retrieve the testConfig and the vantiq config
         if (!(config.get(TEST_CONFIG) instanceof Map)) {
             log.error("Configuration failed. Configuration must contain 'testConfig' field.");
             failConfig();
@@ -53,7 +53,7 @@ public class TestConnectorHandleConfiguration extends Handler<ExtensionServiceMe
         }
         testConfig = (Map) config.get(TEST_CONFIG);
 
-        // Get the general options from the jdbcConfig
+        // Get the general options from the testConfig
         if (!(testConfig.get(GENERAL) instanceof Map)) {
             log.error("Configuration failed. No general options specified.");
             failConfig();
