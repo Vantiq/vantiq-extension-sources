@@ -126,12 +126,12 @@ The query will return data for the files and/or environment variables as follows
 ```
 {
     files: {
-        file1.txt: "The data in file1.txt",
-        file2.txt: "The data in file2.txt"
+        testFile1.txt: "The data in testFile1.txt",
+        testFile2.txt: "The data in testFile1.txt"
     },
     environmentVariables {
-        ENVIRONMENT_VARIABLE1: "The data in ENVIRONMENT_VARIABLE1",
-        ENVIRONMENT_VARIABLE2: "The data in ENVIRONMENT_VARIABLE2"
+        MY_ENV_VAR1: "The data in MY_ENV_VAR1",
+        MY_ENV_VAR2: "The data in MY_ENV_VAR2"
     }
 }
 ```
@@ -197,7 +197,7 @@ as the `gradle.properties` file as follows:
 ## Licensing
 The source code uses the [MIT License](https://opensource.org/licenses/MIT).  
 
-HikariCP, okhttp3, log4j, and jackson-databind are licensed under
+okhttp3, log4j, and jackson-databind are licensed under
 [Apache Version 2.0 License](http://www.apache.org/licenses/LICENSE-2.0).  
 
 slf4j is licensed under the [MIT License](https://opensource.org/licenses/MIT).  
