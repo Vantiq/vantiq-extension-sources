@@ -251,7 +251,20 @@ public class TestConnectorCore {
     public Map<String, Map> processRequest(Map<String, ?> request, String replyAddress) {
         Map<String, Map> responseMap = new LinkedHashMap<>();
 
-        // First we check for environment variables in the request and grab their data
+        // First we check to make sure that both parameters were included, and return an error if not
+        if (!(request.get(ENVIRONMENT_VARIABLES) instanceof List) && !(request.get(FILENAMES) instanceof List)) {
+            log.error("The request cannot be processed because it does not contain a valid list of filenames or " +
+                    "environmentVariables. At least one of these two parameters must be provided.");
+            if (replyAddress != null) {
+                client.sendQueryError(replyAddress, Exception.class.getCanonicalName(),
+                        "The request cannot be processed because it does not contain a valid list of " +
+                                "filenames or environmentVariables. At least one of these two parameters must be " +
+                                "provided.", null);
+            }
+            return null;
+        }
+
+        // Next we check for environment variables in the request and grab their data
         if (request.get(ENVIRONMENT_VARIABLES) instanceof List) {
             List environmentVariables = (List) request.get(ENVIRONMENT_VARIABLES);
             if (TestConnectorHandleConfiguration.checkListValues(environmentVariables)) {
@@ -268,7 +281,7 @@ public class TestConnectorCore {
             }
         }
 
-        // Next we get the data from the files if they were specified
+        // Finally we get the data from the files if they were specified
         if (request.get(FILENAMES) instanceof List) {
             List filenames = (List) request.get(FILENAMES);
             if (TestConnectorHandleConfiguration.checkListValues(filenames)) {

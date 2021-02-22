@@ -21,9 +21,6 @@ public class TestConnectorHandleConfiguration extends Handler<ExtensionServiceMe
     private static final String GENERAL = "general";
     private static final String POLLING_INTERVAL = "pollingInterval";
 
-    // Default pollingInterval if not specified (1 minute in millis)
-    private static final int DEFAULT_POLLING_INTERVAL = 60000;
-
     public TestConnectorHandleConfiguration(TestConnectorCore core) {
         this.core = core;
         this.sourceName = core.getSourceName();
@@ -78,13 +75,15 @@ public class TestConnectorHandleConfiguration extends Handler<ExtensionServiceMe
                 return;
             }
 
-            int pollingInterval = DEFAULT_POLLING_INTERVAL;
             if (generalConfig.get(POLLING_INTERVAL) instanceof Integer && ((Integer) generalConfig.get(POLLING_INTERVAL)) > 0) {
-                pollingInterval = (Integer) generalConfig.get(POLLING_INTERVAL);
+                int pollingInterval = (Integer) generalConfig.get(POLLING_INTERVAL);
+                // Now that we have the data, lets start polling
+                core.pollFromFiles(filenames, pollingInterval);
+            } else {
+                log.warn("A list of filenames was provided, but no valid pollingInterval was included. The " +
+                        "pollingInterval must be an integer greater than 0. This connector will not poll for data from" +
+                        " the filenames list until it has been reconfigured with a valid pollingInterval.");
             }
-
-            // Now that we have the data, lets start polling
-            core.pollFromFiles(filenames, pollingInterval);
         }
     }
 

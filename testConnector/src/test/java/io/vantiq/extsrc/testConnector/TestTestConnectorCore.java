@@ -164,6 +164,11 @@ public class TestTestConnectorCore {
         request.put("environmentVariables", environmentVariables);
         result = core.processRequest(request, null);
         assert result == null;
+
+        // Now lets provide nothing in the request and make sure that fails.
+        request.clear();
+        result = core.processRequest(request, null);
+        assert result == null;
     }
 
     @Test
