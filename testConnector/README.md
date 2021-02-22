@@ -102,21 +102,26 @@ The following example uses a Vail Select Statement to retrieve data from files a
 ```
 PROCEDURE queryTestConnector()
 
-SELECT * FROM SOURCE TestConnector1 as results WITH
-    filenames: ["testFile1.txt", "testFile2.txt"],
-    environmentVariables: ["MY_ENV_VAR1", "MY_ENV_VAR2"]
-
-var fileResponse = results.files
-var envVarResponse = results.environmentVariables
-
-for (file in fileResponse) {
-    // Could do work with object here but we just log as an example
-    log.info(file.toString())
-}
-
-for (envVar in envVarResponse) {
-    // Could do work with object here but we just log as an example
-    log.info(envVar.toString())
+try { 
+    SELECT * FROM SOURCE TestConnector1 as results WITH
+        filenames: ["testFile1.txt", "testFile2.txt"],
+        environmentVariables: ["MY_ENV_VAR1", "MY_ENV_VAR2"]
+    
+    var fileResponse = results.files
+    var envVarResponse = results.environmentVariables
+    
+    for (file in fileResponse) {
+        // Could do work with object here but we just log as an example
+        log.info(file.toString())
+    }
+    
+    for (envVar in envVarResponse) {
+        // Could do work with object here but we just log as an example
+        log.info(envVar.toString())
+    }
+} catch (error) {
+    // Catching any errors and throwing the exception.
+    exception(error.code, error.message)
 }
 ```
 
