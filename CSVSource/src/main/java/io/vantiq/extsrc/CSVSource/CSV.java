@@ -169,9 +169,9 @@ public class CSV {
     public static String CSV_FILEEXIST_MESSAGE = "File already exists.";
 
     public static String CSV_SUCCESS_CODE = "io.vantiq.extsrc.csvsource.success";
-    public static String CSV_SUCCESS_FILE_CREATED_MESSAGE = "File Created Succeesfully";
-    public static String CSV_SUCCESS_FILE_APPENDED_MESSAGE = "File Appended Succeesfully";
-    public static String CSV_SUCCESS_FILE_DELETED_MESSAGE = "File Deleted Succeesfully.";
+    public static String CSV_SUCCESS_FILE_CREATED_MESSAGE = "File Created Successfully";
+    public static String CSV_SUCCESS_FILE_APPENDED_MESSAGE = "File Appended Successfully";
+    public static String CSV_SUCCESS_FILE_DELETED_MESSAGE = "File Deleted Successfully.";
 
     /**
      * Create resource which will required by the extension activity
@@ -406,6 +406,7 @@ public class CSV {
                 throw new VantiqCSVException("General Error", ex);
             }
 
+        } finally {
         }
     }
 
@@ -442,24 +443,25 @@ public class CSV {
                 // file already created.
                 rsArray = CreateResponse(CSV_FILEEXIST_CODE, CSV_FILEEXIST_MESSAGE, file.toString());
             } else {
+
                 file.createNewFile();
 
-                FileOutputStream fos = new FileOutputStream(file);
+                try (FileOutputStream fos = new FileOutputStream(file);
+                    BufferedWriter bw = new BufferedWriter(new OutputStreamWriter(fos))) {
 
-                BufferedWriter bw = new BufferedWriter(new OutputStreamWriter(fos));
+                    checkedAttribute = CONTENT_KEYWORD;
+                    List<Map<String, Object>> content = (List<Map<String, Object>>) body.get(CONTENT_KEYWORD);
 
-                checkedAttribute = CONTENT_KEYWORD;
-                List<Map<String, Object>> content = (List<Map<String, Object>>) body.get(CONTENT_KEYWORD);
+                    for (int i = 0; i < content.size(); i++) {
 
-                for (int i = 0; i < content.size(); i++) {
+                        String line = (String) content.get(i).get(TEXT_KEYWORD);
+                        bw.write(line);
+                        bw.newLine();
+                    }
 
-                    String line = (String) content.get(i).get(TEXT_KEYWORD);
-                    bw.write(line);
-                    bw.newLine();
+                    bw.close();
+                    rsArray = CreateResponse(CSV_SUCCESS_CODE, CSV_SUCCESS_FILE_CREATED_MESSAGE, file.toString());
                 }
-
-                bw.close();
-                rsArray = CreateResponse(CSV_SUCCESS_CODE, CSV_SUCCESS_FILE_CREATED_MESSAGE, file.toString());
 
             }
             return rsArray;
@@ -508,22 +510,22 @@ public class CSV {
             String fullFilePath = path.toString() + "\\" + fileStr;
             File file = new File(fullFilePath);
             if (file.exists()) {
-                FileWriter fw = new FileWriter(file, true);
-                BufferedWriter bw = new BufferedWriter(fw);
+                try (FileWriter fw = new FileWriter(file, true); BufferedWriter bw = new BufferedWriter(fw)) {
 
-                checkedAttribute = CONTENT_KEYWORD;
-                List<Map<String, Object>> content = (List<Map<String, Object>>) body.get(CONTENT_KEYWORD);
-                checkedAttribute = "";
-                for (int i = 0; i < content.size(); i++) {
+                    checkedAttribute = CONTENT_KEYWORD;
+                    List<Map<String, Object>> content = (List<Map<String, Object>>) body.get(CONTENT_KEYWORD);
+                    checkedAttribute = "";
+                    for (int i = 0; i < content.size(); i++) {
 
-                    String line = (String) content.get(0).get(TEXT_KEYWORD);
-                    bw.append(line);
-                    bw.newLine();
+                        String line = (String) content.get(i).get(TEXT_KEYWORD);
+                        bw.append(line);
+                        bw.newLine();
+                    }
+
+                    rsArray = CreateResponse(CSV_SUCCESS_CODE, CSV_SUCCESS_FILE_APPENDED_MESSAGE, file.toString());
+                } finally {
+
                 }
-
-                bw.close();
-                fw.close();
-                rsArray = CreateResponse(CSV_SUCCESS_CODE, CSV_SUCCESS_FILE_APPENDED_MESSAGE, file.toString());
                 // file already created.
             } else {
                 rsArray = CreateResponse(CSV_NOFILE_CODE, CSV_NOFILE_MESSAGE, file.toString());
@@ -540,6 +542,8 @@ public class CSV {
             } else {
                 throw new VantiqCSVException("General Error", ex);
             }
+        } finally {
+
         }
     }
 
