@@ -13,6 +13,11 @@ When the process starts, based on configuration,
 the extension can process all files exist in the input folder which support the name file pattern.
 In this way, in cases where the extension is not running during file updates, it will resend all accumulated files once it restarted. 
 
+In addition to handling delimiter-separated fields, this connector can extract fields from fixed positions in the record.
+This is configured as described below.
+
+It is also possible to have the connector write files. This operation is described below.
+
 The documentation has been split into two parts, [Setting Up Your Machine](#machine) and [Setting Up Your Vantiq](#vantiq).
 
 # Prerequisites <a name="pre" id="pre"></a>
@@ -89,7 +94,9 @@ The Configuration document may look similar to the following example:
             "filePrefix": "eje",
             "fileExtension": "csv",
             "maxLinesInEvent": 200,
+            "skipFirstLine": true,
             "delimiter":",",
+            "extendedLogging":true,
             "processNullValues":false,
                 "schema": {
                     "field0": "value",
@@ -112,10 +119,14 @@ The Configuration document may look similar to the following example:
 *   **filePrefix**: Optional. The prefix of the file pattern to look for, if not set any file name will be accepted. 
 *   **fileExtension**: Required. The file extension of the files to be processed 
 *   **maxLinesInEvent**: Required. Determine how many lines from the CSV file will be sent in a single message to the server. Depending on the number of the lines of the CSV file, a high value might result in messages too large to process efficiently or a memory exception. 
+*   **skipFirstLine**: Optional, skipping first line avoiding processing it when used as header of the csv file. 
 *   **delimiter**: the delimiter to be used when parse the CSV file, default is ",", the system will step over null values which might be in the result of the split operation. 
+*   **extendedLogging**: Optional, write extended information regarding the nuber of records and the segment distribution that where processed during the process, default value is false. 
 *   **processNullValues**: in case of null value ( means two consecutive delimiters in file) determine if 
 the schema filed index should be incremented or not. For example, for the following line _1,,,f_,
 determine if *field1* is "f" or *field3* is "f". 
+*   **fixedRecordSize**: fixed length record size, must include the End of Line characters as well. Required when `fileType` is `FixedLength`.
+
 
 ### Schema Configuration
 Schema can be used to control the field names on the uploaded event. If no name is assigned, 'fieldX' will be used where 'X' is the index of the field in the line.  For example field0, field1, etc. 
@@ -127,6 +138,75 @@ So instead of loading event:
 
 `{ field0:1, field1:true, field2:"there"}` it will upload `{ field0:1, field1:true, address:"there"}`
 this can save conversion processing on the server.
+
+### Fixed Length Records
+CSV Reader supports extracting fields based on fixed length positions in each record.
+To specify extraction based on fixed positions, set the configuration 
+key `fileType` to the value: `FixedLength`
+If this key is missing, it will default to `DelimitedFields`.
+
+The schema for a `FixedLength` file type is as follows:
+
+For each attribute, specify the name of the attribute and the positional information.
+For example using the `code`, `name`, and `price` from the above example,
+each attribute is defined as follows:
+* **offset** : the offset of the field from the beginning of the record
+* **length** : the size of the field
+* **type** : the type of the field : string, int, etc 
+* **charset** : optional -- the character set charset to use when reading the field. 
+* **reversed** : Optional, reverse the attribute value , mainly for support RTL names.
+If `true`, this causes the String attribute read from the file to be reversed.
+So _value_ would become _eulav_ if `reversed` is set to `true`.
+
+
+
+the configuration should be similar to
+```
+   "csvConfig": {
+      "fileFolderPath": "d:/tmp/csv",
+      "filePrefix": "plu",
+      "fileExtension": "txt",
+      "extendedLogging":true,
+      "maxLinesInEvent": 50,
+      "fixedRecordSize": 53,
+      "FileType": "FixedLength",
+      "schema": {
+         "code": {
+            "offset": 0,
+            "length": 13,
+            "type": "string"
+         },
+         "name": {
+            "offset": 14,
+            "length": 20,
+            "type": "string",
+            "charset": "Cp862",
+            "reversed": true
+         },
+         "weighted": {
+            "offset": 35,
+            "length": 1,
+            "type": "string"
+         },
+         "price": {
+            "offset": 37,
+            "length": 6,
+            "type": "string"
+         },
+         "cost": {
+            "offset": 44,
+            "length": 6,
+            "type": "string"
+         },
+         "department": {
+            "offset": 51,
+            "length": 3,
+            "type": "string"
+         }
+      }
+   },
+```
+
 
 ### Execution Options
 
@@ -203,6 +283,53 @@ The file the `/src/test/resource/ejesmall.csv` is aligned with the sample applic
 Once you copy it to the input folder (default is `d:/tmp/csv`),
 the extension source will send the file in multiple segments,
 with the app will saving those in a type. 
+
+## Writing CSV Files
+
+It is also possible to have the connector write files. No addtional configuration is needed, the text will be UTF8 and
+the assumption is that the line to write is produced by the server.
+The VAIL SELECT statement is used to perform this work
+The value returned by the VAIL SELECT statement describes the status of the operation.
+
+Creating, appending to or deleting a csv file is done via a **select** statement.
+
+Given a VAIL object defined as follows,
+```
+m = {
+   path:"c:\tmp",
+   file:"output.txt",
+   content:[
+      {"text","this,is,first,line"},
+      {"text","this,is,second,line"}
+   ]
+}
+```
+
+The following select statement will create the `output.txt` file at folder `c:\tmp` containing 2 lines.
+```
+select * from source CSV1 with body= m, op="create"
+```
+To add additional lines to the file one can use the following command 
+```
+select * from source CSV1 with body= m , op="append"
+```
+To delete a file, the following select statement can be used. 
+```
+select * from source CSV1 with body= m , op="delete"
+```
+For all select statements, a response will be returned with the following structure:
+```
+   {
+      "message": "File Appended Succeesfully",
+      "value": "c:\\tmp\\output.txt",
+      "code": "io.vantiq.extsrc.csvsource.success"
+   }
+```
+code table is
+io.vantiq.extsrc.csvsource.success - success .
+io.vantiq.extsrc.csvsource.fileexists - File already exists
+io.vantiq.extsrc.csvsource.nofolder - Folder does not exist 
+io.vantiq.extsrc.csvsource.nofile - File does not exist 
 
 ## Error Messages
 

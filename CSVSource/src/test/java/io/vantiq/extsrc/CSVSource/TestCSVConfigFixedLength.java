@@ -21,7 +21,7 @@ import org.junit.Test;
 
 import io.vantiq.extjsdk.ExtensionServiceMessage;
 
-public class TestCSVConfig extends TestCSVBase {
+public class TestCSVConfigFixedLength extends TestCSVBase {
 
     CSVHandleConfiguration handler;
 
@@ -103,9 +103,12 @@ public class TestCSVConfig extends TestCSVBase {
 
     public void createTestSchema() {
         schema = new LinkedHashMap<>();
-        schema.put("field0", "value");
-        schema.put("field1", "YScale");
-        schema.put("field2", "flag");
+        schema.put("code", createFixedLengthTestSchemaField(0, 13, "string"));
+        schema.put("name", createFixedLengthTestSchemaField(14, 20, "string", "Cp862", true));
+        schema.put("weighted", createFixedLengthTestSchemaField(35, 1, "string"));
+        schema.put("price", createFixedLengthTestSchemaField(37, 6, "string"));
+        schema.put("cost", createFixedLengthTestSchemaField(44, 6, "string"));
+        schema.put("department", createFixedLengthTestSchemaField(51, 2, "string"));
     }
 
     public void createMinimalConfig(Map<String, Object> config) {
@@ -114,6 +117,8 @@ public class TestCSVConfig extends TestCSVBase {
         config.put("fileExtension", testFileExtension);
         config.put("maxLinesInEvent", testMaxLinesInEvent);
         config.put("delimiter", testDelimiter);
+        config.put("fileType", "FixedLength");
+        config.put("fixedRecordSize", 54);
     }
 
     public Map<String, Object> createMinimalOptions() {
@@ -129,5 +134,23 @@ public class TestCSVConfig extends TestCSVBase {
 
     public boolean configIsFailed() {
         return handler.isComplete() && nCore.isClosed();
+    }
+
+    // *** Helper funciton for support fixed len configyration files
+    public Map<String, Object> createFixedLengthTestSchemaField(int offset, int length, String type) {
+        Map<String, Object> fieldAttr = new LinkedHashMap<>();
+        fieldAttr.put("offset", offset);
+        fieldAttr.put("length", length);
+        fieldAttr.put("type", type);
+
+        return fieldAttr;
+    }
+
+    public Map<String, Object> createFixedLengthTestSchemaField(int offset, int length, String type, String charSet,
+            boolean reversed) {
+        Map<String, Object> fieldAttr = createFixedLengthTestSchemaField(offset, length, type);
+        fieldAttr.put("charset", charSet);
+        fieldAttr.put("reversed", reversed);
+        return fieldAttr;
     }
 }
