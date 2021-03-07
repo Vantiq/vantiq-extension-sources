@@ -108,7 +108,9 @@ subprojects {
             }
         }
     }
-    buildConnectorImage.dependsOn assemble
+    if (project.tasks.findByName('buildConnectorImage')) {
+        buildConnectorImage.dependsOn assemble
+    }
 
     // only run with code-coverage metrics if property is explicitly specified
     if (rootProject.hasProperty('jacocoReport')) {
