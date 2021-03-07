@@ -77,6 +77,12 @@ subprojects {
     // Using gradle-dcompose-plugin to build/push docker images
     dcompose {
         if (rootProject.hasProperty('dockerRegistry') && rootProject.hasProperty('pathToRepo')) {
+            if (!rootProject.hasProperty('dockerRegistryUser')) {
+                project.ext.setProperty('dockerRegistryUser', '')
+            }
+            if (!rootProject.hasProperty('dockerRegistryPassword')) {
+                project.ext.setProperty('dockerRegistryPassword', '')
+            }
             def registryName = rootProject.getProperty('dockerRegistry')
             def pathToRepo = rootProject.getProperty('pathToRepo')
             def repositoryName = "${project.name - 'Source' + '-source'}".toLowerCase()
