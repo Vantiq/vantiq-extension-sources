@@ -62,10 +62,23 @@ allprojects {
             cacheChangingModulesFor 0, 'seconds'
         }
     }
-
-
-
 }
+
+// Here, at config time, we'll set these properties to empty values.  This allows the dcompose-generated
+// tasks to complete without throwing errors. Any publish operations may fail, but they would fail anyway
+// since no credentials were provided.  If these aren't set, creating the images (which will be saved in the
+// local docker) will fail without a good reason. Setting these values allows the buildImages tasks to
+// complete without incident.
+
+if (!rootProject.hasProperty('dockerRegistryUser')) {
+    project.ext.setProperty('dockerRegistryUser', '')
+    logger.warn('The property "dockerRegistryUser" was not provided. This may affect publish operations.')
+}
+if (!rootProject.hasProperty('dockerRegistryPassword')) {
+    project.ext.setProperty('dockerRegistryPassword', '')
+    logger.warn('The property "dockerRegistryPassword" was not provided. This may affect publish operations.')
+}
+
 
 subprojects {
     apply plugin: 'groovy'
@@ -77,12 +90,6 @@ subprojects {
     // Using gradle-dcompose-plugin to build/push docker images
     dcompose {
         if (rootProject.hasProperty('dockerRegistry') && rootProject.hasProperty('pathToRepo')) {
-            if (!rootProject.hasProperty('dockerRegistryUser')) {
-                project.ext.setProperty('dockerRegistryUser', '')
-            }
-            if (!rootProject.hasProperty('dockerRegistryPassword')) {
-                project.ext.setProperty('dockerRegistryPassword', '')
-            }
             def registryName = rootProject.getProperty('dockerRegistry')
             def pathToRepo = rootProject.getProperty('pathToRepo')
             def repositoryName = "${project.name - 'Source' + '-source'}".toLowerCase()
