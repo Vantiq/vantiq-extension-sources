@@ -357,20 +357,33 @@ Otherwise, the connector is ignored for the build.
 
 The connectors in this repository contain `gradle` tasks that can be used to build Docker Images for each connector and 
 push those images to the developer's Docker Registry. In order to use these tasks, the developer must include the 
-following configuration option in their `gradle.properties` file, along with some optional parameters:
+following configuration option in their `gradle.properties` file or on the gradle command line,
+along with some optional parameters:
 
 *   `dockerRegistry`: Required. The name of the registry to which the image should be pushed (i.e. `docker.io`,
 `quay.io`, etc.).
+Note that this is used in naming the image even if you do not request publishing.
 *   `pathToRepo`: Required. The path to the docker repository. This is typically the `namespace` portion of registry
 URIs that follow the `registry/namespace/repo:tag` structure, but each registry can vary, (i.e. `pathToRepo=/vantiq/`).
-*   `dockerRegistryUsername`: Optional. The username used for authenticating with the given docker registry.
+Note that here, too, this is used in naming the image even if you do not publish.
+Generally, this must be numbers and lowercase letters, starting with a letter.
+*   `dockerRegistryUser`: Optional. The username used for authenticating with the given docker registry.
+If not provided, this will be set to the empty string.
+If you are publishing, you will generally need this value.
 *   `dockerRegistryPassword`: Optional. The password used for authenticating with the given docker registry.
+If not provided, this will be set to the empty string.
+If you are publishing, you will generally need this value.
 *   `imageTag`: Optional. The tag used when pushing the image. If not specified, the tag will default to "latest".
 *   `repositoryName`: Optional. The name of the repository in the registry to which the image should be pushed. If not
 specified, the default repository will be the connector's name (i.e. "jdbc-source", "jms-source", 
 "objectrecognition-source", etc.).
 *   `connectorSpecificInclusions`: Optional. The path to a directory of files that need to be included in the image. 
 These can then be referenced and used by the Dockerfile.
+
+Note that the `repositoryName` and, most likely, `connectorSpecificInclusions`, will be most appropriate on the
+gradle command line.
+Otherwise, the `repositoryName` will be used for all connectors built,
+and that will be overwritten by the last one built.
 
 With the required properties in place, the tasks can then be executed as follows:
 
