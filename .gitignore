@@ -50,3 +50,4 @@ windows/
 .vscode/settings.json
 .vscode/launch.json
 gradle.properties
+FAILURE

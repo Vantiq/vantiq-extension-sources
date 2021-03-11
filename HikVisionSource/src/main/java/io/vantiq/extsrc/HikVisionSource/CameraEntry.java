@@ -28,7 +28,11 @@ public class CameraEntry {
 
     public CameraEntry(Map<String, Object> o, int channel) {
         CameraId = (String) o.get("CameraId");
-        Channel = channel;
+        if (o.get("Channel")!=null){
+            Channel = 101 ;//Integer.parseInt((String) o.get("Channel"));
+        } else {
+            Channel = channel;
+        }
         Enable = Boolean.parseBoolean((String) o.get("Enable"));
         DVRIPAddress = (String) o.get("DVRIP");
         DVRPortNumber = Integer.parseInt((String) o.get("DVRPort"));
