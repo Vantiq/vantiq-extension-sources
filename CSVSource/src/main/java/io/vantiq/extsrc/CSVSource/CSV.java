@@ -21,6 +21,7 @@ import java.io.FilenameFilter;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.nio.file.FileSystems;
+import java.nio.file.Files;
 import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -32,11 +33,14 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Timer;
+import java.util.TimerTask;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Stream;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -133,21 +137,26 @@ public class CSV {
     Map<String, Object> options;
 
     // Control of thread should continue to work, set to false in Stop.
-    boolean bContinue = true;
+    // boolean bContinue = true;
 
+    boolean isRunnigInDocker = isRunningInsideDocker();
     // Components used
-    WatchService serviceWatcher;
+    // WatchService serviceWatcher;
     ExecutorService executionPool = null;
     ExtensionWebSocketClient oClient;
 
+    // Thread watcherThread ;
     String fullFilePath;
+    String fileFolderPath;
     String extension = ".csv";
     String filePrefix = "";
     FilenameFilter fileFilter;
     String extensionAfterProcessing = ".done";
     boolean deleteAfterProcessing = false;
+    int pollTime;
 
     Thread currThread;
+    Timer inDockerTime;
 
     private static final int MAX_ACTIVE_TASKS = 5;
     private static final int MAX_QUEUED_TASKS = 10;
@@ -201,6 +210,12 @@ public class CSV {
             deleteAfterProcessing = (boolean) options.get("deleteAfterProcessing");
         }
 
+        if (options.get("pollTime") != null) {
+            pollTime = (Integer) options.get("pollTime");
+        } else {
+            pollTime = 30000;
+        }
+
         int maxActiveTasks = MAX_ACTIVE_TASKS;
         int maxQueuedTasks = MAX_QUEUED_TASKS;
 
@@ -241,25 +256,49 @@ public class CSV {
             this.config = config;
             this.options = options;
             this.oClient = oClient;
-
-            serviceWatcher = FileSystems.getDefault().newWatchService();
-            Path path = Paths.get(fileFolderPath);
-            path.register(serviceWatcher, ENTRY_CREATE);
-            log.info("CSV trying to subscribe to {}", fileFolderPath);
+            this.fileFolderPath = fileFolderPath;
 
             prepareConfigurationData();
 
-            new Thread(() -> processThread(fileFolderPath)).start();
-
-            // working on files already that exist in folder.
-            if (options.get("processExistingFiles") != null) {
-                Object processExistingFiles = options.get("processExistingFiles");
-                if (processExistingFiles instanceof Boolean)
-                    if ((boolean) processExistingFiles) {
-                        log.info("Start working on existing file in folder {}", fileFolderPath);
-                        handleExistingFiles(fileFolderPath);
-                    }
+            if (isRunnigInDocker) {
+                this.fullFilePath = fixFileFolderPathForDocker(this.fullFilePath);
+                this.fileFolderPath = fixFileFolderPathForDocker(this.fileFolderPath);
             }
+            String tmpFileFolderPath = this.fileFolderPath;
+
+            log.info("CSV Running in Docker , trying to subscribe to {} PollTime {}", this.fileFolderPath, pollTime);
+
+            TimerTask task = new TimerTask() {
+                @Override
+                public void run() {
+                    log.info("TimerTask Start working on existing file in folder {}", tmpFileFolderPath);
+                    handleExistingFiles(tmpFileFolderPath);
+
+                }
+            };
+            // Create new Timer, and schedule the task according to the pollTime
+            inDockerTime = new Timer("executePolling");
+            inDockerTime.schedule(task, 0, pollTime);
+
+            /*
+             * } else { log.info("CSV not running in Docker , trying to subscribe to {}",
+             * fileFolderPath);
+             * 
+             * serviceWatcher = FileSystems.getDefault().newWatchService(); Path path =
+             * Paths.get(fileFolderPath); path.register(serviceWatcher, ENTRY_CREATE);
+             * 
+             * new Thread(() -> processThread(fileFolderPath)).start();
+             * 
+             * // working on files already that exist in folder. if
+             * (options.get("processExistingFiles") != null) { Object processExistingFiles =
+             * options.get("processExistingFiles"); if (processExistingFiles instanceof
+             * Boolean) if ((boolean) processExistingFiles) {
+             * log.info("Start working on existing file in folder {}", fileFolderPath);
+             * handleExistingFiles(fileFolderPath); } }
+             * 
+             * }
+             */
+
         } catch (Exception e) {
             log.error("CSV failed to read  from {}", fullFilePath, e);
             reportCSVError(e);
@@ -376,7 +415,10 @@ public class CSV {
             Map<String, ?> request = (Map<String, ?>) message.getObject();
             Map<String, Object> body = (Map<String, Object>) request.get(BODY_KEYWORD);
             checkedAttribute = PATH_KEYWORD;
-            pathStr = (String) body.get(PATH_KEYWORD);
+            pathStr =  (String) body.get(PATH_KEYWORD);
+            if (isRunnigInDocker) {
+                pathStr = fixFileFolderPathForDocker(pathStr);
+            }
             Path path = Paths.get(pathStr);
             if (!path.toFile().exists()) {
                 rsArray = CreateResponse(CSV_NOFOLDER_CODE, CSV_NOFOLDER_MESSAGE, pathStr);
@@ -385,7 +427,7 @@ public class CSV {
             checkedAttribute = FILE_KEYWORD;
             fileStr = (String) body.get(FILE_KEYWORD);
             checkedAttribute = "";
-            String fullFilePath = path.toString() + "\\" + fileStr;
+            String fullFilePath = path.toString() + "/" + fileStr;
             File file = new File(fullFilePath);
             if (file.exists()) {
                 file.delete();
@@ -428,6 +470,10 @@ public class CSV {
             Map<String, Object> body = (Map<String, Object>) request.get(BODY_KEYWORD);
             checkedAttribute = PATH_KEYWORD;
             pathStr = (String) body.get(PATH_KEYWORD);
+            if (isRunnigInDocker) {
+                pathStr = fixFileFolderPathForDocker(pathStr);
+            }
+
             Path path = Paths.get(pathStr);
             if (!path.toFile().exists()) {
                 java.nio.file.Files.createDirectories(path);
@@ -437,7 +483,7 @@ public class CSV {
             checkedAttribute = FILE_KEYWORD;
             fileStr = (String) body.get(FILE_KEYWORD);
             checkedAttribute = "";
-            String fullFilePath = path.toString() + "\\" + fileStr;
+            String fullFilePath = path.toString() + "/" + fileStr;
             File file = new File(fullFilePath);
             if (file.exists()) {
                 // file already created.
@@ -447,7 +493,7 @@ public class CSV {
                 file.createNewFile();
 
                 try (FileOutputStream fos = new FileOutputStream(file);
-                    BufferedWriter bw = new BufferedWriter(new OutputStreamWriter(fos))) {
+                        BufferedWriter bw = new BufferedWriter(new OutputStreamWriter(fos))) {
 
                     checkedAttribute = CONTENT_KEYWORD;
                     List<Map<String, Object>> content = (List<Map<String, Object>>) body.get(CONTENT_KEYWORD);
@@ -500,6 +546,10 @@ public class CSV {
             Map<String, Object> body = (Map<String, Object>) request.get(checkedAttribute);
             checkedAttribute = PATH_KEYWORD;
             pathStr = (String) body.get(PATH_KEYWORD);
+            if (isRunnigInDocker) {
+                pathStr = fixFileFolderPathForDocker(pathStr);
+            }
+
             Path path = Paths.get(pathStr);
             if (!path.toFile().exists()) {
                 rsArray = CreateResponse(CSV_NOFOLDER_CODE, CSV_NOFOLDER_MESSAGE, pathStr);
@@ -507,7 +557,7 @@ public class CSV {
 
             checkedAttribute = FILE_KEYWORD;
             fileStr = (String) body.get(FILE_KEYWORD);
-            String fullFilePath = path.toString() + "\\" + fileStr;
+            String fullFilePath = path.toString() + "/" + fileStr;
             File file = new File(fullFilePath);
             if (file.exists()) {
                 try (FileWriter fw = new FileWriter(file, true); BufferedWriter bw = new BufferedWriter(fw)) {
@@ -547,6 +597,15 @@ public class CSV {
         }
     }
 
+    public static Boolean isRunningInsideDocker() {
+
+        try (Stream<String> stream = Files.lines(Paths.get("/proc/1/cgroup"))) {
+            return stream.anyMatch(line -> line.contains("docker"));
+        } catch (IOException e) {
+            return false;
+        }
+    }
+
     /**
      * Function handles the watcher service notifications. Currently, only new
      * entries are being handled , however , it logs rename files as well without
@@ -554,42 +613,39 @@ public class CSV {
      *
      * @param fileFolderPath - path to the watched folder
      */
-    void processThread(String fileFolderPath) {
-        WatchKey key = null;
-        bContinue = true;
-
-        while (bContinue) {
-            try {
-                key = serviceWatcher.poll(100, TimeUnit.MILLISECONDS);
-                if (key != null) {
-                    // Dequeue events
-                    Kind<?> kind = null;
-                    for (WatchEvent<?> watchEvent : key.pollEvents()) {
-                        // Get the type of the event
-                        kind = watchEvent.kind();
-
-                        if (OVERFLOW == kind) {
-                            continue; // loop
-                        } else if (ENTRY_CREATE == kind) {
-                            // A new Path was created
-                            @SuppressWarnings("unchecked")
-                            Path newPath = ((WatchEvent<Path>) watchEvent).context();
-                            log.info("New path created: {}", newPath.toString());
-                            executeInPool(fileFolderPath, newPath.toString());
-                        } else if (ENTRY_MODIFY == kind) {
-                            // modified
-                            @SuppressWarnings("unchecked")
-                            Path newPath = ((WatchEvent<Path>) watchEvent).context();
-                            log.debug("Ignored path modified: {}", newPath.toString());
-                        }
-                    }
-                    key.reset();
-                }
-            } catch (InterruptedException ex1) {
-                log.error("processThread inloop failure", ex1);
-            }
+    /*
+     * void processThread(String fileFolderPath) { WatchKey key = null; bContinue =
+     * true;
+     * 
+     * this.watcherThread = Thread.currentThread();
+     * 
+     * while (bContinue) { try { key = serviceWatcher.poll(100,
+     * TimeUnit.MILLISECONDS); if (key != null) { // Dequeue events Kind<?> kind =
+     * null; for (WatchEvent<?> watchEvent : key.pollEvents()) { // Get the type of
+     * the event kind = watchEvent.kind();
+     * 
+     * if (OVERFLOW == kind) { continue; // loop } else if (ENTRY_CREATE == kind) {
+     * // A new Path was created
+     * 
+     * @SuppressWarnings("unchecked") Path newPath = ((WatchEvent<Path>)
+     * watchEvent).context(); log.info("New path created: {}", newPath.toString());
+     * executeInPool(fileFolderPath, newPath.toString()); } else if (ENTRY_MODIFY ==
+     * kind) { // modified
+     * 
+     * @SuppressWarnings("unchecked") Path newPath = ((WatchEvent<Path>)
+     * watchEvent).context(); log.debug("Ignored path modified: {}",
+     * newPath.toString()); } } key.reset(); } } catch (InterruptedException ex1) {
+     * log.error("processThread inloop failure", ex1); } }
+     * log.info("Process thread exited"); this.watcherThread = null; }
+     */
+    String fixFileFolderPathForDocker(String filePath) {
+        if (filePath.indexOf(":") > -1) {
+            filePath = "/" + filePath.replace(":", "").toLowerCase();
+        } else {
+            filePath =filePath.toLowerCase(); 
         }
-        log.info("Process thread exited");
+
+        return filePath;
     }
 
     public void reportCSVError(Exception e) throws VantiqCSVException {
@@ -600,16 +656,19 @@ public class CSV {
 
     public void close() {
         // Close single connection if open
-        try {
-            bContinue = false;
-            wait(1000);
-        } catch (Exception ex) {
+        if (inDockerTime != null) {
+            inDockerTime.cancel();
+            inDockerTime = null;
         }
+        /*
+         * try { while (this.watcherThread != null){ bContinue = false; wait(1000); } }
+         * catch (Exception ex) { }
+         */
         log.info("*******************Process thread exited");
         executionPool.shutdownNow();
-        try {
-            serviceWatcher.close();
-        } catch (IOException ioex) {
-        }
+        /*
+         * try { if (serviceWatcher != null){ serviceWatcher.close(); serviceWatcher =
+         * null; } } catch (IOException ioex) { }
+         */
     }
 }
