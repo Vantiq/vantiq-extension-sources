@@ -318,9 +318,7 @@ public class ExtensionWebSocketClient {
      * listener to acknowledge notifications upon receipt of a response message.
      */
     void acknowledgeNotification() {
-        if (outstandingNotifications != null) {
-            outstandingNotifications.release();
-        }
+        outstandingNotifications.release();
     }
 
     /**
