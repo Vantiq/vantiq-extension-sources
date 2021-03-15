@@ -613,31 +613,6 @@ public class CSV {
      *
      * @param fileFolderPath - path to the watched folder
      */
-    /*
-     * void processThread(String fileFolderPath) { WatchKey key = null; bContinue =
-     * true;
-     * 
-     * this.watcherThread = Thread.currentThread();
-     * 
-     * while (bContinue) { try { key = serviceWatcher.poll(100,
-     * TimeUnit.MILLISECONDS); if (key != null) { // Dequeue events Kind<?> kind =
-     * null; for (WatchEvent<?> watchEvent : key.pollEvents()) { // Get the type of
-     * the event kind = watchEvent.kind();
-     * 
-     * if (OVERFLOW == kind) { continue; // loop } else if (ENTRY_CREATE == kind) {
-     * // A new Path was created
-     * 
-     * @SuppressWarnings("unchecked") Path newPath = ((WatchEvent<Path>)
-     * watchEvent).context(); log.info("New path created: {}", newPath.toString());
-     * executeInPool(fileFolderPath, newPath.toString()); } else if (ENTRY_MODIFY ==
-     * kind) { // modified
-     * 
-     * @SuppressWarnings("unchecked") Path newPath = ((WatchEvent<Path>)
-     * watchEvent).context(); log.debug("Ignored path modified: {}",
-     * newPath.toString()); } } key.reset(); } } catch (InterruptedException ex1) {
-     * log.error("processThread inloop failure", ex1); } }
-     * log.info("Process thread exited"); this.watcherThread = null; }
-     */
     String fixFileFolderPathForDocker(String filePath) {
         if (filePath.indexOf(":") > -1) {
             filePath = "/" + filePath.replace(":", "").toLowerCase();
@@ -660,15 +635,6 @@ public class CSV {
             inDockerTime.cancel();
             inDockerTime = null;
         }
-        /*
-         * try { while (this.watcherThread != null){ bContinue = false; wait(1000); } }
-         * catch (Exception ex) { }
-         */
-        log.info("*******************Process thread exited");
         executionPool.shutdownNow();
-        /*
-         * try { if (serviceWatcher != null){ serviceWatcher.close(); serviceWatcher =
-         * null; } } catch (IOException ioex) { }
-         */
     }
 }
