@@ -282,7 +282,9 @@ public class ExtensionWebSocketClient {
                 log.warn("Obtaining space to sent notifications was interrupted.", ie);
             } catch (Exception e) {
                 // If we get an exception during the send, we're unlikely to get a response so release now.
-                outstandingNotifications.release();
+                if (outstandingNotifications != null) {
+                    outstandingNotifications.release();
+                }
                 throw e;
             }
         } else {
@@ -298,7 +300,9 @@ public class ExtensionWebSocketClient {
      * receipt of a response message.
      */
     void acknowledgeNotification() {
-        outstandingNotifications.release();
+        if (outstandingNotifications != null) {
+            outstandingNotifications.release();
+        }
     }
 
     /**
