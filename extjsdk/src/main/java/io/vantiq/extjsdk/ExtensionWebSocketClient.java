@@ -298,11 +298,7 @@ public class ExtensionWebSocketClient {
      * receipt of a response message.
      */
     void acknowledgeNotification() {
-        if (outstandingNotifications != null)
             outstandingNotifications.release();
-        else
-            log.warn("outstandingNotifications is null");
-
     }
 
     /**
