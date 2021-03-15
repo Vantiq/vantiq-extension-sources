@@ -136,16 +136,11 @@ public class CSV {
     Map<String, Object> config;
     Map<String, Object> options;
 
-    // Control of thread should continue to work, set to false in Stop.
-    // boolean bContinue = true;
-
     boolean isRunnigInDocker = isRunningInsideDocker();
     // Components used
-    // WatchService serviceWatcher;
     ExecutorService executionPool = null;
     ExtensionWebSocketClient oClient;
 
-    // Thread watcherThread ;
     String fullFilePath;
     String fileFolderPath;
     String extension = ".csv";
@@ -160,6 +155,7 @@ public class CSV {
 
     private static final int MAX_ACTIVE_TASKS = 5;
     private static final int MAX_QUEUED_TASKS = 10;
+    private static final int DEFAULT_POLL_TIME = 30000;
 
     private static final String MAX_ACTIVE_TASKS_LABEL = "maxActiveTasks";
     private static final String MAX_QUEUED_TASKS_LABEL = "maxQueuedTasks";
@@ -210,12 +206,11 @@ public class CSV {
             deleteAfterProcessing = (boolean) options.get("deleteAfterProcessing");
         }
 
+        pollTime = DEFAULT_POLL_TIME;
         if (options.get("pollTime") != null) {
             pollTime = (Integer) options.get("pollTime");
-        } else {
-            pollTime = 30000;
         }
-
+        
         int maxActiveTasks = MAX_ACTIVE_TASKS;
         int maxQueuedTasks = MAX_QUEUED_TASKS;
 
@@ -279,25 +274,6 @@ public class CSV {
             // Create new Timer, and schedule the task according to the pollTime
             inDockerTime = new Timer("executePolling");
             inDockerTime.schedule(task, 0, pollTime);
-
-            /*
-             * } else { log.info("CSV not running in Docker , trying to subscribe to {}",
-             * fileFolderPath);
-             * 
-             * serviceWatcher = FileSystems.getDefault().newWatchService(); Path path =
-             * Paths.get(fileFolderPath); path.register(serviceWatcher, ENTRY_CREATE);
-             * 
-             * new Thread(() -> processThread(fileFolderPath)).start();
-             * 
-             * // working on files already that exist in folder. if
-             * (options.get("processExistingFiles") != null) { Object processExistingFiles =
-             * options.get("processExistingFiles"); if (processExistingFiles instanceof
-             * Boolean) if ((boolean) processExistingFiles) {
-             * log.info("Start working on existing file in folder {}", fileFolderPath);
-             * handleExistingFiles(fileFolderPath); } }
-             * 
-             * }
-             */
 
         } catch (Exception e) {
             log.error("CSV failed to read  from {}", fullFilePath, e);
@@ -415,7 +391,7 @@ public class CSV {
             Map<String, ?> request = (Map<String, ?>) message.getObject();
             Map<String, Object> body = (Map<String, Object>) request.get(BODY_KEYWORD);
             checkedAttribute = PATH_KEYWORD;
-            pathStr =  (String) body.get(PATH_KEYWORD);
+            pathStr = (String) body.get(PATH_KEYWORD);
             if (isRunnigInDocker) {
                 pathStr = fixFileFolderPathForDocker(pathStr);
             }
@@ -597,6 +573,10 @@ public class CSV {
         }
     }
 
+    /**
+     * this function detects if the code execute in a conteiner envrionment or not. 
+     * @return
+     */
     public static Boolean isRunningInsideDocker() {
 
         try (Stream<String> stream = Files.lines(Paths.get("/proc/1/cgroup"))) {
@@ -617,7 +597,7 @@ public class CSV {
         if (filePath.indexOf(":") > -1) {
             filePath = "/" + filePath.replace(":", "").toLowerCase();
         } else {
-            filePath =filePath.toLowerCase(); 
+            filePath = filePath.toLowerCase();
         }
 
         return filePath;
