@@ -275,14 +275,17 @@ public class ExtensionWebSocketClient {
         ExtensionServiceMessage msg = new ExtensionServiceMessage("");
         msg.fromMap(m);
         if (isConnected()) {
+            Semaphore localOutstandingNotifications = outstandingNotifications;
             try {
-                outstandingNotifications.acquire();
+                localOutstandingNotifications.acquire();
                 this.send(msg);
             } catch (InterruptedException ie) {
                 log.warn("Obtaining space to sent notifications was interrupted.", ie);
             } catch (Exception e) {
                 // If we get an exception during the send, we're unlikely to get a response so release now.
-                outstandingNotifications.release();
+                if (localOutstandingNotifications != null) {
+                    localOutstandingNotifications.release();
+                }
                 throw e;
             }
         } else {
@@ -298,7 +301,10 @@ public class ExtensionWebSocketClient {
      * receipt of a response message.
      */
     void acknowledgeNotification() {
-        outstandingNotifications.release();
+        Semaphore localOutstandingNotifications = outstandingNotifications;
+        if (localOutstandingNotifications != null) {
+            localOutstandingNotifications.release();
+        }
     }
 
     /**
