@@ -255,8 +255,8 @@ public class CSV {
             prepareConfigurationData();
 
             if (isRunningInDocker) {
-                this.fullFilePath = fixFileFolderPathForDocker(this.fullFilePath);
-                this.fileFolderPath = fixFileFolderPathForDocker(this.fileFolderPath);
+                this.fullFilePath = fixFileFolderPathForUnix(this.fullFilePath);
+                this.fileFolderPath = fixFileFolderPathForUnix(this.fileFolderPath);
             }
             String tmpFileFolderPath = this.fileFolderPath;
 
@@ -392,7 +392,7 @@ public class CSV {
             checkedAttribute = PATH_KEYWORD;
             pathStr = (String) body.get(PATH_KEYWORD);
             if (isRunningInDocker) {
-                pathStr = fixFileFolderPathForDocker(pathStr);
+                pathStr = fixFileFolderPathForUnix(pathStr);
             }
             Path path = Paths.get(pathStr);
             if (!path.toFile().exists()) {
@@ -402,7 +402,7 @@ public class CSV {
             checkedAttribute = FILE_KEYWORD;
             fileStr = (String) body.get(FILE_KEYWORD);
             checkedAttribute = "";
-            String fullFilePath = path.toString() + "/" + fileStr;
+            String fullFilePath = path.toString() + File.separator + fileStr;
             File file = new File(fullFilePath);
             if (file.exists()) {
                 file.delete();
@@ -446,7 +446,7 @@ public class CSV {
             checkedAttribute = PATH_KEYWORD;
             pathStr = (String) body.get(PATH_KEYWORD);
             if (isRunningInDocker) {
-                pathStr = fixFileFolderPathForDocker(pathStr);
+                pathStr = fixFileFolderPathForUnix(pathStr);
             }
 
             Path path = Paths.get(pathStr);
@@ -458,7 +458,7 @@ public class CSV {
             checkedAttribute = FILE_KEYWORD;
             fileStr = (String) body.get(FILE_KEYWORD);
             checkedAttribute = "";
-            String fullFilePath = path.toString() + "/" + fileStr;
+            String fullFilePath = path.toString() + File.separator + fileStr;
             File file = new File(fullFilePath);
             if (file.exists()) {
                 // file already created.
@@ -522,7 +522,7 @@ public class CSV {
             checkedAttribute = PATH_KEYWORD;
             pathStr = (String) body.get(PATH_KEYWORD);
             if (isRunningInDocker) {
-                pathStr = fixFileFolderPathForDocker(pathStr);
+                pathStr = fixFileFolderPathForUnix(pathStr);
             }
 
             Path path = Paths.get(pathStr);
@@ -532,7 +532,7 @@ public class CSV {
 
             checkedAttribute = FILE_KEYWORD;
             fileStr = (String) body.get(FILE_KEYWORD);
-            String fullFilePath = path.toString() + "/" + fileStr;
+            String fullFilePath = path.toString() + File.separator + fileStr;
             File file = new File(fullFilePath);
             if (file.exists()) {
                 try (FileWriter fw = new FileWriter(file, true); BufferedWriter bw = new BufferedWriter(fw)) {
@@ -592,9 +592,9 @@ public class CSV {
      *
      * @param fileFolderPath - path to the watched folder
      */
-    String fixFileFolderPathForDocker(String filePath) {
+    String fixFileFolderPathForUnix(String filePath) {
         if (filePath.indexOf(":") > -1) {
-            filePath = "/" + filePath.replace(":", "").toLowerCase();
+            filePath = File.separator + filePath.replace(":", "").toLowerCase();
         } else {
             filePath = filePath.toLowerCase();
         }
