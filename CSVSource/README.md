@@ -112,7 +112,7 @@ The Configuration document may look similar to the following example:
             "processExistingFiles": true,
             "extensionAfterProcessing": "csv.done",
             "deleteAfterProcessing": false,
-            "pollTime":30000
+            "pollTime": 30000
         }
     }
 ```

@@ -136,7 +136,7 @@ public class CSV {
     Map<String, Object> config;
     Map<String, Object> options;
 
-    boolean isRunnigInDocker = isRunningInsideDocker();
+    boolean isRunningInDocker = isRunningInsideDocker();
     // Components used
     ExecutorService executionPool = null;
     ExtensionWebSocketClient oClient;
@@ -150,8 +150,7 @@ public class CSV {
     boolean deleteAfterProcessing = false;
     int pollTime;
 
-    Thread currThread;
-    Timer inDockerTime;
+    Timer timerTask;
 
     private static final int MAX_ACTIVE_TASKS = 5;
     private static final int MAX_QUEUED_TASKS = 10;
@@ -255,7 +254,7 @@ public class CSV {
 
             prepareConfigurationData();
 
-            if (isRunnigInDocker) {
+            if (isRunningInDocker) {
                 this.fullFilePath = fixFileFolderPathForDocker(this.fullFilePath);
                 this.fileFolderPath = fixFileFolderPathForDocker(this.fileFolderPath);
             }
@@ -272,8 +271,8 @@ public class CSV {
                 }
             };
             // Create new Timer, and schedule the task according to the pollTime
-            inDockerTime = new Timer("executePolling");
-            inDockerTime.schedule(task, 0, pollTime);
+            timerTask = new Timer("executePolling");
+            timerTask.schedule(task, 0, pollTime);
 
         } catch (Exception e) {
             log.error("CSV failed to read  from {}", fullFilePath, e);
@@ -392,7 +391,7 @@ public class CSV {
             Map<String, Object> body = (Map<String, Object>) request.get(BODY_KEYWORD);
             checkedAttribute = PATH_KEYWORD;
             pathStr = (String) body.get(PATH_KEYWORD);
-            if (isRunnigInDocker) {
+            if (isRunningInDocker) {
                 pathStr = fixFileFolderPathForDocker(pathStr);
             }
             Path path = Paths.get(pathStr);
@@ -446,7 +445,7 @@ public class CSV {
             Map<String, Object> body = (Map<String, Object>) request.get(BODY_KEYWORD);
             checkedAttribute = PATH_KEYWORD;
             pathStr = (String) body.get(PATH_KEYWORD);
-            if (isRunnigInDocker) {
+            if (isRunningInDocker) {
                 pathStr = fixFileFolderPathForDocker(pathStr);
             }
 
@@ -469,7 +468,7 @@ public class CSV {
                 file.createNewFile();
 
                 try (FileOutputStream fos = new FileOutputStream(file);
-                        BufferedWriter bw = new BufferedWriter(new OutputStreamWriter(fos))) {
+                    BufferedWriter bw = new BufferedWriter(new OutputStreamWriter(fos))) {
 
                     checkedAttribute = CONTENT_KEYWORD;
                     List<Map<String, Object>> content = (List<Map<String, Object>>) body.get(CONTENT_KEYWORD);
@@ -522,7 +521,7 @@ public class CSV {
             Map<String, Object> body = (Map<String, Object>) request.get(checkedAttribute);
             checkedAttribute = PATH_KEYWORD;
             pathStr = (String) body.get(PATH_KEYWORD);
-            if (isRunnigInDocker) {
+            if (isRunningInDocker) {
                 pathStr = fixFileFolderPathForDocker(pathStr);
             }
 
@@ -611,9 +610,9 @@ public class CSV {
 
     public void close() {
         // Close single connection if open
-        if (inDockerTime != null) {
-            inDockerTime.cancel();
-            inDockerTime = null;
+        if (timerTask != null) {
+            timerTask.cancel();
+            timerTask = null;
         }
         executionPool.shutdownNow();
     }
