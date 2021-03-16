@@ -16,7 +16,7 @@ In this way, in cases where the extension is not running during file updates, it
 In addition to handling delimiter-separated fields, this connector can extract fields from fixed positions in the record.
 This is configured as described below.
 
-When running this connector on Linux and the supplied file path are windoes style, the file path is dynamically converted to a UNIX file path. This means that the same configuration can be used for both windows and non-windows runtimes.
+When running this connector on Linux and the supplied file path are windows style, the file path is dynamically converted to a UNIX file path. This means that the same configuration can be used for both windows and non-windows runtimes if and only if the configuration is done in windows path style.
 
 It is also possible to have the connector write files. This operation is described below.
 
