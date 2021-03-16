@@ -136,7 +136,7 @@ public class CSV {
     Map<String, Object> config;
     Map<String, Object> options;
 
-    boolean isRunningInDocker = isRunningInsideDocker();
+    boolean isRunningInLinux = isRunningInsideLinux();
     // Components used
     ExecutorService executionPool = null;
     ExtensionWebSocketClient oClient;
@@ -254,7 +254,7 @@ public class CSV {
 
             prepareConfigurationData();
 
-            if (isRunningInDocker) {
+            if (isRunningInLinux) {
                 this.fullFilePath = fixFileFolderPathForUnix(this.fullFilePath);
                 this.fileFolderPath = fixFileFolderPathForUnix(this.fileFolderPath);
             }
@@ -391,7 +391,7 @@ public class CSV {
             Map<String, Object> body = (Map<String, Object>) request.get(BODY_KEYWORD);
             checkedAttribute = PATH_KEYWORD;
             pathStr = (String) body.get(PATH_KEYWORD);
-            if (isRunningInDocker) {
+            if (isRunningInLinux) {
                 pathStr = fixFileFolderPathForUnix(pathStr);
             }
             Path path = Paths.get(pathStr);
@@ -445,7 +445,7 @@ public class CSV {
             Map<String, Object> body = (Map<String, Object>) request.get(BODY_KEYWORD);
             checkedAttribute = PATH_KEYWORD;
             pathStr = (String) body.get(PATH_KEYWORD);
-            if (isRunningInDocker) {
+            if (isRunningInLinux) {
                 pathStr = fixFileFolderPathForUnix(pathStr);
             }
 
@@ -521,7 +521,7 @@ public class CSV {
             Map<String, Object> body = (Map<String, Object>) request.get(checkedAttribute);
             checkedAttribute = PATH_KEYWORD;
             pathStr = (String) body.get(PATH_KEYWORD);
-            if (isRunningInDocker) {
+            if (isRunningInLinux) {
                 pathStr = fixFileFolderPathForUnix(pathStr);
             }
 
@@ -576,13 +576,8 @@ public class CSV {
      * this function detects if the code execute in a conteiner envrionment or not. 
      * @return
      */
-    public static Boolean isRunningInsideDocker() {
-
-        try (Stream<String> stream = Files.lines(Paths.get("/proc/1/cgroup"))) {
-            return stream.anyMatch(line -> line.contains("docker"));
-        } catch (IOException e) {
-            return false;
-        }
+    public static Boolean isRunningInsideLinux() {
+        return File.separator == "/";
     }
 
     /**
