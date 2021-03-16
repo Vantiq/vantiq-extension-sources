@@ -16,6 +16,8 @@ In this way, in cases where the extension is not running during file updates, it
 In addition to handling delimiter-separated fields, this connector can extract fields from fixed positions in the record.
 This is configured as described below.
 
+When running this connector on Linux and the supplied file path are windows style, the file path is dynamically converted to a UNIX file path. This means that the same configuration can be used for both windows and non-windows runtimes if and only if the configuration is done in windows path style.
+
 It is also possible to have the connector write files. This operation is described below.
 
 The documentation has been split into two parts, [Setting Up Your Machine](#machine) and [Setting Up Your Vantiq](#vantiq).
@@ -109,7 +111,8 @@ The Configuration document may look similar to the following example:
             "maxQueuedTasks": 4,
             "processExistingFiles": true,
             "extensionAfterProcessing": "csv.done",
-            "deleteAfterProcessing": false
+            "deleteAfterProcessing": false,
+            "pollTime": 30000
         }
     }
 ```
@@ -215,6 +218,7 @@ the configuration should be similar to
 * **processExistingFiles**: Optional. If set to `true`, the service will process all files already existing in the folder `fileFolderPath` (filtered using `filePrefix` and the `fileExtension`). Otherwise the service will process only new files.  Default is`false`.
 * **extensionAfterProcessing**: Optional. Rename the file after it has been processed to avoid reprocessing (_e.g._ for cases where `processExistingFiles` is set to `true`).  The default value is combination of the 'fileExtension' and `done`.  For example `.csv.done` when `fileExtension` set to `.csv`.
 * **deleteAfterProcessing**: Optional. Delete the processed file only if processed successfully to avoid reprocessing in cases where `processExistingFiles` is set to `true`. Default value is `false`.
+* **pollTime**: Optional. Default is 30000 milliseconds. The frequency at which the connector checks the target folder for new files to process.
 
 **Note**: the sum of **maxActiveTask** and **maxQueuedTasks** is the maximum number of files that can be processed simultaneously.
 If more than this number is attempted,
