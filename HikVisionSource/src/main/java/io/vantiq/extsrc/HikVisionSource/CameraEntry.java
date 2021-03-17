@@ -29,7 +29,7 @@ public class CameraEntry {
     public CameraEntry(Map<String, Object> o, int channel) {
         CameraId = (String) o.get("CameraId");
         if (o.get("Channel")!=null){
-            Channel = 101 ;//Integer.parseInt((String) o.get("Channel"));
+            Channel = (Integer) o.get("Channel");
         } else {
             Channel = channel;
         }

@@ -77,6 +77,7 @@ public class HikVision {
     ExtensionWebSocketClient oClient;
     List<CameraEntry> cameras;
     Map<String, Object> config;
+    Map<String, Object> general;
     Map<String, Object> options;
     boolean bContinue = true;
 
@@ -306,6 +307,8 @@ public class HikVision {
         Pointer pInfo = struFaceSnapMatchAlarm.getPointer();
         pInfo.write(0, pAlarmInfo.RecvBuffer, 0, struFaceSnapMatchAlarm.size());
         struFaceSnapMatchAlarm.read();
+
+        testDumpObjToBin(struFaceSnapMatchAlarm,"d:/tmp/thermo/struFaceSnapMatchAlarm.bin");
 
         String strIP = new String(pAlarmer.sDeviceIP, StandardCharsets.US_ASCII).trim();
         String stringAlarm = "";
@@ -1208,10 +1211,13 @@ public class HikVision {
         this.vantiqServer = (String) config.get("vantiqServer");
         this.authToken = (String) config.get("authToken");
 
-        this.sdkLogPath = (String) config.get("sdkLogPath");
-        this.DVRImageFolderPath = (String) config.get("DVRImageFolderPath"); // "d:/tmp/Thermo";
-        this.VantiqDocumentPath = (String) config.get("VantiqDocumentPath"); // "public/image";
-        this.vantiqResourcePath = (String) config.get("VantiqResourcePath"); // "/resources/documents";
+        general = (Map<String, Object>) config.get("general");
+
+
+        this.sdkLogPath = (String) general.get("sdkLogPath");
+        this.DVRImageFolderPath = (String) general.get("DVRImageFolderPath"); // "d:/tmp/Thermo";
+        this.VantiqDocumentPath = (String) general.get("VantiqDocumentPath"); // "public/image";
+        this.vantiqResourcePath = (String) general.get("VantiqResourcePath"); // "/resources/documents";
 
         int maxActiveTasks = 5;
         int maxQueuedTasks = 10;
