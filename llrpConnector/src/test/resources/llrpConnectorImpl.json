@@ -1,0 +1,6 @@
+{
+  "name" : "LLRPConnector",
+  "baseType" : "EXTENSION",
+  "verticle" : "service:extensionSource",
+  "config" : {}
+}
