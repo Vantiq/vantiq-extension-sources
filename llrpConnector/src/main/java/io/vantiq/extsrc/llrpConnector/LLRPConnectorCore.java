@@ -14,7 +14,7 @@ import io.vantiq.extjsdk.Handler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.*;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
@@ -141,7 +141,6 @@ public class LLRPConnectorCore {
         @Override
         public void handleMessage(ExtensionServiceMessage message) {
             log.trace("Reconnect message received. Reinitializing configuration");
-            System.out.println("Reconnect message received. Reinitializing configuration");
 
             // Do connector-specific stuff here
             llrpConnectorHandleConfiguration.configComplete = false;
@@ -162,7 +161,6 @@ public class LLRPConnectorCore {
         @Override
         public void handleMessage(ExtensionWebSocketClient message) {
             log.trace("WebSocket closed unexpectedly. Attempting to reconnect");
-            System.out.println("WebSocket closed unexpectedly. Attempting to reconnect");
 
             // Do connector-specific stuff here
             llrpConnectorHandleConfiguration.configComplete = false;
@@ -191,11 +189,10 @@ public class LLRPConnectorCore {
     public void sendMessage(Map<String, Object> msg) {
 
         log.trace("Sending message: " + msg);
-        System.out.println("SendingMessage: " + msg);
         try {
             client.sendNotification(msg);
-        } catch (Exception exception){
-            System.out.println("Something went wrong");
+        } catch (Exception e) {
+            log.error("sendMessage: unexpected error. ", e);
         }
     }
 
@@ -203,7 +200,7 @@ public class LLRPConnectorCore {
      * Closes all resources held by this program except for the {@link ExtensionWebSocketClient}.
      */
     public void close() {
-        System.out.println("LLRPConnectorCore: close all resources");
+        log.info("LLRPConnectorCore: close all resources");
         // Do connector-specific stuff here
         // Stop connection with the reader, letting it buffer reads
         if (llrp != null)

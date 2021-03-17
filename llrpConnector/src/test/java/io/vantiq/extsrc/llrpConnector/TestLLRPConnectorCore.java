@@ -10,19 +10,11 @@ package io.vantiq.extsrc.llrpConnector;
 
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assume.assumeTrue;
-
-import java.util.ArrayList;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
 
 import org.junit.After;
 import org.junit.Before;
-import org.junit.BeforeClass;
 import org.junit.Test;
 
-import io.vantiq.extjsdk.ExtensionServiceMessage;
 import io.vantiq.extjsdk.FalseClient;
 
 public class TestLLRPConnectorCore {
@@ -35,9 +27,6 @@ public class TestLLRPConnectorCore {
 
     @Before
     public void setup() {
-//        sourceName = "zebraRFID";   // "source";
-//        authToken = "rco8Tn6Db433m8BmdyKQ4UABVnKUBc0Ds_mtSBbCiE4="; // "token";
-//        targetVantiqServer = "internal.vantiq.com";    // "dev.vantiq.com";
         sourceName = "source";
         authToken = "token";
         targetVantiqServer = "dev.vantiq.com";

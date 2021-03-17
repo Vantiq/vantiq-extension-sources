@@ -24,7 +24,7 @@ import java.util.Map;
  *{
  *      llrpConfig: {
  *          general: {
- *              <general options>
+ *              (general options)
  *          }
  *      }
  * }
@@ -76,7 +76,6 @@ public class LLRPConnectorHandleConfiguration extends Handler<ExtensionServiceMe
         // Obtain entire config from the message object
         if (!(configObject.get(CONFIG) instanceof Map)) {
             log.error("Configuration failed. No configuration suitable for LLRP Connector.");
-            System.out.println("Configuration failed. No configuration suitable for LLRP Connector.");
             failConfig();
             return;
         }
@@ -85,7 +84,6 @@ public class LLRPConnectorHandleConfiguration extends Handler<ExtensionServiceMe
         // Retrieve the llrpConfig and the vantiq config
         if (!(config.get(LLRP_CONFIG) instanceof Map)) {
             log.error("Configuration failed. Configuration must contain 'llrpConfig' field.");
-            System.out.println("Configuration failed. Configuration must contain 'llrpConfig' field.");
             failConfig();
             return;
         }
@@ -94,7 +92,6 @@ public class LLRPConnectorHandleConfiguration extends Handler<ExtensionServiceMe
         // Get the general options from the llrpConfig
         if (!(llrpConfig.get(GENERAL) instanceof Map)) {
             log.error("Configuration failed. No general options specified.");
-            System.out.println("Configuration failed. No general options specified.");
             failConfig();
             return;
         }
@@ -103,13 +100,12 @@ public class LLRPConnectorHandleConfiguration extends Handler<ExtensionServiceMe
         // Call method to setup the connector with the source configuration
         boolean success = setupLLRPConnector(general);
         if (!success) {
-            System.out.println("Failed during createLLRPConnection.");
+            log.error("Configuration failed. Exception occurred while setting up LLRP Connector: ");
             failConfig();
             return;
         }
 
         log.trace("SetupLLRPConnector complete");
-        System.out.println("SetupLLRPConnector complete");
         configComplete = true;
     }
 
@@ -143,16 +139,16 @@ public class LLRPConnectorHandleConfiguration extends Handler<ExtensionServiceMe
         if (generalConfig.get(TAGREAD_INTERVAL) instanceof Integer) {
            tagReadInterval = (int) generalConfig.get(TAGREAD_INTERVAL);
         } else {
-           log.error("Configuration for "+TAGREAD_INTERVAL+" not found, using "
-                   +DEFAULT_TAGREAD_INTERVAL+" (milliseconds)");
+           log.error("Configuration for " + TAGREAD_INTERVAL + " not found, using "
+                   + DEFAULT_TAGREAD_INTERVAL + " (milliseconds)");
            tagReadInterval = DEFAULT_TAGREAD_INTERVAL;
         }
 
         if (generalConfig.get(LOG_LEVEL) instanceof String) {
             logLevel = (String) generalConfig.get(LOG_LEVEL);
         } else {
-            log.error("Configuration for "+LOG_LEVEL+" not found, using "
-                    +DEFAULT_LOG_LEVEL);
+            log.error("Configuration for " + LOG_LEVEL + " not found, using "
+                    + DEFAULT_LOG_LEVEL);
             logLevel = DEFAULT_LOG_LEVEL;
         }
 
@@ -166,12 +162,10 @@ public class LLRPConnectorHandleConfiguration extends Handler<ExtensionServiceMe
            core.llrp = llrp;
         } catch (VantiqLLRPException | IOException e) {
            log.error("Configuration failed. Exception occurred while setting up LLRP Connector: {}", e);
-           System.out.println("Configuration failed. Exception occurred while setting up LLRP Connector: " + e.getStackTrace());
            return false;
         }
 
         log.trace("LLRP Connector created");
-        System.out.println("LLRP Connector created");
         return true;
     }
 

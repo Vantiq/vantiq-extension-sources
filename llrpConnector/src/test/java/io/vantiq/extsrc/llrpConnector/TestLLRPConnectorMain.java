@@ -14,8 +14,6 @@ import java.security.Permission;
 import java.util.List;
 import java.util.Properties;
 
-import io.vantiq.extsrc.llrpConnector.LLRPConnectorCore;
-import io.vantiq.extsrc.llrpConnector.LLRPConnectorMain;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;

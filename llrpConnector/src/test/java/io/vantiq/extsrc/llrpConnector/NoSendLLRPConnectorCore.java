@@ -9,7 +9,6 @@
 package io.vantiq.extsrc.llrpConnector;
 
 import io.vantiq.extjsdk.FalseClient;
-import io.vantiq.extsrc.llrpConnector.LLRPConnectorHandleConfiguration;
 
 public class NoSendLLRPConnectorCore extends LLRPConnectorCore {
 

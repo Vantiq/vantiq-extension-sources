@@ -71,8 +71,8 @@ public class LLRPConnectorMain {
     private static void startSources(List<LLRPConnectorCore> sources) {
         for (LLRPConnectorCore source : sources) {
             // Starting in threads so they can all connect at once
-            new Thread( () -> {source.start(SOURCE_TIMEOUT);} ).start();
-            System.out.println("Started Source: " + source.sourceName);
+            new Thread( () -> { source.start(SOURCE_TIMEOUT); } ).start();
+            log.trace("Started Source: " + source.sourceName);
         }
     }
 

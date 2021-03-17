@@ -20,19 +20,15 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.Arrays;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Timer;
-import java.util.TimerTask;
 import java.util.concurrent.LinkedBlockingQueue;
 
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 
 import org.apache.commons.lang3.exception.ExceptionUtils;
-import org.json.JSONException;
 import org.json.JSONObject;  // com.google.gson.JsonArray;
 import org.json.JSONArray;
 import org.json.XML;
@@ -50,7 +46,6 @@ import org.llrp.ltk.generated.enumerations.ROReportTriggerType;
 import org.llrp.ltk.generated.enumerations.ROSpecStartTriggerType;
 import org.llrp.ltk.generated.enumerations.ROSpecState;
 import org.llrp.ltk.generated.enumerations.ROSpecStopTriggerType;
-import org.llrp.ltk.generated.enumerations.StatusCode;
 import org.llrp.ltk.generated.messages.ADD_ROSPEC;
 import org.llrp.ltk.generated.messages.ADD_ROSPEC_RESPONSE;
 import org.llrp.ltk.generated.messages.CLOSE_CONNECTION;
@@ -193,7 +188,7 @@ public class LLRPConnector  {
      *  3) GET_READER_CONFIG 			GET_READER_CONFIG_RESPONSE
      *  4) ADD_ROSPEC				 	ADD_ROSPEC_RESPONSE
      *  5) ENABLE_ROSPEC				ENABLE_ROSPEC_RESPONSE
-     *  6) ENABLE_EVENTS_AND_REPORTS	<NONE>
+     *  6) ENABLE_EVENTS_AND_REPORTS	(NONE)
      *
      * During the above cycle, all other READER_EVENT_NOTIFICATION messages
      * are ignored.  After the reader starts up, it queues all messages
@@ -227,7 +222,7 @@ public class LLRPConnector  {
         this.sourceName = llrpCore.getSourceName();
         this.vantiqSourceOffline = false; // We are only called if connection to Vantiq Source is up
         
-        systemPrint("setupLLRP: hostname-"+hostname+":"+readerPort+" tagReadInterval: "+tagReadInterval);
+        systemPrint("setupLLRP: hostname-" + hostname + ":" + readerPort + " tagReadInterval: " + tagReadInterval);
 
         // Connect and set up the Reader - attempt every minute
         connectAndSetupReader();
@@ -301,7 +296,7 @@ public class LLRPConnector  {
                             systemPrint("Connection attempt was successful\n");
                             sendLogMessage(INFO, "Connection to Reader was successful");
                         } else {
-                            String msg = "Reader Connection Unsucessful: " + connectionStatus.toString();
+                            String msg = "Reader Connection Unsuccessful: " + connectionStatus.toString();
                             systemPrint(msg);
                             sendLogMessage(WARN, msg);
                             if (connection != null && !connection.isClosed())
@@ -309,7 +304,7 @@ public class LLRPConnector  {
                             return;
                         }
 
-                        // TODO: Could get the Reader supported version and set to an appropriate version
+                        // May want to get the Reader supported version and set to an appropriate version
 
                         // Get the Reader Capabilities Response
                         readerCapabilities = getReaderCapabilities();
@@ -335,13 +330,13 @@ public class LLRPConnector  {
                                 connection.close();
                             } catch (Exception e1) {
                                 systemPrint("Unable to close open connection. ");
-                                e.printStackTrace();
+                                log.error("Unable to close open connection. ", e);
                                 sendLogMessage(ERROR, "connectAndSetupReader: Unable to close open connection.\n"
                                         + ExceptionUtils.getStackTrace(e1));
                             }
                     } catch (Exception e) {
                         systemPrint("Unexpected error while attempting to connect to the reader");
-                        e.printStackTrace();
+                        log.error("Unexpected error while attempting to connect to the reader ", e);
                         sendLogMessage(ERROR, "connectAndSetupReader: Unexpected error.\n "
                                 + ExceptionUtils.getStackTrace(e));
                     }
@@ -351,7 +346,7 @@ public class LLRPConnector  {
                 }
             } catch (Exception e) {
                 systemPrint("connectAndSetupReader: Unexpected error");
-                e.printStackTrace();
+                log.error("connectAndSetupReader: Unexpected error ", e);
                 sendLogMessage(ERROR, "connectAndSetupReader: Unexpected error.\n" + ExceptionUtils.getStackTrace(e));
             }
         });
@@ -390,12 +385,12 @@ public class LLRPConnector  {
             GET_READER_CAPABILITIES_RESPONSE readerCap = (GET_READER_CAPABILITIES_RESPONSE) m;
 
             returnJSON = XML.toJSONObject(readerCap.toXMLString());
-            sendLogMessage(DEBUG, "READER_CAPABILITIES: "+ returnJSON);
+            sendLogMessage(DEBUG, "READER_CAPABILITIES: " + returnJSON);
         } catch (InvalidLLRPMessageException e) {
             reportLLRPError(e);
         } catch (Exception e) {
-            e.printStackTrace();
-            sendLogMessage(ERROR, "getReaderCapabilities: Unexpected error.\n"+ExceptionUtils.getStackTrace(e));
+            log.error("getReaderCapabilities: Unexpected error ", e);
+            sendLogMessage(ERROR, "getReaderCapabilities: Unexpected error.\n" + ExceptionUtils.getStackTrace(e));
         }
 
         return returnJSON;
@@ -453,7 +448,7 @@ public class LLRPConnector  {
 
             returnJSON = XML.toJSONObject(readerConfig.toXMLString());
             //systemPrint("GET_READER_CONFIG_RESPONSE: " + returnJSON.toString(2));
-            sendLogMessage(DEBUG, "READER_CONFIG: "+ returnJSON);
+            sendLogMessage(DEBUG, "READER_CONFIG: " + returnJSON);
 
             // Get the reader and antennas
             JSONObject config = returnJSON.getJSONObject("llrp:GET_READER_CONFIG_RESPONSE");
@@ -483,8 +478,8 @@ public class LLRPConnector  {
         } catch (InvalidLLRPMessageException e) {
             reportLLRPError(e);
         } catch (Exception e) {
-            e.printStackTrace();
-            sendLogMessage(ERROR, "sendReaderConfiguration: Unexpected error.\n"+ExceptionUtils.getStackTrace(e));
+            log.error("sendReaderConfiguration: Unexpected error ", e);
+            sendLogMessage(ERROR, "sendReaderConfiguration: Unexpected error.\n" + ExceptionUtils.getStackTrace(e));
         }
 
         return returnJSON;
@@ -494,17 +489,17 @@ public class LLRPConnector  {
      * This method creates a SET_READER_CONFIG message to be sent to the reader.
      *
      *  	Possible configuration data parameters for SET_READER_CONFIG:
-     *  		*<ReaderEventNotificationSpec Parameter> - see below
-     *  		<Antenna Properties Parameter>
-     *  		<Antenna Configuration Parameter>
-     *  		*<ROReportSpec Parameter> - see below
-     *  		*<AccessReportSpec Parameter> - see below
-     *  		*<KeepaliveSpec Parameter> - carries the specification for the keepalive
+     *  		*ReaderEventNotificationSpec Parameter - see below
+     *  		Antenna Properties Parameter
+     *  		Antenna Configuration Parameter
+     *  		*ROReportSpec Parameter - see below
+     *  		*AccessReportSpec Parameter - see below
+     *  		*KeepaliveSpec Parameter - carries the specification for the keepalive
      *  									message generation by the Reader. Includes
      *  									periodic trigger to send the keepalive message
-     *  		<GPOWriteData Parameter>
-     *  		<GPIPortCurrentState Parameter>
-     *  		*<EventsAndReports Parameter> - used to enable or disable the holding of
+     *  		GPOWriteData Parameter
+     *  		GPIPortCurrentState Parameter
+     *  		*EventsAndReports Parameters - used to enable or disable the holding of
      *  									    events and reports upon connection using
      *  									    the HoldEventsAndReportsUponReconnect field
      *
@@ -688,12 +683,12 @@ public class LLRPConnector  {
         addROSpec.setROSpec(roSpec);
         write(addROSpec, "ADD_ROSPEC");
         try {
-            sendLogMessage(DEBUG, "Sent ADD_ROSPEC: "+XML.toJSONObject(addROSpec.toXMLString()).toString());
+            sendLogMessage(DEBUG, "Sent ADD_ROSPEC: " + XML.toJSONObject(addROSpec.toXMLString()).toString());
         } catch (InvalidLLRPMessageException e) {
             reportLLRPError(e);
         } catch (Exception e) {
-            e.printStackTrace();
-            sendLogMessage(ERROR, "sendROSpec: Unexpected error.\n"+ExceptionUtils.getStackTrace(e));
+            log.error("sendROSpec: Unexpected error ", e);
+            sendLogMessage(ERROR, "sendROSpec: Unexpected error.\n" + ExceptionUtils.getStackTrace(e));
         }
         pause(250);
 
@@ -751,13 +746,6 @@ public class LLRPConnector  {
         m = getNextMessage("ENABLE_ROSPEC_RESPONSE");
         ENABLE_ROSPEC_RESPONSE emr = (ENABLE_ROSPEC_RESPONSE) m;
         sendLogMessage(DEBUG, "ENABLE_ROSPEC_RESPONSE: " + getLLRPStatus(emr.getLLRPStatus()));
-
-        // Send a START_ROSPEC Message to set ROSpec to Active state
-        // (Note: Not needed if ROSpec is Immediate or Periodic)
-        //START_ROSPEC startROSpec = new START_ROSPEC();
-        //startROSpec.setROSpecID(new UnsignedInteger(ROSPEC_ID));
-        //write(startROSpec, "START_ROSPEC");
-        //pause(250);
 
     }
 
@@ -888,7 +876,7 @@ public class LLRPConnector  {
                         }
                     } catch (Exception e) {
                         systemPrint("msgThread interrupted. ");
-                        e.printStackTrace();
+                        log.error("createAndStartThreads-msgThread: Unexpected error ", e);
                         sendLogMessage(ERROR, "createAndStartThreads-msgThread: Unexpected error.\n"
                                 + ExceptionUtils.getStackTrace(e));
                     }
@@ -912,7 +900,7 @@ public class LLRPConnector  {
                         }
                     } catch (Exception e) {
                         systemPrint("tagThread interrupted. ");
-                        e.printStackTrace();
+                        log.error("createAndStartThreads-tagThread: Unexpected error ", e);
                         sendLogMessage(ERROR, "createAndStartThreads-tagThread: Unexpected error.\n"
                                 + ExceptionUtils.getStackTrace(e));
                     }
@@ -950,7 +938,7 @@ public class LLRPConnector  {
                         }
                     } catch (Exception e) {
                         systemPrint("readerAliveThread interrupted. ");
-                        e.printStackTrace();
+                        log.error("createAndStartThreads-readerAliveThread: Unexpected error ", e);
                         sendLogMessage(ERROR, "createAndStartThreads-readerAliveThread: Unexpected error.\n"
                                 + ExceptionUtils.getStackTrace(e));
                     }
@@ -968,8 +956,8 @@ public class LLRPConnector  {
         try {
             Thread.sleep(ms);
         } catch (InterruptedException e) {
-            e.printStackTrace();
-            sendLogMessage(ERROR, "pause: Unexpected error.\n"+ExceptionUtils.getStackTrace(e));
+            log.error("pause: Unexpected error ", e);
+            sendLogMessage(ERROR, "pause: Unexpected error.\n" + ExceptionUtils.getStackTrace(e));
         }
     }
 
@@ -987,10 +975,10 @@ public class LLRPConnector  {
             out.write(msg.encodeBinary());
         } catch (IOException e) {
             systemPrint("Couldn't send Command "+ e);
-            sendLogMessage(ERROR, "write: Couldn't send Command\n"+ExceptionUtils.getStackTrace(e));
+            sendLogMessage(ERROR, "write: Couldn't send Command\n" + ExceptionUtils.getStackTrace(e));
         } catch (InvalidLLRPMessageException e) {
             systemPrint("Couldn't send Command "+ e);
-            sendLogMessage(ERROR, "write: Couldn't send Command\n"+ExceptionUtils.getStackTrace(e));
+            sendLogMessage(ERROR, "write: Couldn't send Command\n" + ExceptionUtils.getStackTrace(e));
         }
     }
 
@@ -1018,7 +1006,7 @@ public class LLRPConnector  {
                 systemPrint("\nDataInputStream connection made!");
             } catch (IOException e) {
                 systemPrint("Cannot get input stream: " + e);
-                sendLogMessage(ERROR, "ReadThread: Cannot get input stream:\n"+ExceptionUtils.getStackTrace(e));
+                sendLogMessage(ERROR, "ReadThread: Cannot get input stream:\n" + ExceptionUtils.getStackTrace(e));
             }
         }
 
@@ -1039,7 +1027,7 @@ public class LLRPConnector  {
                                 sendLogMessage(WARN, "ReadThread-run: Connection Closed.");
 							}
                             // Add all "RO_ACCESS_REPORT" messages to the tag collection queue
-                            if (msgName == "RO_ACCESS_REPORT") {
+                            if (msgName.equalsIgnoreCase("RO_ACCESS_REPORT")) {
                                 RO_ACCESS_REPORT roAccessRpt = (RO_ACCESS_REPORT) message;
                                 List<TagReportData> tagDataList = roAccessRpt.getTagReportDataList();
                                 if (!tagDataList.isEmpty())
@@ -1055,25 +1043,25 @@ public class LLRPConnector  {
 
                     } catch (IOException | InvalidLLRPMessageException | InterruptedException e) {
                         systemPrint("Error reading message: "+ e);
-                        e.printStackTrace();
-                        sendLogMessage(ERROR, "ReadThread-run: Error reading message:\n"+ExceptionUtils.getStackTrace(e));
+                        log.error("ReadThread-run: Unexpected error ", e);
+                        sendLogMessage(ERROR, "ReadThread-run: Error reading message:\n" + ExceptionUtils.getStackTrace(e));
                         break;
                     }
                 }
             }
             systemPrint("ReadThread closed.   (msgQueue=" + queue.size()
-                    + "\ttagQueue="+ tagQueue.size()+")");
+                    + "\ttagQueue=" + tagQueue.size() + ")");
 
         }
 
         /**
          * Read everything from the stream until the socket is closed
          *
-         * @throws IOException, InvalidLLRPMessageException
+         * @throws IOException
+         * @throws InvalidLLRPMessageException
          */
         public LLRPMessage read() throws IOException, InvalidLLRPMessageException {
 
-            LLRPMessage m = null;
             // message header
             byte[] first = new byte[6];
 
@@ -1142,7 +1130,7 @@ public class LLRPConnector  {
             }
 
             // turn the byte array into an LLRP Message Object
-            m = LLRPMessageFactory.createLLRPMessage(msg);
+            LLRPMessage m = LLRPMessageFactory.createLLRPMessage(msg);
             return m;
         }
 
@@ -1239,7 +1227,7 @@ public class LLRPConnector  {
     private LLRPMessage getNextMessage(String msgName) {
         LLRPMessage msg = null;
         Boolean connectionMsg = false;
-        systemPrint("getNextMessage: " + msgName + "\t (Queue="+queue.size()+")");
+        systemPrint("getNextMessage: " + msgName + "\t (Queue=" + queue.size() + ")");
         try {
             // Connection Attempt is an Event Type for the READER_EVENT_NOTIFICATION message
             // Though there are other responses returned for READER_EVENT_NOTIFICATION, so
@@ -1330,7 +1318,7 @@ public class LLRPConnector  {
                     break;
 
                 case "GET_READER_CONFIG_RESPONSE":
-                    systemPrint("Received Message: ("+msgType+") /n" + msg.toXMLString());
+                    systemPrint("Received Message: (" + msgType + ") /n" + msg.toXMLString());
                     break;
                 default:
                     nList = doc.getDocumentElement().getElementsByTagName("llrp:LLRPStatus");
@@ -1379,7 +1367,7 @@ public class LLRPConnector  {
                 for (TagReportData tagData: tagDataList) {
                     Map<String, Object> tagObj = new HashMap<>();
                     String epc = tagData.getEPCParameter().toString();
-                    tagObj.put("tagId", epc.substring(epc.indexOf("ePC: ")+5));
+                    tagObj.put("tagId", epc.substring(epc.indexOf("ePC: ") + 5));
                     tagObj.put("antennaID", tagData.getAntennaID().getAntennaID().intValue());
                     tagObj.put("firstSeenTimestampUTC", tagData.getFirstSeenTimestampUTC().getMicroseconds().toLong());
                     tagObj.put("lastSeenTimestampUTC", tagData.getLastSeenTimestampUTC().getMicroseconds().toLong());
@@ -1511,7 +1499,7 @@ public class LLRPConnector  {
         } else if (status.getStatusCode().toString() == M_SUCCESS) {
             return "Success";
         } else {
-            return status.getStatusCode().toString()+": "+status.getErrorDescription();
+            return status.getStatusCode().toString()+": " + status.getErrorDescription();
         }
     }
 
@@ -1522,9 +1510,9 @@ public class LLRPConnector  {
      */
     private void systemPrint(String msg) {
         if (msg.startsWith("\n"))
-            System.out.println("\n"+hostname+": "+msg.substring(1));
+            log.info("\n"+hostname+": " + msg.substring(1));
         else
-            System.out.println(hostname+": "+msg);
+            log.info(hostname+": " + msg);
     }
 
     /**
@@ -1534,7 +1522,7 @@ public class LLRPConnector  {
 
         if (LogLevels.indexOf(logLevel) <= this.logLevel) {
             Map<String, Object> vantiqMessage = new HashMap<>();
-            vantiqMessage.put("eventType", logLevel+"Log");
+            vantiqMessage.put("eventType", logLevel + "Log");
             vantiqMessage.put("sourceName", sourceName);
             vantiqMessage.put("hostname", hostname);
             vantiqMessage.put("readerId", readerId);

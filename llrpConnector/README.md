@@ -138,7 +138,7 @@ Log Message Example:
     "msg": "Connection to Reader was successful"
 }
 ```
-**Note**: To capture the Reader Capabilities and Reader Configuration, set the `logLevel` to `debug`.  This information can be used when using a new RFID Reader and want to understand the capabilites of the RFID Reader and configuration settings it was set up to use.
+**Note**: To capture the Reader Capabilities and Reader Configuration, set the `logLevel` to `debug`.  This information can be used when using a new RFID Reader and want to understand the capabilities of the RFID Reader and configuration settings it was set up to use.
 
 ### Reader Status Message
 
