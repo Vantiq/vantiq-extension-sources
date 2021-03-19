@@ -1,15 +1,38 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <Configuration status="WARN">
+    <Properties>
+        <Property name="LOG_DIR">./logs</Property>
+    </Properties>
     <Appenders>
         <Console name="Console" target="SYSTEM_OUT">
             <PatternLayout pattern="%d{HH:mm:ss.SSS} [%t] %-5level %logger{36} - %msg%n"/>
         </Console>
+        <RolllingFile>
+                name="RollingFiile"
+                filename="${LOG_DIR}/llrpOutput.log"
+                filepattern="${LOG_DIR}/%d{yyyy:MM:dd}_UTC_%i.log.zip"
+                ignoreExceptioins="false"
+            <PatternLayout>
+                <Pattern pattern="%d{yyyy:MM:dd HH:mm:ss} %-5p %m%n"</Pattern>
+            </PatternLayout>
+            <Policies>
+                <TimeBasedTriggeringPolicy />
+                <SizeBasedTriggeringPolicy size="50 MB" />
+            </Policies>
+            <DefaultRolloverStrategy>
+                <Delete basePath="${LOG_DIR}/" maxDepth="1">
+                    <IfFileName glob="*.log.zip" />
+                    <IfLastModified age="5d" />
+                </Delete>
+            </DefaultRolloverStrategy>
+        </RolllingFile>
     </Appenders>
     <Loggers>
         <Logger name="io.vantiq.extsrc.llrpConnector" level="debug"/>
-        <Logger name="io.vantiq.extjsdk" level="debug"/>
+        <Logger name="io.vantiq.extjsdk" level="info"/>
         <Root level="error">
             <AppenderRef ref="Console"/>
+            <AppenderRef ref="RollingFile" />
         </Root>
     </Loggers>
 </Configuration>

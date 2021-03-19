@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020 VANTIQ, Inc.
+ * Copyright (c) 2021 VANTIQ, Inc.
  *
  * All rights reserved.
  *
@@ -29,7 +29,7 @@ import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 
 import org.apache.commons.lang3.exception.ExceptionUtils;
-import org.json.JSONObject;  // com.google.gson.JsonArray;
+import org.json.JSONObject;
 import org.json.JSONArray;
 import org.json.XML;
 import org.llrp.ltk.exceptions.InvalidLLRPMessageException;
@@ -177,10 +177,8 @@ public class LLRPConnector  {
     private JSONObject readerConfiguration = null;
     private String readerId = "reader1";
 
-
-
     /**
-     * The constructor creates a connection to the reader and sends LLRP
+     * This method creates a connection to the reader and sends LLRP
      * messages. Once connected, ideal communication is as follows:
      *     From Enterprise Connector	From the Reader
      *  1) GET_READER_CAPABILIITIES 	GET_READER_CAPABILITIES_RESPONSE
@@ -197,7 +195,7 @@ public class LLRPConnector  {
      * A KEEPALIVE message is configured to be sent from the reader
      * periodically and the LLRP Enterprise Connector sends back a
      * KEEPALIVE_ACK message to the reader.  If this ACK is not sent, the
-     * reader will shutdown.
+     * reader will disconnect.
      *
      * Additionally, a timer task is used to assure the Reader stays alive.
      * If a KEEPALIVE message is not received at least once a minute the
@@ -224,136 +222,134 @@ public class LLRPConnector  {
         
         systemPrint("setupLLRP: hostname-" + hostname + ":" + readerPort + " tagReadInterval: " + tagReadInterval);
 
-        // Connect and set up the Reader - attempt every minute
-        connectAndSetupReader();
+        // Connect and set up the Reader in a thread - attempt every minute
+        Thread setup = new Thread(() -> {
+            connectAndSetupReader();
+        });
+        // Start up the connection/setup thread
+        setup.start();
 
         // Create the queue processing and keepalive threads for the reader
         createAndStartThreads();
-
     }
 
     /**
-     * Task used for initial connection and reconnecting to the Reader.
-     * Running as a thread to be able to pause and wait for responses to messages
+     * Method used for initial connection and reconnecting to the Reader.
+     * Running inside a thread to be able to pause and wait for responses to messages
      * which is received on blocking reads.
      *
      */
     private void connectAndSetupReader () {
 
-        Thread setup = new Thread(() -> {
-            try {
+        try {
 
-                systemPrint("connectAndSetupReader started : " + Thread.currentThread().getName());
-                sendLogMessage(INFO, "Attempting to connect to the the Reader");
+            systemPrint("connectAndSetupReader started : " + Thread.currentThread().getName());
+            sendLogMessage(INFO, "Attempting to connect to the the Reader");
 
-                // If connected, nothing to do
-                if (readerOffline && !vantiqSourceOffline) {
+            // If connected, nothing to do
+            if (readerOffline && !vantiqSourceOffline) {
 
-                    try {
-                        // Clear any messages in the queue, keep tag messages
-                        queue.clear();
+                try {
+                    // Clear any messages in the queue, keep tag messages
+                    queue.clear();
 
-                        // Try to establish a connection to the reader
-                        connection = new Socket(hostname, readerPort);
-                        out = new DataOutputStream(connection.getOutputStream());
+                    // Try to establish a connection to the reader
+                    connection = new Socket(hostname, readerPort);
+                    out = new DataOutputStream(connection.getOutputStream());
 
-                        // Start up the ReaderThread to read messages form socket to Console
-                        rt = new ReadThread(connection);
-                        rt.start();
+                    // Start up the ReaderThread to read messages from socket to Console
+                    rt = new ReadThread(connection);
+                    rt.start();
 
-                        // ReaderEventNotificationData is sent by the Reader for a connection attempt,
-                        // though can be sent for other reader events. List of events:
-                        //		<HoppingEventParameter>,
-                        //		<GPIEvent Parameter>,
-                        //		<ROSpecEvent Parameter>,
-                        //		<ReportBufferLevelWarningEvent Parameter>,
-                        //		<ReportBufferOverflowErrorEvent Parameter>,
-                        //		<ReaderExceptionEvent Parameter>,
-                        //		<RFSurveyEvent Parameter>,
-                        //		<AISpecEvent Parameter>,
-                        //		<AntennaEvent Parameter>,
-                        //		<ConnectionAttemptEvent Parameter>,
-                        //		<ConnectionCloseEvent Parameter> - unsolicited close by the reader
-                        // Since we just tried to connect, we are expecting a ConnectionAttempEvent.
-                        //	Possible Values:
-                        //		  Value Definition
-                        //		  ----- ----------
-                        //			0	Success
-                        //			1	Failed (a Reader initiated connection already exists)
-                        //			2	Failed (a Client initiated connection already exists)
-                        //			3	Failed (any reason other than a connection already exists
-                        //			4	Another connection attempted
-                        //
-                        // We will skip all responses from the reader until a ConnectionAttempEvent is
-                        // received.
-                        LLRPMessage m = getNextMessage("CONNECTION_ATTEMPT");
-                        READER_EVENT_NOTIFICATION readerEventNotification = (READER_EVENT_NOTIFICATION) m;
-                        ReaderEventNotificationData eventData = readerEventNotification
-                                .getReaderEventNotificationData();
+                    // ReaderEventNotificationData is sent by the Reader for a connection attempt,
+                    // though can be sent for other reader events. List of events:
+                    //		<HoppingEventParameter>,
+                    //		<GPIEvent Parameter>,
+                    //		<ROSpecEvent Parameter>,
+                    //		<ReportBufferLevelWarningEvent Parameter>,
+                    //		<ReportBufferOverflowErrorEvent Parameter>,
+                    //		<ReaderExceptionEvent Parameter>,
+                    //		<RFSurveyEvent Parameter>,
+                    //		<AISpecEvent Parameter>,
+                    //		<AntennaEvent Parameter>,
+                    //		<ConnectionAttemptEvent Parameter>,
+                    //		<ConnectionCloseEvent Parameter> - unsolicited close by the reader
+                    // Since we just tried to connect, we are expecting a ConnectionAttempEvent.
+                    //	Possible Values:
+                    //		  Value Definition
+                    //		  ----- ----------
+                    //			0	Success
+                    //			1	Failed (a Reader initiated connection already exists)
+                    //			2	Failed (a Client initiated connection already exists)
+                    //			3	Failed (any reason other than a connection already exists
+                    //			4	Another connection attempted
+                    //
+                    // We will skip all responses from the reader until a ConnectionAttempEvent is
+                    // received.
+                    LLRPMessage m = getNextMessage("CONNECTION_ATTEMPT");
+                    READER_EVENT_NOTIFICATION readerEventNotification = (READER_EVENT_NOTIFICATION) m;
+                    ReaderEventNotificationData eventData = readerEventNotification
+                            .getReaderEventNotificationData();
 
-                        ConnectionAttemptStatusType connectionStatus = eventData.getConnectionAttemptEvent().getStatus();
-                        if (connectionStatus.toInteger() == ConnectionAttemptStatusType.Success) {
-                            systemPrint("Connection attempt was successful\n");
-                            sendLogMessage(INFO, "Connection to Reader was successful");
-                        } else {
-                            String msg = "Reader Connection Unsuccessful: " + connectionStatus.toString();
-                            systemPrint(msg);
-                            sendLogMessage(WARN, msg);
-                            if (connection != null && !connection.isClosed())
-                                connection.close();
-                            return;
-                        }
-
-                        // May want to get the Reader supported version and set to an appropriate version
-
-                        // Get the Reader Capabilities Response
-                        readerCapabilities = getReaderCapabilities();
-
-                        // Create/Send the Reader Configuration and Get the Response
-                        readerConfiguration = sendReaderConfiguration();
-
-                        // Create/Send ROSpec to start reading the tags
-                        sendROSpec(tagReadInterval);
-
-                        // Indicate success
-                        changeReaderStatus(READER_ONLINE);
-
-                        // Send an ENABLE_EVENTS_AND_REPORTS Message to start requesting tag data
-                        ENABLE_EVENTS_AND_REPORTS report = new ENABLE_EVENTS_AND_REPORTS();
-                        write(report, "ENABLE_EVENTS_AND_REPORTS");
-
-                    } catch (VantiqLLRPException | IOException e) {
-                        systemPrint("Unable to connect and startup the reader.");
-                        sendLogMessage(WARN, "connectAndSetupReader: Unable to connect and startup the reader, retrying");
+                    ConnectionAttemptStatusType connectionStatus = eventData.getConnectionAttemptEvent().getStatus();
+                    if (connectionStatus.toInteger() == ConnectionAttemptStatusType.Success) {
+                        systemPrint("Connection attempt was successful\n");
+                        sendLogMessage(INFO, "Connection to Reader was successful");
+                    } else {
+                        String msg = "Reader Connection Unsuccessful: " + connectionStatus.toString();
+                        systemPrint(msg);
+                        sendLogMessage(WARN, msg);
                         if (connection != null && !connection.isClosed())
-                            try {
-                                connection.close();
-                            } catch (Exception e1) {
-                                systemPrint("Unable to close open connection. ");
-                                log.error("Unable to close open connection. ", e);
-                                sendLogMessage(ERROR, "connectAndSetupReader: Unable to close open connection.\n"
-                                        + ExceptionUtils.getStackTrace(e1));
-                            }
-                    } catch (Exception e) {
-                        systemPrint("Unexpected error while attempting to connect to the reader");
-                        log.error("Unexpected error while attempting to connect to the reader ", e);
-                        sendLogMessage(ERROR, "connectAndSetupReader: Unexpected error.\n "
-                                + ExceptionUtils.getStackTrace(e));
+                            connection.close();
+                        return;
                     }
-                } else {
-                    systemPrint("connectAndSetupReader: reader is offline");
-                    sendLogMessage(ERROR, "connectAndSetupReader: reader is offline");
+
+                    // May want to get the Reader supported version and set to an appropriate version
+
+                    // Get the Reader Capabilities Response
+                    readerCapabilities = getReaderCapabilities();
+
+                    // Create/Send the Reader Configuration and Get the Response
+                    readerConfiguration = sendReaderConfiguration();
+
+                    // Create/Send ROSpec to start reading the tags
+                    sendROSpec(tagReadInterval);
+
+                    // Indicate success
+                    changeReaderStatus(READER_ONLINE);
+
+                    // Send an ENABLE_EVENTS_AND_REPORTS Message to start requesting tag data
+                    ENABLE_EVENTS_AND_REPORTS report = new ENABLE_EVENTS_AND_REPORTS();
+                    write(report, "ENABLE_EVENTS_AND_REPORTS");
+
+                } catch (VantiqLLRPException | IOException e) {
+                    systemPrint("Unable to connect and startup the reader.");
+                    sendLogMessage(WARN, "connectAndSetupReader: Unable to connect and startup the reader, retrying");
+                    if (connection != null && !connection.isClosed())
+                        try {
+                            connection.close();
+                        } catch (Exception e1) {
+                            systemPrint("Unable to close open connection. ");
+                            log.error("Unable to close open connection. ", e);
+                            sendLogMessage(ERROR, "connectAndSetupReader: Unable to close open connection.\n"
+                                    + ExceptionUtils.getStackTrace(e1));
+                        }
+                } catch (Exception e) {
+                    systemPrint("Unexpected error while attempting to connect to the reader");
+                    log.error("Unexpected error while attempting to connect to the reader ", e);
+                    sendLogMessage(ERROR, "connectAndSetupReader: Unexpected error.\n "
+                            + ExceptionUtils.getStackTrace(e));
                 }
-            } catch (Exception e) {
-                systemPrint("connectAndSetupReader: Unexpected error");
-                log.error("connectAndSetupReader: Unexpected error ", e);
-                sendLogMessage(ERROR, "connectAndSetupReader: Unexpected error.\n" + ExceptionUtils.getStackTrace(e));
+            } else {
+                systemPrint("connectAndSetupReader: reader is offline");
+                sendLogMessage(ERROR, "connectAndSetupReader: reader is offline");
             }
-        });
-        setup.start();
-
+        } catch (Exception e) {
+            systemPrint("connectAndSetupReader: Unexpected error");
+            log.error("connectAndSetupReader: Unexpected error ", e);
+            sendLogMessage(ERROR, "connectAndSetupReader: Unexpected error.\n" + ExceptionUtils.getStackTrace(e));
+        }
     }
-
 
     /**
      *  Send the reader a "GET_READER_CAPABILTIES" message and wait for the response.
@@ -392,7 +388,6 @@ public class LLRPConnector  {
             log.error("getReaderCapabilities: Unexpected error ", e);
             sendLogMessage(ERROR, "getReaderCapabilities: Unexpected error.\n" + ExceptionUtils.getStackTrace(e));
         }
-
         return returnJSON;
     }
 
@@ -481,7 +476,6 @@ public class LLRPConnector  {
             log.error("sendReaderConfiguration: Unexpected error ", e);
             sendLogMessage(ERROR, "sendReaderConfiguration: Unexpected error.\n" + ExceptionUtils.getStackTrace(e));
         }
-
         return returnJSON;
     }
 
@@ -513,7 +507,6 @@ public class LLRPConnector  {
         // ResetToFactoryDefault: If true, the Reader will set all configurable values
         //		to factory defaults before applying the remaining parameters.
         setReaderConfig.setResetToFactoryDefault(new Bit(0));
-
 
         // ReaderEventNotificationSpec Parameter - composed of a list of EventNotificationStates
         // -------------------------------------
@@ -584,7 +577,6 @@ public class LLRPConnector  {
 
         setReaderConfig.setReaderEventNotificationSpec(eventNoteSpec);
 
-
         // ROReportSpec Parameter
         // ----------------------
         // - Create a default RoReportSpec so that reports are sent at the end of ROSpecs
@@ -621,7 +613,6 @@ public class LLRPConnector  {
         roReportSpec.setTagReportContentSelector(tagReportContentSelector);
         setReaderConfig.setROReportSpec(roReportSpec);
 
-
         // AccessReportSpec Parameter
         // --------------------------
         //	AccessReportTrigger - 0 = Whenever ROReport is generated for the RO that triggered
@@ -631,7 +622,6 @@ public class LLRPConnector  {
         accessReportSpec.setAccessReportTrigger(new AccessReportTriggerType(
                 AccessReportTriggerType.Whenever_ROReport_Is_Generated));
         setReaderConfig.setAccessReportSpec(accessReportSpec);
-
 
         // KeepaliveSpec Parameter
         // -----------------------
@@ -655,7 +645,6 @@ public class LLRPConnector  {
         setReaderConfig.setEventsAndReports(eventsAndReportsSpec);
 
         return setReaderConfig;
-
     }
 
     /**
@@ -746,7 +735,6 @@ public class LLRPConnector  {
         m = getNextMessage("ENABLE_ROSPEC_RESPONSE");
         ENABLE_ROSPEC_RESPONSE emr = (ENABLE_ROSPEC_RESPONSE) m;
         sendLogMessage(DEBUG, "ENABLE_ROSPEC_RESPONSE: " + getLLRPStatus(emr.getLLRPStatus()));
-
     }
 
     /**
@@ -1051,7 +1039,6 @@ public class LLRPConnector  {
             }
             systemPrint("ReadThread closed.   (msgQueue=" + queue.size()
                     + "\ttagQueue=" + tagQueue.size() + ")");
-
         }
 
         /**
@@ -1444,7 +1431,6 @@ public class LLRPConnector  {
             // set reader to Offline
             readerOffline = true;
         }
-
     }
 
     /**
@@ -1483,7 +1469,6 @@ public class LLRPConnector  {
             sendLogMessage(INFO, "Reader is OFFLINE");
         else
             sendLogMessage(INFO, "Reader is ONLINE");
-
     }
 
     /**
@@ -1510,9 +1495,9 @@ public class LLRPConnector  {
      */
     private void systemPrint(String msg) {
         if (msg.startsWith("\n"))
-            log.info("\n"+hostname+": " + msg.substring(1));
+            log.info("\n{}: {}", hostname, msg.substring(1));
         else
-            log.info(hostname+": " + msg);
+            log.info("{}: {}", hostname, msg);
     }
 
     /**

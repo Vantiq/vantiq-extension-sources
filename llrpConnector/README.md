@@ -1,17 +1,27 @@
 # Overview
 
-This document outlines the Low-Level Reader Protocol (LLRP) Connector. This connector is used to connect with an RFID Readers supporting the LLRP Standard version 1.1.
+This document outlines the Low-Level Reader Protocol (LLRP) Connector. This connector is used to connect with an 
+RFID Readers supporting the LLRP Standard version 1.1.
 
-To incorporate this Enterprise Connector (also known as an Extension Source), you will need to create the Source in the 
-Vantiq system. The documentation has been split into two parts, [Setting Up Your Machine](#machine) and 
+To incorporate this Enterprise Connector (also known as an Extension Source), you will need to create one or more
+Sources in the Vantiq system. Each Vantiq Source will connect to **one** RFID Reader. The Vantiq Source configuration 
+contains the hostname of the RFID Reader.  Though, this Enterprise Connector may connect to multiple RFID Readers by 
+by creating multiple Vantiq Source(and associated Vantiq Source). The documentation has been split into two parts, [Setting Up Your Machine](#machine) and 
 [Setting Up Your Vantiq Source](#vantiq).
+
+This connector will only connect to the RFID Reader upon successful connection to the Vantiq
+Source.  If the Vantiq Source is disabled or disconnected, the connection the associated RFID
+Reader will also be closed.  This is done primarily to allow the RFID Reader to buffer all Tag Reads that cannot be 
+sent to the Vantiq Source.
 
 # Prerequisites <a name="pre" id="pre"></a>
 
 An understanding of the VANTIQ Extension Source SDK is assumed. Please read the [Extension Source README.md](../README.md) 
 for more information.
 
-A general understanding of the [LLRP standard v1.1](https://www.gs1.org/standards/epc-rfid/llrp/1-1) and specifics to the desired RFID Reader is recommended.
+A general understanding of the [LLRP standard v1.1](https://www.gs1.org/standards/epc-rfid/llrp/1-1) and specifics to 
+the desired RFID Reader is recommended.  Additional developer information is provided in the
+[LLRP Toolkit](http://llrp.org/index.html), which also point to the LLRP Tool Kit [javadoc](http://llrp.org/docs/javaapidoc/).
 
 The user must [define the LLRP Source implementation](#vantiq) in the 
 Vantiq IDE. For an example of the definition, please see the 
@@ -19,14 +29,12 @@ Vantiq IDE. For an example of the definition, please see the
 
 Additionally, an example project named *llrpConnectorExample.zip* can be found in the *src/test/resources* directory.
 
-*   To activate the polling feature, make sure to include both the "filenames" and "pollingInterval" source
-configurations.
-
 # Setting Up Your Machine <a name="machine" id="machine"></a>
 
 ## Repository Contents
 
-*   **LLRPConnector** -- The main interface to the RFID reader based on the LLRP version 1.1 of the standard. Connection to the RFID Reader is only made after a successful connection to the Vantiq source.
+*   **LLRPConnector** -- The main interface to the RFID reader based on the LLRP version 1.1 of the standard. Connection
+    to the RFID Reader is only made after a successful connection to the Vantiq source.
 *   **LLRPConnectorMain** -- The main function for the program. Connects to sources as specified in the configuration 
 file.
 *   **LLRPConnectorCore** -- Does the work of reading RFID tags, and send the ID back to 
@@ -38,8 +46,8 @@ files if configured to do so.
 
 1.  Clone this repository (vantiq-extension-sources) and navigate into `<repo location>/vantiq-extension-sources`.
 2.  Run `./gradlew llrpConnector:assemble`.
-3.  Navigate to `<repo location>/vantiq-extension-sources/llrpConnector/build/distributions`. The zip and tar files both 
-contain the same files, so choose whichever you prefer.
+3.  Navigate to `<repo location>/vantiq-extension-sources/llrpConnector/build/distributions`. The zip and tar files 
+    both contain the same files, so choose whichever you prefer.
 4.  Uncompress the file in the location that you would like to install the program.
 6.  Run `<install location>/llrpConnector/bin/llrpConnector` with a local server.config file or specifying the 
 [server config file](#serverConfig) as the first argument. Note that the `server.config` file can be placed in the 
@@ -52,11 +60,12 @@ which is an [Apache Log4j configuration file](https://logging.apache.org/log4j/2
 name for each class is the class's fully qualified class name, *e.g.* "io.vantiq.extjsdk.ExtensionWebSocketClient".  
 
 ## Server Config File
-An understanding of the Vantiq Extension Source SDK is assumed. Please read the [Extension Source README.md](../README.md) for more information.
+An understanding of the Vantiq Extension Source SDK is assumed. Please read the [Extension Source README.md](../README.md)
+for more information.
 
 ### Vantiq Options
 *   **authToken**: Required. The authentication token to connect with. These can be obtained from the namespace admin.
-*   **sources**: Required. The LLRP connector can be connected to multiple RFID Readers. A comma separated list of the Vantiq source names to which you wish to connect. Any whitespace will be
+*   **sources**: A comma separated list of the sources to which you wish to connect. Any whitespace will be
     removed when read.
 *   **targetServer**: Required. The Vantiq server hosting the sources (e.g., "dev.vantiq.com").
 
@@ -99,57 +108,65 @@ The Configuration document may look similar to the following example:
     }
 
 ### Options Available for llrpConfig
-**Note:** The "llrpConfig" and "general" portions must be included in the source configuration, but they can be left
-empty.
+**Note:** The "llrpConfig" and "general" portions must be included in the source configuration.
 *  **hostame** - Required. The hostame or IP Address of the RFID Reader
-*  **readerPort** - Required. The readerPort to connect to the RFID Reader, which the LLRP protocol specification specifies port 5084 is used for data transfer.
-*  **tagReadInterval** - Optional. Interval in milliseconds to receive collected Tag Data from the RFID Reader. (Default: 500)
-*  **logLevel** - Optional. Indicates log level for messages to be sent to Vantiq ('info', 'warn', 'error', 'debug' are allowed). (Default: send no log messages)
-
-## Select and Publish Statements
-
-There is no support for either Select or Publish statements from Vantiq.  Once a connection is successfully made, messages will automatically be sent to Vantiq based on the Vantiq Source configuration properties.
-
-## Messages Sent To Vantiq Source
+*  **readerPort** - Required. The readerPort to connect to the RFID Reader, which the LLRP protocol specification 
+   specifies port 5084 is used for data transfer.
+*  **tagReadInterval** - Optional. Interval in milliseconds to receive collected Tag Data from the RFID Reader. 
+   (Default: 500)
+*  **logLevel** - Optional. Indicates log level for messages to be sent to Vantiq ('info', 'warn', 'error', 'debug' 
+   are allowed). (Default: send no log messages)
+   
+## Notification Messages Sent To Vantiq Source
+Once a connection is successfully made, messages will automatically be sent to Vantiq based on the Vantiq Source 
+configuration properties.
 
 ### Log Messages
 
-Receipt of any log messages sent from the LLRP Connector will be based on the `logLevel` property in the [Vantiq Source Configuration](#sourceConfig).  This property is optional and if not specified no messages will be sent to the Vantiq Source. The following log level values are supported:
+Receipt of any log messages sent from the LLRP Connector will be based on the `logLevel` property in the [Vantiq Source 
+Configuration](#sourceConfig).  This property is optional and if not specified no messages will be sent to the Vantiq 
+Source. The following log level values are supported:
 * **error** - Unexpected error conditions
 * **warn** - Disconnection information
 * **info** - Successful connection information
 * **debug** - General messages sent/received to/from the RFID Reader
 
-The `loglevel` is hierarchical in that specififying a lower level will send all log levels up to the desired level.  For example, specifying `info` will send `error`, `warn`, and `info` log messages.
+The `loglevel` is hierarchical in that specififying a lower level will send all log levels up to the desired level.  
+For example, specifying `info` will send `error`, `warn`, and `info` log messages.
 
 The JSON format of a Log message contains the following properties:
-* **eventType** - Either `errorLog`, `warnLog`, `infoLog`, or `debugLog`, depending on the specified `logLevel` in the Vantiq source configuration.
-* **sourceName** - The Vantiq source name which is used to differentiate when multiple RFID Readers are connected to the same LLRP Connector.
+* **eventType** - Either `errorLog`, `warnLog`, `infoLog`, or `debugLog`, depending on the specified `logLevel` in the 
+  Vantiq source configuration.
+* **sourceName** - The Vantiq source name which is used to differentiate when multiple RFID Readers are connected to 
+  the same LLRP Connector.
 * **hostname** - The RFID Reader's hostname 
 * **readerId** - The RFID Reader's ID
 * **msg** - Log message provided
 
 Log Message Example:
 ```
-{   "eventType": "infoLog",
+{   "eventType": "errorLog",
     "sourceName": "ZebraRFID",
     "hostname": "fx7500fcc3e9",
     "readerId": "84248dfffffcc3e9",
-    "msg": "Connection to Reader was successful"
+    "msg": "DEBUG: Sending Reader: GET_READER_CAPABILITIES"
 }
 ```
-**Note**: To capture the Reader Capabilities and Reader Configuration, set the `logLevel` to `debug`.  This information can be used when using a new RFID Reader and want to understand the capabilities of the RFID Reader and configuration settings it was set up to use.
+**Note**: To capture the Reader Capabilities and Reader Configuration, set the `logLevel` to `debug`.  This information 
+can be used when using a new RFID Reader and want to understand the capabilities of the RFID Reader and configuration 
+settings it was set up to use.
 
 ### Reader Status Message
 
-Whenever the connection between the LLRP Connector and the RFID Reader changes, a Reader Status message is sent to the Vantiq Source.
+Whenever the connection between the LLRP Connector and the RFID Reader changes, a Reader Status message is sent to the 
+Vantiq Source.
 
 The JSON format of Reader Status message contains the following properties:
 * **eventType** - `readerStatus`
 * **readerId** - The RFID Reader's ID
 * **readerOnline** - Boolean value where `True` is `Online` and 'False` is `Offline`
 
-Log Message Example:
+Reader Status Message Example:
 ```
 {   "eventType": "readerStatus",
     "readerId": "84248dfffffcc3e9",
@@ -163,9 +180,10 @@ This message is sent during the initial connection of the LLRP Connector to the 
 The JSON format of Reader Antenna Data message contains the following properties:
 * **eventType** - `readerData`
 * **readerId** - The RFID Reader's ID
-* **antennaIds** - An array of the potential antenna IDs possible for the RFID Reader.  While an RFID Reader may support multiple antennas, not all ports will have an actual antenna connected to the RFID Reader.`
+* **antennaIds** - An array of the potential antenna IDs possible for the RFID Reader.  While an RFID Reader may 
+  support multiple antennas, not all ports will have an actual antenna connected to the RFID Reader.`
 
-Log Message Example:
+Reader Antenna Data Message Example:
 ```
 {   "eventType": "readerData",
     "readerId": "84248dfffffcc3e9",
@@ -173,11 +191,17 @@ Log Message Example:
 }
 ```
 
-### RFID Reader Tag Data
+### RFID Reader Tag Data Message
 
-The RFID Reader Tag Data is sent to the Vantiq Source as the LLRP Connector receives the data from the RFID Reader.  When the connection is down between the RFID Reader and the LLRP Connector, the RFID Reader caches any Tags found in the antenna's Field Of View (FOV). One reconnected, the cached tags read will be sent to the Vantiq source.
+The RFID Reader Tag Data is sent to the Vantiq Source as the LLRP Connector receives the data from the RFID Reader.  
+When the connection is down between the RFID Reader and the LLRP Connector, the RFID Reader caches any Tags found in 
+the antenna's Field Of View (FOV). Once reconnected, the cached tags read will be sent to the Vantiq source.
 
-Additionally, based on the configured `tagReadInterval` value specified in the Vantiq source, tag data will be received by the LLRP Connector and Tag Data message is sent to the Vantiq source.
+RFID Tags will continually send their ID while charged by the RFID Reader through an antenna.  The RFID Reader will 
+count the number of times a tag reports since the last time it was asked to report.  The configured `tagReadInterval` 
+value specified in the Vantiq source, identifies the frequency the RFID Reader should report its findings from all 
+antennas.  This reported findings is received by the LLRP Connector and the RFID Reader Tag Data Message is sent 
+to the Vantiq Source.
 
 The JSON format of RFID Reader Tag Data message contains the following properties:
 * **eventType** - `readerData`
@@ -196,7 +220,7 @@ The JSON format of RFID Reader Tag Data message contains the following propertie
   * **channelIndex** - As defined in the LLRP specification.
   * **specIndex** - As defined in the LLRP specification.
 
-Log Message Example:
+RFID Reader Tag Data Message Example:
 ```
 {   "eventType": "readerData",
     "readerId": "84248dfffffcc3e9",
@@ -230,9 +254,13 @@ Log Message Example:
 ## Licensing
 The source code uses the [MIT License](https://opensource.org/licenses/MIT).  
 
-common-lang3, ltkjava, okhttp3, log4j, and jackson-databind are licensed under
+xerces-j, mina, common-lang3, ltkjava, okhttp3, log4j, and jackson-databind are licensed under
 [Apache Version 2.0 License](http://www.apache.org/licenses/LICENSE-2.0).  
 
 slf4j is licensed under the [MIT License](https://opensource.org/licenses/MIT).
 
 json is licensed under the [JSON License](https://www.json.org/license.html).
+
+jdom is licensed under the [JDOM License](http://jdom.org/dist/binary/archive/jdom-1.0.zip LICENSE.txt).
+
+jargs is licensed under the [JArgs License](https://sourceforge.net/projects/jargs/files/jargs/1.0/jargs-1.0.zip LICENSE.txt).
