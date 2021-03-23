@@ -159,8 +159,8 @@ public class TestParallelProcessing extends NeuralNetTestBase {
 
     public static void setupRule() {
         String rule = "RULE " + testRuleName + "\n"
-                    + "WHEN MESSAGE ARRIVES FROM " + testSourceName + " AS message\n"
-                    + "INSERT " + testTypeName + "(id: 1)";
+                + "WHEN EVENT OCCURS ON \"/sources/" + testSourceName + "\" AS sourceEvent\n"
+                + "INSERT " + testTypeName + "(id: 1)";
 
         vantiq.insert("system.rules", rule);
     }

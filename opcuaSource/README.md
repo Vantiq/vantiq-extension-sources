@@ -177,7 +177,10 @@ The following example will make note of the message in VANTIQ log.
 
 ```
 RULE opcChangeNotification
-when MESSAGE ARRIVES FROM opctest as message
+WHEN EVENT OCCURS ON "/sources/opctest" as sourceEvent
+
+// Grab the actual value from the event
+var message = sourceEvent.value
 
 log.info("Got a message: {}", [message])
 

@@ -147,7 +147,8 @@ public class RoundTripTestBase {
 
     public static void setupRule() {
         String rule = "RULE " + testRuleName + "\n"
-                + "WHEN MESSAGE ARRIVES FROM " + testSourceName + " AS message\n"
+                + "WHEN EVENT OCCURS ON \"/sources/" + testSourceName + "\" AS sourceEvent\n"
+                + "var message = sourceEvent.value\n"
                 + "INSERT " + testTypeName + "(msgId: message.msgId)";
 
         vantiq.insert("system.rules", rule);

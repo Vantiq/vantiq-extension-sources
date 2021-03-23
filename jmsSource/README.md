@@ -215,8 +215,11 @@ The following example shows a rule that could be used to process incoming notifi
 
 ```
 RULE jmsMessageListener
+WHEN EVENT OCCURS ON "/sources/JMS1" as sourceEvent
 
-WHEN MESSAGE ARRIVES FROM JMS1 as msg
+// Grab the actual value from the event
+var msg = sourceEvent.value
+
 var myObj = {}
 myObj.message = msg.message
 myObj.headers = msg.headers

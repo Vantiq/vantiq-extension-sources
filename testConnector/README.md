@@ -164,7 +164,10 @@ The following example defines a Rule that could be used to process the data retu
 ```
 RULE listenFromTestConnector
 
-WHEN MESSAGE ARRIVES FROM TestConnector1 as message
+WHEN EVENT OCCURS ON "/sources/TestConnector1" as sourceEvent
+
+// Grab the actual value from the event
+var message = sourceEvent.value
 
 var fileResponse = message.files
 var envVarResponse = message.environmentVariables

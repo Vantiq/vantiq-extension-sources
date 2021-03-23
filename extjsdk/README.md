@@ -123,7 +123,7 @@ There are three types of messages that can be sent to a source: Notifications, Q
 
 #### Notifications
 Notifications are JSON messages that the source will pass on to any Vantiq rules saying
-`WHEN MESSAGE ARRIVES FROM SOURCE <source name>`. To send one, simply call
+`WHEN EVENT OCCURS ON "/sources/<source name>"`. To send one, simply call
 `client.sendNotification(<object to be sent>)`, which will translate the message into JSON and add everything Vantiq
 needs to recognize the message.
 Note that neither `List` or array objects can be sent as notifications.

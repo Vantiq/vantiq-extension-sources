@@ -116,7 +116,11 @@ tasks at any given point for query or publish requests, respectively. Must be a 
     
     ```
     RULE checkSourceNotification
-    WHEN MESSAGE ARRIVES FROM JDBC1 AS message
+    WHEN EVENT OCCURS ON "/sources/JDBC1" as sourceEvent
+    
+    // Grab the actual value from the event
+    var message = sourceEvent.value
+    
     try {  
         // Creating a map of each row, used to INSERT into our type
         var resultData = {}
