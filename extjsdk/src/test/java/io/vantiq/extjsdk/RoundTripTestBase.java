@@ -147,7 +147,7 @@ public class RoundTripTestBase {
 
     public static void setupRule() {
         String rule = "RULE " + testRuleName + "\n"
-                + "WHEN EVENT OCCURS ON \"/sources/" + testSourceName + " AS sourceEvent\n"
+                + "WHEN EVENT OCCURS ON \"/sources/" + testSourceName + "\" AS sourceEvent\n"
                 + "var message = sourceEvent.value\n"
                 + "INSERT " + testTypeName + "(msgId: message.msgId)";
 
