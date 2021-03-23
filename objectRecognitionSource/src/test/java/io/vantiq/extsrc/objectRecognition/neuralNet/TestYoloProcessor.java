@@ -2032,7 +2032,8 @@ public class TestYoloProcessor extends NeuralNetTestBase {
 
     public static void setupRule() {
         String rule = "RULE " + testRuleName + "\n"
-                + "WHEN MESSAGE ARRIVES FROM " + testSourceName +  " AS message\n"
+                + "WHEN EVENT OCCURS ON \"/sources/" + testSourceName + " AS sourceEvent\n"
+                + "var message = sourceEvent.value\n"
                 + "INSERT " + testTypeName + "(results: message.results)";
 
         vantiq.insert("system.rules", rule);
