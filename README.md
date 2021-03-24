@@ -414,3 +414,10 @@ Or, you can just run the following task:
 ./gradlew jdbcSource:pushImages
 ```
 *   **NOTE:** Same note as the one above.
+
+### Deploying the connector images in the Vantiq IDE
+
+Once you have built and published the docker image for a given connector (as described above), you can then deploy it 
+into a Kubernetes Cluster directly from the Vantiq IDE. This process is described in its entirety 
+[here](https://dev.vantiq.com/docs/system/extlifecycle/index.html), including both the prerequisite Kubernetes Cluster 
+setup, and an example that deploys the JDBC Connector.
