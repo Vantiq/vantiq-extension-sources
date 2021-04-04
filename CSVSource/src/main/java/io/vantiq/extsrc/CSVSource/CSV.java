@@ -254,13 +254,16 @@ public class CSV {
 
             prepareConfigurationData();
 
+            log.info("setupCSV File Seperator '"+ File.separator+"'"); 
             if (isRunningInLinux) {
                 this.fullFilePath = fixFileFolderPathForUnix(this.fullFilePath);
                 this.fileFolderPath = fixFileFolderPathForUnix(this.fileFolderPath);
+                log.info("CSV Running in Linux , trying to subscribe to {} PollTime {}", this.fileFolderPath, pollTime);
+            } else {
+                log.info("CSV Running in Windows , trying to subscribe to {} PollTime {}", this.fileFolderPath, pollTime);
             }
             String tmpFileFolderPath = this.fileFolderPath;
 
-            log.info("CSV Running in Docker , trying to subscribe to {} PollTime {}", this.fileFolderPath, pollTime);
 
             TimerTask task = new TimerTask() {
                 @Override
@@ -573,12 +576,12 @@ public class CSV {
     }
 
     /**
-     * this function detects if the code execute in a conteiner envrionment or not. 
+     * this function detects if the code execute in a conteiner envrionment/Linux envrionment or not. 
      * @return
      */
     public static Boolean isRunningInsideLinux() {
-        return File.separator == "/";
-    }
+        return File.separator.equals("/");
+    }   
 
     /**
      * Function handles the watcher service notifications. Currently, only new
