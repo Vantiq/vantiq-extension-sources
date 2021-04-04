@@ -62,22 +62,22 @@ tasks.withType(Test) {
     if (rootProject.hasProperty('TestVantiqServer')) {
         systemProperty 'TestVantiqServer', rootProject.findProperty('TestVantiqServer') ?: 'empty'
     }
-    if (rootProject.hasProperty('EntFileFolderPath')) {
-        systemProperty 'EntFileFolderPath', rootProject.findProperty('EntFileFolderPath') ?: 'empty'
+    if (rootProject.hasProperty('EntServerIPAddress')) {
+        systemProperty 'EntServerIPAddress', rootProject.findProperty('EntServerIPAddress') ?: '127.0.0.1'
     }
-    if (rootProject.hasProperty('EntFileExtension')) {
-        systemProperty 'EntFileExtension', rootProject.findProperty('EntFileExtension') ?: 'FTPClient'
+    if (rootProject.hasProperty('EntIPPort')) {
+        systemProperty 'EntIPPort', rootProject.findProperty('EntIPPort') ?: '23'
     }
-    if (rootProject.hasProperty('EntFilePrefix')) {
-        systemProperty 'EntFilePrefix', rootProject.findProperty('EntFilePrefix')
+    if (rootProject.hasProperty('EntUsername')) {
+        systemProperty 'EntUsername', rootProject.findProperty('EntUsername')
     }
-    if (rootProject.hasProperty('EntMaxLinesInEvent')) {
-        systemProperty 'EntMaxLinesInEvent', rootProject.findProperty('EntMaxLinesInEvent')
+    if (rootProject.hasProperty('EntPassword')) {
+        systemProperty 'EntPassword', rootProject.findProperty('EntPassword')
     }
-    if (rootProject.hasProperty('EntDelimiter')) {
-        systemProperty 'EntDelimiter', rootProject.findProperty('EntDelimiter')?:","
+    if (rootProject.hasProperty('EntLocalFolderPath')) {
+        systemProperty 'EntLocalFolderPath', rootProject.findProperty('EntLocalFolderPath')
     }
-    if (rootProject.hasProperty('EntFullFilePath')) {
-        systemProperty 'EntFullFilePath', rootProject.findProperty('EntFullFilePath')?:"b.FTPClient"
+    if (rootProject.hasProperty('EntRemoteFolderPath')) {
+        systemProperty 'EntRemoteFolderPath', rootProject.findProperty('EntRemoteFolderPath')
     }
 }
