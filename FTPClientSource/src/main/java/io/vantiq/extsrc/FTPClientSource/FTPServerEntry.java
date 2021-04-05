@@ -29,7 +29,13 @@ public class FTPServerEntry {
         } else {
             server = def.server;
         }
-        enable = Boolean.parseBoolean((String) o.get(FTPClientHandleConfiguration.SERVER_ENABLE));
+
+        if (o.get(FTPClientHandleConfiguration.SERVER_ENABLE) instanceof String) {
+            enable = Boolean.parseBoolean((String) o.get(FTPClientHandleConfiguration.SERVER_ENABLE));
+        } else if (o.get(FTPClientHandleConfiguration.SERVER_ENABLE) instanceof Boolean) { 
+            enable = (Boolean) o.get(FTPClientHandleConfiguration.SERVER_ENABLE);
+        }
+
 
         if (o.get(FTPClientHandleConfiguration.SERVER_PORT) instanceof Integer) {
             port = Integer.parseInt((String) o.get(FTPClientHandleConfiguration.SERVER_PORT));
