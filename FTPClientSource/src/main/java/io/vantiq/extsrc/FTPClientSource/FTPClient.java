@@ -156,6 +156,8 @@ public class FTPClient {
     String password;
 
     FTPUtil ftpUtil = new FTPUtil(log);
+    boolean isRunningInLinux = isRunningInsideLinux();
+
 
     private static final int MAX_ACTIVE_TASKS = 5;
     private static final int MAX_QUEUED_TASKS = 10;
@@ -177,7 +179,7 @@ public class FTPClient {
     List<FTPServerEntry> serverList;
 
     public static String FTPClient_CHECK_COMM_FAILED_CODE = "io.vantiq.extsrc.FTPClientsource.communicationFailure";
-    public static String FTPClient_CHECK_COMM_FAILED_MESSAGE = "communication failure";
+    public static String FTPClient_CHECK_COMM_FAILED_MESSAGE = "connect failure";
     public static String FTPClient_UPLOAD_FOLDER_FAILED_CODE = "io.vantiq.extsrc.FTPClientsource.uploadFolderFailure";
     public static String FTPClient_UPLOAD_FOLDER_FAILED_MESSAGE = "Upload folder failure";
     public static String FTPClient_CLEAN_FOLDER_FAILED_CODE = "io.vantiq.extsrc.FTPClientsource.cleanFolderFailure";
@@ -215,6 +217,8 @@ public class FTPClient {
         defaultServer.password = (String) config.get(FTPClientHandleConfiguration.PASSWORD);
         defaultServer.remoteFolderPath = (String) config.get(FTPClientHandleConfiguration.REMOTE_FOLDER_PATH);
         defaultServer.localFolderPath = (String) config.get(FTPClientHandleConfiguration.LOCAL_FOLDER_PATH);
+        defaultServer.ageInDays = (Integer) config.get(FTPClientHandleConfiguration.AGE_IN_DAYS_KEYWORD);
+        defaultServer.connectTimeout = (Integer) config.get(FTPClientHandleConfiguration.CONNECT_TIMEOUT);
 
         try {
             if (config.get(FTPClientHandleConfiguration.SERVER_LIST) != null) {
@@ -328,30 +332,16 @@ public class FTPClient {
                         log.info("LookForRemoteFiles trying to connect to " + currEntry.name);
 
                         if (!ftpUtil.downloadFolder(currEntry.server, currEntry.port, currEntry.username, currEntry.password, currEntry.remoteFolderPath,
-                        currEntry.localFolderPath,true)) {
+                        currEntry.localFolderPath,true,currEntry.connectTimeout)) {
                             log.error("LookForRemoteFiles failure when downloading files from " + currEntry.name);
                         }
-                        /*
-                        {
-                        if (ftpUtil.openFtpConection(curr.server, curr.port, curr.username, curr.password)) {
-                            FTPFile[] files = ftpUtil.getListFiles(curr.remoteFolderPath);
-
-                            for (FTPFile ftpFile : files) {
-                                String file = ftpFile.getName();
-                                System.out.println(file);
-                            }
-
-                            ftpUtil.closeFtpConection();
-
-                        }
-                        */
                     }
                 }
 
             } else {
 
                 FTPServerEntry currEntry = defaultServer;
-                if (ftpUtil.openFtpConection(currEntry.server, currEntry.port, currEntry.username, currEntry.password)) {
+                if (ftpUtil.openFtpConection(currEntry.server, currEntry.port, currEntry.username, currEntry.password,currEntry.connectTimeout)) {
                     FTPFile[] files = ftpUtil.getListFiles(remoteFolderPath);
 
                     for (FTPFile ftpFile : files) {
@@ -424,7 +414,7 @@ public class FTPClient {
                 sourcePathStr = currServer.server + ":" + currServer.port;
 
                 if (!ftpUtil.checkCommunication(currServer.server, currServer.port, currServer.username,
-                        currServer.password)) {
+                        currServer.password,currServer.connectTimeout)) {
                     rsArray = CreateResponse(FTPClient_CHECK_COMM_FAILED_CODE, FTPClient_CHECK_COMM_FAILED_MESSAGE,
                             "[" + name + "] " + sourcePathStr);
                 } else {
@@ -521,19 +511,10 @@ public class FTPClient {
             }
 
             checkedAttribute = REMOTE_PATH_KEYWORD;
-            if (body.get(REMOTE_PATH_KEYWORD) instanceof String) {
-                sourcePathStr = (String) body.get(REMOTE_PATH_KEYWORD);
-            } else {
-                sourcePathStr = currEntry.remoteFolderPath;
-            }
+            sourcePathStr = SetFieldStringValue(checkedAttribute,body,currEntry.remoteFolderPath,true);
 
             checkedAttribute = LOCAL_PATH_KEYWORD;
-            if (body.get(LOCAL_PATH_KEYWORD) instanceof String) {
-                destinationPathStr = (String) body.get(LOCAL_PATH_KEYWORD);
-            } else {
-                destinationPathStr = currEntry.localFolderPath;
-            }
-            destinationPathStr = (String) body.get(LOCAL_PATH_KEYWORD);
+            destinationPathStr = SetFieldStringValue(checkedAttribute,body,currEntry.localFolderPath,true);
 
             boolean deleteAfterDownload=false; 
             if (body.get(FTPClientHandleConfiguration.DELETE_AFTER_DOWNLOAD) instanceof String) {
@@ -551,7 +532,7 @@ public class FTPClient {
                 //destinationStruct dest = setDestination(body);
 
                 if (!ftpUtil.downloadFolder(currEntry.server, currEntry.port, currEntry.username, currEntry.password, sourcePathStr,
-                        destinationPathStr,deleteAfterDownload)) {
+                        destinationPathStr,deleteAfterDownload,currEntry.connectTimeout)) {
                     rsArray = CreateResponse(FTPClient_DOWNLOAD_FOLDER_FAILED_CODE,
                             FTPClient_DOWNLOAD_FOLDER_FAILED_MESSAGE, "[" + name + "] " +sourcePathStr);
                 } else {
@@ -588,14 +569,12 @@ public class FTPClient {
         HashMap[] rsArray = null;
         String checkedAttribute = BODY_KEYWORD;
         String destinationPathStr = "";
-        String fileStr = "";
         int ageInDays = 0;
         String name;
 
         try {
             Map<String, ?> request = (Map<String, ?>) message.getObject();
             Map<String, Object> body = (Map<String, Object>) request.get(BODY_KEYWORD);
-
 
             FTPServerEntry currEntry = null;
 
@@ -609,21 +588,17 @@ public class FTPClient {
 
 
             checkedAttribute = REMOTE_PATH_KEYWORD;
-            destinationPathStr = (String) body.get(REMOTE_PATH_KEYWORD);
+            destinationPathStr = SetFieldStringValue(checkedAttribute,body,defaultServer.remoteFolderPath,false);
 
-            checkedAttribute = REMOTE_PATH_KEYWORD;
+            checkedAttribute = AGE_IN_DAYS_KEYWORD;
+            ageInDays =  SetFieldIntegerValue(checkedAttribute,body,currEntry.ageInDays);
             ageInDays = (Integer) body.get(AGE_IN_DAYS_KEYWORD);
-            if (body.get(AGE_IN_DAYS_KEYWORD) instanceof Integer) {
-                ageInDays = (Integer) body.get(AGE_IN_DAYS_KEYWORD);
-            }
 
             checkedAttribute = "";
             FTPUtil ftpUtil = new FTPUtil(log);
 
-            //destinationStruct dest = setDestination(body);
-
             if (!ftpUtil.cleanRemoteFolder(currEntry.server, currEntry.port, currEntry.username, currEntry.password, destinationPathStr,
-                    ageInDays)) {
+                    ageInDays,currEntry.connectTimeout)) {
                 rsArray = CreateResponse(FTPClient_CLEAN_FOLDER_FAILED_CODE, FTPClient_CLEAN_FOLDER_FAILED_MESSAGE,
                         destinationPathStr);
             } else {
@@ -669,6 +644,7 @@ public class FTPClient {
 
             FTPServerEntry currEntry = null;
 
+
             checkedAttribute = FTPClientHandleConfiguration.SERVER_NAME;
             if (body.get(FTPClientHandleConfiguration.SERVER_NAME) instanceof String) {
                 name = (String) body.get(FTPClientHandleConfiguration.SERVER_NAME);
@@ -677,8 +653,9 @@ public class FTPClient {
                 currEntry = defaultServer;
             }
 
+
             checkedAttribute = LOCAL_PATH_KEYWORD;
-            sourcePathStr = (String) body.get(LOCAL_PATH_KEYWORD);
+            sourcePathStr = SetFieldStringValue(checkedAttribute,body,currEntry.localFolderPath,true);
 
             Path path = Paths.get(sourcePathStr);
             if (!path.toFile().exists()) {
@@ -687,14 +664,12 @@ public class FTPClient {
             }
 
             checkedAttribute = REMOTE_PATH_KEYWORD;
-            destinationPathStr = (String) body.get(REMOTE_PATH_KEYWORD);
+            destinationPathStr = SetFieldStringValue(checkedAttribute,body,currEntry.remoteFolderPath,false);
 
             FTPUtil ftpUtil = new FTPUtil(log);
 
-            // destinationStruct dest = setDestination(body);
-
             if (!ftpUtil.uploadFolder(currEntry.server, currEntry.port, currEntry.username, currEntry.password,
-                    destinationPathStr, sourcePathStr)) {
+                    destinationPathStr, sourcePathStr,currEntry.connectTimeout)) {
                 rsArray = CreateResponse(FTPClient_UPLOAD_FOLDER_FAILED_CODE, FTPClient_UPLOAD_FOLDER_FAILED_MESSAGE,
                         "[" + name + "] " + sourcePathStr);
             } else {
@@ -717,6 +692,29 @@ public class FTPClient {
 
         }
     }
+
+    Integer SetFieldIntegerValue(String checkedValue,Map<String, Object> body,Integer defaultValue){
+        int value = defaultValue; 
+        if (body.get(checkedValue)!=null){
+            value = (Integer) body.get(checkedValue);
+        }
+
+        return value; 
+    }
+
+    String SetFieldStringValue(String checkedValue,Map<String, Object> body,String defaultValue,Boolean varifyPath){
+        String value = defaultValue; 
+        if (body.get(checkedValue)!=null){
+            value = (String) body.get(checkedValue);
+        }
+
+        if (varifyPath && isRunningInLinux) {
+            value = fixFileFolderPathForUnix(value);
+        }
+
+        return value; 
+    }
+
 
     /**
      * this function detects if the code execute in a conteiner envrionment or not.

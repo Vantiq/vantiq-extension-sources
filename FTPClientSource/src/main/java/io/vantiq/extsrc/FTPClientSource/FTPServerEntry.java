@@ -15,6 +15,8 @@ public class FTPServerEntry {
     public boolean enable;
     public String remoteFolderPath;
     public String localFolderPath; 
+    public Integer ageInDays;
+    public Integer connectTimeout;
 
     public FTPServerEntry(Map<String, Object> o, FTPServerEntry def) throws VantiqFTPClientException {
         
@@ -41,6 +43,18 @@ public class FTPServerEntry {
             port = Integer.parseInt((String) o.get(FTPClientHandleConfiguration.SERVER_PORT));
         } else {
             port = def.port;
+        }
+
+        if (o.get(FTPClientHandleConfiguration.CONNECT_TIMEOUT) instanceof Integer) {
+            connectTimeout = Integer.parseInt((String) o.get(FTPClientHandleConfiguration.CONNECT_TIMEOUT));
+        } else {
+            connectTimeout = def.connectTimeout;
+        }
+
+        if (o.get(FTPClientHandleConfiguration.AGE_IN_DAYS_KEYWORD) instanceof Integer) {
+            ageInDays = Integer.parseInt((String) o.get(FTPClientHandleConfiguration.AGE_IN_DAYS_KEYWORD));
+        } else {
+            ageInDays = def.ageInDays;
         }
 
         if (o.get(FTPClientHandleConfiguration.USERNAME) instanceof String) {

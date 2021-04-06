@@ -12,9 +12,7 @@ import java.util.Calendar;
 import org.apache.commons.net.ftp.FTP;
 import org.apache.commons.net.ftp.FTPClient;
 import org.apache.commons.net.ftp.FTPFile;
-
 import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import io.vantiq.extsrc.FTPClientSource.exception.VantiqFTPClientException;
 
@@ -52,11 +50,11 @@ public class FTPUtil {
         }
     }
  
-    public boolean openFtpConection(String server, Integer port, String user, String password)
+    public boolean openFtpConection(String server, Integer port, String user, String password,int connectTimeout)
             throws VantiqFTPClientException {
         ftpClient = new org.apache.commons.net.ftp.FTPClient();
         try {
-
+            ftpClient.setConnectTimeout(connectTimeout);
             ftpClient.connect(server, port);
             ftpClient.login(user, password);
             ftpClient.enterLocalPassiveMode();
@@ -154,12 +152,12 @@ public class FTPUtil {
     }
 
     public boolean uploadFolder(String server, Integer port, String user, String password, String remoteFolderPath,
-            String localFolderPath) throws VantiqFTPClientException {
+            String localFolderPath,Integer connectTimeout) throws VantiqFTPClientException {
 
         FTPClient currentFtpClient = new org.apache.commons.net.ftp.FTPClient();
 
         try {
-
+            currentFtpClient.setConnectTimeout(connectTimeout);
             currentFtpClient.connect(server, port);
             currentFtpClient.login(user, password);
             currentFtpClient.enterLocalPassiveMode();
@@ -207,12 +205,12 @@ public class FTPUtil {
     }
 
     public boolean downloadFolder(String server, Integer port, String user, String password, String remoteFolderPath,
-            String localFolderPath,boolean deleteAfterDownload) throws VantiqFTPClientException {
+            String localFolderPath,boolean deleteAfterDownload,Integer connectTimeout) throws VantiqFTPClientException {
 
         FTPClient currentFtpClient = new org.apache.commons.net.ftp.FTPClient();
 
         try {
-
+            currentFtpClient.setConnectTimeout(connectTimeout);
             currentFtpClient.connect(server, port);
             currentFtpClient.login(user, password);
             currentFtpClient.enterLocalPassiveMode();
@@ -265,7 +263,7 @@ public class FTPUtil {
         }
     }
 
-    public boolean checkCommunication(String server, Integer port, String user, String password)
+    public boolean checkCommunication(String server, Integer port, String user, String password,Integer connectTimeout)
             throws VantiqFTPClientException {
 
         FTPClient currentFtpClient = new org.apache.commons.net.ftp.FTPClient();
@@ -273,6 +271,7 @@ public class FTPUtil {
         try {
 
             String remoteFolderPath = server + ":" + port ; 
+            currentFtpClient.setConnectTimeout(connectTimeout);
             currentFtpClient.connect(server, port);
             currentFtpClient.login(user, password);
             int returnCode = currentFtpClient.getReplyCode();
@@ -317,12 +316,12 @@ public class FTPUtil {
         }
     }
     public boolean cleanRemoteFolder(String server, Integer port, String user, String password, String remoteFolderPath,
-            Integer ageInDays) throws VantiqFTPClientException {
+            Integer ageInDays,Integer connectTimeout) throws VantiqFTPClientException {
 
         FTPClient currentFtpClient = new org.apache.commons.net.ftp.FTPClient();
 
         try {
-
+            currentFtpClient.setConnectTimeout(connectTimeout);
             currentFtpClient.connect(server, port);
             currentFtpClient.login(user, password);
             currentFtpClient.enterLocalPassiveMode();

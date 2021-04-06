@@ -62,6 +62,8 @@ public class FTPClientHandleConfiguration extends Handler<ExtensionServiceMessag
     public static final String SERVER_PORT = "port";
     public static final String USERNAME = "username";
     public static final String PASSWORD = "password";
+    public static final String AGE_IN_DAYS_KEYWORD = "ageInDays";
+    public static final String CONNECT_TIMEOUT ="connectTimeout"; 
 
     private static final String ASYNCH_PROCESSING = "asynchronousProcessing";
     private static final String MAX_ACTIVE = "maxActiveTasks";
@@ -111,10 +113,11 @@ public class FTPClientHandleConfiguration extends Handler<ExtensionServiceMessag
 
         // Retrieve the FTPClientConfig and the vantiq config
         if (!(FTPClientConfig.get(SERVER_IP) instanceof String && FTPClientConfig.get(SERVER_PORT) instanceof Integer
-            && FTPClientConfig.get(USERNAME) instanceof String && FTPClientConfig.get(PASSWORD) instanceof String 
+            && FTPClientConfig.get(USERNAME) instanceof String && FTPClientConfig.get(PASSWORD) instanceof String
+            && FTPClientConfig.get(AGE_IN_DAYS_KEYWORD) instanceof Integer  && FTPClientConfig.get(CONNECT_TIMEOUT) instanceof Integer
             && FTPClientConfig.get(LOCAL_FOLDER_PATH) instanceof String && FTPClientConfig.get(REMOTE_FOLDER_PATH) instanceof String)) {
                 log.error(
-                    "Configuration failed. Configuration must contain 'server', 'port', 'username', 'password', 'remoteFolderPath' and 'localFOlderPath' fields.");
+                    "Configuration failed. Configuration must contain 'server', 'port', 'username', 'password', 'AgeInDays', 'connetTimeout', 'remoteFolderPath' and 'localFOlderPath' fields.");
             failConfig();
             return;
         }

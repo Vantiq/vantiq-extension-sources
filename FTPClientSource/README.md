@@ -84,6 +84,8 @@ The Configuration document may look similar to the following example:
       "password": "pass1",
       "remoteFolderPath": "/bizerba/edv/work",
       "localFolderPath":"c:/tmp",
+      "connectTimeout":1000, 
+      "ageInDays":10,
       "servers":[
       	{
         "name":"scale01",
@@ -115,6 +117,8 @@ The Configuration document may look similar to the following example:
 *   **password**: Required. login password for the FTP Server
 *   **remoteFolderPath**: Required, default remote folder in the FTP server
 *   **localFolderPath**: Required, default local folder at host filesystem. 
+*   **ageInDays**: Requierd, default age of file in days, older files will be deleted in a cleaning operation
+*   **connectTimeout**: Required, connection timeout. 
 *   **enable**: Optional, disable flag for a specific FTP configuration entry. 
 
 ### Execution Options
