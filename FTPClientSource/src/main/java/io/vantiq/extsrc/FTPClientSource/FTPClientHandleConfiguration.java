@@ -49,12 +49,14 @@ public class FTPClientHandleConfiguration extends Handler<ExtensionServiceMessag
 
     // Constants for getting config options
     private static final String CONFIG = "config";
-    private static final String FTPClientCONFIG = "ftpClientConfig";
+    public static final String FTPClientCONFIG = "ftpClientConfig";
     private static final String OPTIONS = "options";
 
+    public static final String DELETE_AFTER_PROCCESING_KEYWORD = "deleteAfterProcessing";
     public static final String DELETE_AFTER_DOWNLOAD = "deleteAfterDownload";
     public static final String REMOTE_FOLDER_PATH = "remoteFolderPath";
     public static final String LOCAL_FOLDER_PATH = "localFolderPath";
+    public static final String BASE_DOCUMENT_PATH = "baseDocumentPath";
     public static final String SERVER_LIST = "servers";
     public static final String SERVER_NAME = "name";
     public static final String SERVER_ENABLE = "enable";

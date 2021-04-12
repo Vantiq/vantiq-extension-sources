@@ -17,6 +17,7 @@ public class FTPServerEntry {
     public String localFolderPath; 
     public Integer ageInDays;
     public Integer connectTimeout;
+    public String baseDocumentPath;
 
     public FTPServerEntry(Map<String, Object> o, FTPServerEntry def) throws VantiqFTPClientException {
         
@@ -78,6 +79,13 @@ public class FTPServerEntry {
         } else {
             localFolderPath = def.localFolderPath;
         }
+
+        if (o.get(FTPClientHandleConfiguration.BASE_DOCUMENT_PATH) instanceof String) {
+            baseDocumentPath = (String) o.get(FTPClientHandleConfiguration.BASE_DOCUMENT_PATH);
+        } else {
+            baseDocumentPath = def.baseDocumentPath;
+        }
+
     }
 
     public FTPServerEntry() {

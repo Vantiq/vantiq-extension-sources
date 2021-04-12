@@ -174,39 +174,43 @@ public class FTPClientCore {
                 String opString = (String) request.get("op");
 
                 switch (opString.toLowerCase()) {
-                    case "checkcomm": {
-                        HashMap[] queryArray = localFTPClient.processCheckComm(message);
-                        sendDataFromQuery(queryArray, message);
-                    }
-                        break;
-                    case "upload": {
-                        HashMap[] queryArray = localFTPClient.processUpload(message);
-                        sendDataFromQuery(queryArray, message);
-                    }
-                        break;
-                    case "clean": {
-                        HashMap[] queryArray = localFTPClient.processClean(message);
-                        sendDataFromQuery(queryArray, message);
-                    }
-                        break;
-                    case "download": {
-                        HashMap[] queryArray = localFTPClient.processDownload(message);
-                        sendDataFromQuery(queryArray, message);
-                    }
-                        break;
-                    default:
-                        log.error("Unrecognized op :"+ opString);
-                        client.sendQueryError(replyAddress, this.getClass().getName() + ".opNotSupported",
-                                "The Request could not be executed because the op property is " + opString
-                                        + " not supported.",
-                                null);
+                case "checkcomm": {
+                    HashMap[] queryArray = localFTPClient.processCheckComm(message);
+                    sendDataFromQuery(queryArray, message);
+                }
+                    break;
+                case "upload": {
+                    HashMap[] queryArray = localFTPClient.processUpload(message);
+                    sendDataFromQuery(queryArray, message);
+                }
+                    break;
+                case "clean": {
+                    HashMap[] queryArray = localFTPClient.processClean(message);
+                    sendDataFromQuery(queryArray, message);
+                }
+                    break;
+                case "download": {
+                    HashMap[] queryArray = localFTPClient.processDownload(message);
+                    sendDataFromQuery(queryArray, message);
+                }
+                    break;
+                case "downloadimage": {
+                    HashMap[] queryArray = localFTPClient.processDownloadImage(message);
+                    sendDataFromQuery(queryArray, message);
+                }
+                    break;
+                default:
+                    log.error("Unrecognized op :" + opString);
+                    client.sendQueryError(replyAddress, this.getClass().getName() + ".opNotSupported",
+                            "The Request could not be executed because the op property is " + opString
+                                    + " not supported.",
+                            null);
                 }
 
             } else {
                 log.error("Query could not be executed because query was not a String.");
                 client.sendQueryError(replyAddress, this.getClass().getName() + ".queryNotString",
-                        "The Query Request could not be executed because the query property is not a string.",
-                        null);
+                        "The Query Request could not be executed because the query property is not a string.", null);
             }
         } catch (VantiqFTPClientException e) {
             log.error("Could not execute requested query.", e);

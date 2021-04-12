@@ -7,6 +7,10 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.nio.file.DirectoryNotEmptyException;
+import java.nio.file.Files;
+import java.nio.file.NoSuchFileException;
+import java.nio.file.Paths;
 import java.util.Calendar;
 
 import org.apache.commons.net.ftp.FTP;
@@ -151,8 +155,30 @@ public class FTPUtil {
 
     }
 
+    public Boolean deleteLocalFile(String filename){
+        try
+        {
+            Files.deleteIfExists(Paths.get(filename));
+            return true; 
+        }
+        catch(NoSuchFileException e)
+        {
+            Log.error("No such file/directory exists", e);
+        }
+        catch(DirectoryNotEmptyException e)
+        {
+            Log.error("Directory is not empty.", e);
+        }
+        catch(IOException e)
+        {
+            Log.error("Invalid permissions.", e);
+        }
+        return false;
+    }
+
+
     public boolean uploadFolder(String server, Integer port, String user, String password, String remoteFolderPath,
-            String localFolderPath,Integer connectTimeout) throws VantiqFTPClientException {
+            String localFolderPath,Boolean deleteAfterUpload, Integer connectTimeout) throws VantiqFTPClientException {
 
         FTPClient currentFtpClient = new org.apache.commons.net.ftp.FTPClient();
 
@@ -180,6 +206,14 @@ public class FTPUtil {
                 if (f.isFile()) {
                     if (!UploadFile(currentFtpClient, localFolderPath, fileName, remoteFolderPath)) {
                         Log.error("File " + fileName + " couldn't uploaded");
+                    } else {
+                        if (deleteAfterUpload){
+                            if (deleteLocalFile(f.getPath())){
+                                Log.info("File " + f.getPath() + " uploaded and deleted");
+                            } else {
+                                Log.error("File " + f.getPath() + " uploaded but couldn't deleted");
+                            }
+                        }
                     }
                 }
             }
