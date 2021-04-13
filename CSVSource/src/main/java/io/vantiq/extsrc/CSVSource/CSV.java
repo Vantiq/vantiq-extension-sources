@@ -222,7 +222,6 @@ public class CSV {
 
         fileFilter = (dir, name) -> {
             String lowercaseName = name.toLowerCase();
-
             return lowercaseName.endsWith(extension.toLowerCase())
                     && lowercaseName.startsWith(filePrefix.toLowerCase());
         };
@@ -261,6 +260,8 @@ public class CSV {
             String tmpFileFolderPath = this.fileFolderPath;
 
             log.info("CSV Running in Docker , trying to subscribe to {} PollTime {}", this.fileFolderPath, pollTime);
+
+            new File(tmpFileFolderPath).mkdirs();
 
             TimerTask task = new TimerTask() {
                 @Override
@@ -302,6 +303,9 @@ public class CSV {
 
                         if (configType != null && configType.toLowerCase().equals("fixedlength")) {
                             CSVReader.executeFixedRecord(fullFileName, config, oClient);
+                        }
+                        else if (configType != null && configType.toLowerCase().equals("xml")) {
+                                CSVReader.executeXMLFile(fullFileName, config, oClient);
                         } else {
                             CSVReader.execute(fullFileName, config, oClient);
                         }
@@ -311,8 +315,11 @@ public class CSV {
                             log.info("File {} deleted", fullFileName);
                             file.delete();
                         } else if (extensionAfterProcessing != "") {
-                            File newfullFileName = new File(fullFileName.replace(extension, extensionAfterProcessing));
+                            File newfullFileName = new File(fullFileName.toLowerCase().replace(extension.toLowerCase(), extensionAfterProcessing));
                             log.info("File {} renamed to {}", fullFileName, newfullFileName);
+                            if (newfullFileName.exists()){
+                                newfullFileName.delete();
+                            }
                             file.renameTo(newfullFileName);
                         }
                     } catch (RejectedExecutionException e) {
@@ -335,7 +342,6 @@ public class CSV {
      */
     void handleExistingFiles(String fileFolderPath) {
         File folder = new File(fileFolderPath);
-
         String[] listOfFiles = folder.list(fileFilter);
         for (String fileName : listOfFiles) {
             executeInPool(fileFolderPath, fileName);
@@ -577,7 +583,7 @@ public class CSV {
      * @return
      */
     public static Boolean isRunningInsideLinux() {
-        return File.separator == "/";
+        return File.separator.equals("/");
     }
 
     /**

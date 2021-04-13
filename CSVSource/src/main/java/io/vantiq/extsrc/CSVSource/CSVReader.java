@@ -12,12 +12,17 @@ import java.io.FileInputStream;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
 
+import org.json.JSONException;
+import org.json.JSONObject;
+import org.json.XML;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -49,10 +54,11 @@ public class CSVReader {
      * @param file      - the list of events to be sent .
      * @param oClient
      */
-    static void sendNotification(String filename, int numPacket, ArrayList<Map<String, String>> file,
+    static void sendNotification(String filename, String type ,int numPacket, ArrayList<Map<String, String>> file,
             ExtensionWebSocketClient oClient) {
         Map<String, Object> m = new LinkedHashMap<>();
         m.put("file", filename);
+        m.put("type", type);
         m.put("segment", numPacket);
         m.put("lines", file);
         if (oClient != null) {
@@ -110,7 +116,57 @@ public class CSVReader {
             }
 
         }
-        return recordSize + 1;// CR+LF
+        return recordSize ;//+ 1;// CR+LF
+    }
+
+    /**
+     * Responsible for reading records from the file and converting to events to be
+     * sent to server. Each record is a fixed record and, based on the schema
+     * object, we extract the field.
+     * 
+     * @param csvFile
+     * @param config
+     * @param oClient
+     * @return
+     * @throws InterruptedException
+     * @throws VantiqCSVException
+     */
+    @SuppressWarnings("unchecked")
+    static public ArrayList<Map<String, String>> executeXMLFile(String csvFile, Map<String, Object> config,
+            ExtensionWebSocketClient oClient) throws InterruptedException, VantiqCSVException {
+
+        int packetIndex = 0;
+
+        boolean extendedLogging = false;
+        if (config.get("extendedLogging") != null) {
+            extendedLogging = Boolean.parseBoolean(config.get("extendedLogging").toString());
+        }
+        try {
+            String xmlString = "";
+            xmlString = new String(Files.readAllBytes(Paths.get(csvFile)));
+
+            try {
+                JSONObject json = XML.toJSONObject(xmlString); // converts xml to json
+                String jsonPrettyPrintString = json.toString(); // json pretty print
+                if (extendedLogging){
+                    log.info(jsonPrettyPrintString);
+                }
+                
+                ArrayList<Map<String, String>> file = new ArrayList<Map<String, String>>();
+                Map<String, String> lineValues = new HashMap<String, String>();
+                lineValues.put("xml", jsonPrettyPrintString);
+                file.add(lineValues);
+
+                sendNotification(csvFile,"XML", packetIndex, file, oClient);
+            } catch (JSONException je) {
+                log.error("Convert2Json failed", je);
+            }
+        } catch (IOException iex) {
+
+        }
+
+
+        return null;
     }
 
     /**
@@ -209,7 +265,7 @@ public class CSVReader {
                         log.info("TX Packet {} Size {} Total num of Records {}", packetIndex, MaxLinesInEvent,
                                 numOfRecords);
                     }
-                    sendNotification(csvFile, packetIndex, file, oClient);
+                    sendNotification(csvFile, "FixedLength", packetIndex, file, oClient);
                     if (SleepBetweenPackets > 0) {
                         Thread.sleep(SleepBetweenPackets);
                     }
@@ -223,7 +279,7 @@ public class CSVReader {
                     log.info("TX Last Packet Packet {} Size {} Total num of Records {}", packetIndex, MaxLinesInEvent,
                             numOfRecords);
                 }
-                sendNotification(csvFile, packetIndex, file, oClient);
+                sendNotification(csvFile,"FixedLength", packetIndex, file, oClient);
             }
             return file;
 
@@ -305,7 +361,7 @@ public class CSVReader {
                             log.info("TX Packet {} Size {} Total num of Records {}", packetIndex, MaxLinesInEvent,
                                     numOfRecords);
                         }
-                        sendNotification(csvFile, packetIndex, file, oClient);
+                        sendNotification(csvFile, "Delimited", packetIndex, file, oClient);
                         file = new ArrayList<Map<String, String>>();
                         packetIndex++;
                     }
@@ -319,7 +375,7 @@ public class CSVReader {
                             numOfRecords);
                 }
 
-                sendNotification(csvFile, packetIndex, file, oClient);
+                sendNotification(csvFile, "Delimited", packetIndex, file, oClient);
             }
             return file;
         } catch (IOException e) {
