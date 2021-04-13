@@ -222,8 +222,11 @@ public class CSV {
 
         fileFilter = (dir, name) -> {
             String lowercaseName = name.toLowerCase();
-            return lowercaseName.endsWith(extension.toLowerCase())
-                    && lowercaseName.startsWith(filePrefix.toLowerCase());
+            String regex = filePrefix.toLowerCase()+"[\\.a-z0-9_-]+"+extension.toLowerCase();
+            Boolean b = lowercaseName.matches(regex) ;
+            return b; 
+//            return lowercaseName.endsWith(extension.toLowerCase())
+//                    && lowercaseName.startsWith(filePrefix.toLowerCase());
         };
 
         executionPool = new ThreadPoolExecutor(maxActiveTasks, maxActiveTasks, 0l, TimeUnit.MILLISECONDS,
@@ -315,7 +318,8 @@ public class CSV {
                             log.info("File {} deleted", fullFileName);
                             file.delete();
                         } else if (extensionAfterProcessing != "") {
-                            File newfullFileName = new File(fullFileName.toLowerCase().replace(extension.toLowerCase(), extensionAfterProcessing));
+                           
+                            File newfullFileName = new File(fullFileName.toLowerCase()+extensionAfterProcessing);
                             log.info("File {} renamed to {}", fullFileName, newfullFileName);
                             if (newfullFileName.exists()){
                                 newfullFileName.delete();
