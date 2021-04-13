@@ -18,6 +18,7 @@ public class FTPServerEntry {
     public Integer ageInDays;
     public Integer connectTimeout;
     public String baseDocumentPath;
+    public Boolean addPrefixToDownload; 
 
     public FTPServerEntry(Map<String, Object> o, FTPServerEntry def) throws VantiqFTPClientException {
         
@@ -35,10 +36,15 @@ public class FTPServerEntry {
 
         if (o.get(FTPClientHandleConfiguration.SERVER_ENABLE) instanceof String) {
             enable = Boolean.parseBoolean((String) o.get(FTPClientHandleConfiguration.SERVER_ENABLE));
-        } else if (o.get(FTPClientHandleConfiguration.SERVER_ENABLE) instanceof Boolean) { 
-            enable = (Boolean) o.get(FTPClientHandleConfiguration.SERVER_ENABLE);
+        } else {
+            enable = false;
         }
 
+        if (o.get(FTPClientHandleConfiguration.ADD_PRRFIX_TO_DOWNLOAD) instanceof String) {
+            addPrefixToDownload = Boolean.parseBoolean((String) o.get(FTPClientHandleConfiguration.ADD_PRRFIX_TO_DOWNLOAD));
+        } else { 
+            addPrefixToDownload = def.addPrefixToDownload;
+        }
 
         if (o.get(FTPClientHandleConfiguration.SERVER_PORT) instanceof Integer) {
             port = Integer.parseInt((String) o.get(FTPClientHandleConfiguration.SERVER_PORT));

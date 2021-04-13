@@ -224,6 +224,7 @@ public class FTPClient {
         defaultServer.localFolderPath = (String) config.get(FTPClientHandleConfiguration.LOCAL_FOLDER_PATH);
         defaultServer.ageInDays = (Integer) config.get(FTPClientHandleConfiguration.AGE_IN_DAYS_KEYWORD);
         defaultServer.connectTimeout = (Integer) config.get(FTPClientHandleConfiguration.CONNECT_TIMEOUT);
+        defaultServer.addPrefixToDownload = (Boolean) config.get(FTPClientHandleConfiguration.ADD_PRRFIX_TO_DOWNLOAD);
 
         try {
             if (config.get(FTPClientHandleConfiguration.SERVER_LIST) != null) {
@@ -340,10 +341,11 @@ public class FTPClient {
                         if (isRunningInLinux) {
                             localFolderPath = fixFileFolderPathForUnix(localFolderPath);
                         }
+                        new File(localFolderPath).mkdirs();
 
                         if (!ftpUtil.downloadFolder(currEntry.server, currEntry.port, currEntry.username,
                                 currEntry.password, currEntry.remoteFolderPath, localFolderPath, true,
-                                currEntry.connectTimeout)) {
+                                currEntry.connectTimeout,currEntry.addPrefixToDownload,currEntry.name)) {
                             log.error("LookForRemoteFiles failure when downloading files from " + currEntry.name);
                         }
                     }
@@ -533,12 +535,17 @@ public class FTPClient {
 
             checkedAttribute = LOCAL_PATH_KEYWORD;
             destinationPathStr = SetFieldStringValue(checkedAttribute, body, currEntry.localFolderPath, true);
+            new File(destinationPathStr).mkdirs();
+
 
 
             Boolean deleteAfterDownload = (Boolean) options.get(FTPClientHandleConfiguration.DELETE_AFTER_PROCCESING_KEYWORD);
             checkedAttribute =  FTPClientHandleConfiguration.DELETE_AFTER_DOWNLOAD ;
             deleteAfterDownload = SetFieldBooleanValue(checkedAttribute, body, deleteAfterDownload);
 
+            Boolean addPrefixAfterDownload = (Boolean) options.get(FTPClientHandleConfiguration.ADD_PRRFIX_TO_DOWNLOAD);
+            checkedAttribute =  FTPClientHandleConfiguration.ADD_PRRFIX_TO_DOWNLOAD ;
+            deleteAfterDownload = SetFieldBooleanValue(checkedAttribute, body, addPrefixAfterDownload);
 
 
             Path path = Paths.get(destinationPathStr);
@@ -552,7 +559,7 @@ public class FTPClient {
                 // destinationStruct dest = setDestination(body);
 
                 if (!ftpUtil.downloadFolder(currEntry.server, currEntry.port, currEntry.username, currEntry.password,
-                        sourcePathStr, destinationPathStr, deleteAfterDownload, currEntry.connectTimeout)) {
+                        sourcePathStr, destinationPathStr, deleteAfterDownload, currEntry.connectTimeout,addPrefixAfterDownload,currEntry.name)) {
                     rsArray = CreateResponse(FTPClient_DOWNLOAD_FOLDER_FAILED_CODE,
                             FTPClient_DOWNLOAD_FOLDER_FAILED_MESSAGE, "[" + name + "] " + sourcePathStr);
                 } else {
@@ -606,6 +613,7 @@ public class FTPClient {
 
             checkedAttribute = LOCAL_PATH_KEYWORD;
             destinationPathStr = SetFieldStringValue(checkedAttribute, body, "", true);
+            new File(destinationPathStr).mkdirs();
 
 
             if (sourcePathStr =="" ||  destinationPathStr=="") {
@@ -745,6 +753,7 @@ public class FTPClient {
 
             checkedAttribute = LOCAL_PATH_KEYWORD;
             sourcePathStr = SetFieldStringValue(checkedAttribute, body, currEntry.localFolderPath, true);
+            new File(sourcePathStr).mkdirs();
 
             Path path = Paths.get(sourcePathStr);
             if (!path.toFile().exists()) {

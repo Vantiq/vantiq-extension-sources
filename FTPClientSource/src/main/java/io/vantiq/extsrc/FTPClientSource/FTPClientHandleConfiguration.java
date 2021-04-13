@@ -60,6 +60,7 @@ public class FTPClientHandleConfiguration extends Handler<ExtensionServiceMessag
     public static final String SERVER_LIST = "servers";
     public static final String SERVER_NAME = "name";
     public static final String SERVER_ENABLE = "enable";
+    public static final String ADD_PRRFIX_TO_DOWNLOAD = "addPrefixToDownload";
     public static final String SERVER_IP = "server";
     public static final String SERVER_PORT = "port";
     public static final String USERNAME = "username";
@@ -117,9 +118,10 @@ public class FTPClientHandleConfiguration extends Handler<ExtensionServiceMessag
         if (!(FTPClientConfig.get(SERVER_IP) instanceof String && FTPClientConfig.get(SERVER_PORT) instanceof Integer
             && FTPClientConfig.get(USERNAME) instanceof String && FTPClientConfig.get(PASSWORD) instanceof String
             && FTPClientConfig.get(AGE_IN_DAYS_KEYWORD) instanceof Integer  && FTPClientConfig.get(CONNECT_TIMEOUT) instanceof Integer
-            && FTPClientConfig.get(LOCAL_FOLDER_PATH) instanceof String && FTPClientConfig.get(REMOTE_FOLDER_PATH) instanceof String)) {
+            && FTPClientConfig.get(LOCAL_FOLDER_PATH) instanceof String && FTPClientConfig.get(REMOTE_FOLDER_PATH) instanceof String
+            && FTPClientConfig.get(ADD_PRRFIX_TO_DOWNLOAD) instanceof Boolean)) {
                 log.error(
-                    "Configuration failed. Configuration must contain 'server', 'port', 'username', 'password', 'AgeInDays', 'connetTimeout', 'remoteFolderPath' and 'localFOlderPath' fields.");
+                    "Configuration failed. Configuration must contain 'server', 'port', 'username', 'password', 'AgeInDays', 'connetTimeout', 'remoteFolderPath', 'addPrefixToDownload' and 'localFolderPath' fields.");
             failConfig();
             return;
         }
