@@ -15,6 +15,7 @@ import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -233,7 +234,8 @@ public class CSVReader {
         try (InputStream inputStream = new FileInputStream(csvFile)) {
             numOfRecords = 0;
             byte[] tempBuffer = new byte[recordSize];
-            while (inputStream.read(tempBuffer) != -1) {
+            int len = inputStream.read(tempBuffer);
+            while (len == recordSize) {
                 Map<String, String> lineValues = new HashMap<String, String>();
 
                 for (String key : fieldList) {
@@ -272,6 +274,8 @@ public class CSVReader {
                     file = new ArrayList<Map<String, String>>();
                     packetIndex++;
                 }
+                Arrays.fill(tempBuffer, (byte)0);
+                len = inputStream.read(tempBuffer);
 
             }
             if (file.size() > 0) {
