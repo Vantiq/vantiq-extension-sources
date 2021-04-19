@@ -49,4 +49,27 @@ public class Utils {
 
         return properties;
     }
+
+    /**
+     * Helper method used to
+     * @return An Integer for the port value provided in the server.config file, or null if non was specified.
+     * @throws Exception
+     */
+    public static Integer obtainTCPProbePort() throws Exception {
+        File configFile = new File(SERVER_CONFIG_DIR, SERVER_CONFIG_FILENAME);
+        Properties properties = new Properties();
+        if (!configFile.exists()) {
+            configFile = new File(SERVER_CONFIG_FILENAME);
+            if (!configFile.exists()) {
+                return null;
+            }
+        }
+        properties.load(new FileReader(configFile));
+        String portString = properties.getProperty("tcpProbePort");
+        if (portString != null) {
+            return new Integer(portString);
+        } else {
+            return null;
+        }
+    }
 }

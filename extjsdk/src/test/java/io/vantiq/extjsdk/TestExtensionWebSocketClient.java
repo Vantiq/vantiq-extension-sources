@@ -393,6 +393,54 @@ public class TestExtensionWebSocketClient extends ExtjsdkTestBase{
         assert socket.compareData("resourceId", srcName);
     }
 
+    @Test
+    public void testTCPProbeListener() {
+        // Setup a client and listener and mark things "connected"
+        FalseClient newClient = new FalseClient(srcName);
+        TestListener testListener = new TestListener(newClient);
+        newClient.listener = testListener;
+
+        newClient.initiateWebsocketConnection("unused");
+        newClient.authenticate("");
+        newClient.connectToSource();
+        newClient.webSocketFuture = CompletableFuture.completedFuture(true);
+        newClient.authFuture = CompletableFuture.completedFuture(true);
+        newClient.sourceFuture = CompletableFuture.completedFuture(true);
+
+
+        // Now lets try initialize the TCP Probe Listener, and make sure things still look alright
+        try {
+            newClient.initializeTCPProbeListener();
+        } catch (Exception e) {
+            fail("Initializing TCP Probe should not throw exception.");
+        }
+        assert newClient.isOpen();
+        assert newClient.isAuthed();
+        assert newClient.isConnected();
+
+        // Now we'll cancel the listener, and again check that we didn't mess up anything else
+        newClient.cancelTCPProbeListener();
+        assert newClient.isOpen();
+        assert newClient.isAuthed();
+        assert newClient.isConnected();
+
+        // Finally, lets initialize a new one
+        try {
+            newClient.initializeTCPProbeListener();
+        } catch (Exception e) {
+            fail("Initializing TCP Probe should not throw exception.");
+        }
+        assert newClient.isOpen();
+        assert newClient.isAuthed();
+        assert newClient.isConnected();
+
+        // And cancel it to be complete
+        newClient.cancelTCPProbeListener();
+        assert newClient.isOpen();
+        assert newClient.isAuthed();
+        assert newClient.isConnected();
+    }
+
 // ============================== Helper functions ==============================
     private void markWsConnected(boolean success) {
         client.webSocketFuture = CompletableFuture.completedFuture(success);
