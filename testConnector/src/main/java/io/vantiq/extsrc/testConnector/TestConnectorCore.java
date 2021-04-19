@@ -36,6 +36,7 @@ public class TestConnectorCore {
 
     static final String ENVIRONMENT_VARIABLES = "environmentVariables";
     static final String FILENAMES = "filenames";
+    static final String UNHEALTHY = "unhealthy";
 
     // Timer used if source is configured to poll from files
     Timer pollingTimer;
@@ -135,6 +136,13 @@ public class TestConnectorCore {
 
         // Looping call to client.InitiateFullConnection()
         doFullClientConnection(timeout);
+
+        // Setup the TCP Probe Listener
+        try {
+            client.initializeTCPProbeListener();
+        } catch (Exception e) {
+            log.error("An exception occurred while trying to setup the TCP Probe Listener");
+        }
     }
 
     /**
@@ -251,15 +259,46 @@ public class TestConnectorCore {
     public Map<String, Map> processRequest(Map<String, ?> request, String replyAddress) {
         Map<String, Map> responseMap = new LinkedHashMap<>();
 
-        // First we check to make sure that both parameters were included, and return an error if not
-        if (!(request.get(ENVIRONMENT_VARIABLES) instanceof List) && !(request.get(FILENAMES) instanceof List)) {
+        // First we check to make sure that at least one parameter was included, and return an error if not
+        if (!(request.get(ENVIRONMENT_VARIABLES) instanceof List) && !(request.get(FILENAMES) instanceof List) &&
+                !(request.get(UNHEALTHY) instanceof Boolean)) {
             log.error("The request cannot be processed because it does not contain a valid list of filenames or " +
-                    "environmentVariables. At least one of these two parameters must be provided.");
+                    "environmentVariables, nor does it contain an '{}' flag. At least one parameter must be provided.",
+                    UNHEALTHY);
             if (replyAddress != null) {
                 client.sendQueryError(replyAddress, Exception.class.getCanonicalName(),
                         "The request cannot be processed because it does not contain a valid list of " +
-                                "filenames or environmentVariables. At least one of these two parameters must be " +
-                                "provided.", null);
+                                "filenames or environmentVariables, nor does it contain an '" + UNHEALTHY+ "' flag. " +
+                                "At least one parameter must be provided.", null);
+            }
+            return null;
+        }
+
+        // Before we check for the request parameters that actually do work, lets first see if this request is
+        // supposed to set the connector to an "unhealthy" state
+        if (request.get(UNHEALTHY) instanceof Boolean) {
+            Boolean unhealthyState = (Boolean) request.get(UNHEALTHY);
+            // If true, set to unhealthy
+            if (unhealthyState) {
+                client.cancelTCPProbeListener();
+            } else {
+                // Otherwise, reinitialize the listener (i.e. we're back to a healthy state)
+                try {
+                    client.initializeTCPProbeListener();
+                } catch (Exception e) {
+                    log.error("An error occurred while trying to initialize the TCP Listener, this could be because it" +
+                            " was already initialized.");
+                    if (replyAddress != null) {
+                        client.sendQueryError(replyAddress, Exception.class.getCanonicalName(),
+                                "An error occurred while trying to initialize the TCP Listener, this " +
+                                        "could be because it was already initialized.", null);
+                    }
+                    return  null;
+                }
+            }
+
+            if (replyAddress != null) {
+                client.sendQueryResponse(204, replyAddress, new LinkedHashMap());
             }
             return null;
         }

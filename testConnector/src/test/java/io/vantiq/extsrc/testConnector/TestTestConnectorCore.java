@@ -128,6 +128,22 @@ public class TestTestConnectorCore {
     }
 
     @Test
+    public void testUnhealthyRequest() {
+        Map<String, Object> request = new LinkedHashMap<>();
+        request.put("unhealthy", true);
+        Map result = core.processRequest(request, null);
+        assert result == null;
+        assert core.client.getTCPProbeListenerFuture() == null;
+
+        request.clear();
+        request = new LinkedHashMap<>();
+        request.put("unhealthy", false);
+        result = core.processRequest(request, null);
+        assert result == null;
+        assert core.client.getTCPProbeListenerFuture() != null;
+    }
+
+    @Test
     public void testProcessInvalidRequest() {
         // Put invalid arguments into request to make sure it returns null (if this is a query, we would have sent a
         // query error)
@@ -164,6 +180,13 @@ public class TestTestConnectorCore {
         request.put("environmentVariables", environmentVariables);
         result = core.processRequest(request, null);
         assert result == null;
+
+        // One test to make sure the "unhealthy" flag must be a boolean
+        request.clear();
+        request.put("unhealthy", 100);
+        result = core.processRequest(request, null);
+        assert result == null;
+        assert core.client.getTCPProbeListenerFuture() != null;
 
         // Now lets provide nothing in the request and make sure that fails.
         request.clear();
