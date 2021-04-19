@@ -20,6 +20,11 @@ When running this connector on Linux and the supplied file path are windows styl
 
 It is also possible to have the connector write files. This operation is described below.
 
+later version added the following functionality:
+1. read file as an XML object ; convert it to json and load to Vantiq. 
+2. save to archive bnefore loading file to Vantiq. 
+
+
 The documentation has been split into two parts, [Setting Up Your Machine](#machine) and [Setting Up Your Vantiq](#vantiq).
 
 # Prerequisites <a name="pre" id="pre"></a>
@@ -92,7 +97,7 @@ The Configuration document may look similar to the following example:
 ```json
     {
         "csvConfig": {
-            "fileFolderPath": "d:/tmp/csv",
+            "fileFolderPath": "c:/tmp/csv",
             "filePrefix": "eje",
             "fileExtension": "csv",
             "maxLinesInEvent": 200,
@@ -100,6 +105,8 @@ The Configuration document may look similar to the following example:
             "delimiter":",",
             "extendedLogging":true,
             "processNullValues":false,
+            "saveToArchive": true,
+            "archiveFolderPath": "c:/tmp/csv/archive",
                 "schema": {
                     "field0": "value",
                     "field2": "flag",
@@ -129,7 +136,9 @@ The Configuration document may look similar to the following example:
 the schema filed index should be incremented or not. For example, for the following line _1,,,f_,
 determine if *field1* is "f" or *field3* is "f". 
 *   **fixedRecordSize**: fixed length record size, must include the End of Line characters as well. Required when `fileType` is `FixedLength`.
-
+*   **saveToArchive**: optional, indication if requiere to save the file before loading it to vantiq, default is false
+*   **archiveFolderPath**: optional, the folder path to save the detected file before loading it to vantiq, the faile is saved in the archive with the current 
+timestemp attached befor the prefix ( a.b => a_timesamp.b), missing vanlue will set the `saveToArchive` to false. 
 
 ### Schema Configuration
 Schema can be used to control the field names on the uploaded event. If no name is assigned, 'fieldX' will be used where 'X' is the index of the field in the line.  For example field0, field1, etc. 
@@ -210,6 +219,11 @@ the configuration should be similar to
    },
 ```
 
+### XML Object 
+CSV Reader supports sending xml file, converted to JSON and send as an event to Vantiq
+To specify extraction based on fixed positions, set the configuration 
+key `fileType` to the value: `xml`
+If this key is missing, it will default to `DelimitedFields`.
 
 ### Execution Options
 

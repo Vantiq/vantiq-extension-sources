@@ -14,11 +14,14 @@ import static java.nio.file.StandardWatchEventKinds.OVERFLOW;
 
 import java.io.BufferedWriter;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.FileWriter;
 import java.io.FilenameFilter;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
@@ -27,6 +30,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.WatchEvent;
 import java.nio.file.WatchEvent.Kind;
+import java.time.LocalDateTime;
 import java.nio.file.WatchKey;
 import java.nio.file.WatchService;
 import java.util.ArrayList;
@@ -143,6 +147,8 @@ public class CSV {
 
     String fullFilePath;
     String fileFolderPath;
+    String fileArchivePath;
+    Boolean saveToArchive = false;
     String extension = ".csv";
     String filePrefix = "";
     FilenameFilter fileFilter;
@@ -205,11 +211,37 @@ public class CSV {
             deleteAfterProcessing = (boolean) options.get("deleteAfterProcessing");
         }
 
+        if (config.get("saveToArchive") != null) {
+            saveToArchive = (Boolean) config.get("saveToArchive");
+        }
+
+        if (saveToArchive) {
+            if (config.get("archiveFolderPath") != null) {
+                fileArchivePath = (String) config.get("archiveFolderPath");
+                if (isRunningInLinux) {
+                    this.fileArchivePath = fixFileFolderPathForUnix(this.fileArchivePath);
+                }
+                try {
+                    Path path = Paths.get(fileArchivePath);
+                    Files.createDirectories(path);
+                } catch (IOException io) {
+                    log.error("Failed to create Archive folder , disable save archive", io);
+                    saveToArchive = false;
+                }
+            } else {
+                log.error("Archive folder was not supplied , disable save archive");
+                saveToArchive = false;
+            }
+
+        }
+
+        log.info("***** Configured with SaveToArchive :" +saveToArchive+" archive path " + fileArchivePath);
+
         pollTime = DEFAULT_POLL_TIME;
         if (options.get("pollTime") != null) {
             pollTime = (Integer) options.get("pollTime");
         }
-        
+
         int maxActiveTasks = MAX_ACTIVE_TASKS;
         int maxQueuedTasks = MAX_QUEUED_TASKS;
 
@@ -222,11 +254,11 @@ public class CSV {
 
         fileFilter = (dir, name) -> {
             String lowercaseName = name.toLowerCase();
-            String regex = filePrefix.toLowerCase()+"[\\.a-z0-9_-]+"+extension.toLowerCase();
-            Boolean b = lowercaseName.matches(regex) ;
-            return b; 
-//            return lowercaseName.endsWith(extension.toLowerCase())
-//                    && lowercaseName.startsWith(filePrefix.toLowerCase());
+            String regex = filePrefix.toLowerCase() + "[\\.a-z0-9_-]*" + extension.toLowerCase();
+            Boolean b = lowercaseName.matches(regex);
+            return b;
+            // return lowercaseName.endsWith(extension.toLowerCase())
+            // && lowercaseName.startsWith(filePrefix.toLowerCase());
         };
 
         executionPool = new ThreadPoolExecutor(maxActiveTasks, maxActiveTasks, 0l, TimeUnit.MILLISECONDS,
@@ -306,22 +338,35 @@ public class CSV {
 
                         if (configType != null && configType.toLowerCase().equals("fixedlength")) {
                             CSVReader.executeFixedRecord(fullFileName, config, oClient);
-                        }
-                        else if (configType != null && configType.toLowerCase().equals("xml")) {
-                                CSVReader.executeXMLFile(fullFileName, config, oClient);
+                        } else if (configType != null && configType.toLowerCase().equals("xml")) {
+                            CSVReader.executeXMLFile(fullFileName, config, oClient);
                         } else {
                             CSVReader.execute(fullFileName, config, oClient);
                         }
 
                         File file = new File(fullFileName);
+                        if (saveToArchive) {
+                            File destFile = getArchirvedFileName(file);
+                            try {
+                                copyFileUsingStream(file, destFile);
+                                log.info("copy file {} to {}",file.getName(),destFile.getName());
+
+                            } catch (IOException io) {
+                                log.error("failure to copy archive",io);
+
+                            }
+
+                        }
+
                         if (deleteAfterProcessing) {
                             log.info("File {} deleted", fullFileName);
                             file.delete();
                         } else if (extensionAfterProcessing != "") {
-                           
-                            File newfullFileName = new File(fullFileName.toLowerCase()+extensionAfterProcessing);
+
+                            File newfullFileName = new File(
+                                    getFilenameWithoutExtnsion(fullFileName.toLowerCase()) + extensionAfterProcessing);
                             log.info("File {} renamed to {}", fullFileName, newfullFileName);
-                            if (newfullFileName.exists()){
+                            if (newfullFileName.exists()) {
                                 newfullFileName.delete();
                             }
                             file.renameTo(newfullFileName);
@@ -478,7 +523,7 @@ public class CSV {
                 file.createNewFile();
 
                 try (FileOutputStream fos = new FileOutputStream(file);
-                    BufferedWriter bw = new BufferedWriter(new OutputStreamWriter(fos))) {
+                        BufferedWriter bw = new BufferedWriter(new OutputStreamWriter(fos))) {
 
                     checkedAttribute = CONTENT_KEYWORD;
                     List<Map<String, Object>> content = (List<Map<String, Object>>) body.get(CONTENT_KEYWORD);
@@ -583,7 +628,8 @@ public class CSV {
     }
 
     /**
-     * this function detects if the code execute in a conteiner envrionment or not. 
+     * this function detects if the code execute in a conteiner envrionment or not.
+     * 
      * @return
      */
     public static Boolean isRunningInsideLinux() {
@@ -620,5 +666,57 @@ public class CSV {
             timerTask = null;
         }
         executionPool.shutdownNow();
+    }
+
+    public String getFilenameWithoutExtnsion(String filename) {
+        String filewitnoutExtension;
+        int pos = filename.lastIndexOf(".");
+        if (pos > 0) {
+            filewitnoutExtension = filename.substring(0, pos);
+        } else {
+            filewitnoutExtension = filename;
+        }
+        return filewitnoutExtension;
+    }
+
+    String getTimeString() {
+        String str;
+        LocalDateTime now = LocalDateTime.now();
+
+        str = String.format("%04d-%02d-%02d-%02d-%02d-%02d", now.getYear(), now.getMonthValue(), now.getDayOfMonth(),
+                now.getHour(), now.getMinute(), now.getSecond());
+
+        return str;
+    }
+
+    File getArchirvedFileName(File file) {
+        String timeString = getTimeString();
+        try {
+            String fileNameWithoutExtesion = getFilenameWithoutExtnsion(file.getName());
+            String extension = file.getName().substring(fileNameWithoutExtesion.length());
+            File newfile = new File(fileArchivePath +"/"+ fileNameWithoutExtesion +"_"+ timeString+extension);
+            return newfile;
+        } catch (Exception io) {
+            log.error("getArchirvedFileName failed", io);
+            return file;
+        }
+
+    }
+
+    private static void copyFileUsingStream(File source, File dest) throws IOException {
+        InputStream is = null;
+        OutputStream os = null;
+        try {
+            is = new FileInputStream(source);
+            os = new FileOutputStream(dest);
+            byte[] buffer = new byte[1024];
+            int length;
+            while ((length = is.read(buffer)) > 0) {
+                os.write(buffer, 0, length);
+            }
+        } finally {
+            is.close();
+            os.close();
+        }
     }
 }
