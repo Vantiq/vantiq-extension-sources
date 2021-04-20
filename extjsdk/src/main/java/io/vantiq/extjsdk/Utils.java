@@ -6,7 +6,8 @@ import java.io.IOException;
 import java.util.Properties;
 
 public class Utils {
-    
+
+    public static String PORT_PROPERTY_NAME = "tcpProbePort";
     public static String SERVER_CONFIG_DIR = "serverConfig";
     public static String SERVER_CONFIG_FILENAME = "server.config";
     public static String SECRET_CREDENTIALS = "CONNECTOR_AUTH_TOKEN";
@@ -65,9 +66,9 @@ public class Utils {
             }
         }
         properties.load(new FileReader(configFile));
-        String portString = properties.getProperty("tcpProbePort");
+        String portString = properties.getProperty(PORT_PROPERTY_NAME);
         if (portString != null) {
-            return new Integer(portString);
+            return Integer.valueOf(portString);
         } else {
             return null;
         }

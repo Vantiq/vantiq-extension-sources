@@ -216,7 +216,7 @@ public class ExtensionWebSocketClient {
                 while (true) {
                     try {
                         serverSocket.accept();
-                    } catch (IOException e){
+                    } catch (IOException e) {
                         log.error("An error occurred while attempting to listen for TCP Probe messages.", e);
                     }
                 }

@@ -268,7 +268,7 @@ public class TestConnectorCore {
             if (replyAddress != null) {
                 client.sendQueryError(replyAddress, Exception.class.getCanonicalName(),
                         "The request cannot be processed because it does not contain a valid list of " +
-                                "filenames or environmentVariables, nor does it contain an '" + UNHEALTHY+ "' flag. " +
+                                "filenames or environmentVariables, nor does it contain an '" + UNHEALTHY + "' flag. " +
                                 "At least one parameter must be provided.", null);
             }
             return null;
