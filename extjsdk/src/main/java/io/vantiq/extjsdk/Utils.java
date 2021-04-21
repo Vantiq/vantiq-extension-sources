@@ -1,8 +1,11 @@
 package io.vantiq.extjsdk;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.io.File;
-import java.io.FileReader;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.util.Properties;
 
 public class Utils {
@@ -11,6 +14,8 @@ public class Utils {
     public static String SERVER_CONFIG_DIR = "serverConfig";
     public static String SERVER_CONFIG_FILENAME = "server.config";
     public static String SECRET_CREDENTIALS = "CONNECTOR_AUTH_TOKEN";
+
+    private static final Logger log = LoggerFactory.getLogger(Utils.class);
 
     public static Properties obtainServerConfig() {
         return obtainServerConfig(SERVER_CONFIG_FILENAME);
@@ -30,7 +35,7 @@ public class Utils {
             if (!configFile.exists()) {
                 configFile = new File(fileName);
             }
-            properties.load(new FileReader(configFile));
+            properties.load(Files.newInputStream(configFile.toPath()));
 
             // Next we check for the existence of an environment variable containing a secret reference to the authToken
             // We only set it if the value is not empty and if the authToken wasn't already specified in the
@@ -56,20 +61,26 @@ public class Utils {
      * @return An Integer for the port value provided in the server.config file, or null if non was specified.
      * @throws Exception
      */
-    public static Integer obtainTCPProbePort() throws Exception {
+    public static Integer obtainTCPProbePort() {
         File configFile = new File(SERVER_CONFIG_DIR, SERVER_CONFIG_FILENAME);
         Properties properties = new Properties();
-        if (!configFile.exists()) {
-            configFile = new File(SERVER_CONFIG_FILENAME);
+
+        try {
             if (!configFile.exists()) {
+                configFile = new File(SERVER_CONFIG_FILENAME);
+                if (!configFile.exists()) {
+                    return null;
+                }
+            }
+            properties.load(Files.newInputStream(configFile.toPath()));
+            String portString = properties.getProperty(PORT_PROPERTY_NAME);
+            if (portString != null) {
+                return Integer.valueOf(portString);
+            } else {
                 return null;
             }
-        }
-        properties.load(new FileReader(configFile));
-        String portString = properties.getProperty(PORT_PROPERTY_NAME);
-        if (portString != null) {
-            return Integer.valueOf(portString);
-        } else {
+        } catch (IOException e) {
+            log.error("An error occurred while trying to retrieve the TCP Probe port number.", e);
             return null;
         }
     }

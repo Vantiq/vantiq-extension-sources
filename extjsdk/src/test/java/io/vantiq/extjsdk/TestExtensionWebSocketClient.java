@@ -410,7 +410,7 @@ public class TestExtensionWebSocketClient extends ExtjsdkTestBase{
 
         // Now lets try initialize the TCP Probe Listener, and make sure things still look alright
         try {
-            newClient.initializeTCPProbeListener();
+            newClient.declareHealthy();
         } catch (Exception e) {
             fail("Initializing TCP Probe should not throw exception.");
         }
@@ -419,14 +419,14 @@ public class TestExtensionWebSocketClient extends ExtjsdkTestBase{
         assert newClient.isConnected();
 
         // Now we'll cancel the listener, and again check that we didn't mess up anything else
-        newClient.cancelTCPProbeListener();
+        newClient.declareUnhealthy();
         assert newClient.isOpen();
         assert newClient.isAuthed();
         assert newClient.isConnected();
 
         // Finally, lets initialize a new one
         try {
-            newClient.initializeTCPProbeListener();
+            newClient.declareHealthy();
         } catch (Exception e) {
             fail("Initializing TCP Probe should not throw exception.");
         }
@@ -435,10 +435,22 @@ public class TestExtensionWebSocketClient extends ExtjsdkTestBase{
         assert newClient.isConnected();
 
         // And cancel it to be complete
-        newClient.cancelTCPProbeListener();
+        newClient.declareUnhealthy();
         assert newClient.isOpen();
         assert newClient.isAuthed();
         assert newClient.isConnected();
+
+        // One last test to prove that we don't throw exceptions when declaring healthy/unhealthy multiple times
+        try {
+            newClient.declareHealthy();
+            newClient.declareHealthy();
+            newClient.declareHealthy();
+            newClient.declareUnhealthy();
+            newClient.declareUnhealthy();
+            newClient.declareUnhealthy();
+        } catch (Exception e) {
+            fail("No exceptions should be thrown regardless of when or how the healthy/unhealthy methods are called.");
+        }
     }
 
 // ============================== Helper functions ==============================

@@ -138,11 +138,7 @@ public class TestConnectorCore {
         doFullClientConnection(timeout);
 
         // Setup the TCP Probe Listener
-        try {
-            client.initializeTCPProbeListener();
-        } catch (Exception e) {
-            log.error("An exception occurred while trying to setup the TCP Probe Listener");
-        }
+        client.declareHealthy();
     }
 
     /**
@@ -280,21 +276,10 @@ public class TestConnectorCore {
             Boolean unhealthyState = (Boolean) request.get(UNHEALTHY);
             // If true, set to unhealthy
             if (unhealthyState) {
-                client.cancelTCPProbeListener();
+                client.declareUnhealthy();
             } else {
                 // Otherwise, reinitialize the listener (i.e. we're back to a healthy state)
-                try {
-                    client.initializeTCPProbeListener();
-                } catch (Exception e) {
-                    log.error("An error occurred while trying to initialize the TCP Listener, this could be because it" +
-                            " was already initialized.");
-                    if (replyAddress != null) {
-                        client.sendQueryError(replyAddress, Exception.class.getCanonicalName(),
-                                "An error occurred while trying to initialize the TCP Listener, this " +
-                                        "could be because it was already initialized.", null);
-                    }
-                    return  null;
-                }
+                client.declareHealthy();
             }
 
             if (replyAddress != null) {

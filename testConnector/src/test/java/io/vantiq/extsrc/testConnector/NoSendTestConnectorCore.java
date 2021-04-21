@@ -40,22 +40,19 @@ public class NoSendTestConnectorCore extends TestConnectorCore {
         fClient.completeSourceConnection(true);
 
         exitIfConnectionFails(timeout);
-
-        try {
-            client.initializeTCPProbeListener();
-        } catch (Exception e) {
-            log.error("An exception occurred while trying to setup the TCP Probe Listener");
-        }
+        client.declareHealthy();
     }
 
     @Override
     public void close() {
+        client.declareUnhealthy();
         super.close();
         closed = true;
     }
 
     @Override
     public void stop() {
+        client.declareUnhealthy();
         super.stop();
         closed = true;
     }

@@ -16,6 +16,7 @@ package io.vantiq.extjsdk;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 // WebSocket imports
+import groovy.json.internal.IO;
 import okhttp3.*;
 import okhttp3.ws.WebSocket;
 import okhttp3.ws.WebSocketCall;
@@ -128,7 +129,7 @@ public class ExtensionWebSocketClient {
      * The Server Socket used to connect to the specified port and listen for inbound TCP messages sent by K8s. These
      * messages function as readiness/liveness checks.
      */
-    ServerSocket serverSocket = null;
+    private ServerSocket livenessSocket = null;
 
     /**
      * Whether it should automatically send a connection message after receiving a reconnect message
@@ -204,26 +205,31 @@ public class ExtensionWebSocketClient {
      * readiness/liveness probe.
      */
     @SuppressWarnings("InfiniteLoopStatement")
-    public void initializeTCPProbeListener() throws Exception {
+    synchronized public void declareHealthy() {
+        // Only reinitialize things if we have to, otherwise we just leave things running
+        if (probeFuture != null && livenessSocket != null && !livenessSocket.isClosed()) {
+            return;
+        }
+
         Integer port = Utils.obtainTCPProbePort();
         if (port == null) {
             port = DEFAULT_TCP_PROBE_PORT;
         }
 
-        if (probeFuture == null && serverSocket == null) {
-            serverSocket = new ServerSocket(port);
+        try {
+            livenessSocket = new ServerSocket(port);
             probeFuture = CompletableFuture.runAsync(() -> {
                 while (true) {
                     try {
-                        serverSocket.accept();
+                        livenessSocket.accept();
                     } catch (IOException e) {
                         log.error("An error occurred while attempting to listen for TCP Probe messages.", e);
                     }
                 }
             });
-        } else {
-            throw new RuntimeException("Error occurred when trying to initialize the TCP Probe Listener. A listener" +
-                    " already exists, that one must be cancelled before a new one can be initialized.");
+        } catch (IOException e) {
+            log.error("An exception occurred while trying to initialize the TCP Probe Listener, which may result in " +
+                    "the connector being marked 'unhealthy'.", e);
         }
     }
 
@@ -231,27 +237,29 @@ public class ExtensionWebSocketClient {
      * Cancels the probeFuture, and sets it to null. This kills the ServerSocket, which will indicate to K8s that the
      * connector is not ready/healthy.
      */
-    public void cancelTCPProbeListener() {
+    public synchronized void declareUnhealthy() {
         // First we cancel the probeFuture and nullify it
-        probeFuture.cancel(true);
-        probeFuture = null;
+        if (probeFuture != null) {
+            probeFuture.cancel(true);
+            probeFuture = null;
+        }
 
         // Then we close the ServerSocket and nullify it
-        if (!serverSocket.isClosed()) {
+        if (livenessSocket != null && !livenessSocket.isClosed()) {
             try {
-                serverSocket.close();
+                livenessSocket.close();
             } catch (IOException e) {
                 log.error("An error occurred when trying to close the Server Socket.", e);
             }
         }
-        serverSocket = null;
+        livenessSocket = null;
     }
 
     /**
      * Returns the probeFuture
      */
-    public CompletableFuture getTCPProbeListenerFuture() {
-        return probeFuture;
+    public boolean isMarkedHealthy() {
+        return probeFuture != null && livenessSocket != null && !livenessSocket.isClosed();
     }
 
     /**
@@ -795,6 +803,10 @@ public class ExtensionWebSocketClient {
                 }
             }
         }
+
+        // Calling declareUnhealthy to make sure the TCP Listener is not left open
+        declareUnhealthy();
+
         synchronized (this) {
             // Make sure anything still using these futures know that they are no longer valid
             if (webSocketFuture != null) {

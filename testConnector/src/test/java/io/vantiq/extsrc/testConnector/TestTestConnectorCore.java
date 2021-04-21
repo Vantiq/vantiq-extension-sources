@@ -133,14 +133,14 @@ public class TestTestConnectorCore {
         request.put("unhealthy", true);
         Map result = core.processRequest(request, null);
         assert result == null;
-        assert core.client.getTCPProbeListenerFuture() == null;
+        assert !core.client.isMarkedHealthy();
 
         request.clear();
         request = new LinkedHashMap<>();
         request.put("unhealthy", false);
         result = core.processRequest(request, null);
         assert result == null;
-        assert core.client.getTCPProbeListenerFuture() != null;
+        assert core.client.isMarkedHealthy();
     }
 
     @Test
@@ -186,7 +186,7 @@ public class TestTestConnectorCore {
         request.put("unhealthy", 100);
         result = core.processRequest(request, null);
         assert result == null;
-        assert core.client.getTCPProbeListenerFuture() != null;
+        assert core.client.isMarkedHealthy();
 
         // Now lets provide nothing in the request and make sure that fails.
         request.clear();
@@ -196,10 +196,8 @@ public class TestTestConnectorCore {
 
     @Test
     public void testExitIfConnectionFails() {
-        core.start(3);
         assertTrue("Should have succeeded", core.exitIfConnectionFails(3));
         assertFalse("Success means it shouldn't be closed", core.isClosed());
-
 
         core.close();
         core = new NoSendTestConnectorCore(sourceName, authToken, targetVantiqServer);
