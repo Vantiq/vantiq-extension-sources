@@ -16,7 +16,6 @@ package io.vantiq.extjsdk;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 // WebSocket imports
-import groovy.json.internal.IO;
 import okhttp3.*;
 import okhttp3.ws.WebSocket;
 import okhttp3.ws.WebSocketCall;
@@ -205,7 +204,7 @@ public class ExtensionWebSocketClient {
      * readiness/liveness probe.
      */
     @SuppressWarnings("InfiniteLoopStatement")
-    synchronized public void declareHealthy() {
+    public synchronized void declareHealthy() {
         // Only reinitialize things if we have to, otherwise we just leave things running
         if (probeFuture != null && livenessSocket != null && !livenessSocket.isClosed()) {
             return;
