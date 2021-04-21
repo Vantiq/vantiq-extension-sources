@@ -61,6 +61,11 @@ public class FTPUtil {
             ftpClient.setConnectTimeout(connectTimeout);
             ftpClient.connect(server, port);
             ftpClient.login(user, password);
+            int returnCode = ftpClient.getReplyCode();
+            if (returnCode == FTP_LOGIN_FAILED) {
+                throw new VantiqFTPClientException("Login failed " + server );
+            }
+
             ftpClient.enterLocalPassiveMode();
 
             ftpClient.setFileType(FTP.BINARY_FILE_TYPE);
@@ -186,6 +191,11 @@ public class FTPUtil {
             currentFtpClient.setConnectTimeout(connectTimeout);
             currentFtpClient.connect(server, port);
             currentFtpClient.login(user, password);
+            int returnCode = currentFtpClient.getReplyCode();
+            if (returnCode == FTP_LOGIN_FAILED) {
+                throw new VantiqFTPClientException("Login failed " + remoteFolderPath );
+            }
+
             currentFtpClient.enterLocalPassiveMode();
 
             currentFtpClient.setFileType(FTP.BINARY_FILE_TYPE);
@@ -193,7 +203,7 @@ public class FTPUtil {
             String currentbaseFolder = currentFtpClient.printWorkingDirectory();
 
             currentFtpClient.changeWorkingDirectory(remoteFolderPath);
-            int returnCode = currentFtpClient.getReplyCode();
+            returnCode = currentFtpClient.getReplyCode();
             if (returnCode == FTP_REMOTE_FOLDER_NOT_EXISTS) {
                 throw new VantiqFTPClientException("Remote folder " + remoteFolderPath + " doesn't exist");
             }
@@ -247,6 +257,11 @@ public class FTPUtil {
             currentFtpClient.setConnectTimeout(connectTimeout);
             currentFtpClient.connect(server, port);
             currentFtpClient.login(user, password);
+            int returnCode = currentFtpClient.getReplyCode();
+            if (returnCode == FTP_LOGIN_FAILED) {
+                throw new VantiqFTPClientException("Login failed " + server );
+            }
+
             currentFtpClient.enterLocalPassiveMode();
 
             currentFtpClient.setFileType(FTP.BINARY_FILE_TYPE);
@@ -254,12 +269,13 @@ public class FTPUtil {
             String currentbaseFolder = currentFtpClient.printWorkingDirectory();
 
             currentFtpClient.changeWorkingDirectory(remoteFolderPath);
-            int returnCode = currentFtpClient.getReplyCode();
+            returnCode = currentFtpClient.getReplyCode();
             if (returnCode == FTP_REMOTE_FOLDER_NOT_EXISTS) {
                 throw new VantiqFTPClientException("Remote folder " + remoteFolderPath + " doesn't exist");
             }
 
             FTPFile[] files = currentFtpClient.listFiles();
+//            FTPFile[] files = ftpClient.listFiles();
             for (FTPFile f : files) {
                 String fileName = f.getName();
                 String s = localFolderPath + "/" + fileName;
@@ -313,7 +329,7 @@ public class FTPUtil {
             currentFtpClient.login(user, password);
             int returnCode = currentFtpClient.getReplyCode();
             if (returnCode == FTP_LOGIN_FAILED) {
-                throw new VantiqFTPClientException("Login failed " + remoteFolderPath );
+                throw new VantiqFTPClientException("Login failed " + server );
             }
 
             return true;
@@ -361,6 +377,11 @@ public class FTPUtil {
             currentFtpClient.setConnectTimeout(connectTimeout);
             currentFtpClient.connect(server, port);
             currentFtpClient.login(user, password);
+            int returnCode = currentFtpClient.getReplyCode();
+            if (returnCode == FTP_LOGIN_FAILED) {
+                throw new VantiqFTPClientException("Login failed " + server );
+            }
+
             currentFtpClient.enterLocalPassiveMode();
 
             currentFtpClient.setFileType(FTP.BINARY_FILE_TYPE);
@@ -368,7 +389,7 @@ public class FTPUtil {
             String currentbaseFolder = currentFtpClient.printWorkingDirectory();
 
             currentFtpClient.changeWorkingDirectory(remoteFolderPath);
-            int returnCode = currentFtpClient.getReplyCode();
+            returnCode = currentFtpClient.getReplyCode();
             if (returnCode == FTP_REMOTE_FOLDER_NOT_EXISTS) {
                 throw new VantiqFTPClientException("Remote folder " + remoteFolderPath + " doesn't exist");
             }
