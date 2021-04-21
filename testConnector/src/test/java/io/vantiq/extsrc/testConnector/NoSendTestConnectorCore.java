@@ -40,16 +40,19 @@ public class NoSendTestConnectorCore extends TestConnectorCore {
         fClient.completeSourceConnection(true);
 
         exitIfConnectionFails(timeout);
+        client.declareHealthy();
     }
 
     @Override
     public void close() {
+        client.declareUnhealthy();
         super.close();
         closed = true;
     }
 
     @Override
     public void stop() {
+        client.declareUnhealthy();
         super.stop();
         closed = true;
     }

@@ -20,6 +20,8 @@ import okhttp3.*;
 import okhttp3.ws.WebSocket;
 import okhttp3.ws.WebSocketCall;
 
+import java.io.IOException;
+import java.net.ServerSocket;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -41,73 +43,109 @@ public class ExtensionWebSocketClient {
     /**
      * The code for a query response where more data will be sent.
      */
-    public static final int QUERY_CHUNK_CODE    = 100;
+    public static final int QUERY_CHUNK_CODE = 100;
+
     /**
      * The code for a query response where data is sent and no more is coming.
      */
-    public static final int QUERY_DATA_CODE     = 200;
+    public static final int QUERY_DATA_CODE = 200;
+
     /**
      * The code for a query response where no data is sent and no more is coming.
      */
-    public static final int QUERY_NODATA_CODE   = 204;
+    public static final int QUERY_NODATA_CODE = 204;
+
+    /**
+     * The default port value to run the TCP Probe Server Socket.
+     */
+    public static final int DEFAULT_TCP_PROBE_PORT = 8000;
+
     /**
      * The default max queue size of the failedMessageQueue
      */
     private static final int DEFAULT_FAILED_MESSAGE_QUEUE_SIZE = 25;
+
     /**
      * The env var used to overwrite default queue size
      */
     private static final String FAILED_MESAGE_QUEUE_SIZE = "FAILED_MESSAGE_QUEUE_SIZE";
+
     /**
      * An {@link ObjectMapper} used to transform objects into JSON before sending
      */
     private ObjectMapper mapper = new ObjectMapper();
+
     /**
      * The WebSocket used to talk to the Vantiq deployment. null when no connection is established
      */
     WebSocket webSocket = null;
-    
+
+    /**
+     * The semaphore used to manage sending source notifications back to Vantiq.
+     */
     Semaphore outstandingNotifications = null;
+
     /**
      * The name of the source this client is connected to.
      */
     private String sourceName;
+
     /**
      * An Slf4j logger
      */
     private final Logger log;
+
     /**
      * The listener that receives and interprets responses from the Vantiq deployment for this client's connection.
      */
     ExtensionWebSocketListener listener;
+
     /**
      * A {@link CompletableFuture} that will return true when connected over a websocket, and false when the connection
      * is closed or has failed
      */
     CompletableFuture<Boolean> webSocketFuture;
+
     /**
      * A {@link CompletableFuture} that will return true when authenticated with Vantiq, and false when the WebSocket
      * connection is closed or has failed
      */
     CompletableFuture<Boolean> authFuture;
+
     /**
      * A {@link CompletableFuture} that will return true when connected to source {@code sourceName}, and false when the
      * WebSocket connection is closed or has failed
      */
     CompletableFuture<Boolean> sourceFuture;
+
+    /**
+     * A {@link CompletableFuture} that actively listens for incoming TCP messages on the specified port. This functions
+     * as the readiness/liveness checks configured through K8s.
+     */
+    private CompletableFuture<Void> probeFuture;
+
+    /**
+     * The Server Socket used to connect to the specified port and listen for inbound TCP messages sent by K8s. These
+     * messages function as readiness/liveness checks.
+     */
+    private ServerSocket livenessSocket = null;
+
     /**
      * Whether it should automatically send a connection message after receiving a reconnect message
      */
     boolean autoReconnect = false;
+
     /**
      * The data to be used for authentication. This will be either a {@link String} containing an authentication token or
      * a {@link Map} containing the username and password.
      */
     Object authData;
+
     /**
      * An {@link Handler} that is called when the websocket connection is closed
      */
     Handler<ExtensionWebSocketClient> closeHandler;
+
     /**
      * A {@link Queue} that is used as an internal queue to store messages that failed to send to Vantiq because
      * of a dropped connection. Once a reconnect is successful, the queued messages will be resent.
@@ -159,6 +197,70 @@ public class ExtensionWebSocketClient {
         } else {
             failedMessageQueue = EvictingQueue.create(failedMessageQueueSize);
         }
+    }
+
+    /**
+     * Initializes the Server Socket and probeFuture to actively listen for incoming TCP messages from the K8s
+     * readiness/liveness probe.
+     */
+    @SuppressWarnings("InfiniteLoopStatement")
+    public synchronized void declareHealthy() {
+        // Only reinitialize things if we have to, otherwise we just leave things running
+        if (probeFuture != null && livenessSocket != null && !livenessSocket.isClosed()) {
+            return;
+        }
+
+        Integer port = Utils.obtainTCPProbePort();
+        if (port == null) {
+            port = DEFAULT_TCP_PROBE_PORT;
+        }
+
+        try {
+            livenessSocket = new ServerSocket(port);
+            probeFuture = CompletableFuture.runAsync(() -> {
+                while (true) {
+                    try {
+                        livenessSocket.accept();
+                    } catch (IOException e) {
+                        log.error("An error occurred while attempting to listen for TCP Probe messages.", e);
+                    }
+                }
+            });
+        } catch (IOException e) {
+            log.error("An exception occurred while trying to initialize the TCP Probe Listener, which may result in " +
+                    "the connector being marked 'unhealthy'.", e);
+        }
+    }
+
+    /**
+     * Cancels the probeFuture, and sets it to null. This kills the ServerSocket, which will indicate to K8s that the
+     * connector is not ready/healthy.
+     */
+    public synchronized void declareUnhealthy() {
+        // First we cancel the probeFuture and nullify it
+        if (probeFuture != null) {
+            probeFuture.cancel(true);
+            probeFuture = null;
+        }
+
+        // Then we close the ServerSocket and nullify it
+        if (livenessSocket != null && !livenessSocket.isClosed()) {
+            try {
+                livenessSocket.close();
+            } catch (IOException e) {
+                log.error("An error occurred when trying to close the Server Socket.", e);
+            }
+        }
+        livenessSocket = null;
+    }
+
+    /**
+     * Returns the probeFuture
+     */
+    public boolean isMarkedHealthy() {
+        CompletableFuture<Void> localProbeFuture = probeFuture;
+        ServerSocket localLivenessSocket = livenessSocket;
+        return localProbeFuture != null && localLivenessSocket != null && !localLivenessSocket.isClosed();
     }
 
     /**
@@ -702,6 +804,10 @@ public class ExtensionWebSocketClient {
                 }
             }
         }
+
+        // Calling declareUnhealthy to make sure the TCP Listener is not left open
+        declareUnhealthy();
+
         synchronized (this) {
             // Make sure anything still using these futures know that they are no longer valid
             if (webSocketFuture != null) {
