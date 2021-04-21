@@ -10,10 +10,10 @@ import java.util.Properties;
 
 public class Utils {
 
-    public static String PORT_PROPERTY_NAME = "tcpProbePort";
-    public static String SERVER_CONFIG_DIR = "serverConfig";
-    public static String SERVER_CONFIG_FILENAME = "server.config";
-    public static String SECRET_CREDENTIALS = "CONNECTOR_AUTH_TOKEN";
+    public static final String PORT_PROPERTY_NAME = "tcpProbePort";
+    public static final String SERVER_CONFIG_DIR = "serverConfig";
+    public static final String SERVER_CONFIG_FILENAME = "server.config";
+    public static final String SECRET_CREDENTIALS = "CONNECTOR_AUTH_TOKEN";
 
     private static final Logger log = LoggerFactory.getLogger(Utils.class);
 

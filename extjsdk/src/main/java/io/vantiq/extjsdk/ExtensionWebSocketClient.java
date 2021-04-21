@@ -122,7 +122,7 @@ public class ExtensionWebSocketClient {
      * A {@link CompletableFuture} that actively listens for incoming TCP messages on the specified port. This functions
      * as the readiness/liveness checks configured through K8s.
      */
-    CompletableFuture<Void> probeFuture;
+    private CompletableFuture<Void> probeFuture;
 
     /**
      * The Server Socket used to connect to the specified port and listen for inbound TCP messages sent by K8s. These
@@ -258,7 +258,9 @@ public class ExtensionWebSocketClient {
      * Returns the probeFuture
      */
     public boolean isMarkedHealthy() {
-        return probeFuture != null && livenessSocket != null && !livenessSocket.isClosed();
+        CompletableFuture<Void> localProbeFuture = probeFuture;
+        ServerSocket localLivenessSocket = livenessSocket;
+        return localProbeFuture != null && localLivenessSocket != null && !localLivenessSocket.isClosed();
     }
 
     /**

@@ -34,9 +34,9 @@ public class TestConnectorCore {
     final Logger log;
     final static int RECONNECT_INTERVAL = 5000;
 
-    static final String ENVIRONMENT_VARIABLES = "environmentVariables";
-    static final String FILENAMES = "filenames";
-    static final String UNHEALTHY = "unhealthy";
+    public static final String ENVIRONMENT_VARIABLES = "environmentVariables";
+    public static final String FILENAMES = "filenames";
+    public static final String UNHEALTHY = "unhealthy";
 
     // Timer used if source is configured to poll from files
     Timer pollingTimer;
