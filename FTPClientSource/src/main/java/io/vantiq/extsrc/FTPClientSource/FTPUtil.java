@@ -249,7 +249,7 @@ public class FTPUtil {
     }
 
     public boolean downloadFolder(String server, Integer port, String user, String password, String remoteFolderPath,
-            String localFolderPath,boolean deleteAfterDownload,Integer connectTimeout,Boolean AddFileServerNamePrefix,String serverName) throws VantiqFTPClientException {
+            String localFolderPath,boolean deleteAfterDownload,Integer connectTimeout,Boolean addPrefixToDownload,String serverName) throws VantiqFTPClientException {
 
         FTPClient currentFtpClient = new org.apache.commons.net.ftp.FTPClient();
 
@@ -279,8 +279,9 @@ public class FTPUtil {
             for (FTPFile f : files) {
                 String fileName = f.getName();
                 String s = localFolderPath + "/" + fileName;
-                if (AddFileServerNamePrefix){
+                if (addPrefixToDownload){
                     s = localFolderPath + "/" +serverName.toLowerCase()+"_"+ fileName;
+                    Log.info("File Prefix added" + fileName + " to "+ s);
                 }
                 if (!DownFile(currentFtpClient, fileName, s)) {
                     Log.error("File " + fileName + " couldn't downloaded");
