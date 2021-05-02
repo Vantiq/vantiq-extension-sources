@@ -35,6 +35,12 @@ applicationDistribution.from("src/main/resources") {
 }
 
 dependencies {
+    // https://mvnrepository.com/artifact/com.sun.net.httpserver/http
+    //implementation group: 'com.sun.net.httpserver', name: 'http', version: '20070405'
+     compile 'com.sun.net.httpserver:http:20070405'
+     compile 'org.apache.commons:commons-text:1.9' 
+
+
     // This dependency is used internally, and not exposed to consumers on their own compile classpath.
     implementation 'com.google.guava:guava:23.0'
     

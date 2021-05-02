@@ -46,6 +46,8 @@ import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
 
+import javax.swing.plaf.metal.OceanTheme;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -145,6 +147,8 @@ public class CSV {
     ExecutorService executionPool = null;
     ExtensionWebSocketClient oClient;
 
+    XMLHttpServer xmlHttpServer ; 
+
     String fullFilePath;
     String fileFolderPath;
     String fileArchivePath;
@@ -156,6 +160,12 @@ public class CSV {
     boolean deleteAfterProcessing = false;
     int pollTime;
 
+
+    Boolean enableHttpListener = false ; 
+    int port ; 
+    String context; 
+    String IPListenAddress; 
+
     Timer timerTask;
 
     private static final int MAX_ACTIVE_TASKS = 5;
@@ -164,6 +174,11 @@ public class CSV {
 
     private static final String MAX_ACTIVE_TASKS_LABEL = "maxActiveTasks";
     private static final String MAX_QUEUED_TASKS_LABEL = "maxQueuedTasks";
+
+    private static final String ENABLE_HTTP_LISTNER = "enableHttpListener";
+    private static final String PORT = "port";
+    private static final String HTTP_CONTEXT = "context";
+    private static final String LISTEN_ADDRESS = "ipListenAddress";
 
     private static final String BODY_KEYWORD = "body";
     private static final String PATH_KEYWORD = "path";
@@ -264,6 +279,27 @@ public class CSV {
         executionPool = new ThreadPoolExecutor(maxActiveTasks, maxActiveTasks, 0l, TimeUnit.MILLISECONDS,
                 new LinkedBlockingQueue<Runnable>(maxQueuedTasks));
 
+        if (options.get(ENABLE_HTTP_LISTNER) != null){
+            enableHttpListener = (Boolean) options.get(ENABLE_HTTP_LISTNER);
+        }
+
+        if (enableHttpListener){
+            port = 8001; 
+            if (options.get(PORT) != null){
+                port = (int) options.get(PORT); 
+            }
+            context = "/alarm";
+            if (options.get(HTTP_CONTEXT) != null){
+                context = (String) options.get(HTTP_CONTEXT); 
+            }
+            IPListenAddress = "localhost";
+            if (options.get(LISTEN_ADDRESS) != null){
+                IPListenAddress = (String) options.get(LISTEN_ADDRESS); 
+            }
+
+
+        }
+
     }
 
     /**
@@ -309,6 +345,20 @@ public class CSV {
             // Create new Timer, and schedule the task according to the pollTime
             timerTask = new Timer("executePolling");
             timerTask.schedule(task, 0, pollTime);
+
+
+            // determine if to start HTTP listener ability. 
+            if (enableHttpListener){
+                if (xmlHttpServer==null){
+                    xmlHttpServer = new XMLHttpServer();
+                    xmlHttpServer.oClient = oClient; 
+                    xmlHttpServer.port = port; 
+                    xmlHttpServer.context1 = context; 
+                    xmlHttpServer.IPListenAddress = IPListenAddress;
+                    xmlHttpServer.Start();
+                }
+            }
+            
 
         } catch (Exception e) {
             log.error("CSV failed to read  from {}", fullFilePath, e);
@@ -660,6 +710,12 @@ public class CSV {
     }
 
     public void close() {
+
+        if (xmlHttpServer != null){
+            xmlHttpServer.Stop(); 
+            xmlHttpServer = null; 
+        }
+
         // Close single connection if open
         if (timerTask != null) {
             timerTask.cancel();
