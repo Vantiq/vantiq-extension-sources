@@ -34,10 +34,10 @@ import com.sun.net.httpserver.HttpExchange;
  * https://destinationIs:80/alarm
  */
 public class XMLHttpServer {
-    Logger log = LoggerFactory.getLogger(this.getClass().getCanonicalName());
+    private Logger log = LoggerFactory.getLogger(this.getClass().getCanonicalName());
 
-    HttpServer server;
-    ThreadPoolExecutor threadPoolExecutor;
+    private HttpServer server;
+    private ThreadPoolExecutor threadPoolExecutor;
     public ExtensionWebSocketClient oClient = null;
     public String context1 = "/alarm";
     public int port = 8001;
@@ -105,6 +105,9 @@ public class XMLHttpServer {
                 } catch (JSONException eje) {
                     log.error("Convert2Json failed", eje);
                     requestParamValue = eje.toString();
+                } finally{
+                    isr.close();
+                    br.close();
                 }
 
             } else {
@@ -117,7 +120,7 @@ public class XMLHttpServer {
 
             OutputStream outputStream = httpExchange.getResponseBody();
 
-            StringBuilder htmlBuilder = new StringBuilder();
+            StringBuilder htmlBuilder = new StringBuilder(250);
 
             htmlBuilder.append("<html>").append("<body>").append("<h1>").append("Hello ").append(requestParamValue)
                     .append("</h1>").append("</body>").append("</html>");
