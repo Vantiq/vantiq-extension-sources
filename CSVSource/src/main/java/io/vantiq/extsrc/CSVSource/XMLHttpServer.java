@@ -22,7 +22,10 @@ import org.slf4j.LoggerFactory;
 
 import io.vantiq.extjsdk.ExtensionWebSocketClient;
 
-import com.sun.net.httpserver.*;
+import com.sun.net.httpserver.HttpServer;
+import com.sun.net.httpserver.HttpHandler;
+import com.sun.net.httpserver.HttpExchange;
+
 /**
  * XMLHttpServer receive xml object from post HTTP request, convert it to JSON and notify vantiq source. 
  * congiguration enable IP - which control what is the scope the a meesages can send from, post to listen and the service path - define in the context 
@@ -52,7 +55,7 @@ public class XMLHttpServer {
         int maxActiveTasks = 4;
         int maxQueuedTasks = 10;
 
-        threadPoolExecutor = new ThreadPoolExecutor(maxActiveTasks, maxActiveTasks, 0l, TimeUnit.MILLISECONDS,
+        threadPoolExecutor = new ThreadPoolExecutor(maxActiveTasks, maxActiveTasks, 0L, TimeUnit.MILLISECONDS,
                 new LinkedBlockingQueue<Runnable>(maxQueuedTasks));
 
         try {
@@ -63,7 +66,6 @@ public class XMLHttpServer {
             log.info(" Server started on Context " + context1 + " IP:" + ipListenAddress + ":" + port);
 
         } catch (IOException e) {
-            e.printStackTrace();
             log.error("Create Server failuer", e);
         }
 
