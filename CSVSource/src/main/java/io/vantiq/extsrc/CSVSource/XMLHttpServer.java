@@ -100,9 +100,9 @@ public class XMLHttpServer {
                     lineValues.put("xml", jsonPrettyPrintString);
                     file.add(lineValues);
                     CSVReader.sendNotification("TCP", "XML", 0, file, oClient);
-                } catch (JSONException je) {
-                    log.error("Convert2Json failed", je);
-                    requestParamValue = je.toString();
+                } catch (JSONException eje) {
+                    log.error("Convert2Json failed", eje);
+                    requestParamValue = eje.toString();
                 }
 
             } else {
