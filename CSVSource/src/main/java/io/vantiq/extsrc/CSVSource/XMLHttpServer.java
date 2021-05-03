@@ -23,26 +23,32 @@ import org.slf4j.LoggerFactory;
 import io.vantiq.extjsdk.ExtensionWebSocketClient;
 
 import com.sun.net.httpserver.*;
-
+/**
+ * XMLHttpServer receive xml object from post HTTP request, convert it to JSON and notify vantiq source. 
+ * congiguration enable IP - which control what is the scope the a meesages can send from, post to listen and the service path - define in the context 
+ * value, for example IP: 0.0.0.0 - open to any IP connect request, Port 80 , Context /alarm means that the service is open to any message on port 80, which use the follwing url 
+ * 
+ * https://destinationIs:80/alarm
+ */
 public class XMLHttpServer {
     Logger log = LoggerFactory.getLogger(this.getClass().getCanonicalName());
 
     HttpServer server;
     ThreadPoolExecutor threadPoolExecutor;
-    public ExtensionWebSocketClient oClient = null; 
+    public ExtensionWebSocketClient oClient = null;
     public String context1 = "/alarm";
     public int port = 8001;
-    public String IPListenAddress = "localhost";
+    public String ipListenAddress = "localhost";
 
-    public Boolean Stop(){
-        
-        if (server != null){
+    public Boolean stop() {
+
+        if (server != null) {
             server.stop(0);
         }
-        return true; 
+        return true;
     }
 
-    public Boolean Start() {
+    public Boolean start() {
         int maxActiveTasks = 4;
         int maxQueuedTasks = 10;
 
@@ -50,14 +56,13 @@ public class XMLHttpServer {
                 new LinkedBlockingQueue<Runnable>(maxQueuedTasks));
 
         try {
-            server = HttpServer.create(new InetSocketAddress(IPListenAddress, port), 0);
+            server = HttpServer.create(new InetSocketAddress(ipListenAddress, port), 0);
             server.createContext(context1, new MyHttpHandler());
             server.setExecutor(threadPoolExecutor);
             server.start();
-            log.info(" Server started on Context "+context1+" IP:"+IPListenAddress+":"+ port );
+            log.info(" Server started on Context " + context1 + " IP:" + ipListenAddress + ":" + port);
 
         } catch (IOException e) {
-            // TODO Auto-generated catch block
             e.printStackTrace();
             log.error("Create Server failuer", e);
         }
@@ -66,56 +71,44 @@ public class XMLHttpServer {
     }
 
     private class MyHttpHandler implements HttpHandler {
-
         @Override
-
         public void handle(HttpExchange httpExchange) throws IOException {
-
             String requestParamValue = null;
-
             String method = httpExchange.getRequestMethod();
 
             if ("POST".equals(method)) {
-
                 log.info("Accepting POST HTTP Request");
-                
-                InputStreamReader isr =  new InputStreamReader(httpExchange.getRequestBody(),"utf-8");
+                InputStreamReader isr = new InputStreamReader(httpExchange.getRequestBody(), "utf-8");
                 BufferedReader br = new BufferedReader(isr);
-                
-                String line = null; 
+
+                String line = null;
                 String value = "";
-                while ((line = br.readLine()) != null ){
-                    value += line; 
+                while ((line = br.readLine()) != null) {
+                    value += line;
                 }
-                log.error(value);
+                log.debug(value);
 
                 try {
-                    Boolean extendedLogging = true; 
+                    Boolean extendedLogging = true;
                     JSONObject json = XML.toJSONObject(value); // converts xml to json
                     String jsonPrettyPrintString = json.toString(); // json pretty print
-                    if (extendedLogging){
+                    if (extendedLogging) {
                         log.info(jsonPrettyPrintString);
                     }
-                    
                     ArrayList<Map<String, String>> file = new ArrayList<Map<String, String>>();
                     Map<String, String> lineValues = new HashMap<String, String>();
                     lineValues.put("xml", jsonPrettyPrintString);
                     file.add(lineValues);
-    
-                    CSVReader.sendNotification("TCP","XML", 0, file, oClient);
+                    CSVReader.sendNotification("TCP", "XML", 0, file, oClient);
                 } catch (JSONException je) {
                     log.error("Convert2Json failed", je);
-                    requestParamValue = je.toString(); 
+                    requestParamValue = je.toString();
                 }
-    
-
 
             } else {
-                log.error("RX unexpected message method "+method);
+                log.error("RX unexpected message method " + method);
             }
-
             handleResponse(httpExchange, requestParamValue);
-
         }
 
         private void handleResponse(HttpExchange httpExchange, String requestParamValue) throws IOException {
@@ -124,14 +117,8 @@ public class XMLHttpServer {
 
             StringBuilder htmlBuilder = new StringBuilder();
 
-            htmlBuilder.append("<html>").
-                    append("<body>").
-                    append("<h1>").
-                    append("Hello ")
-                    .append(requestParamValue)
-                    .append("</h1>")
-                    .append("</body>")
-                    .append("</html>");
+            htmlBuilder.append("<html>").append("<body>").append("<h1>").append("Hello ").append(requestParamValue)
+                    .append("</h1>").append("</body>").append("</html>");
 
             // encode HTML content
 

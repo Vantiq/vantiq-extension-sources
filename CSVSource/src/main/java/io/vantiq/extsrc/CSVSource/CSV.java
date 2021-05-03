@@ -8,10 +8,6 @@
 
 package io.vantiq.extsrc.CSVSource;
 
-import static java.nio.file.StandardWatchEventKinds.ENTRY_CREATE;
-import static java.nio.file.StandardWatchEventKinds.ENTRY_MODIFY;
-import static java.nio.file.StandardWatchEventKinds.OVERFLOW;
-
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileInputStream;
@@ -23,16 +19,11 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
-import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.nio.file.WatchEvent;
-import java.nio.file.WatchEvent.Kind;
 import java.time.LocalDateTime;
-import java.nio.file.WatchKey;
-import java.nio.file.WatchService;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -44,9 +35,6 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
-import java.util.stream.Stream;
-
-import javax.swing.plaf.metal.OceanTheme;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -146,7 +134,6 @@ public class CSV {
     // Components used
     ExecutorService executionPool = null;
     ExtensionWebSocketClient oClient;
-
     XMLHttpServer xmlHttpServer ; 
 
     String fullFilePath;
@@ -159,13 +146,10 @@ public class CSV {
     String extensionAfterProcessing = ".done";
     boolean deleteAfterProcessing = false;
     int pollTime;
-
-
     Boolean enableHttpListener = false ; 
     int port ; 
     String context; 
-    String IPListenAddress; 
-
+    String ipListenAddress; 
     Timer timerTask;
 
     private static final int MAX_ACTIVE_TASKS = 5;
@@ -272,8 +256,6 @@ public class CSV {
             String regex = filePrefix.toLowerCase() + "[\\.a-z0-9_-]*" + extension.toLowerCase();
             Boolean b = lowercaseName.matches(regex);
             return b;
-            // return lowercaseName.endsWith(extension.toLowerCase())
-            // && lowercaseName.startsWith(filePrefix.toLowerCase());
         };
 
         executionPool = new ThreadPoolExecutor(maxActiveTasks, maxActiveTasks, 0l, TimeUnit.MILLISECONDS,
@@ -292,14 +274,11 @@ public class CSV {
             if (options.get(HTTP_CONTEXT) != null){
                 context = (String) options.get(HTTP_CONTEXT); 
             }
-            IPListenAddress = "localhost";
+            ipListenAddress = "localhost";
             if (options.get(LISTEN_ADDRESS) != null){
-                IPListenAddress = (String) options.get(LISTEN_ADDRESS); 
+                ipListenAddress = (String) options.get(LISTEN_ADDRESS); 
             }
-
-
         }
-
     }
 
     /**
@@ -354,8 +333,8 @@ public class CSV {
                     xmlHttpServer.oClient = oClient; 
                     xmlHttpServer.port = port; 
                     xmlHttpServer.context1 = context; 
-                    xmlHttpServer.IPListenAddress = IPListenAddress;
-                    xmlHttpServer.Start();
+                    xmlHttpServer.ipListenAddress = ipListenAddress;
+                    xmlHttpServer.start();
                 }
             }
             
@@ -712,7 +691,7 @@ public class CSV {
     public void close() {
 
         if (xmlHttpServer != null){
-            xmlHttpServer.Stop(); 
+            xmlHttpServer.stop(); 
             xmlHttpServer = null; 
         }
 
