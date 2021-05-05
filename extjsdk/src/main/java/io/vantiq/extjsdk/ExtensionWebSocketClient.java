@@ -277,7 +277,11 @@ public class ExtensionWebSocketClient {
         if (isConnected()) {
             Semaphore localOutstandingNotifications = outstandingNotifications;
             try {
-                localOutstandingNotifications.acquire();
+                if (localOutstandingNotifications!= null) {
+                    localOutstandingNotifications.acquire();
+                } else { 
+                    log.error("sendNotification :: localOutstandingNotifications is null");
+                }
                 this.send(msg);
             } catch (InterruptedException ie) {
                 log.warn("Obtaining space to sent notifications was interrupted.", ie);

@@ -727,14 +727,14 @@ public class CSV {
             String extension = file.getName().substring(fileNameWithoutExtesion.length());
             File newfile = new File(fileArchivePath + "/" + fileNameWithoutExtesion + "_" + timeString + extension);
             return newfile;
-        } catch (Exception io) {
-            log.error("getArchirvedFileName failed", io);
+        } catch (Exception eio) {
+            log.error("getArchirvedFileName failed", eio);
             return file;
         }
 
     }
 
-    private static void copyFileUsingStream(File source, File dest) throws IOException {
+    private void copyFileUsingStream(File source, File dest) throws IOException {
         InputStream is = null;
         OutputStream os = null;
         try {
@@ -745,6 +745,8 @@ public class CSV {
             while ((length = is.read(buffer)) > 0) {
                 os.write(buffer, 0, length);
             }
+        } catch (Exception ex){
+            log.error("copyFileUsingStream failed", ex);
         } finally {
             is.close();
             os.close();
