@@ -132,7 +132,7 @@ public class CSVReader {
      * @throws InterruptedException
      * @throws VantiqCSVException
      */
-    @SuppressWarnings("unchecked")
+ //   @SuppressWarnings("unchecked")
     static public ArrayList<Map<String, String>> executeXMLFile(String csvFile, Map<String, Object> config,
             ExtensionWebSocketClient oClient) throws InterruptedException, VantiqCSVException {
 
@@ -144,6 +144,8 @@ public class CSVReader {
         }
         try {
             String xmlString = "";
+            // give time to writer to close the file - FTP should be merged with CSV extension source.
+            Thread.sleep(100);
             xmlString = new String(Files.readAllBytes(Paths.get(csvFile)));
 
             try {
