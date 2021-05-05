@@ -343,16 +343,21 @@ public class FTPClient {
                         }
                         new File(localFolderPath).mkdirs();
 
-                        if (!ftpUtil.downloadFolder(currEntry.server, currEntry.port, currEntry.username,
-                                currEntry.password, currEntry.remoteFolderPath, localFolderPath, true,
-                                currEntry.connectTimeout,currEntry.addPrefixToDownload,currEntry.name)) {
-                            log.error("LookForRemoteFiles failure when downloading files from " + currEntry.name);
+                        try {
+                            if (!ftpUtil.downloadFolder(currEntry.server, currEntry.port, currEntry.username,
+                                    currEntry.password, currEntry.remoteFolderPath, localFolderPath, true,
+                                    currEntry.connectTimeout, currEntry.addPrefixToDownload, currEntry.name)) {
+                                log.error("LookForRemoteFiles failure when downloading files from " + currEntry.name);
+                            }
+                        } catch (VantiqFTPClientException exv) {
+                            log.error("ftpUtil.downloadFolder failed", exv);
                         }
                     }
                 }
 
             } else {
-
+                // support when there is no server list and shgould download from a single
+                // server only.
                 FTPServerEntry currEntry = defaultServer;
                 if (ftpUtil.openFtpConection(currEntry.server, currEntry.port, currEntry.username, currEntry.password,
                         currEntry.connectTimeout)) {
@@ -442,7 +447,8 @@ public class FTPClient {
                 }
             } else {
                 rsArray = CreateResponse(FTPClient_CHECK_COMM_NONAME_FAILED_CODE,
-                        FTPClient_CHECK_COMM_NONAME_FAILED_MESSAGE, "name must be supplied, or must exists for checkcomm command");
+                        FTPClient_CHECK_COMM_NONAME_FAILED_MESSAGE,
+                        "name must be supplied, or must exists for checkcomm command");
             }
 
             return rsArray;
@@ -537,16 +543,14 @@ public class FTPClient {
             destinationPathStr = SetFieldStringValue(checkedAttribute, body, currEntry.localFolderPath, true);
             new File(destinationPathStr).mkdirs();
 
-
-
-            Boolean deleteAfterDownload = (Boolean) options.get(FTPClientHandleConfiguration.DELETE_AFTER_PROCCESING_KEYWORD);
-            checkedAttribute =  FTPClientHandleConfiguration.DELETE_AFTER_DOWNLOAD ;
+            Boolean deleteAfterDownload = (Boolean) options
+                    .get(FTPClientHandleConfiguration.DELETE_AFTER_PROCCESING_KEYWORD);
+            checkedAttribute = FTPClientHandleConfiguration.DELETE_AFTER_DOWNLOAD;
             deleteAfterDownload = SetFieldBooleanValue(checkedAttribute, body, deleteAfterDownload);
 
             Boolean addPrefixAfterDownload = (Boolean) options.get(FTPClientHandleConfiguration.ADD_PRRFIX_TO_DOWNLOAD);
-            checkedAttribute =  FTPClientHandleConfiguration.ADD_PRRFIX_TO_DOWNLOAD ;
+            checkedAttribute = FTPClientHandleConfiguration.ADD_PRRFIX_TO_DOWNLOAD;
             deleteAfterDownload = SetFieldBooleanValue(checkedAttribute, body, addPrefixAfterDownload);
-
 
             Path path = Paths.get(destinationPathStr);
             if (!path.toFile().exists()) {
@@ -559,7 +563,8 @@ public class FTPClient {
                 // destinationStruct dest = setDestination(body);
 
                 if (!ftpUtil.downloadFolder(currEntry.server, currEntry.port, currEntry.username, currEntry.password,
-                        sourcePathStr, destinationPathStr, deleteAfterDownload, currEntry.connectTimeout,addPrefixAfterDownload,currEntry.name)) {
+                        sourcePathStr, destinationPathStr, deleteAfterDownload, currEntry.connectTimeout,
+                        addPrefixAfterDownload, currEntry.name)) {
                     rsArray = CreateResponse(FTPClient_DOWNLOAD_FOLDER_FAILED_CODE,
                             FTPClient_DOWNLOAD_FOLDER_FAILED_MESSAGE, "[" + name + "] " + sourcePathStr);
                 } else {
@@ -615,24 +620,22 @@ public class FTPClient {
             destinationPathStr = SetFieldStringValue(checkedAttribute, body, "", true);
             new File(destinationPathStr).mkdirs();
 
-
-            if (sourcePathStr =="" ||  destinationPathStr=="") {
+            if (sourcePathStr == "" || destinationPathStr == "") {
                 rsArray = CreateResponse(FTPClient_DOWNLOAD_DOCUMENT_FAILED_CODE,
                         FTPClient_DOWNLOAD_DOCUMENT_MISSING_MESSAGE, destinationPathStr);
             } else {
 
                 VantiqUtil vantiqUtil = new VantiqUtil(log);
 
-
-                String fullSourcePath = basePathStr+"/"+sourcePathStr+"?token="+token; 
+                String fullSourcePath = basePathStr + "/" + sourcePathStr + "?token=" + token;
 
                 // destinationStruct dest = setDestination(body);
-                if (!vantiqUtil.downloadFromVantiq(fullSourcePath,destinationPathStr)){
+                if (!vantiqUtil.downloadFromVantiq(fullSourcePath, destinationPathStr)) {
                     rsArray = CreateResponse(FTPClient_DOWNLOAD_DOCUMENT_FAILED_CODE,
                             FTPClient_DOWNLOAD_FOLDER_FAILED_MESSAGE, fullSourcePath);
                 } else {
                     rsArray = CreateResponse(FTPClient_SUCCESS_CODE, FTPClient_SUCCESS_FOLDER_DOWNLOADED_MESSAGE,
-                    fullSourcePath);
+                            fullSourcePath);
 
                 }
             }
@@ -649,8 +652,6 @@ public class FTPClient {
 
         }
     }
-
-
 
     /**
      * The method used to execute a create file command, triggered by a SELECT on
@@ -746,10 +747,10 @@ public class FTPClient {
                 currEntry = defaultServer;
             }
 
-            Boolean deleteAfterUpload = (Boolean) options.get(FTPClientHandleConfiguration.DELETE_AFTER_PROCCESING_KEYWORD);
-            checkedAttribute =  DELETE_AFTER_UPLOAD_KEYWORD ;
+            Boolean deleteAfterUpload = (Boolean) options
+                    .get(FTPClientHandleConfiguration.DELETE_AFTER_PROCCESING_KEYWORD);
+            checkedAttribute = DELETE_AFTER_UPLOAD_KEYWORD;
             deleteAfterUpload = SetFieldBooleanValue(checkedAttribute, body, deleteAfterUpload);
-
 
             checkedAttribute = LOCAL_PATH_KEYWORD;
             sourcePathStr = SetFieldStringValue(checkedAttribute, body, currEntry.localFolderPath, true);
@@ -804,17 +805,17 @@ public class FTPClient {
         if (body.get(checkedValue) != null) {
             value = (String) body.get(checkedValue);
         }
-/*
-        System.out.println("*********************checkedValue:"+checkedValue);
-        System.out.println("varifyPath:"+varifyPath);
-        System.out.println("InLinux:"+isRunningInLinux);
-        System.out.println("defaultValue:"+defaultValue);
-        System.out.println("value:"+value);
-*/        
+        /*
+         * System.out.println("*********************checkedValue:"+checkedValue);
+         * System.out.println("varifyPath:"+varifyPath);
+         * System.out.println("InLinux:"+isRunningInLinux);
+         * System.out.println("defaultValue:"+defaultValue);
+         * System.out.println("value:"+value);
+         */
         if (varifyPath && isRunningInLinux) {
             value = fixFileFolderPathForUnix(value);
         }
-//        System.out.println("after fix value:"+value);
+        // System.out.println("after fix value:"+value);
 
         return value;
     }
