@@ -254,7 +254,7 @@ dependencies {
     }
     
     // Used for uploading documents (images) to VANTIQ with VANTIQ SDK
-    compile 'io.vantiq:vantiq-sdk:1.0.28'
+    compile "io.vantiq:vantiq-sdk:${vantiqSDKVersion}"
 
     // Use JUnit test framework
     testCompile 'junit:junit:4.12'

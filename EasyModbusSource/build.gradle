@@ -51,7 +51,7 @@ dependencies {
     compile files("${System.env.EASY_MODBUS_LOC}/EasyModbusJava.jar")
 
     // Used in tests
-    testCompile 'io.vantiq:vantiq-sdk:1.0.28'
+    testCompile "io.vantiq:vantiq-sdk:${vantiqSDKVersion}"
     
     // Use JUnit test framework
     testCompile 'junit:junit:4.12'
