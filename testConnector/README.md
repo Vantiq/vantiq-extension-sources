@@ -98,6 +98,11 @@ include a `WITH` clause that contains a `filenames` and/or an `environmentVariab
 parameters must be provided. Both parameters are defined as lists of Strings, representing filenames or environment 
 variable names, respectively.
 
+Both Select and Publish statements can include an additional boolean parameter, `rawBytes`, that when true will tell the 
+Test Connector to read file data as raw bytes instead of a String. The raw bytes are then returned to Vantiq as a base64 
+encoded string. This parameter only applies to the data from files specified in the request, and does not apply to 
+environment variables or polling files specified in the Source Configuration.
+
 The following example uses a Vail Select Statement to retrieve data from files and environment variables:
 ```
 PROCEDURE queryTestConnector()
@@ -105,7 +110,8 @@ PROCEDURE queryTestConnector()
 try { 
     SELECT * FROM SOURCE TestConnector1 as results WITH
         filenames: ["testFile1.txt", "testFile2.txt"],
-        environmentVariables: ["MY_ENV_VAR1", "MY_ENV_VAR2"]
+        environmentVariables: ["MY_ENV_VAR1", "MY_ENV_VAR2"],
+        rawBytes: true
     
     var fileResponse = results.files
     var envVarResponse = results.environmentVariables
