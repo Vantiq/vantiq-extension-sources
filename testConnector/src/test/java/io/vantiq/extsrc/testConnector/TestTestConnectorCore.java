@@ -12,7 +12,11 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeTrue;
 
-import java.util.*;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.ArrayList;
+import java.util.Base64;
 
 import org.junit.After;
 import org.junit.Before;
@@ -38,9 +42,9 @@ public class TestTestConnectorCore {
 
     @BeforeClass
     public static void checkFilesAndEnvVars() {
-        environmentVariable = System.getProperty("TestConnectorEnvVarName", null);
-        filename = System.getProperty("TestConnectorFilename", null);
-        fileContents = System.getProperty("TestConnectorFileContents", null);
+        environmentVariable = System.getProperty("TestConnectorEnvVarName");
+        filename = System.getProperty("TestConnectorFilename");
+        fileContents = System.getProperty("TestConnectorFileContents");
     }
 
     @Before
