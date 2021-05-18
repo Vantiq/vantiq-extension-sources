@@ -33,9 +33,7 @@ jar.from(".") {
 }
 
 repositories {
-    maven {
-        url "https://dl.bintray.com/vantiq/maven"
-    }
+    mavenCentral()
 }
 
 configurations {

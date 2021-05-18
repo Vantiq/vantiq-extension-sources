@@ -9,11 +9,6 @@ sourceCompatibility = 1.8
 repositories {
     mavenCentral()
     jcenter()
-    
-    // Used for checking VANTIQ date format behavior with VANTIQ SDK
-    maven {
-    	url "https://dl.bintray.com/vantiq/maven"
-    }
 }
 
 mainClassName = 'io.vantiq.extsrc.jdbcSource.JDBCMain'
