@@ -150,7 +150,6 @@ public class TestTestConnectorCore {
         assert !fileString.isEmpty();
         assert !fileString.equals(fileContents);
         String decodedString = new String(Base64.getDecoder().decode(fileString.getBytes()));
-        decodedString = decodedString.replace(System.getProperty("line.separator"), ""); // Removing new lines
         assert decodedString.equals(fileContents);
     }
 
