@@ -12,10 +12,11 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeTrue;
 
-import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.ArrayList;
+import java.util.Base64;
 
 import org.junit.After;
 import org.junit.Before;
@@ -35,13 +36,15 @@ public class TestTestConnectorCore {
 
     private static String environmentVariable;
     private static String filename;
+    private static String fileContents;
 
     private static final String NONEXISTENT_ENV_VAR = "anEnvironmentVariableThatIsUnlikelyToExist";
 
     @BeforeClass
     public static void checkFilesAndEnvVars() {
-        environmentVariable = System.getProperty("TestConnectorEnvVarName", null);
-        filename = System.getProperty("TestConnectorFilename", null);
+        environmentVariable = System.getProperty("TestConnectorEnvVarName");
+        filename = System.getProperty("TestConnectorFilename");
+        fileContents = System.getProperty("TestConnectorFileContents");
     }
 
     @Before
@@ -125,6 +128,29 @@ public class TestTestConnectorCore {
         assert result.get("environmentVariables") instanceof Map;
         resultEnvVars = (Map) result.get("environmentVariables");
         assert resultEnvVars.get(NONEXISTENT_ENV_VAR) == null;
+    }
+
+    @Test
+    public void testRawBytes() {
+        assumeTrue(filename != null && fileContents != null);
+
+        // Put data in the request and call the process method
+        Map<String, Object> request = new LinkedHashMap<>();
+        List<String> filenames = new ArrayList<>();
+        filenames.add(filename);
+        request.put("filenames", filenames);
+        request.put("rawBytes", true);
+        Map result = core.processRequest(request, null);
+
+        // Check that the data is base64 encoded version of what we expect
+        assert result.get("files") instanceof Map;
+        Map resultFiles = (Map) result.get("files");
+        assert resultFiles.get(filename) instanceof String;
+        String fileString = (String) resultFiles.get(filename);
+        assert !fileString.isEmpty();
+        assert !fileString.equals(fileContents);
+        String decodedString = new String(Base64.getDecoder().decode(fileString.getBytes()));
+        assert decodedString.equals(fileContents);
     }
 
     @Test
