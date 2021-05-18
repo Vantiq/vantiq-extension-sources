@@ -37,6 +37,7 @@ public class TestConnectorCore {
     public static final String ENVIRONMENT_VARIABLES = "environmentVariables";
     public static final String FILENAMES = "filenames";
     public static final String UNHEALTHY = "unhealthy";
+    public static final String RAW_BYTES = "rawBytes";
 
     // Timer used if source is configured to poll from files
     Timer pollingTimer;
@@ -181,7 +182,7 @@ public class TestConnectorCore {
             @Override
             public void run() {
                 try {
-                    Map responseObject = readFromFiles(filenames);
+                    Map responseObject = readFromFiles(filenames, false);
                     client.sendNotification(responseObject);
                 } catch (Exception e) {
                     log.error("", e);
@@ -194,13 +195,20 @@ public class TestConnectorCore {
     /**
      * Helper method that reads the data from files as a String, and then creates a map of filenames and their data.
      * @param filenames The list of filenames from which to read data
+     * @param rawBytes A flag specifying whether to read from file as raw bytes or as String
      * @return A map of filenames to their data (as a String)
      * @throws Exception
      */
-    public Map readFromFiles(List<String> filenames) throws Exception {
+    public Map readFromFiles(List<String> filenames, Boolean rawBytes) throws Exception {
         Map<String, String> fileData = new LinkedHashMap<>();
         for (String filename : filenames) {
-            String data = new String(Files.readAllBytes(Paths.get(filename)));
+            String data;
+            if (rawBytes) {
+                byte[] rawData = Files.readAllBytes(Paths.get(filename));
+                data = Base64.getEncoder().encodeToString(rawData);
+            } else {
+                data = new String(Files.readAllBytes(Paths.get(filename)));
+            }
             fileData.put(filename, data);
         }
         return fileData;
@@ -308,9 +316,15 @@ public class TestConnectorCore {
         // Finally we get the data from the files if they were specified
         if (request.get(FILENAMES) instanceof List) {
             List filenames = (List) request.get(FILENAMES);
+
+            // Check if rawBytes flag was included
+            boolean rawBytes = false;
+            if (request.get(RAW_BYTES) instanceof Boolean) {
+                rawBytes = (Boolean) request.get(RAW_BYTES);
+            }
             if (TestConnectorHandleConfiguration.checkListValues(filenames)) {
                 try {
-                    Map fileData = readFromFiles(filenames);
+                    Map fileData = readFromFiles(filenames, rawBytes);
                     responseMap.put("files", fileData);
                 } catch (Exception e) {
                     log.error("An exception occurred while processing the filenames provided in the request", e);
