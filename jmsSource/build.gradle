@@ -9,11 +9,6 @@ sourceCompatibility = 1.8
 repositories {
     mavenCentral()
     jcenter()
-
-    // Used for testing extension source in VANTIQ
-    maven {
-        url "https://dl.bintray.com/vantiq/maven"
-    }
 }
 
 mainClassName = 'io.vantiq.extsrc.jmsSource.JMSMain'
@@ -65,7 +60,7 @@ dependencies {
     compile files("${System.env.JMS_DRIVER_LOC}")
 
     // Used for testing extension source in VANTIQ
-    testCompile 'io.vantiq:vantiq-sdk:1.0.17'
+    testCompile "io.vantiq:vantiq-sdk:${vantiqSDKVersion}"
 
     // Use JUnit test framework
     testCompile 'junit:junit:4.12'
