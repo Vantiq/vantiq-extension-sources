@@ -33,9 +33,7 @@ jar.from(".") {
 }
 
 repositories {
-    maven {
-        url "https://dl.bintray.com/vantiq/maven"
-    }
+    mavenCentral()
 }
 
 configurations {
@@ -79,8 +77,9 @@ dependencies {
     compile "com.fasterxml.jackson.core:jackson-databind:${jacksonVersion}"
 
     testCompile group: 'junit', name: 'junit', version: '4.12'
-    // Used for uploading documents (images) to VANTIQ with VANTIQ SDK
-    testCompile 'io.vantiq:vantiq-sdk:1.0.24'
+
+    // Used in tests
+    testCompile "io.vantiq:vantiq-sdk:${vantiqSDKVersion}"
 
     // Used to create EvictingQueue for failed messages queue
     implementation 'com.google.guava:guava:23.0'
