@@ -14,9 +14,10 @@ package io.vantiq.extjsdk;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import okhttp3.ResponseBody;
-import okhttp3.ws.WebSocket;
-import okhttp3.ws.WebSocketListener;
+import okhttp3.WebSocket;
+import okhttp3.WebSocketListener;
 import okio.Buffer;
+import okio.ByteString;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -29,7 +30,7 @@ import java.util.Map;
  * A listener that deals with messages received from a Vantiq deployment for Extension sources. It uses {@link Handler}
  * to allow users to specify how different types of messages are dealt with.
  */
-public class ExtensionWebSocketListener implements WebSocketListener{
+public class ExtensionWebSocketListener extends WebSocketListener {
     // Each Handler effectively says what to do when receiving a message of its message type, or a response to its
     // message type in the case of authenticationHandler
     /**
@@ -202,7 +203,6 @@ public class ExtensionWebSocketListener implements WebSocketListener{
      */
     @Override
     public void onOpen(WebSocket webSocket, okhttp3.Response response) {
-        this.client.webSocket = webSocket;
         this.client.webSocketFuture.complete(true);
         log.info("WebSocket open");
     }
@@ -212,25 +212,13 @@ public class ExtensionWebSocketListener implements WebSocketListener{
      * Translate the received message and pass it on to the related handler. Additionally, updates the client about
      * successful authentications and source connections.
      *
-     * @param body  The {@link ResponseBody} containing the message received.
+     * @param webSocket The websocket on which the message was received.
+     * @param bodyBytes  The {@link ByteString} containing the message received.
      */
     @Override
-    public void onMessage(ResponseBody body) {
+    public void onMessage(WebSocket webSocket, ByteString bodyBytes) {
         // Extract the original message from the body
-        byte[] data;
-        try {
-            if (body.contentType() == WebSocket.TEXT) {
-                data = body.string().getBytes();
-            } else {
-                data = body.bytes();
-            }
-        }
-        catch (IOException e) {
-            log.error("Error trying to interpret WebSocket message", e);
-            return;
-        }
-        body.close();
-
+        byte[] data = bodyBytes.toByteArray();
 
         if (this.isClosed) {
             return; // Do nothing if closed at this point
@@ -447,24 +435,14 @@ public class ExtensionWebSocketListener implements WebSocketListener{
      * @param code      The WebSocket code for why this listener is closing
      * @param reason    The {@link String} describing why it closed
      */
-    @Override
-    public void onClose(int code, String reason) {
-        log.info("Closing websocket code: {}", code);
-        log.debug(reason);
-        if (client.isOpen() && client.webSocket != null) {
-            client.close();
-        }
-    }
-
-    /**
-     * Logs the pong received.
-     * @param payload   The payload received with the Pong message
-     */
-    @Override
-    public void onPong(Buffer payload) {
-        log.debug("Pong received");
-        log.debug("Pong payload: {}", payload.toString());
-    }
+//    @Override
+//    public void onClose(WebSocket webSocket, int code, String reason) {
+//        log.info("Closing websocket code: {}", code);
+//        log.debug(reason);
+//        if (client.isOpen() && client.webSocket != null) {
+//            client.close();
+//        }
+//    }
 
     /**
      * Logs the error and closes the client. Only closes the client on an {@link EOFException} with no message, as that appears to
@@ -472,26 +450,26 @@ public class ExtensionWebSocketListener implements WebSocketListener{
      * @param e         The {@link IOException} that initiated the failure.
      * @param response  The {@link okhttp3.Response} that caused the failure, if any.
      */
-    @Override
-    public void onFailure(IOException e, okhttp3.Response response) {
-        if (e instanceof EOFException) { // An EOF exception appears on closing the websocket connection
-            if (e.getMessage() != null) {
-                log.error("EOFException: {}", e.getMessage());
-            }
-        }
-        else if (e instanceof ConnectException) {
-            log.error("{}: {}", e.getClass().toString(), e.getMessage());
-        }
-        else {
-            log.error("Failure occurred in listener", e);
-        }
-        
-        // The error occurred during an unknown point during execution. We don't have enough information to determine
-        // what caused it, so we will close
-        if (client.isOpen()) { 
-            client.close();
-        } else { // The websocket never opened, so it must be a problem connecting. Mark the failure and let the user handle it
-            client.webSocketFuture.complete(false);
-        }
-    }
+//    @Override
+//    public void onFailure(WebSocket webSocket, IOException e, okhttp3.Response response) {
+//        if (e instanceof EOFException) { // An EOF exception appears on closing the websocket connection
+//            if (e.getMessage() != null) {
+//                log.error("EOFException: {}", e.getMessage());
+//            }
+//        }
+//        else if (e instanceof ConnectException) {
+//            log.error("{}: {}", e.getClass().toString(), e.getMessage());
+//        }
+//        else {
+//            log.error("Failure occurred in listener", e);
+//        }
+//
+//        // The error occurred during an unknown point during execution. We don't have enough information to determine
+//        // what caused it, so we will close
+//        if (client.isOpen()) {
+//            client.close();
+//        } else { // The websocket never opened, so it must be a problem connecting. Mark the failure and let the user handle it
+//            client.webSocketFuture.complete(false);
+//        }
+//    }
 }
