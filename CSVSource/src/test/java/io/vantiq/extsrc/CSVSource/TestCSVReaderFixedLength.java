@@ -28,11 +28,10 @@ public class TestCSVReaderFixedLength extends TestCSVConfigFixedLength {
 
     @Before
     public void setup() {
-        config = new HashMap<String, Object>();
+        super.setup();
 
-        TestCSVConfigFixedLength o = new TestCSVConfigFixedLength();
-        config = o.minimalConfig();
-        options = o.createMinimalOptions();
+        config = minimalConfig();
+        options = createMinimalOptions();
         CSVReader.segmentList.clear();
     }
 
