@@ -113,20 +113,23 @@ public class TestYoloQueries extends NeuralNetTestBase {
     
     @BeforeClass
     public static void setup() {
-        vantiq = new io.vantiq.client.Vantiq(testVantiqServer);
-        vantiq.setAccessToken(testAuthToken);
-        
-        // Add files to be deleted from VANTIQ later
-        vantiqUploadFiles.add(IMAGE_1.get("filename"));
-        vantiqUploadFiles.add(IMAGE_2.get("filename"));
-        vantiqUploadFiles.add(IMAGE_3.get("filename"));
-        vantiqUploadFiles.add(IMAGE_4.get("filename"));
-        vantiqUploadFiles.add(IMAGE_5.get("filename"));
-        vantiqUploadFiles.add(IMAGE_6.get("filename"));
-        vantiqUploadFiles.add(IMAGE_7.get("filename"));
-        vantiqUploadFiles.add(IMAGE_8.get("filename"));
-        
-        setupSource(createSourceDef());
+        if (testAuthToken != null && testVantiqServer != null) {
+
+            vantiq = new io.vantiq.client.Vantiq(testVantiqServer);
+            vantiq.setAccessToken(testAuthToken);
+
+            // Add files to be deleted from VANTIQ later
+            vantiqUploadFiles.add(IMAGE_1.get("filename"));
+            vantiqUploadFiles.add(IMAGE_2.get("filename"));
+            vantiqUploadFiles.add(IMAGE_3.get("filename"));
+            vantiqUploadFiles.add(IMAGE_4.get("filename"));
+            vantiqUploadFiles.add(IMAGE_5.get("filename"));
+            vantiqUploadFiles.add(IMAGE_6.get("filename"));
+            vantiqUploadFiles.add(IMAGE_7.get("filename"));
+            vantiqUploadFiles.add(IMAGE_8.get("filename"));
+
+            setupSource(createSourceDef());
+        }
     }
     
     @AfterClass
@@ -135,19 +138,23 @@ public class TestYoloQueries extends NeuralNetTestBase {
             core.stop();
             core = null;
         }
-        deleteSource(vantiq);
-        deleteDirectory(OUTPUT_DIR);
-        
-        for (int i = 0; i < vantiqUploadFiles.size(); i++) {
-            deleteFileFromVantiq(vantiqUploadFiles.get(i));
+        if (vantiq != null && vantiq.isAuthenticated()) {
+            deleteSource(vantiq);
+
+            for (int i = 0; i < vantiqUploadFiles.size(); i++) {
+                deleteFileFromVantiq(vantiqUploadFiles.get(i));
+            }
         }
+        deleteDirectory(OUTPUT_DIR);
     }
     
     @After
     public void deleteOldFiles() {
-        // Deleting all the files from VANTIQ, and deleting local directory for next test
-        for (int i = 0; i < vantiqUploadFiles.size(); i++) {
-            deleteFileFromVantiq(vantiqUploadFiles.get(i));
+        if (vantiq != null && vantiq.isAuthenticated()) {
+            // Deleting all the files from VANTIQ, and deleting local directory for next test
+            for (int i = 0; i < vantiqUploadFiles.size(); i++) {
+                deleteFileFromVantiq(vantiqUploadFiles.get(i));
+            }
         }
         deleteDirectory(OUTPUT_DIR);
     }

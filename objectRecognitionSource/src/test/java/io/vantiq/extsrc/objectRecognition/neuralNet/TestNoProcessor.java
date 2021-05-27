@@ -55,47 +55,50 @@ public class TestNoProcessor extends NeuralNetTestBase {
         Map<String, Object> config = new LinkedHashMap<>();
         noProcessor.setupImageProcessing(config, SOURCE_NAME, MODEL_DIRECTORY, testAuthToken, testVantiqServer);
 
-        vantiq = new io.vantiq.client.Vantiq(testVantiqServer);
-        vantiq.setAccessToken(testAuthToken);
+        if (testAuthToken != null && testVantiqServer != null) {
+            vantiq = new io.vantiq.client.Vantiq(testVantiqServer);
+            vantiq.setAccessToken(testAuthToken);
+        }
     }
 
     @AfterClass
     public static void deleteFromVantiq() throws InterruptedException {
-        // Deleting files saved as documents
-        for (int i = 0; i < vantiqSavedFiles.size(); i++) {
-            Thread.sleep(1000);
-            vantiq.deleteOne(VANTIQ_DOCUMENTS, vantiqSavedFiles.get(i), new BaseResponseHandler() {
+        if (vantiq != null && vantiq.isAuthenticated()) {
+            // Deleting files saved as documents
+            for (int i = 0; i < vantiqSavedFiles.size(); i++) {
+                Thread.sleep(1000);
+                vantiq.deleteOne(VANTIQ_DOCUMENTS, vantiqSavedFiles.get(i), new BaseResponseHandler() {
 
-                @Override
-                public void onSuccess(Object body, Response response) {
-                    super.onSuccess(body, response);
-                }
+                    @Override
+                    public void onSuccess(Object body, Response response) {
+                        super.onSuccess(body, response);
+                    }
 
-                @Override
-                public void onError(List<VantiqError> errors, Response response) {
-                    super.onError(errors, response);
-                }
+                    @Override
+                    public void onError(List<VantiqError> errors, Response response) {
+                        super.onError(errors, response);
+                    }
 
-            });
+                });
+            }
+            // Deleting files saved as images
+            for (int i = 0; i < vantiqSavedImageFiles.size(); i++) {
+                Thread.sleep(1000);
+                vantiq.deleteOne(VANTIQ_IMAGES, vantiqSavedImageFiles.get(i), new BaseResponseHandler() {
+
+                    @Override
+                    public void onSuccess(Object body, Response response) {
+                        super.onSuccess(body, response);
+                    }
+
+                    @Override
+                    public void onError(List<VantiqError> errors, Response response) {
+                        super.onError(errors, response);
+                    }
+
+                });
+            }
         }
-        // Deleting files saved as images
-        for (int i = 0; i < vantiqSavedImageFiles.size(); i++) {
-            Thread.sleep(1000);
-            vantiq.deleteOne(VANTIQ_IMAGES, vantiqSavedImageFiles.get(i), new BaseResponseHandler() {
-
-                @Override
-                public void onSuccess(Object body, Response response) {
-                    super.onSuccess(body, response);
-                }
-
-                @Override
-                public void onError(List<VantiqError> errors, Response response) {
-                    super.onError(errors, response);
-                }
-
-            });
-        }
-
     }
 
     @AfterClass
