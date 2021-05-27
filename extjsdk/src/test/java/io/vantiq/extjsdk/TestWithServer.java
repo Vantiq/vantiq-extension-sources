@@ -16,12 +16,15 @@ public class TestWithServer extends RoundTripTestBase {
     
     @AfterClass
     public static void cleanup() {
-        deleteType();
-        deleteRule();
-        deleteSource();
-        deleteSourceImpl();
+        // If we started up, shut down nicely.  Otherwise, pass w/o issue
+        if (vantiq != null && vantiq.isAuthenticated()) {
+            deleteType();
+            deleteRule();
+            deleteSource();
+            deleteSourceImpl();
+        }
     }
-    
+
     @Test
     public void testNotificationEnMasse() throws Exception {
 
