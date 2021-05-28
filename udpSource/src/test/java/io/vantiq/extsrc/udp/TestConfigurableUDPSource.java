@@ -10,6 +10,7 @@
 package io.vantiq.extsrc.udp;
 
 import static org.junit.Assume.assumeTrue;
+import static org.junit.Assert.assertTrue;
 
 import java.io.BufferedWriter;
 import java.io.File;
@@ -25,7 +26,6 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Properties;
 
 import io.vantiq.extjsdk.Utils;
 import org.junit.After;
@@ -337,7 +337,9 @@ public class TestConfigurableUDPSource extends UDPTestBase {
         assert ConfigurableUDPSource.targetVantiqServer.equals("ws://localhost:8080");
         assert ConfigurableUDPSource.MAX_UDP_DATA == 1024;
         assert ConfigurableUDPSource.LISTENING_PORT == 3141;
-        assert ConfigurableUDPSource.LISTENING_ADDRESS.equals(InetAddress.getLocalHost());
+        assertTrue ("Listen Addr: " + ConfigurableUDPSource.LISTENING_ADDRESS +
+                            " =?= localhost: " + InetAddress.getLocalHost(),
+                ConfigurableUDPSource.LISTENING_ADDRESS.equals(InetAddress.getLocalHost()));
         assert ConfigurableUDPSource.authToken.equals("token");
         
         
