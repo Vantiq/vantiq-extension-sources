@@ -11,7 +11,6 @@ package io.vantiq.extsrc.udp;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assume.assumeTrue;
-import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 import java.io.BufferedWriter;
@@ -347,7 +346,7 @@ public class TestConfigurableUDPSource extends UDPTestBase {
         // during the setup code, but here returns the IP address. Socket stuff works around
         // that by verifying that can connect to ourselves
 
-        ServerSocket ss = new ServerSocket(9999);
+        new ServerSocket(9999);
         // Here, if we can't connect, it'll through an exception, failing the test
         Socket s = new Socket(ConfigurableUDPSource.LISTENING_ADDRESS, 9999);
         assertEquals ("Listen Addr: " + ConfigurableUDPSource.LISTENING_ADDRESS +
