@@ -11,6 +11,7 @@ package io.vantiq.extsrc.udp;
 
 import static org.junit.Assume.assumeTrue;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 import java.io.BufferedWriter;
 import java.io.File;
@@ -325,7 +326,7 @@ public class TestConfigurableUDPSource extends UDPTestBase {
         
         try {
             ConfigurableUDPSource.setupServer(config);
-            assert false; // Should throw RTE for an invalid or missing authToken
+            fail("Should fail with invalid authToken"); // Should throw RTE for an invalid or missing authToken
         } catch (RuntimeException e) {}
         
         config.put("authToken", "token");
@@ -337,9 +338,9 @@ public class TestConfigurableUDPSource extends UDPTestBase {
         assert ConfigurableUDPSource.targetVantiqServer.equals("ws://localhost:8080");
         assert ConfigurableUDPSource.MAX_UDP_DATA == 1024;
         assert ConfigurableUDPSource.LISTENING_PORT == 3141;
-        assertTrue ("Listen Addr: " + ConfigurableUDPSource.LISTENING_ADDRESS +
-                            " =?= localhost: " + InetAddress.getLocalHost(),
-                ConfigurableUDPSource.LISTENING_ADDRESS.equals(InetAddress.getLocalHost()));
+        assertTrue ("Listen Addr: " + ConfigurableUDPSource.LISTENING_ADDRESS.getHostName() +
+                            " =?= localhost: " + InetAddress.getLocalHost().getHostName(),
+                ConfigurableUDPSource.LISTENING_ADDRESS.getHostName().equals(InetAddress.getLocalHost().getHostName()));
         assert ConfigurableUDPSource.authToken.equals("token");
         
         
