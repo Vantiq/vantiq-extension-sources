@@ -19,6 +19,8 @@ import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
+import java.net.ServerSocket;
+import java.net.Socket;
 import java.net.UnknownHostException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -319,7 +321,7 @@ public class TestConfigurableUDPSource extends UDPTestBase {
     
     @Test
     @SuppressWarnings({"unchecked", "rawtypes"})
-    public void testSetupServer() throws UnknownHostException {
+    public void testSetupServer() throws UnknownHostException, IOException {
         Map config = new LinkedHashMap<>();
         
         config.put("authToken", new Object());
@@ -338,9 +340,17 @@ public class TestConfigurableUDPSource extends UDPTestBase {
         assert ConfigurableUDPSource.targetVantiqServer.equals("ws://localhost:8080");
         assert ConfigurableUDPSource.MAX_UDP_DATA == 1024;
         assert ConfigurableUDPSource.LISTENING_PORT == 3141;
-        assertTrue ("Listen Addr: " + ConfigurableUDPSource.LISTENING_ADDRESS.getHostName() +
-                            " =?= localhost: " + InetAddress.getLocalHost().getHostName(),
-                ConfigurableUDPSource.LISTENING_ADDRESS.getHostName().equals(InetAddress.getLocalHost().getHostName()));
+
+        // Playing these shenanigans to deal with localhost being different on jenkins machines.
+        // Moreover, on Jenkins, InetAddress.getLocalHost() seems to return the loopback address
+        // during the setup code, but here returns the IP address. Socket stuff works around
+        // that by verifying that can connect to ourselves
+        ServerSocket ss = new ServerSocket(9999);
+        ss.getInetAddress();
+        Socket s = new Socket(ConfigurableUDPSource.LISTENING_ADDRESS, 9999);
+        assertTrue ("Listen Addr: " + ConfigurableUDPSource.LISTENING_ADDRESS +
+                            " =?= localhost: " + ss.getInetAddress(),
+                ConfigurableUDPSource.LISTENING_ADDRESS.equals(s.getInetAddress()));
         assert ConfigurableUDPSource.authToken.equals("token");
         
         
