@@ -78,7 +78,6 @@ public class TestNoProcessor extends NeuralNetTestBase {
                     public void onError(List<VantiqError> errors, Response response) {
                         super.onError(errors, response);
                     }
-
                 });
             }
             // Deleting files saved as images
