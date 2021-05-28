@@ -9,6 +9,7 @@
 
 package io.vantiq.extsrc.udp;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assume.assumeTrue;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
@@ -345,12 +346,13 @@ public class TestConfigurableUDPSource extends UDPTestBase {
         // Moreover, on Jenkins, InetAddress.getLocalHost() seems to return the loopback address
         // during the setup code, but here returns the IP address. Socket stuff works around
         // that by verifying that can connect to ourselves
+
         ServerSocket ss = new ServerSocket(9999);
-        ss.getInetAddress();
+        // Here, if we can't connect, it'll through an exception, failing the test
         Socket s = new Socket(ConfigurableUDPSource.LISTENING_ADDRESS, 9999);
-        assertTrue ("Listen Addr: " + ConfigurableUDPSource.LISTENING_ADDRESS +
-                            " =?= localhost: " + ss.getInetAddress(),
-                ConfigurableUDPSource.LISTENING_ADDRESS.equals(s.getInetAddress()));
+        assertEquals ("Listen Addr: " + ConfigurableUDPSource.LISTENING_ADDRESS +
+                            " =?= localhost: " + s.getInetAddress(),
+                s.getInetAddress(), ConfigurableUDPSource.LISTENING_ADDRESS);
         assert ConfigurableUDPSource.authToken.equals("token");
         
         
