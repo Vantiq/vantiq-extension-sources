@@ -141,8 +141,8 @@ public class TestYoloQueries extends NeuralNetTestBase {
         if (vantiq != null && vantiq.isAuthenticated()) {
             deleteSource(vantiq);
 
-            for (int i = 0; i < vantiqUploadFiles.size(); i++) {
-                deleteFileFromVantiq(vantiqUploadFiles.get(i));
+            for (String vantiqUploadFile : vantiqUploadFiles) {
+                deleteFileFromVantiq(vantiqUploadFile);
             }
         }
         deleteDirectory(OUTPUT_DIR);
@@ -152,8 +152,8 @@ public class TestYoloQueries extends NeuralNetTestBase {
     public void deleteOldFiles() {
         if (vantiq != null && vantiq.isAuthenticated()) {
             // Deleting all the files from VANTIQ, and deleting local directory for next test
-            for (int i = 0; i < vantiqUploadFiles.size(); i++) {
-                deleteFileFromVantiq(vantiqUploadFiles.get(i));
+            for (String vantiqUploadFile : vantiqUploadFiles) {
+                deleteFileFromVantiq(vantiqUploadFile);
             }
         }
         deleteDirectory(OUTPUT_DIR);

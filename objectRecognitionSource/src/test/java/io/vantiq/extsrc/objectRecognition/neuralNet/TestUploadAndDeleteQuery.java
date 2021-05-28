@@ -144,9 +144,9 @@ public class TestUploadAndDeleteQuery extends NeuralNetTestBase {
     @After
     public void deleteFromVantiq() throws InterruptedException {
         if (vantiq != null && vantiq.isAuthenticated()) {
-            for (int i = 0; i < vantiqUploadFiles.size(); i++) {
+            for (String vantiqUploadFile : vantiqUploadFiles) {
                 Thread.sleep(1000);
-                vantiq.deleteOne(VANTIQ_DOCUMENTS, vantiqUploadFiles.get(i), new BaseResponseHandler() {
+                vantiq.deleteOne(VANTIQ_DOCUMENTS, vantiqUploadFile, new BaseResponseHandler() {
 
                     @Override
                     public void onSuccess(Object body, Response response) {

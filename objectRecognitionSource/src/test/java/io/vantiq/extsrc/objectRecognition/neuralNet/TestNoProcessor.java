@@ -65,9 +65,9 @@ public class TestNoProcessor extends NeuralNetTestBase {
     public static void deleteFromVantiq() throws InterruptedException {
         if (vantiq != null && vantiq.isAuthenticated()) {
             // Deleting files saved as documents
-            for (int i = 0; i < vantiqSavedFiles.size(); i++) {
+            for (String vantiqSavedFile : vantiqSavedFiles) {
                 Thread.sleep(1000);
-                vantiq.deleteOne(VANTIQ_DOCUMENTS, vantiqSavedFiles.get(i), new BaseResponseHandler() {
+                vantiq.deleteOne(VANTIQ_DOCUMENTS, vantiqSavedFile, new BaseResponseHandler() {
 
                     @Override
                     public void onSuccess(Object body, Response response) {
@@ -82,9 +82,9 @@ public class TestNoProcessor extends NeuralNetTestBase {
                 });
             }
             // Deleting files saved as images
-            for (int i = 0; i < vantiqSavedImageFiles.size(); i++) {
+            for (String vantiqSavedImageFile : vantiqSavedImageFiles) {
                 Thread.sleep(1000);
-                vantiq.deleteOne(VANTIQ_IMAGES, vantiqSavedImageFiles.get(i), new BaseResponseHandler() {
+                vantiq.deleteOne(VANTIQ_IMAGES, vantiqSavedImageFile, new BaseResponseHandler() {
 
                     @Override
                     public void onSuccess(Object body, Response response) {
@@ -95,7 +95,6 @@ public class TestNoProcessor extends NeuralNetTestBase {
                     public void onError(List<VantiqError> errors, Response response) {
                         super.onError(errors, response);
                     }
-
                 });
             }
         }

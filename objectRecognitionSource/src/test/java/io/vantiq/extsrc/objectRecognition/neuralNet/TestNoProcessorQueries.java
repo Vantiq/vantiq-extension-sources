@@ -51,8 +51,8 @@ public class TestNoProcessorQueries extends NeuralNetTestBase {
         if (vantiq != null && vantiq.isAuthenticated()) {
             deleteSource();
 
-            for (int i = 0; i < vantiqUploadFiles.size(); i++) {
-                deleteFileFromVantiq(vantiqUploadFiles.get(i));
+            for (String vantiqUploadFile : vantiqUploadFiles) {
+                deleteFileFromVantiq(vantiqUploadFile);
             }
         }
         deleteDirectory(OUTPUT_DIR);
