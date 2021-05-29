@@ -54,6 +54,7 @@ import io.vantiq.extjsdk.ExtensionServiceMessage;
 import okhttp3.Response;
 import okio.BufferedSource;
 
+@SuppressWarnings("PMD.ExcessiveClassLength")
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
 public class TestYoloProcessor extends NeuralNetTestBase {
 

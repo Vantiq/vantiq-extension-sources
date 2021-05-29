@@ -318,9 +318,9 @@ public class TestConfigurableUDPSource extends UDPTestBase {
         assert secondHandler.getVariable().get("data") == null;
         
     }
-    
+
+    @SuppressWarnings({"PMD.JUnitUseExpected", "unchecked", "rawtypes"})
     @Test
-    @SuppressWarnings({"unchecked", "rawtypes"})
     public void testSetupServer() throws UnknownHostException, IOException {
         Map config = new LinkedHashMap<>();
         

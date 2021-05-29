@@ -27,6 +27,7 @@ import org.junit.Assume;
 /**
  * A collection of Utility methods used by the OPC UA Extension Source unit tests
  */
+@SuppressWarnings("PMD.TooManyFields")
 @Slf4j
 public class Utils {
 
