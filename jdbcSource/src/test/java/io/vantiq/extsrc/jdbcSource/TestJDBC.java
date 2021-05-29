@@ -32,6 +32,7 @@ import io.vantiq.client.Vantiq;
 import io.vantiq.client.VantiqResponse;
 import io.vantiq.extsrc.jdbcSource.exception.VantiqSQLException;
 
+@SuppressWarnings("PMD.ExcessiveClassLength")
 public class TestJDBC extends TestJDBCBase {
     
     // Queries to be tested
