@@ -59,6 +59,7 @@ public class TestYoloQueriesLocationMapper extends NeuralNetTestBase {
         vantiq.setAccessToken(testAuthToken);
     }
 
+    @SuppressWarnings("PMD.JUnit4TestShouldUseAfterAnnotation")
     @AfterClass
     public static void tearDown() {
         if (core != null) {

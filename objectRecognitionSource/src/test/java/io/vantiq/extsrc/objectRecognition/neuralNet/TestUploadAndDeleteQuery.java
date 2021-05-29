@@ -135,7 +135,8 @@ public class TestUploadAndDeleteQuery extends NeuralNetTestBase {
         testFile = new File(OUTPUT_DIR + File.separator + IMAGE_7.get("date") + ".jpg");
         ImageIO.write(testImageBuffer, "jpg", testFile);
     }
-    
+
+    @SuppressWarnings("PMD.JUnit4TestShouldUseAfterAnnotation")
     @AfterClass
     public static void tearDown() {
         core.stop();

@@ -156,6 +156,7 @@ public class TestYoloProcessor extends NeuralNetTestBase {
         }
     }
 
+    @SuppressWarnings("PMD.JUnit4TestShouldUseAfterAnnotation")
     @AfterClass
     public static void classTearDown() {
         if (ypJson != null) {

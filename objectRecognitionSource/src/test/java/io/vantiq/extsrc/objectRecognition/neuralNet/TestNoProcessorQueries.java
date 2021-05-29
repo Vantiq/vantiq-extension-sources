@@ -41,7 +41,8 @@ public class TestNoProcessorQueries extends NeuralNetTestBase {
             setupSource(createSourceDef());
         }
     }
-    
+
+    @SuppressWarnings("PMD.JUnit4TestShouldUseAfterAnnotation")
     @AfterClass
     public static void tearDown() {
         if (core != null) {

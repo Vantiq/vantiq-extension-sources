@@ -67,7 +67,8 @@ public class TestJMS extends TestJMSBase {
     public void unsubscribe() {
         vantiq.unsubscribeAll();
     }
-        
+
+    @SuppressWarnings("PMD.JUnit4TestShouldUseAfterAnnotation")
     @AfterClass
     public static void tearDown() {
         // Delete source from VANTIQ

@@ -149,7 +149,8 @@ public class TestJDBC extends TestJDBCBase {
     }
     
     */
-    
+
+    @SuppressWarnings("PMD.JUnit4TestShouldUseAfterAnnotation")
     @AfterClass
     public static void tearDown() throws VantiqSQLException {
         if (testDBUsername != null && testDBPassword != null && testDBURL != null && jdbcDriverLoc != null) {

@@ -31,6 +31,7 @@ public class TestParallelProcessing extends NeuralNetTestBase {
         }
     }
 
+    @SuppressWarnings("PMD.JUnit4TestShouldUseAfterAnnotation")
     @AfterClass
     public static void tearDown() {
         // Double check that everything was deleted from VANTIQ
