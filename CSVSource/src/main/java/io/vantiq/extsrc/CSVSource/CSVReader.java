@@ -251,8 +251,9 @@ public class CSVReader {
                     }
 
                     if (o.reversed) {
+                        
                         StringBuilder sb = new StringBuilder();
-                        sb.append(t);
+                        sb.append(RTLReverse.rToLNumberRepair(t));
                         sb = sb.reverse();
                         t = sb.toString();
                     }
