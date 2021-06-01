@@ -9,7 +9,9 @@
 
 package io.vantiq.extsrc.udp;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assume.assumeTrue;
+import static org.junit.Assert.fail;
 
 import java.io.BufferedWriter;
 import java.io.File;
@@ -17,6 +19,8 @@ import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
+import java.net.ServerSocket;
+import java.net.Socket;
 import java.net.UnknownHostException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -25,7 +29,6 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Properties;
 
 import io.vantiq.extjsdk.Utils;
 import org.junit.After;
@@ -315,17 +318,17 @@ public class TestConfigurableUDPSource extends UDPTestBase {
         assert secondHandler.getVariable().get("data") == null;
         
     }
-    
+
+    @SuppressWarnings({"PMD.JUnitUseExpected", "unchecked", "rawtypes"})
     @Test
-    @SuppressWarnings({"unchecked", "rawtypes"})
-    public void testSetupServer() throws UnknownHostException {
+    public void testSetupServer() throws UnknownHostException, IOException {
         Map config = new LinkedHashMap<>();
         
         config.put("authToken", new Object());
         
         try {
             ConfigurableUDPSource.setupServer(config);
-            assert false; // Should throw RTE for an invalid or missing authToken
+            fail("Should fail with invalid authToken"); // Should throw RTE for an invalid or missing authToken
         } catch (RuntimeException e) {}
         
         config.put("authToken", "token");
@@ -337,7 +340,18 @@ public class TestConfigurableUDPSource extends UDPTestBase {
         assert ConfigurableUDPSource.targetVantiqServer.equals("ws://localhost:8080");
         assert ConfigurableUDPSource.MAX_UDP_DATA == 1024;
         assert ConfigurableUDPSource.LISTENING_PORT == 3141;
-        assert ConfigurableUDPSource.LISTENING_ADDRESS.equals(InetAddress.getLocalHost());
+
+        // Playing these shenanigans to deal with localhost being different on jenkins machines.
+        // Moreover, on Jenkins, InetAddress.getLocalHost() seems to return the loopback address
+        // during the setup code, but here returns the IP address. Socket stuff works around
+        // that by verifying that can connect to ourselves
+
+        new ServerSocket(9999);
+        // Here, if we can't connect, it'll through an exception, failing the test
+        Socket s = new Socket(ConfigurableUDPSource.LISTENING_ADDRESS, 9999);
+        assertEquals ("Listen Addr: " + ConfigurableUDPSource.LISTENING_ADDRESS +
+                            " =?= localhost: " + s.getInetAddress(),
+                s.getInetAddress(), ConfigurableUDPSource.LISTENING_ADDRESS);
         assert ConfigurableUDPSource.authToken.equals("token");
         
         

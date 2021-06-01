@@ -27,6 +27,7 @@ import org.junit.Assume;
 /**
  * A collection of Utility methods used by the OPC UA Extension Source unit tests
  */
+@SuppressWarnings("PMD.TooManyFields")
 @Slf4j
 public class Utils {
 
@@ -48,7 +49,7 @@ public class Utils {
 
     public static List<String> OPC_PUBLIC_SERVERS = Arrays.asList(
             // OPC_PUBLIC_SERVER_1,  // requires credentials & registration :-(
-            OPC_PUBLIC_SERVER_2,
+            // OPC_PUBLIC_SERVER_2,
             OPC_PUBLIC_SERVER_3,
             // OPC_PUBLIC_SERVER_4,  // not responding
             // OPC_PUBLIC_SERVER_5,  // returns that the service is unsupported.

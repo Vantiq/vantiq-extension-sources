@@ -275,7 +275,7 @@ public class TestObjRecConfig {
 
     @Test
     public void testEmptyPostProcessor() {
-        postProcessor = new HashMap<String, Object>();
+        postProcessor = new HashMap<>();
         Map conf = minimalConfig();
         sendConfig(conf);
         assertFalse("Should not fail with empty postProcessor", configIsFailed());
@@ -283,7 +283,7 @@ public class TestObjRecConfig {
 
     @Test
     public void testEmptyPPMapper() {
-        postProcessor = new HashMap<String, Object>();
+        postProcessor = new HashMap<>();
         postProcessor.put(ObjectRecognitionConfigHandler.LOCATION_MAPPER, new HashMap<String, Object>());
         Map conf = minimalConfig();
         sendConfig(conf);
@@ -292,8 +292,8 @@ public class TestObjRecConfig {
 
     @Test
     public void testBadCoords() {
-        postProcessor = new HashMap<String, Object>();
-        Map<String, Object> mapper = new HashMap<String,Object>();
+        postProcessor = new HashMap<>();
+        Map<String, Object> mapper = new HashMap<>();
         List<Map> imgCoords = new ArrayList<>();
         mapper.put(ObjectRecognitionConfigHandler.IMAGE_COORDINATES, imgCoords);
         postProcessor.put(ObjectRecognitionConfigHandler.LOCATION_MAPPER, mapper);
@@ -374,8 +374,8 @@ public class TestObjRecConfig {
 
     @Test
     public void testInvalidResultSpec() {
-        postProcessor = new HashMap<String, Object>();
-        Map<String, Object> mapper = new HashMap<String,Object>();
+        postProcessor = new HashMap<>();
+        Map<String, Object> mapper = new HashMap<>();
         List<Map> imgCoords = new ArrayList<>();
         List<Map> mappedCoords = new ArrayList<>();
 
@@ -411,7 +411,7 @@ public class TestObjRecConfig {
 
     @Test
     public void testValidPostProcessor() {
-        postProcessor = new HashMap<String, Object>();
+        postProcessor = new HashMap<>();
         Map<String, Object> mapper = new HashMap<String,Object>();
         List<Map> imgCoords = new ArrayList<>();
         List<Map> mappedCoords = new ArrayList<>();

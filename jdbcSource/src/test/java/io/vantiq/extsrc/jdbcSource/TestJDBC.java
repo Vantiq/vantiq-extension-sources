@@ -32,6 +32,7 @@ import io.vantiq.client.Vantiq;
 import io.vantiq.client.VantiqResponse;
 import io.vantiq.extsrc.jdbcSource.exception.VantiqSQLException;
 
+@SuppressWarnings("PMD.ExcessiveClassLength")
 public class TestJDBC extends TestJDBCBase {
     
     // Queries to be tested
@@ -149,7 +150,8 @@ public class TestJDBC extends TestJDBCBase {
     }
     
     */
-    
+
+    @SuppressWarnings("PMD.JUnit4TestShouldUseAfterAnnotation")
     @AfterClass
     public static void tearDown() throws VantiqSQLException {
         if (testDBUsername != null && testDBPassword != null && testDBURL != null && jdbcDriverLoc != null) {

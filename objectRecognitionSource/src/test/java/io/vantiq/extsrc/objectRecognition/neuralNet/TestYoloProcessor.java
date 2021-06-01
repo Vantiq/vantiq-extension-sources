@@ -54,6 +54,7 @@ import io.vantiq.extjsdk.ExtensionServiceMessage;
 import okhttp3.Response;
 import okio.BufferedSource;
 
+@SuppressWarnings("PMD.ExcessiveClassLength")
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
 public class TestYoloProcessor extends NeuralNetTestBase {
 
@@ -112,48 +113,51 @@ public class TestYoloProcessor extends NeuralNetTestBase {
             fail("Could not setup the JSON YoloProcessor");
         }
 
-        vantiq = new io.vantiq.client.Vantiq(testVantiqServer);
-        vantiq.setAccessToken(testAuthToken);
+        if (testVantiqServer != null && testAuthToken != null) {
+            vantiq = new io.vantiq.client.Vantiq(testVantiqServer);
+            vantiq.setAccessToken(testAuthToken);
+        }
     }
 
     @AfterClass
     public static void deleteFromVantiq() throws InterruptedException {
         // Deleting files saved as documents
-        for (int i = 0; i < vantiqSavedFiles.size(); i++) {
-            Thread.sleep(1000);
-            vantiq.deleteOne(VANTIQ_DOCUMENTS, vantiqSavedFiles.get(i), new BaseResponseHandler() {
+        if (vantiq != null && vantiq.isAuthenticated()) {
+            for (String vantiqSavedFile : vantiqSavedFiles) {
+                Thread.sleep(1000);
+                vantiq.deleteOne(VANTIQ_DOCUMENTS, vantiqSavedFile, new BaseResponseHandler() {
 
-                @Override
-                public void onSuccess(Object body, Response response) {
-                    super.onSuccess(body, response);
-                }
+                    @Override
+                    public void onSuccess(Object body, Response response) {
+                        super.onSuccess(body, response);
+                    }
 
-                @Override
-                public void onError(List<VantiqError> errors, Response response) {
-                    super.onError(errors, response);
-                }
+                    @Override
+                    public void onError(List<VantiqError> errors, Response response) {
+                        super.onError(errors, response);
+                    }
+                });
+            }
+            // Deleting files saved as images
+            for (String vantiqSavedImageFile : vantiqSavedImageFiles) {
+                Thread.sleep(1000);
+                vantiq.deleteOne(VANTIQ_IMAGES, vantiqSavedImageFile, new BaseResponseHandler() {
 
-            });
-        }
-        // Deleting files saved as images
-        for (int i = 0; i < vantiqSavedImageFiles.size(); i++) {
-            Thread.sleep(1000);
-            vantiq.deleteOne(VANTIQ_IMAGES, vantiqSavedImageFiles.get(i), new BaseResponseHandler() {
+                    @Override
+                    public void onSuccess(Object body, Response response) {
+                        super.onSuccess(body, response);
+                    }
 
-                @Override
-                public void onSuccess(Object body, Response response) {
-                    super.onSuccess(body, response);
-                }
-
-                @Override
-                public void onError(List<VantiqError> errors, Response response) {
-                    super.onError(errors, response);
-                }
-
-            });
+                    @Override
+                    public void onError(List<VantiqError> errors, Response response) {
+                        super.onError(errors, response);
+                    }
+                });
+            }
         }
     }
 
+    @SuppressWarnings("PMD.JUnit4TestShouldUseAfterAnnotation")
     @AfterClass
     public static void classTearDown() {
         if (ypJson != null) {
@@ -166,10 +170,12 @@ public class TestYoloProcessor extends NeuralNetTestBase {
             deleteDirectory(OUTPUT_DIR);
         }
 
-        // Double check that everything was deleted from VANTIQ
-        deleteSource(vantiq);
-        deleteType(vantiq);
-        deleteRule(vantiq);
+        if (vantiq != null && vantiq.isAuthenticated()) {
+            // Double check that everything was deleted from VANTIQ
+            deleteSource(vantiq);
+            deleteType(vantiq);
+            deleteRule(vantiq);
+        }
     }
 
     @Test
@@ -275,7 +281,6 @@ public class TestYoloProcessor extends NeuralNetTestBase {
         } catch (Exception e) {
             fail("Should not fail with label and meta file, and anchors: " + e.getClass().getName() + "::" + e.getMessage());
         }
-
     }
     
     @Test
@@ -512,7 +517,6 @@ public class TestYoloProcessor extends NeuralNetTestBase {
         // Only run test with intended vantiq availability
         assumeTrue(testAuthToken != null && testVantiqServer != null);
         labelTestHelper(false);
-
     }
 
     @Test
@@ -521,7 +525,6 @@ public class TestYoloProcessor extends NeuralNetTestBase {
         // Only run test with intended vantiq availability
         assumeTrue(testAuthToken != null && testVantiqServer != null);
         labelTestHelper(true);
-
     }
 
     // Helper function to test the "labelImage" option
@@ -632,7 +635,6 @@ public class TestYoloProcessor extends NeuralNetTestBase {
         // The savedResolution is not a map which is not allowed, should not do any resizing
         config.put("savedResolution", "jibberish");
         checkInvalidResizing(config);
-        
     }
     
     // Helper function to test invalid resizing
@@ -1007,7 +1009,6 @@ public class TestYoloProcessor extends NeuralNetTestBase {
             Thread.sleep(1000);
             checkUploadToVantiq(results.getLastFilename(), vantiq, VANTIQ_DOCUMENTS);
             vantiqSavedFiles.add(results.getLastFilename());
-
         } finally {
             // delete the directory even if the test fails
             if (d.exists()) {
@@ -1203,7 +1204,6 @@ public class TestYoloProcessor extends NeuralNetTestBase {
 
             ypImageSaver.close();
         }
-
     }
     
     @Test
@@ -1405,7 +1405,6 @@ public class TestYoloProcessor extends NeuralNetTestBase {
             
             assert resizedImage.getWidth() == CROPPED_WIDTH;
             assert resizedImage.getHeight() == CROPPED_HEIGHT;
-
         } finally {
             if (d.exists()) {
                 deleteDirectory(OUTPUT_DIR);
@@ -1463,11 +1462,9 @@ public class TestYoloProcessor extends NeuralNetTestBase {
             byte[] imageBytes = source.readByteArray();
             InputStream imageStream = new ByteArrayInputStream(imageBytes);
             BufferedImage resizedImage = ImageIO.read(imageStream);
-            
-            
+
             assert resizedImage.getWidth() == CROPPED_WIDTH;
             assert resizedImage.getHeight() == CROPPED_HEIGHT;
-
         } finally {
             ypImageSaver.close();
         }
@@ -1539,10 +1536,8 @@ public class TestYoloProcessor extends NeuralNetTestBase {
             InputStream imageStream = new ByteArrayInputStream(imageBytes);
             resizedImage = ImageIO.read(imageStream);
             
-            
             assert resizedImage.getWidth() == CROPPED_WIDTH;
             assert resizedImage.getHeight() == CROPPED_HEIGHT;
-
         } finally {
             if (d.exists()) {
                 deleteDirectory(OUTPUT_DIR);
@@ -1604,7 +1599,6 @@ public class TestYoloProcessor extends NeuralNetTestBase {
             // Since savedResolution was set, the image dimensions should correspond to the longEdge value
             assert resizedImage.getWidth() == RESIZED_IMAGE_WIDTH;
             assert resizedImage.getHeight() == RESIZED_IMAGE_HEIGHT;
-
         } finally {
             if (d.exists()) {
                 deleteDirectory(OUTPUT_DIR);
@@ -1667,7 +1661,6 @@ public class TestYoloProcessor extends NeuralNetTestBase {
             // Since the savedResolution was too large, image dimensions should correspond to the preCrop values
             assert resizedImage.getWidth() == CROPPED_WIDTH;
             assert resizedImage.getHeight() == CROPPED_HEIGHT;
-
         } finally {
             if (d.exists()) {
                 deleteDirectory(OUTPUT_DIR);
