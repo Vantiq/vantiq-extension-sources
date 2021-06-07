@@ -9,12 +9,11 @@
 
 package io.vantiq.extjsdk;
 
-//Author: Alex Blumer
-//Email: alex.j.blumer@gmail.com
+//Author: Alex Blumer, Namir Fawaz, Fred Carter
+//Email: support@vantiq.com
 
-import okhttp3.ws.WebSocket;
-import okio.Buffer;
-import okhttp3.RequestBody;
+import okhttp3.Request;
+import okhttp3.WebSocket;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -24,6 +23,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
+import okio.ByteString;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -31,7 +31,7 @@ import org.junit.Test;
 import static org.junit.Assert.fail;
 
 
-public class TestExtensionWebSocketClient extends ExtjsdkTestBase{
+public class TestExtensionWebSocketClient extends ExtjsdkTestBase {
     
     // Note: testing of connections occurs in TestExtensionWebSocketListener, as more of the relevant interactions occur
     // through ExtensionWebSocketListener
@@ -277,7 +277,7 @@ public class TestExtensionWebSocketClient extends ExtjsdkTestBase{
         
         // Should make sourceConnection be recreated
         client.setAutoReconnect(true);
-        client.getListener().onMessage(TestListener.createReconnectMessage(""));
+        client.getListener().onMessage(null, TestListener.createReconnectMessage(""));
 
         assert !client.isConnected();
         assert !client.getSourceConnectionFuture().isDone(); 
@@ -357,7 +357,7 @@ public class TestExtensionWebSocketClient extends ExtjsdkTestBase{
         newClient.webSocketFuture = CompletableFuture.completedFuture(true);
         newClient.authFuture = CompletableFuture.completedFuture(true);
         newClient.sourceFuture = CompletableFuture.completedFuture(false);
-        newClient.listener.onMessage(testListener.createConfigResponse(new LinkedHashMap<>(), srcName));
+        newClient.listener.onMessage(null, testListener.createConfigResponse(new LinkedHashMap<>(), srcName));
         assert newClient.failedMessageQueue.size() == 0;
 
         // Now lets do the same thing with a query
@@ -375,7 +375,7 @@ public class TestExtensionWebSocketClient extends ExtjsdkTestBase{
         newClient.webSocketFuture = CompletableFuture.completedFuture(true);
         newClient.authFuture = CompletableFuture.completedFuture(true);
         newClient.sourceFuture = CompletableFuture.completedFuture(false);
-        newClient.listener.onMessage(testListener.createConfigResponse(new LinkedHashMap<>(), srcName));
+        newClient.listener.onMessage(null, testListener.createConfigResponse(new LinkedHashMap<>(), srcName));
         assert newClient.failedMessageQueue.size() == 0;
     }
 
@@ -482,23 +482,17 @@ public class TestExtensionWebSocketClient extends ExtjsdkTestBase{
         
         Map<String,Object> lastData = null;
         boolean messageReceived = false;
-        
-        
+
         @Override
-        public void sendMessage(RequestBody body) {
-            Buffer buf = new Buffer();
+        public boolean send(ByteString bytes) {
             try {
-                body.writeTo(buf);
+                lastData = mapper.readValue(bytes.toByteArray(), Map.class);
             } catch (IOException e) {
                 e.printStackTrace();
             }
-            try {
-                lastData = mapper.readValue(buf.inputStream(), Map.class);
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-            
+
             messageReceived = true;
+            return messageReceived;
         }
         
         public boolean compareData(String key, Object expectedVal) {
@@ -511,9 +505,21 @@ public class TestExtensionWebSocketClient extends ExtjsdkTestBase{
         }
 
         @Override
-        public void sendPing(Buffer payload) throws IOException {}
+        public boolean close(int code, String reason) {
+            client.getListener().onClosed(null, code,reason);
+            return true;
+        }
+
+        //================================ Necessary to implement WebSocket ================================
+
         @Override
-        public void close(int code, String reason) throws IOException {client.getListener().onClose(code,reason);}
+        public void cancel() {}
+        @Override
+        public long queueSize() {return 0;}
+        @Override
+        public Request request() {return null;}
+        @Override
+        public boolean send(String s) {return false;}
     }
     
     public static Object getTransformVal(Map map, String loc) {

@@ -10,10 +10,11 @@
 package io.vantiq.extjsdk;
 
 //Author: Alex Blumer
-//Email: alex.j.blumer@gmail.com
+//Email: support@vantiq.com
 
 import okhttp3.ResponseBody;
 
+import okio.ByteString;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -115,7 +116,7 @@ public class TestExtensionWebSocketListener extends ExtjsdkTestBase{
     public void testSourceConnectionFailFirst() {
         authenticate(true);
         
-        listener.onMessage(TestListener.errorMessage());
+        listener.onMessage(null, TestListener.errorMessage());
         
         assert !client.getSourceConnectionFuture().getNow(true); // It should be set to false now
         
@@ -143,7 +144,7 @@ public class TestExtensionWebSocketListener extends ExtjsdkTestBase{
         
         authenticate(true);
         
-        listener.onMessage(TestListener.errorMessage());
+        listener.onMessage(null, TestListener.errorMessage());
         
         assert !client.getSourceConnectionFuture().getNow(true); // It should be set to false now
         
@@ -168,8 +169,8 @@ public class TestExtensionWebSocketListener extends ExtjsdkTestBase{
         String val = "info";
         publishMessage.put(key, val);
         
-        ResponseBody body = TestListener.createPublishMessage(publishMessage, srcName);
-        listener.onMessage(body);
+        ByteString body = TestListener.createPublishMessage(publishMessage, srcName);
+        listener.onMessage(null, body);
         
         assert pHandler.compareOp(ExtensionServiceMessage.OP_PUBLISH);
         assert pHandler.compareSourceName(srcName);
@@ -185,8 +186,8 @@ public class TestExtensionWebSocketListener extends ExtjsdkTestBase{
         String val = "request";
         queryMessage.put(key, val);
         
-        ResponseBody body = TestListener.createQueryMessage(queryMessage, srcName);
-        listener.onMessage(body);
+        ByteString body = TestListener.createQueryMessage(queryMessage, srcName);
+        listener.onMessage(null, body);
         
         assert qHandler.compareOp(ExtensionServiceMessage.OP_QUERY);
         assert qHandler.compareSourceName( srcName);
@@ -198,9 +199,9 @@ public class TestExtensionWebSocketListener extends ExtjsdkTestBase{
         connectToSource(srcName, null);
         
         Response resp = new Response().status(200);
-        ResponseBody body = TestListener.createHttpMessage(resp);
+        ByteString body = TestListener.createHttpMessage(resp);
         
-        listener.onMessage(body);
+        listener.onMessage(null, body);
         
         assert hHandler.compareStatus(200);
     }
@@ -210,9 +211,9 @@ public class TestExtensionWebSocketListener extends ExtjsdkTestBase{
         authenticate(true);
         
         Response resp = new Response().status(403);
-        ResponseBody body = TestListener.createHttpMessage(resp);
+        ByteString body = TestListener.createHttpMessage(resp);
         
-        listener.onMessage(body);
+        listener.onMessage(null, body);
         
         assert !client.getSourceConnectionFuture().getNow(true); // It should be set to false now
         assert hHandler.compareStatus(403);
@@ -222,9 +223,9 @@ public class TestExtensionWebSocketListener extends ExtjsdkTestBase{
     public void testReconnectHandler() {
         connectToSource(srcName, null);
         
-        ResponseBody body = TestListener.createReconnectMessage(srcName);
+        ByteString body = TestListener.createReconnectMessage(srcName);
         
-        listener.onMessage(body);
+        listener.onMessage(null, body);
         
         assert !client.isConnected();
         assert rHandler.compareOp(ExtensionServiceMessage.OP_RECONNECT_REQUIRED);
@@ -236,30 +237,30 @@ public class TestExtensionWebSocketListener extends ExtjsdkTestBase{
         
         listener.close();
         
-        ResponseBody body = TestListener.createReconnectMessage(srcName);
-        listener.onMessage(body);
+        ByteString body = TestListener.createReconnectMessage(srcName);
+        listener.onMessage(null, body);
         assert rHandler.compareMessage(null);
         
         body = TestListener.createHttpMessage(new Response().status(200));
-        listener.onMessage(body);
+        listener.onMessage(null, body);
         assert hHandler.compareMessage(null);
         
         aHandler.lastMessage = null; // Resetting from auth in connectToSource
         body = TestListener.createAuthenticationResponse(true);
-        listener.onMessage(body);
+        listener.onMessage(null, body);
         assert aHandler.compareMessage(null);
         
         body = TestListener.createQueryMessage(new LinkedHashMap(), srcName);
-        listener.onMessage(body);
+        listener.onMessage(null, body);
         assert qHandler.compareMessage(null);
         
         body = TestListener.createPublishMessage(new LinkedHashMap(), srcName);
-        listener.onMessage(body);
+        listener.onMessage(null, body);
         assert pHandler.compareMessage(null);
         
         cHandler.lastMessage = null; // Resetting from message in connectToSource
         body = TestListener.createConfigResponse(new LinkedHashMap(), srcName);
-        listener.onMessage(body);
+        listener.onMessage(null, body);
         assert cHandler.compareMessage(null);
     }
     
@@ -269,9 +270,9 @@ public class TestExtensionWebSocketListener extends ExtjsdkTestBase{
         client.listener = listener;
         
         connectToSource(srcName, null);
-        
-        ResponseBody body = TestListener.createQueryMessage(new LinkedHashMap(), srcName);
-        listener.onMessage(body);
+
+        ByteString body = TestListener.createQueryMessage(new LinkedHashMap(), srcName);
+        listener.onMessage(null, body);
         Response resp = null;
         try {
             resp = client.getLastMessageAsResponse();
@@ -309,29 +310,29 @@ public class TestExtensionWebSocketListener extends ExtjsdkTestBase{
 
         // Every message should not error out due to EWSL catching and logging the error
         // Every message should be saved before the error occurs.
-        ResponseBody body = TestListener.createAuthenticationResponse(true);
-        listener.onMessage(body);
+        ByteString body = TestListener.createAuthenticationResponse(true);
+        listener.onMessage(null, body);
         assert client.isAuthed();
         assert aHandler.compareStatus(200);
 
         body = TestListener.createHttpMessage(new Response().status(200));
-        listener.onMessage(body);
+        listener.onMessage(null, body);
         assert hHandler.compareStatus(200);
 
         body = TestListener.createConfigResponse(new LinkedHashMap(), srcName);
-        listener.onMessage(body);
+        listener.onMessage(null, body);
         assert cHandler.compareOp(ExtensionServiceMessage.OP_CONFIGURE_EXTENSION);
 
         body = TestListener.createQueryMessage(new LinkedHashMap(), srcName);
-        listener.onMessage(body);
+        listener.onMessage(null, body);
         assert qHandler.compareOp(ExtensionServiceMessage.OP_QUERY);
 
         body = TestListener.createPublishMessage(new LinkedHashMap(), srcName);
-        listener.onMessage(body);
+        listener.onMessage(null, body);
         assert pHandler.compareOp(ExtensionServiceMessage.OP_PUBLISH);
         
         body = TestListener.createReconnectMessage(srcName);
-        listener.onMessage(body);
+        listener.onMessage(null, body);
         assert rHandler.compareOp(ExtensionServiceMessage.OP_RECONNECT_REQUIRED);
     }
     
@@ -347,23 +348,23 @@ public class TestExtensionWebSocketListener extends ExtjsdkTestBase{
         open();
 
         // All that is expected is that no NPEs are thrown
-        ResponseBody body = TestListener.createAuthenticationResponse(true);
-        listener.onMessage(body);
+        ByteString body = TestListener.createAuthenticationResponse(true);
+        listener.onMessage(null, body);
 
         body = TestListener.createHttpMessage(new Response().status(200));
-        listener.onMessage(body);
+        listener.onMessage(null, body);
 
         body = TestListener.createConfigResponse(new LinkedHashMap(), srcName);
-        listener.onMessage(body);
+        listener.onMessage(null, body);
 
         body = TestListener.createQueryMessage(new LinkedHashMap(), srcName);
-        listener.onMessage(body);
+        listener.onMessage(null, body);
 
         body = TestListener.createPublishMessage(new LinkedHashMap(), srcName);
-        listener.onMessage(body);
+        listener.onMessage(null, body);
 
         body = TestListener.createReconnectMessage(srcName);
-        listener.onMessage(body);
+        listener.onMessage(null, body);
         
     }
     
@@ -375,7 +376,7 @@ public class TestExtensionWebSocketListener extends ExtjsdkTestBase{
         assert client.isAuthed();
         assert client.isConnected();
         
-        listener.onFailure(new IOException(), null);
+        listener.onFailure(null, new IOException(), null);
 
         assert listener.isClosed();
         assert !client.isOpen();
@@ -393,14 +394,14 @@ public class TestExtensionWebSocketListener extends ExtjsdkTestBase{
             open();
         }
         client.authenticate("unused");
-        listener.onMessage(TestListener.createAuthenticationResponse(success));
+        listener.onMessage(null, TestListener.createAuthenticationResponse(success));
     }
     private void connectToSource(String sourceName, Map config) {
         if (!client.isAuthed()) {
             authenticate(true);
         }
         client.connectToSource();
-        listener.onMessage(TestListener.createConfigResponse(config, sourceName));
+        listener.onMessage(null, TestListener.createConfigResponse(config, sourceName));
     }
 
     

@@ -1,6 +1,6 @@
 
 /*
- * Copyright (c) 2018 Vantiq, Inc.
+ * Copyright (c) 2021 Vantiq, Inc.
  *
  * All rights reserved.
  * 
@@ -9,14 +9,16 @@
 
 package io.vantiq.extjsdk;
 
-// Author: Alex Blumer
-// Email: alex.j.blumer@gmail.com
+// Authors: Alex Blumer, Namir Fawaz, Fred Carter
+// Email: support@vantiq.com
 
 // For decoding of the messages received
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 // WebSocket imports
-import okhttp3.*;
+import okhttp3.OkHttpClient;
+import okhttp3.Request;
+import okhttp3.WebSocket;
 
 import java.io.IOException;
 import java.net.ServerSocket;
@@ -293,10 +295,17 @@ public class ExtensionWebSocketClient {
             webSocketFuture = new CompletableFuture<>();
 
             // Start the connection attempt
-            OkHttpClient client = new OkHttpClient.Builder()
+            OkHttpClient.Builder clientBuilder = new OkHttpClient.Builder()
                     .readTimeout(0, TimeUnit.MILLISECONDS)
-                    .writeTimeout(0, TimeUnit.MILLISECONDS)
-                    .build();
+                    .writeTimeout(0, TimeUnit.MILLISECONDS);
+
+            boolean sendPings = Utils.obtainSendPingStatus();
+            if (sendPings) {
+                clientBuilder.pingInterval(5000, TimeUnit.MILLISECONDS);
+            }
+
+            OkHttpClient client = clientBuilder.build();
+
             Request request = new Request.Builder().url(validifyUrl(url)).build();
             webSocket = client.newWebSocket(request, listener);
         }

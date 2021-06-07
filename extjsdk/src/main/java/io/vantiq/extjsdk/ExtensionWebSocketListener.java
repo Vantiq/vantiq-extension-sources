@@ -1,6 +1,6 @@
 
 /*
- * Copyright (c) 2018 Vantiq, Inc.
+ * Copyright (c) 2021 Vantiq, Inc.
  *
  * All rights reserved.
  * 
@@ -9,20 +9,17 @@
 
 package io.vantiq.extjsdk;
 
-// Author: Alex Blumer
-// Email: alex.j.blumer@gmail.com
+// Authors: Alex Blumer, Namir Fawaz, Fred Carter
+// Email: support@vantiq.com
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import okhttp3.ResponseBody;
 import okhttp3.WebSocket;
 import okhttp3.WebSocketListener;
-import okio.Buffer;
 import okio.ByteString;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.EOFException;
-import java.io.IOException;
 import java.net.ConnectException;
 import java.util.Map;
 
@@ -428,48 +425,63 @@ public class ExtensionWebSocketListener extends WebSocketListener {
         ExtensionWebSocketListener listener = client.getListener();
         this.useHandlersFromListener(listener);
     }
-    
+
     /**
      * Logs the code and reason for this listener closing.
      *
+     * @param webSocket The {@link WebSocket} that opened this listener.
      * @param code      The WebSocket code for why this listener is closing
      * @param reason    The {@link String} describing why it closed
      */
-//    @Override
-//    public void onClose(WebSocket webSocket, int code, String reason) {
-//        log.info("Closing websocket code: {}", code);
-//        log.debug(reason);
-//        if (client.isOpen() && client.webSocket != null) {
-//            client.close();
-//        }
-//    }
+    @Override
+    public void onClosing(WebSocket webSocket, int code, String reason) {
+        log.info("Closing websocket code: {}", code);
+        log.debug(reason);
+    }
+
+    /**
+     * Logs the code and reason for this listener being closed, and closes the client.
+     *
+     * @param webSocket The {@link WebSocket} that opened this listener.
+     * @param code      The WebSocket code for why this listener is closing
+     * @param reason    The {@link String} describing why it closed
+     */
+    @Override
+    public void onClosed(WebSocket webSocket, int code, String reason) {
+        log.info("Closed websocket code: {}", code);
+        log.debug(reason);
+        if (client.isOpen() && client.webSocket != null) {
+            client.close();
+        }
+    }
 
     /**
      * Logs the error and closes the client. Only closes the client on an {@link EOFException} with no message, as that appears to
      * be the result of closing the connection with the Vantiq deployment.
-     * @param e         The {@link IOException} that initiated the failure.
+     * @param webSocket The {@link WebSocket} that opened this listener.
+     * @param t         The {@link Throwable} that initiated the failure.
      * @param response  The {@link okhttp3.Response} that caused the failure, if any.
      */
-//    @Override
-//    public void onFailure(WebSocket webSocket, IOException e, okhttp3.Response response) {
-//        if (e instanceof EOFException) { // An EOF exception appears on closing the websocket connection
-//            if (e.getMessage() != null) {
-//                log.error("EOFException: {}", e.getMessage());
-//            }
-//        }
-//        else if (e instanceof ConnectException) {
-//            log.error("{}: {}", e.getClass().toString(), e.getMessage());
-//        }
-//        else {
-//            log.error("Failure occurred in listener", e);
-//        }
-//
-//        // The error occurred during an unknown point during execution. We don't have enough information to determine
-//        // what caused it, so we will close
-//        if (client.isOpen()) {
-//            client.close();
-//        } else { // The websocket never opened, so it must be a problem connecting. Mark the failure and let the user handle it
-//            client.webSocketFuture.complete(false);
-//        }
-//    }
+    @Override
+    public void onFailure(WebSocket webSocket, Throwable t, okhttp3.Response response) {
+        if (t instanceof EOFException) { // An EOF exception appears on closing the websocket connection
+            if (t.getMessage() != null) {
+                log.error("EOFException: {}", t.getMessage());
+            }
+        }
+        else if (t instanceof ConnectException) {
+            log.error("{}: {}", t.getClass().toString(), t.getMessage());
+        }
+        else {
+            log.error("Failure occurred in listener", t);
+        }
+
+        // The error occurred during an unknown point during execution. We don't have enough information to determine
+        // what caused it, so we will close
+        if (client.isOpen()) {
+            client.close();
+        } else { // The websocket never opened, so it must be a problem connecting. Mark the failure and let the user handle it
+            client.webSocketFuture.complete(false);
+        }
+    }
 }
