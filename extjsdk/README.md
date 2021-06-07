@@ -46,6 +46,10 @@ The SDK includes a utility method to retrieve the startup configuration document
 `<connectorWorkingDirector>/serverConfig/server.config`. The SDK will also look for the file in the working connector 
 directory if it is not found in the `serverConfig` subdirectory (i.e. `<connectorWorkingDirector>/server.config`).
 
+In addition to the minimum configuration properties, the `server.config` file can also include the following property:
+*   `sendPings`: A boolean property that, if set to `true`, enables the SDK to send ping messages to the Vantiq Server. 
+The ping messages are handled by the underlying OkHttp library.
+
 For users who may not want to write the `authToken` property to a file because of its sensitive nature, the 
 `Utils.obtainServerConfig()` method will also search for this value in an environment variable named 
 `CONNECTOR_AUTH_TOKEN`. If the `authToken` is specified in the `server.config` document, that value will take precedence.
@@ -59,6 +63,7 @@ variable instead):
 authToken=XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 sources=MySourceName
 targetServer=https://dev.vantiq.com/
+sendPings=true
 ```
 
 ## Program Flow
