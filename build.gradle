@@ -204,6 +204,14 @@ subprojects {
                 }
             }
         }
+
+        def jenkinsHome = System.env.JENKINS_HOME
+
+        if (jenkinsHome != null && jenkinsHome.length() > 0) {
+            // continue the build on test failures, so that all tests get run & we get one total...
+            // AND in jenkins, the build is continued with later reports collected...
+            ignoreFailures = true
+        }
     }
 }
 

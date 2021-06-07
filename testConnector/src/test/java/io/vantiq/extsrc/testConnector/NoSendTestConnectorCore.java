@@ -45,14 +45,18 @@ public class NoSendTestConnectorCore extends TestConnectorCore {
 
     @Override
     public void close() {
-        client.declareUnhealthy();
+        if (client != null) {
+            client.declareUnhealthy();
+        }
         super.close();
         closed = true;
     }
 
     @Override
     public void stop() {
-        client.declareUnhealthy();
+        if (client != null) {
+            client.declareUnhealthy();
+        }
         super.stop();
         closed = true;
     }

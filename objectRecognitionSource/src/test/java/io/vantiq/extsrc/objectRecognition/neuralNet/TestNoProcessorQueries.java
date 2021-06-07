@@ -1,6 +1,5 @@
 package io.vantiq.extsrc.objectRecognition.neuralNet;
 
-import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeTrue;
 
 import java.io.File;
@@ -14,7 +13,6 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 import io.vantiq.client.Vantiq;
-import io.vantiq.client.VantiqError;
 import io.vantiq.client.VantiqResponse;
 import io.vantiq.extsrc.objectRecognition.ObjectRecognitionCore;
 
@@ -36,24 +34,30 @@ public class TestNoProcessorQueries extends NeuralNetTestBase {
     
     @BeforeClass
     public static void setup() {
-        vantiq = new io.vantiq.client.Vantiq(testVantiqServer);
-        vantiq.setAccessToken(testAuthToken);
-        
-        setupSource(createSourceDef());
+        if (testVantiqServer != null && testAuthToken != null) {
+            vantiq = new io.vantiq.client.Vantiq(testVantiqServer);
+            vantiq.setAccessToken(testAuthToken);
+
+            setupSource(createSourceDef());
+        }
     }
-    
+
+    @SuppressWarnings("PMD.JUnit4TestShouldUseAfterAnnotation")
     @AfterClass
     public static void tearDown() {
         if (core != null) {
             core.stop();
             core = null;
         }
-        deleteSource();
-        deleteDirectory(OUTPUT_DIR);
-        
-        for (int i = 0; i < vantiqUploadFiles.size(); i++) {
-            deleteFileFromVantiq(vantiqUploadFiles.get(i));
+        if (vantiq != null && vantiq.isAuthenticated()) {
+            deleteSource();
+
+            for (String vantiqUploadFile : vantiqUploadFiles) {
+                deleteFileFromVantiq(vantiqUploadFile);
+            }
         }
+        deleteDirectory(OUTPUT_DIR);
+
     }
     
     @Test

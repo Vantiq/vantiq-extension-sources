@@ -86,21 +86,24 @@ public class TestUploadAndDeleteQuery extends NeuralNetTestBase {
     
     @BeforeClass
     public static void setup() {
+
         core = new NoSendORCore(SOURCE_NAME, testAuthToken, testVantiqServer, MODEL_DIRECTORY);
         core.start(10);
         core.outputDir = OUTPUT_DIR;
-        
-        vantiq = new io.vantiq.client.Vantiq(testVantiqServer);
-        vantiq.setAccessToken(testAuthToken);
-        
-        // Add files to be deleted from VANTIQ later
-        vantiqUploadFiles.add(IMAGE_1.get("filename"));
-        vantiqUploadFiles.add(IMAGE_2.get("filename"));
-        vantiqUploadFiles.add(IMAGE_3.get("filename"));
-        vantiqUploadFiles.add(IMAGE_4.get("filename"));
-        vantiqUploadFiles.add(IMAGE_5.get("filename"));
-        vantiqUploadFiles.add(IMAGE_6.get("filename"));
-        vantiqUploadFiles.add(IMAGE_7.get("filename"));
+
+        if (testAuthToken != null && testVantiqServer != null) {
+            vantiq = new io.vantiq.client.Vantiq(testVantiqServer);
+            vantiq.setAccessToken(testAuthToken);
+
+            // Add files to be deleted from VANTIQ later
+            vantiqUploadFiles.add(IMAGE_1.get("filename"));
+            vantiqUploadFiles.add(IMAGE_2.get("filename"));
+            vantiqUploadFiles.add(IMAGE_3.get("filename"));
+            vantiqUploadFiles.add(IMAGE_4.get("filename"));
+            vantiqUploadFiles.add(IMAGE_5.get("filename"));
+            vantiqUploadFiles.add(IMAGE_6.get("filename"));
+            vantiqUploadFiles.add(IMAGE_7.get("filename"));
+        }
     }
     
     @Before
@@ -132,7 +135,8 @@ public class TestUploadAndDeleteQuery extends NeuralNetTestBase {
         testFile = new File(OUTPUT_DIR + File.separator + IMAGE_7.get("date") + ".jpg");
         ImageIO.write(testImageBuffer, "jpg", testFile);
     }
-    
+
+    @SuppressWarnings("PMD.JUnit4TestShouldUseAfterAnnotation")
     @AfterClass
     public static void tearDown() {
         core.stop();
@@ -140,21 +144,23 @@ public class TestUploadAndDeleteQuery extends NeuralNetTestBase {
     
     @After
     public void deleteFromVantiq() throws InterruptedException {
-        for (int i = 0; i < vantiqUploadFiles.size(); i++) {
-            Thread.sleep(1000);
-            vantiq.deleteOne(VANTIQ_DOCUMENTS, vantiqUploadFiles.get(i), new BaseResponseHandler() {
+        if (vantiq != null && vantiq.isAuthenticated()) {
+            for (String vantiqUploadFile : vantiqUploadFiles) {
+                Thread.sleep(1000);
+                vantiq.deleteOne(VANTIQ_DOCUMENTS, vantiqUploadFile, new BaseResponseHandler() {
 
-                @Override
-                public void onSuccess(Object body, Response response) {
-                    super.onSuccess(body, response);
-                }
+                    @Override
+                    public void onSuccess(Object body, Response response) {
+                        super.onSuccess(body, response);
+                    }
 
-                @Override
-                public void onError(List<VantiqError> errors, Response response) {
-                    super.onError(errors, response);
-                }
+                    @Override
+                    public void onError(List<VantiqError> errors, Response response) {
+                        super.onError(errors, response);
+                    }
 
-            });
+                });
+            }
         }
         
         File d = new File(OUTPUT_DIR);
