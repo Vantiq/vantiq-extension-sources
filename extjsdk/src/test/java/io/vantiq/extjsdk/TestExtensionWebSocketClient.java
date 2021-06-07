@@ -9,7 +9,7 @@
 
 package io.vantiq.extjsdk;
 
-//Author: Alex Blumer, Namir Fawaz, Fred Carter
+//Authors: Alex Blumer, Namir Fawaz, Fred Carter
 //Email: support@vantiq.com
 
 import okhttp3.Request;
