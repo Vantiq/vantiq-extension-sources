@@ -12,7 +12,6 @@ package io.vantiq.extjsdk;
 //Author: Alex Blumer
 //Email: support@vantiq.com
 
-
 import java.io.IOException;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;

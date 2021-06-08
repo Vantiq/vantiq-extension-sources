@@ -517,10 +517,12 @@ public class TestExtensionWebSocketClient extends ExtjsdkTestBase {
         public void cancel() {
 
         }
+
         @Override
         public long queueSize() {
             return 0;
         }
+
         @Override
         public boolean send(@NotNull String s) {
             return false;

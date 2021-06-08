@@ -49,6 +49,8 @@ public class TestListener extends ExtensionWebSocketListener {
     public Handler<ExtensionServiceMessage> getReconnectHandler() {
         return reconnectHandler;
     }
+
+    public static final ObjectMapper mapper = new ObjectMapper();
     
     /**
      * Makes the listener receive a response specifying either a successful or failed authentication
@@ -57,6 +59,7 @@ public class TestListener extends ExtensionWebSocketListener {
     public void receiveAuthenticationResponse(boolean success) {
         this.onMessage(falseWebSocket, createAuthenticationResponse(success));
     }
+
     /**
      * Makes the listener receive a configuration message, signifying a successful source connection. A failed
      * connection is sent using {@link #errorMessage()}.
@@ -66,6 +69,7 @@ public class TestListener extends ExtensionWebSocketListener {
     public void receiveConfigResponse(Map<String,Object> config, String sourceName) {
         this.onMessage(falseWebSocket, createConfigResponse(config, sourceName));
     }
+
     /**
      * Makes the listener receive a Publish message
      * @param message       The object sent with the Publish
@@ -74,6 +78,7 @@ public class TestListener extends ExtensionWebSocketListener {
     public void receivePublishMessage(Map<String,Object> message, String sourceName) {
         this.onMessage(falseWebSocket, createPublishMessage(message, sourceName));
     }
+
     /**
      * Makes the listener receive a Query message
      * @param message       The data to be received along with the Query message
@@ -82,6 +87,7 @@ public class TestListener extends ExtensionWebSocketListener {
     public void receiveQueryMessage(Map<String,Object> message, String sourceName) {
         this.onMessage(falseWebSocket, createQueryMessage(message, sourceName));
     }
+
     /**
      * Makes the listener receive a reconnect message
      * @param sourceName    The name of the source that sent the message
@@ -89,6 +95,7 @@ public class TestListener extends ExtensionWebSocketListener {
     public void receiveReconnectMessage(String sourceName) {
         this.onMessage(falseWebSocket, createReconnectMessage(sourceName));
     }
+
     /**
      * Makes the listener receive an HTTP message.
      * @param resp The {@link Response} that the listener will receive
@@ -96,15 +103,13 @@ public class TestListener extends ExtensionWebSocketListener {
     public void receiveHttpMessage(Response resp) {
         this.onMessage(falseWebSocket, createHttpMessage(resp));
     }
+
     /**
      * Makes the listener receive a simple HTTP error message. This is a {@link Response} with status code 400.
      */
     public void receiveErrorMessage() {
         this.onMessage(falseWebSocket, errorMessage());
     }
-
-    public static MediaType JSON = MediaType.parse("application/json; charset=utf-8");
-    public static final ObjectMapper mapper = new ObjectMapper();
     
     /**
      * Create a ResponseBody with a simple error. This is a {@link Response} with status code 400.
@@ -114,6 +119,7 @@ public class TestListener extends ExtensionWebSocketListener {
         String errorString = "{\"status\":400}";
         return ByteString.of(errorString.getBytes());
     }
+
     /**
      * Creates a response specifying either a successful or failed authentication
      * @param success   Whether the authentication response should respond as a success
@@ -127,6 +133,7 @@ public class TestListener extends ExtensionWebSocketListener {
             return errorMessage();
         }
     }
+
     /**
      * Creates a configuration message, signifying a successful source connection. A failed
      * connection is sent using {@link #errorMessage()}.
@@ -147,6 +154,7 @@ public class TestListener extends ExtensionWebSocketListener {
             return ByteString.EMPTY;
         }
     }
+
     /**
      * Creates a Publish message
      * @param message       The object sent with the Publish
@@ -164,6 +172,7 @@ public class TestListener extends ExtensionWebSocketListener {
             return ByteString.EMPTY;
         }
     }
+
     /**
      * Creates a Query message
      * @param message       The data to be received along with the Query message
@@ -181,6 +190,7 @@ public class TestListener extends ExtensionWebSocketListener {
             return ByteString.EMPTY;
         }
     }
+
     /**
      * Creates an HTTP message.
      * @param resp The {@link Response} that the listener will receive
@@ -194,6 +204,7 @@ public class TestListener extends ExtensionWebSocketListener {
             return ByteString.EMPTY;
         }
     }
+
     /**
      * Creates a reconnect message
      * @param sourceName    Name of the source that sent the message

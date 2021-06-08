@@ -366,7 +366,6 @@ public class TestExtensionWebSocketListener extends ExtjsdkTestBase {
 
         body = TestListener.createReconnectMessage(srcName);
         listener.onMessage(client.webSocket, body);
-        
     }
     
     @Test
@@ -390,6 +389,7 @@ public class TestExtensionWebSocketListener extends ExtjsdkTestBase {
     private void open() {
         client.completeWebSocketConnection(true);
     }
+
     private void authenticate(boolean success) {
         if (!client.isOpen()) {
             open();
@@ -397,6 +397,7 @@ public class TestExtensionWebSocketListener extends ExtjsdkTestBase {
         client.authenticate("unused");
         listener.onMessage(client.webSocket, TestListener.createAuthenticationResponse(success));
     }
+
     private void connectToSource(String sourceName, Map config) {
         if (!client.isAuthed()) {
             authenticate(true);
@@ -405,12 +406,10 @@ public class TestExtensionWebSocketListener extends ExtjsdkTestBase {
         listener.onMessage(client.webSocket, TestListener.createConfigResponse(config, sourceName));
     }
 
-    
-    
-
     private class TestHandlerESM extends Handler<ExtensionServiceMessage> {
         public String lastOp = "";
         public ExtensionServiceMessage lastMessage = null;
+
         @Override
         public void handleMessage(ExtensionServiceMessage message) {
             lastOp = message.getOp();
@@ -420,13 +419,16 @@ public class TestExtensionWebSocketListener extends ExtjsdkTestBase {
         public boolean compareOp(String expectedOp) {
             return lastOp.equals(expectedOp);
         }
+
         public boolean compareMessage(ExtensionServiceMessage expectedMessage) {
             if (lastMessage == expectedMessage) return true; // null case
             return lastMessage.equals(expectedMessage);
         }
+
         public boolean compareSourceName(String sourceName) {
             return lastMessage.getSourceName().equals(sourceName);
         }
+
         public boolean compareValue(String key, Object expectedVal) {
             Object actualVal = ((Map)lastMessage.getObject()).get(key);
             return expectedVal.equals(actualVal);
@@ -435,21 +437,27 @@ public class TestExtensionWebSocketListener extends ExtjsdkTestBase {
     
     private class TestHandlerResp extends Handler<Response> {
         public Response lastMessage = null;
+
         @Override
         public void handleMessage(Response message) {
             lastMessage = message;
         }
 
         public boolean compareMessage(Response expectedMessage) {
-            if (lastMessage == expectedMessage) {return true;} // null case
+            if (lastMessage == expectedMessage) {
+                return true; // null case
+            }
             return expectedMessage.equals(lastMessage);
         }
+
         public boolean compareStatus(Integer expectedStatus) {
             return expectedStatus.equals(lastMessage.getStatus());
         }
+
         public boolean compareBody(Object expectedBody) {
             return lastMessage.getBody().equals(expectedBody);
         }
+
         public boolean compareHeader(String headerName, String expectedVal) {
             Object actualVal = lastMessage.getHeader(headerName);
             return expectedVal.equals(actualVal);

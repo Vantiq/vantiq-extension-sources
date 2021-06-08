@@ -16,6 +16,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import okhttp3.WebSocket;
 import okhttp3.WebSocketListener;
 import okio.ByteString;
+import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -37,30 +38,36 @@ public class ExtensionWebSocketListener extends WebSocketListener {
      * {@link #setHttpHandler}
      */
     Handler<Response> httpHandler = null;
+
     /**
      * {@link Handler} that handles Publish requests received by this listener. Set by {@link #setPublishHandler}
      */
     Handler<ExtensionServiceMessage> publishHandler = null;
+
     /**
      * {@link Handler} that handles Query requests received by this listener. Set by {@link #setQueryHandler}
      */
     Handler<ExtensionServiceMessage> queryHandler = null;
+
     /**
      * {@link Handler} that handles Configuration messages received by this listener. Configuration messages are sent
      * in response to connection messages, so this should be set before sending the connection message to a source. Set
      * by {@link #setConfigHandler}
      */
     Handler<ExtensionServiceMessage> configHandler = null;
+
     /**
      * {@link Handler} that handles responses to auth messages, both successful and not. Strictly speaking, it handles
      * all Http responses received by this listener before and upon successful authentication, as no other
      * Http responses are expected until after authorization. Set by {@link #setAuthHandler}
      */
     Handler<Response> authHandler = null;
+
     /**
      * {@link Handler} that handles reconnect messages. Set by {@link #setReconnectHandler}
      */
     Handler<ExtensionServiceMessage> reconnectHandler = null;
+
     /**
      * An Slf4j logger
      */
@@ -75,6 +82,7 @@ public class ExtensionWebSocketListener extends WebSocketListener {
      * {@link ObjectMapper} used to translate the received message into a {@link Map}
      */
     ObjectMapper mapper = new ObjectMapper();
+
     /**
      * Whether this listener has been closed, and should not make any more changes to its client.
      */
@@ -102,6 +110,7 @@ public class ExtensionWebSocketListener extends WebSocketListener {
     public void setHttpHandler(Handler<Response> httpHandler) {
         this.httpHandler = httpHandler;
     }
+
     /**
      * Set the {@link Handler} for any Publish messages that are received.
      * <br>
@@ -114,6 +123,7 @@ public class ExtensionWebSocketListener extends WebSocketListener {
     public void setPublishHandler(Handler<ExtensionServiceMessage> publishHandler) {
         this.publishHandler = publishHandler;
     }
+
     /**
      * Set the {@link Handler} for any queries that are received.
      * <br>
@@ -131,6 +141,7 @@ public class ExtensionWebSocketListener extends WebSocketListener {
     public void setQueryHandler(Handler<ExtensionServiceMessage> queryHandler) {
         this.queryHandler = queryHandler;
     }
+
     /**
      * Set the {@link Handler} for any Configuration messages that are returned.
      * <p>
@@ -147,6 +158,7 @@ public class ExtensionWebSocketListener extends WebSocketListener {
     public void setConfigHandler(Handler<ExtensionServiceMessage> configHandler) {
         this.configHandler = configHandler;
     }
+
     /**
      * Set the {@link Handler} for the result of any message received before a successful authentication attempt,
      * and the result of the authentication attempt.
@@ -161,6 +173,7 @@ public class ExtensionWebSocketListener extends WebSocketListener {
     public void setAuthHandler(Handler<Response> authHandler) {
         this.authHandler = authHandler;
     }
+
     /**
      * Set the {@link Handler} that will deal with any reconnect messages received. These will occur when an event 
      * happens on the Vantiq servers that requires the source to shut down. To restart the connection, just call 
@@ -200,12 +213,11 @@ public class ExtensionWebSocketListener extends WebSocketListener {
      * @param response  The {@link okhttp3.Response} associated with the opening of the connection. Currently not used.
      */
     @Override
-    public void onOpen(WebSocket webSocket, okhttp3.Response response) {
+    public void onOpen(@NotNull WebSocket webSocket, @NotNull okhttp3.Response response) {
         this.client.webSocketFuture.complete(true);
         log.info("WebSocket open");
     }
 
-    
     /**
      * Translate the received message and pass it on to the related handler. Additionally, updates the client about
      * successful authentications and source connections.
@@ -214,7 +226,7 @@ public class ExtensionWebSocketListener extends WebSocketListener {
      * @param bodyBytes  The {@link ByteString} containing the message received.
      */
     @Override
-    public void onMessage(WebSocket webSocket, ByteString bodyBytes) {
+    public void onMessage(@NotNull WebSocket webSocket, ByteString bodyBytes) {
         // Extract the original message from the body
         byte[] data = bodyBytes.toByteArray();
 
@@ -435,7 +447,7 @@ public class ExtensionWebSocketListener extends WebSocketListener {
      * @param reason    The {@link String} describing why it closed
      */
     @Override
-    public void onClosing(WebSocket webSocket, int code, String reason) {
+    public void onClosing(@NotNull WebSocket webSocket, int code, @NotNull String reason) {
         log.info("Closing websocket code: {}", code);
         log.debug(reason);
     }
@@ -448,7 +460,7 @@ public class ExtensionWebSocketListener extends WebSocketListener {
      * @param reason    The {@link String} describing why it closed
      */
     @Override
-    public void onClosed(WebSocket webSocket, int code, String reason) {
+    public void onClosed(@NotNull WebSocket webSocket, int code, @NotNull String reason) {
         log.info("Closed websocket code: {}", code);
         log.debug(reason);
         if (client.isOpen() && client.webSocket != null) {
@@ -464,7 +476,7 @@ public class ExtensionWebSocketListener extends WebSocketListener {
      * @param response  The {@link okhttp3.Response} that caused the failure, if any.
      */
     @Override
-    public void onFailure(WebSocket webSocket, Throwable t, okhttp3.Response response) {
+    public void onFailure(@NotNull WebSocket webSocket, @NotNull Throwable t, okhttp3.Response response) {
         if (t instanceof EOFException) { // An EOF exception appears on closing the websocket connection
             if (t.getMessage() != null) {
                 log.error("EOFException: {}", t.getMessage());

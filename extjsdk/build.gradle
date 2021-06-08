@@ -71,7 +71,6 @@ dependencies {
     compile "org.slf4j:slf4j-api:1.7.25"
     compile "org.apache.logging.log4j:log4j-slf4j-impl:2.11.0"
 
-
     compile "com.squareup.okhttp3:okhttp:${okhttpVersion}"
     compile "com.fasterxml.jackson.core:jackson-databind:${jacksonVersion}"
 

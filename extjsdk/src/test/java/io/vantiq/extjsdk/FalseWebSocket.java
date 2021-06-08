@@ -49,19 +49,23 @@ public class FalseWebSocket implements WebSocket {
     public boolean close(int code, String reason) {
         return true;
     }
+
     @Override
     public void cancel() {
 
     }
+
     @Override
     public long queueSize() {
         return 0;
     }
+
     @NotNull
     @Override
     public Request request() {
         return new Request.Builder().build();
     }
+
     @Override
     public boolean send(String s) {
         return false;
@@ -88,141 +92,170 @@ public class FalseWebSocket implements WebSocket {
         public void write(@NotNull Buffer source, long byteCount) {
 
         }
+
         @NotNull
         @Override
         public Timeout timeout() {
             return new Timeout();
         }
+
         @Override
         public boolean isOpen() {
             return false;
         }
+
         @Override
         public void close() {
 
         }
+
         @NotNull
         @Override
         public Buffer buffer() {
             return new Buffer();
         }
+
         @NotNull
         @Override
         public BufferedSink write(@NotNull ByteString byteString, int offset, int byteCount) {
             return new FalseBufferedSink();
         }
+
         @NotNull
         @Override
         public BufferedSink write(@NotNull byte[] source) {
             return new FalseBufferedSink();
         }
+
         @Override
         public long writeAll(@NotNull Source source) {
             return 0;
         }
+
         @NotNull
         @Override
         public BufferedSink write(@NotNull Source source, long byteCount) {
             return new FalseBufferedSink();
         }
+
         @NotNull
         @Override
         public BufferedSink write(@NotNull byte[] bytes, int i, int i1) {
             return new FalseBufferedSink();
         }
+
         @Override
         public int write(ByteBuffer src) {
             return 0;
         }
+
         @NotNull
         @Override
         public BufferedSink writeUtf8(@NotNull String string) {
             return new FalseBufferedSink();
         }
+
         @NotNull
         @Override
         public BufferedSink writeUtf8(@NotNull String string, int beginIndex, int endIndex) {
             return new FalseBufferedSink();
         }
+
         @NotNull
         @Override
         public BufferedSink writeUtf8CodePoint(int codePoint) {
             return new FalseBufferedSink();
         }
+
         @NotNull
         @Override
         public BufferedSink writeString(@NotNull String string, @NotNull Charset charset) {
             return new FalseBufferedSink();
         }
+
         @NotNull
         @Override
         public BufferedSink writeString(@NotNull String string, int beginIndex, int endIndex, @NotNull Charset charset) {
             return new FalseBufferedSink();
         }
+
         @NotNull
         @Override
         public BufferedSink writeByte(int b) {
             return new FalseBufferedSink();
         }
+
         @NotNull
         @Override
         public BufferedSink writeShort(int s) {
             return new FalseBufferedSink();
         }
+
         @NotNull
         @Override
         public BufferedSink writeShortLe(int s) {
             return new FalseBufferedSink();
         }
+
         @NotNull
         @Override
         public BufferedSink writeInt(int i) {
             return new FalseBufferedSink();
         }
+
         @NotNull
         @Override
         public BufferedSink writeIntLe(int i) {
             return new FalseBufferedSink();
         }
+
         @NotNull
         @Override
         public BufferedSink writeLong(long v) {
             return new FalseBufferedSink();
         }
+
         @NotNull
         @Override
         public BufferedSink writeLongLe(long v) {
             return new FalseBufferedSink();
         }
+
         @NotNull
         @Override
         public BufferedSink writeDecimalLong(long v) {
             return new FalseBufferedSink();
         }
+
         @NotNull
         @Override
         public BufferedSink writeHexadecimalUnsignedLong(long v) {
             return new FalseBufferedSink();
         }
+
         @Override
         public void flush() {
 
         }
+
         @NotNull
         @Override
         public BufferedSink emit() {
             return new FalseBufferedSink();
         }
+
         @NotNull
         @Override
         public BufferedSink emitCompleteSegments() {
             return new FalseBufferedSink();
         }
+
         @NotNull
         @Override
         public OutputStream outputStream() {
             return new ByteArrayOutputStream();
         }
+
         @NotNull
         @Override
         public Buffer getBuffer() {
