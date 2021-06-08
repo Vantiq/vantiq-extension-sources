@@ -468,7 +468,7 @@ public class TestExtensionWebSocketClient extends ExtjsdkTestBase {
     }
     
     // Merely makes several private functions public
-    private static class OpenExtensionWebSocketClient extends ExtensionWebSocketClient{
+    private static class OpenExtensionWebSocketClient extends ExtensionWebSocketClient {
         public OpenExtensionWebSocketClient(String sourceName) {
             super(sourceName);
         }

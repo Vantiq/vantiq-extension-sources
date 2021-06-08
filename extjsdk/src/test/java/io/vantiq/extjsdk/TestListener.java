@@ -134,7 +134,7 @@ public class TestListener extends ExtensionWebSocketListener {
      * @param sourceName    The name of the source for which the connection succeeded.
      * @return              A ByteString representing the message
      */
-    public static ByteString createConfigResponse(Map<String,Object> config, String sourceName) {
+    public static ByteString createConfigResponse(Map<String, Object> config, String sourceName) {
         try {
             Map<String,Object> body = mapper.readValue(sampleConfigBody, Map.class);
             Map<String,Object> c = new LinkedHashMap<>();
@@ -153,7 +153,7 @@ public class TestListener extends ExtensionWebSocketListener {
      * @param sourceName    The name of the source that sent the message
      * @return              A ByteString representing the message
      */
-    public static ByteString createPublishMessage(Map<String,Object> message, String sourceName) {
+    public static ByteString createPublishMessage(Map<String, Object> message, String sourceName) {
         try {
             Map<String,Object> body = mapper.readValue(samplePublishBody, Map.class);
             body.put("resourceId", sourceName);
@@ -170,7 +170,7 @@ public class TestListener extends ExtensionWebSocketListener {
      * @param sourceName    The name of the source that sent the message
      * @return              A ByteString representing the message
      */
-    public static ByteString createQueryMessage(Map<String,Object> message, String sourceName) {
+    public static ByteString createQueryMessage(Map<String, Object> message, String sourceName) {
         try {
             Map<String,Object> body = mapper.readValue(sampleQueryBody, Map.class);
             body.put("resourceId", sourceName);
