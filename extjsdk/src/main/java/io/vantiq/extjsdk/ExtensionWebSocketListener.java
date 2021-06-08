@@ -27,6 +27,7 @@ import java.util.Map;
  * A listener that deals with messages received from a Vantiq deployment for Extension sources. It uses {@link Handler}
  * to allow users to specify how different types of messages are dealt with.
  */
+@SuppressWarnings("PMD.GuardLogStatement")
 public class ExtensionWebSocketListener extends WebSocketListener {
     // Each Handler effectively says what to do when receiving a message of its message type, or a response to its
     // message type in the case of authenticationHandler
@@ -468,11 +469,9 @@ public class ExtensionWebSocketListener extends WebSocketListener {
             if (t.getMessage() != null) {
                 log.error("EOFException: {}", t.getMessage());
             }
-        }
-        else if (t instanceof ConnectException) {
+        } else if (t instanceof ConnectException) {
             log.error("{}: {}", t.getClass().toString(), t.getMessage());
-        }
-        else {
+        } else {
             log.error("Failure occurred in listener", t);
         }
 

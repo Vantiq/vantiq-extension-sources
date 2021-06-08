@@ -35,6 +35,7 @@ qualified class name, appended by a '#' and the name of the source they are asso
 
 ## <a name="serverConfig" id="serverConfig"></a>Connector Startup Configuration
 Generally, connectors need a minimum of three configuration properties at startup:
+
 *   `targetServer`: The URL of the Vantiq server to which the connector should connect.
 *   `authToken`: The access token that the connector will use to authenticate to the desired namespace.
 *   `source(s)`: The name of the source in the namespace (or in some cases a list of comma-separated source names) 
@@ -47,6 +48,7 @@ The SDK includes a utility method to retrieve the startup configuration document
 directory if it is not found in the `serverConfig` subdirectory (i.e. `<connectorWorkingDirector>/server.config`).
 
 In addition to the minimum configuration properties, the `server.config` file can also include the following property:
+
 *   `sendPings`: A boolean property that, if set to `true`, enables the SDK to send ping messages to the Vantiq Server. 
 The ping messages are handled by the underlying OkHttp library.
 

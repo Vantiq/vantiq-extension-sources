@@ -24,6 +24,7 @@ import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
 import okio.ByteString;
+import org.jetbrains.annotations.NotNull;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -277,7 +278,7 @@ public class TestExtensionWebSocketClient extends ExtjsdkTestBase {
         
         // Should make sourceConnection be recreated
         client.setAutoReconnect(true);
-        client.getListener().onMessage(null, TestListener.createReconnectMessage(""));
+        client.getListener().onMessage(client.webSocket, TestListener.createReconnectMessage(""));
 
         assert !client.isConnected();
         assert !client.getSourceConnectionFuture().isDone(); 
@@ -357,7 +358,7 @@ public class TestExtensionWebSocketClient extends ExtjsdkTestBase {
         newClient.webSocketFuture = CompletableFuture.completedFuture(true);
         newClient.authFuture = CompletableFuture.completedFuture(true);
         newClient.sourceFuture = CompletableFuture.completedFuture(false);
-        newClient.listener.onMessage(null, testListener.createConfigResponse(new LinkedHashMap<>(), srcName));
+        newClient.listener.onMessage(client.webSocket, testListener.createConfigResponse(new LinkedHashMap<>(), srcName));
         assert newClient.failedMessageQueue.size() == 0;
 
         // Now lets do the same thing with a query
@@ -375,7 +376,7 @@ public class TestExtensionWebSocketClient extends ExtjsdkTestBase {
         newClient.webSocketFuture = CompletableFuture.completedFuture(true);
         newClient.authFuture = CompletableFuture.completedFuture(true);
         newClient.sourceFuture = CompletableFuture.completedFuture(false);
-        newClient.listener.onMessage(null, testListener.createConfigResponse(new LinkedHashMap<>(), srcName));
+        newClient.listener.onMessage(client.webSocket, testListener.createConfigResponse(new LinkedHashMap<>(), srcName));
         assert newClient.failedMessageQueue.size() == 0;
     }
 
@@ -467,7 +468,7 @@ public class TestExtensionWebSocketClient extends ExtjsdkTestBase {
     }
     
     // Merely makes several private functions public
-    private class OpenExtensionWebSocketClient extends ExtensionWebSocketClient{
+    private static class OpenExtensionWebSocketClient extends ExtensionWebSocketClient{
         public OpenExtensionWebSocketClient(String sourceName) {
             super(sourceName);
         }
@@ -506,20 +507,30 @@ public class TestExtensionWebSocketClient extends ExtjsdkTestBase {
 
         @Override
         public boolean close(int code, String reason) {
-            client.getListener().onClosed(null, code,reason);
+            client.getListener().onClosed(client.webSocket, code, reason);
             return true;
         }
 
         //================================ Necessary to implement WebSocket ================================
 
         @Override
-        public void cancel() {}
+        public void cancel() {
+
+        }
         @Override
-        public long queueSize() {return 0;}
+        public long queueSize() {
+            return 0;
+        }
         @Override
-        public Request request() {return null;}
+        public boolean send(@NotNull String s) {
+            return false;
+        }
+
+        @NotNull
         @Override
-        public boolean send(String s) {return false;}
+        public Request request() {
+            return new Request.Builder().build();
+        }
     }
     
     public static Object getTransformVal(Map map, String loc) {

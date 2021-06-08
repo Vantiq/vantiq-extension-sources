@@ -29,7 +29,8 @@ public class TestListener extends ExtensionWebSocketListener {
     public TestListener(ExtensionWebSocketClient client) {
         super(client);
     }
-    
+
+    FalseWebSocket falseWebSocket = new FalseWebSocket();
     public Handler<Response> getAuthHandler() {
         return authHandler;
     }
@@ -54,7 +55,7 @@ public class TestListener extends ExtensionWebSocketListener {
      * @param success   Whether the authentication response should respond as a success 
      */
     public void receiveAuthenticationResponse(boolean success) {
-        this.onMessage(null, createAuthenticationResponse(success));
+        this.onMessage(falseWebSocket, createAuthenticationResponse(success));
     }
     /**
      * Makes the listener receive a configuration message, signifying a successful source connection. A failed
@@ -63,7 +64,7 @@ public class TestListener extends ExtensionWebSocketListener {
      * @param sourceName    The name of the source for which the connection succeeded.
      */
     public void receiveConfigResponse(Map<String,Object> config, String sourceName) {
-        this.onMessage(null, createConfigResponse(config, sourceName));
+        this.onMessage(falseWebSocket, createConfigResponse(config, sourceName));
     }
     /**
      * Makes the listener receive a Publish message
@@ -71,7 +72,7 @@ public class TestListener extends ExtensionWebSocketListener {
      * @param sourceName    The name of the source that sent the message
      */
     public void receivePublishMessage(Map<String,Object> message, String sourceName) {
-        this.onMessage(null, createPublishMessage(message, sourceName));
+        this.onMessage(falseWebSocket, createPublishMessage(message, sourceName));
     }
     /**
      * Makes the listener receive a Query message
@@ -79,27 +80,27 @@ public class TestListener extends ExtensionWebSocketListener {
      * @param sourceName    The name of the source that sent the message
      */
     public void receiveQueryMessage(Map<String,Object> message, String sourceName) {
-        this.onMessage(null, createQueryMessage(message, sourceName));
+        this.onMessage(falseWebSocket, createQueryMessage(message, sourceName));
     }
     /**
      * Makes the listener receive a reconnect message
      * @param sourceName    The name of the source that sent the message
      */
     public void receiveReconnectMessage(String sourceName) {
-        this.onMessage(null, createReconnectMessage(sourceName));
+        this.onMessage(falseWebSocket, createReconnectMessage(sourceName));
     }
     /**
      * Makes the listener receive an HTTP message.
      * @param resp The {@link Response} that the listener will receive
      */
     public void receiveHttpMessage(Response resp) {
-        this.onMessage(null, createHttpMessage(resp));
+        this.onMessage(falseWebSocket, createHttpMessage(resp));
     }
     /**
      * Makes the listener receive a simple HTTP error message. This is a {@link Response} with status code 400.
      */
     public void receiveErrorMessage() {
-        this.onMessage(null, errorMessage());
+        this.onMessage(falseWebSocket, errorMessage());
     }
 
     public static MediaType JSON = MediaType.parse("application/json; charset=utf-8");
@@ -143,7 +144,7 @@ public class TestListener extends ExtensionWebSocketListener {
             return ByteString.of(mapper.writeValueAsBytes(body));
         }
         catch (Exception e) {
-            return null;
+            return ByteString.EMPTY;
         }
     }
     /**
@@ -160,7 +161,7 @@ public class TestListener extends ExtensionWebSocketListener {
             return ByteString.of(mapper.writeValueAsBytes(body));
         }
         catch (Exception e) {
-            return null;
+            return ByteString.EMPTY;
         }
     }
     /**
@@ -177,7 +178,7 @@ public class TestListener extends ExtensionWebSocketListener {
             return ByteString.of(mapper.writeValueAsBytes(body));
         }
         catch (Exception e) {
-            return null;
+            return ByteString.EMPTY;
         }
     }
     /**
@@ -190,7 +191,7 @@ public class TestListener extends ExtensionWebSocketListener {
             return ByteString.of(mapper.writeValueAsBytes(resp));
         }
         catch (Exception e) {
-            return null;
+            return ByteString.EMPTY;
         }
     }
     /**
@@ -206,7 +207,7 @@ public class TestListener extends ExtensionWebSocketListener {
             return ByteString.of(mapper.writeValueAsBytes(body));
         }
         catch (Exception e) {
-            return null;
+            return ByteString.EMPTY;
         }
     }
     
