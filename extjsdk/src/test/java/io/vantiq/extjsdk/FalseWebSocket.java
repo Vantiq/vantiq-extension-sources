@@ -67,7 +67,7 @@ public class FalseWebSocket implements WebSocket {
     }
 
     @Override
-    public boolean send(String s) {
+    public boolean send(@NotNull String s) {
         return false;
     }
 
