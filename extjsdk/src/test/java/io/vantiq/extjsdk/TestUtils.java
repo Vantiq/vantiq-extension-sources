@@ -90,7 +90,7 @@ public class TestUtils  {
         File f = new File(p.toString());
         f.deleteOnExit();
 
-        try (BufferedWriter bw = fillProps(p, includeAuthToken)){
+        try (BufferedWriter bw = fillProps(p, includeAuthToken)) {
             checkPropBeforeObtainingServer();
             checkProps();
             Utils.clearServerConfigProperties();
