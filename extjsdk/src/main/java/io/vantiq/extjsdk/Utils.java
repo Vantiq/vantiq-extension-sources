@@ -10,6 +10,7 @@ import java.util.Properties;
 
 public class Utils {
 
+    public static final String SEND_PING_PROPERTY_NAME = "sendPings";
     public static final String PORT_PROPERTY_NAME = "tcpProbePort";
     public static final String SERVER_CONFIG_DIR = "serverConfig";
     public static final String SERVER_CONFIG_FILENAME = "server.config";
@@ -84,4 +85,30 @@ public class Utils {
             return null;
         }
     }
+
+    public static boolean obtainSendPingStatus() {
+        File configFile = new File(SERVER_CONFIG_DIR, SERVER_CONFIG_FILENAME);
+        Properties properties = new Properties();
+
+        try {
+            if (!configFile.exists()) {
+                configFile = new File(SERVER_CONFIG_FILENAME);
+                if (!configFile.exists()) {
+                    return false;
+                }
+            }
+            properties.load(Files.newInputStream(configFile.toPath()));
+            String sendPingString = properties.getProperty(SEND_PING_PROPERTY_NAME);
+            if (sendPingString != null) {
+                return Boolean.parseBoolean(sendPingString);
+            } else {
+                return false;
+            }
+        } catch (IOException e) {
+            log.error("An error occurred while trying to retrieve the sendPings value.", e);
+            return false;
+        }
+    }
+
+    // TODO NAMIR - Add helper that returns the properties object since that code is repeated
 }

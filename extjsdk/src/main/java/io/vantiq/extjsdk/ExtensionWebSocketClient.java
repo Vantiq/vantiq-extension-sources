@@ -1,6 +1,6 @@
 
 /*
- * Copyright (c) 2018 Vantiq, Inc.
+ * Copyright (c) 2021 Vantiq, Inc.
  *
  * All rights reserved.
  * 
@@ -9,16 +9,16 @@
 
 package io.vantiq.extjsdk;
 
-// Author: Alex Blumer
-// Email: alex.j.blumer@gmail.com
+// Authors: Alex Blumer, Namir Fawaz, Fred Carter
+// Email: support@vantiq.com
 
 // For decoding of the messages received
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 // WebSocket imports
-import okhttp3.*;
-import okhttp3.ws.WebSocket;
-import okhttp3.ws.WebSocketCall;
+import okhttp3.OkHttpClient;
+import okhttp3.Request;
+import okhttp3.WebSocket;
 
 import java.io.IOException;
 import java.net.ServerSocket;
@@ -32,6 +32,7 @@ import java.util.Queue;
 import com.google.common.collect.EvictingQueue;
 
 // Logging
+import okio.ByteString;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -294,13 +295,19 @@ public class ExtensionWebSocketClient {
             webSocketFuture = new CompletableFuture<>();
 
             // Start the connection attempt
-            OkHttpClient client = new OkHttpClient.Builder()
+            OkHttpClient.Builder clientBuilder = new OkHttpClient.Builder()
                     .readTimeout(0, TimeUnit.MILLISECONDS)
-                    .writeTimeout(0, TimeUnit.MILLISECONDS)
-                    .build();
-            WebSocketCall.create(client, new Request.Builder()
-                    .url(validifyUrl(url))
-                    .build()).enqueue(listener);
+                    .writeTimeout(0, TimeUnit.MILLISECONDS);
+
+            boolean sendPings = Utils.obtainSendPingStatus();
+            if (sendPings) {
+                clientBuilder.pingInterval(5000, TimeUnit.MILLISECONDS);
+            }
+
+            OkHttpClient client = clientBuilder.build();
+
+            Request request = new Request.Builder().url(validifyUrl(url)).build();
+            webSocket = client.newWebSocket(request, listener);
         }
         return webSocketFuture;
     }
@@ -511,7 +518,7 @@ public class ExtensionWebSocketClient {
             byte[] bytes = mapper.writeValueAsBytes(obj);
             synchronized (this) {
                 if (webSocket != null) {
-                    this.webSocket.sendMessage(RequestBody.create(WebSocket.BINARY, bytes));
+                    this.webSocket.send(ByteString.of(bytes));
                 }
             }
         }

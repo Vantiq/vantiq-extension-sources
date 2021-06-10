@@ -1,6 +1,6 @@
 
 /*
- * Copyright (c) 2018 Vantiq, Inc.
+ * Copyright (c) 2021 Vantiq, Inc.
  *
  * All rights reserved.
  * 
@@ -9,19 +9,18 @@
 
 package io.vantiq.extjsdk;
 
-// Author: Alex Blumer
-// Email: alex.j.blumer@gmail.com
+// Authors: Alex Blumer, Namir Fawaz, Fred Carter
+// Email: support@vantiq.com
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import okhttp3.ResponseBody;
-import okhttp3.ws.WebSocket;
-import okhttp3.ws.WebSocketListener;
-import okio.Buffer;
+import okhttp3.WebSocket;
+import okhttp3.WebSocketListener;
+import okio.ByteString;
+import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.EOFException;
-import java.io.IOException;
 import java.net.ConnectException;
 import java.util.Map;
 
@@ -29,7 +28,8 @@ import java.util.Map;
  * A listener that deals with messages received from a Vantiq deployment for Extension sources. It uses {@link Handler}
  * to allow users to specify how different types of messages are dealt with.
  */
-public class ExtensionWebSocketListener implements WebSocketListener{
+@SuppressWarnings("PMD.GuardLogStatement")
+public class ExtensionWebSocketListener extends WebSocketListener {
     // Each Handler effectively says what to do when receiving a message of its message type, or a response to its
     // message type in the case of authenticationHandler
     /**
@@ -38,30 +38,36 @@ public class ExtensionWebSocketListener implements WebSocketListener{
      * {@link #setHttpHandler}
      */
     Handler<Response> httpHandler = null;
+
     /**
      * {@link Handler} that handles Publish requests received by this listener. Set by {@link #setPublishHandler}
      */
     Handler<ExtensionServiceMessage> publishHandler = null;
+
     /**
      * {@link Handler} that handles Query requests received by this listener. Set by {@link #setQueryHandler}
      */
     Handler<ExtensionServiceMessage> queryHandler = null;
+
     /**
      * {@link Handler} that handles Configuration messages received by this listener. Configuration messages are sent
      * in response to connection messages, so this should be set before sending the connection message to a source. Set
      * by {@link #setConfigHandler}
      */
     Handler<ExtensionServiceMessage> configHandler = null;
+
     /**
      * {@link Handler} that handles responses to auth messages, both successful and not. Strictly speaking, it handles
      * all Http responses received by this listener before and upon successful authentication, as no other
      * Http responses are expected until after authorization. Set by {@link #setAuthHandler}
      */
     Handler<Response> authHandler = null;
+
     /**
      * {@link Handler} that handles reconnect messages. Set by {@link #setReconnectHandler}
      */
     Handler<ExtensionServiceMessage> reconnectHandler = null;
+
     /**
      * An Slf4j logger
      */
@@ -76,6 +82,7 @@ public class ExtensionWebSocketListener implements WebSocketListener{
      * {@link ObjectMapper} used to translate the received message into a {@link Map}
      */
     ObjectMapper mapper = new ObjectMapper();
+
     /**
      * Whether this listener has been closed, and should not make any more changes to its client.
      */
@@ -103,6 +110,7 @@ public class ExtensionWebSocketListener implements WebSocketListener{
     public void setHttpHandler(Handler<Response> httpHandler) {
         this.httpHandler = httpHandler;
     }
+
     /**
      * Set the {@link Handler} for any Publish messages that are received.
      * <br>
@@ -115,6 +123,7 @@ public class ExtensionWebSocketListener implements WebSocketListener{
     public void setPublishHandler(Handler<ExtensionServiceMessage> publishHandler) {
         this.publishHandler = publishHandler;
     }
+
     /**
      * Set the {@link Handler} for any queries that are received.
      * <br>
@@ -132,6 +141,7 @@ public class ExtensionWebSocketListener implements WebSocketListener{
     public void setQueryHandler(Handler<ExtensionServiceMessage> queryHandler) {
         this.queryHandler = queryHandler;
     }
+
     /**
      * Set the {@link Handler} for any Configuration messages that are returned.
      * <p>
@@ -148,6 +158,7 @@ public class ExtensionWebSocketListener implements WebSocketListener{
     public void setConfigHandler(Handler<ExtensionServiceMessage> configHandler) {
         this.configHandler = configHandler;
     }
+
     /**
      * Set the {@link Handler} for the result of any message received before a successful authentication attempt,
      * and the result of the authentication attempt.
@@ -162,6 +173,7 @@ public class ExtensionWebSocketListener implements WebSocketListener{
     public void setAuthHandler(Handler<Response> authHandler) {
         this.authHandler = authHandler;
     }
+
     /**
      * Set the {@link Handler} that will deal with any reconnect messages received. These will occur when an event 
      * happens on the Vantiq servers that requires the source to shut down. To restart the connection, just call 
@@ -201,36 +213,22 @@ public class ExtensionWebSocketListener implements WebSocketListener{
      * @param response  The {@link okhttp3.Response} associated with the opening of the connection. Currently not used.
      */
     @Override
-    public void onOpen(WebSocket webSocket, okhttp3.Response response) {
-        this.client.webSocket = webSocket;
+    public void onOpen(@NotNull WebSocket webSocket, @NotNull okhttp3.Response response) {
         this.client.webSocketFuture.complete(true);
         log.info("WebSocket open");
     }
 
-    
     /**
      * Translate the received message and pass it on to the related handler. Additionally, updates the client about
      * successful authentications and source connections.
      *
-     * @param body  The {@link ResponseBody} containing the message received.
+     * @param webSocket The websocket on which the message was received.
+     * @param bodyBytes  The {@link ByteString} containing the message received.
      */
     @Override
-    public void onMessage(ResponseBody body) {
+    public void onMessage(@NotNull WebSocket webSocket, ByteString bodyBytes) {
         // Extract the original message from the body
-        byte[] data;
-        try {
-            if (body.contentType() == WebSocket.TEXT) {
-                data = body.string().getBytes();
-            } else {
-                data = body.bytes();
-            }
-        }
-        catch (IOException e) {
-            log.error("Error trying to interpret WebSocket message", e);
-            return;
-        }
-        body.close();
-
+        byte[] data = bodyBytes.toByteArray();
 
         if (this.isClosed) {
             return; // Do nothing if closed at this point
@@ -440,16 +438,30 @@ public class ExtensionWebSocketListener implements WebSocketListener{
         ExtensionWebSocketListener listener = client.getListener();
         this.useHandlersFromListener(listener);
     }
-    
+
     /**
      * Logs the code and reason for this listener closing.
      *
+     * @param webSocket The {@link WebSocket} that opened this listener.
      * @param code      The WebSocket code for why this listener is closing
      * @param reason    The {@link String} describing why it closed
      */
     @Override
-    public void onClose(int code, String reason) {
+    public void onClosing(@NotNull WebSocket webSocket, int code, @NotNull String reason) {
         log.info("Closing websocket code: {}", code);
+        log.debug(reason);
+    }
+
+    /**
+     * Logs the code and reason for this listener being closed, and closes the client.
+     *
+     * @param webSocket The {@link WebSocket} that opened this listener.
+     * @param code      The WebSocket code for why this listener is closing
+     * @param reason    The {@link String} describing why it closed
+     */
+    @Override
+    public void onClosed(@NotNull WebSocket webSocket, int code, @NotNull String reason) {
+        log.info("Closed websocket code: {}", code);
         log.debug(reason);
         if (client.isOpen() && client.webSocket != null) {
             client.close();
@@ -457,38 +469,27 @@ public class ExtensionWebSocketListener implements WebSocketListener{
     }
 
     /**
-     * Logs the pong received.
-     * @param payload   The payload received with the Pong message
-     */
-    @Override
-    public void onPong(Buffer payload) {
-        log.debug("Pong received");
-        log.debug("Pong payload: {}", payload.toString());
-    }
-
-    /**
      * Logs the error and closes the client. Only closes the client on an {@link EOFException} with no message, as that appears to
      * be the result of closing the connection with the Vantiq deployment.
-     * @param e         The {@link IOException} that initiated the failure.
+     * @param webSocket The {@link WebSocket} that opened this listener.
+     * @param t         The {@link Throwable} that initiated the failure.
      * @param response  The {@link okhttp3.Response} that caused the failure, if any.
      */
     @Override
-    public void onFailure(IOException e, okhttp3.Response response) {
-        if (e instanceof EOFException) { // An EOF exception appears on closing the websocket connection
-            if (e.getMessage() != null) {
-                log.error("EOFException: {}", e.getMessage());
+    public void onFailure(@NotNull WebSocket webSocket, @NotNull Throwable t, okhttp3.Response response) {
+        if (t instanceof EOFException) { // An EOF exception appears on closing the websocket connection
+            if (t.getMessage() != null) {
+                log.error("EOFException: {}", t.getMessage());
             }
+        } else if (t instanceof ConnectException) {
+            log.error("{}: {}", t.getClass().toString(), t.getMessage());
+        } else {
+            log.error("Failure occurred in listener", t);
         }
-        else if (e instanceof ConnectException) {
-            log.error("{}: {}", e.getClass().toString(), e.getMessage());
-        }
-        else {
-            log.error("Failure occurred in listener", e);
-        }
-        
+
         // The error occurred during an unknown point during execution. We don't have enough information to determine
         // what caused it, so we will close
-        if (client.isOpen()) { 
+        if (client.isOpen()) {
             client.close();
         } else { // The websocket never opened, so it must be a problem connecting. Mark the failure and let the user handle it
             client.webSocketFuture.complete(false);

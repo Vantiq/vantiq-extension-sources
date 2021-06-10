@@ -1,6 +1,6 @@
 
 /*
- * Copyright (c) 2018 Vantiq, Inc.
+ * Copyright (c) 2021 Vantiq, Inc.
  *
  * All rights reserved.
  * 
@@ -9,21 +9,22 @@
 
 package io.vantiq.extjsdk;
 
-//Author: Alex Blumer
-//Email: alex.j.blumer@gmail.com
+//Authors: Alex Blumer, Namir Fawaz, Fred Carter
+//Email: support@vantiq.com
 
-
-import java.io.IOException;
+import java.io.ByteArrayOutputStream;
 import java.io.OutputStream;
+import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 
-import okhttp3.RequestBody;
-import okhttp3.ws.WebSocket;
+import okhttp3.Request;
+import okhttp3.WebSocket;
 import okio.Buffer;
 import okio.BufferedSink;
 import okio.ByteString;
 import okio.Source;
 import okio.Timeout;
+import org.jetbrains.annotations.NotNull;
 
 /**
  * The WebSocket used by {@link FalseClient}. The data stored here can be accessed through 
@@ -37,83 +38,229 @@ public class FalseWebSocket implements WebSocket {
     }
     
     @Override
-    public void sendMessage(RequestBody message) throws IOException {
-        message.writeTo(s);
+    public boolean send(@NotNull ByteString bytes) {
+        s.write(bytes);
+        return true;
+    }
+
+    //================================ Necessary to implement WebSocket ================================
+
+    @Override
+    public boolean close(int code, String reason) {
+        return true;
     }
 
     @Override
-    public void sendPing(Buffer payload) throws IOException {}
+    public void cancel() {
+
+    }
+
     @Override
-    public void close(int code, String reason) throws IOException {}
-    
-    public class FalseBufferedSink implements BufferedSink {
-        byte[] savedBytes = null;
+    public long queueSize() {
+        return 0;
+    }
+
+    @NotNull
+    @Override
+    public Request request() {
+        return new Request.Builder().build();
+    }
+
+    @Override
+    public boolean send(@NotNull String s) {
+        return false;
+    }
+
+    // Buffered Sink implementation
+    public static class FalseBufferedSink implements BufferedSink {
+        ByteString savedBytes = null;
         
         public byte[] retrieveSentBytes() {
-            return savedBytes;
+            return savedBytes != null ? savedBytes.toByteArray() : null;
         }
         
-        // Called by RequestBody.writeTo
+        // Called by FalseWebSocket.send()
+        @NotNull
         @Override
-        public BufferedSink write(byte[] source, int offset, int byteCount) throws IOException {
+        public BufferedSink write(@NotNull ByteString source) {
             savedBytes = source;
-            return null;
+            return new FalseBufferedSink();
         }
-        
-    //================================ Necessary to implement BufferedSink ================================
+
+        //================================ Necessary to implement BufferedSink ================================
         @Override
-        public void write(Buffer source, long byteCount) throws IOException {}
+        public void write(@NotNull Buffer source, long byteCount) {
+
+        }
+
+        @NotNull
         @Override
-        public Timeout timeout() {return null;}
+        public Timeout timeout() {
+            return new Timeout();
+        }
+
         @Override
-        public void close() throws IOException {}
+        public boolean isOpen() {
+            return false;
+        }
+
         @Override
-        public Buffer buffer() {return null;}
+        public void close() {
+
+        }
+
+        @NotNull
         @Override
-        public BufferedSink write(ByteString byteString) throws IOException {return null;}
+        public Buffer buffer() {
+            return new Buffer();
+        }
+
+        @NotNull
         @Override
-        public BufferedSink write(byte[] source) throws IOException {return null;}
+        public BufferedSink write(@NotNull ByteString byteString, int offset, int byteCount) {
+            return new FalseBufferedSink();
+        }
+
+        @NotNull
         @Override
-        public long writeAll(Source source) throws IOException {return 0;}
+        public BufferedSink write(@NotNull byte[] source) {
+            return new FalseBufferedSink();
+        }
+
         @Override
-        public BufferedSink write(Source source, long byteCount) throws IOException {return null;}
+        public long writeAll(@NotNull Source source) {
+            return 0;
+        }
+
+        @NotNull
         @Override
-        public BufferedSink writeUtf8(String string) throws IOException {return null;}
+        public BufferedSink write(@NotNull Source source, long byteCount) {
+            return new FalseBufferedSink();
+        }
+
+        @NotNull
         @Override
-        public BufferedSink writeUtf8(String string, int beginIndex, int endIndex) throws IOException {return null;}
+        public BufferedSink write(@NotNull byte[] bytes, int i, int i1) {
+            return new FalseBufferedSink();
+        }
+
         @Override
-        public BufferedSink writeUtf8CodePoint(int codePoint) throws IOException {return null;}
+        public int write(ByteBuffer src) {
+            return 0;
+        }
+
+        @NotNull
         @Override
-        public BufferedSink writeString(String string, Charset charset) throws IOException {return null;}
+        public BufferedSink writeUtf8(@NotNull String string) {
+            return new FalseBufferedSink();
+        }
+
+        @NotNull
         @Override
-        public BufferedSink writeString(String string, int beginIndex, int endIndex, Charset charset)
-                throws IOException {return null;}
+        public BufferedSink writeUtf8(@NotNull String string, int beginIndex, int endIndex) {
+            return new FalseBufferedSink();
+        }
+
+        @NotNull
         @Override
-        public BufferedSink writeByte(int b) throws IOException {return null;}
+        public BufferedSink writeUtf8CodePoint(int codePoint) {
+            return new FalseBufferedSink();
+        }
+
+        @NotNull
         @Override
-        public BufferedSink writeShort(int s) throws IOException {return null;}
+        public BufferedSink writeString(@NotNull String string, @NotNull Charset charset) {
+            return new FalseBufferedSink();
+        }
+
+        @NotNull
         @Override
-        public BufferedSink writeShortLe(int s) throws IOException {return null;}
+        public BufferedSink writeString(@NotNull String string, int beginIndex, int endIndex, @NotNull Charset charset) {
+            return new FalseBufferedSink();
+        }
+
+        @NotNull
         @Override
-        public BufferedSink writeInt(int i) throws IOException {return null;}
+        public BufferedSink writeByte(int b) {
+            return new FalseBufferedSink();
+        }
+
+        @NotNull
         @Override
-        public BufferedSink writeIntLe(int i) throws IOException {return null;}
+        public BufferedSink writeShort(int s) {
+            return new FalseBufferedSink();
+        }
+
+        @NotNull
         @Override
-        public BufferedSink writeLong(long v) throws IOException {return null;}
+        public BufferedSink writeShortLe(int s) {
+            return new FalseBufferedSink();
+        }
+
+        @NotNull
         @Override
-        public BufferedSink writeLongLe(long v) throws IOException {return null;}
+        public BufferedSink writeInt(int i) {
+            return new FalseBufferedSink();
+        }
+
+        @NotNull
         @Override
-        public BufferedSink writeDecimalLong(long v) throws IOException {return null;}
+        public BufferedSink writeIntLe(int i) {
+            return new FalseBufferedSink();
+        }
+
+        @NotNull
         @Override
-        public BufferedSink writeHexadecimalUnsignedLong(long v) throws IOException {return null;}
+        public BufferedSink writeLong(long v) {
+            return new FalseBufferedSink();
+        }
+
+        @NotNull
         @Override
-        public void flush() throws IOException {}
+        public BufferedSink writeLongLe(long v) {
+            return new FalseBufferedSink();
+        }
+
+        @NotNull
         @Override
-        public BufferedSink emit() throws IOException {return null;}
+        public BufferedSink writeDecimalLong(long v) {
+            return new FalseBufferedSink();
+        }
+
+        @NotNull
         @Override
-        public BufferedSink emitCompleteSegments() throws IOException {return null;}
+        public BufferedSink writeHexadecimalUnsignedLong(long v) {
+            return new FalseBufferedSink();
+        }
+
         @Override
-        public OutputStream outputStream() {return null;}
+        public void flush() {
+
+        }
+
+        @NotNull
+        @Override
+        public BufferedSink emit() {
+            return new FalseBufferedSink();
+        }
+
+        @NotNull
+        @Override
+        public BufferedSink emitCompleteSegments() {
+            return new FalseBufferedSink();
+        }
+
+        @NotNull
+        @Override
+        public OutputStream outputStream() {
+            return new ByteArrayOutputStream();
+        }
+
+        @NotNull
+        @Override
+        public Buffer getBuffer() {
+            return new Buffer();
+        }
     }
 }
 

@@ -18,8 +18,7 @@ ExtensionWebSocketListener to handle various message types.
 4.	Copy and connect extjsdk.jar to your project.
 5.	Include the following dependencies through Gradle, Maven, or whatever build manager you are using. Links to the
 dependencies on mvnrepository.com are included.
-	*	[com.squareup.okhttp3:okhttp Version 3.4.1](https://mvnrepository.com/artifact/com.squareup.okhttp3/okhttp/3.4.1)
-	*	[com.squareup.okhttp3:okhttp-ws Version 3.4.1](https://mvnrepository.com/artifact/com.squareup.okhttp3/okhttp-ws/3.4.1)
+	*	[com.squareup.okhttp3:okhttp Version 4.9.1](https://mvnrepository.com/artifact/com.squareup.okhttp3/okhttp/4.9.1)
 	*	[com.fasterxml.jackson.core:jackson-databind Version 2.9.3](https://mvnrepository.com/artifact/com.fasterxml.jackson.core/jackson-databind/2.9.3)
     *   [org.slf4j:slf4j-api Version 1.7.25](https://mvnrepository.com/artifact/org.slf4j/slf4j-api/1.7.25)
 
@@ -36,6 +35,7 @@ qualified class name, appended by a '#' and the name of the source they are asso
 
 ## <a name="serverConfig" id="serverConfig"></a>Connector Startup Configuration
 Generally, connectors need a minimum of three configuration properties at startup:
+
 *   `targetServer`: The URL of the Vantiq server to which the connector should connect.
 *   `authToken`: The access token that the connector will use to authenticate to the desired namespace.
 *   `source(s)`: The name of the source in the namespace (or in some cases a list of comma-separated source names) 
@@ -46,6 +46,11 @@ The SDK includes a utility method to retrieve the startup configuration document
 `server.config`. That file is expected to be included in the connector's working directory as follows: 
 `<connectorWorkingDirector>/serverConfig/server.config`. The SDK will also look for the file in the working connector 
 directory if it is not found in the `serverConfig` subdirectory (i.e. `<connectorWorkingDirector>/server.config`).
+
+In addition to the minimum configuration properties, the `server.config` file can also include the following property:
+
+*   `sendPings`: A boolean property that, if set to `true`, enables the SDK to send ping messages to the Vantiq Server. 
+The ping messages are handled by the underlying OkHttp library.
 
 For users who may not want to write the `authToken` property to a file because of its sensitive nature, the 
 `Utils.obtainServerConfig()` method will also search for this value in an environment variable named 
@@ -60,6 +65,7 @@ variable instead):
 authToken=XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 sources=MySourceName
 targetServer=https://dev.vantiq.com/
+sendPings=true
 ```
 
 ## Program Flow
