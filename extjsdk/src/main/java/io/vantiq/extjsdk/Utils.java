@@ -1,5 +1,7 @@
 package io.vantiq.extjsdk;
 
+import org.apache.commons.lang3.StringUtils;
+
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -8,7 +10,7 @@ import java.util.Properties;
 public class Utils {
 
     // String used by methods to synch on
-    private static final String SYNCH_LOCK = "sycnhLockString";
+    private static final String SYNCH_LOCK = "synchLockString";
 
     public static final String SEND_PING_PROPERTY_NAME = "sendPings";
     public static final String PORT_PROPERTY_NAME = "tcpProbePort";
@@ -17,7 +19,7 @@ public class Utils {
     public static final String SECRET_CREDENTIALS = "CONNECTOR_AUTH_TOKEN";
 
     // The properties object containing the data from the server configuration file
-    public static Properties serverConfigProperties;
+    private static Properties serverConfigProperties;
 
     public static Properties obtainServerConfig() {
         return obtainServerConfig(SERVER_CONFIG_FILENAME);
@@ -44,7 +46,7 @@ public class Utils {
                 // We only set it if the value is not empty and if the authToken wasn't already specified in the
                 // server.config
                 String secretAuthToken = System.getenv(SECRET_CREDENTIALS);
-                if (secretAuthToken != null && !secretAuthToken.trim().isEmpty()
+                if (secretAuthToken != null && !StringUtils.isBlank(secretAuthToken)
                         && serverConfigProperties.getProperty("authToken") == null) {
                     serverConfigProperties.setProperty("authToken", secretAuthToken);
                 }
@@ -120,7 +122,6 @@ public class Utils {
      */
     public static void clearServerConfigProperties() {
         synchronized (SYNCH_LOCK) {
-            serverConfigProperties.clear();
             serverConfigProperties = null;
         }
     }

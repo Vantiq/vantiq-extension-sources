@@ -46,7 +46,8 @@ public class TestUtils  {
 
             checkPropBeforeObtainingServer();
             checkProps();
-            clearProps();
+            Utils.clearServerConfigProperties();
+            checkPropBeforeObtainingServer();
         } finally {
             if (bw != null) {
                 bw.close();
@@ -75,7 +76,8 @@ public class TestUtils  {
 
             checkPropBeforeObtainingServer();
             checkProps();
-            clearProps();
+            Utils.clearServerConfigProperties();
+            checkPropBeforeObtainingServer();
         } finally {
             if (bw != null) {
                 bw.close();
@@ -114,7 +116,8 @@ public class TestUtils  {
 
             checkPropBeforeObtainingServer();
             checkProps();
-            clearProps();
+            Utils.clearServerConfigProperties();
+            checkPropBeforeObtainingServer();
         } finally {
             if (bw != null) {
                 bw.close();
@@ -159,23 +162,18 @@ public class TestUtils  {
 
     private void checkPropBeforeObtainingServer() {
         try {
-            Boolean noUse = Utils.obtainSendPingStatus();
+            Utils.obtainSendPingStatus();
             fail("We should not get here, an exception should be thrown first");
         } catch (Exception e) {
             // Expected to catch exception here.
         }
 
         try {
-            Integer noUse = Utils.obtainTCPProbePort();
+            Utils.obtainTCPProbePort();
             fail("We should not get here, an exception should be thrown first");
         } catch (Exception e) {
             // Expected to catch exception here.
         }
-    }
-
-    private void clearProps() {
-        Utils.clearServerConfigProperties();
-        assert Utils.serverConfigProperties == null;
     }
     
     @Before

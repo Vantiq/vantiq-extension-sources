@@ -12,12 +12,15 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeTrue;
 
+import java.io.File;
+import java.io.IOException;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.ArrayList;
 import java.util.Base64;
 
+import io.vantiq.extjsdk.Utils;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -37,6 +40,7 @@ public class TestTestConnectorCore {
     private static String environmentVariable;
     private static String filename;
     private static String fileContents;
+    private static File serverConfigFile;
 
     private static final String NONEXISTENT_ENV_VAR = "anEnvironmentVariableThatIsUnlikelyToExist";
 
@@ -48,10 +52,16 @@ public class TestTestConnectorCore {
     }
 
     @Before
-    public void setup() {
+    public void setup() throws IOException {
         sourceName = "src";
         authToken = "token";
         targetVantiqServer = "dev.vantiq.com";
+
+        // Make initial Utils.obtainServerConfig() call so that we don't get errors later on
+        serverConfigFile = new File("server.config");
+        serverConfigFile.createNewFile();
+        serverConfigFile.deleteOnExit();
+        Utils.obtainServerConfig();
 
         core = new NoSendTestConnectorCore(sourceName, authToken, targetVantiqServer);
         core.start(10);
@@ -60,6 +70,7 @@ public class TestTestConnectorCore {
     @After
     public void tearDown() {
         core.stop();
+        serverConfigFile.delete();
     }
 
     @Test

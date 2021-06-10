@@ -15,6 +15,7 @@ package io.vantiq.extjsdk;
 import okhttp3.Request;
 import okhttp3.WebSocket;
 
+import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -41,14 +42,21 @@ public class TestExtensionWebSocketClient extends ExtjsdkTestBase {
     String srcName;
     String queryAddress;
     FalseWebSocket socket;
+    File serverConfigFile;
     
     @Before
-    public void setup() {
+    public void setup() throws IOException {
         srcName = "src";
         socket = new FalseWebSocket();
         client = new OpenExtensionWebSocketClient(srcName); // OpenExtensionWebSocketClient just makes a few functions public
         client.webSocket = socket;
         queryAddress = "gobbledygook";
+
+        // Make initial Utils.obtainServerConfig() call so that we don't get errors later on
+        serverConfigFile = new File("server.config");
+        serverConfigFile.createNewFile();
+        serverConfigFile.deleteOnExit();
+        Utils.obtainServerConfig();
     }
     
     @After
@@ -57,6 +65,7 @@ public class TestExtensionWebSocketClient extends ExtjsdkTestBase {
         client = null;
         socket = null;
         queryAddress = null;
+        serverConfigFile.delete();
     }
     
     @Test
