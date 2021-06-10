@@ -31,6 +31,7 @@ public class TestUtils  {
     @Before
     public void setup() {
         envVarAuthToken = System.getenv(SECRET_CREDENTIALS);
+        Utils.clearServerConfigProperties();
     }
 
     @Test
