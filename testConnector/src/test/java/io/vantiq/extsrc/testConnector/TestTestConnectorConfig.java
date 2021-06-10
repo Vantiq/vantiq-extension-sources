@@ -11,11 +11,14 @@ package io.vantiq.extsrc.testConnector;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
+import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
+import io.vantiq.extjsdk.Utils;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -31,12 +34,20 @@ public class TestTestConnectorConfig {
     String sourceName;
     String authToken;
     String targetVantiqServer;
+    File serverConfigFile;
 
     @Before
-    public void setup() {
+    public void setup() throws IOException {
         sourceName = "src";
         authToken = "token";
         targetVantiqServer = "dev.vantiq.com";
+
+        // Make initial Utils.obtainServerConfig() call so that we don't get errors later on
+        serverConfigFile = new File("server.config");
+        serverConfigFile.createNewFile();
+        serverConfigFile.deleteOnExit();
+        Utils.obtainServerConfig();
+
         nCore = new NoSendTestConnectorCore(sourceName, authToken, targetVantiqServer);
         handler = new TestConnectorHandleConfiguration(nCore);
     }
@@ -44,6 +55,7 @@ public class TestTestConnectorConfig {
     @After
     public void tearDown() {
         nCore.stop();
+        serverConfigFile.delete();
     }
 
     @Test

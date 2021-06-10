@@ -11,6 +11,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Properties;
 
+import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeTrue;
 
 public class TestUtils  {
@@ -18,6 +19,8 @@ public class TestUtils  {
     private static final String FAKE_URL = "http://somewhere/else";
     private static final String FAKE_TOKEN = "xxxx====";
     private static final String FAKE_SOURCE = "someSource";
+    private static final String FAKE_PORT = "8000";
+    private static final String FAKE_PINGS = "true";
     public static final String TARGET_SERVER_PROP = "targetServer";
     public static final String AUTH_TOKEN_PROP = "authToken";
     public static final String OTHER_PROP = "otherProperty";
@@ -28,59 +31,46 @@ public class TestUtils  {
     @Before
     public void setup() {
         envVarAuthToken = System.getenv(SECRET_CREDENTIALS);
+        Utils.clearServerConfigProperties();
     }
 
     @Test
     public void testGetConfigAlone() throws Exception {
-        BufferedWriter bw = null;
-        File f = null;
-        try {
-            Path p = Files.createFile( Paths.get("server.config"));
-            f = new File(p.toString());
-            f.deleteOnExit();
-            
-            bw = fillProps(p, true);
-           
+        Path p = Files.createFile( Paths.get("server.config"));
+        File f = new File(p.toString());
+        f.deleteOnExit();
+
+        try (BufferedWriter bw = fillProps(p, true)) {
+            checkPropBeforeObtainingServer();
             checkProps();
+            Utils.clearServerConfigProperties();
+            checkPropBeforeObtainingServer();
         } finally {
-            if (bw != null) {
-                bw.close();
-            }
-            if (f != null) {
-                //noinspection ResultOfMethodCallIgnored
-                f.delete();
-            }
+            //noinspection ResultOfMethodCallIgnored
+            f.delete();
         }
     }
 
     @Test
     public void testGetConfigInDir() throws Exception {
-        BufferedWriter bw = null;
-        File f = null;
-        File dir = null;
-        try {
-            dir = new File("serverConfig");
-            //noinspection ResultOfMethodCallIgnored
-            dir.mkdir();
-            dir.deleteOnExit();
-            Path p = Files.createFile(Paths.get("serverConfig/server.config"));
-            f = new File(p.toString());
-            f.deleteOnExit();
-            bw = fillProps(p, true);
-            
+        File dir = new File("serverConfig");
+        //noinspection ResultOfMethodCallIgnored
+        dir.mkdir();
+        dir.deleteOnExit();
+        Path p = Files.createFile(Paths.get("serverConfig/server.config"));
+        File f = new File(p.toString());
+        f.deleteOnExit();
+
+        try (BufferedWriter bw = fillProps(p, true)) {
+            checkPropBeforeObtainingServer();
             checkProps();
+            Utils.clearServerConfigProperties();
+            checkPropBeforeObtainingServer();
         } finally {
-            if (bw != null) {
-                bw.close();
-            }
-            if (f != null) {
-                //noinspection ResultOfMethodCallIgnored
-                f.delete();
-            }
-            if (dir != null) {
-                //noinspection ResultOfMethodCallIgnored
-                dir.delete();
-            }
+            //noinspection ResultOfMethodCallIgnored
+            f.delete();
+            //noinspection ResultOfMethodCallIgnored
+            dir.delete();
         }
     }
 
@@ -92,32 +82,24 @@ public class TestUtils  {
     }
 
     private void doEnvVarTests(boolean includeAuthToken) throws Exception {
-        BufferedWriter bw = null;
-        File f = null;
-        File dir = null;
-        try {
-            dir = new File("serverConfig");
-            //noinspection ResultOfMethodCallIgnored
-            dir.mkdir();
-            dir.deleteOnExit();
-            Path p = Files.createFile(Paths.get("serverConfig/server.config"));
-            f = new File(p.toString());
-            f.deleteOnExit();
-            bw = fillProps(p, includeAuthToken);
+        File dir = new File("serverConfig");
+        //noinspection ResultOfMethodCallIgnored
+        dir.mkdir();
+        dir.deleteOnExit();
+        Path p = Files.createFile(Paths.get("serverConfig/server.config"));
+        File f = new File(p.toString());
+        f.deleteOnExit();
 
+        try (BufferedWriter bw = fillProps(p, includeAuthToken)) {
+            checkPropBeforeObtainingServer();
             checkProps();
+            Utils.clearServerConfigProperties();
+            checkPropBeforeObtainingServer();
         } finally {
-            if (bw != null) {
-                bw.close();
-            }
-            if (f != null) {
-                //noinspection ResultOfMethodCallIgnored
-                f.delete();
-            }
-            if (dir != null) {
-                //noinspection ResultOfMethodCallIgnored
-                dir.delete();
-            }
+            //noinspection ResultOfMethodCallIgnored
+            f.delete();
+            //noinspection ResultOfMethodCallIgnored
+            dir.delete();
         }
     }
     
@@ -128,6 +110,8 @@ public class TestUtils  {
             bw.append(AUTH_TOKEN_PROP + " = " + FAKE_TOKEN + "\n");
         }
         bw.append(OTHER_PROP + " = " + FAKE_SOURCE + "\n");
+        bw.append(Utils.SEND_PING_PROPERTY_NAME + " = " + FAKE_PINGS + "\n");
+        bw.append(Utils.PORT_PROPERTY_NAME + " = " + FAKE_PORT + "\n");
         bw.close();
         return bw;
     }
@@ -140,6 +124,27 @@ public class TestUtils  {
         assert props.getProperty(AUTH_TOKEN_PROP).contains(FAKE_TOKEN);
         assert props.getProperty(OTHER_PROP) != null;
         assert props.getProperty(OTHER_PROP).contains(FAKE_SOURCE);
+        assert props.getProperty(Utils.SEND_PING_PROPERTY_NAME) != null;
+        assert props.getProperty(Utils.SEND_PING_PROPERTY_NAME).contains(FAKE_PINGS);
+        assert props.getProperty(Utils.PORT_PROPERTY_NAME) != null;
+        assert props.getProperty(Utils.PORT_PROPERTY_NAME).contains(FAKE_PORT);
+    }
+
+    @SuppressWarnings("PMD.EmptyCatchBlock")
+    private void checkPropBeforeObtainingServer() {
+        try {
+            Utils.obtainSendPingStatus();
+            fail("We should not get here, an exception should be thrown first");
+        } catch (Exception e) {
+            // Expected to catch exception here.
+        }
+
+        try {
+            Utils.obtainTCPProbePort();
+            fail("We should not get here, an exception should be thrown first");
+        } catch (Exception e) {
+            // Expected to catch exception here.
+        }
     }
     
     @Before
