@@ -36,61 +36,41 @@ public class TestUtils  {
 
     @Test
     public void testGetConfigAlone() throws Exception {
-        BufferedWriter bw = null;
-        File f = null;
-        try {
-            Path p = Files.createFile( Paths.get("server.config"));
-            f = new File(p.toString());
-            f.deleteOnExit();
-            
-            bw = fillProps(p, true);
+        Path p = Files.createFile( Paths.get("server.config"));
+        File f = new File(p.toString());
+        f.deleteOnExit();
 
+        try (BufferedWriter bw = fillProps(p, true)) {
             checkPropBeforeObtainingServer();
             checkProps();
             Utils.clearServerConfigProperties();
             checkPropBeforeObtainingServer();
         } finally {
-            if (bw != null) {
-                bw.close();
-            }
-            if (f != null) {
-                //noinspection ResultOfMethodCallIgnored
-                f.delete();
-            }
+            //noinspection ResultOfMethodCallIgnored
+            f.delete();
         }
     }
 
     @Test
     public void testGetConfigInDir() throws Exception {
-        BufferedWriter bw = null;
-        File f = null;
-        File dir = null;
-        try {
-            dir = new File("serverConfig");
-            //noinspection ResultOfMethodCallIgnored
-            dir.mkdir();
-            dir.deleteOnExit();
-            Path p = Files.createFile(Paths.get("serverConfig/server.config"));
-            f = new File(p.toString());
-            f.deleteOnExit();
-            bw = fillProps(p, true);
+        File dir = new File("serverConfig");
+        //noinspection ResultOfMethodCallIgnored
+        dir.mkdir();
+        dir.deleteOnExit();
+        Path p = Files.createFile(Paths.get("serverConfig/server.config"));
+        File f = new File(p.toString());
+        f.deleteOnExit();
 
+        try (BufferedWriter bw = fillProps(p, true)) {
             checkPropBeforeObtainingServer();
             checkProps();
             Utils.clearServerConfigProperties();
             checkPropBeforeObtainingServer();
         } finally {
-            if (bw != null) {
-                bw.close();
-            }
-            if (f != null) {
-                //noinspection ResultOfMethodCallIgnored
-                f.delete();
-            }
-            if (dir != null) {
-                //noinspection ResultOfMethodCallIgnored
-                dir.delete();
-            }
+            //noinspection ResultOfMethodCallIgnored
+            f.delete();
+            //noinspection ResultOfMethodCallIgnored
+            dir.delete();
         }
     }
 
@@ -102,35 +82,24 @@ public class TestUtils  {
     }
 
     private void doEnvVarTests(boolean includeAuthToken) throws Exception {
-        BufferedWriter bw = null;
-        File f = null;
-        File dir = null;
-        try {
-            dir = new File("serverConfig");
-            //noinspection ResultOfMethodCallIgnored
-            dir.mkdir();
-            dir.deleteOnExit();
-            Path p = Files.createFile(Paths.get("serverConfig/server.config"));
-            f = new File(p.toString());
-            f.deleteOnExit();
-            bw = fillProps(p, includeAuthToken);
+        File dir = new File("serverConfig");
+        //noinspection ResultOfMethodCallIgnored
+        dir.mkdir();
+        dir.deleteOnExit();
+        Path p = Files.createFile(Paths.get("serverConfig/server.config"));
+        File f = new File(p.toString());
+        f.deleteOnExit();
 
+        try (BufferedWriter bw = fillProps(p, includeAuthToken)){
             checkPropBeforeObtainingServer();
             checkProps();
             Utils.clearServerConfigProperties();
             checkPropBeforeObtainingServer();
         } finally {
-            if (bw != null) {
-                bw.close();
-            }
-            if (f != null) {
-                //noinspection ResultOfMethodCallIgnored
-                f.delete();
-            }
-            if (dir != null) {
-                //noinspection ResultOfMethodCallIgnored
-                dir.delete();
-            }
+            //noinspection ResultOfMethodCallIgnored
+            f.delete();
+            //noinspection ResultOfMethodCallIgnored
+            dir.delete();
         }
     }
     
@@ -161,6 +130,7 @@ public class TestUtils  {
         assert props.getProperty(Utils.PORT_PROPERTY_NAME).contains(FAKE_PORT);
     }
 
+    @SuppressWarnings("PMD.EmptyCatchBlock")
     private void checkPropBeforeObtainingServer() {
         try {
             Utils.obtainSendPingStatus();
