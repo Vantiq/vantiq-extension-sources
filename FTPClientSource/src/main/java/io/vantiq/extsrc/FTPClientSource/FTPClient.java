@@ -350,7 +350,7 @@ public class FTPClient {
                                 log.error("LookForRemoteFiles failure when downloading files from " + currEntry.name);
                             }
                         } catch (VantiqFTPClientException exv) {
-                            log.error("ftpUtil.downloadFolder failed", exv);
+                            log.error("LookForRemoteFiles ftpUtil.downloadFolder failed", exv);
                         }
                     }
                 }
