@@ -57,6 +57,10 @@ public class FTPClientHandleConfiguration extends Handler<ExtensionServiceMessag
     public static final String REMOTE_FOLDER_PATH = "remoteFolderPath";
     public static final String LOCAL_FOLDER_PATH = "localFolderPath";
     public static final String BASE_DOCUMENT_PATH = "baseDocumentPath";
+    public static final String DOCUMENT_SERVER = "documentServer";
+    public static final String DOCUMENT_SERVER_TOKEN = "documentToken";
+    public static final String AUTO_UPLOAD_TO_DOCUMENT_POSTFIX = "autoUploadToDocumentPostfix";
+    public static final String DELETE_AFTER_SUCCESSFULL_UPLOAD = "deleteAfterSuccessfullUpload";
     public static final String SERVER_LIST = "servers";
     public static final String SERVER_NAME = "name";
     public static final String SERVER_ENABLE = "enable";

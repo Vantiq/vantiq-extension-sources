@@ -8,27 +8,13 @@
 
 package io.vantiq.extsrc.FTPClientSource;
 
-import static java.nio.file.StandardWatchEventKinds.ENTRY_CREATE;
-import static java.nio.file.StandardWatchEventKinds.ENTRY_MODIFY;
-import static java.nio.file.StandardWatchEventKinds.OVERFLOW;
-
-import java.io.BufferedWriter;
+import io.vantiq.client.ResponseHandler;
+import io.vantiq.client.Vantiq;
+import io.vantiq.client.VantiqError;
 import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
-import java.io.FileWriter;
-import java.io.FilenameFilter;
-import java.io.IOException;
-import java.io.OutputStreamWriter;
-import java.nio.file.FileSystems;
-import java.nio.file.Files;
 import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.nio.file.WatchEvent;
-import java.nio.file.WatchEvent.Kind;
-import java.nio.file.WatchKey;
-import java.nio.file.WatchService;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -38,18 +24,13 @@ import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
-import java.util.stream.Stream;
 
-import org.apache.commons.net.ftp.FTPClientConfig;
 import org.apache.commons.net.ftp.FTPFile;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import groovy.json.internal.Exceptions;
-import groovy.ui.Console;
 import io.vantiq.extjsdk.ExtensionServiceMessage;
 import io.vantiq.extjsdk.ExtensionWebSocketClient;
 import io.vantiq.extsrc.FTPClientSource.exception.VantiqFTPClientException;
@@ -190,7 +171,10 @@ public class FTPClient {
     public static String FTPClient_DOWNLOAD_FOLDER_FAILED_MESSAGE = "Download destination folder failure (does not exists)";
     public static String FTPClient_DOWNLOAD_DOCUMENT_FAILED_CODE = "io.vantiq.extsrc.FTPClientsource.downloadDocumentFailure";
     public static String FTPClient_DOWNLOAD_DOCUMENT_FAILED_MESSAGE = "Download document failure";
-    public static String FTPClient_DOWNLOAD_DOCUMENT_MISSING_MESSAGE = "Must supply source abd destination";
+    public static String FTPClient_DOWNLOAD_DOCUMENT_MISSING_MESSAGE = "Must supply source and destination";
+    public static String FTPClient_UPLOAD_DOCUMENT_FAILED_CODE = "io.vantiq.extsrc.FTPClientsource.uploadDocumentFailure";
+    public static String FTPClient_UPLOAD_DOCUMENT_FAILED_MESSAGE = "Upload document failure";
+    public static String FTPClient_UPLOAD_DOCUMENT_MISSING_MESSAGE = "Must supply source and destination";
 
     public static String FTPClient_NOFILE_CODE = "io.vantiq.extsrc.FTPClientsource.nofile";
     public static String FTPClient_NOFILE_MESSAGE = "File does not exist.";
@@ -204,6 +188,8 @@ public class FTPClient {
     public static String FTPClient_SUCCESS_FOLDER_DOWNLOADED_MESSAGE = "Folder downloaded Successfully";
     public static String FTPClient_SUCCESS_FOLDER_CLEANED_MESSAGE = "Folder cleaned Successfully";
     public static String FTPClient_SUCCESS_CHECK_COMM_MESSAGE = "communication extablished Successfully";
+    public static String FTPClient_SUCCESS_IMAGE_DOWNLOADED_MESSAGE = "Image downloaded Successfully";
+    public static String FTPClient_SUCCESS_IMAGE_UPLOADED_MESSAGE = "Image uploaded Successfully";
 
     public static String FTPClient_SUCCESS_FILE_CREATED_MESSAGE = "File Created Successfully";
     public static String FTPClient_SUCCESS_FILE_APPENDED_MESSAGE = "File Appended Successfully";
@@ -225,6 +211,34 @@ public class FTPClient {
         defaultServer.ageInDays = (Integer) config.get(FTPClientHandleConfiguration.AGE_IN_DAYS_KEYWORD);
         defaultServer.connectTimeout = (Integer) config.get(FTPClientHandleConfiguration.CONNECT_TIMEOUT);
         defaultServer.addPrefixToDownload = (Boolean) config.get(FTPClientHandleConfiguration.ADD_PRRFIX_TO_DOWNLOAD);
+
+        defaultServer.baseDocumentPath = "";
+        if (config.get(FTPClientHandleConfiguration.BASE_DOCUMENT_PATH) != null) {
+            defaultServer.baseDocumentPath = (String) config.get(FTPClientHandleConfiguration.BASE_DOCUMENT_PATH);
+        }
+
+        defaultServer.documentServer = "dev.vantiq.com";
+        if (config.get(FTPClientHandleConfiguration.DOCUMENT_SERVER) != null) {
+            defaultServer.documentServer = (String) config.get(FTPClientHandleConfiguration.DOCUMENT_SERVER);
+        }
+
+        defaultServer.documentServerToken = "";
+        if (config.get(FTPClientHandleConfiguration.DOCUMENT_SERVER_TOKEN) != null) {
+            defaultServer.documentServerToken = (String) config.get(FTPClientHandleConfiguration.DOCUMENT_SERVER_TOKEN);
+        }
+
+        defaultServer.autoUploadToDocumentPostfix = "";
+        if (config.get(FTPClientHandleConfiguration.AUTO_UPLOAD_TO_DOCUMENT_POSTFIX) != null) {
+            defaultServer.autoUploadToDocumentPostfix = (String) config
+                    .get(FTPClientHandleConfiguration.AUTO_UPLOAD_TO_DOCUMENT_POSTFIX);
+        }
+
+        defaultServer.deleteAfterSuccessfullUpload = false;
+        if (config.get(FTPClientHandleConfiguration.DELETE_AFTER_SUCCESSFULL_UPLOAD) != null) {
+            defaultServer.deleteAfterSuccessfullUpload = (Boolean) config
+                    .get(FTPClientHandleConfiguration.DELETE_AFTER_SUCCESSFULL_UPLOAD);
+        }
+        
 
         try {
             if (config.get(FTPClientHandleConfiguration.SERVER_LIST) != null) {
@@ -346,7 +360,8 @@ public class FTPClient {
                         try {
                             if (!ftpUtil.downloadFolder(currEntry.server, currEntry.port, currEntry.username,
                                     currEntry.password, currEntry.remoteFolderPath, localFolderPath, true,
-                                    currEntry.connectTimeout, currEntry.addPrefixToDownload, currEntry.name)) {
+                                    currEntry.connectTimeout, currEntry.addPrefixToDownload, currEntry.name,
+                                    currEntry)) {
                                 log.error("LookForRemoteFiles failure when downloading files from " + currEntry.name);
                             }
                         } catch (VantiqFTPClientException exv) {
@@ -548,8 +563,9 @@ public class FTPClient {
             checkedAttribute = FTPClientHandleConfiguration.DELETE_AFTER_DOWNLOAD;
             deleteAfterDownload = SetFieldBooleanValue(checkedAttribute, body, deleteAfterDownload);
 
-            Boolean addPrefixAfterDownload = (Boolean) options.get(FTPClientHandleConfiguration.ADD_PRRFIX_TO_DOWNLOAD);
-            checkedAttribute = FTPClientHandleConfiguration.ADD_PRRFIX_TO_DOWNLOAD;
+            Boolean addPrefixAfterDownload = (Boolean) options
+                    .get(FTPClientHandleConfiguration.AUTO_UPLOAD_TO_DOCUMENT_POSTFIX);
+            checkedAttribute = FTPClientHandleConfiguration.AUTO_UPLOAD_TO_DOCUMENT_POSTFIX;
             deleteAfterDownload = SetFieldBooleanValue(checkedAttribute, body, addPrefixAfterDownload);
 
             Path path = Paths.get(destinationPathStr);
@@ -564,7 +580,7 @@ public class FTPClient {
 
                 if (!ftpUtil.downloadFolder(currEntry.server, currEntry.port, currEntry.username, currEntry.password,
                         sourcePathStr, destinationPathStr, deleteAfterDownload, currEntry.connectTimeout,
-                        addPrefixAfterDownload, currEntry.name)) {
+                        addPrefixAfterDownload, currEntry.name, currEntry)) {
                     rsArray = CreateResponse(FTPClient_DOWNLOAD_FOLDER_FAILED_CODE,
                             FTPClient_DOWNLOAD_FOLDER_FAILED_MESSAGE, "[" + name + "] " + sourcePathStr);
                 } else {
@@ -634,10 +650,81 @@ public class FTPClient {
                     rsArray = CreateResponse(FTPClient_DOWNLOAD_DOCUMENT_FAILED_CODE,
                             FTPClient_DOWNLOAD_FOLDER_FAILED_MESSAGE, fullSourcePath);
                 } else {
-                    rsArray = CreateResponse(FTPClient_SUCCESS_CODE, FTPClient_SUCCESS_FOLDER_DOWNLOADED_MESSAGE,
+                    rsArray = CreateResponse(FTPClient_SUCCESS_CODE, FTPClient_SUCCESS_IMAGE_DOWNLOADED_MESSAGE,
                             fullSourcePath);
 
                 }
+            }
+
+            return rsArray;
+        } catch (Exception ex) {
+            if (checkedAttribute != "") {
+                throw new VantiqFTPClientException(
+                        String.format("Illegal request structure , attribute %s doesn't exist", checkedAttribute), ex);
+            } else {
+                throw new VantiqFTPClientException("General Error", ex);
+            }
+        } finally {
+
+        }
+    }
+
+    /**
+     * The method used to execute an upload imgae command, triggered by a SELECT on
+     * the respective source from VANTIQ.
+     * 
+     * @param message
+     * @return
+     * @throws VantiqFTPClientException
+     */
+    public HashMap[] processUploadImage(ExtensionServiceMessage message) throws VantiqFTPClientException {
+        HashMap[] rsArray = null;
+        String checkedAttribute = BODY_KEYWORD;
+        String sourcePathStr = "";
+        String destinationPathStr = "";
+        String name = "default";
+
+        try {
+            Map<String, ?> request = (Map<String, ?>) message.getObject();
+            Map<String, Object> body = (Map<String, Object>) request.get(checkedAttribute);
+
+            checkedAttribute = FTPClientHandleConfiguration.DOCUMENT_SERVER;
+            String documentServer = SetFieldStringValue(checkedAttribute, body, defaultServer.documentServer, false); // body.get(checkedAttribute).toString();
+
+            checkedAttribute = FTPClientHandleConfiguration.DOCUMENT_SERVER_TOKEN;
+            String token = SetFieldStringValue(checkedAttribute, body, defaultServer.documentServerToken, false);
+
+            checkedAttribute = FTPClientHandleConfiguration.BASE_DOCUMENT_PATH;
+            String defBaseFolder = (String) config.get(FTPClientHandleConfiguration.BASE_DOCUMENT_PATH);
+            String basePathStr = defBaseFolder;
+
+            checkedAttribute = LOCAL_PATH_KEYWORD;
+            sourcePathStr = SetFieldStringValue(checkedAttribute, body, "", true);
+
+            checkedAttribute = REMOTE_PATH_KEYWORD;
+            destinationPathStr = SetFieldStringValue(checkedAttribute, body, "", true);
+            // new File(destinationPathStr).mkdirs();
+
+            if (sourcePathStr == "" || destinationPathStr == "") {
+                rsArray = CreateResponse(FTPClient_UPLOAD_DOCUMENT_FAILED_CODE,
+                        FTPClient_UPLOAD_DOCUMENT_MISSING_MESSAGE, destinationPathStr);
+            } else {
+
+                VantiqUtil vantiqUtil = new VantiqUtil(log, documentServer, token);
+
+                File f = new File(sourcePathStr);
+                String fullDestinationPath = basePathStr + "/" + destinationPathStr;
+
+                vantiqUtil.uploadAsImage = true;
+                if (!vantiqUtil.uploadToVantiq(f, fullDestinationPath)) {
+                    rsArray = CreateResponse(FTPClient_UPLOAD_DOCUMENT_FAILED_CODE,
+                            FTPClient_UPLOAD_DOCUMENT_FAILED_MESSAGE, fullDestinationPath);
+                } else {
+                    rsArray = CreateResponse(FTPClient_SUCCESS_CODE, FTPClient_SUCCESS_IMAGE_UPLOADED_MESSAGE,
+                            fullDestinationPath);
+
+                }
+
             }
 
             return rsArray;

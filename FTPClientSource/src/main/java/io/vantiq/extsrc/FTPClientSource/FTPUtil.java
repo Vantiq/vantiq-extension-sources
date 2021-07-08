@@ -249,7 +249,8 @@ public class FTPUtil {
     }
 
     public boolean downloadFolder(String server, Integer port, String user, String password, String remoteFolderPath,
-            String localFolderPath,boolean deleteAfterDownload,Integer connectTimeout,Boolean addPrefixToDownload,String serverName) throws VantiqFTPClientException {
+            String localFolderPath,boolean deleteAfterDownload,Integer connectTimeout,Boolean addPrefixToDownload,String serverName,
+            FTPServerEntry serverEntry) throws VantiqFTPClientException {
 
         FTPClient currentFtpClient = new org.apache.commons.net.ftp.FTPClient();
 
@@ -291,6 +292,29 @@ public class FTPUtil {
                             Log.info("File " + fileName + " downloaded and deleted");
                         } else {
                             Log.error("File " + fileName + " downloaded but couldn't deleted");
+                        }
+
+                    }
+
+                    // in case need to be upload to dsocument. 
+          
+                if (s.indexOf(serverEntry.autoUploadToDocumentPostfix) !=-1){
+                        VantiqUtil vu = new VantiqUtil(Log, serverEntry.documentServer, serverEntry.documentServerToken); 
+                        vu.uploadAsImage = true;
+                        String fullDestinationPath = serverEntry.baseDocumentPath + "/" + fileName ;
+                        File fu = new File(s);
+                        if (vu.uploadToVantiq(fu, fullDestinationPath)){
+                            Log.info("File " + fileName + " Uploaded to vantiq document");
+                        } else {
+                            Log.error("File " + fileName + " Failed to upload to Vantiq document");
+                        }
+
+                        if (serverEntry.deleteAfterSuccessfullUpload){
+                            if (deleteLocalFile(s)){
+                                Log.info("File " + fileName + " uploaded to Vantiq document and deleted");
+                            } else {
+                                Log.error("File " + fileName + " uploaded to Vantiq document but couldn't deleted");
+                            }
                         }
 
                     }

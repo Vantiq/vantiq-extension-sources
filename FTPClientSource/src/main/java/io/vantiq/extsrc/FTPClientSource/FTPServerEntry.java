@@ -18,7 +18,11 @@ public class FTPServerEntry {
     public Integer ageInDays;
     public Integer connectTimeout;
     public String baseDocumentPath;
-    public Boolean addPrefixToDownload; 
+    public boolean addPrefixToDownload;
+    public String documentServer ;
+    public String documentServerToken;
+    public String autoUploadToDocumentPostfix  ;
+    public Boolean deleteAfterSuccessfullUpload;
 
     public FTPServerEntry(Map<String, Object> o, FTPServerEntry def) throws VantiqFTPClientException {
         
@@ -91,6 +95,29 @@ public class FTPServerEntry {
         } else {
             baseDocumentPath = def.baseDocumentPath;
         }
+
+        if (o.get(FTPClientHandleConfiguration.DOCUMENT_SERVER) instanceof String) {
+            documentServer = (String) o.get(FTPClientHandleConfiguration.DOCUMENT_SERVER);
+        } else {
+            documentServer = def.documentServer;
+        }
+        if (o.get(FTPClientHandleConfiguration.DOCUMENT_SERVER_TOKEN) instanceof String) {
+                documentServerToken  = (String) o.get(FTPClientHandleConfiguration.DOCUMENT_SERVER_TOKEN);
+        } else {
+            documentServerToken = def.documentServerToken;
+        }
+        if (o.get(FTPClientHandleConfiguration.AUTO_UPLOAD_TO_DOCUMENT_POSTFIX) instanceof String) {
+            autoUploadToDocumentPostfix = (String) o.get(FTPClientHandleConfiguration.AUTO_UPLOAD_TO_DOCUMENT_POSTFIX);
+        } else {
+            autoUploadToDocumentPostfix = def.autoUploadToDocumentPostfix;
+        }
+
+        if (o.get(FTPClientHandleConfiguration.DELETE_AFTER_SUCCESSFULL_UPLOAD) instanceof String) {
+           deleteAfterSuccessfullUpload = Boolean.parseBoolean((String) o.get(FTPClientHandleConfiguration.DELETE_AFTER_SUCCESSFULL_UPLOAD));
+        } else { 
+            deleteAfterSuccessfullUpload = def.deleteAfterSuccessfullUpload;
+        }
+        
 
     }
 
