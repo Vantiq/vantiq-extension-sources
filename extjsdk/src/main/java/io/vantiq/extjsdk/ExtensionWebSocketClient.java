@@ -799,7 +799,6 @@ public class ExtensionWebSocketClient {
         // Saving and nulling before closing so EWSListener can know when it is closed by the client 
         WebSocket socket = webSocket;
         webSocket = null;
-        outstandingNotifications = null;
         if (socket != null) {
             try {
                 socket.close(1000, "Closed by client");

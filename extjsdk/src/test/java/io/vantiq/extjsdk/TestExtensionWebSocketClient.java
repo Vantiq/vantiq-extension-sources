@@ -308,6 +308,31 @@ public class TestExtensionWebSocketClient extends ExtjsdkTestBase {
     }
 
     @Test
+    public void testOpenAndClose() {
+        // Setup a client and listener and mark things "connected"
+        FalseClient newClient = new FalseClient(srcName);
+        TestListener testListener = new TestListener(newClient);
+        newClient.listener = testListener;
+
+        // Lets initiate the full connection and send a notification
+        newClient.initiateFullConnection("doesn't matter", "also doesn't matter");
+        newClient.webSocketFuture = CompletableFuture.completedFuture(true);
+        newClient.authFuture = CompletableFuture.completedFuture(true);
+        newClient.sourceFuture = CompletableFuture.completedFuture(true);
+        newClient.sendNotification("blah");
+
+        // Now we close the client
+        newClient.close();
+
+        // Now reopen and try to send a notification again
+        newClient.initiateFullConnection("doesn't matter", "also doesn't matter");
+        newClient.webSocketFuture = CompletableFuture.completedFuture(true);
+        newClient.authFuture = CompletableFuture.completedFuture(true);
+        newClient.sourceFuture = CompletableFuture.completedFuture(true);
+        newClient.sendNotification("blah2");
+    }
+
+    @Test
     public void testBadNotificationArguments() {
         markSourceConnected(true);
 
