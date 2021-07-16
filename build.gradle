@@ -42,7 +42,7 @@ group 'io.vantiq'
 ext {
     slf4jApiVersion = '1.7.25'
     eclipseMiloVersion = '0.2.1'
-    vantiqSDKVersion = '1.0.30'
+    vantiqSDKVersion = '1.0.31'
 }
 
 
