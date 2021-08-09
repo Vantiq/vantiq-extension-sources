@@ -28,6 +28,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.*;
 import java.util.Queue;
+import java.util.UUID;
 
 import com.google.common.collect.EvictingQueue;
 
@@ -179,6 +180,12 @@ public class ExtensionWebSocketClient {
     public ExtensionWebSocketClient (String sourceName) {
         this(sourceName, DEFAULT_FAILED_MESSAGE_QUEUE_SIZE);
     }
+
+    /**
+     * Unique identifier for this loader's class.  This is set on load and then left.  This
+     * shared secret allows instances of this client to perform reconnects to the server.
+     */
+    protected final static String clientReconnectSecret = UUID.randomUUID().toString();
 
     /**
      * Creates an {@link ExtensionWebSocketClient} that will connect to the source {@code sourceName}.
@@ -643,6 +650,8 @@ public class ExtensionWebSocketClient {
     protected void doConnectionToSource() {
         ExtensionServiceMessage connectMessage = new ExtensionServiceMessage("");
         connectMessage.connectExtension(ExtensionServiceMessage.RESOURCE_NAME_SOURCES, sourceName, null);
+        connectMessage.parameters = new HashMap<String, String>();
+        connectMessage.parameters.put(ExtensionServiceMessage.RECONNECT_SECRET, clientReconnectSecret);
         send(connectMessage);
         log.trace("Connect message sent.");
     }
