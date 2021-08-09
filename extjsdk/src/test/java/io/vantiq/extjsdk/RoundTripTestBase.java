@@ -29,6 +29,7 @@ public class RoundTripTestBase {
     public static String testSourceName = null;
     public static String testTypeName = null;
     public static String testRuleName = null;
+    public static Boolean testRepeatedConnectsEnabled = null;
     public static final String TEST_IMPL_NAME = "TEST_SOURCE_IMPL";
 
     static Vantiq vantiq;
@@ -40,6 +41,8 @@ public class RoundTripTestBase {
         testSourceName = System.getProperty("EntConTestSourceName", "testSourceName");
         testTypeName = System.getProperty("EntConTestTypeName", "testTypeName");
         testRuleName = System.getProperty("EntConTestRuleName", "testRuleName");
+        testRepeatedConnectsEnabled =
+                Boolean.valueOf(System.getProperty("TestRepeatedConnects", "false"));
         assumeTrue("Tests require system property 'buildDir' to be set -- should be extjsdk/build",
                 System.getProperty("buildDir") != null);
 
