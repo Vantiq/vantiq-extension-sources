@@ -80,7 +80,7 @@ dependencies {
 
     testCompile group: 'junit', name: 'junit', version: '4.12'
     // Used for uploading documents (images) to VANTIQ with VANTIQ SDK
-    testCompile 'io.vantiq:vantiq-sdk:1.0.24'
+    testCompile 'io.vantiq:vantiq-sdk:1.0.28'
 
     // Used to create EvictingQueue for failed messages queue
     implementation 'com.google.guava:guava:23.0'
