@@ -545,10 +545,11 @@ public class CSV {
                 rsArray = CreateResponse(CSV_FILEEXIST_CODE, CSV_FILEEXIST_MESSAGE, file.toString());
             } else {
 
-                file.createNewFile();
+               // file.createNewFile();
 
-                try (FileOutputStream fos = new FileOutputStream(file);
-                        BufferedWriter bw = new BufferedWriter(new OutputStreamWriter(fos))) {
+                try (//FileOutputStream fos = new FileOutputStream(file);
+//                BufferedWriter bw = new BufferedWriter(new OutputStreamWriter(fos))) {
+                    BufferedWriter bw = new BufferedWriter( new OutputStreamWriter(new FileOutputStream(fullFilePath), "UTF-8"))) {
 
                     checkedAttribute = CONTENT_KEYWORD;
                     List<Map<String, Object>> content = (List<Map<String, Object>>) body.get(CONTENT_KEYWORD);
@@ -615,7 +616,10 @@ public class CSV {
             String fullFilePath = path.toString() + File.separator + fileStr;
             File file = new File(fullFilePath);
             if (file.exists()) {
-                try (FileWriter fw = new FileWriter(file, true); BufferedWriter bw = new BufferedWriter(fw)) {
+                try (//FileWriter fw = new FileWriter(file, true); 
+//                BufferedWriter bw = new BufferedWriter(fw)) 
+                BufferedWriter bw = new BufferedWriter( new OutputStreamWriter(new FileOutputStream(fullFilePath), "UTF-8"))) 
+                {
 
                     checkedAttribute = CONTENT_KEYWORD;
                     List<Map<String, Object>> content = (List<Map<String, Object>>) body.get(CONTENT_KEYWORD);
