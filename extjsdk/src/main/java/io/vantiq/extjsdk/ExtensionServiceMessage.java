@@ -39,7 +39,7 @@ public class ExtensionServiceMessage {
     public static final String PROPERTY_MESSAGE_HEADERS = "messageHeaders";
 
     // Set in parameters to allow reconnect after network half-open situation
-    public static String RECONNECT_SECRET = "reconnectSecret";
+    public static final String RECONNECT_SECRET = "reconnectSecret";
 
     public String address;
     public Map    messageHeaders;

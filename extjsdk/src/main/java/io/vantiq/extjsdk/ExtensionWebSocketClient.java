@@ -185,7 +185,7 @@ public class ExtensionWebSocketClient {
      * Unique identifier for this loader's class.  This is set on load and then left.  This
      * shared secret allows instances of this client to perform reconnects to the server.
      */
-    protected final static String clientReconnectSecret = UUID.randomUUID().toString();
+    protected static final String clientReconnectSecret = UUID.randomUUID().toString();
 
     /**
      * Creates an {@link ExtensionWebSocketClient} that will connect to the source {@code sourceName}.
