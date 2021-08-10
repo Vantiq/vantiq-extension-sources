@@ -11,6 +11,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeTrue;
 
 public class TestWithServer extends RoundTripTestBase {
@@ -23,6 +24,39 @@ public class TestWithServer extends RoundTripTestBase {
             deleteRule();
             deleteSource();
             deleteSourceImpl();
+        }
+    }
+
+    @Test
+    public void testRepeatedConnects() throws Exception {
+
+        assumeTrue(testRepeatedConnectsEnabled);    // TODO remove after 1.32 is out
+
+        int repCount = 20;
+
+        setupSourceImpl();
+        setupSource(createSource());
+
+        assert checkSourceExists();
+
+        ExtensionWebSocketClient client = new ExtensionWebSocketClient(SOURCE_NAME);
+
+        // Make initial Utils.obtainServerConfig() call so that we don't get errors later on
+        File serverConfigFile = new File("server.config");
+        serverConfigFile.createNewFile();
+        serverConfigFile.deleteOnExit();
+        Utils.obtainServerConfig();
+
+        // Now, to verify that things work as expected, repeatedly connect w/o close
+        // This is verifying that the reconnect secret is being passed & used correctly.
+
+        for (int i = 0; i < repCount; i++ ) {
+            client = new ExtensionWebSocketClient(SOURCE_NAME);
+            client.initiateFullConnection(testVantiqServer, testAuthToken).get();
+            assertTrue("Failed to open connection", client.isOpen());
+            assertTrue("Failed to authenticate", client.isAuthed());
+            assertTrue("Failed to connect to source (may fail if run against Vantiq version < 1.32)",
+                    client.isConnected());
         }
     }
 

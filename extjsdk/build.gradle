@@ -54,6 +54,10 @@ tasks.withType(Test) {
     if (rootProject.hasProperty("TestVantiqServer")) {
         systemProperty "TestVantiqServer", rootProject.findProperty("TestVantiqServer") ?: "empty"
     }
+
+    if (rootProject.hasProperty("TestRepeatedConnects")) {
+        systemProperty "TestRepeatedConnects", rootProject.findProperty("TestRepeatedConnects") ?: "empty"
+    }
     // Use the build dir as a base to get our various test artifacts.
     systemProperty "buildDir", "${buildDir}"
 }

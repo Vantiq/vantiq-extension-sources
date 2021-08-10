@@ -25,6 +25,7 @@ import java.util.Map;
  * Created by fcarter 7 Jun 2018
  */
 
+@SuppressWarnings("PMD.TooManyFields")
 public class ExtensionServiceMessage {
     public static final String RESOURCE_NAME_SOURCES = "sources";
     public static final String OP_CONFIGURE_EXTENSION = "configureExtension";
@@ -37,6 +38,15 @@ public class ExtensionServiceMessage {
     public static final String ORIGIN_ADDRESS_HEADER = "REPLY_ADDR_HEADER";
     public static final String RESPONSE_ADDRESS_HEADER = "X-Reply-Address";
     public static final String PROPERTY_MESSAGE_HEADERS = "messageHeaders";
+
+    // Set in parameters to allow reconnect after network half-open situation
+    // This is sent on any CONNECT_EXTENSION messages.  It is used when a connector
+    // "re-connects" to the server to verify that it's the same connector connecting in
+    // (otherwise, the reconnect is rejected).  So, while it's send on all CONNECT... calls,
+    // its use is only in the reconnect case (that is, usurping an existing connection).
+    // The name's a bit confusing, but CONNECT_SECRET sounds too much like something you need
+    // to connect (which, under normal circumstances, you don't).
+    public static final String RECONNECT_SECRET = "reconnectSecret";
 
     public String address;
     public Map    messageHeaders;
