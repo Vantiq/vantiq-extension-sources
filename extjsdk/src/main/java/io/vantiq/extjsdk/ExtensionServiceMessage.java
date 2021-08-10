@@ -25,6 +25,7 @@ import java.util.Map;
  * Created by fcarter 7 Jun 2018
  */
 
+@SuppressWarnings("PMD.TooManyFields")
 public class ExtensionServiceMessage {
     public static final String RESOURCE_NAME_SOURCES = "sources";
     public static final String OP_CONFIGURE_EXTENSION = "configureExtension";

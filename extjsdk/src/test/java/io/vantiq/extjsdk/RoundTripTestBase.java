@@ -21,6 +21,7 @@ import static org.junit.Assume.assumeTrue;
 import io.vantiq.client.Vantiq;
 import io.vantiq.client.VantiqResponse;
 
+@SuppressWarnings("PMD.MutableStaticState")
 public class RoundTripTestBase {
     public static final String UNUSED = "unused";
 
