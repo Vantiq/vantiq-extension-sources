@@ -40,6 +40,12 @@ public class ExtensionServiceMessage {
     public static final String PROPERTY_MESSAGE_HEADERS = "messageHeaders";
 
     // Set in parameters to allow reconnect after network half-open situation
+    // This is sent on any CONNECT_EXTENSION messages.  It is used when a connector
+    // "re-connects" to the server to verify that it's the same connector connecting in
+    // (otherwise, the reconnect is rejected).  So, while it's send on all CONNECT... calls,
+    // it's use is in only in the reconnect case (that is, usurping an existing connection).
+    // The name's a bit confusing, but CONNECT_SECRET sounds too much like something you need
+    // to connect (which, under normal circumstances, you don't).
     public static final String RECONNECT_SECRET = "reconnectSecret";
 
     public String address;
