@@ -43,7 +43,7 @@ public class ExtensionServiceMessage {
     // This is sent on any CONNECT_EXTENSION messages.  It is used when a connector
     // "re-connects" to the server to verify that it's the same connector connecting in
     // (otherwise, the reconnect is rejected).  So, while it's send on all CONNECT... calls,
-    // it's use is in only in the reconnect case (that is, usurping an existing connection).
+    // its use is only in the reconnect case (that is, usurping an existing connection).
     // The name's a bit confusing, but CONNECT_SECRET sounds too much like something you need
     // to connect (which, under normal circumstances, you don't).
     public static final String RECONNECT_SECRET = "reconnectSecret";
