@@ -146,6 +146,15 @@ public class CSVReader {
             String xmlString = "";
             // give time to writer to close the file - FTP should be merged with CSV extension source.
             Thread.sleep(100);
+
+            long fileSize = Files.size(Paths.get(csvFile));
+            log.info("file {} attempt:{} fileSize {}",csvFile,0,fileSize);
+            for ( int t = 0 ; t < 10 && fileSize < 10 ; t++){
+                Thread.sleep(100);
+                fileSize = Files.size(Paths.get(csvFile));
+                log.info("file {} attempt:{} fileSize {}",csvFile,t,fileSize);
+            }
+
             xmlString = new String(Files.readAllBytes(Paths.get(csvFile)));
 
             try {

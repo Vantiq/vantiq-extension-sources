@@ -752,8 +752,8 @@ public class CSV {
         } catch (Exception ex){
             log.error("copyFileUsingStream failed", ex);
         } finally {
-            is.close();
-            os.close();
+            if (is!=null) is.close();
+            if (os!=null) os.close();
         }
     }
 }

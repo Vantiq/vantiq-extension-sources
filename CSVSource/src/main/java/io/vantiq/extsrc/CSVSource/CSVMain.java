@@ -48,7 +48,7 @@ public class CSVMain {
      */
     public static void main(String[] args) {
         Properties config;
-        log.error("Start V1.0.0.2");
+        log.error("Start V1.0.0.3");
         if (args != null && args.length > 0) {
             config = Utils.obtainServerConfig(args[0]);
         } else {
