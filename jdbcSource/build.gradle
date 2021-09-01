@@ -75,7 +75,7 @@ dependencies {
     runtime files("${System.env.JDBC_DRIVER_LOC}")
     
     // Used for checking VANTIQ date format behavior with VANTIQ SDK
-    compile 'io.vantiq:vantiq-sdk:1.0.27'
+    compile 'io.vantiq:vantiq-sdk:1.0.28'
     
     // Use JUnit test framework
     testCompile 'junit:junit:4.12'

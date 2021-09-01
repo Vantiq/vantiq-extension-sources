@@ -203,6 +203,11 @@ public class FTPClientCore {
                         sendDataFromQuery(queryArray, message);
                     }
                         break;
+                    case "importdocument": {
+                        HashMap[] queryArray = localFTPClient.processImportDocument(message);
+                        sendDataFromQuery(queryArray, message);
+                    }
+                        break;
                     default:
                         log.error("Unrecognized op :" + opString);
                         client.sendQueryError(replyAddress, this.getClass().getName() + ".opNotSupported",

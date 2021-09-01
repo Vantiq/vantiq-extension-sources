@@ -108,6 +108,10 @@ public class VantiqUtil {
                     target,
                     DOCUMENT_RESOURCE_PATH); 
 
+                    if (vr.getStatusCode() != 200){
+                        LOGGER.error("Errors uploading image with VANTIQ SDK: " + vr.toString());
+
+                    }
                     return vr.getStatusCode() == 200 ; 
             /*
             vantiq.upload(fileToUpload,

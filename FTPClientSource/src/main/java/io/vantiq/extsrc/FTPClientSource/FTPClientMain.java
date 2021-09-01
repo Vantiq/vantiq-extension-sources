@@ -48,6 +48,7 @@ public class FTPClientMain {
      */
     public static void main(String[] args) {
         Properties config;
+        log.error("Start V1.0.0.1");
         if (args != null && args.length > 0) {
             config = Utils.obtainServerConfig(args[0]);
         } else {

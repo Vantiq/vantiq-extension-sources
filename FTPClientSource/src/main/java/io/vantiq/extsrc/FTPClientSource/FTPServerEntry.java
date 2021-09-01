@@ -21,6 +21,10 @@ public class FTPServerEntry {
     public boolean addPrefixToDownload;
     public String documentServer ;
     public String documentServerToken;
+    public String documentServerPath;
+    public String sourceDocumentServer ;
+    public String sourceDocumentServerToken;
+    public String sourceDocumentServerPath;
     public String autoUploadToDocumentPostfix  ;
     public Boolean deleteAfterSuccessfullUpload;
 
@@ -106,6 +110,30 @@ public class FTPServerEntry {
         } else {
             documentServerToken = def.documentServerToken;
         }
+
+        if (o.get(FTPClientHandleConfiguration.DOCUMENT_SERVER_PATH) instanceof String) {
+            documentServerPath  = (String) o.get(FTPClientHandleConfiguration.DOCUMENT_SERVER_PATH);
+        } else {
+            documentServerPath = def.documentServerPath;
+        }
+
+        if (o.get(FTPClientHandleConfiguration.SOURCE_DOCUMENT_SERVER) instanceof String) {
+            sourceDocumentServer = (String) o.get(FTPClientHandleConfiguration.SOURCE_DOCUMENT_SERVER);
+        } else {
+            sourceDocumentServer = def.sourceDocumentServer;
+        }
+        if (o.get(FTPClientHandleConfiguration.SOURCE_DOCUMENT_SERVER_TOKEN) instanceof String) {
+                sourceDocumentServerToken  = (String) o.get(FTPClientHandleConfiguration.SOURCE_DOCUMENT_SERVER_TOKEN);
+        } else {
+            sourceDocumentServerToken = def.sourceDocumentServerToken;
+        }
+
+        if (o.get(FTPClientHandleConfiguration.SOURCE_DOCUMENT_SERVER_PATH) instanceof String) {
+            sourceDocumentServerPath  = (String) o.get(FTPClientHandleConfiguration.SOURCE_DOCUMENT_SERVER_PATH);
+        } else {
+            sourceDocumentServerPath = def.sourceDocumentServerPath;
+        }
+
         if (o.get(FTPClientHandleConfiguration.AUTO_UPLOAD_TO_DOCUMENT_POSTFIX) instanceof String) {
             autoUploadToDocumentPostfix = (String) o.get(FTPClientHandleConfiguration.AUTO_UPLOAD_TO_DOCUMENT_POSTFIX);
         } else {
