@@ -127,6 +127,7 @@ folder. Some features may depend on additional .dll/.so/.dylib files, such as FF
     `opencv_ffmpeg410_64.so` file, respectively, to the OPENCV_LOC folder. This file is located in the same directory as the 
     other OpenCV .jar/.dll/.so/.dylib files. (Use `opencv_ffmpeg410.dll` or `opencv_ffmpeg410.so` for 32 bit version.)
         *   A typical indicator that you will need to add this file is if OpenCV cannot open video streams/files.
+        * Note that the version numbers (_e.g._, `410`) on these libraries will vary based on the versions installed.
     *   The implementations dependent on OpenCV are FileRetriever, NetworkStreamRetriever, and CameraRetriever.
 2.  Clone this repository (vantiq-extension-sources) and navigate into `<repo location>/vantiq-extension-sources`.
 3.  Run `./gradlew objectRecognitionSource:assemble`.
