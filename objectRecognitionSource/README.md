@@ -59,7 +59,7 @@ The [official site](https://opencv.org/releases/) and [the somewhat dated tutori
 
 Installation on macOS<sup>&reg;</sup> is a bit more complicated. The easiest way is to use [Homebrew](https://brew.sh). _Homebrew_ is a package manager for macOS.  It is also available for Linux.
 
-Once _Homebrew_ is installed, you can read the instructions in [this slightly dated tutorial]() for background information. However, recent changes in _Homebrew_ have made some changes necessary.
+Once _Homebrew_ is installed, you can read the instructions in [this only slightly dated tutorial](https://medium.com/macoclock/setting-up-mac-for-opencv-java-development-with-intellij-idea-fd2153eb634f) for background information. However, recent changes in _Homebrew_ have made some changes necessary.
 
 Specfically, current versions of _Homebrew_ need a bit more information about the Java environment to build the Java code for OpenCV. If this information is not provided, the installation of OpenCV appears to succeed, but the Java implemenation is not available. No errors are apparent. 
 
@@ -71,7 +71,7 @@ As a result, the following steps are necessary to install OpenCV with Java suppo
     * Set the ANT_HOME environment variable to the installation location.  Due to some issues with the current versions of the _Ant_ installation, you may need to to set ANT_HOME to `/usr/local/Cellar/ant/1.10.11/libexec` where _1.10.11_ is the version of _Ant_ installed.
 3. If not already installed, install the XCode command-line tools.
     * `xcode-select install`
-4. Prepare to use `brew` to install OpenCV. To do this, you will configure the OpenCV installation to include the Java libraries.  Do do this, you will edit the `brew` _formula_ (the instructions `brew` uses to do the installation.
+4. Prepare to use `brew` to install OpenCV. To do this, you will configure the OpenCV installation to include the Java libraries.  This is done by editing the `brew` _formula_ (the instructions `brew` uses to do the installation.
     * `brew edit opencv`
     * In the text editor that opens, make the following changes.
         * Find the line `-DBUILD_JAVA=OFF` and change it to `-DBUILD_JAVA=ON`
