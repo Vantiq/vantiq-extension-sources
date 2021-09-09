@@ -175,10 +175,10 @@ sources inside your own code, then it is what you will use.
     *   FileRetriever, NetworkStreamRetriever, and CameraRetriever all use OpenCV, which is not in the gradle
         dependencies. If they are not removed you must install OpenCV, set the environment variable
         OPENCV_LOC to the folder containing the jar, and ensure that when running your code the jar is in the classpath
-        and (lib)opencv_javaXXX.dll/.so/.dylib is in a folder in `java.library.path` (where XXX is replace by the version of OpenCV you've installed -- _e.g._, 453, 410, _etc_). You may see a warning about not 
+        and (lib)opencv_javaXXX.dll/.so/.dylib is in a folder in `java.library.path` (where XXX is replaced by the version of OpenCV you've installed -- _e.g._, 453, 410, _etc_). You may see a warning about not 
         having (lib)opencv_javaXXX.dll/.so/.dylib in the correct directory when compiling the objectRecognition jar,
         but this can be safely ignored since you will be setting the path yourself. Instructions for installing
-        OpenCV can be found at the [official site](https://opencv.org/releases/). Please see the [Building OpenCV](#building-opencv) for instructions on generating these libraries.
+        OpenCV can be found at the [official site](https://opencv.org/releases/). Please see [Building OpenCV](#building-opencv) for instructions on generating these libraries.
 2.  Run `./gradlew objectRecognitionSource:assemble` or `.\gradlew objectRecognitionSource:assemble` depending on the
     OS.
 3.  Navigate to `<repo location>/vantiq-extension-sources/objectRecognitionSource/build/libs` and copy
