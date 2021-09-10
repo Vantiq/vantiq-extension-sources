@@ -67,7 +67,7 @@ As a result, the following steps are necessary to install OpenCV with Java suppo
 
 1. If not already installed, install _Homebrew_ (see the [installation instructions](https://brew.sh).) The _Homebrew_ command is `brew`, so you will see its use below.
 2. If not already installed, install _Ant_ (used by the build process).
-    *`brew install ant`.
+    * `brew install ant`
     * Set the ANT_HOME environment variable to the installation location.  Due to some issues with the current versions of the _Ant_ installation, you may need to to set ANT_HOME to `/usr/local/Cellar/ant/1.10.11/libexec` where _1.10.11_ is the version of _Ant_ installed.
 3. If not already installed, install the XCode command-line tools.
     * `xcode-select install`
