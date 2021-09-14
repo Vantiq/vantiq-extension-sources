@@ -70,12 +70,15 @@ As a result, the following steps are necessary to install OpenCV with Java suppo
     * `brew install ant`
     * Set the ANT_HOME environment variable to the installation location.  Due to some issues with the current versions of the _Ant_ installation, you may need to to set ANT_HOME to `/usr/local/Cellar/ant/1.10.11/libexec` where _1.10.11_ is the version of _Ant_ installed.
 3. If not already installed, install the XCode command-line tools.
-    * `xcode-select install`
+    * `xcode-select --install`
 4. Prepare to use `brew` to install OpenCV. To do this, you will configure the OpenCV installation to include the Java libraries.  This is done by editing the `brew` _formula_ (the instructions `brew` uses to do the installation).
     * `brew edit opencv`
     * In the text editor that opens, make the following changes.
+        * All of these are added to the build arguments, after the line beginning with `args = std_cmake_args`.
         * Find the line `-DBUILD_JAVA=OFF` and change it to `-DBUILD_JAVA=ON`
+            * If this line is not in your formula, please add it.
         * Find the line `-DBUILD_opencv_java=OFF` and change it to `-DBUILD_opencv_java=ON`
+            * If this line is not in your formula, please add it.
         * Below this line, add the following lines
         
         ```
