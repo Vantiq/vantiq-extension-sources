@@ -27,7 +27,7 @@ import org.junit.Assume;
 /**
  * A collection of Utility methods used by the OPC UA Extension Source unit tests
  */
-@SuppressWarnings("PMD.TooManyFields")
+@SuppressWarnings({"PMD.TooManyFields", "PMD.StaticVariableNameCheck"})
 @Slf4j
 public class Utils {
 
@@ -37,15 +37,15 @@ public class Utils {
     //
     // At present, we'll check the "write value" stuff only on our internal server.
 
-    public static String OPC_PUBLIC_SERVER_1  = "opc.tcp://opcua.rocks:4840";    // Different vendors servers...
-    public static String OPC_PUBLIC_SERVER_2  = "opc.tcp://opcuaserver.com:48484";    // Different vendors servers...
-    public static String OPC_PUBLIC_SERVER_3  = "opc.tcp://opcua-demo.factry.io:51210";
-    public static String OPC_PUBLIC_SERVER_4  = "opc.tcp://commsvr.com:51234/UA/CAS_UA_Server";
-    public static String OPC_PUBLIC_SERVER_5  = "opc.tcp://milo.digitalpetri.com:62541/milo";
-    public static String OPC_PUBLIC_SERVER_6  = "opc.tcp://opcua.123mc.com:4840/";
-    public static String OPC_PUBLIC_SERVER_7  = "opc.tcp://mfactorengineering.com:4840";
+    public static final String OPC_PUBLIC_SERVER_1  = "opc.tcp://opcua.rocks:4840";    // Different vendors servers...
+    public static final String OPC_PUBLIC_SERVER_2  = "opc.tcp://opcuaserver.com:48484";    // Different vendors servers...
+    public static final String OPC_PUBLIC_SERVER_3  = "opc.tcp://opcua-demo.factry.io:51210";
+    public static final String OPC_PUBLIC_SERVER_4  = "opc.tcp://commsvr.com:51234/UA/CAS_UA_Server";
+    public static final String OPC_PUBLIC_SERVER_5  = "opc.tcp://milo.digitalpetri.com:62541/milo";
+    public static final String OPC_PUBLIC_SERVER_6  = "opc.tcp://opcua.123mc.com:4840/";
+    public static final String OPC_PUBLIC_SERVER_7  = "opc.tcp://mfactorengineering.com:4840";
 
-    public static List<String> OPC_PUBLIC_SERVERS = Arrays.asList(
+    public static final List<String> OPC_PUBLIC_SERVERS = Arrays.asList(
             OPC_PUBLIC_SERVER_1,
             OPC_PUBLIC_SERVER_2,
             OPC_PUBLIC_SERVER_3,
@@ -55,16 +55,13 @@ public class Utils {
             OPC_PUBLIC_SERVER_7     // Flaky support -- sometimes times out after discovery, sometimes before
     );
 
-    public static String OPC_INPROCESS_SERVER = "opc.tcp://localhost:12686/milo";
-    public static String OPC_PUBLIC_SERVER_NO_GOOD = "opc.tcp://opcuaserver.com:4840";
+    public static final String OPC_INPROCESS_SERVER = "opc.tcp://localhost:12686/milo";
+    public static final String OPC_PUBLIC_SERVER_NO_GOOD = "opc.tcp://opcuaserver.com:4840";
 
-    public static String EXAMPLE_NS_SCALAR_INT32_IDENTIFIER = "HelloWorld/ScalarTypes/Int32";
-    public static String EXAMPLE_NS_SCALAR_INT32_TYPE = "Int32";
-    public static String EXAMPLE_NS_SCALAR_STRING_IDENTIFIER = "HelloWorld/ScalarTypes/String";
-    public static String EXAMPLE_NS_SCALAR_STRING_TYPE = "String";
-
-    public static String OPC_UA_CORE_NAMESPACE = Namespaces.OPC_UA;
-
+    public static final String EXAMPLE_NS_SCALAR_INT32_IDENTIFIER = "HelloWorld/ScalarTypes/Int32";
+    public static final String EXAMPLE_NS_SCALAR_INT32_TYPE = "Int32";
+    public static final String EXAMPLE_NS_SCALAR_STRING_IDENTIFIER = "HelloWorld/ScalarTypes/String";
+    public static final String EXAMPLE_NS_SCALAR_STRING_TYPE = "String";
 
     /**
      * Turn an exception into readable text for test diagnostics
@@ -111,7 +108,7 @@ public class Utils {
      * @return The OpcUaESClient created
      * @throws ExecutionException Errors returned by underlying connection if connection attempt fails.
      */
-    static public OpcUaESClient makeConnection(Map config, boolean runAsync, OpcUaTestBase testInstance, boolean startProcessOnly) throws ExecutionException {
+    public static OpcUaESClient makeConnection(Map config, boolean runAsync, OpcUaTestBase testInstance, boolean startProcessOnly) throws ExecutionException {
         return makeConnection(config, runAsync, testInstance, startProcessOnly, false);
     }
 
@@ -125,7 +122,8 @@ public class Utils {
      * @return The OpcUaESClient created
      * @throws ExecutionException Errors returned by underlying connection if connection attempt fails.
      */
-    static public OpcUaESClient makeConnection(Map config,
+    @SuppressWarnings("PMD.CognitiveComplexity")
+    public static OpcUaESClient makeConnection(Map config,
                                                boolean runAsync,
                                                OpcUaTestBase testInstance,
                                                boolean startProcessOnly,

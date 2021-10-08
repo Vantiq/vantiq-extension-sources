@@ -8,6 +8,7 @@
 
 package io.vantiq.extsrc.opcua.uaOperations;
 
+import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
@@ -743,7 +744,9 @@ public class Connection extends OpcUaTestBase {
         }
     }
 
-        private static int invocationCount = 0;
+    private static int invocationCount = 0;
+
+    @SuppressWarnings({"PMD.CognitiveComplexity", "PMD.GuardLogStatement"})
     public void makeConnection(boolean runAsync,
                                String secPolicy,
                                String msgSecMode,
@@ -791,7 +794,9 @@ public class Connection extends OpcUaTestBase {
                 String host = opcuri.getHost();
                 int    port = opcuri.getPort();
                 log.info("Making socket connection to {}:{}", host, port);
-                Socket serverSock = new Socket(host, port);
+
+                // We don't use the result so we won't save it.  We just care that it completes w/o error
+                new Socket(host, port);
                 // If we get this far, the server has accepted the connection so there's something out there.
                 // We'll assume it's our OPC server & let the test proceed
             } catch (UnknownHostException | URISyntaxException badURL) {
@@ -818,6 +823,8 @@ public class Connection extends OpcUaTestBase {
             } catch (ExecutionException e) {
                 if (e.getCause() instanceof UaException) {
                     UaException uae = (UaException) e.getCause();
+
+
                     log.error("Got error: {}", uae.getStatusCode().toString());
                     // Unfortunately, not all errors are reported reasonably.  So we'll look for our "acceptable errors"
                     // in the returned strings...
@@ -842,9 +849,9 @@ public class Connection extends OpcUaTestBase {
 
         log.info("Found {} servers to which we may be able to connect.", workingServers);
         log.info("Successfully connected to {} servers.", successfulConnections);
-        assertTrue("No responding servers found to test.", workingServers != 0);
-        assertTrue("No successful connections: (count: " + successfulConnections + ")",
-                successfulConnections != 0);
+        assertNotEquals("No responding servers found to test.", 0, workingServers);
+        assertNotEquals("No successful connections: (count: " + successfulConnections + ")", 0,
+                successfulConnections);
     }
 
     public void performConnection(Map config, boolean runAsync, boolean startProcessOnly) throws ExecutionException {
