@@ -9,7 +9,6 @@
 package io.vantiq.extsrc.opcua.uaOperations;
 
 import static org.junit.Assert.assertNotEquals;
-import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 import org.eclipse.milo.opcua.stack.core.UaException;
@@ -743,8 +742,6 @@ public class Connection extends OpcUaTestBase {
             fail("Unexpected Exception: " + e.getClass().getName() + " -- " + e.getMessage());
         }
     }
-
-    private static int invocationCount = 0;
 
     @SuppressWarnings({"PMD.CognitiveComplexity", "PMD.GuardLogStatement"})
     public void makeConnection(boolean runAsync,

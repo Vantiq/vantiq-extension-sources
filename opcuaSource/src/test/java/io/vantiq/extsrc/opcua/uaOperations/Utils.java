@@ -19,7 +19,6 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 
 import lombok.extern.slf4j.Slf4j;
-import org.eclipse.milo.opcua.stack.core.util.Namespaces;
 
 import static org.junit.Assert.fail;
 import org.junit.Assume;
