@@ -37,27 +37,23 @@ public class Utils {
     //
     // At present, we'll check the "write value" stuff only on our internal server.
 
-    public static String OPC_PUBLIC_SERVER_1 = "opc.tcp://opcuaserver.com:48010";
-    public static String OPC_PUBLIC_SERVER_2 = "opc.tcp://opcua.rocks:4840";
-    public static String OPC_PUBLIC_SERVER_3 = "opc.tcp://opcua-demo.factry.io:51210";
-    public static String OPC_PUBLIC_SERVER_4 = "opc.tcp://commsvr.com:51234/UA/CAS_UA_Server";
-    public static String OPC_PUBLIC_SERVER_5 = "opc.tcp://uademo.prosysopc.com:53530";
-    public static String OPC_PUBLIC_SERVER_6 = "opc.tcp://demo.ascolab.com:4841";
-    public static String OPC_PUBLIC_SERVER_7 = "opc.tcp://milo.digitalpetri.com:62541/milo";
-    public static String OPC_PUBLIC_SERVER_8 = "opc.tcp://opcuademo.sterfive.com:26543";
-    public static String OPC_PUBLIC_SERVER_9 = "http://opcua.demo-this.com:51211/UA/SampleServer";
+    public static String OPC_PUBLIC_SERVER_1  = "opc.tcp://opcua.rocks:4840";    // Different vendors servers...
+    public static String OPC_PUBLIC_SERVER_2  = "opc.tcp://opcuaserver.com:48484";    // Different vendors servers...
+    public static String OPC_PUBLIC_SERVER_3  = "opc.tcp://opcua-demo.factry.io:51210";
+    public static String OPC_PUBLIC_SERVER_4  = "opc.tcp://commsvr.com:51234/UA/CAS_UA_Server";
+    public static String OPC_PUBLIC_SERVER_5  = "opc.tcp://milo.digitalpetri.com:62541/milo";
+    public static String OPC_PUBLIC_SERVER_6  = "opc.tcp://opcua.123mc.com:4840/";
+    public static String OPC_PUBLIC_SERVER_7  = "opc.tcp://mfactorengineering.com:4840";
 
     public static List<String> OPC_PUBLIC_SERVERS = Arrays.asList(
-            // OPC_PUBLIC_SERVER_1,  // requires credentials & registration :-(
-            // OPC_PUBLIC_SERVER_2,
+            OPC_PUBLIC_SERVER_1,
+            OPC_PUBLIC_SERVER_2,
             OPC_PUBLIC_SERVER_3,
-            // OPC_PUBLIC_SERVER_4,  // not responding
-            // OPC_PUBLIC_SERVER_5,  // returns that the service is unsupported.
-            // OPC_PUBLIC_SERVER_6,  // unknown host
-            OPC_PUBLIC_SERVER_7,     // Flaky support -- sometimes times out after discovery, sometimes before
-            OPC_PUBLIC_SERVER_8
-            // OPC_PUBLIC_SERVER_9    // #9 is offline
-            );
+            OPC_PUBLIC_SERVER_4,  // not responding
+            OPC_PUBLIC_SERVER_5,  // returns that the service is unsupported.
+            OPC_PUBLIC_SERVER_6,
+            OPC_PUBLIC_SERVER_7     // Flaky support -- sometimes times out after discovery, sometimes before
+    );
 
     public static String OPC_INPROCESS_SERVER = "opc.tcp://localhost:12686/milo";
     public static String OPC_PUBLIC_SERVER_NO_GOOD = "opc.tcp://opcuaserver.com:4840";
@@ -129,7 +125,11 @@ public class Utils {
      * @return The OpcUaESClient created
      * @throws ExecutionException Errors returned by underlying connection if connection attempt fails.
      */
-    static public OpcUaESClient makeConnection(Map config, boolean runAsync, OpcUaTestBase testInstance, boolean startProcessOnly, boolean expectFailure) throws ExecutionException {
+    static public OpcUaESClient makeConnection(Map config,
+                                               boolean runAsync,
+                                               OpcUaTestBase testInstance,
+                                               boolean startProcessOnly,
+                                               boolean expectFailure) throws ExecutionException {
         Map<String, String> opcConfig = (Map<String, String>) config.get(OpcConstants.CONFIG_OPC_UA_INFORMATION);
         String discoveryPoint = opcConfig.get(OpcConstants.CONFIG_DISCOVERY_ENDPOINT);
 
@@ -150,7 +150,7 @@ public class Utils {
                 } else {
                     log.debug("Connection completed within wait time: " + discoveryPoint);
                 }
-                assert cf.isCancelled() == false;
+                assert !cf.isCancelled();
                 if (discoveryPoint == OPC_PUBLIC_SERVER_NO_GOOD || expectFailure) {
                     // This one will complete with an unreachable-style error
                     assert cf.isCompletedExceptionally();
@@ -188,11 +188,11 @@ public class Utils {
                 // Then we can get these exceptions when attempting to connect to the bad server.  If that's our
                 // connection target, this this is expected.  Otherwise, it's a failure.
                 if (discoveryPoint != OPC_PUBLIC_SERVER_NO_GOOD || !e.getMessage().contains("UnresolvedAddressException")) {
-                    fail("Unexpected general exception: " + Utils.errFromExc(e));
+                    throw(e);
                 }
             } else {
                 // These are bad...
-                fail("Unexpected general exception: " + Utils.errFromExc(e));
+                throw(e);
             }
         }
         catch (Exception e) {
