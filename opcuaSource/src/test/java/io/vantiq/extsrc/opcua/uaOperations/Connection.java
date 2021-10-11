@@ -8,14 +8,21 @@
 
 package io.vantiq.extsrc.opcua.uaOperations;
 
+import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.fail;
 
+import org.eclipse.milo.opcua.stack.core.UaException;
 import org.eclipse.milo.opcua.stack.core.security.SecurityPolicy;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.MessageSecurityMode;
 import org.eclipse.milo.opcua.stack.core.types.structured.EndpointDescription;
 import org.junit.Assert;
 import org.junit.Test;
 
+import java.io.IOException;
+import java.net.Socket;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.net.UnknownHostException;
 import java.util.Arrays;
 import java.util.EnumSet;
 import java.util.HashMap;
@@ -33,6 +40,13 @@ import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 public class Connection extends OpcUaTestBase {
+
+    // List of status that means the server's a mess so we'll ignore it in this test...
+    public static final List<String> serverHosedStatus =
+            Arrays.asList(
+                    "Bad_ConnectionClosed",
+                    "Bad_ServiceUnsupported"
+            );
 
     @Test
     public void testMissingConfig() {
@@ -729,7 +743,7 @@ public class Connection extends OpcUaTestBase {
         }
     }
 
-        private static int invocationCount = 0;
+    @SuppressWarnings({"PMD.CognitiveComplexity", "PMD.GuardLogStatement"})
     public void makeConnection(boolean runAsync,
                                String secPolicy,
                                String msgSecMode,
@@ -766,8 +780,34 @@ public class Connection extends OpcUaTestBase {
             pubServers = Arrays.asList(Utils.OPC_INPROCESS_SERVER);
         }
 
+        int workingServers = 0;
+        int successfulConnections = 0;
         for (String discEP : pubServers) {
             log.info("Attempting connection to public server: " + discEP);
+            try {
+                URI opcuri = new URI(discEP);
+                // We cannot just use the URL since we don't have handling for the opc.tcp scheme.
+                // We'll just do a basic socket connection as that's where most of the issues w/r/t availability are.
+                String host = opcuri.getHost();
+                int port = opcuri.getPort();
+                log.info("Making socket connection to {}:{}", host, port);
+
+                // We don't use the result so we won't save it.  We just care that it completes w/o error
+                new Socket(host, port);
+                // If we get this far, the server has accepted the connection so there's something out there.
+                // We'll assume it's our OPC server & let the test proceed
+            } catch (UnknownHostException | URISyntaxException badURL) {
+                fail("URL " + discEP + " has unknown host or invalid syntax.  " +
+                                "Probably means that the list of free servers has changed... ");
+            } catch (IOException ioe) {
+                // Could be bad connection or socket timeout (a subclass of ioexception)
+                // In either case, this means our free server is not currently available (you get what you pay for)
+                // so skip this one...
+                log.warn("Discovery Endpoint: {} not responding to open.  Skipping it.", discEP);
+                continue;
+            }
+
+            workingServers += 1;
             opcConfig.put(OpcConstants.CONFIG_DISCOVERY_ENDPOINT, discEP);
 
             if (useServerAddress && Utils.OPC_PUBLIC_SERVER_1.equals(discEP)) {
@@ -776,8 +816,27 @@ public class Connection extends OpcUaTestBase {
 
             try {
                 performConnection(config, runAsync, startProcessOnly);
+                successfulConnections += 1;
             } catch (ExecutionException e) {
-                if (startProcessOnly) {
+                if (e.getCause() instanceof UaException) {
+                    UaException uae = (UaException) e.getCause();
+
+
+                    log.error("Got error: {}", uae.getStatusCode().toString());
+                    // Unfortunately, not all errors are reported reasonably.  So we'll look for our "acceptable errors"
+                    // in the returned strings...
+
+                    boolean okError = false;
+                    for (String err: serverHosedStatus) {
+                        okError = uae.getStatusCode().toString().contains(err);
+                        if (okError) {
+                            break;
+                        }
+                    }
+                    if (!okError) {
+                        Utils.unexpectedException(uae);
+                    }
+                } else if (startProcessOnly) {
                     throw e;
                 } else {
                     Utils.unexpectedException(e);
@@ -785,6 +844,11 @@ public class Connection extends OpcUaTestBase {
             }
         }
 
+        log.info("Found {} servers to which we may be able to connect.", workingServers);
+        log.info("Successfully connected to {} servers.", successfulConnections);
+        assertNotEquals("No responding servers found to test.", 0, workingServers);
+        assertNotEquals("No successful connections: (count: " + successfulConnections + ")", 0,
+                successfulConnections);
     }
 
     public void performConnection(Map config, boolean runAsync, boolean startProcessOnly) throws ExecutionException {
