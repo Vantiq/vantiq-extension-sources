@@ -789,7 +789,7 @@ public class Connection extends OpcUaTestBase {
                 // We cannot just use the URL since we don't have handling for the opc.tcp scheme.
                 // We'll just do a basic socket connection as that's where most of the issues w/r/t availability are.
                 String host = opcuri.getHost();
-                int    port = opcuri.getPort();
+                int port = opcuri.getPort();
                 log.info("Making socket connection to {}:{}", host, port);
 
                 // We don't use the result so we won't save it.  We just care that it completes w/o error
