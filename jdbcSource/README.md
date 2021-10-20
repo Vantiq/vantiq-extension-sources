@@ -85,7 +85,7 @@ The Configuration document may look similar to the following example:
              "dbURL": "jdbc:mysql://localhost/myDB?useSSL=false&serverTimezone=UTC",
              "asynchronousProcessing": true,
              "maxActiveTasks": 10,
-             "maxQueuedTasks" 20,
+             "maxQueuedTasks": 20,
              "pollTime": 3000,
              "pollQuery": "SELECT * FROM myTable"
           }
