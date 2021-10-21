@@ -298,7 +298,7 @@ public class FTPUtil {
 
                     // in case need to be upload to dsocument. 
           
-                if (s.indexOf(serverEntry.autoUploadToDocumentPostfix) !=-1){
+                if (serverEntry.autoUploadToDocumentPostfix != "" && s.indexOf(serverEntry.autoUploadToDocumentPostfix) !=-1){
                         VantiqUtil vu = new VantiqUtil(Log, serverEntry.documentServer, serverEntry.documentServerToken); 
                         vu.uploadAsImage = true;
                         String fullDestinationPath = serverEntry.baseDocumentPath + "/" + fileName ;
