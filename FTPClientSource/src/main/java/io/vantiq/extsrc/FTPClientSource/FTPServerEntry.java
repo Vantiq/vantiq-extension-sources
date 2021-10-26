@@ -55,6 +55,9 @@ public class FTPServerEntry {
         }
 
         if (o.get(FTPClientHandleConfiguration.SERVER_PORT) instanceof Integer) {
+//            port = Integer.parseInt((String) o.get(FTPClientHandleConfiguration.SERVER_PORT));
+            port = (Integer)o.get(FTPClientHandleConfiguration.SERVER_PORT);
+        } else if (o.get(FTPClientHandleConfiguration.SERVER_PORT) instanceof String){
             port = Integer.parseInt((String) o.get(FTPClientHandleConfiguration.SERVER_PORT));
         } else {
             port = def.port;
