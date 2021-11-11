@@ -2,5 +2,10 @@
    "name" : "OPCUA",
    "baseType" : "EXTENSION",
    "verticle" : "service:extensionSource",
-   "config" : {}
+   "config" : {},
+   "baseConfigProperties": [
+      "opcUAInformation.discoveryEndpoint",
+      "opcUAInformation.securityPolicy",
+      "opcUAInformation.monitoredItems"
+   ]
 }

@@ -2,5 +2,8 @@
   "name" : "TestConnector",
   "baseType" : "EXTENSION",
   "verticle" : "service:extensionSource",
-  "config" : {}
+  "config" : {},
+  "baseConfigProperties": [
+    "testConfig.general"
+  ]
 }

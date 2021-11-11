@@ -2,5 +2,10 @@
    "name" : "JMS",
    "baseType" : "EXTENSION",
    "verticle" : "service:extensionSource",
-   "config" : {}
+   "config" : {},
+   "baseConfigProperties": [
+      "jmsConfig.general.providerURL",
+      "jmsConfig.general.connectionFactory",
+      "jmsConfig.general.initialContext"
+   ]
 }

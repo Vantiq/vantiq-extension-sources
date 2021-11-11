@@ -1,6 +1,0 @@
-{
-   "name" : "UDP",
-   "baseType" : "EXTENSION",
-   "verticle" : "service:extensionSource",
-   "config" : {}
-}

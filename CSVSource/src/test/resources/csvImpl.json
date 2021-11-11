@@ -3,5 +3,10 @@
    "baseType" : "EXTENSION",
    "verticle" : "service:extensionSource",
    "config" : {},
-   "operations": [ "notification" ]
+   "operations": [ "notification" ],
+   "baseConfigProperties": [
+      "csvConfig.fileFolderPath",
+      "csvConfig.fileExtension",
+      "csvConfig.maxLinesInEvent"
+   ]
 }
