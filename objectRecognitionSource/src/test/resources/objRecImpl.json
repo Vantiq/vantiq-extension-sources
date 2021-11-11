@@ -5,6 +5,7 @@
    "config" : {},
    "baseConfigProperties": [
       "objRecConfig.dataSource.type",
+      "objRecConfig.dataSource.camera",
       "objRecConfig.neuralNet.type"
    ]
 }
