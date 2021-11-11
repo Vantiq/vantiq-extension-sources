@@ -19,8 +19,10 @@ public class TestNetworkStreamRetriever {
     NetworkStreamRetriever retriever;
     NoSendORCore source;
     
-    final String IP_CAMERA_URL = "http://153.142.207.158:80/-wvhttp-01-/GetOneShot?image_size=640x480&frame_count=1000000000";
-    
+//    final String IP_CAMERA_URL = "http://153.142.207.158:80/-wvhttp-01-/GetOneShot?image_size=640x480&frame_count=1000000000";
+    // Apparently new version of camera or camera software.  URL requires update...cd ../ve
+    final String IP_CAMERA_URL = "http://153.142.207.158:80/-wvhttp-01-/image.cgi?image_size=640x480&frame_count=1000000000";
+
     @Before
     public void setup() {
         source = new NoSendORCore("src", "token", "server", "dir");
