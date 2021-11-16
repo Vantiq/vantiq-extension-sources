@@ -517,7 +517,7 @@ public class ObjectRecognitionConfigHandler extends Handler<ExtensionServiceMess
 
 
     /**
-     * Sets up the the communication method, one of timed notifications, continuous notifications, or Query responses
+     * Sets up the communication method, one of timed notifications, continuous notifications, or Query responses
      * @param general   The general portion of the configuration document
      * @return          true if the communication method could be setup, false otherwise
      */
