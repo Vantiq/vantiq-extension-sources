@@ -814,8 +814,11 @@ camera is inaccessible in non-Query mode, (i.e. if the video stream has ended).
 
 The options are as follows. Remember to prepend "DS" when using an option in a Query.
 
-*   camera: Required for Config, optional for Query. The URL of the camera to read images from. For queries, defaults
+* camera: Required for Config, optional for Query. The URL of the camera to read images from. For queries, defaults
     to the camera specified in the Config.
+* rtspConfig:
+    * rtsp_transport: Protocol to use for lower rtsp transport.  This is ignored if the scheme for the camera is
+neither`rtsp` or `rtsps`. Default is `tcp`.
 
 The timestamp is captured immediately before the image is grabbed from the camera. The additional data is:
 
