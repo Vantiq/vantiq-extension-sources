@@ -19,9 +19,11 @@ public class TestNetworkStreamRetriever {
     NetworkStreamRetriever retriever;
     NoSendORCore source;
     
-//    final String IP_CAMERA_URL = "http://153.142.207.158:80/-wvhttp-01-/GetOneShot?image_size=640x480&frame_count=1000000000";
-    // Apparently new version of camera or camera software.  URL requires update...cd ../ve
-    final String IP_CAMERA_URL = "http://153.142.207.158:80/-wvhttp-01-/image.cgi?image_size=640x480&frame_count=1000000000";
+    final String IP_CAMERA_URL = "http://60.45.181.202:8080/mjpg/quad/video.mjpg";
+    final String RTSP_CAMERA_ADDRESS = "rtsp://wowzaec2demo.streamlock.net/vod/mp4:BigBuckBunny_115k.mp4";
+    // Alternate purportedly opened, but sometimes apparently broken...
+    // "rtsp://demo:demo@ipvmdemo.dyndns.org:5541/onvif-media/media.amp?profile=profile_1_h264&sessiontimeout=60&streamtype=unicast";
+
 
     @Before
     public void setup() {
@@ -37,6 +39,7 @@ public class TestNetworkStreamRetriever {
     
     @Test
     public void testIpCamera() {
+        // Don't fail if camera's offline...
         assumeTrue("Could not open requested url", isIpAccessible(IP_CAMERA_URL));
         
         try {
@@ -57,11 +60,41 @@ public class TestNetworkStreamRetriever {
             fail("Exception occurred when requesting frame from camera: " + e.toString());
         }
     }
+
+    @Test
+    public void testRTSPCamera() {
+        // Don't fail if camera's offline...
+        assumeTrue("Could not open requested url", isIpAccessible(IP_CAMERA_URL));
+
+        try {
+            Map<String, String> config = new LinkedHashMap<>();
+            config.put("camera", RTSP_CAMERA_ADDRESS);
+            retriever.setupDataRetrieval(config, source);
+        } catch (Exception e) {
+            fail("Could not setup retriever: " + e.getMessage());
+        }
+
+        try {
+            ImageRetrieverResults imgResults = retriever.getImage();
+            assert imgResults != null;
+            byte[] data = imgResults.getImage();
+            assert data != null;
+            assert data.length > 0;
+        } catch (ImageAcquisitionException e) {
+            fail("Exception occurred when requesting frame from camera: " + e.toString());
+        }
+    }
     
     
 // ================================================= Helper functions =================================================
     public boolean isIpAccessible(String url) {
-        URL img = null;
+        URL img;
+
+        // Override schema to make sure something exists at the other end.  The URL class doesn't necessarily
+        // grok all the scheme's used by camera URLs, so we'll convert to a common version just so we can
+        // test the connection.
+        String schemeFreeURL = url.substring(url.indexOf(":"));
+        url = "http" + schemeFreeURL;
         try {
             img = new URL(url);
             InputStream s = img.openStream();

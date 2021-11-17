@@ -20,19 +20,6 @@ repositories {
 
 mainClassName = 'io.vantiq.extsrc.objectRecognition.ObjectRecognitionMain'
 
-// Used to check if OpenCV is needed, and compile with OpenCV or throw errors if needed
-// Should be "**/<source file name>.java" for every file that need openCV to run
-def opencvDependentSourceFilePatterns = new ArrayList<String>(
-    [
-        "**/CameraRetriever.java",
-        "**/FileRetriever.java",
-        "**/NetworkStreamRetriever.java"
-    ]
-)
-def opencvDependentFiles = sourceSets.main.java.matching(
-        { delegate.setIncludes(opencvDependentSourceFilePatterns) }
-)
-
 // Used to automatically ignore tests for implementations that have been removed.
 // The tests should be called "Test<source file name>.java"
 // And should be included in the list as "**/Test<source file name>.java"
@@ -46,24 +33,7 @@ def standardImplementationTestPatterns = new ArrayList<String>(
     ]
 )
 
-// This is the version of OpenCV that you will be using. Should be "XYZ" for version X.Y.Z
-
-def opencvVersion = "410"   // Default value.  We'll use the OPENCV_LOC env. variable to find the version present.
-
-if (System.env.OPENCV_LOC != null ) {
-    def ocv = new File(System.env.OPENCV_LOC)
-    ocv.eachFile { fname ->
-        if (fname.name.startsWith("opencv-") && fname.name.endsWith(".jar")) {
-            opencvVersion = fname.name.substring("opencv-".length(), fname.name.lastIndexOf(".jar"))
-            logger.warn("Detected OpenCV Version ${opencvVersion}")
-        }
-    }
-} else {
-    logger.warn("No OPENCV Located via OPENCV_LOC env. variable.  Defaulting to OpenCV Version ${opencvVersion}")
-}
 // Add the logConfig folder to the classpath so that changes to logConfig/log4j2.xml will be used for logging
-// and set java.library.path to the contents of the environment variable OPENCV_LOC so the OpenCV native libraries are
-// usable 
 startScripts{
     doLast{
         def windowsScriptFile = file getWindowsScript()
@@ -71,14 +41,6 @@ startScripts{
         // Add the log Config to the top of the classpath
         windowsScriptFile.text = windowsScriptFile.text.replace("CLASSPATH=", "CLASSPATH=%APP_HOME%\\logConfig;")
         unixScriptFile.text = unixScriptFile.text.replace('CLASSPATH=', 'CLASSPATH=$APP_HOME/logConfig:')
-        
-        if (!opencvDependentFiles.getFiles().isEmpty()) { // Only set java.library.path for OpenCV if we need it
-            // Set the path to the location of the native libraries
-            windowsScriptFile.text = windowsScriptFile.text.replace('DEFAULT_JVM_OPTS=',
-                    'DEFAULT_JVM_OPTS=-Djava.library.path=%OPENCV_LOC%;%TENSORFLOW_JNI%')
-            unixScriptFile.text = unixScriptFile.text.replace('DEFAULT_JVM_OPTS=',
-                    'DEFAULT_JVM_OPTS=-Djava.library.path=$OPENCV_LOC:$TENSORFLOW_JNI')
-        }
     }
 }
 
@@ -100,52 +62,24 @@ applicationDistribution.from("src/main/resources") {
 
 test {
     // set heap size for the test JVM(s)
+    // Java CV seems to impart more memory requirements for getting the same test results
+    // with gradle that we do with the IDE (even though the IDE is running tests via gradle).
     minHeapSize = "2048m"
     maxHeapSize = "2048m"
 }
 
 tasks.withType(Test) {
-    def os = org.gradle.internal.os.OperatingSystem.current()
-    if (os.isWindows()) {
-        systemProperty "java.library.path", "${System.env.OPENCV_LOC};${System.env.TENSORFLOW_JNI}"
-    } else {
-        systemProperty "java.library.path", "${System.env.OPENCV_LOC}:${System.env.TENSORFLOW_JNI}"
-    }
     if (rootProject.hasProperty("TestAuthToken")) {
+        println('Setting TestAuthToken')
         systemProperty "TestAuthToken", rootProject.findProperty("TestAuthToken") ?: "empty"
     }
     if (rootProject.hasProperty("TestVantiqServer")) {
+        println('Setting TestVantiqServer')
+
         systemProperty "TestVantiqServer", rootProject.findProperty("TestVantiqServer") ?: "empty"
     }
     // Use the build dir as a base to get our various test artifacts.
     systemProperty "buildDir", "${buildDir}"
-}
-
-// Logs a warning if the .dll/.so/.dylib cannot be found for OpenCV when OpenCV is needed
-assemble.doLast {
-    def os = org.gradle.internal.os.OperatingSystem.current()
-    // Only need to warn about missing libraries if there are files dependent on OpenCV
-    if (!opencvDependentFiles.getFiles().isEmpty()) {
-        if (os.isWindows()) {
-            if (!file("${System.env.OPENCV_LOC}\\opencv_java${opencvVersion}.dll").exists()) {
-                logger.warn("Cannot find opencv_java${opencvVersion}.dll in '${System.env.OPENCV_LOC}'. Ensure that the requested "
-                    + "file exists at the folder specified in the environment variable OPENCV_LOC")
-            }
-        } else if (os.isLinux()) {
-            if (!file("${System.env.OPENCV_LOC}/libopencv_java${opencvVersion}.so").exists()) {
-                logger.warn("Cannot find libopencv_java${opencvVersion}.so in '${System.env.OPENCV_LOC}'. Ensure that the requested "
-                    + "file exists at the folder specified in the environment variable OPENCV_LOC")
-            }
-        } else if (os.isMacOsX()) {
-            if (!file("${System.env.OPENCV_LOC}/libopencv_java${opencvVersion}.dylib").exists()) {
-                logger.warn("Cannot find libopencv_java${opencvVersion}.dylib in '${System.env.OPENCV_LOC}/'. Ensure that the "
-                    + "requested file exists at the folder specified in the environment variable OPENCV_LOC")
-            }
-        } else {
-            logger.warn("Compiling unknown file system. Please ensure that the compiled OpenCV C++ library is inside " 
-                + "'${System.env.OPENCV_LOC}' so that the program can function correctly")
-        }
-    }
 }
 
 compileJava.doFirst {
@@ -181,8 +115,9 @@ configurations {
 }
 
 ext {
-    currentCocoVersion = 1.2
-    lombokVersion = "1.16.18"
+    currentCocoVersion = '1.2'
+    lombokVersion = '1.16.18'
+    javaCvVersion = '1.5.6'
 }
 
 dependencies {
@@ -225,28 +160,8 @@ dependencies {
     metaTest "vantiq.models:coco:1.1@meta"
     metaTest "vantiq.models:coco:1.1@pb"
 
-
-    // This imports OpenCV if it is needed, and throws an error if OpenCV is needed but not properly setup
-    // The opencv
-    if (!opencvDependentFiles.getFiles().isEmpty()) { // Only look for OpenCV if we need it
-        if (System.env.OPENCV_LOC == null ) { // Fail out if OpenCV is not available 
-            // Setting depFileNames to the files still dependent on OpenCV
-            def depFileNames = "'"
-            opencvDependentFiles.getFiles().forEach {file -> depFileNames += file.getName() + "', '"}
-            depFileNames = depFileNames.substring(0, depFileNames.length() - 3) // Remove the last ", '"
-            throw new Exception("Environment variable 'OPENCV_LOC' is not set. Either set it to a location containing " + 
-            "opencv-${opencvVersion}.jar and the compiled OpenCV library, or remove the following files: ${depFileNames}")
-        } else if (!file("${System.env.OPENCV_LOC}/opencv-${opencvVersion}.jar").exists()) { // Fail out if the OpenCV jar is missing
-            // Setting depFileNames to the files still dependent on OpenCV
-            def depFileNames = "'"
-            opencvDependentFiles.getFiles().forEach {file -> depFileNames += file.getName() + "', '"}
-            depFileNames = depFileNames.substring(0, depFileNames.length() - 3) // Remove the last ", '"
-            throw new Exception("Could not find opencv-${opencvVersion}.jar in '${System.env.OPENCV_LOC}'. Either add the jar to the "
-                + "folder specified in the environment variable OPENCV_LOC or remove the following files: ${depFileNames}")
-        } else {
-            compile files("${System.env.OPENCV_LOC}/opencv-${opencvVersion}.jar")
-        }
-    }
+    // The following imports the Java OpenCV API * jar files representing the various JNI libraries (by platform)
+    compile "org.bytedeco:javacv-platform:${javaCvVersion}"
     
     // Used for uploading documents (images) to VANTIQ with VANTIQ SDK
     compile "io.vantiq:vantiq-sdk:${vantiqSDKVersion}"

@@ -16,7 +16,12 @@ import io.vantiq.extsrc.objectRecognition.exception.FatalImageException;
 import io.vantiq.extsrc.objectRecognition.exception.ImageAcquisitionException;
 
 public interface ImageRetrieverInterface {
+    // Constants for source configuration
     static final String TYPE_ENTRY = "type";
+    static final String CAMERA = "camera";
+    static final String RTSP_CONFIG = "rtspConfig";
+    static final String RTSP_TRANSPORT = "rtspTransport";
+    static final String RTSP_FLAGS = "rtspFlags";
     
     /**
      * Configures the data retriever.

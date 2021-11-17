@@ -13,26 +13,79 @@ import static org.junit.Assert.fail;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.vantiq.client.Vantiq;
 import io.vantiq.client.VantiqError;
 import io.vantiq.client.VantiqResponse;
+import io.vantiq.extjsdk.Utils;
 import io.vantiq.extsrc.objectRecognition.ObjRecTestBase;
 
 public class NeuralNetTestBase extends ObjRecTestBase {
     public static final String MODEL_DIRECTORY = System.getProperty("buildDir") + "/models";
     public static final String SOURCE_NAME = "testSourceName";
     public static final String OR_SRC_TYPE = "OBJECT_RECOGNITION";
+    public static final String OR_IMPL_DEF = "objRecImpl.json";
+    private static final Integer OR_IMPL_MAX_SIZE = 1000;
 
     static final String VANTIQ_DOCUMENTS = "system.documents";
     static final String VANTIQ_IMAGES = "system.images";
+    static final String VANTIQ_SOURCE_IMPL = "system.sourceimpls";
     static final String NOT_FOUND_CODE = "io.vantiq.resource.not.found";
     static final int WAIT_FOR_ASYNC_MILLIS = 5000;
+
+    // Note that we created the source impl so we can trash it iff we did.
+    // Static so available in @BeforeClass/@AfterClass
+    static boolean createdImpl = false;
+    protected static File serverConfigFile;
+
+    protected static void createServerConfig() throws Exception {
+        // Make initial Utils.obtainServerConfig() call so that we don't get errors later on
+        serverConfigFile = new File("server.config");
+        serverConfigFile.createNewFile();
+        serverConfigFile.deleteOnExit();
+        Utils.obtainServerConfig();
+    }
+
+    @SuppressWarnings("unchecked")
+    protected static void createSourceImpl(Vantiq vantiq) throws Exception {
+        VantiqResponse resp = vantiq.selectOne(VANTIQ_SOURCE_IMPL, OR_SRC_TYPE);
+        if (!resp.isSuccess()) {
+            ClassLoader loader = Thread.currentThread().getContextClassLoader();
+            byte[] implDef = new byte[OR_IMPL_MAX_SIZE];
+            try (InputStream is = loader.getResourceAsStream(OR_IMPL_DEF))
+            {
+                assert is != null;
+                int implSize = is.read(implDef);
+                assert implSize > 0;
+                assert implSize < OR_IMPL_MAX_SIZE;
+            }
+
+            ObjectMapper mapper = new ObjectMapper();
+            Map<String, Object> implMap = new LinkedHashMap<>();
+            implMap = mapper.readValue(implDef, implMap.getClass());
+            resp = vantiq.insert(VANTIQ_SOURCE_IMPL, implMap);
+            assert resp.isSuccess();
+            createdImpl = true;
+        }
+    }
+
+    protected static void deleteSourceImpl(Vantiq vantiq) throws Exception {
+        if (createdImpl) {
+            vantiq.deleteOne(VANTIQ_SOURCE_IMPL, OR_SRC_TYPE);
+        }
+
+        VantiqResponse resp = vantiq.selectOne(VANTIQ_SOURCE_IMPL, OR_SRC_TYPE);
+        if (resp.hasErrors()) {
+            fail("Error deleting source impl" + resp.getErrors());
+        }
+    }
 
     public static byte[] getTestImage() {
         File image = new File(JPEG_IMAGE_LOCATION);

@@ -302,8 +302,8 @@ public class ObjectRecognitionCore {
     }
     
     /**
-     * Processes the image then sends the results to the Vantiq source. Calls {@code stop()} if a FatalImageException is
-     * received.
+     * Processes the image then sends the results to the Vantiq source. Calls {@code stop()} if a
+     * FatalImageException is received.
      * @param imageResults An {@link ImageRetrieverResults} containing the image to be translated
      */
     public void sendDataFromImage(ImageRetrieverResults imageResults) {
@@ -340,20 +340,24 @@ public class ObjectRecognitionCore {
             if (!localNeuralNet.getClass().toString().contains("NoProcessor")) {
                 // Translate the results from the neural net and image into a message to send back 
                 Map message = createMapFromResults(imageResults, results);
+                log.debug("Message from results: {}", message.get("results"));
+                log.debug("Suppress value: {}", suppressEmptyNeuralNetResults);
 
                 // If suppressNullValues is set to true, then skip sending message results list is empty
                 if (suppressEmptyNeuralNetResults) {
                     if (message.get("results") instanceof List && ((List) message.get("results")).size() == 0) {
+                        log.debug("Skipping notification");
                         return;
                     }
                 }
+                log.debug("Notifying client with: {}", message);
                 client.sendNotification(message);
             }
         } catch (ImageProcessingException e) {
             log.warn("Could not process image", e);
         } catch (FatalImageException e) {
-            log.error("Image processor of type '" + localNeuralNet.getClass().getCanonicalName() + "' failed unrecoverably"
-                    , e);
+            log.error("Image processor of type '" + localNeuralNet.getClass().getCanonicalName() +
+                            "' failed unrecoverably", e);
             log.error("Stopping");
             stop();
         } catch (RuntimeException e) {

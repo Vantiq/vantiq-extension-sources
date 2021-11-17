@@ -17,6 +17,8 @@ import io.vantiq.extsrc.objectRecognition.ObjectRecognitionCore;
 import io.vantiq.extsrc.objectRecognition.exception.FatalImageException;
 import io.vantiq.extsrc.objectRecognition.exception.ImageAcquisitionException;
 
+import org.bytedeco.javacpp.Loader;
+import org.bytedeco.opencv.opencv_java;
 import org.opencv.core.Core;
 import org.opencv.core.Mat;
 import org.opencv.core.MatOfByte;
@@ -86,7 +88,7 @@ public class FileRetriever implements ImageRetrieverInterface {
 
         // Load OpenCV
         try {
-            System.loadLibrary(Core.NATIVE_LIBRARY_NAME);
+            Loader.load(opencv_java.class);
         } catch (Throwable t) {
             throw new Exception(this.getClass().getCanonicalName() + ".opencvDependency" 
                     + ": Could not load OpenCv for FileRetriever."

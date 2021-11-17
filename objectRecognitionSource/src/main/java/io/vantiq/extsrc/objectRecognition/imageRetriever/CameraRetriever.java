@@ -12,6 +12,8 @@ package io.vantiq.extsrc.objectRecognition.imageRetriever;
 import java.util.Date;
 import java.util.Map;
 
+import org.bytedeco.javacpp.Loader;
+import org.bytedeco.opencv.opencv_java;
 import org.opencv.core.Core;
 import org.opencv.core.Mat;
 import org.opencv.core.MatOfByte;
@@ -43,7 +45,7 @@ public class CameraRetriever implements ImageRetrieverInterface {
     public void setupDataRetrieval(Map<String, ?> dataSourceConfig, ObjectRecognitionCore source) throws Exception {
         // Try to load OpenCV
         try {
-            System.loadLibrary(Core.NATIVE_LIBRARY_NAME);
+            Loader.load(opencv_java.class);
         } catch (Throwable t) {
             throw new Exception(this.getClass().getCanonicalName() + ".opencvDependency" 
                     + ": Could not load OpenCv for CameraRetriever. "

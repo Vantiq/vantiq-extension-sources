@@ -528,7 +528,8 @@ public class ObjectRecognitionConfigHandler extends Handler<ExtensionServiceMess
         int maxQueuedTasks = MAX_QUEUED_TASKS_DEFAULT;
 
         // First, we'll check the suppressNullValues option
-        if (general.get(SUPPRESS_EMPTY_NEURAL_NET_RESULTS) instanceof Boolean && (Boolean) general.get(SUPPRESS_EMPTY_NEURAL_NET_RESULTS)) {
+        if (general.get(SUPPRESS_EMPTY_NEURAL_NET_RESULTS) instanceof Boolean
+                && (Boolean) general.get(SUPPRESS_EMPTY_NEURAL_NET_RESULTS)) {
             source.suppressEmptyNeuralNetResults = (Boolean) general.get(SUPPRESS_EMPTY_NEURAL_NET_RESULTS);
         }
 

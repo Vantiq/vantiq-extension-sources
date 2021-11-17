@@ -30,6 +30,7 @@ import java.util.Map;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeTrue;
 
 @Slf4j
@@ -39,24 +40,31 @@ public class TestYoloQueriesLocationMapper extends NeuralNetTestBase {
     static ObjectRecognitionCore core;
 
     static final int CORE_START_TIMEOUT = 10;
-    static final int CONNECTION_ATTEMPT_LIMIT = 5;
     static final String COCO_MODEL_VERSION = "1.2";
-    static final String LABEL_FILE = "coco-" + COCO_MODEL_VERSION + ".names";
     static final String PB_FILE = "coco-" + COCO_MODEL_VERSION + ".pb";
     static final String META_FILE = "coco-" + COCO_MODEL_VERSION + ".meta";
     static final String OUTPUT_DIR = System.getProperty("buildDir") + "/resources/out";
-    static final String IP_CAMERA_ADDRESS = "http://207.192.232.2:8000/mjpg/video.mjpg";
+    static final String IP_CAMERA_ADDRESS =
+            "http://220.254.136.170/cgi-bin/camera" +
+                    "?resolution=640&quality=1&Language=0&1636763912";
     static final Double ACCEPTABLE_DELTA = 0.0001d;
     static final Long REQUIRED_IMAGES = 4L;
     static final int IMAGE_ATTEMPTS = 40;
 
     @BeforeClass
-    public static void setup() {
+    public static void setup() throws Exception {
         // Only run test with intended vantiq availability
         assumeTrue(testAuthToken != null && testVantiqServer != null);
 
         vantiq = new io.vantiq.client.Vantiq(testVantiqServer);
         vantiq.setAccessToken(testAuthToken);
+
+        try {
+            createSourceImpl(vantiq);
+        } catch (Exception e) {
+            fail("Trapped exception creating source impl: " + e);
+        }
+        createServerConfig();
     }
 
     @SuppressWarnings("PMD.JUnit4TestShouldUseAfterAnnotation")
@@ -69,6 +77,12 @@ public class TestYoloQueriesLocationMapper extends NeuralNetTestBase {
         if (vantiq != null && vantiq.isAuthenticated()) {
             deleteSource(vantiq);
             deleteFilesFromVantiq();
+
+            try {
+                deleteSourceImpl(vantiq);
+            } catch (Exception e) {
+                assert false;
+            }
         }
         deleteDirectory(OUTPUT_DIR);
     }
@@ -181,7 +195,7 @@ public class TestYoloQueriesLocationMapper extends NeuralNetTestBase {
         VantiqResponse insertResponse = vantiq.insert("system.sources", sourceDef);
         assertTrue("Cannot create source: " + insertResponse.toString(), insertResponse.isSuccess());
         if (insertResponse.isSuccess()) {
-            core = new ObjectRecognitionCore(SOURCE_NAME, testAuthToken, testVantiqServer, MODEL_DIRECTORY);;
+            core = new ObjectRecognitionCore(SOURCE_NAME, testAuthToken, testVantiqServer, MODEL_DIRECTORY);
             core.start(CORE_START_TIMEOUT);
         }
     }
@@ -228,6 +242,7 @@ public class TestYoloQueriesLocationMapper extends NeuralNetTestBase {
 
         // Setting up dataSource config options
         dataSource.put("camera", IP_CAMERA_ADDRESS);
+
         dataSource.put("type", "network");
 
         // Setting up general config options

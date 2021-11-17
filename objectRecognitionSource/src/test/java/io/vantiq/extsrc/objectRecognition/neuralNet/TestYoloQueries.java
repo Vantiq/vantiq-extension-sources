@@ -50,7 +50,11 @@ public class TestYoloQueries extends NeuralNetTestBase {
     static final String PB_FILE = "coco-" + COCO_MODEL_VERSION + ".pb";
     static final String META_FILE = "coco-" + COCO_MODEL_VERSION + ".meta";
     static final String OUTPUT_DIR = System.getProperty("buildDir") + "/resources/out";
-    static final String IP_CAMERA_ADDRESS = "http://207.192.232.2:8000/mjpg/video.mjpg";
+
+    // Used for pre-cropping tests
+    static final int IP_CAMERA_WIDTH = 704;
+    static final int IP_CAMERA_HEIGHT = 480;
+    static final String IP_CAMERA_ADDRESS = "http://60.45.181.202:8080/mjpg/quad/video.mjpg";
 
     static final String IMAGE_1_DATE = "2019-02-05--02-35-10";
     static final Map<String,String> IMAGE_1 = new LinkedHashMap<String,String>() {{
@@ -107,12 +111,10 @@ public class TestYoloQueries extends NeuralNetTestBase {
     static final int PRECROP_TOP_LEFT_Y_COORDINATE = 50;
     static final int CROPPED_WIDTH = 200;
     static final int CROPPED_HEIGHT = 150;
-    static final int IP_CAMERA_WIDTH = 800;
-    static final int IP_CAMERA_HEIGHT = 450;
 
     
     @BeforeClass
-    public static void setup() {
+    public static void setup() throws Exception {
         if (testAuthToken != null && testVantiqServer != null) {
 
             vantiq = new io.vantiq.client.Vantiq(testVantiqServer);
@@ -128,6 +130,12 @@ public class TestYoloQueries extends NeuralNetTestBase {
             vantiqUploadFiles.add(IMAGE_7.get("filename"));
             vantiqUploadFiles.add(IMAGE_8.get("filename"));
 
+            try {
+                createSourceImpl(vantiq);
+            } catch (Exception e) {
+                fail("Trapped exception creating source impl: " + e);
+            }
+            createServerConfig();
             setupSource(createSourceDef());
         }
     }
@@ -141,6 +149,12 @@ public class TestYoloQueries extends NeuralNetTestBase {
         }
         if (vantiq != null && vantiq.isAuthenticated()) {
             deleteSource(vantiq);
+
+            try {
+                deleteSourceImpl(vantiq);
+            } catch (Exception e) {
+                fail("Trapped exception deleting source impl: " + e);
+            }
 
             for (String vantiqUploadFile : vantiqUploadFiles) {
                 deleteFileFromVantiq(vantiqUploadFile);
@@ -205,6 +219,7 @@ public class TestYoloQueries extends NeuralNetTestBase {
         
         // Check there is only one file, and it's name is equivalent to QUERY_FILENAME
         File[] outputDirFiles = outputDir.listFiles();
+        assert outputDirFiles != null;
         assert outputDirFiles.length == 1;
         assert outputDirFiles[0].getName().equals(IMAGE_8.get("name") + ".jpg");
         
@@ -222,6 +237,7 @@ public class TestYoloQueries extends NeuralNetTestBase {
         
         // Check there is only one file, and it's name is equivalent to QUERY_FILENAME
         outputDirFiles = outputDir.listFiles();
+        assert outputDirFiles != null;
         assert outputDirFiles.length == 1;
         assert outputDirFiles[0].getName().equals(IMAGE_8.get("name") + ".jpg");
         
@@ -239,6 +255,7 @@ public class TestYoloQueries extends NeuralNetTestBase {
         
         // Check there is only one file, and it's name is equivalent to the last saved file
         outputDirFiles = outputDir.listFiles();
+        assert outputDirFiles != null;
         assert outputDirFiles.length == 1;
         
         int index = core.lastQueryFilename.lastIndexOf('/') + 1;
@@ -312,6 +329,7 @@ public class TestYoloQueries extends NeuralNetTestBase {
         
         // Check there is only one file, and it's name is equivalent to QUERY_FILENAME
         File[] outputDirFiles = outputDir.listFiles();
+        assert outputDirFiles != null;
         assert outputDirFiles.length == 1;
         assert outputDirFiles[0].getName().equals(IMAGE_8.get("name") + ".jpg");
         
@@ -336,6 +354,7 @@ public class TestYoloQueries extends NeuralNetTestBase {
         
         // Check there is only one file, and it's name is equivalent to QUERY_FILENAME
         outputDirFiles = outputDir.listFiles();
+        assert outputDirFiles != null;
         assert outputDirFiles.length == 1;
         assert outputDirFiles[0].getName().equals(IMAGE_8.get("name") + ".jpg");
         
@@ -360,6 +379,7 @@ public class TestYoloQueries extends NeuralNetTestBase {
         
         // Check there is only one file, and it's name is equivalent to the last saved file
         outputDirFiles = outputDir.listFiles();
+        assert outputDirFiles != null;
         assert outputDirFiles.length == 1;
         
         int index = core.lastQueryFilename.lastIndexOf('/') + 1;
@@ -572,8 +592,8 @@ public class TestYoloQueries extends NeuralNetTestBase {
         vantiqResponse = vantiq.selectOne("system.documents", IMAGE_2.get("filename"));
         if (vantiqResponse.hasErrors()) {
             List<VantiqError> errors = vantiqResponse.getErrors();
-            for (int i = 0; i < errors.size(); i++) {
-                if (errors.get(i).getCode().equals(NOT_FOUND_CODE)) {
+            for (VantiqError error : errors) {
+                if (error.getCode().equals(NOT_FOUND_CODE)) {
                     fail();
                 }
             }
@@ -613,6 +633,7 @@ public class TestYoloQueries extends NeuralNetTestBase {
         File outputDir = new File(OUTPUT_DIR);
         assert outputDir.exists();
         File[] outputDirFiles = outputDir.listFiles();
+        assert outputDirFiles != null;
         assert outputDirFiles.length == 7;
         
         for (File file : outputDirFiles) {
@@ -644,7 +665,7 @@ public class TestYoloQueries extends NeuralNetTestBase {
         
         File d = new File(OUTPUT_DIR);
         File[] dList = d.listFiles();
-        
+        assert dList != null;
         assert dList.length == 1;
         assert dList[0].getName().equals(IMAGE_8.get("name") + ".jpg");
     }
@@ -669,7 +690,7 @@ public class TestYoloQueries extends NeuralNetTestBase {
         
         File d = new File(OUTPUT_DIR);
         File[] dList = d.listFiles();
-        
+        assert dList != null;
         assert dList.length == 6;
         
         for (File imageFile: dList) {
@@ -699,7 +720,7 @@ public class TestYoloQueries extends NeuralNetTestBase {
         
         File d = new File(OUTPUT_DIR);
         File[] dList = d.listFiles();
-        
+        assert dList != null;
         assert dList.length == 2;
         for (File file : dList) {
             assert file.getName().equals(IMAGE_1.get("date") + ".jpg") || file.getName().equals(IMAGE_8.get("name") + ".jpg");
@@ -726,7 +747,7 @@ public class TestYoloQueries extends NeuralNetTestBase {
 
         File d = new File(OUTPUT_DIR);
         File[] dList = d.listFiles();
-        
+        assert dList != null;
         assert dList.length == 5;
         
         for (File imageFile: dList) {
@@ -764,12 +785,14 @@ public class TestYoloQueries extends NeuralNetTestBase {
         
         // Check there is only one file, and it's name is equivalent to QUERY_FILENAME
         File[] outputDirFiles = outputDir.listFiles();
+        assert outputDirFiles != null;
         assert outputDirFiles.length == 1;
         assert outputDirFiles[0].getName().equals("testInvalidPreCrop.jpg");
         
         File resizedImageFile = new File(OUTPUT_DIR + "/" + outputDirFiles[0].getName());
         BufferedImage resizedImage = ImageIO.read(resizedImageFile);
-        
+
+        System.out.println("New size: w: " + resizedImage.getWidth() + ", h: " +resizedImage.getHeight());
         assert resizedImage.getWidth() == IP_CAMERA_WIDTH;
         assert resizedImage.getHeight() == IP_CAMERA_HEIGHT;
     }
@@ -806,6 +829,7 @@ public class TestYoloQueries extends NeuralNetTestBase {
         
         // Check there is only one file, and it's name is equivalent to QUERY_FILENAME
         File[] outputDirFiles = outputDir.listFiles();
+        assert outputDirFiles != null;
         assert outputDirFiles.length == 1;
         assert outputDirFiles[0].getName().equals("testPreCrop.jpg");
         
@@ -818,9 +842,6 @@ public class TestYoloQueries extends NeuralNetTestBase {
 
     @Test
     public void testUploadAsImage() throws IOException, InterruptedException {
-        // Only run test with intended vantiq availability
-        assumeTrue(testAuthToken != null && testVantiqServer != null);
-
         // Only run test with intended vantiq availability
         assumeTrue(testAuthToken != null && testVantiqServer != null);
 
@@ -992,9 +1013,10 @@ public class TestYoloQueries extends NeuralNetTestBase {
     }
     
     public void addLocalTestImages() throws IOException {
-        new File(OUTPUT_DIR).mkdirs();
+        assert new File(OUTPUT_DIR).mkdirs();
         
         byte[] testImageBytes = getTestImage();
+        assert testImageBytes != null;
         InputStream in = new ByteArrayInputStream(testImageBytes);
         BufferedImage testImageBuffer = ImageIO.read(in);
         

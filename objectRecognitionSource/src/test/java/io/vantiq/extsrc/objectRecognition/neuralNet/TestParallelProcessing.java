@@ -11,6 +11,7 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
+import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeTrue;
 
@@ -21,13 +22,22 @@ public class TestParallelProcessing extends NeuralNetTestBase {
 
     static final String FAKE_MODEL_DIR = "";
     static final int CORE_START_TIMEOUT = 10;
-    static final String IP_CAMERA_ADDRESS = "http://207.192.232.2:8000/mjpg/video.mjpg";
+    // Camera here not really used -- just need it to set up
+    static final String IP_CAMERA_ADDRESS = "http://60.45.181.202:8080/mjpg/video.mjpg";
+
 
     @BeforeClass
     public static void classSetup() {
         if (testVantiqServer != null && testAuthToken != null) {
             vantiq = new io.vantiq.client.Vantiq(testVantiqServer);
             vantiq.setAccessToken(testAuthToken);
+
+            try {
+                createServerConfig();
+                createSourceImpl(vantiq);
+            } catch (Exception e) {
+                fail("Trapped exception creating source impl: " + e);
+            }
         }
     }
 
@@ -39,6 +49,12 @@ public class TestParallelProcessing extends NeuralNetTestBase {
             deleteSource(vantiq);
             deleteType(vantiq);
             deleteRule(vantiq);
+
+            try {
+                deleteSourceImpl(vantiq);
+            } catch (Exception e) {
+                fail("Trapped exception deleting source impl: " + e);
+            }
         }
     }
 
