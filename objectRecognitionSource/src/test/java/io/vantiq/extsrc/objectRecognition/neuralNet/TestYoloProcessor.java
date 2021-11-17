@@ -1176,7 +1176,7 @@ public class TestYoloProcessor extends NeuralNetTestBase {
             // Should have saved the image at queryOutputFile + ".jpg"
             assert dNew.exists();
             assert dNew.isDirectory();
-            File[] lf = d.listFiles();
+            File[] lf = dNew.listFiles();
             assert lf != null;
             assert lf.length == 1;
             assert lf[0].getName().equals(queryOutputFile + ".jpg");
