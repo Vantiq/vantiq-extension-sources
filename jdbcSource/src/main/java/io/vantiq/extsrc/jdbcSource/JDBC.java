@@ -22,6 +22,7 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -51,10 +52,6 @@ public class JDBC {
 
     // Used if asynchronous publish/query handling has been specified
     private HikariDataSource ds = null;
-
-    DateFormat dfTimestamp  = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSZ");
-    DateFormat dfDate       = new SimpleDateFormat("yyyy-MM-dd");
-    DateFormat dfTime       = new SimpleDateFormat("HH:mm:ss.SSSZ");
     
     /**
      * The method used to setup the connection to the SQL Database, using the values retrieved from the source config.
@@ -105,8 +102,8 @@ public class JDBC {
      *                          Array if nothing was returned)
      * @throws VantiqSQLException
      */
-    public HashMap[] processQuery(String sqlQuery) throws VantiqSQLException {
-        HashMap[] rsArray = null;
+    public Map[] processQuery(String sqlQuery) throws VantiqSQLException {
+        Map[] rsArray = null;
 
         if (isAsync) {
             try (Connection conn = ds.getConnection();
@@ -123,7 +120,7 @@ public class JDBC {
 
             try (Statement stmt = conn.createStatement();
                  ResultSet rs = stmt.executeQuery(sqlQuery)) {
-                rsArray = createMapFromResults(rs);
+                 rsArray = createMapFromResults(rs);
             } catch (SQLException e) {
                 // Handle errors for JDBC
                 reportSQLError(e);
@@ -219,18 +216,24 @@ public class JDBC {
      *                       (or an empty HashMap Array if the ResultSet was empty).
      * @throws VantiqSQLException
      */
-    HashMap[] createMapFromResults(ResultSet queryResults) throws VantiqSQLException {
-        ArrayList<HashMap> rows = new ArrayList<HashMap>();
+    @SuppressWarnings({"rawtypes"})
+    Map[] createMapFromResults(ResultSet queryResults) throws VantiqSQLException {
+        ArrayList<HashMap<String, Object>> rows = new ArrayList<HashMap<String, Object>>();
         try {
             if (!queryResults.next()) { 
-                return rows.toArray(new HashMap[rows.size()]);
+                return rows.toArray(new HashMap[0]);
             } else {
                 ResultSetMetaData md = queryResults.getMetaData(); 
                 int columns = md.getColumnCount();
+
+                // These formatters need to be local as they are not threadsafe.  Issue #290
+                DateFormat dfTimestamp  = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSZ");
+                DateFormat dfDate       = new SimpleDateFormat("yyyy-MM-dd");
+                DateFormat dfTime       = new SimpleDateFormat("HH:mm:ss.SSSZ");
                 
                 // Iterate over rows of Result Set and create a map for each row
                 do {
-                    HashMap row = new HashMap(columns);
+                    HashMap<String, Object> row = new HashMap<>(columns);
                     for (int i=1; i<=columns; ++i) {
                         // Check column type to retrieve data in appropriate manner
                         int columnType = md.getColumnType(i);
@@ -273,8 +276,7 @@ public class JDBC {
         } catch (SQLException e) {
             reportSQLError(e);
         }
-        HashMap[] rowsArray = rows.toArray(new HashMap[rows.size()]);
-        return rowsArray;
+        return rows.toArray(new HashMap[0]);
     }
     
     /**
