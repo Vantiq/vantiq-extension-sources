@@ -51,10 +51,6 @@ public class JDBC {
 
     // Used if asynchronous publish/query handling has been specified
     private HikariDataSource ds = null;
-
-    DateFormat dfTimestamp  = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSZ");
-    DateFormat dfDate       = new SimpleDateFormat("yyyy-MM-dd");
-    DateFormat dfTime       = new SimpleDateFormat("HH:mm:ss.SSSZ");
     
     /**
      * The method used to setup the connection to the SQL Database, using the values retrieved from the source config.
@@ -227,6 +223,11 @@ public class JDBC {
             } else {
                 ResultSetMetaData md = queryResults.getMetaData(); 
                 int columns = md.getColumnCount();
+
+                // These formatters need to be local as they are not threadsafe.  Issue #290
+                DateFormat dfTimestamp  = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSZ");
+                DateFormat dfDate       = new SimpleDateFormat("yyyy-MM-dd");
+                DateFormat dfTime       = new SimpleDateFormat("HH:mm:ss.SSSZ");
                 
                 // Iterate over rows of Result Set and create a map for each row
                 do {
