@@ -16,6 +16,8 @@ import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeTrue;
 import static org.junit.Assert.assertEquals;
 
+import java.io.File;
+import java.io.IOException;
 import java.lang.Integer;
 import java.math.BigDecimal;
 import java.text.SimpleDateFormat;
@@ -29,6 +31,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import org.junit.AfterClass;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
 import com.google.gson.JsonArray;
@@ -36,6 +39,7 @@ import com.google.gson.JsonObject;
 
 import io.vantiq.client.Vantiq;
 import io.vantiq.client.VantiqResponse;
+import io.vantiq.extjsdk.Utils;
 import io.vantiq.extsrc.jdbcSource.exception.VantiqSQLException;
 
 @SuppressWarnings({"PMD.ExcessiveClassLength", "rawtypes"})
@@ -70,7 +74,7 @@ public class TestJDBC extends TestJDBCBase {
     static final Integer TS_COUNT = 25;
     static final Integer PARALLEL_DATE_INSTANCE_COUNT = 15;
     static final Integer PARALLEL_DATE_THREAD_COUNT = 150;
-    static final String CREATE_TABLE_MANY_DATES = "create table TestDates(id int," +
+    static final String CREATE_TABLE_MANY_DATES = "create table TestManyDates(id int," +
             "ts1  TIMESTAMP," +
             "ts2  TIMESTAMP," +
             "ts3  TIMESTAMP," +
@@ -99,9 +103,10 @@ public class TestJDBC extends TestJDBCBase {
             "testDate DATE, " +
             "testTime TIME);";
 
-    static final String SELECT_QUERY_MANY_DATES= "SELECT * FROM TestDates;";
-    static final String DELETE_ROW_MANY_DATES = "DELETE FROM TestDates;";
-    static final String DROP_TABLE_MANY_DATES = "DROP TABLE TestDates;";
+    static final String INSERT_MANY_DATES_FRAG = "INSERT INTO TestManyDates VALUES (";
+    static final String SELECT_QUERY_MANY_DATES= "SELECT * FROM TestManyDates;";
+    static final String DELETE_ROW_MANY_DATES = "DELETE FROM TestManyDates;";
+    static final String DROP_TABLE_MANY_DATES = "DROP TABLE TestManyDates;";
 
     // Queries to test errors
     static final String NO_TABLE = "SELECT * FROM jibberish";
@@ -184,15 +189,15 @@ public class TestJDBC extends TestJDBCBase {
         vantiq = new io.vantiq.client.Vantiq(testVantiqServer);
         vantiq.setAccessToken(testAuthToken);
     }
-    
-    /* Uncomment this BeforeClass when debugging to ensure tables have been properly deleted.
-    
+
     @BeforeClass
-    public static void debugSetup() throws VantiqSQLException {
-        tearDown();
+    public static void setupEnv() throws IOException {
+        // Make initial Utils.obtainServerConfig() call so that we don't get errors later on
+        File serverConfigFile = new File("server.config");
+        serverConfigFile.createNewFile();
+        serverConfigFile.deleteOnExit();
+        Utils.obtainServerConfig();
     }
-    
-    */
 
     @SuppressWarnings("PMD.JUnit4TestShouldUseAfterAnnotation")
     @AfterClass
@@ -516,7 +521,6 @@ public class TestJDBC extends TestJDBCBase {
             t.start();
         }
 
-        System.out.println("Thread count: " + threads.size());
         Exception trapped = null;
         for (Thread t: threads) {
             try {
@@ -1137,13 +1141,12 @@ public class TestJDBC extends TestJDBCBase {
         LinkedHashMap<String, Object> resSet = new LinkedHashMap<>();
         String[] insertList = new String[rowCount];
         for (int i = 1; i <= rowCount; i++) {
-            StringBuilder result = new StringBuilder("INSERT INTO TestDates VALUES (" + id + ", '");
+            StringBuilder result = new StringBuilder(INSERT_MANY_DATES_FRAG + id + ", '");
             for (int j = 0; j < TS_COUNT; j++) {
                 result.append(instString).append("', '");
             }
             result.append(" " + DATE + "', '" + TIME + "');");
             insertList[i -1] = result.toString();
-            System.out.println(result);
         }
         resSet.put("id", id);
         resSet.put("expected", instString);
@@ -1156,11 +1159,7 @@ public class TestJDBC extends TestJDBCBase {
         where.put("name", testSourceName);
         VantiqResponse response = vantiq.select("system.sources", null, where, null);
         ArrayList responseBody = (ArrayList) response.getBody();
-        if (responseBody.isEmpty()) {
-            return false;
-        } else {
-            return true;
-        }
+        return !responseBody.isEmpty();
     }
 
     public static void setupSource(Map<String,Object> sourceDef) {
