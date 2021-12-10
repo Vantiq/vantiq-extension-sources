@@ -521,6 +521,7 @@ public class TestJDBC extends TestJDBCBase {
             t.start();
         }
 
+        // Now, wait for all the threads to complete, checking that they all ran exception free.
         Exception trapped = null;
         for (Thread t: threads) {
             try {
