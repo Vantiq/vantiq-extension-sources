@@ -70,7 +70,8 @@ public class TestJDBC extends TestJDBCBase {
     static final String DELETE_TABLE_EXTENDED_TYPES = "DROP TABLE TestTypes;";
 
     static final Integer TS_COUNT = 25;
-    static final Integer PARALLEL_DATE_COUNT = 15;
+    static final Integer PARALLEL_DATE_INSTANCE_COUNT = 15;
+    static final Integer PARALLEL_DATE_THREAD_COUNT = 150;
     static final String CREATE_TABLE_MANY_DATES = "create table TestDates(id int," +
             "ts1  TIMESTAMP," +
             "ts2  TIMESTAMP," +
@@ -417,7 +418,8 @@ public class TestJDBC extends TestJDBCBase {
             queryResult = jdbc.processQuery(SELECT_QUERY_EXTENDED_TYPES);
             String timestampTest = (String) queryResult[0].get("ts");
             assert timestampTest.matches(timestampPattern);
-            assertTrue("Expected " + FORMATTED_TIMESTAMP + ", but got " + timestampTest,timestampTest.equals(FORMATTED_TIMESTAMP));
+            assertEquals("Expected " + FORMATTED_TIMESTAMP + ", but got " + timestampTest,
+                    FORMATTED_TIMESTAMP, timestampTest);
             String dateTest = (String) queryResult[0].get("testDate");
             assert dateTest.matches(datePattern);
             assert dateTest.equals(DATE);
@@ -461,7 +463,7 @@ public class TestJDBC extends TestJDBCBase {
         ArrayList<Map<String, Object>> dataMap = new ArrayList<>();
         try {
             for (int i = 0; i < 25; i++) {
-                Map<String, Object> toPub = createManyDatesRows(i, PARALLEL_DATE_COUNT);
+                Map<String, Object> toPub = createManyDatesRows(i, PARALLEL_DATE_INSTANCE_COUNT);
                 dataMap.add(toPub);
                 for (String row : (String[]) toPub.get("batch")) {
                     publishResult = jdbc.processPublish(row);
@@ -482,16 +484,13 @@ public class TestJDBC extends TestJDBCBase {
             // Select the values from the table and make sure the data is retrieved correctly
             try {
                 Map[] qres = jdbc.processQuery(SELECT_QUERY_MANY_DATES);
-                System.out.println("Rowcount: " + qres.length);
                 for (Map row : qres) {
                     int id = (int) row.get("id");
-                    System.out.println("Doing id: " + id);
                     for (int i = 1; i <= TS_COUNT; i++ ) {
                         String timestampTest = (String) row.get("ts" + i);
                         assertNotNull(timestampTest);
                         assert timestampTest.matches(timestampPattern);
                         Date found = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSZ").parse(timestampTest);
-                        System.out.println("Datamap size: " + dataMap.size());
                         assert dataMap.size() > id;
                         Date expected = new SimpleDateFormat("yyyy-MM-dd' 'HH:mm:ss")
                                 .parse(dataMap.get(id).get("expected").toString());
@@ -507,14 +506,12 @@ public class TestJDBC extends TestJDBCBase {
                     }
                 }
             } catch (Exception e) {
-                e.printStackTrace();
                 threadFailed.set(e);
-                fail("Should not have thrown exception during select." + e);
             }
         };
 
         ArrayList<Thread> threads = new ArrayList<>();
-        for (int i = 0; i < PARALLEL_DATE_COUNT; i++) {
+        for (int i = 0; i < PARALLEL_DATE_THREAD_COUNT; i++) {
             Thread t = new Thread(querier);
             threads.add(t);
             t.start();
@@ -1138,8 +1135,7 @@ public class TestJDBC extends TestJDBCBase {
 
     // ================================================= Helper functions =================================================
 
-    public static Map createManyDatesRows(int id, int rowCount) {
-//        TIMESTAMP = "2018-08-15 9:24:18";
+    public static Map<String, Object> createManyDatesRows(int id, int rowCount) {
         Instant inst = Instant.now().plus(id, ChronoUnit.DAYS);
         String instString = new SimpleDateFormat("yyyy-MM-dd' 'HH:mm:ss").format(Date.from(inst));
         LinkedHashMap<String, Object> resSet = new LinkedHashMap<>();
