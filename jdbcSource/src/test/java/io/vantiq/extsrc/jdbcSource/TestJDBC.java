@@ -8,20 +8,28 @@
 
 package io.vantiq.extsrc.jdbcSource;
 
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeTrue;
 import static org.junit.Assert.assertEquals;
 
+import java.lang.Integer;
 import java.math.BigDecimal;
+import java.text.SimpleDateFormat;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.junit.AfterClass;
-import org.junit.BeforeClass;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -54,12 +62,48 @@ public class TestJDBC extends TestJDBCBase {
     // Queries to test oddball types
     static final String CREATE_TABLE_EXTENDED_TYPES = "create table TestTypes(id int, ts TIMESTAMP, testDate DATE, "
             + "testTime TIME, testDec decimal(5,2));";
+
     static final String PUBLISH_QUERY_EXTENDED_TYPES = "INSERT INTO TestTypes VALUES (1, '" + TIMESTAMP + "', '" + DATE + "',"
             + " '" + TIME + "', 145.86);";
     static final String SELECT_QUERY_EXTENDED_TYPES = "SELECT * FROM TestTypes;";
     static final String DELETE_ROW_EXTENDED_TYPES = "DELETE FROM TestTypes;";
     static final String DELETE_TABLE_EXTENDED_TYPES = "DROP TABLE TestTypes;";
-    
+
+    static final Integer TS_COUNT = 25;
+    static final Integer PARALLEL_DATE_COUNT = 15;
+    static final String CREATE_TABLE_MANY_DATES = "create table TestDates(id int," +
+            "ts1  TIMESTAMP," +
+            "ts2  TIMESTAMP," +
+            "ts3  TIMESTAMP," +
+            "ts4  TIMESTAMP," +
+            "ts5  TIMESTAMP," +
+            "ts6  TIMESTAMP," +
+            "ts7  TIMESTAMP," +
+            "ts8  TIMESTAMP," +
+            "ts9  TIMESTAMP," +
+            "ts10 TIMESTAMP," +
+            "ts11 TIMESTAMP," +
+            "ts12 TIMESTAMP," +
+            "ts13 TIMESTAMP," +
+            "ts14 TIMESTAMP," +
+            "ts15 TIMESTAMP," +
+            "ts16 TIMESTAMP," +
+            "ts17 TIMESTAMP," +
+            "ts18 TIMESTAMP," +
+            "ts19 TIMESTAMP," +
+            "ts20 TIMESTAMP," +
+            "ts21 TIMESTAMP," +
+            "ts22 TIMESTAMP," +
+            "ts23 TIMESTAMP," +
+            "ts24 TIMESTAMP," +
+            "ts25 TIMESTAMP," +
+            "testDate DATE, " +
+            "testTime TIME);";
+
+    static final String SELECT_QUERY_MANY_DATES= "SELECT * FROM TestDates;";
+    static final String DELETE_ROW_MANY_DATES = "DELETE FROM TestDates;";
+    static final String DROP_TABLE_MANY_DATES = "DROP TABLE TestDates;";
+
     // Queries to test errors
     static final String NO_TABLE = "SELECT * FROM jibberish";
     static final String NO_FIELD = "SELECT jibberish FROM Test";
@@ -235,6 +279,13 @@ public class TestJDBC extends TestJDBCBase {
             } catch (VantiqSQLException e) {
                 // Shouldn't throw Exception
             }
+
+            // Delete parallel Dates table
+            try {
+                dropTablesJDBC.processPublish(DROP_TABLE_MANY_DATES);
+            } catch (VantiqSQLException e) {
+                // Shouldn't throw Exception
+            }
             
             // Close the new JDBC Instance
             dropTablesJDBC.close();
@@ -384,6 +435,110 @@ public class TestJDBC extends TestJDBCBase {
             assert publishResult > 0;
         } catch (VantiqSQLException e) {
             fail("Should not have thrown exception.");
+        }
+    }
+
+    @Test
+    public void testParallelDates() throws VantiqSQLException {
+        assumeTrue(testDBUsername != null && testDBPassword != null && testDBURL != null && jdbcDriverLoc != null);
+        jdbc.setupJDBC(testDBURL, testDBUsername, testDBPassword, false, 0);
+        HashMap[] queryResult;
+        int publishResult;
+
+
+        // Create table with odd types including timestamps, dates, times, and decimals
+        try {
+            publishResult = jdbc.processPublish(CREATE_TABLE_MANY_DATES);
+            assert publishResult == 0;
+        } catch (VantiqSQLException e) {
+            e.printStackTrace();
+            fail("Should not have thrown exception." + e);
+        }
+
+        // Insert values into the newly created table
+        // Here, we will set up a bunch of sets of 25 rows, where each row has a bunch of dates in it.
+
+        ArrayList<Map<String, Object>> dataMap = new ArrayList<>();
+        try {
+            for (int i = 0; i < 25; i++) {
+                Map<String, Object> toPub = createManyDatesRows(i, PARALLEL_DATE_COUNT);
+                dataMap.add(toPub);
+                for (String row : (String[]) toPub.get("batch")) {
+                    publishResult = jdbc.processPublish(row);
+                    assert publishResult > 0;
+                }
+            }
+        } catch (VantiqSQLException e) {
+            e.printStackTrace();
+            fail("Should not have thrown exception on insert: " + e);
+        }
+
+        // Now, to verify our parallel operations, we'll fire off a bunch of threads all doing the same
+        // query across this table full of dates.  We should get everything with correct results,
+        // but we had had the date results scrambled due to use of non-threadsafe methods.
+
+        AtomicReference<Exception> threadFailed = new AtomicReference<>();
+        Runnable querier = () -> {
+            // Select the values from the table and make sure the data is retrieved correctly
+            try {
+                Map[] qres = jdbc.processQuery(SELECT_QUERY_MANY_DATES);
+                System.out.println("Rowcount: " + qres.length);
+                for (Map row : qres) {
+                    int id = (int) row.get("id");
+                    System.out.println("Doing id: " + id);
+                    for (int i = 1; i <= TS_COUNT; i++ ) {
+                        String timestampTest = (String) row.get("ts" + i);
+                        assertNotNull(timestampTest);
+                        assert timestampTest.matches(timestampPattern);
+                        Date found = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSZ").parse(timestampTest);
+                        System.out.println("Datamap size: " + dataMap.size());
+                        assert dataMap.size() > id;
+                        Date expected = new SimpleDateFormat("yyyy-MM-dd' 'HH:mm:ss")
+                                .parse(dataMap.get(id).get("expected").toString());
+                        assertNotNull(found);
+                        assertNotNull(expected);
+                        assertEquals("Expected " + expected + ", but got " + found, expected, found);
+                        String dateTest = (String) row.get("testDate");
+                        assert dateTest.matches(datePattern);
+                        assert dateTest.equals(DATE);
+                        String timeTest = (String) row.get("testTime");
+                        assert timeTest.matches(timePattern);
+                        assert timeTest.equals(FORMATTED_TIME);
+                    }
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+                threadFailed.set(e);
+                fail("Should not have thrown exception during select." + e);
+            }
+        };
+
+        ArrayList<Thread> threads = new ArrayList<>();
+        for (int i = 0; i < PARALLEL_DATE_COUNT; i++) {
+            Thread t = new Thread(querier);
+            threads.add(t);
+            t.start();
+        }
+
+        System.out.println("Thread count: " + threads.size());
+        Exception trapped = null;
+        for (Thread t: threads) {
+            try {
+                t.join();
+            } catch (Exception e) {
+                trapped = e;
+            }
+        }
+
+        assertNull(trapped);
+        assertNull("Trapped exception during thread processing: " + threadFailed.get(), threadFailed.get());
+
+        // Delete the row of data
+        try {
+            publishResult = jdbc.processPublish(DELETE_ROW_MANY_DATES);
+            assert publishResult > 0;
+        } catch (VantiqSQLException e) {
+            fail("Should not have thrown exception on drop.");
         }
     }
     
@@ -982,6 +1137,27 @@ public class TestJDBC extends TestJDBCBase {
     }
 
     // ================================================= Helper functions =================================================
+
+    public static Map createManyDatesRows(int id, int rowCount) {
+//        TIMESTAMP = "2018-08-15 9:24:18";
+        Instant inst = Instant.now().plus(id, ChronoUnit.DAYS);
+        String instString = new SimpleDateFormat("yyyy-MM-dd' 'HH:mm:ss").format(Date.from(inst));
+        LinkedHashMap<String, Object> resSet = new LinkedHashMap<>();
+        String[] insertList = new String[rowCount];
+        for (int i = 1; i <= rowCount; i++) {
+            StringBuilder result = new StringBuilder("INSERT INTO TestDates VALUES (" + id + ", '");
+            for (int j = 0; j < TS_COUNT; j++) {
+                result.append(instString).append("', '");
+            }
+            result.append(" " + DATE + "', '" + TIME + "');");
+            insertList[i -1] = result.toString();
+            System.out.println(result);
+        }
+        resSet.put("id", id);
+        resSet.put("expected", instString);
+        resSet.put("batch", insertList);
+        return resSet;
+    }
 
     public static boolean checkSourceExists() {
         Map<String,String> where = new LinkedHashMap<String,String>();
