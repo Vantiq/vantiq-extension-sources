@@ -1138,7 +1138,7 @@ public class TestJDBC extends TestJDBCBase {
 
     // ================================================= Helper functions =================================================
 
-    @SuppressWarnings({"PMD.SimpleDateFormatNeedsLocale"})
+    @SuppressWarnings({"PMD.SimpleDateFormatNeedsLocale", "PMD.IllegalTypeCheck"})
     public static Map<String, Object> createManyDatesRows(int id, int rowCount) {
         Instant inst = Instant.now().plus(id, ChronoUnit.DAYS);
         String instString = new SimpleDateFormat("yyyy-MM-dd' 'HH:mm:ss").format(Date.from(inst));
