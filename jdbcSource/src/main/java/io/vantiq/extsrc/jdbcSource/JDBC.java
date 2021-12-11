@@ -216,7 +216,7 @@ public class JDBC {
      *                       (or an empty HashMap Array if the ResultSet was empty).
      * @throws VantiqSQLException
      */
-    @SuppressWarnings({"rawtypes", "PMD.CognitiveComplexity","PMD.SimpleDateFormatNeedsLocale"})
+    @SuppressWarnings({"rawtypes", "PMD.CognitiveComplexity", "PMD.SimpleDateFormatNeedsLocale"})
     Map[] createMapFromResults(ResultSet queryResults) throws VantiqSQLException {
         ArrayList<HashMap<String, Object>> rows = new ArrayList<HashMap<String, Object>>();
         try {

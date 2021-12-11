@@ -41,7 +41,7 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-@SuppressWarnings({"PMD.ExcessiveClassLength", "rawtypes"})
+@SuppressWarnings({"PMD.ExcessiveClassLength", "rawtypes", "PMD.IllegalTypeCheck"})
 public class TestJDBC extends TestJDBCBase {
     
     // Queries to be tested
@@ -601,7 +601,8 @@ public class TestJDBC extends TestJDBCBase {
         // Delete the Source from VANTIQ
         deleteSource();
     }
-    
+
+    @SuppressWarnings({"PMD.CognitiveComplexity"})
     @Test
     public void testNullValues() throws VantiqSQLException {
         assumeTrue(testDBUsername != null && testDBPassword != null && testDBURL != null && jdbcDriverLoc != null);
@@ -1149,7 +1150,7 @@ public class TestJDBC extends TestJDBCBase {
                 result.append(instString).append("', '");
             }
             result.append(" " + DATE + "', '" + TIME + "');");
-            insertList[i -1] = result.toString();
+            insertList[i - 1] = result.toString();
         }
         resSet.put("id", id);
         resSet.put("expected", instString);
