@@ -26,7 +26,6 @@ import io.vantiq.extsrc.jdbcSource.exception.VantiqSQLException;
 
 import java.io.File;
 import java.io.IOException;
-import java.lang.Integer;
 import java.math.BigDecimal;
 import java.text.SimpleDateFormat;
 import java.time.Instant;
@@ -104,7 +103,7 @@ public class TestJDBC extends TestJDBCBase {
             "testTime TIME);";
 
     static final String INSERT_MANY_DATES_FRAG = "INSERT INTO TestManyDates VALUES (";
-    static final String SELECT_QUERY_MANY_DATES= "SELECT * FROM TestManyDates;";
+    static final String SELECT_QUERY_MANY_DATES = "SELECT * FROM TestManyDates;";
     static final String DELETE_ROW_MANY_DATES = "DELETE FROM TestManyDates;";
     static final String DROP_TABLE_MANY_DATES = "DROP TABLE TestManyDates;";
 
@@ -199,7 +198,7 @@ public class TestJDBC extends TestJDBCBase {
         Utils.obtainServerConfig();
     }
 
-    @SuppressWarnings("PMD.JUnit4TestShouldUseAfterAnnotation")
+    @SuppressWarnings({"PMD.JUnit4TestShouldUseAfterAnnotation", "PMD.CognitiveComplexity", "PMD.EmptyCatchBlock"})
     @AfterClass
     public static void tearDown() throws VantiqSQLException {
         if (testDBUsername != null && testDBPassword != null && testDBURL != null && jdbcDriverLoc != null) {
@@ -445,6 +444,7 @@ public class TestJDBC extends TestJDBCBase {
         }
     }
 
+    @SuppressWarnings({"PMD.CognitiveComplexity", "PMD.SimpleDateFormatNeedsLocale"})
     @Test
     public void testParallelDates() throws VantiqSQLException {
         assumeTrue(testDBUsername != null && testDBPassword != null && testDBURL != null && jdbcDriverLoc != null);
@@ -705,7 +705,8 @@ public class TestJDBC extends TestJDBCBase {
         
         jdbc.close();
     }
-    
+
+    @SuppressWarnings({"PMD.CognitiveComplexity"})
     @Test
     public void testCorrectErrors() throws VantiqSQLException {
         assumeTrue(testDBUsername != null && testDBPassword != null && testDBURL != null && jdbcDriverLoc != null);
@@ -1136,6 +1137,7 @@ public class TestJDBC extends TestJDBCBase {
 
     // ================================================= Helper functions =================================================
 
+    @SuppressWarnings({"PMD.SimpleDateFormatNeedsLocale"})
     public static Map<String, Object> createManyDatesRows(int id, int rowCount) {
         Instant inst = Instant.now().plus(id, ChronoUnit.DAYS);
         String instString = new SimpleDateFormat("yyyy-MM-dd' 'HH:mm:ss").format(Date.from(inst));

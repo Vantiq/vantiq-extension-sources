@@ -169,6 +169,7 @@ public class JDBCCore {
      * a query error using sendQueryError()
      * @param message   The Query message.
      */
+    @SuppressWarnings({"PMD.CognitiveComplexity"})
     public void executeQuery(ExtensionServiceMessage message) {
         Map<String, ?> request = (Map<String, ?>) message.getObject();
         String replyAddress = ExtensionServiceMessage.extractReplyAddress(message);
@@ -344,7 +345,7 @@ public class JDBCCore {
            // Otherwise, send messages containing 'bundleFactor' number of rows
            int len = queryArray.length;
            for (int i = 0; i < len; i += bundleFactor) {
-               Map[] rowBundle = Arrays.copyOfRange(queryArray, i, Math.min(queryArray.length, i+bundleFactor));
+               Map[] rowBundle = Arrays.copyOfRange(queryArray, i, Math.min(queryArray.length, i + bundleFactor));
                
                // If we reached the last row, send with 200 code
                if  (i + bundleFactor >= len) {
