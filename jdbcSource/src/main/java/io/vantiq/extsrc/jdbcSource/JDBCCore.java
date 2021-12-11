@@ -10,12 +10,10 @@ package io.vantiq.extsrc.jdbcSource;
 
 import java.util.Arrays;
 import java.util.List;
-import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Timer;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.ExecutorService;
@@ -51,7 +49,7 @@ public class JDBCCore {
     final static String SELECT_STATEMENT_IDENTIFIER = "select";
     
     // Used to check row bundling in tests
-    public HashMap[] lastRowBundle = null;
+    public Map[] lastRowBundle = null;
 
     ExecutorService queryPool = null;
     ExecutorService publishPool = null;
@@ -171,6 +169,7 @@ public class JDBCCore {
      * a query error using sendQueryError()
      * @param message   The Query message.
      */
+    @SuppressWarnings({"PMD.CognitiveComplexity"})
     public void executeQuery(ExtensionServiceMessage message) {
         Map<String, ?> request = (Map<String, ?>) message.getObject();
         String replyAddress = ExtensionServiceMessage.extractReplyAddress(message);
@@ -193,7 +192,7 @@ public class JDBCCore {
                 String queryString = (String) request.get("query");
                 // Check if SQL Query is an update statement, or query statement
                 if (queryString.trim().toLowerCase().startsWith(SELECT_STATEMENT_IDENTIFIER)) {
-                    HashMap[] queryArray = localJDBC.processQuery(queryString);
+                    Map[] queryArray = localJDBC.processQuery(queryString);
                     sendDataFromQuery(queryArray, message);
                 } else {
                     int data = localJDBC.processPublish(queryString);
@@ -299,9 +298,9 @@ public class JDBCCore {
             return;
         }
         try {
-            HashMap[] queryMap = localJDBC.processQuery(pollQuery);
+            Map[] queryMap = localJDBC.processQuery(pollQuery);
             if (queryMap != null) {
-                for (HashMap h : queryMap) {
+                for (Map h : queryMap) {
                     if (client.isConnected()) {
                         client.sendNotification(h);
                     } else {
@@ -324,7 +323,7 @@ public class JDBCCore {
     * @param queryArray     A HashMap Array containing the retrieved data from processQuery().
     * @param message        The Query message
     */
-   public void sendDataFromQuery(HashMap[] queryArray, ExtensionServiceMessage message) {
+   public void sendDataFromQuery(Map[] queryArray, ExtensionServiceMessage message) {
        Map<String, ?> request = (Map<String, ?>) message.getObject();
        String replyAddress = ExtensionServiceMessage.extractReplyAddress(message);
        
@@ -346,7 +345,7 @@ public class JDBCCore {
            // Otherwise, send messages containing 'bundleFactor' number of rows
            int len = queryArray.length;
            for (int i = 0; i < len; i += bundleFactor) {
-               HashMap[] rowBundle = Arrays.copyOfRange(queryArray, i, Math.min(queryArray.length, i+bundleFactor));
+               Map[] rowBundle = Arrays.copyOfRange(queryArray, i, Math.min(queryArray.length, i + bundleFactor));
                
                // If we reached the last row, send with 200 code
                if  (i + bundleFactor >= len) {
