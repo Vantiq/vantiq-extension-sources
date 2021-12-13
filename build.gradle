@@ -43,6 +43,7 @@ ext {
     slf4jApiVersion = '1.7.25'
     eclipseMiloVersion = '0.2.1'
     vantiqSDKVersion = '1.0.31'
+    log4jVersion = '2.15.0'
 }
 
 
