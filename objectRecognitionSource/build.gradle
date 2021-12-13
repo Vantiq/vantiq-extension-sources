@@ -189,7 +189,7 @@ dependencies {
     compile project(':extjsdk')
     
     compile "org.slf4j:slf4j-api:1.7.25"
-    compile "org.apache.logging.log4j:log4j-slf4j-impl:2.11.0"
+    compile "org.apache.logging.log4j:log4j-slf4j-impl:${log4jVersion}"
 
     compile "org.projectlombok:lombok:${lombokVersion}"
 

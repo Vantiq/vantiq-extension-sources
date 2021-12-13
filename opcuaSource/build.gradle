@@ -27,7 +27,7 @@ ext {
     commonsCliVersion = '1.4'
     bouncyCastleVersion = '1.58'
     slf4jApiVersion = '1.7.25'
-    log4jSlfImplVersion = '2.11.0'
+    log4jSlfImplVersion = '2.15.0'
 }
 
 repositories {
