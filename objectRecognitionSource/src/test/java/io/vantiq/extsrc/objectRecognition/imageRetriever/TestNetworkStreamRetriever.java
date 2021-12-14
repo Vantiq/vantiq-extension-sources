@@ -19,7 +19,7 @@ public class TestNetworkStreamRetriever {
     NetworkStreamRetriever retriever;
     NoSendORCore source;
     
-    final static String IP_CAMERA_URL = "http://60.45.181.202:8080/mjpg/quad/video.mjpg";
+    static final String IP_CAMERA_URL = "http://60.45.181.202:8080/mjpg/quad/video.mjpg";
 
     @Before
     public void setup() {
