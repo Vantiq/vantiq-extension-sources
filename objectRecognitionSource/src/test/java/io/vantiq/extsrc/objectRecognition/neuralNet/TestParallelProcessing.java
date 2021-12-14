@@ -21,7 +21,7 @@ public class TestParallelProcessing extends NeuralNetTestBase {
 
     static final String FAKE_MODEL_DIR = "";
     static final int CORE_START_TIMEOUT = 10;
-    static final String IP_CAMERA_ADDRESS = "http://207.192.232.2:8000/mjpg/video.mjpg";
+    static final String IP_CAMERA_ADDRESS = "http://49.229.157.154:8080/mjpg/video.mjpg";
 
     @BeforeClass
     public static void classSetup() {

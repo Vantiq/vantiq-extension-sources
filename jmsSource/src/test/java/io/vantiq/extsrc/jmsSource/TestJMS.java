@@ -436,6 +436,8 @@ public class TestJMS extends TestJMSBase {
     
     @Test
     public void testIncorrectOddballJMSTypes() {
+        checkAllJMSProperties(false);
+
         // Check that Source and Type do not already exist in namespace, and skip test if they do
         assumeFalse(checkSourceExists());
         

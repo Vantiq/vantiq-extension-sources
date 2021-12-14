@@ -8,6 +8,11 @@
 
 package io.vantiq.extsrc.jmsSource;
 
+import static org.junit.Assert.fail;
+
+import io.vantiq.extjsdk.Utils;
+import java.io.File;
+import java.io.IOException;
 import org.junit.BeforeClass;
 
 public class TestJMSBase {
@@ -37,5 +42,16 @@ public class TestJMSBase {
         testAuthToken = System.getProperty("TestAuthToken", null);
         testVantiqServer = System.getProperty("TestVantiqServer", null);
         testSourceName = System.getProperty("EntConTestSourceName", "testSourceName");
+
+        // Also, set up the config file we'll (not really) use
+        // Make initial Utils.obtainServerConfig() call so that we don't get errors later on
+        try {
+            File serverConfigFile = new File("server.config");
+            serverConfigFile.createNewFile();
+            serverConfigFile.deleteOnExit();
+            Utils.obtainServerConfig();
+        } catch (IOException e) {
+            fail("Could not setup config file");
+        }
     }
 }

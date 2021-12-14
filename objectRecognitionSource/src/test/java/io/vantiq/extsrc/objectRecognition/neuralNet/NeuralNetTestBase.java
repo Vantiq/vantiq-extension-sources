@@ -22,7 +22,9 @@ import java.util.Map;
 import io.vantiq.client.Vantiq;
 import io.vantiq.client.VantiqError;
 import io.vantiq.client.VantiqResponse;
+import io.vantiq.extjsdk.Utils;
 import io.vantiq.extsrc.objectRecognition.ObjRecTestBase;
+import org.junit.BeforeClass;
 
 public class NeuralNetTestBase extends ObjRecTestBase {
     public static final String MODEL_DIRECTORY = System.getProperty("buildDir") + "/models";
@@ -34,6 +36,18 @@ public class NeuralNetTestBase extends ObjRecTestBase {
     static final String NOT_FOUND_CODE = "io.vantiq.resource.not.found";
     static final int WAIT_FOR_ASYNC_MILLIS = 5000;
 
+    @BeforeClass
+    public static void setupConfigFile() {
+        // Make initial Utils.obtainServerConfig() call so that we don't get errors later on
+        try {
+            File serverConfigFile = new File("server.config");
+            serverConfigFile.createNewFile();
+            serverConfigFile.deleteOnExit();
+            Utils.obtainServerConfig();
+        } catch (IOException e) {
+            fail("Could not setup config file");
+        }
+    }
     public static byte[] getTestImage() {
         File image = new File(JPEG_IMAGE_LOCATION);
         try {
