@@ -45,7 +45,7 @@ public class TestYoloQueriesLocationMapper extends NeuralNetTestBase {
     static final String PB_FILE = "coco-" + COCO_MODEL_VERSION + ".pb";
     static final String META_FILE = "coco-" + COCO_MODEL_VERSION + ".meta";
     static final String OUTPUT_DIR = System.getProperty("buildDir") + "/resources/out";
-    static final String IP_CAMERA_ADDRESS = "http://207.192.232.2:8000/mjpg/video.mjpg";
+    static final String IP_CAMERA_ADDRESS = "http://61.208.190.221:8001/cgi-bin/camera?resolution=640&quality=1&Language=0&1639432689";
     static final Double ACCEPTABLE_DELTA = 0.0001d;
     static final Long REQUIRED_IMAGES = 4L;
     static final int IMAGE_ATTEMPTS = 40;

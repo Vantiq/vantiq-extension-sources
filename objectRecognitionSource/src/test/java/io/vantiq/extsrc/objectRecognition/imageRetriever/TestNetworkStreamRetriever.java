@@ -19,8 +19,8 @@ public class TestNetworkStreamRetriever {
     NetworkStreamRetriever retriever;
     NoSendORCore source;
     
-    final String IP_CAMERA_URL = "http://153.142.207.158:80/-wvhttp-01-/GetOneShot?image_size=640x480&frame_count=1000000000";
-    
+    final String IP_CAMERA_URL = "http://60.45.181.202:8080/mjpg/quad/video.mjpg";
+
     @Before
     public void setup() {
         source = new NoSendORCore("src", "token", "server", "dir");

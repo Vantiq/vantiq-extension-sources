@@ -86,7 +86,7 @@ public class TestYoloProcessor extends NeuralNetTestBase {
     static final int KEYBOARD_CROPPED_HEIGHT = 125;
 
     // Used to test suppressNullValues
-    static final String NO_RECOGNIZED_OBJECTS_CAMERA_ADDRESS = "http://90.41.66.162:9000/mjpg/video.mjpg";
+    static final String NO_RECOGNIZED_OBJECTS_CAMERA_ADDRESS = "http://49.229.157.154:8080/mjpg/video.mjpg";
     static final int CORE_START_TIMEOUT = 10;
 
     static ObjectRecognitionCore core;
