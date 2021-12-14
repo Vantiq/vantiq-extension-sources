@@ -31,18 +31,18 @@ applicationDistribution.from("src/main/resources") {
 dependencies {
     // This dependency is used internally, and not exposed to consumers on their own compile classpath.
     implementation 'com.google.guava:guava:23.0'
-    
-    compile project(':extjsdk')
-    
-    compile "org.slf4j:slf4j-api:1.7.25"
-    compile "org.apache.logging.log4j:log4j-slf4j-impl:${log4jVersion}"
+
+    implementation project(':extjsdk')
+
+    implementation "org.slf4j:slf4j-api:1.7.25"
+    implementation "org.apache.logging.log4j:log4j-slf4j-impl:${log4jVersion}"
 
     // Used in tests
-    testCompile "io.vantiq:vantiq-sdk:${vantiqSDKVersion}"
+    testImplementation "io.vantiq:vantiq-sdk:${vantiqSDKVersion}"
     
     // Use JUnit test framework
-    testCompile 'junit:junit:4.12'
-    testCompile project(path:":extjsdk", configuration:"testArtifacts")
+    testImplementation 'junit:junit:4.12'
+    testImplementation project(path:":extjsdk", configuration:"testArtifacts")
 }
 
 tasks.withType(Test) {
