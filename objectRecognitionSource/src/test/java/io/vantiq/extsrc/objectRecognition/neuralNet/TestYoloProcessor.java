@@ -1737,7 +1737,6 @@ public class TestYoloProcessor extends NeuralNetTestBase {
         try {
             // Make sure that appropriate number of entries are stored in type (this means discard policy works, and core is still alive)
             VantiqResponse response = vantiq.select(testTypeName, null, null, null);
-            Object ent = response.getBody();
             @SuppressWarnings("unchecked")
             ArrayList<JsonObject> responseBody = (ArrayList<JsonObject>) response.getBody();
 
