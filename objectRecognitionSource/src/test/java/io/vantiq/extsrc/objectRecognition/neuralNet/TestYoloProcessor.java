@@ -1987,8 +1987,6 @@ public class TestYoloProcessor extends NeuralNetTestBase {
         dataSource.put("fileLocation", NOTHING_VIDEO_LOCATION);
         dataSource.put("fileExtension", "mov");
         dataSource.put("type", "file");
-//        dataSource.put("camera", NO_RECOGNIZED_OBJECTS_CAMERA_ADDRESS);
-//        dataSource.put("type", "network");
 
         // Setting up neuralNet config options
         neuralNet.put("type", "yolo");
