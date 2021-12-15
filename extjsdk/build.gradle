@@ -72,18 +72,18 @@ artifacts {
 }
 
 dependencies {
-    compile "org.slf4j:slf4j-api:1.7.25"
-    compile "org.apache.logging.log4j:log4j-slf4j-impl:${log4jVersion}"
+    implementation "org.slf4j:slf4j-api:1.7.25"
+    implementation "org.apache.logging.log4j:log4j-slf4j-impl:${log4jVersion}"
 
-    compile "org.apache.commons:commons-lang3:3.12.0"
+    implementation "org.apache.commons:commons-lang3:3.12.0"
 
-    compile "com.squareup.okhttp3:okhttp:${okhttpVersion}"
-    compile "com.fasterxml.jackson.core:jackson-databind:${jacksonVersion}"
+    implementation "com.squareup.okhttp3:okhttp:${okhttpVersion}"
+    implementation "com.fasterxml.jackson.core:jackson-databind:${jacksonVersion}"
 
-    testCompile group: 'junit', name: 'junit', version: '4.12'
+    testImplementation group: 'junit', name: 'junit', version: '4.12'
 
     // Used in tests
-    testCompile "io.vantiq:vantiq-sdk:${vantiqSDKVersion}"
+    testImplementation "io.vantiq:vantiq-sdk:${vantiqSDKVersion}"
 
     // Used to create EvictingQueue for failed messages queue
     implementation 'com.google.guava:guava:23.0'

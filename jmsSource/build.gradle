@@ -47,21 +47,21 @@ dependencies {
     // This dependency is used internally, and not exposed to consumers on their own compile classpath.
     implementation 'com.google.guava:guava:23.0'
 
-    compile project(':extjsdk')
+    implementation project(':extjsdk')
 
-    compile "org.slf4j:slf4j-api:1.7.25"
-    compile "org.apache.logging.log4j:log4j-slf4j-impl:${log4jVersion}"
+    implementation "org.slf4j:slf4j-api:1.7.25"
+    implementation "org.apache.logging.log4j:log4j-slf4j-impl:${log4jVersion}"
     
     // Used for for standard JMS utility
-    compile group: 'javax.jms', name: 'javax.jms-api', version: '2.0.1'
+    implementation group: 'javax.jms', name: 'javax.jms-api', version: '2.0.1'
 
     // Compiling relevant JMS Driver .jar file
-    compile files("${System.env.JMS_DRIVER_LOC}")
+    implementation files("${System.env.JMS_DRIVER_LOC}")
 
     // Used for testing extension source in VANTIQ
-    testCompile "io.vantiq:vantiq-sdk:${vantiqSDKVersion}"
+    testImplementation "io.vantiq:vantiq-sdk:${vantiqSDKVersion}"
 
     // Use JUnit test framework
-    testCompile 'junit:junit:4.12'
-    testCompile project(path:":extjsdk", configuration:"testArtifacts")
+    testImplementation 'junit:junit:4.12'
+    testImplementation project(path:":extjsdk", configuration:"testArtifacts")
 }

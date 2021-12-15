@@ -36,29 +36,29 @@ repositories {
 
 dependencies {
     // compile files('../extjsdk/build/libs/extjsdk-all.jar')
-    compile project(":extjsdk")
+    implementation project(":extjsdk")
 
-    compile "org.projectlombok:lombok:${lombokVersion}"
-    compile "org.slf4j:slf4j-api:${slf4jApiVersion}"
-    compile "org.apache.logging.log4j:log4j-slf4j-impl:${log4jVersion}"
+    implementation "org.projectlombok:lombok:${lombokVersion}"
+    implementation "org.slf4j:slf4j-api:${slf4jApiVersion}"
+    implementation "org.apache.logging.log4j:log4j-slf4j-impl:${log4jVersion}"
 
-    compile "com.fasterxml.jackson.core:jackson-databind:${jacksonVersion}"
-    compile "commons-cli:commons-cli:${commonsCliVersion}"
-    
-    compile "org.eclipse.milo:sdk-client:${eclipseMiloVersion}"
-    compile "org.eclipse.milo:stack-client:${eclipseMiloVersion}"
-    compile "org.eclipse.milo:stack-core:${eclipseMiloVersion}"
+    implementation "com.fasterxml.jackson.core:jackson-databind:${jacksonVersion}"
+    implementation "commons-cli:commons-cli:${commonsCliVersion}"
+
+    implementation "org.eclipse.milo:sdk-client:${eclipseMiloVersion}"
+    implementation "org.eclipse.milo:stack-client:${eclipseMiloVersion}"
+    implementation "org.eclipse.milo:stack-core:${eclipseMiloVersion}"
 
     // To force the inclusion of the bouncy castle provider libraries into the application build,
     // we must re-declare these on Milo SDK-client's behalf. The dependency declared
     // in the stack is optional, so it won't be bundled
     // into the application plugin's opcuaSource.{tar,zip}
 
-    runtime "org.bouncycastle:bcprov-jdk15on:${bouncyCastleVersion}"
-    runtime "org.bouncycastle:bcpkix-jdk15on:${bouncyCastleVersion}"
+    runtimeOnly "org.bouncycastle:bcprov-jdk15on:${bouncyCastleVersion}"
+    runtimeOnly "org.bouncycastle:bcpkix-jdk15on:${bouncyCastleVersion}"
 
-    testCompile group: 'junit', name: 'junit', version: "${junitVersion}"
-    testCompile "org.eclipse.milo:client-examples:${eclipseMiloVersion}"
+    testImplementation group: 'junit', name: 'junit', version: "${junitVersion}"
+    testImplementation "org.eclipse.milo:client-examples:${eclipseMiloVersion}"
 }
 
 mainClassName = 'io.vantiq.extsrc.opcua.opcUaSource.OpcUaServer'
