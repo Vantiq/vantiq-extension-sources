@@ -213,15 +213,12 @@ dependencies {
     implementation "com.jcraft:jsch:0.1.54"
     
     // The following dependencies are used to download neural net model information (and test artifacts) used in our
-    // tests and by some customer applications.  Formerly, some of these were downloaded from the following locations,
-    //    def sampleVideoUrl = new URL("https://www.dropbox.com/s/h5yd00qr8sfgdlt/sampleVideo.mov?dl=1")
-    //    def yoloGraphUrl = new URL("https://www.dropbox.com/s/lhnygcd6o6275jb/yolo.pb?dl=1")
-    // but we have now standardized on this mechanism.  The endpoints immediately above are left here for a short
-    // period of time in the event they prove useful to someone in the short term.  They are, however, temporary,
-    // the data there may not be available for an extended period of time.
+    // tests and by some customer applications.
 
 
     testRuntimeOnly "vantiq.testArtifacts:sampleVideo:1.0@mov"
+    testRuntimeOnly "vantiq.testArtifacts:nothingVideo:1.0@mov"
+
     testRuntimeOnly "vantiq.models:coco:${currentCocoVersion}@meta"
     testRuntimeOnly "vantiq.models:coco:${currentCocoVersion}@names"
     testRuntimeOnly "vantiq.models:coco:${currentCocoVersion}@pb"
@@ -302,6 +299,7 @@ task copyOldYoloModels(type: Copy, dependsOn: [configurations.testRuntimeClasspa
 
 task copyTestResources(type: Copy, dependsOn: [configurations.testRuntimeClasspath, configurations.oldYoloNames]) {
     from configurations.testRuntimeClasspath.find { it.name == 'sampleVideo-1.0.mov' },
+        configurations.testRuntimeClasspath.find { it.name == 'nothingVideo-1.0.mov' },
         sourceSets.test.resources.asList()
 
     into "$buildDir/testResources/"
