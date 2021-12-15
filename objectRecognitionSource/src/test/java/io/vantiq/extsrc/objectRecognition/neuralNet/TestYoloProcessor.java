@@ -1703,17 +1703,17 @@ public class TestYoloProcessor extends NeuralNetTestBase {
     public void testNotSuppressNullValues() throws InterruptedException {
         // Setting suppress null values to false
         // Here, we check to see that we still received data even though there were no recognitions
-        testSuppressNullValuesHelper(false);
+        suppressNullValuesHelper(false);
     }
 
     @Test
     public void testSuppressNullValues() throws InterruptedException {
         // Setting suppress null values to true
         // Here, we check to see that we did not receive any data since there were no recognitions
-        testSuppressNullValuesHelper(true);
+        suppressNullValuesHelper(true);
     }
 
-    public void testSuppressNullValuesHelper(boolean suppressNullValues) throws InterruptedException {
+    public void suppressNullValuesHelper(boolean suppressNullValues) throws InterruptedException {
         // Only run test with intended vantiq availability
         assumeTrue(testAuthToken != null && testVantiqServer != null);
 
@@ -1737,19 +1737,21 @@ public class TestYoloProcessor extends NeuralNetTestBase {
         try {
             // Make sure that appropriate number of entries are stored in type (this means discard policy works, and core is still alive)
             VantiqResponse response = vantiq.select(testTypeName, null, null, null);
-            ArrayList responseBody = (ArrayList) response.getBody();
+            Object ent = response.getBody();
+            @SuppressWarnings("unchecked")
+            ArrayList<JsonObject> responseBody = (ArrayList<JsonObject>) response.getBody();
 
             // If suppressNullValues is set to true, we shouldn't have any results stored in our type
             if (suppressNullValues) {
                 assertEquals("Get responseBody content when none expected: " + responseBody,
                         0, responseBody.size());
             } else {
-                System.out.println("Found response: " + responseBody);
                 // Otherwise, we should have some results and they should be empty arrays
                 assert responseBody.size() > 0;
 
-                for (int i = 0; i < responseBody.size(); i++) {
-                    JsonObject resultObject = (JsonObject) responseBody.get(i);
+                for (Object oneFrameResult: responseBody) {
+                    assert oneFrameResult instanceof JsonObject;
+                    JsonObject resultObject = (JsonObject) oneFrameResult;
                     assert resultObject.get("results") instanceof JsonArray;
                     assertEquals("Get resultObject.results content when none expected: " + responseBody,
                             0, ((JsonArray) resultObject.get("results")).size());
