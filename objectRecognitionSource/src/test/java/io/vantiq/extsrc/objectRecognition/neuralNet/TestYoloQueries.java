@@ -50,7 +50,6 @@ public class TestYoloQueries extends NeuralNetTestBase {
     static final String PB_FILE = "coco-" + COCO_MODEL_VERSION + ".pb";
     static final String META_FILE = "coco-" + COCO_MODEL_VERSION + ".meta";
     static final String OUTPUT_DIR = System.getProperty("buildDir") + "/resources/out";
-    static final String IP_CAMERA_ADDRESS = "http://49.229.157.154:8080/mjpg/video.mjpg";
 
     static final String IMAGE_1_DATE = "2019-02-05--02-35-10";
     static final Map<String,String> IMAGE_1 = new LinkedHashMap<String,String>() {{
@@ -955,7 +954,7 @@ public class TestYoloQueries extends NeuralNetTestBase {
         Map<String,Object> neuralNet = new LinkedHashMap<String,Object>();
         
         // Setting up dataSource config options
-        dataSource.put("camera", IP_CAMERA_ADDRESS);
+        dataSource.put("camera", IP_CAMERA_URL);
         dataSource.put("type", "network");
         
         // Setting up general config options

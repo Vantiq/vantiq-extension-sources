@@ -25,11 +25,23 @@ public class ObjRecTestBase {
     public static final String JPEG_IMAGE_LOCATION = System.getProperty("buildDir") + "/testResources/sampleImage.jpg";
     public static final String PNG_IMAGE_LOCATION = System.getProperty("buildDir") + "/testResources/sampleImage.png";
     public static final String VIDEO_LOCATION = System.getProperty("buildDir") + "/testResources/sampleVideo-1.0.mov";
+    // Used to test suppressNullValues. Finding online cameras with nothing on them is hard, so we'll
+    // simply include a video of a white wall.  This should be good enough to find nothing.
+    public static final String NOTHING_VIDEO_LOCATION =
+            System.getProperty("buildDir") + "/testResources/nothingVideo-1.0.mov";
     public static String testAuthToken = null;
     public static String testVantiqServer = null;
     public static String testSourceName = null;
     public static String testTypeName = null;
     public static String testRuleName = null;
+
+    // Few of these are truly "public services" on purpose, so they periodically drop
+    // offline & things need to be refreshed here.  We centralize these definitions to simplify things when we need to
+    // find & change them.
+
+    // Camera with some recognizable objects in it.
+    // Use camera "close to home" -- CalTrans camera close to the office...
+    public static final String IP_CAMERA_URL = "https://wzmedia.dot.ca.gov/D4/S680_at_N_Main_St.stream/playlist.m3u8";
 
     @BeforeClass
     public static void getProps() {

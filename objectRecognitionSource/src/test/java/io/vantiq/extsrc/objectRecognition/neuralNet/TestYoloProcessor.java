@@ -85,8 +85,6 @@ public class TestYoloProcessor extends NeuralNetTestBase {
     static final int KEYBOARD_CROPPED_WIDTH = 230;
     static final int KEYBOARD_CROPPED_HEIGHT = 125;
 
-    // Used to test suppressNullValues
-    static final String NO_RECOGNIZED_OBJECTS_CAMERA_ADDRESS = "http://49.229.157.154:8080/mjpg/video.mjpg";
     static final int CORE_START_TIMEOUT = 10;
 
     static ObjectRecognitionCore core;
@@ -1705,17 +1703,17 @@ public class TestYoloProcessor extends NeuralNetTestBase {
     public void testNotSuppressNullValues() throws InterruptedException {
         // Setting suppress null values to false
         // Here, we check to see that we still received data even though there were no recognitions
-        testSuppressNullValuesHelper(false);
+        suppressNullValuesHelper(false);
     }
 
     @Test
     public void testSuppressNullValues() throws InterruptedException {
         // Setting suppress null values to true
         // Here, we check to see that we did not receive any data since there were no recognitions
-        testSuppressNullValuesHelper(true);
+        suppressNullValuesHelper(true);
     }
 
-    public void testSuppressNullValuesHelper(boolean suppressNullValues) throws InterruptedException {
+    public void suppressNullValuesHelper(boolean suppressNullValues) throws InterruptedException {
         // Only run test with intended vantiq availability
         assumeTrue(testAuthToken != null && testVantiqServer != null);
 
@@ -1725,6 +1723,7 @@ public class TestYoloProcessor extends NeuralNetTestBase {
         assumeFalse(checkRuleExists(vantiq));
 
         // Setup a VANTIQ Obj Rec Source, and start running the core
+
         setupSource(createSourceDef(suppressNullValues));
 
         // Create Type to store results
@@ -1735,32 +1734,35 @@ public class TestYoloProcessor extends NeuralNetTestBase {
 
         // Wait for 15 seconds while the source polls for frames from the data source and stores data in type
         Thread.sleep(15000);
+        try {
+            // Make sure that appropriate number of entries are stored in type (this means discard policy works, and core is still alive)
+            VantiqResponse response = vantiq.select(testTypeName, null, null, null);
+            @SuppressWarnings("unchecked")
+            ArrayList<JsonObject> responseBody = (ArrayList<JsonObject>) response.getBody();
 
-        // Make sure that appropriate number of entries are stored in type (this means discard policy works, and core is still alive)
-        VantiqResponse response = vantiq.select(testTypeName, null, null, null);
-        ArrayList responseBody = (ArrayList) response.getBody();
+            // If suppressNullValues is set to true, we shouldn't have any results stored in our type
+            if (suppressNullValues) {
+                assertEquals("Get responseBody content when none expected: " + responseBody,
+                        0, responseBody.size());
+            } else {
+                // Otherwise, we should have some results and they should be empty arrays
+                assert responseBody.size() > 0;
 
-        // If suppressNullValues is set to true, we shouldn't have any results stored in our type
-        if (suppressNullValues) {
-            assertEquals("Get responseBody content when none expected: " + responseBody, 
-                    0, responseBody.size());
-        } else {
-            // Otherwise, we should have some results and they should be empty arrays
-            assert responseBody.size() > 0;
-
-            for (int i = 0; i < responseBody.size(); i++) {
-                JsonObject resultObject = (JsonObject) responseBody.get(i);
-                assert resultObject.get("results") instanceof JsonArray;
-                assertEquals("Get resultObject.results content when none expected: " + responseBody,
-                        0, ((JsonArray) resultObject.get("results")).size());
+                for (Object oneFrameResult: responseBody) {
+                    assert oneFrameResult instanceof JsonObject;
+                    JsonObject resultObject = (JsonObject) oneFrameResult;
+                    assert resultObject.get("results") instanceof JsonArray;
+                    assertEquals("Get resultObject.results content when none expected: " + responseBody,
+                            0, ((JsonArray) resultObject.get("results")).size());
+                }
             }
+        } finally {
+            // Delete the Source/Type/Rule from VANTIQ
+            core.close();
+            deleteSource(vantiq);
+            deleteType(vantiq);
+            deleteRule(vantiq);
         }
-
-        // Delete the Source/Type/Rule from VANTIQ
-        core.close();
-        deleteSource(vantiq);
-        deleteType(vantiq);
-        deleteRule(vantiq);
     }
 
     @Test
@@ -1983,8 +1985,9 @@ public class TestYoloProcessor extends NeuralNetTestBase {
         general.put("suppressEmptyNeuralNetResults", suppressNullValues);
 
         // Setting up dataSource config options
-        dataSource.put("camera", NO_RECOGNIZED_OBJECTS_CAMERA_ADDRESS);
-        dataSource.put("type", "network");
+        dataSource.put("fileLocation", NOTHING_VIDEO_LOCATION);
+        dataSource.put("fileExtension", "mov");
+        dataSource.put("type", "file");
 
         // Setting up neuralNet config options
         neuralNet.put("type", "yolo");
