@@ -93,6 +93,7 @@ dependencies {
 task fatJar(type: Jar) {
     appendix = 'fat'
     from sourceSets.main.output
+    duplicatesStrategy 'include'
     from(".") {
         include "README.md"
         include "LICENSE/*"
