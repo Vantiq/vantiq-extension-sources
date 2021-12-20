@@ -17,7 +17,7 @@ import org.eclipse.milo.opcua.sdk.client.api.identity.AnonymousProvider;
 import org.eclipse.milo.opcua.sdk.client.api.identity.IdentityProvider;
 import org.eclipse.milo.opcua.sdk.client.api.identity.UsernameProvider;
 import org.eclipse.milo.opcua.sdk.client.api.identity.X509IdentityProvider;
-import org.eclipse.milo.opcua.sdk.client.api.nodes.VariableNode;
+import org.eclipse.milo.opcua.sdk.client.nodes.UaVariableNode;
 import org.eclipse.milo.opcua.sdk.client.api.subscriptions.UaMonitoredItem;
 import org.eclipse.milo.opcua.sdk.client.api.subscriptions.UaSubscription;
 import org.eclipse.milo.opcua.stack.client.DiscoveryClient;
@@ -31,19 +31,16 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.QualifiedName;
 import org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode;
 import org.eclipse.milo.opcua.stack.core.types.builtin.Variant;
-import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UByte;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UShort;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.MessageSecurityMode;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.MonitoringMode;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.TimestampsToReturn;
-import org.eclipse.milo.opcua.stack.core.types.structured.ApplicationDescription;
 import org.eclipse.milo.opcua.stack.core.types.structured.EndpointDescription;
 import org.eclipse.milo.opcua.stack.core.types.structured.MonitoredItemCreateRequest;
 import org.eclipse.milo.opcua.stack.core.types.structured.MonitoringParameters;
 import org.eclipse.milo.opcua.stack.core.types.structured.ReadValueId;
 
-import org.eclipse.milo.opcua.stack.core.types.structured.UserTokenPolicy;
 import org.slf4j.helpers.MessageFormatter;
 
 import java.io.File;
@@ -89,7 +86,7 @@ public class OpcUaESClient {
     private final AtomicLong clientToMILink = new AtomicLong(1);
     private boolean connected = false;
     private static String defaultStorageDirectory = null;
-    private String storageDirectory;
+    private final String storageDirectory;
 
 
 
@@ -138,7 +135,7 @@ public class OpcUaESClient {
      * @throws OpcExtConfigException when a null configuration is passed in
      * @throws Exception due to other errors during processing the creation of the client
      */
-    public OpcUaESClient(Map theConfig) throws OpcExtConfigException, Exception
+    public OpcUaESClient(Map<String, Object> theConfig) throws OpcExtConfigException, Exception
     {
         if (theConfig == null) {
             String errMsg = ERROR_PREFIX + ".nullConfig: Configuration was null";
@@ -150,6 +147,7 @@ public class OpcUaESClient {
         config = theConfig; // Store for later use
 
         // Extract OPC information and create the client.
+        //noinspection unchecked
         Map<String, Object> opcConfig = (Map<String, Object>) theConfig.get(OpcConstants.CONFIG_OPC_UA_INFORMATION);
         storageDirectory = opcConfig.get(OpcConstants.CONFIG_STORAGE_DIRECTORY) != null
                 ? (String) opcConfig.get(OpcConstants.CONFIG_STORAGE_DIRECTORY) : defaultStorageDirectory;
@@ -159,11 +157,7 @@ public class OpcUaESClient {
 
     public X509Certificate getCertificate() {
         Optional<X509Certificate> maybeCert = client.getConfig().getCertificate();
-        if (maybeCert.isPresent()) {
-            return maybeCert.get();
-        } else {
-            return null;
-        }
+        return maybeCert.orElse(null);
     }
 
     /**
@@ -256,6 +250,7 @@ public class OpcUaESClient {
             String errMsg = ERROR_PREFIX + ".noOPCInformation: Configuration contained no OPC Information.";
             throwError(errMsg);
         }
+        //noinspection unchecked
         Map<String, String> opcConfig = (Map<String, String>) config.get(OpcConstants.CONFIG_OPC_UA_INFORMATION);
 
         String errMsg = null;
@@ -292,6 +287,7 @@ public class OpcUaESClient {
             secPolURI = SecurityPolicy.None.getUri();
         }
         try {
+            //noinspection UnusedReturnValue
             URI.create(secPolURI);  // To verify wellformedness
             return SecurityPolicy.fromUri(secPolURI);
         } catch (IllegalArgumentException e) {
@@ -507,9 +503,7 @@ public class OpcUaESClient {
                         if (!ina.isLoopbackAddress() || ina.isReachable(3000)) {
                             return true;
                         }
-                    } catch (UnknownHostException ex) {
-                        log.warn("Recoverable error during discovered server URL validation:" + ex.getClass().getName() + "::" + ex.getMessage() + "-->" + e.getEndpointUrl());
-                    } catch (URISyntaxException ex) {
+                    } catch (UnknownHostException | URISyntaxException ex) {
                         log.warn("Recoverable error during discovered server URL validation:" + ex.getClass().getName() + "::" + ex.getMessage() + "-->" + e.getEndpointUrl());
                     } catch (Exception ex) {
                         // This means that we have some non-optimal addresses returned by discovery.
@@ -754,8 +748,9 @@ public class OpcUaESClient {
 
     public Object readValue(UShort nsIndex, String identifier, String identifierType) throws OpcExtRuntimeException {
         try {
-            VariableNode theNode = client.getAddressSpace().getVariableNode(constructNodeId(nsIndex, identifier, identifierType)).get();
-            return theNode.readValue().get().getValue().getValue();
+            UaVariableNode theNode = client.getAddressSpace().getVariableNode(constructNodeId(nsIndex, identifier, identifierType));
+                //.   .get();
+            return theNode.readValue().getValue().getValue();
         } catch (Exception e) {
             throw new OpcExtRuntimeException(ERROR_PREFIX + ".unexpectedException: OPC UA Error", e);
         }
@@ -783,20 +778,20 @@ public class OpcUaESClient {
 
     public void updateMonitoredItems(Map<String, Object> config, BiConsumer<NodeId, Object> handler) throws OpcExtRuntimeException {
         try {
-            boolean isNewSubscription = false;
             if (subscription == null) {
                 // TODO -- update interval should be gleaned from the config file
                 subscription = client.getSubscriptionManager().createSubscription(1000.0).get();
-                isNewSubscription = true;
             }
 
+            // noinspection unchecked
             Map<String, Object> opcConf = (Map<String, Object>) config.get(OpcConstants.CONFIG_OPC_UA_INFORMATION);
             Object mis = opcConf.get(OpcConstants.CONFIG_OPC_MONITORED_ITEMS);
 
             if (mis instanceof Map) {
+                // noinspection unchecked
                 Map<String, Map<String, String>> newMonitoredItems = (Map<String, Map<String, String>>) mis;
 
-                if (newMonitoredItems == null || newMonitoredItems.isEmpty()) {
+                if (newMonitoredItems.isEmpty()) {
                     log.info("No monitoring requested for OPC UA server with discovery endpoint: {}", discoveryEndpoint);
                 } else {
                     log.debug("Config requesting {} monitored items", newMonitoredItems.size());
@@ -868,8 +863,8 @@ public class OpcUaESClient {
                         reqList.add(request);
                     }
 
-                    BiConsumer<UaMonitoredItem, Integer> monitoringCreated =
-                            (item, id) -> item.setValueConsumer(this::onDataChange);
+                    UaSubscription.ItemCreationCallback monitoringCreated =
+                         (item, index) ->  item.setValueConsumer(this::onDataChange);
 
                     this.subscriptionHandler = handler;
                     // Having created the list, add it to the subscription
