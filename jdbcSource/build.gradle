@@ -5,6 +5,9 @@ apply plugin: 'java'
 apply plugin: 'application'
 
 sourceCompatibility = 1.8
+ext {
+    jacksonVersion = '2.9.3'
+}
 
 repositories {
     mavenCentral()
@@ -76,7 +79,10 @@ dependencies {
     
     // Used for checking VANTIQ date format behavior with VANTIQ SDK
     compile 'io.vantiq:vantiq-sdk:1.0.28'
-    
+    //compile "com.fasterxml.jackson.dataformat:jackson-dataformat-xml:${jacksonVersion}"//2.9.3"	//XML parsing
+    //compile "com.fasterxml.jackson.core:jackson-databind:${jacksonVersion}"
+    implementation 'org.json:json:20180130'
+
     // Use JUnit test framework
     testCompile 'junit:junit:4.12'
     testCompile project(path:":extjsdk", configuration:"testArtifacts")

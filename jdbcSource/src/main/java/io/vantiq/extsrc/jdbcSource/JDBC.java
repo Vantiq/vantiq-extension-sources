@@ -22,6 +22,8 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import org.json.JSONObject;
+import org.json.XML;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -259,10 +261,23 @@ public class JDBC {
                                 }
                                 break;
                             default:
-                                // If none of the initial cases are met, the data will be converted to a String via getObject()
-                                if(queryResults.getObject(i) != null) {
-                                    row.put(md.getColumnName(i), queryResults.getObject(i));
+                                {
+                                    // If none of the initial cases are met, the data will be converted to a String via getObject()
+                                    String name = md.getColumnName(i) ; 
+                                    if (name.contains("XML")){
+
+                                        if(queryResults.getObject(i) != null) {
+                                            JSONObject json = XML.toJSONObject((String)queryResults.getObject(i)); // converts xml to json
+                                            String jsonPrettyPrintString = json.toString(); // json pretty print
+                                            row.put(md.getColumnName(i), jsonPrettyPrintString);
+                                        }
+                    
+                                    } else {
+                                        if(queryResults.getObject(i) != null) {
+                                            row.put(md.getColumnName(i), queryResults.getObject(i));
+                                    }
                                 }
+                            }
                                 break;
                         }
                     }
