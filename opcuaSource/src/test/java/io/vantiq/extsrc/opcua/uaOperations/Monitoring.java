@@ -8,7 +8,6 @@
 
 package io.vantiq.extsrc.opcua.uaOperations;
 
-import org.eclipse.milo.examples.server.ExampleNamespace;
 import org.eclipse.milo.opcua.stack.core.Identifiers;
 import org.eclipse.milo.opcua.stack.core.security.SecurityPolicy;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DateTime;
@@ -39,7 +38,7 @@ public class Monitoring extends OpcUaTestBase {
 
     public AtomicInteger updateCount;
     public AtomicInteger eventErrorCount;
-    List<Class> expectedClass;
+    List<Class<?>> expectedClass;
     List<String> expectedNodeIdentifier;
     Map<String, Integer> updateByNode = new HashMap<>();
     int repetitionCount = 10;
@@ -50,7 +49,7 @@ public class Monitoring extends OpcUaTestBase {
 
         resetUpdateCounters();
 
-        HashMap config = new HashMap();
+        Map<String, Object> config = new HashMap<>();
         Map<String, Object> opcConfig = new HashMap<>();
         Map<String, Map<String, String>> misMap = new HashMap<>();
 
@@ -61,7 +60,7 @@ public class Monitoring extends OpcUaTestBase {
 
         // Here, we'll create a simple map set that creates a monitored
         opcConfig.put(OpcConstants.CONFIG_OPC_MONITORED_ITEMS, misMap);
-        Map timeMap = new HashMap<>();
+        Map<String, String> timeMap = new HashMap<>();
 
         // Leaving since we use it elsewhere.
         // For most node identification, we cannot trust the namespace index to remain stable across reboots.
@@ -149,7 +148,7 @@ public class Monitoring extends OpcUaTestBase {
     public void testBasicMonitor() {
         resetUpdateCounters();
 
-        HashMap config = new HashMap();
+        HashMap<String, Object> config = new HashMap<>();
         Map<String, Object> opcConfig = new HashMap<>();
         Map<String, Map<String, String>> misMap = new HashMap<>();
 
@@ -160,7 +159,7 @@ public class Monitoring extends OpcUaTestBase {
 
         // Here, we'll create a simple map set that creates a monitored
         opcConfig.put(OpcConstants.CONFIG_OPC_MONITORED_ITEMS, misMap);
-        Map miMap = new HashMap<>();
+        Map<String, String> miMap = new HashMap<>();
         miMap.put(OpcConstants.CONFIG_MI_NAMESPACE_URN,
                 exampleNamespace);
         miMap.put(OpcConstants.CONFIG_MI_IDENTIFIER,
@@ -218,7 +217,7 @@ public class Monitoring extends OpcUaTestBase {
     public void testUpdateMonitor() {
         resetUpdateCounters();
 
-        HashMap config = new HashMap();
+        HashMap<String, Object> config = new HashMap<>();
         Map<String, Object> opcConfig = new HashMap<>();
         Map<String, Map<String, String>> misMap = new HashMap<>();
 
@@ -296,7 +295,7 @@ public class Monitoring extends OpcUaTestBase {
         //   (once) repetitionCount + twice that turned into seconds for the server time updates.
         // Plus a few for initial changes which sometimes happen.
 
-        expectedEventCount = ((1 * repetitionCount) // "manual" changes above
+        expectedEventCount = ((repetitionCount) // "manual" changes above
                 + 2)                  // Plus startup states sometimes
                 + (repetitionCount * 2 * msDelayBetweenUpdates) / 1000
                 // twice manual changes * delay in seconds -- since we're still going to update both fields,
@@ -306,7 +305,7 @@ public class Monitoring extends OpcUaTestBase {
         performUpdates(client, config, expectedEventCount);
     }
 
-    private void performUpdates(OpcUaESClient client, Map config, int expectedEventCount) {
+    private void performUpdates(OpcUaESClient client, Map<String, Object> config, int expectedEventCount) {
         try {
             expectedClass = Arrays.asList(Integer.class, String.class, DateTime.class);
             expectedNodeIdentifier = Arrays.asList(Utils.EXAMPLE_NS_SCALAR_INT32_IDENTIFIER,
