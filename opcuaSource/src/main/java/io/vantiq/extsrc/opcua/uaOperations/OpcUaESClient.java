@@ -378,7 +378,7 @@ public class OpcUaESClient {
         return retVal;
     }
 
-    @SuppressWarnings({"PMD.CognitiveComplexity","PMD.MethodLengthCheck"})
+    @SuppressWarnings({"PMD.CognitiveComplexity", "PMD.MethodLengthCheck"})
     private OpcUaClient createClient(Map<String, Object> config) throws Exception {
 
         if (storageDirectory == null) {
@@ -833,6 +833,7 @@ public class OpcUaESClient {
         }
     }
 
+    @SuppressWarnings("PMD.GuardLogStatement")
     private void logDiscoveredEndpoints(List<EndpointDescription> endpoints) throws URISyntaxException {
         log.debug("Endpoints discovered via discoveryEndpoint: " + discoveryEndpoint);
         for (EndpointDescription e : endpoints) {
@@ -845,6 +846,7 @@ public class OpcUaESClient {
         }
     }
 
+    @SuppressWarnings("PMD.GuardLogStatement")
     private void logAcceptableEndpoints(List<EndpointDescription> validEndpoints,
                                         SecurityPolicy securityPolicy, MessageSecurityMode msgSecMode)
                     throws URISyntaxException {
@@ -861,6 +863,7 @@ public class OpcUaESClient {
         }
     }
 
+    @SuppressWarnings("PMD.GuardLogStatement")
     private EndpointDescription fixLookbackAddress(EndpointDescription endpoint) throws URISyntaxException {
         // Fix up loop-back or unreachable address...
 
@@ -871,6 +874,7 @@ public class OpcUaESClient {
                 ina = InetAddress.getByName(url.getHost());
             } catch (UnknownHostException uhe) {
                 // We'll treat this the same as unreachable.  Leave ina null to be checked below
+                log.debug("Unknown host in endpoint address: {}", url.getHost());
             }
 
             if (ina == null || ina.isLoopbackAddress() || !ina.isReachable(3000)) {
