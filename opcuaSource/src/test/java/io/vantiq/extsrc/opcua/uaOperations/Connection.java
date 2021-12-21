@@ -842,7 +842,7 @@ public class Connection extends OpcUaTestBase {
                 } else {
                     Utils.unexpectedException(e);
                 }
-            } catch (AssertionError ae) {
+            } catch (AssertionError eAe) {
                 // If performConnection() fails, we'll assume that this URL is bad & that we should move on.  We're
                 // looking for some working
                 continue;

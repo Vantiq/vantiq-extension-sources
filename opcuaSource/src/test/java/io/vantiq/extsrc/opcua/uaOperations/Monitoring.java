@@ -148,7 +148,7 @@ public class Monitoring extends OpcUaTestBase {
     public void testBasicMonitor() {
         resetUpdateCounters();
 
-        HashMap<String, Object> config = new HashMap<>();
+        Map<String, Object> config = new HashMap<>();
         Map<String, Object> opcConfig = new HashMap<>();
         Map<String, Map<String, String>> misMap = new HashMap<>();
 
@@ -217,7 +217,7 @@ public class Monitoring extends OpcUaTestBase {
     public void testUpdateMonitor() {
         resetUpdateCounters();
 
-        HashMap<String, Object> config = new HashMap<>();
+        Map<String, Object> config = new HashMap<>();
         Map<String, Object> opcConfig = new HashMap<>();
         Map<String, Map<String, String>> misMap = new HashMap<>();
 

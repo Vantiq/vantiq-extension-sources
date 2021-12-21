@@ -378,6 +378,7 @@ public class OpcUaESClient {
         return retVal;
     }
 
+    @SuppressWarnings({"PMD.CognitiveComplexity"})
     private OpcUaClient createClient(Map<String, Object> config) throws Exception {
 
         if (storageDirectory == null) {
@@ -748,8 +749,8 @@ public class OpcUaESClient {
 
     public Object readValue(UShort nsIndex, String identifier, String identifierType) throws OpcExtRuntimeException {
         try {
-            UaVariableNode theNode = client.getAddressSpace().getVariableNode(constructNodeId(nsIndex, identifier, identifierType));
-                //.   .get();
+            UaVariableNode theNode =
+                    client.getAddressSpace().getVariableNode(constructNodeId(nsIndex, identifier, identifierType));
             return theNode.readValue().getValue().getValue();
         } catch (Exception e) {
             throw new OpcExtRuntimeException(ERROR_PREFIX + ".unexpectedException: OPC UA Error", e);
@@ -776,6 +777,7 @@ public class OpcUaESClient {
      * @throws OpcExtRuntimeException In case of errors, etc.
      */
 
+    @SuppressWarnings({"PMD.CognitiveComplexity"})
     public void updateMonitoredItems(Map<String, Object> config, BiConsumer<NodeId, Object> handler) throws OpcExtRuntimeException {
         try {
             if (subscription == null) {
