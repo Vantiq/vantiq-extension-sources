@@ -378,7 +378,7 @@ public class OpcUaESClient {
         return retVal;
     }
 
-    @SuppressWarnings({"PMD.CognitiveComplexity"})
+    @SuppressWarnings({"PMD.CognitiveComplexity","PMD.MethodLengthCheck"})
     private OpcUaClient createClient(Map<String, Object> config) throws Exception {
 
         if (storageDirectory == null) {
@@ -429,15 +429,7 @@ public class OpcUaESClient {
         }
 
         if (log.isDebugEnabled()) {
-            log.debug("Endpoints discovered via discoveryEndpoint: " + discoveryEndpoint);
-            for (EndpointDescription e : endpoints) {
-                URI secPolUri = new URI(e.getSecurityPolicyUri());
-                String fragSpec = secPolUri.getFragment();
-                if (fragSpec == null) {
-                    fragSpec = e.getSecurityPolicyUri();
-                }
-                log.debug("    Discovered endpoint: {} [{}, {}])", e.getEndpointUrl(), fragSpec, e.getSecurityMode());
-            }
+            logDiscoveredEndpoints(endpoints);
         }
 
         List<EndpointDescription> validEndpoints = endpoints.stream()
@@ -446,17 +438,7 @@ public class OpcUaESClient {
                 .collect(Collectors.toList());
 
         if (log.isDebugEnabled()) {
-            log.debug("Discovered endpoints that accept the security configuration: [security policy: {}, message security mode: {}]",
-                    securityPolicy.getUri(),
-                    msgSecMode);
-            for (EndpointDescription e : validEndpoints) {
-                URI secPolUri = new URI(e.getSecurityPolicyUri());
-                String fragSpec = secPolUri.getFragment();
-                if (fragSpec == null) {
-                    fragSpec = e.getSecurityPolicyUri();
-                }
-                log.debug("    Acceptable endpoint: {} [{}, {}])", e.getEndpointUrl(), fragSpec, e.getSecurityMode());
-            }
+            logAcceptableEndpoints(validEndpoints, securityPolicy, msgSecMode);
 
             // The following code is here for testing only.  It allows us to fake a poorly configured
             // server that reports invalid or unreachable endpoints as part of discovery.  This is, for
@@ -534,52 +516,7 @@ public class OpcUaESClient {
             // Consequently, we'll apply the spec'd response which is to substitute the discovery address.
 
             if (endpoint != null) {
-                // Fixup loopback or unreachable address...
-
-                URI url = new URI(endpoint.getEndpointUrl());
-                try {
-                    InetAddress ina = null;
-                    try {
-                        ina = InetAddress.getByName(url.getHost());
-                    } catch (UnknownHostException uhe) {
-                        // We'll treat this the same as unreachable.  Leave ina null to be checked below
-                    }
-
-                    if (ina == null || ina.isLoopbackAddress() || !ina.isReachable(3000)) {
-                        // We'll only do this replacement for loopback or unreachable addresses.
-                        // We can end up here if the addresses are less than optimal, but the SDK can connect.
-
-                        URI discUrl = new URI(discoveryEndpoint);
-
-                        log.info("Host {} is either unreachable or is a loopback address.  Substituting discovery address: {}",
-                                url.getHost(), discUrl.getHost());
-
-                        URI fixedEndpoint = new URI(url.getScheme(),
-                                null,
-                                discUrl.getHost(),
-                                url.getPort(),
-                                url.getPath(),
-                                null,
-                                null);
-
-                        EndpointDescription newEndpoint = new EndpointDescription(fixedEndpoint.toString(),
-                                endpoint.getServer(),
-                                endpoint.getServerCertificate(),
-                                endpoint.getSecurityMode(),
-                                endpoint.getSecurityPolicyUri(),
-                                endpoint.getUserIdentityTokens(),
-                                endpoint.getTransportProfileUri(),
-                                endpoint.getSecurityLevel());
-                        log.debug("Replacing loopback/unreachable address for endpoint: {} --> {}",
-                                endpoint.getEndpointUrl(), newEndpoint.getEndpointUrl());
-
-                        endpoint = newEndpoint;
-                    }
-                } catch (Exception ex) {
-                    // This means that we have some non-optimal addresses returned by discovery.
-                    // In these cases, we'll leave it up to the SDK & network stack to figure out how to get there.
-                    log.debug("Recoverable error during discovered server URL validation. Left to network stack to resolve:" + ex.getClass().getName() + "::" + ex.getMessage() + "-->" + endpoint.getEndpointUrl());
-                }
+                endpoint = fixLookbackAddress(endpoint);
             }
         }
 
@@ -894,6 +831,84 @@ public class OpcUaESClient {
         } catch (Exception e) {
             throw new OpcExtRuntimeException(ERROR_PREFIX + ".unexpectedException", e);
         }
+    }
+
+    private void logDiscoveredEndpoints(List<EndpointDescription> endpoints) throws URISyntaxException {
+        log.debug("Endpoints discovered via discoveryEndpoint: " + discoveryEndpoint);
+        for (EndpointDescription e : endpoints) {
+            URI secPolUri = new URI(e.getSecurityPolicyUri());
+            String fragSpec = secPolUri.getFragment();
+            if (fragSpec == null) {
+                fragSpec = e.getSecurityPolicyUri();
+            }
+            log.debug("    Discovered endpoint: {} [{}, {}])", e.getEndpointUrl(), fragSpec, e.getSecurityMode());
+        }
+    }
+
+    private void logAcceptableEndpoints(List<EndpointDescription> validEndpoints,
+                                        SecurityPolicy securityPolicy, MessageSecurityMode msgSecMode)
+                    throws URISyntaxException {
+        log.debug("Discovered endpoints that accept the security configuration: [security policy: {}, message security mode: {}]",
+                securityPolicy.getUri(),
+                msgSecMode);
+        for (EndpointDescription e : validEndpoints) {
+            URI secPolUri = new URI(e.getSecurityPolicyUri());
+            String fragSpec = secPolUri.getFragment();
+            if (fragSpec == null) {
+                fragSpec = e.getSecurityPolicyUri();
+            }
+            log.debug("    Acceptable endpoint: {} [{}, {}])", e.getEndpointUrl(), fragSpec, e.getSecurityMode());
+        }
+    }
+
+    private EndpointDescription fixLookbackAddress(EndpointDescription endpoint) throws URISyntaxException {
+        // Fix up loop-back or unreachable address...
+
+        URI url = new URI(endpoint.getEndpointUrl());
+        try {
+            InetAddress ina = null;
+            try {
+                ina = InetAddress.getByName(url.getHost());
+            } catch (UnknownHostException uhe) {
+                // We'll treat this the same as unreachable.  Leave ina null to be checked below
+            }
+
+            if (ina == null || ina.isLoopbackAddress() || !ina.isReachable(3000)) {
+                // We'll only do this replacement for loopback or unreachable addresses.
+                // We can end up here if the addresses are less than optimal, but the SDK can connect.
+
+                URI discUrl = new URI(discoveryEndpoint);
+
+                log.info("Host {} is either unreachable or is a loopback address.  Substituting discovery address: {}",
+                        url.getHost(), discUrl.getHost());
+
+                URI fixedEndpoint = new URI(url.getScheme(),
+                        null,
+                        discUrl.getHost(),
+                        url.getPort(),
+                        url.getPath(),
+                        null,
+                        null);
+
+                EndpointDescription newEndpoint = new EndpointDescription(fixedEndpoint.toString(),
+                        endpoint.getServer(),
+                        endpoint.getServerCertificate(),
+                        endpoint.getSecurityMode(),
+                        endpoint.getSecurityPolicyUri(),
+                        endpoint.getUserIdentityTokens(),
+                        endpoint.getTransportProfileUri(),
+                        endpoint.getSecurityLevel());
+                log.debug("Replacing loopback/unreachable address for endpoint: {} --> {}",
+                        endpoint.getEndpointUrl(), newEndpoint.getEndpointUrl());
+
+                endpoint = newEndpoint;
+            }
+        } catch (Exception ex) {
+            // This means that we have some non-optimal addresses returned by discovery.
+            // In these cases, we'll leave it up to the SDK & network stack to figure out how to get there.
+            log.debug("Recoverable error during discovered server URL validation. Left to network stack to resolve:" + ex.getClass().getName() + "::" + ex.getMessage() + "-->" + endpoint.getEndpointUrl());
+        }
+        return endpoint;
     }
 
     private void onDataChange(UaMonitoredItem item, DataValue value) {
