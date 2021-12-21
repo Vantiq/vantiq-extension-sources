@@ -24,6 +24,7 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.UnknownHostException;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.List;
@@ -753,7 +754,7 @@ public class Connection extends OpcUaTestBase {
                                boolean startProcessOnly,
                                boolean useServerAddress,
                                boolean fakeUnreachable) throws ExecutionException {
-        HashMap config = new HashMap();
+        Map<String, Object> config = new HashMap<>();
         Map<String, Object> opcConfig = new HashMap<>();
 
         config.put(OpcConstants.CONFIG_OPC_UA_INFORMATION, opcConfig);
@@ -777,7 +778,7 @@ public class Connection extends OpcUaTestBase {
         if (!inProcessOnly) {
             pubServers = Utils.OPC_PUBLIC_SERVERS;
         } else {
-            pubServers = Arrays.asList(Utils.OPC_INPROCESS_SERVER);
+            pubServers = Collections.singletonList(Utils.OPC_INPROCESS_SERVER);
         }
 
         int workingServers = 0;
@@ -841,6 +842,10 @@ public class Connection extends OpcUaTestBase {
                 } else {
                     Utils.unexpectedException(e);
                 }
+            } catch (AssertionError ae) {
+                // If performConnection() fails, we'll assume that this URL is bad & that we should move on.  We're
+                // looking for some working
+                continue;
             }
         }
 
