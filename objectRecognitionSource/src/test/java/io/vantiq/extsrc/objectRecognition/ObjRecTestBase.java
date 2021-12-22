@@ -41,7 +41,10 @@ public class ObjRecTestBase {
 
     // Camera with some recognizable objects in it.
     // Use camera "close to home" -- CalTrans camera close to the office...
-    public static final String IP_CAMERA_URL = "https://wzmedia.dot.ca.gov/D4/S680_at_N_Main_St.stream/playlist.m3u8";
+//    public static final String IP_CAMERA_URL = "https://wzmedia.dot.ca.gov/D4/S680_at_N_Main_St.stream/playlist.m3u8";
+    // Walnut Creek/North Main camera (above) currently malfunctioning.  Swapping to Hwy 242 Junction for now.
+    // Keeping old around to swap back sometime.
+    public static final String IP_CAMERA_URL = "https://wzmedia.dot.ca.gov/D4/N680_JSO_JCT_242.stream/playlist.m3u8";
 
     @BeforeClass
     public static void getProps() {
