@@ -3,5 +3,9 @@
    "baseType" : "EXTENSION",
    "verticle" : "service:extensionSource",
    "config" : {},
-   "operations": [ "select","publish","notification" ]
+   "operations": [ "select","publish","notification" ],
+   "baseConfigProperties": [
+      "easyModbusConfig.general.TCPAddress",
+      "easyModbusConfig.general.TCPPort"
+   ]
 }

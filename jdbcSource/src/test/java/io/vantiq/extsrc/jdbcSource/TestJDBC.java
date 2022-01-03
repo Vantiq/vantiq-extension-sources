@@ -8,31 +8,40 @@
 
 package io.vantiq.extsrc.jdbcSource;
 
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeTrue;
 import static org.junit.Assert.assertEquals;
 
-import java.math.BigDecimal;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.Map;
-
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Before;
-import org.junit.Test;
-
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 
 import io.vantiq.client.Vantiq;
 import io.vantiq.client.VantiqResponse;
+import io.vantiq.extjsdk.Utils;
 import io.vantiq.extsrc.jdbcSource.exception.VantiqSQLException;
 
-@SuppressWarnings("PMD.ExcessiveClassLength")
+import java.io.File;
+import java.io.IOException;
+import java.math.BigDecimal;
+import java.text.SimpleDateFormat;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.LinkedHashMap;
+import java.util.Map;
+import java.util.concurrent.atomic.AtomicReference;
+
+import org.junit.AfterClass;
+import org.junit.Before;
+import org.junit.BeforeClass;
+import org.junit.Test;
+
+@SuppressWarnings({"PMD.ExcessiveClassLength", "rawtypes", "PMD.IllegalTypeCheck"})
 public class TestJDBC extends TestJDBCBase {
     
     // Queries to be tested
@@ -54,12 +63,50 @@ public class TestJDBC extends TestJDBCBase {
     // Queries to test oddball types
     static final String CREATE_TABLE_EXTENDED_TYPES = "create table TestTypes(id int, ts TIMESTAMP, testDate DATE, "
             + "testTime TIME, testDec decimal(5,2));";
+
     static final String PUBLISH_QUERY_EXTENDED_TYPES = "INSERT INTO TestTypes VALUES (1, '" + TIMESTAMP + "', '" + DATE + "',"
             + " '" + TIME + "', 145.86);";
     static final String SELECT_QUERY_EXTENDED_TYPES = "SELECT * FROM TestTypes;";
     static final String DELETE_ROW_EXTENDED_TYPES = "DELETE FROM TestTypes;";
     static final String DELETE_TABLE_EXTENDED_TYPES = "DROP TABLE TestTypes;";
-    
+
+    static final Integer TS_COUNT = 25;
+    static final Integer PARALLEL_DATE_INSTANCE_COUNT = 15;
+    static final Integer PARALLEL_DATE_THREAD_COUNT = 150;
+    static final String CREATE_TABLE_MANY_DATES = "create table TestManyDates(id int," +
+            "ts1  TIMESTAMP," +
+            "ts2  TIMESTAMP," +
+            "ts3  TIMESTAMP," +
+            "ts4  TIMESTAMP," +
+            "ts5  TIMESTAMP," +
+            "ts6  TIMESTAMP," +
+            "ts7  TIMESTAMP," +
+            "ts8  TIMESTAMP," +
+            "ts9  TIMESTAMP," +
+            "ts10 TIMESTAMP," +
+            "ts11 TIMESTAMP," +
+            "ts12 TIMESTAMP," +
+            "ts13 TIMESTAMP," +
+            "ts14 TIMESTAMP," +
+            "ts15 TIMESTAMP," +
+            "ts16 TIMESTAMP," +
+            "ts17 TIMESTAMP," +
+            "ts18 TIMESTAMP," +
+            "ts19 TIMESTAMP," +
+            "ts20 TIMESTAMP," +
+            "ts21 TIMESTAMP," +
+            "ts22 TIMESTAMP," +
+            "ts23 TIMESTAMP," +
+            "ts24 TIMESTAMP," +
+            "ts25 TIMESTAMP," +
+            "testDate DATE, " +
+            "testTime TIME);";
+
+    static final String INSERT_MANY_DATES_FRAG = "INSERT INTO TestManyDates VALUES (";
+    static final String SELECT_QUERY_MANY_DATES = "SELECT * FROM TestManyDates;";
+    static final String DELETE_ROW_MANY_DATES = "DELETE FROM TestManyDates;";
+    static final String DROP_TABLE_MANY_DATES = "DROP TABLE TestManyDates;";
+
     // Queries to test errors
     static final String NO_TABLE = "SELECT * FROM jibberish";
     static final String NO_FIELD = "SELECT jibberish FROM Test";
@@ -141,17 +188,17 @@ public class TestJDBC extends TestJDBCBase {
         vantiq = new io.vantiq.client.Vantiq(testVantiqServer);
         vantiq.setAccessToken(testAuthToken);
     }
-    
-    /* Uncomment this BeforeClass when debugging to ensure tables have been properly deleted.
-    
-    @BeforeClass
-    public static void debugSetup() throws VantiqSQLException {
-        tearDown();
-    }
-    
-    */
 
-    @SuppressWarnings("PMD.JUnit4TestShouldUseAfterAnnotation")
+    @BeforeClass
+    public static void setupEnv() throws IOException {
+        // Make initial Utils.obtainServerConfig() call so that we don't get errors later on
+        File serverConfigFile = new File("server.config");
+        serverConfigFile.createNewFile();
+        serverConfigFile.deleteOnExit();
+        Utils.obtainServerConfig();
+    }
+
+    @SuppressWarnings({"PMD.JUnit4TestShouldUseAfterAnnotation", "PMD.CognitiveComplexity", "PMD.EmptyCatchBlock"})
     @AfterClass
     public static void tearDown() throws VantiqSQLException {
         if (testDBUsername != null && testDBPassword != null && testDBURL != null && jdbcDriverLoc != null) {
@@ -163,14 +210,14 @@ public class TestJDBC extends TestJDBCBase {
             try {
                 dropTablesJDBC.processPublish(DELETE_TABLE);
             } catch (VantiqSQLException e) {
-                // Shoudn't throw Exception
+                // Shouldn't throw Exception
             }
             
             // Delete second table
             try {
                 dropTablesJDBC.processPublish(DELETE_TABLE_EXTENDED_TYPES);
             } catch (VantiqSQLException e) {
-                // Shoudn't throw Exception
+                // Shouldn't throw Exception
             }
             
             // Delete third table
@@ -235,6 +282,13 @@ public class TestJDBC extends TestJDBCBase {
             } catch (VantiqSQLException e) {
                 // Shouldn't throw Exception
             }
+
+            // Delete parallel Dates table
+            try {
+                dropTablesJDBC.processPublish(DROP_TABLE_MANY_DATES);
+            } catch (VantiqSQLException e) {
+                // Shouldn't throw Exception
+            }
             
             // Close the new JDBC Instance
             dropTablesJDBC.close();
@@ -246,11 +300,13 @@ public class TestJDBC extends TestJDBCBase {
             deleteProcedure();
             deleteRule();
         }
+
         // Close JDBCCore if still open
         if (core != null) {
             core.close();
             core = null;
         }
+
         // Close JDBC if still open
         if (jdbc != null) {
             jdbc.close();
@@ -267,7 +323,7 @@ public class TestJDBC extends TestJDBCBase {
         
         // Try processPublish with a nonsense query
         try {
-            queryResult = jdbc.processPublish("jibberish");
+            jdbc.processPublish("jibberish");
             fail("Should have thrown an exception");
         } catch (VantiqSQLException e) {
             // Expected behavior
@@ -297,12 +353,12 @@ public class TestJDBC extends TestJDBCBase {
         assumeTrue(testDBUsername != null && testDBPassword != null && testDBURL != null && jdbcDriverLoc != null);
         jdbc.setupJDBC(testDBURL, testDBUsername, testDBPassword, false, 0);
         
-        HashMap[] queryResult;
+        Map[] queryResult;
         int deleteResult;
         
         // Try processQuery with a nonsense query
         try {
-            queryResult = jdbc.processQuery("jibberish");
+            jdbc.processQuery("jibberish");
             fail("Should have thrown exception.");
         } catch (VantiqSQLException e) {
             // Expected behavior
@@ -342,7 +398,7 @@ public class TestJDBC extends TestJDBCBase {
     public void testExtendedTypes() throws VantiqSQLException {
         assumeTrue(testDBUsername != null && testDBPassword != null && testDBURL != null && jdbcDriverLoc != null);
         jdbc.setupJDBC(testDBURL, testDBUsername, testDBPassword, false, 0);
-        HashMap[] queryResult;
+        Map[] queryResult;
         int publishResult;
         
         // Create table with odd types including timestamps, dates, times, and decimals
@@ -366,7 +422,8 @@ public class TestJDBC extends TestJDBCBase {
             queryResult = jdbc.processQuery(SELECT_QUERY_EXTENDED_TYPES);
             String timestampTest = (String) queryResult[0].get("ts");
             assert timestampTest.matches(timestampPattern);
-            assertTrue("Expected " + FORMATTED_TIMESTAMP + ", but got " + timestampTest,timestampTest.equals(FORMATTED_TIMESTAMP));
+            assertEquals("Expected " + FORMATTED_TIMESTAMP + ", but got " + timestampTest,
+                    FORMATTED_TIMESTAMP, timestampTest);
             String dateTest = (String) queryResult[0].get("testDate");
             assert dateTest.matches(datePattern);
             assert dateTest.equals(DATE);
@@ -384,6 +441,105 @@ public class TestJDBC extends TestJDBCBase {
             assert publishResult > 0;
         } catch (VantiqSQLException e) {
             fail("Should not have thrown exception.");
+        }
+    }
+
+    @SuppressWarnings({"PMD.CognitiveComplexity", "PMD.SimpleDateFormatNeedsLocale"})
+    @Test
+    public void testParallelDates() throws VantiqSQLException {
+        assumeTrue(testDBUsername != null && testDBPassword != null && testDBURL != null && jdbcDriverLoc != null);
+        jdbc.setupJDBC(testDBURL, testDBUsername, testDBPassword, false, 0);
+        int publishResult;
+
+
+        // Create table with odd types including timestamps, dates, times, and decimals
+        try {
+            publishResult = jdbc.processPublish(CREATE_TABLE_MANY_DATES);
+            assert publishResult == 0;
+        } catch (VantiqSQLException e) {
+            e.printStackTrace();
+            fail("Should not have thrown exception." + e);
+        }
+
+        // Insert values into the newly created table
+        // Here, we will set up a bunch of sets of 25 rows, where each row has a bunch of dates in it.
+
+        ArrayList<Map<String, Object>> dataMap = new ArrayList<>();
+        try {
+            for (int i = 0; i < 25; i++) {
+                Map<String, Object> toPub = createManyDatesRows(i, PARALLEL_DATE_INSTANCE_COUNT);
+                dataMap.add(toPub);
+                for (String row : (String[]) toPub.get("batch")) {
+                    publishResult = jdbc.processPublish(row);
+                    assert publishResult > 0;
+                }
+            }
+        } catch (VantiqSQLException e) {
+            e.printStackTrace();
+            fail("Should not have thrown exception on insert: " + e);
+        }
+
+        // Now, to verify our parallel operations, we'll fire off a bunch of threads all doing the same
+        // query across this table full of dates.  We should get everything with correct results,
+        // but we had had the date results scrambled due to use of non-threadsafe methods.
+
+        AtomicReference<Exception> threadFailed = new AtomicReference<>();
+        Runnable querier = () -> {
+            // Select the values from the table and make sure the data is retrieved correctly
+            try {
+                Map[] qres = jdbc.processQuery(SELECT_QUERY_MANY_DATES);
+                for (Map row : qres) {
+                    int id = (int) row.get("id");
+                    for (int i = 1; i <= TS_COUNT; i++ ) {
+                        String timestampTest = (String) row.get("ts" + i);
+                        assertNotNull(timestampTest);
+                        assert timestampTest.matches(timestampPattern);
+                        Date found = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSZ").parse(timestampTest);
+                        assert dataMap.size() > id;
+                        Date expected = new SimpleDateFormat("yyyy-MM-dd' 'HH:mm:ss")
+                                .parse(dataMap.get(id).get("expected").toString());
+                        assertNotNull(found);
+                        assertNotNull(expected);
+                        assertEquals("Expected " + expected + ", but got " + found, expected, found);
+                        String dateTest = (String) row.get("testDate");
+                        assert dateTest.matches(datePattern);
+                        assert dateTest.equals(DATE);
+                        String timeTest = (String) row.get("testTime");
+                        assert timeTest.matches(timePattern);
+                        assert timeTest.equals(FORMATTED_TIME);
+                    }
+                }
+            } catch (Exception e) {
+                threadFailed.set(e);
+            }
+        };
+
+        ArrayList<Thread> threads = new ArrayList<>();
+        for (int i = 0; i < PARALLEL_DATE_THREAD_COUNT; i++) {
+            Thread t = new Thread(querier);
+            threads.add(t);
+            t.start();
+        }
+
+        // Now, wait for all the threads to complete, checking that they all ran exception free.
+        Exception trapped = null;
+        for (Thread t: threads) {
+            try {
+                t.join();
+            } catch (Exception e) {
+                trapped = e;
+            }
+        }
+
+        assertNull(trapped);
+        assertNull("Trapped exception during thread processing: " + threadFailed.get(), threadFailed.get());
+
+        // Delete the row of data
+        try {
+            publishResult = jdbc.processPublish(DELETE_ROW_MANY_DATES);
+            assert publishResult > 0;
+        } catch (VantiqSQLException e) {
+            fail("Should not have thrown exception on drop.");
         }
     }
     
@@ -445,14 +601,15 @@ public class TestJDBC extends TestJDBCBase {
         // Delete the Source from VANTIQ
         deleteSource();
     }
-    
+
+    @SuppressWarnings({"PMD.CognitiveComplexity"})
     @Test
     public void testNullValues() throws VantiqSQLException {
         assumeTrue(testDBUsername != null && testDBPassword != null && testDBURL != null && jdbcDriverLoc != null);
         jdbc.setupJDBC(testDBURL, testDBUsername, testDBPassword, false, 0);
         
         int publishResult;
-        HashMap[] queryResult;
+        Map[] queryResult;
         
         // Create table with all supported data type values
         try {
@@ -526,12 +683,12 @@ public class TestJDBC extends TestJDBCBase {
                     assert queryResult[0].get("ts").equals(FORMATTED_TIMESTAMP);
                 }
                 if (i != 1) {
-                    assertTrue("Expected " + DATE + ", but got " + queryResult[0].get("testDate"),
-                            queryResult[0].get("testDate").equals(DATE));
+                    assertEquals("Expected " + DATE + ", but got " + queryResult[0].get("testDate"),
+                            DATE, queryResult[0].get("testDate"));
                 }
                 if (i != 2) {
-                    assertTrue("Expected " + FORMATTED_TIME + ", but got " + queryResult[0].get("testTime"),
-                         queryResult[0].get("testTime").equals(FORMATTED_TIME));
+                    assertEquals("Expected " + FORMATTED_TIME + ", but got " + queryResult[0].get("testTime"),
+                         FORMATTED_TIME, queryResult[0].get("testTime"));
                 }
                 if (i != 3) {
                     assert queryResult[0].get("testInt").toString().equals(TEST_INT);
@@ -549,18 +706,17 @@ public class TestJDBC extends TestJDBCBase {
         
         jdbc.close();
     }
-    
+
+    @SuppressWarnings({"PMD.CognitiveComplexity"})
     @Test
     public void testCorrectErrors() throws VantiqSQLException {
         assumeTrue(testDBUsername != null && testDBPassword != null && testDBURL != null && jdbcDriverLoc != null);
         assumeTrue(testDBURL.contains("mysql"));
         jdbc.setupJDBC(testDBURL, testDBUsername, testDBPassword, false, 0);
-        HashMap[] queryResult;
-        int publishResult;
-        
+
         // Check error code for selecting from non-existent table
         try {
-            queryResult = jdbc.processQuery(NO_TABLE);
+            jdbc.processQuery(NO_TABLE);
             fail("Should have thrown an exception.");
         } catch (VantiqSQLException e) {
             String message = e.getMessage();
@@ -569,7 +725,7 @@ public class TestJDBC extends TestJDBCBase {
         
         // Check error code for selecting non-existent field
         try {
-            queryResult = jdbc.processQuery(NO_FIELD);
+            jdbc.processQuery(NO_FIELD);
             fail("Should have thrown an exception.");
         } catch (VantiqSQLException e) {
             String message = e.getMessage();
@@ -578,7 +734,7 @@ public class TestJDBC extends TestJDBCBase {
         
         // Check error code for syntax error
         try {
-            queryResult = jdbc.processQuery(SYNTAX_ERROR);
+            jdbc.processQuery(SYNTAX_ERROR);
             fail("Should have thrown an exception.");
         } catch (VantiqSQLException e) {
             String message = e.getMessage();
@@ -587,7 +743,7 @@ public class TestJDBC extends TestJDBCBase {
         
         // Check error code for using INSERT with executeQuery() method
         try {
-            queryResult = jdbc.processQuery(PUBLISH_QUERY);
+            jdbc.processQuery(PUBLISH_QUERY);
             fail("Should have thrown an exception.");
         } catch (VantiqSQLException e) {
             String message = e.getMessage();
@@ -596,7 +752,7 @@ public class TestJDBC extends TestJDBCBase {
         
         // Check error code for INSERT not matching columns
         try {
-            publishResult = jdbc.processPublish(INSERT_NO_FIELD);
+            jdbc.processPublish(INSERT_NO_FIELD);
             fail("Should have thrown an exception.");
         } catch (VantiqSQLException e) {
             String message = e.getMessage();
@@ -605,13 +761,12 @@ public class TestJDBC extends TestJDBCBase {
         
         // Check error code for inserting wrong types
         try {
-            publishResult = jdbc.processPublish(INSERT_WRONG_TYPE);
+            jdbc.processPublish(INSERT_WRONG_TYPE);
             fail("Should have thrown an exception.");
         } catch (VantiqSQLException e) {
             String message = e.getMessage();
             assert message.contains("1366");
         }
-        
     }
     
     @Test
@@ -983,16 +1138,32 @@ public class TestJDBC extends TestJDBCBase {
 
     // ================================================= Helper functions =================================================
 
+    @SuppressWarnings({"PMD.SimpleDateFormatNeedsLocale", "PMD.IllegalTypeCheck"})
+    public static Map<String, Object> createManyDatesRows(int id, int rowCount) {
+        Instant inst = Instant.now().plus(id, ChronoUnit.DAYS);
+        String instString = new SimpleDateFormat("yyyy-MM-dd' 'HH:mm:ss").format(Date.from(inst));
+        LinkedHashMap<String, Object> resSet = new LinkedHashMap<>();
+        String[] insertList = new String[rowCount];
+        for (int i = 1; i <= rowCount; i++) {
+            StringBuilder result = new StringBuilder(INSERT_MANY_DATES_FRAG + id + ", '");
+            for (int j = 0; j < TS_COUNT; j++) {
+                result.append(instString).append("', '");
+            }
+            result.append(" " + DATE + "', '" + TIME + "');");
+            insertList[i - 1] = result.toString();
+        }
+        resSet.put("id", id);
+        resSet.put("expected", instString);
+        resSet.put("batch", insertList);
+        return resSet;
+    }
+
     public static boolean checkSourceExists() {
         Map<String,String> where = new LinkedHashMap<String,String>();
         where.put("name", testSourceName);
         VantiqResponse response = vantiq.select("system.sources", null, where, null);
         ArrayList responseBody = (ArrayList) response.getBody();
-        if (responseBody.isEmpty()) {
-            return false;
-        } else {
-            return true;
-        }
+        return !responseBody.isEmpty();
     }
 
     public static void setupSource(Map<String,Object> sourceDef) {
@@ -1108,11 +1279,7 @@ public class TestJDBC extends TestJDBCBase {
         where.put("name", testTopicName);
         VantiqResponse response = vantiq.select("system.topics", null, where, null);
         ArrayList responseBody = (ArrayList) response.getBody();
-        if (responseBody.isEmpty()) {
-            return false;
-        } else {
-            return true;
-        }
+        return !responseBody.isEmpty();
     }
 
     public static void setupTopic() {
@@ -1133,11 +1300,7 @@ public class TestJDBC extends TestJDBCBase {
         where.put("name", testProcedureName);
         VantiqResponse response = vantiq.select("system.procedures", null, where, null);
         ArrayList responseBody = (ArrayList) response.getBody();
-        if (responseBody.isEmpty()) {
-            return false;
-        } else {
-            return true;
-        }
+        return !responseBody.isEmpty();
     }
 
     public static void setupProcedure() {

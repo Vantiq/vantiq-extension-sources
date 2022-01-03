@@ -8,6 +8,7 @@ import java.net.URL;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
+import io.vantiq.extsrc.objectRecognition.ObjRecTestBase;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -15,16 +16,16 @@ import org.junit.Test;
 import io.vantiq.extsrc.objectRecognition.NoSendORCore;
 import io.vantiq.extsrc.objectRecognition.exception.ImageAcquisitionException;
 
-public class TestNetworkStreamRetriever {
-    NetworkStreamRetriever retriever;
-    NoSendORCore source;
-    
-    final String IP_CAMERA_URL = "http://60.45.181.202:8080/mjpg/quad/video.mjpg";
+public class TestNetworkStreamRetriever extends ObjRecTestBase {
+
     final String RTSP_CAMERA_ADDRESS = "rtsp://wowzaec2demo.streamlock.net/vod/mp4:BigBuckBunny_115k.mp4";
     // Alternate purportedly opened, but sometimes apparently broken...
     // "rtsp://demo:demo@ipvmdemo.dyndns.org:5541/onvif-media/media.amp?profile=profile_1_h264&sessiontimeout=60&streamtype=unicast";
 
 
+    NetworkStreamRetriever retriever;
+    NoSendORCore source;
+    
     @Before
     public void setup() {
         source = new NoSendORCore("src", "token", "server", "dir");

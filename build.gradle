@@ -1,5 +1,5 @@
 buildscript {
-    repositories { jcenter() }
+    repositories { mavenCentral() }
     dependencies {
         classpath 'com.github.jengelman.gradle.plugins:shadow:1.2.4'
         classpath 'com.netflix.nebula:gradle-ospackage-plugin:4.4.0'
@@ -43,6 +43,7 @@ ext {
     slf4jApiVersion = '1.7.25'
     eclipseMiloVersion = '0.2.1'
     vantiqSDKVersion = '1.0.31'
+    log4jVersion = '2.17.0'
 }
 
 
@@ -157,21 +158,21 @@ subprojects {
 
     repositories {
         mavenCentral()
-        jcenter()
         maven { url 'https://jitpack.io' }
     }
 
     dependencies {
         provided 'org.projectlombok:lombok:1.16.18'
 
-        compile 'org.codehaus.groovy:groovy-all:2.4.11'
-        compile "org.slf4j:slf4j-api:${slf4jApiVersion}"
+        implementation 'org.codehaus.groovy:groovy-all:2.4.11'
+        implementation "org.slf4j:slf4j-api:${slf4jApiVersion}"
     }
 
     compileGroovy {
         groovyOptions.javaAnnotationProcessing = true
     }
 
+    // Generate dependency report for all subprojects
     task allDeps(type: DependencyReportTask) {}
 
     test {
@@ -219,7 +220,6 @@ apply plugin: 'java'
 
 repositories {
     mavenCentral()
-    jcenter()
     maven { url 'https://jitpack.io' }
 }
 
@@ -269,24 +269,24 @@ task jacocoRootReport(type: JacocoReport, group: 'Coverage reports') {
 
     dependsOn(publishedProjects.test)
 
-    additionalSourceDirs = files(publishedProjects.sourceSets.main.allSource.srcDirs)
-    sourceDirectories = files(publishedProjects.sourceSets.main.allSource.srcDirs)
-    classDirectories = files(publishedProjects.sourceSets.main.output)
+    additionalSourceDirs.setFrom(files(publishedProjects.sourceSets.main.allSource.srcDirs))
+    sourceDirectories.setFrom(files(publishedProjects.sourceSets.main.allSource.srcDirs))
+    classDirectories.setFrom(files(publishedProjects.sourceSets.main.output))
     // disable this report unless jacocoReport is specified
     if (rootProject.hasProperty('jacocoReport')) {
-        executionData = files(publishedProjects.jacocoTestReport.executionData)
+        executionData.setFrom(files(publishedProjects.jacocoTestReport.executionData))
     } else {
-        executionData = files('dummy')  // just create empty list if property not specified
+        executionData.setFrom(files('dummy'))  // just create empty list if property not specified
     }
 
     doFirst {
-        executionData = files(executionData.findAll { it.exists() })
-        classDirectories = files(classDirectories.findAll {
+        executionData.setFrom(files(executionData.findAll { it.exists() }))
+        classDirectories.setFrom(files(classDirectories.findAll {
             // exclude the sqlsvc directory/module, because it contains a duplicate class;
             // i.e.    io/vantiq/service/storage/DatabaseServiceModule.class
             // is in both dbservice/mongodbsvc & dbservice/sqlsvc
             it.exists() && !(it.absolutePath.contains('sqlsvc'))
-        })
+        }))
     }
 
     reports {

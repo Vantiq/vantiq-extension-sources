@@ -1,11 +1,11 @@
 {
-   "name" : "JDBC",
+   "name" : "UDP",
    "baseType" : "EXTENSION",
    "verticle" : "service:extensionSource",
    "config" : {},
    "baseConfigProperties": [
-      "jdbcConfig.general.username",
-      "jdbcConfig.general.password",
-      "jdbcConfig.general.dbURL"
+      "udpSourceConfig.general",
+      "udpSourceConfig.incoming",
+      "udpSourceConfig.outgoing"
    ]
 }

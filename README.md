@@ -310,6 +310,26 @@ vantiq -s <profileName> load sourceimpls exampleImpl.json
 
 where `<profileName>` is replaced by the VANTIQ profile name, and `exampleImpl.json` identifies the file containing the definition to be loaded.
 
+Source Implementation documents may also include `baseConfigProperties`- a list of strings that represent source 
+configuration options for the connector in question. By including this field, the listed configuration properties will 
+automatically be made available for configuration by a Vantiq Assembly. Typically, the source config options included 
+in the `baseConfigProperties` are the required properties for any instance of the connector. The following example 
+demonstrates how to include the 'baseConfigProperties':
+
+```
+{
+   "name" : "EXAMPLE",
+   "baseType" : "EXTENSION",
+   "verticle" : "service:extensionSource",
+   "config" : {},
+   "baseConfigProperties": [
+        "exampleConfigOption",
+        "nested.config.example1",
+        "nested.config.example2",
+   ] 
+}
+```
+
 Once that type is loaded, you can create a source of that type. This is done by first selecting the EXAMPLE type for the source,
 
 ![Creating a source, step 1](docs/images/createSource1.png)

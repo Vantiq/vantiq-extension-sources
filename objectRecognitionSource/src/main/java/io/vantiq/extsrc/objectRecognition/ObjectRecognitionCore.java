@@ -158,7 +158,7 @@ public class ObjectRecognitionCore {
             Object[] body = {msg.getSourceName()};
             client.sendQueryError(ExtensionServiceMessage.extractReplyAddress(msg),
                     "io.vantiq.extsrc.objectRecognition.noQueryConfigured",
-                    "Source '{0}' is not configured for Queries. Queries require objRecConfig.general.pollRate < 0",
+                    "Source {0} is not configured for Queries. Queries require objRecConfig.general.pollRate < 0",
                     body);
         }
     };
@@ -276,7 +276,7 @@ public class ObjectRecognitionCore {
             log.warn("Could not obtain requested image.", e);
             log.debug("Request was: {}", request);
             client.sendQueryError(replyAddress, ImageAcquisitionException.class.getCanonicalName(), 
-                    "Failed to obtain an image for reason '{0}'. Exception was {1}. Request was {2}"
+                    "Failed to obtain an image: {0}. Exception was {1}. Request was {2}"
                     , new Object[] {e.getMessage(), e, request});
         } catch (FatalImageException e) {
             log.error("Image retriever of type '" + imageRetriever.getClass().getCanonicalName() 
@@ -284,7 +284,7 @@ public class ObjectRecognitionCore {
                     , e);
             log.debug("Request was: {}", request);
             client.sendQueryError(replyAddress, FatalImageException.class.getCanonicalName() + ".acquisition", 
-                    "Fatally failed to obtain an image for reason '{0}'. Exception was {1}. Request was {2}"
+                    "Fatally failed to obtain an image:{0}. Exception was {1}. Request was {2}"
                     , new Object[] {e.getMessage(), e, request});
             stop();
         } catch (RuntimeException e) {
@@ -424,14 +424,14 @@ public class ObjectRecognitionCore {
            log.warn("Could not process image", e);
            log.debug("Request was: " + request);
            client.sendQueryError(replyAddress, ImageProcessingException.class.getCanonicalName(), 
-                   "Failed to process the image obtained for reason '{0}'. Exception was {1}. Request was {2}"
+                   "Failed to process the image obtained for reason: {0}. Exception was {1}. Request was {2}"
                    , new Object[] {e.getMessage(), e, request});
        } catch (FatalImageException e) {
            log.error("Image processor of type '" + localNeuralNet.getClass().getCanonicalName() + "' failed unrecoverably"
                    , e);
            log.debug("Request was: " + request);
-           client.sendQueryError(replyAddress, FatalImageException.class.getCanonicalName() + ".processing", 
-                   "Fatally failed to process the image obtained for reason '{0}'. Exception was {1}. Request was {2}"
+           client.sendQueryError(replyAddress, FatalImageException.class.getCanonicalName() + ".processing",
+                   "Fatally failed to process the image obtained for reason: {0}. Exception was {1}. Request was {2}"
                    , new Object[] {e.getMessage(), e, request});
            log.error("Stopping");
            stop();

@@ -1,6 +1,6 @@
-* @fhcarter @pbutterworth
+* @fhcarter @pbutterworth @AlexBlumer @jcguion
 
 /opcuaSource @fhcarter
-/udpSource @fhcarter @AlexBlumer @namirfa
-/extjsdk @fhcarter @AlexBlumer @namirfa
-/objectRecognitionSource @fhcarter @AlexBlumer @namirfa
+/udpSource @fhcarter @AlexBlumer 
+/extjsdk @fhcarter @AlexBlumer 
+/objectRecognitionSource @fhcarter @AlexBlumer 

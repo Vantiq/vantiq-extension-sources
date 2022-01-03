@@ -17,10 +17,7 @@ sourceCompatibility = 1.8
 
 // In this section you declare where to find the dependencies of your project
 repositories {
-    // Use jcenter for resolving your dependencies.
-    // You can declare any Maven/Ivy/file repository here.
     mavenCentral()
-    jcenter()
 }
 
 mainClassName = 'io.vantiq.extsrc.udp.ConfigurableUDPSource'
@@ -51,20 +48,20 @@ applicationDistribution.from("src/main/resources") {
 
 dependencies {
    // compile 'extjsdk' // extjsdk.jar must be in
-    compile project(":extjsdk")
-    
-    compile "org.slf4j:slf4j-api:1.7.25"
-    compile "org.apache.logging.log4j:log4j-slf4j-impl:2.11.0"
-    
-    compile "com.fasterxml.jackson.core:jackson-databind:2.9.3"
-    compile "com.fasterxml.jackson.dataformat:jackson-dataformat-xml:2.9.3"	//XML parsing
-    compile "com.fasterxml.jackson.dataformat:jackson-dataformat-csv:2.9.3"
+    implementation project(":extjsdk")
+
+    implementation "org.slf4j:slf4j-api:1.7.25"
+    implementation "org.apache.logging.log4j:log4j-slf4j-impl:${log4jVersion}"
+
+    implementation "com.fasterxml.jackson.core:jackson-databind:2.9.3"
+    implementation "com.fasterxml.jackson.dataformat:jackson-dataformat-xml:2.9.3"	//XML parsing
+    implementation "com.fasterxml.jackson.dataformat:jackson-dataformat-csv:2.9.3"
     
 
     // This dependency is used internally, and not exposed to consumers on their own compile classpath.
     implementation 'com.google.guava:guava:23.0'
 
     // Use JUnit test framework
-    testCompile 'junit:junit:4.12'
-    testCompile project(path:":extjsdk", configuration:"testArtifacts")
+    testImplementation 'junit:junit:4.12'
+    testImplementation project(path:":extjsdk", configuration:"testArtifacts")
 }

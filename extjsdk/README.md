@@ -254,6 +254,14 @@ its properties.
 *	`getHeader(<header name>)` returns the String value of the requested header.
 *	`getContentType()` returns the MIME type of the message body. Currently, only JSON is possible for sent or received
     messages.
+     
+### TCP Probe
+In the case that the connector is deployed within a Kubernetes cluster, the ExtensionWebSocketClient offers support for 
+TCP Startup/Liveness/Readiness probes. The client defines two methods: `declareHealthy()` and `declareUnhealthy()`, that 
+can be used to open and close a TCP socket. The socket is opened on port 8000 by default, but can be overwritten by
+including `tcpProbePort:<portNumberHere>` in the connector's `server.config` document. It is the responsibility of the 
+connector developer to manage when the connector is healthy and when it is not. The `testConnector` includes examples of
+how to call the two methods.
 
 ## Licenses
 The source code in this project is licensed under the [MIT License](https://opensource.org/licenses/MIT).  

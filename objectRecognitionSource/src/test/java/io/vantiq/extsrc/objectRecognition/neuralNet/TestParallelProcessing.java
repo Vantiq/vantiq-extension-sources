@@ -22,9 +22,6 @@ public class TestParallelProcessing extends NeuralNetTestBase {
 
     static final String FAKE_MODEL_DIR = "";
     static final int CORE_START_TIMEOUT = 10;
-    // Camera here not really used -- just need it to set up
-    static final String IP_CAMERA_ADDRESS = "http://60.45.181.202:8080/mjpg/video.mjpg";
-
 
     @BeforeClass
     public static void classSetup() {
@@ -141,7 +138,7 @@ public class TestParallelProcessing extends NeuralNetTestBase {
         }
 
         // Setting up dataSource config options
-        dataSource.put("camera", IP_CAMERA_ADDRESS);
+        dataSource.put("camera", IP_CAMERA_URL);
         dataSource.put("type", "network");
 
         // Setting up neuralNet config options

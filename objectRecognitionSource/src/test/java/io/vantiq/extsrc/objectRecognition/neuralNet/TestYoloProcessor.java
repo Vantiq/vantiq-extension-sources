@@ -26,23 +26,15 @@ import java.io.InputStream;
 import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
 import javax.imageio.ImageIO;
 
-import com.google.gson.JsonArray;
-import io.vantiq.extsrc.objectRecognition.ObjectRecognitionCore;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.FixMethodOrder;
-import org.junit.Test;
-import org.junit.runners.MethodSorters;
-
-import com.fasterxml.jackson.core.JsonParseException;
-import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 
@@ -50,10 +42,17 @@ import io.vantiq.client.BaseResponseHandler;
 import io.vantiq.client.Vantiq;
 import io.vantiq.client.VantiqError;
 import io.vantiq.client.VantiqResponse;
-import io.vantiq.extsrc.objectRecognition.exception.ImageProcessingException;
 import io.vantiq.extjsdk.ExtensionServiceMessage;
+import io.vantiq.extsrc.objectRecognition.exception.ImageProcessingException;
+import io.vantiq.extsrc.objectRecognition.ObjectRecognitionCore;
 import okhttp3.Response;
 import okio.BufferedSource;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
+import org.junit.FixMethodOrder;
+import org.junit.Test;
+import org.junit.runners.MethodSorters;
+
 
 @SuppressWarnings("PMD.ExcessiveClassLength")
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
@@ -65,7 +64,7 @@ public class TestYoloProcessor extends NeuralNetTestBase {
     static final String META_FILE = "coco-" + COCO_MODEL_VERSION + ".meta";
     static final String PB_FILE_608 = "coco-1.1.pb";
     static final String META_FILE_608 = "coco-1.1.meta";
-    static final String OUTPUT_DIR = System.getProperty("buildDir") + "/resources/out";
+    static final String OUTPUT_DIR = System.getProperty("buildDir") + "/resources/out/";
     static final int SAVE_RATE = 2; // Saves every other so that we can know it counts correctly
 
     // For image resizing tests
@@ -86,9 +85,6 @@ public class TestYoloProcessor extends NeuralNetTestBase {
     static final int KEYBOARD_CROPPED_WIDTH = 230;
     static final int KEYBOARD_CROPPED_HEIGHT = 125;
 
-    // Used to test suppressNullValues
-    static final String NO_RECOGNIZED_OBJECTS_CAMERA_ADDRESS = "http://49.229.157.154:8080/mjpg/video.mjpg";
-
     static final int CORE_START_TIMEOUT = 10;
 
     static ObjectRecognitionCore core;
@@ -104,11 +100,6 @@ public class TestYoloProcessor extends NeuralNetTestBase {
     // A single processor is used for the entire class because it is very expensive to do initial setup
     @BeforeClass
     public static void classSetup() {
-        try {
-            createServerConfig();
-        } catch (Exception e) {
-            fail("Error creating server config file: " + e);
-        }
         ypJson = new YoloProcessor();
 
         Map<String, Object> config = new LinkedHashMap<>();
@@ -347,9 +338,9 @@ public class TestYoloProcessor extends NeuralNetTestBase {
         verifyProcessing(ypJson, expectedResults);
     }
 
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings({"unchecked", "rawtypes"})
     @Test
-    public void testRealJSONConfig() throws ImageProcessingException, JsonParseException, JsonMappingException, IOException {
+    public void testRealJSONConfig() throws IOException {
         String expectedResults = imageResultsAsString; // imageResultsAsStringWithoutServer;
         if (testAuthToken != null && testVantiqServer != null) {
             expectedResults = imageResultsAsString;
@@ -418,7 +409,7 @@ public class TestYoloProcessor extends NeuralNetTestBase {
 
     @SuppressWarnings("unchecked")
     @Test
-    public void testDifferentFrameSizeProcessing () throws JsonParseException, JsonMappingException, IOException {
+    public void testDifferentFrameSizeProcessing () throws IOException {
         YoloProcessor ypImageSaver = new YoloProcessor();
         ExtensionServiceMessage msg = createRealConfig(neuralNetJSON5);
         Map<String, Object> config;
@@ -438,7 +429,7 @@ public class TestYoloProcessor extends NeuralNetTestBase {
     }
 
     @Test
-    public void testValidAnchors() throws ImageProcessingException {
+    public void testValidAnchors() {
         Map<String, Object> config = new LinkedHashMap<>();
         YoloProcessor ypImageSaver = new YoloProcessor();
 
@@ -465,13 +456,14 @@ public class TestYoloProcessor extends NeuralNetTestBase {
         }
     }
 
+    @SuppressWarnings("rawtypes")
     @Test
-    public void testInvalidAnchors() throws ImageProcessingException {
+    public void testInvalidAnchors() {
         Map<String, Object> config = new LinkedHashMap<>();
         YoloProcessor ypImageSaver = new YoloProcessor();
 
         // anchorList is too short
-        List anchorList = Arrays.asList(0.5);
+        List anchorList = Collections.singletonList(0.5);
         config.put("pbFile", PB_FILE);
         config.put("labelFile", LABEL_FILE);
         config.put("anchors", anchorList);
@@ -507,7 +499,7 @@ public class TestYoloProcessor extends NeuralNetTestBase {
 
     @Test
     public void testInvalidData() {
-        byte[] invalidImage = {123, 012, 45, -3, -102};
+        byte[] invalidImage = {123, 12, 45, -3, -102};
         try {
             ypJson.processImage(invalidImage);
             fail("Should throw Exception when not a jpeg");
@@ -679,7 +671,7 @@ public class TestYoloProcessor extends NeuralNetTestBase {
             assert lf.length == 1;
             assert lf[0].getName().matches(timestampPattern);
             
-            File resizedImageFile = new File(OUTPUT_DIR + "/" + lf[0].getName());
+            File resizedImageFile = new File(OUTPUT_DIR + lf[0].getName());
             BufferedImage resizedImage = ImageIO.read(resizedImageFile);
             
             // Original dimensions
@@ -736,7 +728,7 @@ public class TestYoloProcessor extends NeuralNetTestBase {
             assert lf.length == 1;
             assert lf[0].getName().matches(timestampPattern);
             
-            File resizedImageFile = new File(OUTPUT_DIR + "/" + lf[0].getName());
+            File resizedImageFile = new File(OUTPUT_DIR + lf[0].getName());
             BufferedImage resizedImage = ImageIO.read(resizedImageFile);
             
             assert resizedImage.getWidth() == RESIZED_IMAGE_WIDTH;
@@ -847,7 +839,7 @@ public class TestYoloProcessor extends NeuralNetTestBase {
             assert lf.length == 1;
             assert lf[0].getName().matches(timestampPattern);
             
-            File resizedImageFile = new File(OUTPUT_DIR + "/" + lf[0].getName());
+            File resizedImageFile = new File(OUTPUT_DIR + lf[0].getName());
             BufferedImage resizedImage = ImageIO.read(resizedImageFile);
             
             assert resizedImage.getWidth() == RESIZED_IMAGE_WIDTH;
@@ -1218,7 +1210,7 @@ public class TestYoloProcessor extends NeuralNetTestBase {
             assert results != null;
             assert results.getResults() != null;
 
-            listOfFiles = d.listFiles();
+            listOfFiles = dNew.listFiles();
             assert listOfFiles != null;
             assert listOfFiles.length == 3;
 
@@ -1347,6 +1339,7 @@ public class TestYoloProcessor extends NeuralNetTestBase {
     }
     
     // Helper method used to check invalid pre cropping configurations
+    @SuppressWarnings({"rawtypes", "unchecked"})
     public void checkInvalidPreCropping(Map config) throws ImageProcessingException, IOException {
         YoloProcessor ypImageSaver = new YoloProcessor();
         try {
@@ -1373,7 +1366,7 @@ public class TestYoloProcessor extends NeuralNetTestBase {
             assert lf.length == 1;
             assert lf[0].getName().matches(timestampPattern);
             
-            File resizedImageFile = new File(OUTPUT_DIR + "/" + lf[0].getName());
+            File resizedImageFile = new File(OUTPUT_DIR + lf[0].getName());
             BufferedImage resizedImage = ImageIO.read(resizedImageFile);
             
             // Original dimensions
@@ -1433,7 +1426,7 @@ public class TestYoloProcessor extends NeuralNetTestBase {
             assert lf.length == 1;
             assert lf[0].getName().matches(timestampPattern);
             
-            File resizedImageFile = new File(OUTPUT_DIR + "/" + lf[0].getName());
+            File resizedImageFile = new File(OUTPUT_DIR + lf[0].getName());
             BufferedImage resizedImage = ImageIO.read(resizedImageFile);
             
             assert resizedImage.getWidth() == CROPPED_WIDTH;
@@ -1547,7 +1540,7 @@ public class TestYoloProcessor extends NeuralNetTestBase {
             assert lf.length == 1;
             assert lf[0].getName().matches(timestampPattern);
             
-            File resizedImageFile = new File(OUTPUT_DIR + "/" + lf[0].getName());
+            File resizedImageFile = new File(OUTPUT_DIR + lf[0].getName());
             BufferedImage resizedImage = ImageIO.read(resizedImageFile);
             
             assert resizedImage.getWidth() == CROPPED_WIDTH;
@@ -1630,7 +1623,7 @@ public class TestYoloProcessor extends NeuralNetTestBase {
             assert lf.length == 1;
             assert lf[0].getName().matches(timestampPattern);
             
-            File resizedImageFile = new File(OUTPUT_DIR + "/" + lf[0].getName());
+            File resizedImageFile = new File(OUTPUT_DIR + lf[0].getName());
             BufferedImage resizedImage = ImageIO.read(resizedImageFile);
             
             // Since savedResolution was set, the image dimensions should correspond to the longEdge value
@@ -1694,7 +1687,7 @@ public class TestYoloProcessor extends NeuralNetTestBase {
             assert lf.length == 1;
             assert lf[0].getName().matches(timestampPattern);
             
-            File resizedImageFile = new File(OUTPUT_DIR + "/" + lf[0].getName());
+            File resizedImageFile = new File(OUTPUT_DIR + lf[0].getName());
             BufferedImage resizedImage = ImageIO.read(resizedImageFile);
             
             // Since the savedResolution was too large, image dimensions should correspond to the preCrop values
@@ -1742,18 +1735,17 @@ public class TestYoloProcessor extends NeuralNetTestBase {
     public void testNotSuppressNullValues() throws InterruptedException {
         // Setting suppress null values to false
         // Here, we check to see that we still received data even though there were no recognitions
-        testSuppressNullValuesHelper(false);
+        suppressNullValuesHelper(false);
     }
 
     @Test
     public void testSuppressNullValues() throws InterruptedException {
         // Setting suppress null values to true
         // Here, we check to see that we did not receive any data since there were no recognitions
-        testSuppressNullValuesHelper(true);
+        suppressNullValuesHelper(true);
     }
 
-    @SuppressWarnings("unchecked")
-    public void testSuppressNullValuesHelper(boolean suppressNullValues) throws InterruptedException {
+    public void suppressNullValuesHelper(boolean suppressNullValues) throws InterruptedException {
         // Only run test with intended vantiq availability
         assumeTrue(testAuthToken != null && testVantiqServer != null);
 
@@ -1763,6 +1755,7 @@ public class TestYoloProcessor extends NeuralNetTestBase {
         assumeFalse(checkRuleExists(vantiq));
 
         // Setup a VANTIQ Obj Rec Source, and start running the core
+
         setupSource(createSourceDef(suppressNullValues));
 
         // Create Type to store results
@@ -1773,33 +1766,24 @@ public class TestYoloProcessor extends NeuralNetTestBase {
 
         // Wait for 15 seconds while the source polls for frames from the data source and stores data in type
         Thread.sleep(15000);
+        try {
+            // Make sure that appropriate number of entries are stored in type (this means discard policy works, and core is still alive)
+            VantiqResponse response = vantiq.select(testTypeName, null, null, null);
+            @SuppressWarnings("unchecked")
+            ArrayList<JsonObject> responseBody = (ArrayList<JsonObject>) response.getBody();
 
-        // Make sure that appropriate number of entries are stored in type (this means discard policy works, and core is still alive)
-        VantiqResponse response = vantiq.select(testTypeName, null, null, null);
-        System.out.println(">>> VtqResp: " + response);
-        ArrayList<JsonObject> responseBody = (ArrayList<JsonObject>) response.getBody();
-
-        // If suppressNullValues is set to true, we shouldn't have any results stored in our type
-        if (suppressNullValues) {
-            assertEquals("Get responseBody content when none expected: " + responseBody, 
-                    0, responseBody.size());
-        } else {
-            // Otherwise, we should have some results and they should be empty arrays
-            assert responseBody.size() > 0;
-
-            for (int i = 0; i < responseBody.size(); i++) {
-                JsonObject resultObject = (JsonObject) responseBody.get(i);
+            for (JsonObject resultObject: responseBody) {
                 assert resultObject.get("results") instanceof JsonArray;
                 assertEquals("Get resultObject.results content when none expected: " + responseBody,
                         0, ((JsonArray) resultObject.get("results")).size());
             }
+        } finally {
+            // Delete the Source/Type/Rule from VANTIQ
+            core.close();
+            deleteSource(vantiq);
+            deleteType(vantiq);
+            deleteRule(vantiq);
         }
-
-        // Delete the Source/Type/Rule from VANTIQ
-        core.close();
-        deleteSource(vantiq);
-        deleteType(vantiq);
-        deleteRule(vantiq);
     }
 
     @Test
@@ -1943,7 +1927,8 @@ public class TestYoloProcessor extends NeuralNetTestBase {
                     + "         }"
                     + "}";
 
-    List<Map> getExpectedResults(String resultsAsString) throws JsonParseException, JsonMappingException, IOException {
+    @SuppressWarnings({"rawtypes", "unchecked"})
+    List<Map> getExpectedResults(String resultsAsString) throws IOException {
         ObjectMapper m = new ObjectMapper();
         return m.readValue(resultsAsString, List.class);
     }
@@ -1959,9 +1944,10 @@ public class TestYoloProcessor extends NeuralNetTestBase {
         }
     }
 
+    @SuppressWarnings({"rawtypes", "unchecked"})
     void resultsEquals(List<Map<String, ?>> list, List<Map> expectedRes) {
-        assertTrue("list Size: " + list.size() + ", expected: "+ expectedRes.size() +" :: " + list,
-                list.size() == expectedRes.size());
+        assertEquals("list Size: " + list.size() + ", expected: "+ expectedRes.size() +" :: " + list,
+                expectedRes.size(), list.size());
         for (int i = 0; i < list.size(); i++) {
             mapEquals(list.get(i), expectedRes.get(i));
         }
@@ -1975,7 +1961,7 @@ public class TestYoloProcessor extends NeuralNetTestBase {
                     + " but received " + actual, valEquals(actual, expected));
         }
     }
-
+    @SuppressWarnings({"rawtypes", "unchecked"})
     boolean valEquals(Object actual, Object expected) {
         if (actual instanceof Map && expected instanceof Map) {
             mapEquals((Map) actual, (Map) expected);
@@ -1988,16 +1974,15 @@ public class TestYoloProcessor extends NeuralNetTestBase {
         return actual.equals(expected);
     }
 
-    ExtensionServiceMessage createRealConfig(String neuralNetJSON) throws JsonParseException, JsonMappingException, IOException {
+    @SuppressWarnings({"rawtypes", "unchecked"})
+    ExtensionServiceMessage createRealConfig(String neuralNetJSON) throws IOException {
         Map msg = new LinkedHashMap();
-        Map object = new LinkedHashMap();
 
         ObjectMapper m = new ObjectMapper();
-        object = m.readValue(neuralNetJSON, Map.class);
+        Map object = m.readValue(neuralNetJSON, Map.class);
         msg.put("object", object);
 
-        ExtensionServiceMessage message = new ExtensionServiceMessage("").fromMap(msg);
-        return message;
+        return new ExtensionServiceMessage("").fromMap(msg);
     }
 
     public static void setupSource(Map<String,Object> sourceDef) {
@@ -2009,20 +1994,21 @@ public class TestYoloProcessor extends NeuralNetTestBase {
     }
 
     public static Map<String,Object> createSourceDef(boolean suppressNullValues) {
-        Map<String,Object> sourceDef = new LinkedHashMap<String,Object>();
-        Map<String,Object> sourceConfig = new LinkedHashMap<String,Object>();
-        Map<String,Object> objRecConfig = new LinkedHashMap<String,Object>();
-        Map<String,Object> general = new LinkedHashMap<String,Object>();
-        Map<String,Object> dataSource = new LinkedHashMap<String,Object>();
-        Map<String,Object> neuralNet = new LinkedHashMap<String,Object>();
+        Map<String,Object> sourceDef = new LinkedHashMap<>();
+        Map<String,Object> sourceConfig = new LinkedHashMap<>();
+        Map<String,Object> objRecConfig = new LinkedHashMap<>();
+        Map<String,Object> general = new LinkedHashMap<>();
+        Map<String,Object> dataSource = new LinkedHashMap<>();
+        Map<String,Object> neuralNet = new LinkedHashMap<>();
 
         // Setting up general config options
         general.put("pollTime", 1000);
         general.put("suppressEmptyNeuralNetResults", suppressNullValues);
 
         // Setting up dataSource config options
-        dataSource.put("camera", NO_RECOGNIZED_OBJECTS_CAMERA_ADDRESS);
-        dataSource.put("type", "network");
+        dataSource.put("fileLocation", NOTHING_VIDEO_LOCATION);
+        dataSource.put("fileExtension", "mov");
+        dataSource.put("type", "file");
 
         // Setting up neuralNet config options
         neuralNet.put("type", "yolo");
@@ -2049,9 +2035,9 @@ public class TestYoloProcessor extends NeuralNetTestBase {
     }
 
     public static void setupType() {
-        Map<String,Object> typeDef = new LinkedHashMap<String,Object>();
-        Map<String,Object> properties = new LinkedHashMap<String,Object>();
-        Map<String,Object> propertyDef = new LinkedHashMap<String,Object>();
+        Map<String,Object> typeDef = new LinkedHashMap<>();
+        Map<String,Object> properties = new LinkedHashMap<>();
+        Map<String,Object> propertyDef = new LinkedHashMap<>();
         propertyDef.put("type", "Object");
         propertyDef.put("multi", true);
         propertyDef.put("required", true);

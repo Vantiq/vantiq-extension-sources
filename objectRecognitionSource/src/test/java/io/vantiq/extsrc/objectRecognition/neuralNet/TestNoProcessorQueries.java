@@ -27,7 +27,6 @@ public class TestNoProcessorQueries extends NeuralNetTestBase {
     static final int CORE_START_TIMEOUT = 10;
     static final String OUTPUT_DIR = System.getProperty("buildDir") + "/resources/out";
     static final String SOURCE_NAME = "UnlikelyToExistTestObjectRecognitionSource";
-    static final String IP_CAMERA_ADDRESS = "http://60.45.181.202:8080/mjpg/quad/video.mjpg";
     static final String QUERY_FILENAME = "testFile";
     static final Map<String,String> IMAGE = new LinkedHashMap<String,String>() {{
         put("filename", "objectRecognition/" + SOURCE_NAME + "/" + QUERY_FILENAME + ".jpg");
@@ -317,7 +316,7 @@ public class TestNoProcessorQueries extends NeuralNetTestBase {
         Map<String,Object> neuralNet = new LinkedHashMap<String,Object>();
         
         // Setting up dataSource config options
-        dataSource.put("camera", IP_CAMERA_ADDRESS);
+        dataSource.put("camera", IP_CAMERA_URL);
         dataSource.put("type", "network");
         
         // Setting up general config options

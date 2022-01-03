@@ -461,7 +461,8 @@ public class TestObjRecConfig {
         postProcessor.put(ObjectRecognitionConfigHandler.LOCATION_MAPPER, mapper);
         conf = minimalConfig();
         sendConfig(conf);
-        assertFalse("Should not fail with valid setup & resultsAsGeoJSON (false/string)", configIsFailed());
+        assertFalse("Should not fail with valid setup & resultsAsGeoJSON (false/string)" +
+                " -- sometimes fails due to timing", configIsFailed());
     }
     
 // ================================================= Helper functions =================================================

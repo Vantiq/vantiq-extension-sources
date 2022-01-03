@@ -11,10 +11,18 @@ sourceCompatibility = 1.8
 
 repositories {
     mavenCentral()
-    jcenter()
 
     maven {
-        url "http://vantiqmaven.s3.amazonaws.com/"
+        url "https://vantiqmaven.s3.amazonaws.com/"
+        metadataSources {
+            // The artifact() metadataSource allows the dependency resolver to use the existence of the file
+            // we want to be sufficient.  Then we don't have to publish fake POM files for our coco models
+            // or image/video files.  Since this repo is used primarily to store big test objects that
+            // we don't want in our GIT repo, this allows our strategy to work.  This change came during
+            // upgrade to Gradle 6.x from 5.x.
+            mavenPom()
+            artifact()
+        }
     }
 }
 
@@ -121,37 +129,34 @@ ext {
 }
 
 dependencies {
-    compile project(':extjsdk')
-    
-    compile "org.slf4j:slf4j-api:1.7.25"
-    compile "org.apache.logging.log4j:log4j-slf4j-impl:2.11.0"
+    implementation project(':extjsdk')
 
-    compile "org.projectlombok:lombok:${lombokVersion}"
+    implementation "org.slf4j:slf4j-api:1.7.25"
+    implementation "org.apache.logging.log4j:log4j-slf4j-impl:${log4jVersion}"
 
-    compile "com.fasterxml.jackson.core:jackson-databind:2.9.3"
+    implementation "org.projectlombok:lombok:${lombokVersion}"
+
+    implementation "com.fasterxml.jackson.core:jackson-databind:2.9.3"
     
     // Used by YoloProcessor alone. These two dependencies and all files in the edu.* package may be removed if YoloProcessor
     // is removed
-    compile "org.tensorflow:tensorflow:1.11.0"
-    compile "org.apache.commons:commons-math3:3.6.1"
+    implementation "org.tensorflow:tensorflow:1.11.0"
+    implementation "org.apache.commons:commons-math3:3.6.1"
     
     // Used by FtpRetriever alone. Can be removed if FtpRetriever is removed
-    compile "commons-net:commons-net:3.6"
-    compile "com.jcraft:jsch:0.1.54"
+    implementation "commons-net:commons-net:3.6"
+    implementation "com.jcraft:jsch:0.1.54"
     
     // The following dependencies are used to download neural net model information (and test artifacts) used in our
-    // tests and by some customer applications.  Formerly, some of these were downloaded from the following locations,
-    //    def sampleVideoUrl = new URL("https://www.dropbox.com/s/h5yd00qr8sfgdlt/sampleVideo.mov?dl=1")
-    //    def yoloGraphUrl = new URL("https://www.dropbox.com/s/lhnygcd6o6275jb/yolo.pb?dl=1")
-    // but we have now standardized on this mechanism.  The endpoints immediately above are left here for a short
-    // period of time in the event they prove useful to someone in the short term.  They are, however, temporary,
-    // the data there may not be available for an extended period of time.
+    // tests and by some customer applications.
 
 
-    testRuntime "vantiq.testArtifacts:sampleVideo:1.0@mov"
-    testRuntime "vantiq.models:coco:${currentCocoVersion}@meta"
-    testRuntime "vantiq.models:coco:${currentCocoVersion}@names"
-    testRuntime "vantiq.models:coco:${currentCocoVersion}@pb"
+    testRuntimeOnly "vantiq.testArtifacts:sampleVideo:1.0@mov"
+    testRuntimeOnly "vantiq.testArtifacts:nothingVideo:1.0@mov"
+
+    testRuntimeOnly "vantiq.models:coco:${currentCocoVersion}@meta"
+    testRuntimeOnly "vantiq.models:coco:${currentCocoVersion}@names"
+    testRuntimeOnly "vantiq.models:coco:${currentCocoVersion}@pb"
 
     oldYoloNames "vantiq.models:coco:1.0@pb"
     oldYoloNames "vantiq.models:coco:1.0@names"
@@ -161,20 +166,20 @@ dependencies {
     metaTest "vantiq.models:coco:1.1@pb"
 
     // The following imports the Java OpenCV API * jar files representing the various JNI libraries (by platform)
-    compile "org.bytedeco:javacv-platform:${javaCvVersion}"
+    implementation "org.bytedeco:javacv-platform:${javaCvVersion}"
     
     // Used for uploading documents (images) to VANTIQ with VANTIQ SDK
-    compile "io.vantiq:vantiq-sdk:${vantiqSDKVersion}"
+    implementation "io.vantiq:vantiq-sdk:${vantiqSDKVersion}"
 
     // Use JUnit test framework
-    testCompile 'junit:junit:4.12'
-    testCompile project(path:":extjsdk", configuration:"testArtifacts")
+    testImplementation 'junit:junit:4.12'
+    testImplementation project(path:":extjsdk", configuration:"testArtifacts")
 }
 
-task copyModels(type: Copy, dependsOn: [configurations.testRuntime, configurations.metaTest]) {
-    from configurations.testRuntime.find { it.name == "coco-${currentCocoVersion}.pb" },
-        configurations.testRuntime.find { it.name == "coco-${currentCocoVersion}.names" },
-        configurations.testRuntime.find { it.name == "coco-${currentCocoVersion}.meta" },
+task copyModels(type: Copy, dependsOn: [configurations.testRuntimeClasspath, configurations.metaTest]) {
+    from configurations.testRuntimeClasspath.find { it.name == "coco-${currentCocoVersion}.pb" },
+        configurations.testRuntimeClasspath.find { it.name == "coco-${currentCocoVersion}.names" },
+        configurations.testRuntimeClasspath.find { it.name == "coco-${currentCocoVersion}.meta" },
         
         // Used for testing different height/width from .meta file
         configurations.metaTest.find { it.name == "coco-1.1.meta" },
@@ -183,7 +188,7 @@ task copyModels(type: Copy, dependsOn: [configurations.testRuntime, configuratio
     into "$buildDir/models/"
 }
 
-task copyOldCocoModels(type: Copy, dependsOn: [configurations.testRuntime, configurations.oldYoloNames]) {
+task copyOldCocoModels(type: Copy, dependsOn: [configurations.testRuntimeClasspath, configurations.oldYoloNames]) {
     from configurations.oldYoloNames.find { it.name == 'coco-1.0.pb' },
         configurations.oldYoloNames.find { it.name == 'coco-1.0.names' }
         
@@ -192,7 +197,7 @@ task copyOldCocoModels(type: Copy, dependsOn: [configurations.testRuntime, confi
 }
 
 
-task copyOldYoloModels(type: Copy, dependsOn: [configurations.testRuntime, configurations.oldYoloNames]) {
+task copyOldYoloModels(type: Copy, dependsOn: [configurations.testRuntimeClasspath, configurations.oldYoloNames]) {
     from configurations.oldYoloNames.find { it.name == 'yolo-1.0.pb' },
         configurations.oldYoloNames.find { it.name == 'coco-1.0.names' }
 
@@ -207,8 +212,9 @@ task copyOldYoloModels(type: Copy, dependsOn: [configurations.testRuntime, confi
     into "$buildDir/models/"
 }
 
-task copyTestResources(type: Copy, dependsOn: [configurations.testRuntime, configurations.oldYoloNames]) {
-    from configurations.testRuntime.find { it.name == 'sampleVideo-1.0.mov' },
+task copyTestResources(type: Copy, dependsOn: [configurations.testRuntimeClasspath, configurations.oldYoloNames]) {
+    from configurations.testRuntimeClasspath.find { it.name == 'sampleVideo-1.0.mov' },
+        configurations.testRuntimeClasspath.find { it.name == 'nothingVideo-1.0.mov' },
         sourceSets.test.resources.asList()
 
     into "$buildDir/testResources/"

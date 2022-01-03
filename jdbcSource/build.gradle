@@ -8,7 +8,6 @@ sourceCompatibility = 1.8
 
 repositories {
     mavenCentral()
-    jcenter()
 }
 
 mainClassName = 'io.vantiq.extsrc.jdbcSource.JDBCMain'
@@ -60,22 +59,22 @@ tasks.withType(Test) {
 dependencies {
     // This dependency is used internally, and not exposed to consumers on their own compile classpath.
     implementation 'com.google.guava:guava:23.0'
-    
-    compile project(':extjsdk')
-    
-    compile "org.slf4j:slf4j-api:1.7.25"
-    compile "org.apache.logging.log4j:log4j-slf4j-impl:2.11.0"
+
+    implementation project(':extjsdk')
+
+    implementation "org.slf4j:slf4j-api:1.7.25"
+    implementation "org.apache.logging.log4j:log4j-slf4j-impl:${log4jVersion}"
     
     //  Compiling relevant JDBC Driver .jar file
-    runtime files("${System.env.JDBC_DRIVER_LOC}")
+    runtimeOnly files("${System.env.JDBC_DRIVER_LOC}")
     
     // Used in tests that check VANTIQ date format behavior
-    testCompile "io.vantiq:vantiq-sdk:${vantiqSDKVersion}"
+    testImplementation "io.vantiq:vantiq-sdk:${vantiqSDKVersion}"
     
     // Use JUnit test framework
-    testCompile 'junit:junit:4.12'
-    testCompile project(path:":extjsdk", configuration:"testArtifacts")
+    testImplementation 'junit:junit:4.12'
+    testImplementation project(path:":extjsdk", configuration:"testArtifacts")
 
     // Used to create a connection pool if asynchronous processing has been specified for publish/query handlers
-    compile group: 'com.zaxxer', name: 'HikariCP', version: '3.3.1'
+    implementation group: 'com.zaxxer', name: 'HikariCP', version: '3.3.1'
 }
