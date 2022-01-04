@@ -50,94 +50,16 @@ Additionally, an example VANTIQ project named *objRecExample.zip* can be found i
     *   [FtpRetriever](#ftpRet) -- Retrieves images through FTP, FTPS, and SFTP.
 
 ## How to Run the Program<a name="objRecMain" id="objRecMain"></a>
-
-### Building OpenCV <a name="building-opencv" id="building-openv"></a>
-
-The [official site](https://opencv.org/releases/) and [the somewhat dated tutorial](https://opencv-java-tutorials.readthedocs.io/en/latest/01-installing-opencv-for-java.html) describe how to install it. These are, we believe, sufficient in Windows and Linux environments.
-
-#### Building OpenCV for macOS
-
-Installation on macOS<sup>&reg;</sup> is a bit more complicated. The easiest way is to use [Homebrew](https://brew.sh). _Homebrew_ is a package manager for macOS.  It is also available for Linux.
-
-Once _Homebrew_ is installed, you can read the instructions in [this only slightly dated tutorial](https://medium.com/macoclock/setting-up-mac-for-opencv-java-development-with-intellij-idea-fd2153eb634f) for background information. However, recent changes in _Homebrew_ have made some changes necessary.
-
-Specfically, current versions of _Homebrew_ need a bit more information about the Java environment to build the Java code for OpenCV. If this information is not provided, the installation of OpenCV appears to succeed, but the Java implemenation is not available. No errors are apparent. 
-
-As a result, the following steps are necessary to install OpenCV with Java support on macOS. The following are expected to be run from the Terminal application.
-
-1. If not already installed, install _Homebrew_ (see the [installation instructions](https://brew.sh).) The _Homebrew_ command is `brew`, so you will see its use below.
-2. If not already installed, install _Ant_ (used by the build process).
-    * `brew install ant`
-    * Set the ANT_HOME environment variable to the installation location.  Due to some issues with the current versions of the _Ant_ installation, you may need to to set ANT_HOME to `/usr/local/Cellar/ant/1.10.11/libexec` where _1.10.11_ is the version of _Ant_ installed.
-3. If not already installed, install the XCode command-line tools.
-    * `xcode-select --install`
-4. Prepare to use `brew` to install OpenCV. To do this, you will configure the OpenCV installation to include the Java libraries.  This is done by editing the `brew` _formula_ (the instructions `brew` uses to do the installation).
-    * `brew edit opencv`
-    * In the text editor that opens, make the following changes.
-        * All of these are added to the build arguments, after the line beginning with `args = std_cmake_args`.
-        * Find the line `-DBUILD_JAVA=OFF` and change it to `-DBUILD_JAVA=ON`
-            * If this line is not in your formula, please add it.
-        * Find the line `-DBUILD_opencv_java=OFF` and change it to `-DBUILD_opencv_java=ON`
-            * If this line is not in your formula, please add it.
-        * Below this line, add the following lines
-        
-        ```
-            -DJAVA_INCLUDE_PATH=<JAVA_HOME>/include
-            -DJAVA_INCLUDE_PATH2=<JAVA_HOME>/include/darwin
-            -DJAVA_AWT_INCLUDE_PATH=<JAVA_HOME>/include
-            -DOPENCV_JAVA_TARGET_VERSION=<Java runtime version>
-        ```
-        * In these additions,
-            * Replace `<JAVA_HOME>` with the value of your `JAVA_HOME` environment variable, and
-            * Replace  `<Java runtime version>` with the version of the Java runtime you use (_e.g._, 1.8).
-            * For example, on this developer's machine, these lines are as follows:
-
-            ```
-            -DJAVA_INCLUDE_PATH=/Library/Java/JavaVirtualMachines/jdk1.8.0_192.jdk/Contents/Home/include
-            -DJAVA_INCLUDE_PATH2=/Library/Java/JavaVirtualMachines/jdk1.8.0_192.jdk/Contents/Home/include/darwin
-            -DJAVA_AWT_INCLUDE_PATH=/Library/Java/JavaVirtualMachines/jdk1.8.0_192.jdk/Contents/Home/include
-            -DOPENCV_JAVA_TARGET_VERSION=1.8
-            ```
-            but your system may be different.
-            
-            * Note that these are defined as 
-                * `JAVA_INCLUDE_PATH`: the include path to `jni.h`
-                * `JAVA_INCLUDE_PATH2`: the include path to `jni_md.h`
-                * `JAVA_AWT_INCLUDE_PATH`: the include path to `jawt.h`
-            * If these files are not found where indicated, the Java code will not be built (but you will not be notified).
-        * Once these changes are complete, save the file and exit the editor.
-5. Run the build.
-    * `brew install --build-from-source opencv`
-        * Depending upon your machine and environment, this build can take a few minutes to close to an hour. This command will download the source code & compile it.
-    * At the end, you should see no errors.  You can check that everything built correctly by looking at the folder/directory `/usr/local/opt/opencv/share/java/opencv4`.  This directory should exist, and contain one `.jar` file and one `.dylib` file. You can also look at  `/usr/local/Cellar/opencv/<opencv version>/share/java/opencv4/`, where `<opencv version>` is a representation of version of OpenCV installed. (On this developer's machine at the time of this writing, the current version is 4.5.3_2). The former directory is easier to find -- it is symlinked to the latter.
-        * If these directories do not exist or don't contain the expected files, your build did not build required Java files.  Check your edits to the formula.
-        * Note that if you need to rebuild, you will need to `brew uninstall opencv` before doing the install again.
-6. Set the environment variable OPENCV_LOC to the directory containing the OpenCV Java files.
-
-    * (using bash) `export OPENCV_LOC=/usr/local/opt/opencv/share/java/opencv4`
-    * (using csh) `setenv OPENCV_LOC /usr/local/opt/opencv/share/java/opencv4`
-
-Once these have completed, you have successfully installed OpenCV, and it is ready to use to build the Object Recognition Connector.
-            
+ 
  
 ### Building the ObjectRecognitionConnector
 
-1.  If you intend to use any of the implementations that require OpenCV, you must install OpenCV version 4 (any version 4 should be fine) for
-Java.  See the [Building OpenCV](#building-opencv) section. Once it's installed, copy 
-the jar and (lib)opencv_java410.dll/.so/.dylib to a single folder, then set the environment variable OPENCV_LOC to that 
-folder. Some features may depend on additional .dll/.so/.dylib files, such as FFmpeg for IP cameras.
-    *   **NOTE:** If you are using a Windows or Linux machine, you may need to add the `opencv_ffmpeg410_64.dll` or 
-    `opencv_ffmpeg410_64.so` file, respectively, to the OPENCV_LOC folder. This file is located in the same directory as the 
-    other OpenCV .jar/.dll/.so/.dylib files. (Use `opencv_ffmpeg410.dll` or `opencv_ffmpeg410.so` for 32 bit version.)
-        *   A typical indicator that you will need to add this file is if OpenCV cannot open video streams/files.
-        * Note that the version numbers (_e.g._, `410`) on these libraries will vary based on the versions installed.
-    *   The implementations dependent on OpenCV are FileRetriever, NetworkStreamRetriever, and CameraRetriever.
-2.  Clone this repository (vantiq-extension-sources) and navigate into `<repo location>/vantiq-extension-sources`.
-3.  Run `./gradlew objectRecognitionSource:assemble`.
-4.  Navigate to `<repo location>/vantiq-extension-sources/objectRecognitionSource/build/distributions`. The zip and tar
+1.  Clone this repository (vantiq-extension-sources) and navigate into `<repo location>/vantiq-extension-sources`.
+2.  Run `./gradlew objectRecognitionSource:assemble`.
+3.  Navigate to `<repo location>/vantiq-extension-sources/objectRecognitionSource/build/distributions`. The zip and tar
     files both contain the same files, so choose whichever you prefer.
-5.  Uncompress the file in the location that you would like to install the program.
-6.  Run `<install location>/objectRecognitionSource/bin/objectRecognitionSource` with a local server.config file or
+4.  Uncompress the file in the location that you would like to install the program.
+5.  Run `<install location>/objectRecognitionSource/bin/objectRecognitionSource` with a local server.config file or
 specifying the [server config file](#serverConfig) as the first argument. Note that the `server.config` file can be placed in the `<install location>/objectRecognitionSource/serverConfig/server.config` or `<install location>/objectRecognitionSource/server.config` locations.
 
 ## Logging
@@ -175,13 +97,7 @@ sources inside your own code, then it is what you will use.
 1.  Clone this repository (vantiq-extension-sources) and navigate into `<repo location>/vantiq-extension-sources`.
     *   If you know that you will not use specific classes in the *.neuralNet or *.imageRetriever packages you can
         remove them now.
-    *   FileRetriever, NetworkStreamRetriever, and CameraRetriever all use OpenCV, which is not in the gradle
-        dependencies. If they are not removed you must install OpenCV, set the environment variable
-        OPENCV_LOC to the folder containing the jar, and ensure that when running your code the jar is in the classpath
-        and (lib)opencv_javaXXX.dll/.so/.dylib is in a folder in `java.library.path` (where XXX is replaced by the version of OpenCV you've installed -- _e.g._, 453, 410, _etc_). You may see a warning about not 
-        having (lib)opencv_javaXXX.dll/.so/.dylib in the correct directory when compiling the objectRecognition jar,
-        but this can be safely ignored since you will be setting the path yourself. Instructions for installing
-        OpenCV can be found at the [official site](https://opencv.org/releases/). Please see [Building OpenCV](#building-opencv) for instructions on generating these libraries.
+    *   FileRetriever, NetworkStreamRetriever, and CameraRetriever.
 2.  Run `./gradlew objectRecognitionSource:assemble` or `.\gradlew objectRecognitionSource:assemble` depending on the
     OS.
 3.  Navigate to `<repo location>/vantiq-extension-sources/objectRecognitionSource/build/libs` and copy
@@ -190,8 +106,8 @@ sources inside your own code, then it is what you will use.
     your project.
     *   The gradle build file specifies every dependency that is used only in neural net or image retriever
         implementations. If you removed any classes in step 1, use the comments to identify which dependencies are
-        no longer needed. OpenCV is automatically ignored if all its dependents are removed, so it can be ignored.
-
+        no longer needed.
+        
 ### Using in Your Own Code
 
 The ObjectRecognitionCore class has four public functions. The constructor takes in the same arguments passed through
@@ -794,7 +710,7 @@ before running `./gradlew assemble` or by inserting the class as a jar into
 
 ### Camera Retriever<a name="camRet" id="camRet"></a>
 
-This implementation uses OpenCV to capture images from a camera connected directly to a computer. An error is thrown
+This implementation uses JavaCV/OpenCV to capture images from a camera connected directly to a computer. An error is thrown
 whenever an image cannot be read successfully. Fatal errors are thrown only when the camera is inaccessible in non-Query
 mode.  
 
@@ -807,7 +723,7 @@ The timestamp is captured immediately before the image is grabbed from the camer
     
 ### Network Stream Retriever<a name="netRet" id="netRet"></a>
 
-This implementation uses OpenCV to capture live frames from a camera connected to a network address. Errors are thrown
+This implementation uses JavaCV/OpenCV to capture live frames from a camera connected to a network address. Errors are thrown
 whenever an image cannot be read successfully, whenever the provided URL uses an unsupported protocol, whenever the URL
 was unable to be opened, or whenever the URL does not represent a video stream. Fatal errors are thrown only when the
 camera is inaccessible in non-Query mode, (i.e. if the video stream has ended).  
@@ -826,7 +742,7 @@ The timestamp is captured immediately before the image is grabbed from the camer
 
 ### File Retriever<a name="fileRet" id="fileRet"></a>
 
-This implementation reads files from the disk using OpenCV for the videos. `fileLocation` must be a valid file at
+This implementation reads files from the disk using JavaCV/OpenCV for the videos. `fileLocation` must be a valid file at
 initialization. The initial image file can be replaced while the source is running, but the video cannot. For Queries,
 new files can be specified using the `fileLocation` and `fileExtension` options, and defaults to the initial file
 if `fileLocation` is not set. Queried videos can specify which frame of the video to access using the `targetFrame`
@@ -1058,7 +974,7 @@ into the `CLASSPATH` variable found in `<install location>/objectRecognitionSour
 and `<install location>/objectRecognitionSource/bin/objectRecognitionSource.bat` and remove the `libtensorflow*` files
 in `<install location>/objectRecognitionSource/lib`.  
 
-OpenCV will also display errors that look like `warning: Error opening file
+JavaCV/OpenCV will also display errors that look like `warning: Error opening file
 (/build/opencv/modules/videoio/src/cap_ffmpeg_impl.hpp:856)` and `warning: invalidLocation
 (/build/opencv/modules/videoio/src/cap_ffmpeg_impl.hpp:857)`. These are expected, as the tests need to ensure correct
 behavior when the file cannot be found.
@@ -1084,7 +1000,10 @@ are documented, and most if not all are in ObjectDetector and IOUtil.
 
 JSch is licensed under a [BSD-style license](http://www.jcraft.com/jsch/LICENSE.txt).
 
-OpenCV is licensed under the [BSD 3-clause license](https://opencv.org/license.html) or the [Apache Version 2.0 License](http://www.apache.org/licenses/LICENSE-2.0), depending upon the version of OpenCV you've installed. OpenCV typically uses third party
+JavaCV is licensed under the [Apache Version 2.0 License](http://www.apache.org/licenses/LICENSE-2.0) with Classpath Exceptions. Alternatively, it can be licensed under the [GNU General Public License (GPLv2), version 2 or better](https://www.gnu.org/licenses/old-licenses/gpl-2.0.html).
+JavaCV incorporates OpenCV.
+
+OpenCV is licensed under the [BSD 3-clause license](https://opencv.org/license.html) or the [Apache Version 2.0 License](http://www.apache.org/licenses/LICENSE-2.0), depending upon the version of OpenCV included. OpenCV may use third party
 components that may have stricter licenses and other licenses in this project. It is the responsibility of the
 user of this library to ensure that they meet all licensing requirements of components in or used by their OpenCV build.
 
