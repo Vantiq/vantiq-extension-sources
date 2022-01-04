@@ -214,7 +214,7 @@ task copyOldYoloModels(type: Copy, dependsOn: [configurations.testRuntimeClasspa
 
 task copyTestResources(type: Copy, dependsOn: [configurations.testRuntimeClasspath, configurations.oldYoloNames]) {
     from configurations.testRuntimeClasspath.find { it.name == 'sampleVideo-1.0.mov' },
-        configurations.testRuntimeClasspath.find { it.name == 'nothingVideo-1.0.mov' },
+         configurations.testRuntimeClasspath.find { it.name == 'nothingVideo-1.0.mov' },
         sourceSets.test.resources.asList()
 
     into "$buildDir/testResources/"
