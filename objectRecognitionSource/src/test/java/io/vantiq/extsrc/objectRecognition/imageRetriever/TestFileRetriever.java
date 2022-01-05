@@ -10,6 +10,7 @@
 package io.vantiq.extsrc.objectRecognition.imageRetriever;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeTrue;
@@ -210,6 +211,7 @@ public class TestFileRetriever extends ObjRecTestBase {
     
     @Test
     public void testVideoBasicRead() {
+        System.out.println("Reading & setting frame number");
         try {
             Map<String, String> config = new LinkedHashMap<>();
             config.put("fileLocation", VIDEO_LOCATION);
@@ -220,12 +222,44 @@ public class TestFileRetriever extends ObjRecTestBase {
         }
         try {
             ImageRetrieverResults results;
+            Map od;
             results = fr.getImage();
+            int frameCount = (Integer) results.getOtherData().get("videoFrameCount");
             byte[] data = results.getImage();
+            od = results.getOtherData();
+            assert od.get("releaseException") == null;
             assert data != null;
             assert data.length >= 640000 && data.length <= 660000;
+
+            // Now, ensure that we can read the next image
+            results = fr.getImage();
+            od = results.getOtherData();
+            assert od.get("releaseException") == null;
+            byte[] data2 = results.getImage();
+            assert data2 != null;
+            assert data2.length >= 640000 && data2.length <= 660000;
+            assertNotEquals(data, data2);
+
+            // Now, repeat until done, making sure that each image is different from the previous one
+
+            int loopLimit = Math.min(50, frameCount);
+            int loopCount = 0;
+            while (loopCount++ < loopLimit) {
+                byte[] oldData = data2;
+                results = fr.getImage();
+                od = results.getOtherData();
+                assert od.get("releaseException") == null;
+                data2 = results.getImage();
+                int nextFrameNumber = (Integer) od.get("frame");
+                assert data2 != null;
+                assert nextFrameNumber < frameCount;
+                // otherData["frame"] is, in fact, the next frame number.
+                // So we'll expect it to be the two we started with (0 & 1 + another) == +2
+                assertEquals(loopCount + 2, nextFrameNumber);
+                assertNotEquals(oldData, data2);
+            }
         } catch (ImageAcquisitionException e) {
-            fail("Exception occurred when obtaining image: " + e.toString());
+            fail("Exception occurred when obtaining image: " + e);
         }
     }
     
@@ -260,7 +294,7 @@ public class TestFileRetriever extends ObjRecTestBase {
             results = fr.getImage(request);
             byte[] data = results.getImage();
             assert data != null;
-            assert data.length >= 620000 && data.length <= 650000;
+            assert data.length >= 620000 && data.length <= 660000;
         } catch (ImageAcquisitionException e) {
             fail("Exception occurred when requesting frame 4 of video: " + e.toString());
         }

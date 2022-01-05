@@ -17,14 +17,19 @@ import io.vantiq.extsrc.objectRecognition.ObjectRecognitionCore;
 import io.vantiq.extsrc.objectRecognition.exception.FatalImageException;
 import io.vantiq.extsrc.objectRecognition.exception.ImageAcquisitionException;
 
-import org.bytedeco.javacpp.Loader;
-import org.bytedeco.opencv.opencv_java;
-import org.opencv.core.Core;
-import org.opencv.core.Mat;
-import org.opencv.core.MatOfByte;
-import org.opencv.imgcodecs.Imgcodecs;
-import org.opencv.videoio.VideoCapture;
-import org.opencv.videoio.Videoio;
+import org.bytedeco.javacpp.BytePointer;
+import org.bytedeco.javacv.FFmpegFrameGrabber;
+import org.bytedeco.javacv.Frame;
+import org.bytedeco.javacv.FrameGrabber;
+import org.bytedeco.javacv.OpenCVFrameConverter;
+import org.bytedeco.opencv.opencv_core.Size;
+import org.bytedeco.opencv.opencv_core.Mat;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import static org.bytedeco.opencv.global.opencv_imgcodecs.imread;
+import static org.bytedeco.opencv.global.opencv_imgcodecs.imencode;
+
 
 /**
  * This implementation reads files from the disk, using OpenCV for the videos. {@code fileLocation} must be a valid file
@@ -67,10 +72,13 @@ import org.opencv.videoio.Videoio;
 public class FileRetriever implements ImageRetrieverInterface {
 
     String defaultImageLocation;
-    VideoCapture capture;
+    FFmpegFrameGrabber capture;
     Boolean isMov = false;
     int frameInterval;
-    
+    int currentFrameNumber = 0;
+    Logger log = LoggerFactory.getLogger(this.getClass().getCanonicalName());
+
+
     // Constants for source configuration
     private static final String FILE_EXTENSION = "fileExtension";
     private static final String FILE_LOCATION = "fileLocation";
@@ -86,39 +94,28 @@ public class FileRetriever implements ImageRetrieverInterface {
             }
         }
 
-        // Load OpenCV
-        try {
-            Loader.load(opencv_java.class);
-        } catch (Throwable t) {
-            throw new Exception(this.getClass().getCanonicalName() + ".opencvDependency" 
-                    + ": Could not load OpenCv for FileRetriever."
-                    + "This is most likely due to a missing .dll/.so/.dylib. Please ensure that the environment "
-                    + "variable 'OPENCV_LOC' is set to the directory containing '" + Core.NATIVE_LIBRARY_NAME
-                    + "' and any other library requested by the attached error", t);
-        }
-        
         // Save the initial file location
         if (dataSourceConfig.get(FILE_LOCATION) instanceof String) {
             defaultImageLocation = (String) dataSourceConfig.get(FILE_LOCATION);
             // Setup OpenCV to read the video if the file is a video
             if (isMov) {
                 // Open the requested file
-                capture = new VideoCapture(defaultImageLocation);
-                
-                // Exit if the video cannot be read
-                if (!capture.isOpened()) {
+                capture = new FFmpegFrameGrabber(defaultImageLocation);
+                try {
+                    capture.start();
+                } catch (Exception e) {
                     capture.release();
                     if (!new File(defaultImageLocation).exists()) {
                         throw new ImageAcquisitionException(this.getClass().getCanonicalName() + ".mainVideoDoesNotExist: "
                                 + "The requested video '" + defaultImageLocation + "' does not exist");
                     }
-                    throw new IllegalArgumentException(this.getClass().getCanonicalName() + ".invalidMainVideo: " 
+                    throw new IllegalArgumentException(this.getClass().getCanonicalName() + ".invalidMainVideo: "
                             + "Intended video '" + defaultImageLocation + "' could not be opened. Most likely OpenCV is not "
                             + "compiled with the codecs required to read this video type");
                 }
-                
+
                 // Obtain the frame rate of the video, defaulting to 24
-                double videoFps = capture.get(Videoio.CAP_PROP_FPS);
+                double videoFps = capture.getFrameRate();
                 if (videoFps == 0) {
                     videoFps = 24;
                 }
@@ -133,7 +130,6 @@ public class FileRetriever implements ImageRetrieverInterface {
                 } else {
                     frameInterval = (int) Math.ceil(videoFps / fps);
                 }
-                
             }
         }
     }
@@ -149,46 +145,53 @@ public class FileRetriever implements ImageRetrieverInterface {
         
         results.setOtherData(otherData);
         otherData.put("file", defaultImageLocation);
+        if (capture != null) {
+            otherData.put("videoFrameCount", capture.getLengthInVideoFrames());
+        }
         
         if (isMov) {
             Mat matrix = new Mat();
             // Save the current position for later.
-            double val = capture.get(Videoio.CAP_PROP_POS_FRAMES);
-            
-            capture.read(matrix);
+            log.debug("Reading frame number {}", currentFrameNumber);
+
+            matrix = grabFrameAsMat();
             // Exit if nothing could be read
             if (matrix.empty()) {
-                capture.release();
-                matrix.release();
+                close();
                 throw new FatalImageException(this.getClass().getCanonicalName() + ".defaultVideoReadError: " 
                          + "Default video could not be read. Most likely the video completed reading.");
             }
-            
-            // Move forward by the number of frames specified in the Configuration
-            val += frameInterval;
-            capture.set(Videoio.CAP_PROP_POS_FRAMES, val);
-            
+
             // Translate the image to jpeg
             byte[] imageBytes = convertToJpeg(matrix);
             if (imageBytes == null) {
                 throw new ImageAcquisitionException(this.getClass().getCanonicalName() + ".videoConversionError: " 
-                        + "Could not convert frame #" + val + " from video '" + defaultImageLocation 
+                        + "Could not convert frame #" + currentFrameNumber + " from video '" + defaultImageLocation
                         + "' into a jpeg image");
             }
-            
-            otherData.put("frame", val);
+
+            // Move forward by the number of frames specified in the Configuration
+            currentFrameNumber += frameInterval;
+            try {
+                log.debug("Setting next frame number to {}", currentFrameNumber);
+                capture.setVideoFrameNumber(currentFrameNumber);
+            } catch (FFmpegFrameGrabber.Exception e) {
+                throw new ImageAcquisitionException(this.getClass().getCanonicalName() + ".videoSeekError: "
+                        + "Could not advance to frame #" + currentFrameNumber + " from video '" + defaultImageLocation
+                        + "'.", e);
+            }
+            otherData.put("frame", currentFrameNumber);
             results.setImage(imageBytes);
                     
             return results;
         } else if (defaultImageLocation != null){
             // Read the expected image
             otherData.put("file", defaultImageLocation);
-            Mat image = Imgcodecs.imread(defaultImageLocation);
-            if (image == null || image.empty()) {
-                if (image != null) {
-                    image.release();
-                }
-                
+            Mat image = imread(defaultImageLocation);
+
+            if (image.empty()) {
+                image.release();
+
                 if (!new File(defaultImageLocation).exists()) {
                     throw new ImageAcquisitionException(this.getClass().getCanonicalName() + ".defaultImageDoesNotExist: "
                             + "The default image does not exist");
@@ -239,28 +242,26 @@ public class FileRetriever implements ImageRetrieverInterface {
                 String imageFile = (String) request.get("DSfileLocation");
                 otherData.put("file", imageFile);
                 
-                VideoCapture newcapture = new VideoCapture(imageFile);
+                FFmpegFrameGrabber newcapture = new FFmpegFrameGrabber(imageFile);
+                try {
+                    newcapture.start();
+                } catch (FFmpegFrameGrabber.Exception e) {
+                    if (!new File(imageFile).exists()) {
+                        throw new ImageAcquisitionException(this.getClass().getCanonicalName() + ".queryImageDoesNotExist: "
+                                + "The requested image '" + imageFile + "' does not exist", e);
+                    }
+                    throw new ImageAcquisitionException(this.getClass().getCanonicalName() + ".queryImageUnreadable: "
+                            + "Could not read requested file '" + imageFile + "'. "
+                            + "Most likely the image was in an unreadable format", e);
+                }
                 Mat matrix = new Mat();
                 
-                // Make sure the video opened
-                if (!newcapture.isOpened()) {
-                    newcapture.release();
-                    matrix.release();
-                    
-                    if (!new File(imageFile).exists()) {
-                        throw new ImageAcquisitionException(this.getClass().getCanonicalName() + ".queryVideoDoesNotExist: "
-                                + "The requested video '" + imageFile + "' does not exist");
-                    }
-                    throw new ImageAcquisitionException(this.getClass().getCanonicalName() + ".invalidVideoQueried: " 
-                            + "Requested video '" + imageFile + "' could not be opened");
-                }
-                
                 // Calculate the specified frame
-                int targetFrame = 0;
+                int targetFrame = 1;
                 if (request.get("DStargetFrame") instanceof Number) {
                     targetFrame = ((Number) request.get("DStargetFrame")).intValue();
                 } else if (request.get("DStargetTime") instanceof Number) {
-                    double fps = newcapture.get(Videoio.CAP_PROP_FPS);
+                    double fps = newcapture.getFrameRate();
                     if (fps == 0) {
                         fps = 24;
                     }
@@ -269,26 +270,48 @@ public class FileRetriever implements ImageRetrieverInterface {
                 
                 // Ensure that targetFrame is inside the bounds of the video, and that we know how many frames are
                 // in the video
-                double frameCount = newcapture.get(Videoio.CAP_PROP_FRAME_COUNT);
+                int frameCount = newcapture.getLengthInVideoFrames();
                 if (frameCount == 0) {
-                    newcapture.release();
+                    try {
+                        newcapture.release();
+                    } catch (FFmpegFrameGrabber.Exception e) {
+                        otherData.put("releaseException", e);
+                        // Otherwise, ignore
+                    }
                     matrix.release();
                     throw new ImageAcquisitionException(this.getClass().getCanonicalName() + ".videoPropertyError: " 
                             + "Video '" + imageFile + "' registers as 0 frames long");
                 } else if (targetFrame >= frameCount || targetFrame < 0) {
-                    newcapture.release();
+                    try {
+                        newcapture.release();
+                    } catch (FFmpegFrameGrabber.Exception e) {
+                        otherData.put("releaseException", e);
+                    }
                     matrix.release();
                     throw new ImageAcquisitionException(this.getClass().getCanonicalName() + ".invalidTargetFrame: " 
                             + "Requested frame " + targetFrame + " outside valid bounds (0," + frameCount + ") for "
                             + "video '"+ imageFile + "'");
                 }
-                newcapture.set(Videoio.CAP_PROP_POS_FRAMES, targetFrame);
-                
-                newcapture.read(matrix);
-                newcapture.release();
+                try {
+                    newcapture.setVideoFrameNumber(targetFrame);
+                } catch (FFmpegFrameGrabber.Exception e) {
+                    throw new ImageAcquisitionException(this.getClass().getCanonicalName() + ".videoSeekError2: "
+                            + "Could not advance to frame #" + currentFrameNumber + " from video '" + imageFile
+                            + "'.", e);
+                }
+
+                matrix = grabFrameAsMat(newcapture);
+                // Since we're going to release the stream, we need to clone the matrix.
+                // Otherwise, things go badly awry.
+                matrix = matrix.clone();
+                try {
+                    newcapture.release();
+                } catch (FFmpegFrameGrabber.Exception e) {
+                    otherData.put("releaseException", e);
+                    // Otherwise, ignore
+                }
                 // Exit if nothing could be read
                 if (matrix.empty()) {
-                    newcapture.release();
                     matrix.release();
                     
                     throw new ImageAcquisitionException(this.getClass().getCanonicalName() + ".videoUnreadable: " 
@@ -311,7 +334,8 @@ public class FileRetriever implements ImageRetrieverInterface {
                 // Read the expected image
                 String imageFile = (String) request.get("DSfileLocation");
                 otherData.put("file", imageFile);
-                Mat image = Imgcodecs.imread(imageFile);
+                Mat image = imread(imageFile);
+
                 if (image == null || image.empty()) {
                     if (image != null) {
                         image.release();
@@ -337,7 +361,7 @@ public class FileRetriever implements ImageRetrieverInterface {
             }
         } else {
             // Only try to use default if it is set
-            if ((isMov && capture.isOpened()) || defaultImageLocation != null) {
+            if (isMov || defaultImageLocation != null) {
                 try {
                     return getImage();
                 } catch (FatalImageException e) {
@@ -352,10 +376,42 @@ public class FileRetriever implements ImageRetrieverInterface {
         }
     }
 
+    protected Mat grabFrameAsMat() throws ImageAcquisitionException {
+        return grabFrameAsMat(capture);
+    }
+
+    protected Mat grabFrameAsMat(FFmpegFrameGrabber cap) throws ImageAcquisitionException {
+        try {
+            Frame frame = null;
+            int tryCount = 0;
+            while (frame == null && tryCount < 100) {
+                frame = cap.grabImage();
+                tryCount += 1;
+                if (frame != null) {
+                    if (!frame.getTypes().contains(Frame.Type.VIDEO)) {
+                        log.error("Found non-video frame: {}", frame.getTypes());
+                        continue;
+                    }
+                }
+            }
+
+            OpenCVFrameConverter.ToMat converterToMat = new OpenCVFrameConverter.ToMat();
+            return converterToMat.convertToMat(frame);
+        } catch (Exception e) {
+            throw new ImageAcquisitionException(this.getClass().getCanonicalName() + ".badImageGrab: "
+                    + "Could not obtain frame from file '" + defaultImageLocation + "': " + e, e);
+        }
+    }
+
     @Override
     public void close() {
         if (capture != null) {
-            capture.release();
+            try {
+                capture.release();
+                capture.close();
+            } catch (FrameGrabber.Exception e) {
+                log.warn("Error encountered releasing capture: ", e);
+            }
         }
     }
 
@@ -365,17 +421,28 @@ public class FileRetriever implements ImageRetrieverInterface {
      * @return      The bytes of the image in jpeg format, or null if it could not be converted 
      */
     byte[] convertToJpeg(Mat image) {
-        MatOfByte matOfByte = new MatOfByte();
+        // JPG conversion requires a buffer into which we'll place the jpg.  However, we have to guess at the size
+        // beforehand.  To do this, we'll work out the size of the uncompressed image in the passed-in Mat,
+        // and use that as our buffer size.  JPG's are compressed, so the results should be smaller...
+        Size s = image.size();
+        int maxSize = s.height() * s.width();
+        byte[] buf = new byte[maxSize];
+        BytePointer bytes = new BytePointer(buf);
+        log.debug("Image facts: size: h:{}, w: {}, using buffer size (h*w): {}", s.height(), s.width(), maxSize);
+
         // Translate the image into jpeg, return null if it cannot
-        if (!Imgcodecs.imencode(".jpg", image, matOfByte)) {
-            matOfByte.release();
-            image.release();
-            return null;
+        byte[] imageBytes = null;
+        if (image.empty()) {
+            log.warn("Cannot convert empty image to jpg");
+        } else if (imencode(".jpg", image, bytes)) {
+            log.debug("bytes stuff: limit: {}, position: {}, capacity: {}", bytes.limit(),
+                    bytes.position(), bytes.capacity());
+            imageBytes = bytes.getStringBytes();
+            log.debug("JPG length is: {}", imageBytes.length);
+        } else {
+            log.error("Failed to convert image to jpeg");
         }
-        byte [] imageByte = matOfByte.toArray();
-        matOfByte.release();
         image.release();
-        
-        return imageByte;
+        return imageBytes;
     }
 }

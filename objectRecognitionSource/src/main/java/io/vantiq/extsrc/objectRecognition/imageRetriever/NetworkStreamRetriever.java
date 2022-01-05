@@ -17,19 +17,15 @@ import java.net.URL;
 import java.util.Date;
 import java.util.Map;
 
-import org.bytedeco.javacpp.Loader;
+import org.bytedeco.javacpp.BytePointer;
 import org.bytedeco.javacv.FFmpegFrameGrabber;
 import org.bytedeco.javacv.Frame;
 import org.bytedeco.javacv.OpenCVFrameConverter;
-import org.bytedeco.opencv.opencv_java;
+import org.bytedeco.opencv.opencv_core.Size;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.opencv.core.Core;
-import org.opencv.core.Mat;
-import org.opencv.core.MatOfByte;
-import org.opencv.imgcodecs.Imgcodecs;
-import org.opencv.videoio.VideoCapture;
+import org.bytedeco.opencv.opencv_core.Mat;
 
 import io.vantiq.extsrc.objectRecognition.ObjectRecognitionCore;
 import io.vantiq.extsrc.objectRecognition.exception.FatalImageException;
@@ -37,6 +33,7 @@ import io.vantiq.extsrc.objectRecognition.exception.ImageAcquisitionException;
 
 import static org.bytedeco.ffmpeg.global.avutil.AV_LOG_ERROR;
 import static org.bytedeco.ffmpeg.global.avutil.av_log_set_level;
+import static org.bytedeco.opencv.global.opencv_imgcodecs.imencode;
 
 /**
  * Captures images from an IP camera.
@@ -67,18 +64,6 @@ public class NetworkStreamRetriever implements ImageRetrieverInterface {
     @SuppressWarnings("unchecked")
     public void setupDataRetrieval(Map<String, ?> dataSourceConfig, ObjectRecognitionCore source) throws Exception {
         sourceName = source.getSourceName();
-        if (!openCvLoaded) {
-            try {
-                Loader.load(opencv_java.class);
-                openCvLoaded = true;
-            } catch (Throwable t) {
-                throw new Exception(this.getClass().getCanonicalName() + ".opencvDependency"
-                        + ": Could not load OpenCv for NetworkStreamRetriever."
-                        + "This is most likely due to a missing .dll/.so/.dylib. Please ensure that the environment "
-                        + "variable 'OPENCV_LOC' is set to the directory containing '" + Core.NATIVE_LIBRARY_NAME
-                        + "' and any other library requested by the attached error", t);
-            }
-        }
         if (dataSourceConfig.get(CAMERA) instanceof String){
             camera = (String) dataSourceConfig.get(CAMERA);
             try {
@@ -180,7 +165,7 @@ public class NetworkStreamRetriever implements ImageRetrieverInterface {
             }
 
             OpenCVFrameConverter.ToMat converterToMat = new OpenCVFrameConverter.ToMat();
-            return converterToMat.convertToOrgOpenCvCoreMat(frame);
+            return converterToMat.convertToMat(frame);
         } catch (Exception e) {
             throw new ImageAcquisitionException(this.getClass().getCanonicalName() + ".badImageGrab: "
                     + "Could not obtain frame from camera '" + camera + "': " + e.toString(), e);
@@ -198,7 +183,7 @@ public class NetworkStreamRetriever implements ImageRetrieverInterface {
         long before = System.currentTimeMillis();
         
         // Reading the next video frame from the camera
-        Mat matrix = new Mat();
+        Mat matrix;
         ImageRetrieverResults results = new ImageRetrieverResults();
         Date captureTime = new Date();
 
@@ -219,17 +204,8 @@ public class NetworkStreamRetriever implements ImageRetrieverInterface {
                         + "Could not obtain frame from camera '" + camera + "'");
             }
         }
-      
-        MatOfByte matOfByte = new MatOfByte();
-        // Translate the image into jpeg, error out if it cannot
-        if (!Imgcodecs.imencode(".jpg", matrix, matOfByte)) {
-            matOfByte.release();
-            matrix.release();
-            throw new ImageAcquisitionException(this.getClass().getCanonicalName() + ".mainCameraConversionError: " 
-                    + "Could not convert the frame from camera '" + camera + "' into a jpeg image");
-        }
-        byte [] imageByte = matOfByte.toArray();
-        matOfByte.release();
+
+        byte [] imageByte = convertMatToJpeg(matrix);
         matrix.release();
         
         results.setImage(imageByte);
@@ -247,55 +223,20 @@ public class NetworkStreamRetriever implements ImageRetrieverInterface {
      */
     @Override
     public ImageRetrieverResults getImage(Map<String, ?> request) throws ImageAcquisitionException {
-        VideoCapture cap;
-        Object camId;
+        FFmpegFrameGrabber cap = null;
         ImageRetrieverResults results = new ImageRetrieverResults();
-        Date captureTime;
-        
+
         if (request.get("DScamera") instanceof String) {
             String cam = (String) request.get("DScamera");
-            camId = cam;
-            cap = new VideoCapture(cam);
-        } else if (capture == null) {
+            cap = new FFmpegFrameGrabber(cam);
+        }
+
+        if (cap == null) {
             throw new ImageAcquisitionException(this.getClass().getCanonicalName() + ".noMainCamera: " 
                     + "No camera was requested and no main camera was specified at initialization.");
-        } else  {// if (capture.isOpened()){
-            return getImage();
         }
 
         return getImage();
-        // FIXME -- sort this all out & fix it up with new structure
-//        if (!cap.isOpened()) {
-//            cap.release();
-//            throw new ImageAcquisitionException(this.getClass().getCanonicalName() + ".queryCameraUnreadable: "
-//                    + "Could not open camera '" + camId + "'");
-//        }
-//        Mat mat = new Mat();
-//
-//        captureTime = new Date();
-//        cap.read(mat);
-//        if (mat.empty()) {
-//            cap.release();
-//            mat.release();
-//            throw new ImageAcquisitionException(this.getClass().getCanonicalName() + ".queryCameraReadError: "
-//                    + "Could not obtain frame from camera '" + camId + "'");
-//        }
-//        MatOfByte matOfByte = new MatOfByte();
-//        // Translate the image into jpeg, error out if it cannot
-//        if (!Imgcodecs.imencode(".jpg", mat, matOfByte)) {
-//            matOfByte.release();
-//            mat.release();
-//            throw new ImageAcquisitionException(this.getClass().getCanonicalName() + ".queryCameraConversionError: "
-//                    + "Could not convert the frame from camera '" + camera + "' into a jpeg image");
-//        }
-//        byte [] imageByte = matOfByte.toArray();
-//        matOfByte.release();
-//        mat.release();
-//        cap.release();
-//
-//        results.setImage(imageByte);
-//        results.setTimestamp(captureTime);
-//        return results;
     }
     
     public void diagnoseConnection() throws ImageAcquisitionException {
@@ -332,5 +273,36 @@ public class NetworkStreamRetriever implements ImageRetrieverInterface {
                     + "Unable to release framegrabber for cammera : " + camera, e);
 
         }
+    }
+
+    /**
+     * Converts an image into jpeg format and releases the Mat that held the original image
+     * @param image The image to convert
+     * @return      The bytes of the image in jpeg format, or null if it could not be converted
+     */
+    byte[] convertMatToJpeg(Mat image) {
+        // JPG conversion requires a buffer into which we'll place the jpg.  However, we have to guess at the size
+        // beforehand.  To do this, we'll work out the size of the uncompressed image in the passed-in Mat,
+        // and use that as our buffer size.  JPG's are compressed, so the results should be smaller...
+        Size s = image.size();
+        int maxSize = s.height() * s.width();
+        byte[] buf = new byte[maxSize];
+        BytePointer bytes = new BytePointer(buf);
+        log.debug("Image facts: size: h:{}, w: {}, using buffer size (h*w): {}", s.height(), s.width(), maxSize);
+
+        // Translate the image into jpeg, return null if it cannot
+        byte[] imageBytes = null;
+        if (image.empty()) {
+            log.warn("Cannot convert empty image to jpg");
+        } else if (imencode(".jpg", image, bytes)) {
+            log.debug("bytes stuff: limit: {}, position: {}, capacity: {}", bytes.limit(),
+                    bytes.position(), bytes.capacity());
+            imageBytes = bytes.getStringBytes();
+            log.debug("JPG length is: {}", imageBytes.length);
+        } else {
+            log.error("Failed to convert image to jpeg");
+        }
+        image.release();
+        return imageBytes;
     }
 }
