@@ -17,18 +17,13 @@ import io.vantiq.extsrc.objectRecognition.ObjectRecognitionCore;
 import io.vantiq.extsrc.objectRecognition.exception.FatalImageException;
 import io.vantiq.extsrc.objectRecognition.exception.ImageAcquisitionException;
 
-import org.bytedeco.javacpp.BytePointer;
 import org.bytedeco.javacv.FFmpegFrameGrabber;
 import org.bytedeco.javacv.Frame;
 import org.bytedeco.javacv.FrameGrabber;
 import org.bytedeco.javacv.OpenCVFrameConverter;
-import org.bytedeco.opencv.opencv_core.Size;
 import org.bytedeco.opencv.opencv_core.Mat;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import static org.bytedeco.opencv.global.opencv_imgcodecs.imread;
-import static org.bytedeco.opencv.global.opencv_imgcodecs.imencode;
 
 
 /**
@@ -69,15 +64,11 @@ import static org.bytedeco.opencv.global.opencv_imgcodecs.imencode;
  *      <li>{@code frame}: Which frame of the file this represents. Only included when `fileExtension` is set to "mov".
  * </ul>
  */
-public class FileRetriever implements ImageRetrieverInterface {
+public class FileRetriever extends RetrieverBase implements ImageRetrieverInterface {
 
-    String defaultImageLocation;
-    FFmpegFrameGrabber capture;
     Boolean isMov = false;
     int frameInterval;
     int currentFrameNumber = 0;
-    Logger log = LoggerFactory.getLogger(this.getClass().getCanonicalName());
-
 
     // Constants for source configuration
     private static final String FILE_EXTENSION = "fileExtension";
@@ -96,21 +87,21 @@ public class FileRetriever implements ImageRetrieverInterface {
 
         // Save the initial file location
         if (dataSourceConfig.get(FILE_LOCATION) instanceof String) {
-            defaultImageLocation = (String) dataSourceConfig.get(FILE_LOCATION);
+            cameraOrFile = (String) dataSourceConfig.get(FILE_LOCATION);
             // Setup OpenCV to read the video if the file is a video
             if (isMov) {
                 // Open the requested file
-                capture = new FFmpegFrameGrabber(defaultImageLocation);
+                capture = new FFmpegFrameGrabber(cameraOrFile);
                 try {
                     capture.start();
                 } catch (Exception e) {
                     capture.release();
-                    if (!new File(defaultImageLocation).exists()) {
+                    if (!new File(cameraOrFile).exists()) {
                         throw new ImageAcquisitionException(this.getClass().getCanonicalName() + ".mainVideoDoesNotExist: "
-                                + "The requested video '" + defaultImageLocation + "' does not exist");
+                                + "The requested video '" + cameraOrFile + "' does not exist");
                     }
                     throw new IllegalArgumentException(this.getClass().getCanonicalName() + ".invalidMainVideo: "
-                            + "Intended video '" + defaultImageLocation + "' could not be opened. Most likely OpenCV is not "
+                            + "Intended video '" + cameraOrFile + "' could not be opened. Most likely OpenCV is not "
                             + "compiled with the codecs required to read this video type");
                 }
 
@@ -144,7 +135,7 @@ public class FileRetriever implements ImageRetrieverInterface {
         Map<String, Object> otherData = new LinkedHashMap<>();
         
         results.setOtherData(otherData);
-        otherData.put("file", defaultImageLocation);
+        otherData.put("file", cameraOrFile);
         if (capture != null) {
             otherData.put("videoFrameCount", capture.getLengthInVideoFrames());
         }
@@ -163,10 +154,10 @@ public class FileRetriever implements ImageRetrieverInterface {
             }
 
             // Translate the image to jpeg
-            byte[] imageBytes = convertToJpeg(matrix);
+            byte[] imageBytes = convertMatToJpeg(matrix);
             if (imageBytes == null) {
                 throw new ImageAcquisitionException(this.getClass().getCanonicalName() + ".videoConversionError: " 
-                        + "Could not convert frame #" + currentFrameNumber + " from video '" + defaultImageLocation
+                        + "Could not convert frame #" + currentFrameNumber + " from video '" + cameraOrFile
                         + "' into a jpeg image");
             }
 
@@ -177,35 +168,35 @@ public class FileRetriever implements ImageRetrieverInterface {
                 capture.setVideoFrameNumber(currentFrameNumber);
             } catch (FFmpegFrameGrabber.Exception e) {
                 throw new ImageAcquisitionException(this.getClass().getCanonicalName() + ".videoSeekError: "
-                        + "Could not advance to frame #" + currentFrameNumber + " from video '" + defaultImageLocation
+                        + "Could not advance to frame #" + currentFrameNumber + " from video '" + cameraOrFile
                         + "'.", e);
             }
             otherData.put("frame", currentFrameNumber);
             results.setImage(imageBytes);
                     
             return results;
-        } else if (defaultImageLocation != null){
+        } else if (cameraOrFile != null){
             // Read the expected image
-            otherData.put("file", defaultImageLocation);
-            Mat image = imread(defaultImageLocation);
+            otherData.put("file", cameraOrFile);
+            Mat image = imread(cameraOrFile);
 
             if (image.empty()) {
                 image.release();
 
-                if (!new File(defaultImageLocation).exists()) {
+                if (!new File(cameraOrFile).exists()) {
                     throw new ImageAcquisitionException(this.getClass().getCanonicalName() + ".defaultImageDoesNotExist: "
                             + "The default image does not exist");
                 }
                 
                 throw new ImageAcquisitionException(this.getClass().getCanonicalName() + ".defaultImageUnreadable: " 
-                        + "Could not read requested file '" + defaultImageLocation + "'. "
+                        + "Could not read requested file '" + cameraOrFile + "'. "
                         + "Most likely the image was in an unreadable format");
             }
             
-            byte[] jpegImage = convertToJpeg(image);
+            byte[] jpegImage = convertMatToJpeg(image);
             if (jpegImage == null) {
                 throw new ImageAcquisitionException(this.getClass().getCanonicalName() + ".imageConversionError: " 
-                        + "Could not convert file '" + defaultImageLocation + "' into a jpeg image");
+                        + "Could not convert file '" + cameraOrFile + "' into a jpeg image");
             }
             
             results.setImage(jpegImage);
@@ -319,7 +310,7 @@ public class FileRetriever implements ImageRetrieverInterface {
                 }
                 
                 // Translate the image to jpeg
-                byte[] imageBytes = convertToJpeg(matrix);
+                byte[] imageBytes = convertMatToJpeg(matrix);
                 if (imageBytes == null) {
                     throw new ImageAcquisitionException(this.getClass().getCanonicalName() + ".queryVideoConversionError: " 
                             + "Could not convert frame #" + targetFrame + " from video '" + imageFile
@@ -350,10 +341,10 @@ public class FileRetriever implements ImageRetrieverInterface {
                             + "Most likely the image was in an unreadable format");
                 }
                 
-                byte[] jpegImage = convertToJpeg(image);
+                byte[] jpegImage = convertMatToJpeg(image);
                 if (jpegImage == null) {
                     throw new ImageAcquisitionException(this.getClass().getCanonicalName() + ".queryImageConversionError: " 
-                            + "Could not convert file '" + defaultImageLocation + "' into a jpeg image");
+                            + "Could not convert file '" + cameraOrFile + "' into a jpeg image");
                 }
                 
                 results.setImage(jpegImage);
@@ -361,7 +352,7 @@ public class FileRetriever implements ImageRetrieverInterface {
             }
         } else {
             // Only try to use default if it is set
-            if (isMov || defaultImageLocation != null) {
+            if (isMov || cameraOrFile != null) {
                 try {
                     return getImage();
                 } catch (FatalImageException e) {
@@ -399,7 +390,7 @@ public class FileRetriever implements ImageRetrieverInterface {
             return converterToMat.convertToMat(frame);
         } catch (Exception e) {
             throw new ImageAcquisitionException(this.getClass().getCanonicalName() + ".badImageGrab: "
-                    + "Could not obtain frame from file '" + defaultImageLocation + "': " + e, e);
+                    + "Could not obtain frame from file '" + cameraOrFile + "': " + e, e);
         }
     }
 
@@ -413,36 +404,5 @@ public class FileRetriever implements ImageRetrieverInterface {
                 log.warn("Error encountered releasing capture: ", e);
             }
         }
-    }
-
-    /**
-     * Converts an image into jpeg format and releases the Mat that held the original image
-     * @param image The image to convert
-     * @return      The bytes of the image in jpeg format, or null if it could not be converted 
-     */
-    byte[] convertToJpeg(Mat image) {
-        // JPG conversion requires a buffer into which we'll place the jpg.  However, we have to guess at the size
-        // beforehand.  To do this, we'll work out the size of the uncompressed image in the passed-in Mat,
-        // and use that as our buffer size.  JPG's are compressed, so the results should be smaller...
-        Size s = image.size();
-        int maxSize = s.height() * s.width();
-        byte[] buf = new byte[maxSize];
-        BytePointer bytes = new BytePointer(buf);
-        log.debug("Image facts: size: h:{}, w: {}, using buffer size (h*w): {}", s.height(), s.width(), maxSize);
-
-        // Translate the image into jpeg, return null if it cannot
-        byte[] imageBytes = null;
-        if (image.empty()) {
-            log.warn("Cannot convert empty image to jpg");
-        } else if (imencode(".jpg", image, bytes)) {
-            log.debug("bytes stuff: limit: {}, position: {}, capacity: {}", bytes.limit(),
-                    bytes.position(), bytes.capacity());
-            imageBytes = bytes.getStringBytes();
-            log.debug("JPG length is: {}", imageBytes.length);
-        } else {
-            log.error("Failed to convert image to jpeg");
-        }
-        image.release();
-        return imageBytes;
     }
 }
