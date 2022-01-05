@@ -231,7 +231,8 @@ public class NetworkStreamRetriever implements ImageRetrieverInterface {
             cap = new FFmpegFrameGrabber(cam);
         }
 
-        if (cap == null) {
+        // FIXME:  This seems incorrect -- we get the camera from above but ignore it.
+        if (capture == null) {
             throw new ImageAcquisitionException(this.getClass().getCanonicalName() + ".noMainCamera: " 
                     + "No camera was requested and no main camera was specified at initialization.");
         }
