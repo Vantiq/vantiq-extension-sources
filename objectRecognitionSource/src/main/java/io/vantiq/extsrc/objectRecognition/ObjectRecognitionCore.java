@@ -351,7 +351,11 @@ public class ObjectRecognitionCore {
                     }
                 }
                 log.debug("Notifying client with: {}", message);
-                client.sendNotification(message);
+                if (client != null) {
+                    client.sendNotification(message);
+                } else {
+                    log.debug("Unable to notify client as client is null,");
+                }
             }
         } catch (ImageProcessingException e) {
             log.warn("Could not process image", e);
