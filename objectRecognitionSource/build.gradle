@@ -78,12 +78,9 @@ test {
 
 tasks.withType(Test) {
     if (rootProject.hasProperty("TestAuthToken")) {
-        println('Setting TestAuthToken')
         systemProperty "TestAuthToken", rootProject.findProperty("TestAuthToken") ?: "empty"
     }
     if (rootProject.hasProperty("TestVantiqServer")) {
-        println('Setting TestVantiqServer')
-
         systemProperty "TestVantiqServer", rootProject.findProperty("TestVantiqServer") ?: "empty"
     }
     // Use the build dir as a base to get our various test artifacts.
