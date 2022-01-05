@@ -229,6 +229,14 @@ public class TestYoloQueriesLocationMapper extends NeuralNetTestBase {
         return mapper;
     }
 
+    /**
+     * Create basic source definition.  In this case, we'll define the source to read from our supplied
+     * file.  This allows a consistent set of results rather than depending upon some arbitrary camera
+     * feed to provide enough targets.
+     *
+     * @param imgConvSpec
+     * @return
+     */
     public static Map<String,Object> createSourceDef(Map<String, Object> imgConvSpec) {
         Map<String,Object> sourceDef = new LinkedHashMap<String,Object>();
         Map<String,Object> sourceConfig = new LinkedHashMap<String,Object>();
@@ -238,8 +246,9 @@ public class TestYoloQueriesLocationMapper extends NeuralNetTestBase {
         Map<String,Object> neuralNet = new LinkedHashMap<String,Object>();
 
         // Setting up dataSource config options
-        dataSource.put("camera", IP_CAMERA_URL);
-        dataSource.put("type", "network");
+        dataSource.put("fileLocation", VIDEO_LOCATION);
+        dataSource.put("fileExtension", "mov");
+        dataSource.put("type", "file");
 
         // Setting up general config options
         general.put("allowQueries", true);
