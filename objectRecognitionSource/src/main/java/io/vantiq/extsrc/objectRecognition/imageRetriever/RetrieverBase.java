@@ -23,6 +23,7 @@ import static org.bytedeco.ffmpeg.global.avutil.AV_LOG_ERROR;
 import static org.bytedeco.ffmpeg.global.avutil.av_log_set_level;
 import static org.bytedeco.opencv.global.opencv_imgcodecs.imencode;
 
+@SuppressWarnings({"PMD.PackageCase"})
 public class RetrieverBase {
     FFmpegFrameGrabber capture;
     String cameraOrFile;
