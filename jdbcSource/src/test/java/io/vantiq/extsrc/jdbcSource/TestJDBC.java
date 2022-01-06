@@ -559,12 +559,12 @@ public class TestJDBC extends TestJDBCBase {
         setupSource(createSourceDef(false, false));
         
         // Publish to the source in order to create a table
-        Map<String,Object> createParams = new LinkedHashMap<>();
+        Map<String, Object> createParams = new LinkedHashMap<>();
         createParams.put("query", CREATE_TABLE_DATETIME);
         vantiq.publish("sources", testSourceName, createParams);
         
         // Publish to the source in order to insert data into the table
-        Map<String,Object> insertParams = new LinkedHashMap<>();
+        Map<String, Object> insertParams = new LinkedHashMap<>();
         insertParams.put("query", INSERT_VALUE_DATETIME);
         vantiq.publish("sources", testSourceName, insertParams);
         
