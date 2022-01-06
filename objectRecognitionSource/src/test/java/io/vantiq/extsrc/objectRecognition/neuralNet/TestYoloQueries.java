@@ -1008,7 +1008,8 @@ public class TestYoloQueries extends NeuralNetTestBase {
         
         return sourceDef;
     }
-    
+
+    @SuppressWarnings({"PMD.DetachedTestCase"})
     public void addLocalTestImages() throws IOException {
         assert new File(OUTPUT_DIR).mkdirs();
         

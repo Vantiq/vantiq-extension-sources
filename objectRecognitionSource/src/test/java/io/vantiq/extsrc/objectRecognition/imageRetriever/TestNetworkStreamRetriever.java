@@ -18,10 +18,9 @@ import io.vantiq.extsrc.objectRecognition.exception.ImageAcquisitionException;
 
 public class TestNetworkStreamRetriever extends ObjRecTestBase {
 
-    final static String RTSP_CAMERA_ADDRESS = "rtsp://wowzaec2demo.streamlock.net/vod/mp4:BigBuckBunny_115k.mp4";
+    static final String RTSP_CAMERA_ADDRESS = "rtsp://wowzaec2demo.streamlock.net/vod/mp4:BigBuckBunny_115k.mp4";
     // Alternate purportedly opened, but sometimes apparently broken...
     // "rtsp://demo:demo@ipvmdemo.dyndns.org:5541/onvif-media/media.amp?profile=profile_1_h264&sessiontimeout=60&streamtype=unicast";
-
 
     NetworkStreamRetriever retriever;
     NoSendORCore source;

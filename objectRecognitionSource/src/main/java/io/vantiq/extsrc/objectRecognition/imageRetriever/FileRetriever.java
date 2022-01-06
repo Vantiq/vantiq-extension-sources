@@ -383,7 +383,7 @@ public class FileRetriever extends RetrieverBase implements ImageRetrieverInterf
                 if (frame != null) {
                     if (!frame.getTypes().contains(Frame.Type.VIDEO)) {
                         if (log.isDebugEnabled()) {
-                            log.error("Found non-video frame: {}", frame.getTypes());
+                            log.debug("Found non-video frame: {}", frame.getTypes());
                         }
                         continue;
                     }
