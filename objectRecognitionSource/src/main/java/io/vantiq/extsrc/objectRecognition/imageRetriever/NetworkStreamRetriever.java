@@ -144,7 +144,8 @@ public class NetworkStreamRetriever extends RetrieverBase implements ImageRetrie
                 throw new ImageAcquisitionException(this.getClass().getCanonicalName() + ".errorStopStart: "
                         + "Could not stop/start '" + cameraOrFile + "'", e);
             }
-        }    }
+        }
+    }
     
     /**
      * Obtain the most recent image from the camera
@@ -186,8 +187,10 @@ public class NetworkStreamRetriever extends RetrieverBase implements ImageRetrie
         results.setTimestamp(captureTime);
         
         after = System.currentTimeMillis();
-        log.debug("Image retrieving time for source " + sourceName + ": {}.{} seconds"
-                , (after - before) / 1000, String.format("%03d", (after - before) % 1000));
+        if (log.isDebugEnabled()) {
+            log.debug("Image retrieving time for source " + sourceName + ": {}.{} seconds",
+                    (after - before) / 1000, String.format("%03d", (after - before) % 1000));
+        }
         
         return results;
     }

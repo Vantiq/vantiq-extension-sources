@@ -1154,7 +1154,7 @@ public class TestYoloProcessor extends NeuralNetTestBase {
             assert !dNew.exists();
 
             // Checking that image was saved in VANTIQ
-            Thread.sleep(1000); //. FIXME was 1 sec
+            Thread.sleep(1000);
             checkUploadToVantiq(results.getLastFilename(), vantiq, VANTIQ_DOCUMENTS);
             vantiqSavedFiles.add(results.getLastFilename());
 

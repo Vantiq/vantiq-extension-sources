@@ -70,8 +70,6 @@ applicationDistribution.from("src/main/resources") {
 
 test {
     // set heap size for the test JVM(s)
-    // Java CV seems to impart more memory requirements for getting the same test results
-    // with gradle that we do with the IDE (even though the IDE is running tests via gradle).
     minHeapSize = "2048m"
     maxHeapSize = "2048m"
 }
@@ -187,8 +185,7 @@ task copyModels(type: Copy, dependsOn: [configurations.testRuntimeClasspath, con
 
 task copyOldCocoModels(type: Copy, dependsOn: [configurations.testRuntimeClasspath, configurations.oldYoloNames]) {
     from configurations.oldYoloNames.find { it.name == 'coco-1.0.pb' },
-        configurations.oldYoloNames.find { it.name == 'coco-1.0.names' }
-        
+         configurations.oldYoloNames.find { it.name == 'coco-1.0.names' }
 
     into "$buildDir/models/"
 }
@@ -196,7 +193,7 @@ task copyOldCocoModels(type: Copy, dependsOn: [configurations.testRuntimeClasspa
 
 task copyOldYoloModels(type: Copy, dependsOn: [configurations.testRuntimeClasspath, configurations.oldYoloNames]) {
     from configurations.oldYoloNames.find { it.name == 'yolo-1.0.pb' },
-        configurations.oldYoloNames.find { it.name == 'coco-1.0.names' }
+         configurations.oldYoloNames.find { it.name == 'coco-1.0.names' }
 
     rename { filename ->
         if (filename.contains("-1.0")) {
@@ -212,7 +209,7 @@ task copyOldYoloModels(type: Copy, dependsOn: [configurations.testRuntimeClasspa
 task copyTestResources(type: Copy, dependsOn: [configurations.testRuntimeClasspath, configurations.oldYoloNames]) {
     from configurations.testRuntimeClasspath.find { it.name == 'sampleVideo-1.0.mov' },
          configurations.testRuntimeClasspath.find { it.name == 'nothingVideo-1.0.mov' },
-        sourceSets.test.resources.asList()
+         sourceSets.test.resources.asList()
 
     into "$buildDir/testResources/"
 }

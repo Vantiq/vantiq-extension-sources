@@ -256,7 +256,6 @@ public class TestNoProcessorQueries extends NeuralNetTestBase {
         // Check there is only one file, and it's name is equivalent to the last saved file
         outputDirFiles = outputDir.listFiles();
         assert outputDirFiles != null;
-        assert outputDirFiles != null;
         assert outputDirFiles.length == 1;
         
         int index = core.lastQueryFilename.lastIndexOf('/') + 1;

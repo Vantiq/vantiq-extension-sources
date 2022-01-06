@@ -31,7 +31,7 @@ public class RetrieverBase {
 
     RetrieverBase() {
         // This av_log_set_level() call  turns off a boatload of warnings reading some types of cameras.
-        // Fix for the actual issue (which isn't a functional one) hasn't been found, apparently.]
+        // Fix for the actual issue (which isn't a functional one) hasn't been found, apparently.
         // See https://github.com/bytedeco/javacv/issues/780 for more information.
 
         av_log_set_level(AV_LOG_ERROR);
@@ -64,7 +64,9 @@ public class RetrieverBase {
                         bytes.position(), bytes.capacity());
             }
             imageBytes = bytes.getStringBytes();
-            log.debug("JPG length is: {}", imageBytes.length);
+            if (log.isDebugEnabled()) {
+                log.debug("JPG length is: {}", imageBytes.length);
+            }
         } else {
             log.error("Failed to convert image to jpeg");
         }

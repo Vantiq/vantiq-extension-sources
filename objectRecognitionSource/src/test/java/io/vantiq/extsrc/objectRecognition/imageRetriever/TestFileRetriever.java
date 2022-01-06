@@ -211,7 +211,6 @@ public class TestFileRetriever extends ObjRecTestBase {
     
     @Test
     public void testVideoBasicRead() {
-        System.out.println("Reading & setting frame number");
         try {
             Map<String, String> config = new LinkedHashMap<>();
             config.put("fileLocation", VIDEO_LOCATION);

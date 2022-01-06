@@ -62,7 +62,7 @@ public class CameraRetriever extends RetrieverBase implements ImageRetrieverInte
         long before = System.currentTimeMillis();
 
         // Reading the next video frame from the camera
-        org.bytedeco.opencv.opencv_core.Mat matrix;
+        Mat matrix;
         ImageRetrieverResults results = new ImageRetrieverResults();
         Date captureTime = new Date();
 
