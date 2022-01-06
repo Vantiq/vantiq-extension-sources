@@ -104,14 +104,14 @@ public class NetworkStreamRetriever extends RetrieverBase implements ImageRetrie
 
                 capture.setOption("rtsp_transport", rtspTransport);
 
-                if (log.isDebugEnabled()) {
-                    log.debug("Capture opened, Format: {}, codec: {}, Vid Options: {}",
+                if (log.isTraceEnabled()) {
+                    log.trace("Capture opened, Format: {}, codec: {}, Vid Options: {}",
                             capture.getFormat(), capture.getVideoCodecName(), capture.getOptions().toString());
                 }
             }
             capture.start();
-            if (log.isDebugEnabled()) {
-                log.debug("Capture started, Format: {}, codec: {} ({}), Vid Meta: {}",
+            if (log.isTraceEnabled()) {
+                log.trace("Capture started, Format: {}, codec: {} ({}), Vid Meta: {}",
                         capture.getFormat(), capture.getVideoCodecName(),
                         capture.getVideoCodec(), capture.getVideoMetadata().toString());
             }
@@ -135,8 +135,8 @@ public class NetworkStreamRetriever extends RetrieverBase implements ImageRetrie
             log.debug("Camera is via push protocol -- restarting...");
             try {
                 cap.restart();
-                if (log.isDebugEnabled()) {
-                    log.debug("Capture restarted, Format: {}, codec: {} ({}), Vid Meta: {}",
+                if (log.isTraceEnabled()) {
+                    log.trace("Capture restarted, Format: {}, codec: {} ({}), Vid Meta: {}",
                             capture.getFormat(), capture.getVideoCodecName(),
                             capture.getVideoCodec(), capture.getVideoMetadata().toString());
                 }

@@ -144,7 +144,7 @@ public class FileRetriever extends RetrieverBase implements ImageRetrieverInterf
         if (isMov) {
             Mat matrix = new Mat();
             // Save the current position for later.
-            log.debug("Reading frame number {}", currentFrameNumber);
+            log.trace("Reading frame number {}", currentFrameNumber);
 
             matrix = grabFrameAsMat();
             // Exit if nothing could be read
@@ -165,7 +165,7 @@ public class FileRetriever extends RetrieverBase implements ImageRetrieverInterf
             // Move forward by the number of frames specified in the Configuration
             currentFrameNumber += frameInterval;
             try {
-                log.debug("Setting next frame number to {}", currentFrameNumber);
+                log.trace("Setting next frame number to {}", currentFrameNumber);
                 capture.setVideoFrameNumber(currentFrameNumber);
             } catch (FFmpegFrameGrabber.Exception e) {
                 throw new ImageAcquisitionException(this.getClass().getCanonicalName() + ".videoSeekError: "
@@ -382,8 +382,8 @@ public class FileRetriever extends RetrieverBase implements ImageRetrieverInterf
                 tryCount += 1;
                 if (frame != null) {
                     if (!frame.getTypes().contains(Frame.Type.VIDEO)) {
-                        if (log.isDebugEnabled()) {
-                            log.debug("Found non-video frame: {}", frame.getTypes());
+                        if (log.isTraceEnabled()) {
+                            log.trace("Found non-video frame: {}", frame.getTypes());
                         }
                         continue;
                     }

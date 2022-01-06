@@ -34,7 +34,10 @@ public class RetrieverBase {
         // Fix for the actual issue (which isn't a functional one) hasn't been found, apparently.
         // See https://github.com/bytedeco/javacv/issues/780 for more information.
 
-        av_log_set_level(AV_LOG_ERROR);
+        if (!log.isTraceEnabled()) {
+            // allow info dump when working at trace level
+            av_log_set_level(AV_LOG_ERROR);
+        }
     }
 
     /**
@@ -50,8 +53,8 @@ public class RetrieverBase {
         int maxSize = s.height() * s.width();
         byte[] buf = new byte[maxSize];
         BytePointer bytes = new BytePointer(buf);
-        if (log.isDebugEnabled()) {
-            log.debug("Image facts: size: h:{}, w: {}, using buffer size (h*w): {}", s.height(), s.width(), maxSize);
+        if (log.isTraceEnabled()) {
+            log.trace("Image facts: size: h:{}, w: {}, using buffer size (h*w): {}", s.height(), s.width(), maxSize);
         }
 
         // Translate the image into jpeg, return null if it cannot
@@ -59,13 +62,13 @@ public class RetrieverBase {
         if (image.empty()) {
             log.warn("Cannot convert empty image to jpg");
         } else if (imencode(".jpg", image, bytes)) {
-            if (log.isDebugEnabled()) {
-                log.debug("bytes stuff: limit: {}, position: {}, capacity: {}", bytes.limit(),
+            if (log.isTraceEnabled()) {
+                log.trace("BytePointer Info: limit: {}, position: {}, capacity: {}", bytes.limit(),
                         bytes.position(), bytes.capacity());
             }
             imageBytes = bytes.getStringBytes();
-            if (log.isDebugEnabled()) {
-                log.debug("JPG length is: {}", imageBytes.length);
+            if (log.isTraceEnabled()) {
+                log.trace("JPG length is: {}", imageBytes.length);
             }
         } else {
             log.error("Failed to convert image to jpeg");
@@ -101,8 +104,8 @@ public class RetrieverBase {
                 tryCount += 1;
                 if (frame != null) {
                     if (!frame.getTypes().contains(Frame.Type.VIDEO)) {
-                        if (log.isDebugEnabled()) {
-                            log.debug("Found non-video frame: {}", frame.getTypes());
+                        if (log.isTraceEnabled()) {
+                            log.trace("Found non-video frame: {}", frame.getTypes());
                         }
                         continue;
                     }
