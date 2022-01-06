@@ -25,7 +25,6 @@ import org.bytedeco.opencv.opencv_core.Mat;
 
 import static org.bytedeco.opencv.global.opencv_imgcodecs.imread;
 
-
 /**
  * This implementation reads files from the disk, using OpenCV for the videos. {@code fileLocation} must be a valid file
  * at initialization if specified for a video. The initial image file can be replaced while the source is running, but the video cannot. For
@@ -76,6 +75,7 @@ public class FileRetriever extends RetrieverBase implements ImageRetrieverInterf
     private static final String FPS = "fps";
 
     @Override
+    @SuppressWarnings({"PMD.CognitiveComplexity", "PMD.AvoidDeeplyNestedIfStmts"})
     public void setupDataRetrieval(Map<String, ?> dataSourceConfig, ObjectRecognitionCore source) throws Exception {
         // Check if the file is a video
         if (dataSourceConfig.get(FILE_EXTENSION) instanceof String) {
@@ -130,6 +130,7 @@ public class FileRetriever extends RetrieverBase implements ImageRetrieverInterf
      * @throws FatalImageException  If no file was specified at configuration, or if the video has completed
      */
     @Override
+    @SuppressWarnings({"PMD.CognitiveComplexity"})
     public ImageRetrieverResults getImage() throws ImageAcquisitionException {
         ImageRetrieverResults results = new ImageRetrieverResults();
         Map<String, Object> otherData = new LinkedHashMap<>();
@@ -175,7 +176,7 @@ public class FileRetriever extends RetrieverBase implements ImageRetrieverInterf
             results.setImage(imageBytes);
                     
             return results;
-        } else if (cameraOrFile != null){
+        } else if (cameraOrFile != null) {
             // Read the expected image
             otherData.put("file", cameraOrFile);
             Mat image = imread(cameraOrFile);
@@ -211,6 +212,7 @@ public class FileRetriever extends RetrieverBase implements ImageRetrieverInterf
      * Read the specified file, or the file specified at configuration
      */
     @Override
+    @SuppressWarnings({"PMD.CognitiveComplexity"})
     public ImageRetrieverResults getImage(Map<String, ?> request) throws ImageAcquisitionException {
         ImageRetrieverResults results = new ImageRetrieverResults();
         Map<String, Object> otherData = new LinkedHashMap<>();
@@ -380,7 +382,9 @@ public class FileRetriever extends RetrieverBase implements ImageRetrieverInterf
                 tryCount += 1;
                 if (frame != null) {
                     if (!frame.getTypes().contains(Frame.Type.VIDEO)) {
-                        log.error("Found non-video frame: {}", frame.getTypes());
+                        if (log.isDebugEnabled()) {
+                            log.error("Found non-video frame: {}", frame.getTypes());
+                        }
                         continue;
                     }
                 }

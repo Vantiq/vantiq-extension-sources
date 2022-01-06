@@ -49,6 +49,7 @@ import io.vantiq.extsrc.objectRecognition.query.DateRangeFilter;
  * itself. start() will return a boolean describing whether or not it succeeded, and will wait up to 10 seconds if
  * necessary.
  */
+@SuppressWarnings({"PMD.TooManyFields"})
 public class ObjectRecognitionCore {
     String sourceName;
     String authToken;
@@ -306,6 +307,7 @@ public class ObjectRecognitionCore {
      * FatalImageException is received.
      * @param imageResults An {@link ImageRetrieverResults} containing the image to be translated
      */
+    @SuppressWarnings({"PMD.CognitiveComplexity"})
     public void sendDataFromImage(ImageRetrieverResults imageResults) {
         
         if (imageResults == null) {
@@ -340,8 +342,10 @@ public class ObjectRecognitionCore {
             if (!localNeuralNet.getClass().toString().contains("NoProcessor")) {
                 // Translate the results from the neural net and image into a message to send back 
                 Map message = createMapFromResults(imageResults, results);
-                log.debug("Message from results: {}", message.get("results"));
-                log.debug("Suppress value: {}", suppressEmptyNeuralNetResults);
+                if (log.isDebugEnabled()) {
+                    log.debug("Message from results: {}", message.get("results"));
+                    log.debug("Suppress value: {}", suppressEmptyNeuralNetResults);
+                }
 
                 // If suppressNullValues is set to true, then skip sending message results list is empty
                 if (suppressEmptyNeuralNetResults) {
@@ -360,9 +364,11 @@ public class ObjectRecognitionCore {
         } catch (ImageProcessingException e) {
             log.warn("Could not process image", e);
         } catch (FatalImageException e) {
-            log.error("Image processor of type '" + localNeuralNet.getClass().getCanonicalName() +
-                            "' failed unrecoverably", e);
-            log.error("Stopping");
+            if (log.isErrorEnabled()) {
+                log.error("Image processor of type '" + localNeuralNet.getClass().getCanonicalName() +
+                        "' failed unrecoverably", e);
+                log.error("Stopping");
+            }
             stop();
         } catch (RuntimeException e) {
             log.error("Neural net had an uncaught runtime exception", e);

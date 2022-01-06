@@ -68,16 +68,17 @@ public class CameraRetriever extends RetrieverBase implements ImageRetrieverInte
 
         matrix = grabFrameAsMat();
 
-        byte [] imageByte = convertMatToJpeg(matrix);
+        byte[] imageByte = convertMatToJpeg(matrix);
         matrix.release();
 
         results.setImage(imageByte);
         results.setTimestamp(captureTime);
 
         after = System.currentTimeMillis();
-        log.debug("Image retrieving time for source " + sourceName + ": {}.{} seconds"
-                , (after - before) / 1000, String.format("%03d", (after - before) % 1000));
-
+        if (log.isDebugEnabled()) {
+            log.debug("Image retrieving time for source " + sourceName + ": {}.{} seconds",
+                    (after - before) / 1000, String.format("%03d", (after - before) % 1000));
+        }
         return results;
     }
     
@@ -116,16 +117,17 @@ public class CameraRetriever extends RetrieverBase implements ImageRetrieverInte
         // Reading the next video frame from the camera
         Mat matrix = grabFrameAsMat(cap);
 
-        byte [] imageByte = convertMatToJpeg(matrix);
+        byte[] imageByte = convertMatToJpeg(matrix);
         matrix.release();
 
         results.setImage(imageByte);
         results.setTimestamp(captureTime);
 
         after = System.currentTimeMillis();
-        log.debug("Image retrieving time for source " + sourceName + ": {}.{} seconds"
-                , (after - before) / 1000, String.format("%03d", (after - before) % 1000));
-
+        if (log.isDebugEnabled()) {
+            log.debug("Image retrieving time for source " + sourceName + ": {}.{} seconds",
+                    (after - before) / 1000, String.format("%03d", (after - before) % 1000));
+        }
         return results;
     }
     

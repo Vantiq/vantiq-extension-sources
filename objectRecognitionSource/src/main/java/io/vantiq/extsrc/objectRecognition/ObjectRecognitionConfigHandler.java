@@ -65,7 +65,7 @@ import io.vantiq.extsrc.objectRecognition.neuralNet.NeuralNetInterface;
  * CameraRetriever, {@code ftp} for FtpRetriever, and {@code network} for NetworkStreamRetriever for the dataSource
  * config; and {@code yolo} for YoloProcessor for the neuralNet config.
  */
-@SuppressWarnings({"WeakerAccess"})
+@SuppressWarnings({"WeakerAccess", "PMD.TooManyFields"})
 public class ObjectRecognitionConfigHandler extends Handler<ExtensionServiceMessage> {
     
     Logger                  log;
@@ -521,6 +521,7 @@ public class ObjectRecognitionConfigHandler extends Handler<ExtensionServiceMess
      * @param general   The general portion of the configuration document
      * @return          true if the communication method could be setup, false otherwise
      */
+    @SuppressWarnings({"PMD.CognitiveComplexity"})
     private boolean prepareCommunication(Map<String, ?> general) {
         int polling = -1; // initializing to an invalid input
         boolean queryable = false;

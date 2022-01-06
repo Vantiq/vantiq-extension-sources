@@ -54,7 +54,7 @@ import org.junit.Test;
 import org.junit.runners.MethodSorters;
 
 
-@SuppressWarnings("PMD.ExcessiveClassLength")
+@SuppressWarnings({"PMD.ExcessiveClassLength", "PMD.AbbreviationAsWordInNameCheck"})
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
 public class TestYoloProcessor extends NeuralNetTestBase {
 
@@ -340,7 +340,7 @@ public class TestYoloProcessor extends NeuralNetTestBase {
 
     @SuppressWarnings({"unchecked", "rawtypes"})
     @Test
-    public void testRealJSONConfig() throws IOException {
+    public void testRealJsonConfig() throws IOException {
         String expectedResults = imageResultsAsString; // imageResultsAsStringWithoutServer;
         if (testAuthToken != null && testVantiqServer != null) {
             expectedResults = imageResultsAsString;
@@ -1791,7 +1791,7 @@ public class TestYoloProcessor extends NeuralNetTestBase {
         // Only run test with intended vantiq availability
         assumeTrue(testAuthToken != null && testVantiqServer != null);
 
-        Map <String, Object> config = new LinkedHashMap<>();
+        Map<String, Object> config = new LinkedHashMap<>();
         YoloProcessor ypImageSaver = new YoloProcessor();
 
         config.put("pbFile", PB_FILE);
@@ -1946,7 +1946,7 @@ public class TestYoloProcessor extends NeuralNetTestBase {
 
     @SuppressWarnings({"rawtypes", "unchecked"})
     void resultsEquals(List<Map<String, ?>> list, List<Map> expectedRes) {
-        assertEquals("list Size: " + list.size() + ", expected: "+ expectedRes.size() +" :: " + list,
+        assertEquals("list Size: " + list.size() + ", expected: " + expectedRes.size() + " :: " + list,
                 expectedRes.size(), list.size());
         for (int i = 0; i < list.size(); i++) {
             mapEquals(list.get(i), expectedRes.get(i));
@@ -1985,7 +1985,7 @@ public class TestYoloProcessor extends NeuralNetTestBase {
         return new ExtensionServiceMessage("").fromMap(msg);
     }
 
-    public static void setupSource(Map<String,Object> sourceDef) {
+    public static void setupSource(Map<String, Object> sourceDef) {
         VantiqResponse insertResponse = vantiq.insert("system.sources", sourceDef);
         if (insertResponse.isSuccess()) {
             core = new ObjectRecognitionCore(testSourceName, testAuthToken, testVantiqServer, MODEL_DIRECTORY);
@@ -1993,13 +1993,13 @@ public class TestYoloProcessor extends NeuralNetTestBase {
         }
     }
 
-    public static Map<String,Object> createSourceDef(boolean suppressNullValues) {
-        Map<String,Object> sourceDef = new LinkedHashMap<>();
-        Map<String,Object> sourceConfig = new LinkedHashMap<>();
-        Map<String,Object> objRecConfig = new LinkedHashMap<>();
-        Map<String,Object> general = new LinkedHashMap<>();
-        Map<String,Object> dataSource = new LinkedHashMap<>();
-        Map<String,Object> neuralNet = new LinkedHashMap<>();
+    public static Map<String, Object> createSourceDef(boolean suppressNullValues) {
+        Map<String, Object> sourceDef = new LinkedHashMap<>();
+        Map<String, Object> sourceConfig = new LinkedHashMap<>();
+        Map<String, Object> objRecConfig = new LinkedHashMap<>();
+        Map<String, Object> general = new LinkedHashMap<>();
+        Map<String, Object> dataSource = new LinkedHashMap<>();
+        Map<String, Object> neuralNet = new LinkedHashMap<>();
 
         // Setting up general config options
         general.put("pollTime", 1000);
@@ -2035,9 +2035,9 @@ public class TestYoloProcessor extends NeuralNetTestBase {
     }
 
     public static void setupType() {
-        Map<String,Object> typeDef = new LinkedHashMap<>();
-        Map<String,Object> properties = new LinkedHashMap<>();
-        Map<String,Object> propertyDef = new LinkedHashMap<>();
+        Map<String, Object> typeDef = new LinkedHashMap<>();
+        Map<String, Object> properties = new LinkedHashMap<>();
+        Map<String, Object> propertyDef = new LinkedHashMap<>();
         propertyDef.put("type", "Object");
         propertyDef.put("multi", true);
         propertyDef.put("required", true);

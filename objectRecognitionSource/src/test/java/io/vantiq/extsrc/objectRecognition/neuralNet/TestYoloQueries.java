@@ -37,6 +37,7 @@ import io.vantiq.client.VantiqResponse;
 import io.vantiq.extsrc.objectRecognition.ObjectRecognitionCore;
 import okio.BufferedSource;
 
+@SuppressWarnings({"PMD.ExcessiveClassLength"})
 public class TestYoloQueries extends NeuralNetTestBase {
     
     static Vantiq vantiq;

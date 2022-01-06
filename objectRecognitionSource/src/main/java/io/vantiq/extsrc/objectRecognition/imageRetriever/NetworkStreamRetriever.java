@@ -43,12 +43,10 @@ public class NetworkStreamRetriever extends RetrieverBase implements ImageRetrie
     Boolean        isRTSP = false;
     Boolean        isPushProtocol = false;
 
-    static boolean openCvLoaded = false;
-    
     private String sourceName;
 
     @Override
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings({"unchecked", "PMD.CognitiveComplexity", "PMD.AvoidDeeplyNestedIfStmts"})
     public void setupDataRetrieval(Map<String, ?> dataSourceConfig, ObjectRecognitionCore source) throws Exception {
         sourceName = source.getSourceName();
         if (dataSourceConfig.get(CAMERA) instanceof String){
@@ -65,8 +63,8 @@ public class NetworkStreamRetriever extends RetrieverBase implements ImageRetrie
                     // If the camera is an rtsp URL, check for any options
                     if (dataSourceConfig.get(RTSP_CONFIG) instanceof Map) {
                         Map<String, String> rtspConf = (Map<String, String>) dataSourceConfig.get(RTSP_CONFIG);
-                        if (rtspConf.get(RTSP_TRANSPORT) instanceof String) {
-                            rtspTransport = (String) rtspConf.get(RTSP_TRANSPORT);
+                        if (rtspConf.get(RTSP_TRANSPORT) != null) {
+                            rtspTransport = rtspConf.get(RTSP_TRANSPORT);
                         }
                         // rtsp_flags is for cases where the transport is acting as a server
                         // It does not apply in our connector case.
@@ -106,13 +104,17 @@ public class NetworkStreamRetriever extends RetrieverBase implements ImageRetrie
 
                 capture.setOption("rtsp_transport", rtspTransport);
 
-                log.debug("Capture opened, Format: {}, codec: {}, Vid Options: {}",
-                        capture.getFormat(), capture.getVideoCodecName(), capture.getOptions().toString());
+                if (log.isDebugEnabled()) {
+                    log.debug("Capture opened, Format: {}, codec: {}, Vid Options: {}",
+                            capture.getFormat(), capture.getVideoCodecName(), capture.getOptions().toString());
+                }
             }
             capture.start();
-            log.debug("Capture started, Format: {}, codec: {} ({}), Vid Meta: {}",
-                    capture.getFormat(), capture.getVideoCodecName(), capture.getVideoCodec(), capture.getVideoMetadata().toString());
-
+            if (log.isDebugEnabled()) {
+                log.debug("Capture started, Format: {}, codec: {} ({}), Vid Meta: {}",
+                        capture.getFormat(), capture.getVideoCodecName(),
+                        capture.getVideoCodec(), capture.getVideoMetadata().toString());
+            }
         } catch (Exception e) {
             throw new ImageAcquisitionException(this.getClass().getCanonicalName() + ".noGrabber: "
                     + "Unable to create or start FrameGrabber for camera '" + cameraOrFile + "'", e);
@@ -133,8 +135,11 @@ public class NetworkStreamRetriever extends RetrieverBase implements ImageRetrie
             log.debug("Camera is via push protocol -- restarting...");
             try {
                 cap.restart();
-                log.debug("Capture restarted, Format: {}, codec: {} ({}), Vid Meta: {}",
-                        capture.getFormat(), capture.getVideoCodecName(), capture.getVideoCodec(), capture.getVideoMetadata().toString());
+                if (log.isDebugEnabled()) {
+                    log.debug("Capture restarted, Format: {}, codec: {} ({}), Vid Meta: {}",
+                            capture.getFormat(), capture.getVideoCodecName(),
+                            capture.getVideoCodec(), capture.getVideoMetadata().toString());
+                }
             } catch (Exception e) {
                 throw new ImageAcquisitionException(this.getClass().getCanonicalName() + ".errorStopStart: "
                         + "Could not stop/start '" + cameraOrFile + "'", e);
@@ -174,7 +179,7 @@ public class NetworkStreamRetriever extends RetrieverBase implements ImageRetrie
             }
         }
 
-        byte [] imageByte = convertMatToJpeg(matrix);
+        byte[] imageByte = convertMatToJpeg(matrix);
         matrix.release();
         
         results.setImage(imageByte);
@@ -214,23 +219,24 @@ public class NetworkStreamRetriever extends RetrieverBase implements ImageRetrie
         // Reading the next video frame from the camera
         Mat matrix = grabFrameAsMat(cap);
 
-        byte [] imageByte = convertMatToJpeg(matrix);
+        byte[] imageByte = convertMatToJpeg(matrix);
         matrix.release();
 
         results.setImage(imageByte);
         results.setTimestamp(captureTime);
 
         after = System.currentTimeMillis();
-        log.debug("Image retrieving time for source " + sourceName + ": {}.{} seconds"
-                , (after - before) / 1000, String.format("%03d", (after - before) % 1000));
-
+        if (log.isDebugEnabled()) {
+            log.debug("Image retrieving time for source " + sourceName + ": {}.{} seconds",
+                    (after - before) / 1000, String.format("%03d", (after - before) % 1000));
+        }
         return results;
     }
     
     public void diagnoseConnection() throws ImageAcquisitionException {
         try {
-            URI URITest = new URI(cameraOrFile);
-            if (URITest.getScheme().equalsIgnoreCase("http") || URITest.getScheme().equalsIgnoreCase("https")) {
+            URI uriTest = new URI(cameraOrFile);
+            if (uriTest.getScheme().equalsIgnoreCase("http") || uriTest.getScheme().equalsIgnoreCase("https")) {
                 try {
                   URL urlProtocolTest = new URL((String) cameraOrFile);
                   InputStream urlReadTest = urlProtocolTest.openStream();

@@ -60,7 +60,7 @@ import io.vantiq.client.Vantiq;
  * 
  * No additional data is given.
  */
-
+@SuppressWarnings({"PMD.TooManyFields"})
 public class YoloProcessor extends NeuralNetUtils implements NeuralNetInterface2 {
 
     Logger log = LoggerFactory.getLogger(this.getClass());
@@ -120,6 +120,7 @@ public class YoloProcessor extends NeuralNetUtils implements NeuralNetInterface2
     private static SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd--HH-mm-ss");
 
     @Override
+    @SuppressWarnings({"PMD.UseObjectForClearerAPI"})
     public void setupImageProcessing(Map<String, ?> neuralNetConfig, String sourceName, String modelDirectory,
                                      String authToken, String server) throws Exception {
         setup(neuralNetConfig, sourceName, modelDirectory, authToken, server);

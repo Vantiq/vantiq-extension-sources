@@ -49,15 +49,19 @@ public class RetrieverBase {
         int maxSize = s.height() * s.width();
         byte[] buf = new byte[maxSize];
         BytePointer bytes = new BytePointer(buf);
-        log.debug("Image facts: size: h:{}, w: {}, using buffer size (h*w): {}", s.height(), s.width(), maxSize);
+        if (log.isDebugEnabled()) {
+            log.debug("Image facts: size: h:{}, w: {}, using buffer size (h*w): {}", s.height(), s.width(), maxSize);
+        }
 
         // Translate the image into jpeg, return null if it cannot
         byte[] imageBytes = null;
         if (image.empty()) {
             log.warn("Cannot convert empty image to jpg");
         } else if (imencode(".jpg", image, bytes)) {
-            log.debug("bytes stuff: limit: {}, position: {}, capacity: {}", bytes.limit(),
-                    bytes.position(), bytes.capacity());
+            if (log.isDebugEnabled()) {
+                log.debug("bytes stuff: limit: {}, position: {}, capacity: {}", bytes.limit(),
+                        bytes.position(), bytes.capacity());
+            }
             imageBytes = bytes.getStringBytes();
             log.debug("JPG length is: {}", imageBytes.length);
         } else {
@@ -94,7 +98,9 @@ public class RetrieverBase {
                 tryCount += 1;
                 if (frame != null) {
                     if (!frame.getTypes().contains(Frame.Type.VIDEO)) {
-                        log.debug("Found non-video frame: {}", frame.getTypes());
+                        if (log.isDebugEnabled()) {
+                            log.debug("Found non-video frame: {}", frame.getTypes());
+                        }
                         continue;
                     }
                 }

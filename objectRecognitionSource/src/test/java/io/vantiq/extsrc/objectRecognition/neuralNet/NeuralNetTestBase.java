@@ -28,6 +28,7 @@ import io.vantiq.extjsdk.Utils;
 import io.vantiq.extsrc.objectRecognition.ObjRecTestBase;
 import org.junit.BeforeClass;
 
+@SuppressWarnings({"PMD.MutableStaticState"})
 public class NeuralNetTestBase extends ObjRecTestBase {
     public static final String MODEL_DIRECTORY = System.getProperty("buildDir") + "/models";
     public static final String SOURCE_NAME = "testSourceName";
