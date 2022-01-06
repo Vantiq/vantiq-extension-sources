@@ -245,6 +245,7 @@ public class TestFileRetriever extends ObjRecTestBase {
             int loopLimit = Math.min(50, frameCount);
             int loopCount = 0;
             while (loopCount < loopLimit) {
+                loopCount += 1;
                 byte[] oldData = data2;
                 results = fr.getImage();
                 od = results.getOtherData();
@@ -257,7 +258,6 @@ public class TestFileRetriever extends ObjRecTestBase {
                 // So we'll expect it to be the two we started with (0 & 1 + another) == +2
                 assertEquals(loopCount + 2, nextFrameNumber);
                 assertNotEquals(oldData, data2);
-                loopCount += 1;
             }
         } catch (ImageAcquisitionException e) {
             fail("Exception occurred when obtaining image: " + e);
