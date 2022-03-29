@@ -145,6 +145,7 @@ public class CSV {
     FilenameFilter fileFilter;
     String extensionAfterProcessing = ".done";
     boolean deleteAfterProcessing = false;
+    boolean sendKeepAliveWhenNofileFound = false;
     int pollTime;
     private Boolean enableHttpListener = false;
     private int port;
@@ -208,6 +209,10 @@ public class CSV {
         }
         if (options.get("deleteAfterProcessing") != null) {
             deleteAfterProcessing = (boolean) options.get("deleteAfterProcessing");
+        }
+
+        if (options.get("sendKeepAliveWhenNofileFound") != null) {
+            sendKeepAliveWhenNofileFound = (boolean) options.get("sendKeepAliveWhenNofileFound");
         }
 
         if (config.get("saveToArchive") != null) {
@@ -417,8 +422,12 @@ public class CSV {
     void handleExistingFiles(String fileFolderPath) {
         File folder = new File(fileFolderPath);
         String[] listOfFiles = folder.list(fileFilter);
-        for (String fileName : listOfFiles) {
-            executeInPool(fileFolderPath, fileName);
+        if (sendKeepAliveWhenNofileFound && listOfFiles.length == 0) {
+            CSVReader.sendNotification("Watchdog", "KeepALive", 0, null, oClient);
+        } else {
+            for (String fileName : listOfFiles) {
+                executeInPool(fileFolderPath, fileName);
+            }
         }
     }
 
@@ -548,7 +557,7 @@ public class CSV {
                 // file.createNewFile();
 
                 try (// FileOutputStream fos = new FileOutputStream(file);
-                        // BufferedWriter bw = new BufferedWriter(new OutputStreamWriter(fos))) {
+                     // BufferedWriter bw = new BufferedWriter(new OutputStreamWriter(fos))) {
                         BufferedWriter bw = new BufferedWriter(
                                 new OutputStreamWriter(new FileOutputStream(fullFilePath), "UTF-8"))) {
 
@@ -618,7 +627,7 @@ public class CSV {
             File file = new File(fullFilePath);
             if (file.exists()) {
                 try (// FileWriter fw = new FileWriter(file, true);
-                        // BufferedWriter bw = new BufferedWriter(fw))
+                     // BufferedWriter bw = new BufferedWriter(fw))
                         BufferedWriter bw = new BufferedWriter(
                                 new OutputStreamWriter(new FileOutputStream(fullFilePath, true), "UTF-8"))) {
 
