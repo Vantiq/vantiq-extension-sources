@@ -2,8 +2,46 @@ plugins {
     id 'ru.vyarus.use-python' version '2.3.0'
 }
 
-python.installVirtualenv = false
-python.envPath = '/Users/fcarter/.local/share/virtualenvs/extpython-BFR0Iv0C'
+python {
+   // python binary name (python or python3 by default)
+   pythonBinary
+   // path to python binary (global by default)
+   pythonPath
+   // additional environment variables, visible for all python commands
+   // Note: We specify the directory paths to search in the pytest.ini file
+   environment = [:]
+
+   // minimal required python version (m.m.m)
+   minPythonVersion = '3.10'
+   // minimal required pip version (m.m.m)
+   minPipVersion = '9'
+
+   // show all installed modules versions after pip installation
+   showInstalledVersions = true
+   // always call module install, even if correct version is already installed
+   alwaysInstallModules = false
+   // may be used to disable pip cache (--no-cache-dir option)
+   usePipCache = true
+   // additional pip repositories (--extra-index-url option)
+   extraIndexUrls = []
+   // trusted hosts for pip install (--trusted-host option)
+   trustedHosts = []
+
+    // pip modules installation scope (project local, os user dir, global)
+   scope = VIRTUALENV_OR_USER
+   // automatically install virtualenv module (if pip modules declared and scope allows)
+   installVirtualenv = false
+   // if virtualenv not installed (in --user scope), plugin will install exactly this version
+   // (known to be working version) to avoid side effects
+   virtualenvVersion = '20.4.2'
+   // minimal required virtualenv (v20 is recommended, but by default 16 set to not fail previous
+  // setups)
+   minVirtualenvVersion = '20'
+   // used virtualenv path (if virtualenv used, see 'scope')
+   envPath = '/Users/fcarter/.local/share/virtualenvs/extpython-BFR0Iv0C'
+   // copy virtualenv instead of symlink (when created)
+   envCopy = false
+}
 
 task pytest(type: PythonTask) {
     module = 'pytest'
