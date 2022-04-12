@@ -1,0 +1,756 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+
+"""Vantiq Connector SDK for Python
+
+This module contains the Vantiq Connector SDK for the Python language.
+
+Structure:
+    The SDK consists of two (2) classes.  These classes are as follows:
+        VantiqSourceConnection -- this is a class holding the client connection for a single source
+        VantiqConnector -- this class manages the runtime connections for all sources instantiated by a single
+            server.config file.
+    
+Constants:
+    The following constants are available to support the callers use of the interface.
+
+        Server response control
+            QUERY_EMPTY -- used when a query returns no data
+            QUERY_PARTIAL -- used when there will be more than one call to send_query_response()
+            QUERY_COMPLETE -- used to indicate the last (or only) call to send_query_complete()
+                              (when the response is not empty)
+
+        server.config file properties
+           SOURCES -- list of sources whose connection is defined by this config file
+           TARGET_SERVER -- URI for the Vantiq server
+           AUTH_TOKEN -- Access token to be used to connect.  This is generally better done by leaving it out and using...
+           CONNECTOR_AUTH_TOKEN -- Environment variable name from which to get the access token
+           SEND_PINGS -- whether this connector should send pings periodically.  It is a good idea to set this to true
+               when the connector will have idle time. Some network connections will terminate when not used
+               for a while.
+"""
+
+__author__ = 'fhcarter'
+__copyright__ = "Copyright 2022, Vantiq, Inc."
+__license__ = "MIT License"
+__email__ = "support@vantiq.com"
+__all__ = ['VantiqSourceConnection',
+           'VantiqConnectorSet',
+           'VantiqConnectorConfigException',
+           'VantiqConnectorException',
+           'SOURCE_NAME',
+           'RESPONSE_ADDRESS',
+           'ERROR_CODE',
+           'ERROR_TEMPLATE',
+           'ERROR_PARAMETERS',
+           'QUERY_EMPTY',
+           'QUERY_COMPLETE',
+           'QUERY_PARTIAL',
+           'QUERY_ERROR',
+           'TARGET_SERVER',
+           'AUTH_TOKEN',
+           'CONNECTOR_AUTH_TOKEN',
+           'SEND_PINGS']
+
+import sys
+import string
+from typing import Optional, Awaitable, Callable
+import traceback
+from urllib import parse
+import re
+
+import jprops
+import logging
+import logging.config
+from logging import Logger
+
+import os
+import json
+import websockets
+import asyncio
+import socket
+
+_OP_AUTHENTICATE = 'authenticate'  # used for user/pw
+_OP_VALIDATE = 'validate'   # used for auth tokens
+_OP_CONNECT_EXTENSION = 'connectExtension'
+_OP_CONFIGURE_EXTENSION = 'configureExtension'
+_OP_RECONNECT_REQUIRED = 'reconnectRequired'
+_OP_PUBLISH = 'publish'
+_OP_QUERY = 'query'
+_OP_NOTIFY = 'notify'
+_CLOSED = 'connectionHasBeenClosed'  # Pseudo op used to track what's happened
+_TEST_CLOSE = 'testRequestsClientClose'  # Used during tests
+_CONNECTION_FAILED = 'connection_failed'
+
+# Message content properties
+# Internal use
+_STATUS = 'status'
+_BODY = 'body'
+_RESPONSE_ADDRESS_HEADER = "X-Reply-Address"
+_MESSAGE_HEADERS = 'messageHeaders'
+_ORIGIN_ADDRESS = 'REPLY_ADDR_HEADER'
+# FIXME -- check these & rename to _...
+_OPERATION = 'op'
+_RESOURCE_NAME = 'resourceName'
+_RESOURCE_ID = 'resourceId'
+_SOURCES_RESOURCE = 'sources'
+_OBJECT = 'object'
+
+# External Use
+
+ERROR_CODE = 'messageCode'
+ERROR_TEMPLATE = 'messageTemplate'
+ERROR_PARAMETERS = 'parameters'
+
+# Context properties
+SOURCE_NAME = 'source_name'
+RESPONSE_ADDRESS = 'response_address'
+
+# Status Codes
+QUERY_COMPLETE = 200
+QUERY_EMPTY = 204
+QUERY_PARTIAL = 100
+QUERY_ERROR = 400
+
+_WEBSOCKET_URL_PATTERN = '.*/api/v[0-9]+/wsock/websocket'
+_WEBSOCKET_V1_PATH = '/api/v1/wsock/websocket'
+
+SOURCES = 'sources'
+TARGET_SERVER = 'targetServer'
+AUTH_TOKEN = 'authToken'
+CONNECTOR_AUTH_TOKEN = 'CONNECTOR_AUTH_TOKEN'
+SEND_PINGS = 'sendPings'
+FAIL_ON_CONNECTION_ERROR = 'failOnConnectionError'
+
+# Initialise the logging module
+_vlog: Optional[Logger] = None
+
+
+def setup_logging():
+    """Read the log configuration file & initialize appropriately"""
+    global _vlog
+    # load the logging configuration
+    logging.config.fileConfig('serverConfig/logger.ini', disable_existing_loggers=False)
+    _vlog = logging.getLogger(__name__)
+    _vlog.setLevel(logging.DEBUG)
+    # create a file handler
+    handler = logging.FileHandler('VantiqConnector.log')
+    handler.setLevel(logging.INFO)
+
+    # create a logging format
+    formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+    handler.setFormatter(formatter)
+
+    # add the file handler to the logger
+    _vlog.addHandler(handler)
+
+
+def sanitize_url(user_url):
+    """Adjust the provided TARGET_SERVER URI, converting to use web sockets"""
+    global _vlog
+    ts = parse.urlparse(user_url)
+    scheme = ts.scheme
+    path = ts.path
+
+    if ts.scheme.startswith('http'):
+        # Need to replace the http with WS equivalents
+        if ts.scheme.startswith('https'):
+            scheme = 'wss'
+        else:
+            scheme = 'ws'
+
+    if not re.fullmatch(_WEBSOCKET_URL_PATTERN, path):
+        path = _WEBSOCKET_V1_PATH
+
+    clean_url = parse.urlunparse(ts._replace(path=path, scheme=scheme))
+    _vlog.debug('Configured URL %s converted to %s', user_url, clean_url)
+    return clean_url
+
+
+class VantiqConnectorException(RuntimeError):
+    """An error from the connector/Vantiq interoperation."""
+
+    def __init__(self, *args, **kwargs):  # real signature unknown
+        pass
+
+    __weakref__ = property(lambda self: object(), lambda self, v: None, lambda self: None)  # default
+    """list of weak references to the object (if defined)"""
+
+
+class VantiqConnectorConfigException(VantiqConnectorException):
+    """An error in the connector configuration."""
+
+    def __init__(self, *args, **kwargs):  # real signature unknown
+        pass
+
+    __weakref__ = property(lambda self: object(), lambda self, v: None, lambda self: None)  # default
+
+
+class VantiqSourceConnection:
+    """A connection to a single source
+
+    This class manages the connection to and interactions with the Vantiq server on behalf a single source.
+
+    Generally, users are encouraged to use the VanticConnectorSet class.  That class whill orchestrate the operation
+    of the set of connections required for the sources defined in the server.config file.
+    """
+
+    def __init__(self, source_name: string, config: Optional[dict]):
+        self.source_name = source_name
+        self.close_handler: Callable[[dict], Awaitable[None]] | None = None
+        self.connect_handler: Callable[[dict, dict], Awaitable[None]] | None = None
+        self.publish_handler: Callable[[dict, dict], Awaitable[None]] | None = None
+        self.query_handler:Callable[[dict, dict], Awaitable[None]] | None = None
+        self.connection: websockets = None
+        self.config = config
+        self.is_connected = False
+        self._is_connected_future = None
+
+    def get_source(self) -> string:
+        """Return the source name with which this connection is associated
+        Returns:
+            name of the source on whose behalf this class is operating
+        """
+        return self.source_name
+
+    def get_server_config(self) -> dict:
+        """Get the server config information
+
+        Returns:
+            Return the server.config file as a dict object
+        """
+        return self.config
+
+    def configure_handlers(self, handle_close: Callable[[dict], Awaitable[None]] | None,
+                           handle_connect: Callable[[dict, dict], Awaitable[None]] | None,
+                           handle_publish: Callable[[dict, dict], Awaitable[None]] | None,
+                           handle_query: Callable[[dict, dict], Awaitable[None]] | None) -> None:
+        """Provide handlers for close, connect, publish, and query operations
+
+        Parameters:
+            handle_close : Callable[[dict], Awaitable[None]]
+            handle_connect : Callable[[dict, dict], Awaitable[None]
+            handle_publish : Callable[[dict, dict], Awaitable[None]
+            handle_query : Callable[[dict, dict], Awaitable[None]
+                These parameters specify the callbacks to handle close, connect, publish, and query calls, respectively.
+                For each, the first parameter is a dict providing the context for the operation.  The context will
+                contain an entry keyed with 'source_name' whose value is the name of the source for which this is a
+                callback.  For query calls, there will be an additional entry keyed with 'response_address'. The value
+                here is used to route the query response back to the querier in the Vantiq server.
+
+                This context parameter is to be used in the various query response calls.
+
+                For the handle_connect, handle_query, and handle_publish calls, there will b be a second dict named
+                parameter. This will contain the message sent from Vantiq to the connector (source).
+
+        """
+        self.close_handler = handle_close
+        self.connect_handler = handle_connect
+        self.publish_handler = handle_publish
+        self.query_handler = handle_query
+
+    def _configure_connection(self, file_name) -> dict:
+        global _vlog
+
+        server_config = None
+        scf = None
+        try:
+            scf = open(file_name, encoding='utf-8', mode='rt')
+            server_config = jprops.load_properties(scf)
+        except FileNotFoundError:
+            # This means that the file  wasn't there.  Let's look in the other std place.
+            _vlog.warning('Failed to open %s', file_name)
+            pass
+        finally:
+            if scf is not None:
+                scf.close()
+
+        if server_config is not None and TARGET_SERVER in server_config:
+            # If things are looking reasonable, fetch the authToken if necessary
+            if AUTH_TOKEN not in server_config:
+                # Defined behavior is that serverConfig.authToken overrides env. variable
+                auth_tok = os.environ.get(CONNECTOR_AUTH_TOKEN)
+                server_config[AUTH_TOKEN] = auth_tok
+
+            fixed_url = sanitize_url(server_config[TARGET_SERVER])
+            if fixed_url is not None:
+                server_config[TARGET_SERVER] = fixed_url
+
+        return server_config
+        # serverConfig holds the properties from our server.config file.  These are used to define the server connection
+
+    async def connect_to_vantiq(self):
+        """(Async) Make the connection to Vantiq
+
+        This will make the connection to Vantiq and begin dispatching messages to the connector via the defined
+        handlers. If successful, this method will not return when awaited.
+        """
+        global _vlog
+
+        if self.config is None or TARGET_SERVER not in self.config:
+            raise VantiqConnectorConfigException('No valid server.config file was found.  Working directory: {0}.'
+                               .format(os.getcwd()))
+
+        _vlog.debug('Using character set: %s', sys.getdefaultencoding())
+        do_pings = True
+        if SEND_PINGS not in self.config or self.config[SEND_PINGS] == 'false':
+            do_pings = False
+
+        self._is_connected_future = asyncio.get_event_loop().create_future()
+
+        fail_fast = False
+        if FAIL_ON_CONNECTION_ERROR in self.config:
+            fail_fast = self.config[FAIL_ON_CONNECTION_ERROR]
+        reason = None
+        fail_count = 0
+        while reason != _TEST_CLOSE:  # reason can be CLOSED in test scenarios only
+            _vlog.info('Connector for source %s is connecting to Vantiq at: %s',
+                       self.source_name, self.config[TARGET_SERVER])
+            try:
+                reason = await self._perform_connection(do_pings)
+                fail_count = 0
+            except VantiqConnectorConfigException as vcce:
+                # Generally, these are not recoverable and will not be helped by continuous retry.
+                raise vcce from None
+            except VantiqConnectorException as vce:
+                reason = vce
+                fail_count += 1
+            except RuntimeError as rte:
+                fail_count += 1
+                reason = rte
+            except socket.gaierror as gaierror:
+                # This means that the URL is (currently) not valid.
+                # 'gai' --> GetAddressInfo
+                fail_count += 1
+                reason = gaierror
+            except OSError as e:
+                fail_count += 1
+                reason = e
+                _vlog.debug('Connection error to %s: %s',
+                            self.config[TARGET_SERVER], type(reason).__name__)
+            except Exception as exc:
+                reason = exc
+                fail_count += 1
+            finally:
+                if self.is_connected:
+                    # Then we need close the connection & let our caller know.
+                    # Then, we'll redo things. The actions we do here are the same regardless.
+                    local = self.close_handler
+                    if local is not None:
+                        await local(self._create_context(None))
+                self.is_connected = False
+                if fail_fast and fail_count > 0:
+                    _vlog.error('failOnConnectionError set & could not connect: {0}'.format(reason))
+                    raise reason from None
+                # After a disconnect & subsequent reconnect failure, wait a bit to let things settle down.
+                if fail_count > 0:
+                    wait_period = 0.5 * fail_count
+                    _vlog.warning('Waiting {0} to reconnect...'.format(wait_period))
+                    await asyncio.sleep(wait_period)
+            _vlog.debug('Looping in connector with reason: %s', str(reason))
+        _vlog.info('Connector for source %s via Vantiq at: %s is completing',
+                   self.source_name, self.config[TARGET_SERVER])
+
+    async def _perform_connection(self, do_pings: bool) -> string:
+        global _vlog
+
+        try:
+            _vlog.debug('perform_connection() to %s', self.config[TARGET_SERVER])
+            async with websockets.connect(uri=self.config[TARGET_SERVER],
+                                          ping_interval=20 if do_pings else None,
+                                          ping_timeout=20 if do_pings else None) as websocket:
+                _vlog.debug('Connection completed')
+                auth_msg = {
+                    _OPERATION: _OP_VALIDATE,
+                    _RESOURCE_NAME: 'system.credentials',
+                    _OBJECT: self.config[AUTH_TOKEN]
+                }
+
+                await websocket.send(json.dumps(auth_msg))
+                raw_resp = await websocket.recv()
+                resp = json.loads(raw_resp)
+
+                _vlog.debug('Authenticate returned: %s', resp)
+                if _STATUS in resp:
+                    # then we probably have an error
+                    if resp[_STATUS] != 200:
+                        _vlog.error('Connect call failed: %s :: %s:%s', resp[_STATUS],
+                                    resp[_BODY][0]['code'], resp[_BODY][0]['message'])
+                        raise VantiqConnectorConfigException('Connect call failed: {0} :: {1}:{2}'.format(resp[_STATUS],
+                                           resp[_BODY][0]['code'],  resp[_BODY][0]['message']))
+
+                connect_msg = {_OPERATION: _OP_CONNECT_EXTENSION,
+                               _RESOURCE_NAME: _SOURCES_RESOURCE,
+                               _RESOURCE_ID: self.source_name}
+                await websocket.send(json.dumps(connect_msg))
+                raw_resp = await websocket.recv()
+                resp = json.loads(raw_resp)
+                _vlog.debug('Connect returned: %s', resp)
+                if _STATUS in resp:
+                    status = resp[_STATUS]
+                    if status >= 300:
+                        return _CONNECTION_FAILED
+
+                # Otherwise, we should have a configExtension message
+                if _OPERATION in resp:
+                    if resp[_OPERATION] == _OP_CONFIGURE_EXTENSION:
+                        # Here, we have a configuration that's been returned.  Process it
+                        _vlog.debug('Configuration message: %s', resp[_OPERATION])
+                        if _OBJECT in resp and 'config' in resp[_OBJECT]:
+                            _vlog.debug('Configuration is: %s', resp[_OBJECT]['config'])
+                            local = self.connect_handler
+                            if local is not None:
+                                await local(self._create_context(None), resp[_OBJECT]['config'])
+                        else:
+                            error = 'Malformed configuration message: {0}. Please report to Vantiq.'.format(resp)
+                            _vlog.error(error)
+                            raise VantiqConnectorException(error)
+                    else:
+                        error = 'Unexpected operation for configuration: {0} -- {1}. Please report to Vantiq'\
+                            .format(resp[_OPERATION], resp)
+                        _vlog.error(error)
+                        raise VantiqConnectorException(error)
+                self.connection = websocket
+                self.is_connected = True
+                reason = await self._perform_message_processing()
+                return reason
+        except Exception as e:
+            _vlog.error('Failed to connect to server: %s', e)
+            raise e from None
+
+    async def _perform_message_processing(self):
+        # If we've gotten this far, then we loop processing messages
+        try:
+            # The future below allows holding off work until the connection is ready
+            self._is_connected_future.set_result('Connected to src {0} at {1}'
+                                                 .format(self.source_name, self.config[TARGET_SERVER]))
+            retval = 'COMPLETED'
+            async for rawMessage in self.connection:
+                message = json.loads(rawMessage)
+                _vlog.debug('VantiqConnector received message: %s', message)
+                if 'op' in message:
+                    op = message[_OPERATION]
+                    if op == _OP_RECONNECT_REQUIRED:
+                        retval = _OP_RECONNECT_REQUIRED
+                        break
+                    elif op == _TEST_CLOSE:
+                        retval = _TEST_CLOSE
+                        break
+                    else:
+                        await self._process_message(op, message)
+                elif _STATUS in message:
+                    # Then this is a http response message.  Accept that if it's OK.
+                    if message[_STATUS] >= 300:
+                        # Then we have some error condition.  Log it & move on
+                        _vlog.error('Received status message indicating a problem: {0}'.format(message))
+                else:
+                    _vlog.error('Malformed message received from server: %s', message)
+            return retval
+        finally:
+            old_future = self._is_connected_future
+            self._is_connected_future = asyncio.get_event_loop().create_future()
+            if old_future is not None and not old_future.done():
+                # Mark a cancelled state so that any waiters will find out
+                old_future.cancel()
+            self.connection = None
+
+    async def close(self):
+        """(Async) Close the connection to the Vantiq server."""
+        if self.connection is not None:
+            await self.connection.close()
+
+    async def _process_message(self, op: string, message: dict):
+        global _vlog
+        global _OP_PUBLISH
+        global _OP_QUERY
+
+        local = None
+        if op == _OP_PUBLISH:
+            local = self.publish_handler
+        elif op == _OP_QUERY:
+            local = self.query_handler
+        else:
+            _vlog.error('Unexpected operation: %s -- ignored', op)
+
+        if local is not None:
+            try:
+                await local(self._create_context(message),
+                            message[_OBJECT] if message is not None and _OBJECT in message else None)
+            except Exception as e:  # pylint: disable=broad-except
+                _vlog.error('Exception {0} thrown by {1} handler while processing message {2}'
+                            .format(op, type(e).__name__, message))
+                _vlog.error('Trace: %s', traceback.format_exc())
+        else:
+            _vlog.error('No handler found for operation %s', op)
+
+    async def send_query_error(self, ctx: dict, message: dict) -> None:
+        """(Async) Respond to a Vantiq query with an error
+
+        Parameters:
+            ctx : dict
+                The context for the query.  Contains the 'source_name' and 'response_address' entries.
+            message : dict
+                The error message to return.  The error message should contain the following entries:
+                    'messageCode' --  a string containing a short name for the error
+                    'messageTemplate'  -- a string describing the problem.  Parameters in this template are indexed
+                                        from 0, and indicated using {index}.
+                    'parameters' -- a list/array containing the parameters to be substituted in the template.
+
+        Examples:
+        ::
+            # Assumes ctx was provided by the handler, and that cnx is the VantiqSourceConnection
+
+            await cnx.send_query_error(ctx, 'my.connector.badparameter',
+                                       'The parameter {0} with value {1} is invalid,
+                                       ['some_param_name', some_bad_value])
+        """
+        if (ctx is None
+                or SOURCE_NAME not in ctx
+                or ctx[SOURCE_NAME] != self.source_name
+                or RESPONSE_ADDRESS not in ctx
+                or ctx[RESPONSE_ADDRESS] is None):
+            raise VantiqConnectorException('send_query_error(): Missing or incomplete context: {0}'.format(ctx))
+        if (message is None
+                or message[ERROR_CODE] is None
+                or message[ERROR_TEMPLATE] is None
+                or message[ERROR_PARAMETERS] is None):
+            raise VantiqConnectorException('send_query_error(): Missing or incomplete error message information: {0}'
+                                           .format(message))
+        await self._do_message_send( ctx, QUERY_ERROR, message)
+
+    async def send_query_response(self, ctx: dict, code: int, message: dict | list | None):
+        """(Async) Respond to a Vantiq query
+
+                Parameters:
+                    ctx : dict
+                        The context for the query.  Contains the 'source_name' and 'response_address' entries.
+                    code : int
+                        Status code to return.  Use VantiqConnector.QUERY_PARTIAL when making several
+                        calls to return things. Use VantiqConnector.QUERY_COMPLETE to indicate
+                    `   the last of the return calls. Use VantiqConnector.QUERY_EMPTY to return an empty result.
+                    message : dict | list | None
+                        The message to return.  The entries will comprise the entry to the "row" coming back from the
+                        Vantiq VAIL SELECT statement. If a list is passed, it should be a list of dict objects, each
+                        representing a row returned to the SELECT statement.
+
+                Examples:
+                ::
+                    # Assumes ctx was provided by the handler, and that cnx is the VantiqSourceConnection
+
+                    await cnx.send_query_response(ctx, VantiqConnector.QUERY_COMPLETE,
+                                                 {'name': 'someName', 'otherProperty': 'some value'})
+            """
+        if code not in [QUERY_EMPTY, QUERY_COMPLETE, QUERY_PARTIAL]:
+            raise VantiqConnectorException('send_query_response(): Invalid Code: {0}.'.format(code))
+        if code != QUERY_EMPTY and message is None:
+            raise VantiqConnectorException('send_query_response(): Non-empty responses require a message parameter.')
+        await self._do_message_send(ctx, code, message)
+
+    async def _do_message_send(self, ctx: dict, code: int, message):
+        if (ctx is None
+                or SOURCE_NAME not in ctx
+                or ctx[SOURCE_NAME] != self.source_name
+                or RESPONSE_ADDRESS not in ctx
+                or ctx[RESPONSE_ADDRESS] is None):
+            raise VantiqConnectorException('Query response is missing or has incomplete context: {0}'.format(ctx))
+
+        msg_to_send = {_STATUS: code, 'headers': {_RESPONSE_ADDRESS_HEADER: ctx[RESPONSE_ADDRESS]}}
+        if code != QUERY_EMPTY:
+            body = message
+            msg_to_send[_BODY] = body
+
+        raw_msg = json.dumps(msg_to_send)
+        ready = False
+        is_ready_future = self._is_connected_future
+        if is_ready_future is None:
+            raise VantiqConnectorException('Connector has no ready future.')
+        while not ready:
+            await is_ready_future
+            if is_ready_future.done():
+                # If the future finished but no successfully, get a new future & rewait
+                if is_ready_future.exception() is not None or is_ready_future.cancelled():
+                    # The system will reconnect here, replacing the future in the process.  Simply retry
+                    is_ready_future = self._is_connected_future
+                    pass
+                else:
+                    ready = True
+        try:
+            await self.connection.send(raw_msg)
+        except Exception as e:
+            _vlog.error('Trapped exception during sending response for source {0}: {1}'
+                        .format(self.source_name, type(e).__name__))
+            raise e from None
+
+    async def send_notification(self, message: dict):
+        """(Async) Send a notification (an event) to the Vantiq server.
+
+        Parameters:
+            message : dict
+                The event value to send.  The event will appear as an event from this source.
+        """
+        msg_to_send = {_OPERATION: _OP_NOTIFY,
+                       _RESOURCE_NAME: _SOURCES_RESOURCE,
+                       _RESOURCE_ID: self.source_name,
+                       _OBJECT: message}
+        raw_msg = json.dumps(msg_to_send)
+        ready = False
+        is_ready_future = self._is_connected_future
+        if is_ready_future is None:
+            raise VantiqConnectorException('Connector has no ready future.')
+        while not ready:
+            await is_ready_future
+            if is_ready_future.done():
+                # If the future finished but no successfully, get a new future & rewait
+                if is_ready_future.exception() is not None or is_ready_future.cancelled():
+                    # The system will reconnect here, replacing the future in the process.  Simply retry
+                    is_ready_future = self._is_connected_future
+                    pass
+                else:
+                    ready = True
+        try:
+            await self.connection.send(raw_msg)
+        except Exception as e:
+            _vlog.error('Trapped exception during send for source %s: %s', self.source_name, type(e).__name__)
+            raise e from None
+
+    def _create_context(self, message: dict | None):
+        ctx: dict = {SOURCE_NAME: self.source_name}
+        if (message is not None
+                and _MESSAGE_HEADERS in message
+                and message[_MESSAGE_HEADERS] is not None
+                and _ORIGIN_ADDRESS in message[_MESSAGE_HEADERS]
+                and message[_MESSAGE_HEADERS][_ORIGIN_ADDRESS] is not None):
+            ctx[RESPONSE_ADDRESS] = message[_MESSAGE_HEADERS][_ORIGIN_ADDRESS]
+        return ctx
+
+
+class VantiqConnectorSet:
+
+    def __init__(self):
+        self._sources = []
+        self._connections = {}
+        self._server_config: Optional[dict] = None
+        self._read_configuration()
+
+        # Initialize the set of connections for the caller
+        for src in self._sources:
+            self._connections[src] = VantiqSourceConnection(src, self._server_config)
+
+    def get_logger(self) -> Logger | None:
+        """Returns the logger in use"""
+        global _vlog
+        return _vlog
+
+    def get_sources(self):
+        """Returns the list of sources in this connector set"""
+        return self._sources
+
+    def get_connections(self) -> dict:
+        """
+        This returns the set of VantiqSourceConnections, indexed by source name.
+
+        Returns:
+             dict where the item key is the source name, and the item value is a VqntiqSourceConnection.
+        """
+        return self._connections
+
+    def get_connection_for_source(self, source_name: str) -> VantiqSourceConnection:
+        """Returns the VantiqSourceConnection for a named source
+
+        Parameters:
+            source_name : str
+                name of the source for which you are looking.
+
+        Returns:
+            VantiqSourceConnection for the named source
+
+            Returns None if there is no connection to the named source
+
+        """
+        return self._connections[source_name] if source_name in self._connections else None
+
+    def _read_configuration(self):
+        sc = self._read_config_from_file('serverConfig/server.config')
+        if sc is None:
+            sc = self._read_config_from_file('server.config')
+
+        if sc is None:
+            raise VantiqConnectorConfigException('No server.config file found.')
+
+        self._server_config = sc
+        self._sources = sc[SOURCES].replace(' ', '').split(',')
+
+    def _read_config_from_file(self, file_name) -> Optional[dict]:
+        server_config = None
+        scf = None
+        try:
+            scf = open(file_name, encoding='utf-8', mode='rt')
+            server_config = jprops.load_properties(scf)
+        except FileNotFoundError:
+            # This means that the file  wasn't there.  Let's look in the other std place.
+            _vlog.warning('Failed to open %s', file_name)
+            pass
+        finally:
+            if scf is not None:
+                scf.close()
+
+        if server_config is not None and TARGET_SERVER in server_config:
+            # If things are looking reasonable, fetch the authToken if necessary
+            if AUTH_TOKEN not in server_config:
+                # Defined behavior is that serverConfig.authToken overrides env. variable
+                auth_tok = os.environ.get(CONNECTOR_AUTH_TOKEN)
+                server_config[AUTH_TOKEN] = auth_tok
+
+            fixed_url = sanitize_url(server_config[TARGET_SERVER])
+            if fixed_url is not None:
+                server_config[TARGET_SERVER] = fixed_url
+
+        return server_config
+
+    def configure_handlers_for_all(self, handle_close: Callable[[dict], Awaitable[None]] | None,
+                                   handle_connect: Callable[[dict, dict], Awaitable[None]] | None,
+                                   handle_publish: Callable[[dict, dict], Awaitable[None]] | None,
+                                   handle_query: Callable[[dict, dict], Awaitable[None]] | None) -> None:
+        """Provide handlers for close, connect, publish, and query operations for all sources in this set
+
+         Parameters:
+             handle_close : Callable[[dict], Awaitable[None]]
+             handle_connect : Callable[[dict, dict], Awaitable[None]
+             handle_publish : Callable[[dict, dict], Awaitable[None]
+             handle_query : Callable[[dict, dict], Awaitable[None]
+                 These parameters specify the callbacks to handle close, connect, publish, and query calls, respectively.
+                 For each, the first parameter is a dict providing the context for the operation.  The context will
+                 contain an entry keyed with 'source_name' whose value is the name of the source for which this is a
+                 callback.  For query calls, there will be an additional entry keyed with 'response_address'. The value
+                 here is used to route the query response back to the querier in the Vantiq server.
+
+                 This context parameter is to be used in the various query response calls.
+
+                 For the handle_connect, handle_query, and handle_publish calls, there will b be a second dict parameter.
+                 This will contain the message sent from Vantiq to the connector (source).
+         """
+
+        for src in self._sources:
+            conn: VantiqSourceConnection = self._connections[src]
+            conn.configure_handlers(handle_close, handle_connect, handle_publish, handle_query)
+
+    async def run_connectors(self) -> None:
+        """(Async) Make the connection(s) to Vantiq
+
+        This will make the connection to Vantiq for all sources in the server.config file and begin dispatching
+        messages to the connector via the defined handlers. If successful, this method will not return when awaited.
+        """
+
+        connector_calls = []
+        for src in self._sources:
+            connector_calls.append(self._connections[src].connect_to_vantiq())
+        _vlog.info('Starting %i connectors', len(connector_calls))
+        await asyncio.gather(*connector_calls)
+
+    async def close(self) -> None:
+        """(Async) Close the connection to Vantiq.
+
+        This will close the connections for all sources in this set.
+        """
+        for conn in self._connections:
+            conn.close()

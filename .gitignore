@@ -49,3 +49,7 @@ windows/
 */.vscode/
 .vscode/settings.json
 .vscode/launch.json
+
+# Python infrastructure
+**/__pycache__
+**/*.egg-info/*

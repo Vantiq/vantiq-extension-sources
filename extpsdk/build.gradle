@@ -1,0 +1,12 @@
+plugins {
+    id 'ru.vyarus.use-python' version '2.3.0'
+}
+
+python.installVirtualenv = false
+python.envPath = '/Users/fcarter/.local/share/virtualenvs/extpython-BFR0Iv0C'
+
+task pytest(type: PythonTask) {
+    module = 'pytest'
+}
+
+test.dependsOn pytest
