@@ -23,7 +23,8 @@ Constants:
         server.config file properties
            SOURCES -- list of sources whose connection is defined by this config file
            TARGET_SERVER -- URI for the Vantiq server
-           AUTH_TOKEN -- Access token to be used to connect.  This is generally better done by leaving it out and using...
+           AUTH_TOKEN -- Access token to be used to connect.  This is generally better done by leaving it
+                         out and using the CONNECTOR_AUTH_TOKEN environment variable
            CONNECTOR_AUTH_TOKEN -- Environment variable name from which to get the access token
            SEND_PINGS -- whether this connector should send pings periodically.  It is a good idea to set this to true
                when the connector will have idle time. Some network connections will terminate when not used
@@ -54,7 +55,7 @@ __all__ = ['VantiqSourceConnection',
 
 import sys
 import string
-from typing import Optional, Awaitable, Callable
+from typing import Awaitable, Callable, Union
 import traceback
 from urllib import parse
 import re
@@ -123,7 +124,7 @@ SEND_PINGS = 'sendPings'
 FAIL_ON_CONNECTION_ERROR = 'failOnConnectionError'
 
 # Initialise the logging module
-_vlog: Optional[Logger] = None
+_vlog: Union[Logger, None] = None
 
 
 def setup_logging():
@@ -195,12 +196,14 @@ class VantiqSourceConnection:
     of the set of connections required for the sources defined in the server.config file.
     """
 
-    def __init__(self, source_name: string, config: Optional[dict]):
+    def __init__(self, source_name: string, config: Union[dict, None]):
         self.source_name = source_name
-        self.close_handler: Callable[[dict], Awaitable[None]] | None = None
-        self.connect_handler: Callable[[dict, dict], Awaitable[None]] | None = None
-        self.publish_handler: Callable[[dict, dict], Awaitable[None]] | None = None
-        self.query_handler:Callable[[dict, dict], Awaitable[None]] | None = None
+        # TODO: when upgrade to python 3.10, use more compact specification
+        self.close_handler: Union[Callable[[dict], Awaitable[None]], None] = None
+        self.connect_handler: Union[Callable[[dict, dict], Awaitable[None]], None] = None
+        self.publish_handler: Union[Callable[[dict, dict], Awaitable[None]], None] = None
+        self.query_handler: Union[Callable[[dict, dict], Awaitable[None]], None] = None
+
         self.connection: websockets = None
         self.config = config
         self.is_connected = False
@@ -221,17 +224,17 @@ class VantiqSourceConnection:
         """
         return self.config
 
-    def configure_handlers(self, handle_close: Callable[[dict], Awaitable[None]] | None,
-                           handle_connect: Callable[[dict, dict], Awaitable[None]] | None,
-                           handle_publish: Callable[[dict, dict], Awaitable[None]] | None,
-                           handle_query: Callable[[dict, dict], Awaitable[None]] | None) -> None:
+    def configure_handlers(self, handle_close: Union[Callable[[dict], Awaitable[None]],  None],
+                           handle_connect: Union[Callable[[dict, dict], Awaitable[None]], None],
+                           handle_publish: Union[Callable[[dict, dict], Awaitable[None]], None],
+                           handle_query: Union[Callable[[dict, dict], Awaitable[None]], None]) -> None:
         """Provide handlers for close, connect, publish, and query operations
 
         Parameters:
             handle_close : Callable[[dict], Awaitable[None]]
-            handle_connect : Callable[[dict, dict], Awaitable[None]
-            handle_publish : Callable[[dict, dict], Awaitable[None]
-            handle_query : Callable[[dict, dict], Awaitable[None]
+            handle_connect : Callable[[dict, dict], Awaitable[None]]
+            handle_publish : Callable[[dict, dict], Awaitable[None]]
+            handle_query : Callable[[dict, dict], Awaitable[None]]
                 These parameters specify the callbacks to handle close, connect, publish, and query calls, respectively.
                 For each, the first parameter is a dict providing the context for the operation.  The context will
                 contain an entry keyed with 'source_name' whose value is the name of the source for which this is a
@@ -289,7 +292,7 @@ class VantiqSourceConnection:
 
         if self.config is None or TARGET_SERVER not in self.config:
             raise VantiqConnectorConfigException('No valid server.config file was found.  Working directory: {0}.'
-                               .format(os.getcwd()))
+                                                 .format(os.getcwd()))
 
         _vlog.debug('Using character set: %s', sys.getdefaultencoding())
         do_pings = True
@@ -377,7 +380,7 @@ class VantiqSourceConnection:
                         _vlog.error('Connect call failed: %s :: %s:%s', resp[_STATUS],
                                     resp[_BODY][0]['code'], resp[_BODY][0]['message'])
                         raise VantiqConnectorConfigException('Connect call failed: {0} :: {1}:{2}'.format(resp[_STATUS],
-                                           resp[_BODY][0]['code'],  resp[_BODY][0]['message']))
+                                                             resp[_BODY][0]['code'],  resp[_BODY][0]['message']))
 
                 connect_msg = {_OPERATION: _OP_CONNECT_EXTENSION,
                                _RESOURCE_NAME: _SOURCES_RESOURCE,
@@ -516,9 +519,9 @@ class VantiqSourceConnection:
                 or message[ERROR_PARAMETERS] is None):
             raise VantiqConnectorException('send_query_error(): Missing or incomplete error message information: {0}'
                                            .format(message))
-        await self._do_message_send( ctx, QUERY_ERROR, message)
+        await self._do_message_send(ctx, QUERY_ERROR, message)
 
-    async def send_query_response(self, ctx: dict, code: int, message: dict | list | None):
+    async def send_query_response(self, ctx: dict, code: int, message: Union[dict, list, None]):
         """(Async) Respond to a Vantiq query
 
                 Parameters:
@@ -613,7 +616,7 @@ class VantiqSourceConnection:
             _vlog.error('Trapped exception during send for source %s: %s', self.source_name, type(e).__name__)
             raise e from None
 
-    def _create_context(self, message: dict | None):
+    def _create_context(self, message: Union[dict, None]):
         ctx: dict = {SOURCE_NAME: self.source_name}
         if (message is not None
                 and _MESSAGE_HEADERS in message
@@ -629,14 +632,14 @@ class VantiqConnectorSet:
     def __init__(self):
         self._sources = []
         self._connections = {}
-        self._server_config: Optional[dict] = None
+        self._server_config: Union[dict, None] = None
         self._read_configuration()
 
         # Initialize the set of connections for the caller
         for src in self._sources:
             self._connections[src] = VantiqSourceConnection(src, self._server_config)
 
-    def get_logger(self) -> Logger | None:
+    def get_logger(self) -> Union[Logger, None]:
         """Returns the logger in use"""
         global _vlog
         return _vlog
@@ -680,7 +683,7 @@ class VantiqConnectorSet:
         self._server_config = sc
         self._sources = sc[SOURCES].replace(' ', '').split(',')
 
-    def _read_config_from_file(self, file_name) -> Optional[dict]:
+    def _read_config_from_file(self, file_name) -> Union[dict, None]:
         server_config = None
         scf = None
         try:
@@ -707,18 +710,18 @@ class VantiqConnectorSet:
 
         return server_config
 
-    def configure_handlers_for_all(self, handle_close: Callable[[dict], Awaitable[None]] | None,
-                                   handle_connect: Callable[[dict, dict], Awaitable[None]] | None,
-                                   handle_publish: Callable[[dict, dict], Awaitable[None]] | None,
-                                   handle_query: Callable[[dict, dict], Awaitable[None]] | None) -> None:
+    def configure_handlers_for_all(self, handle_close: Union[Callable[[dict], Awaitable[None]], None],
+                                   handle_connect: Union[Callable[[dict, dict], Awaitable[None]], None],
+                                   handle_publish: Union[Callable[[dict, dict], Awaitable[None]], None],
+                                   handle_query: Union[Callable[[dict, dict], Awaitable[None]], None]) -> None:
         """Provide handlers for close, connect, publish, and query operations for all sources in this set
 
          Parameters:
              handle_close : Callable[[dict], Awaitable[None]]
-             handle_connect : Callable[[dict, dict], Awaitable[None]
-             handle_publish : Callable[[dict, dict], Awaitable[None]
-             handle_query : Callable[[dict, dict], Awaitable[None]
-                 These parameters specify the callbacks to handle close, connect, publish, and query calls, respectively.
+             handle_connect : Callable[[dict, dict], Awaitable[None]]
+             handle_publish : Callable[[dict, dict], Awaitable[None]]
+             handle_query : Callable[[dict, dict], Awaitable[None]]
+                 These parameters specify callbacks to handle close, connect, publish, and query calls, respectively.
                  For each, the first parameter is a dict providing the context for the operation.  The context will
                  contain an entry keyed with 'source_name' whose value is the name of the source for which this is a
                  callback.  For query calls, there will be an additional entry keyed with 'response_address'. The value
@@ -726,7 +729,7 @@ class VantiqConnectorSet:
 
                  This context parameter is to be used in the various query response calls.
 
-                 For the handle_connect, handle_query, and handle_publish calls, there will b be a second dict parameter.
+                 For handle_connect, handle_query, and handle_publish calls, there will b be a second dict parameter.
                  This will contain the message sent from Vantiq to the connector (source).
          """
 

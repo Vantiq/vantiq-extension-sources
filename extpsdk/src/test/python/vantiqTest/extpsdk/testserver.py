@@ -7,19 +7,20 @@ import websockets
 from websockets import WebSocketServer
 import json
 import vantiq.extpsdk.VantiqConnector as VantiqConnector
+from typing import Union
 
 props = None
 publish_count = 0
 notify_count = 0
 disconnect_count = 0
 
-stop: asyncio.Future | None = None
-reconnect: asyncio.Future | None = None
-running: asyncio.Future | None = None
-starting: asyncio.Future | None = None
+stop: Union[asyncio.Future, None] = None
+reconnect: Union[asyncio.Future, None] = None
+running: Union[asyncio.Future, None] = None
+starting: Union[asyncio.Future, None] = None
 
-wait_for_notifications: asyncio.Future | None = None
-wait_for_publications: asyncio.Future | None = None
+wait_for_notifications: Union[asyncio.Future, None] = None
+wait_for_publications: Union[asyncio.Future, None] = None
 
 
 def message_dumper(message):
@@ -197,16 +198,16 @@ async def run_server(port, config, pub_count, note_count=0, server_disc_count=0)
             # Need to cancel our outstanding waiters so that our close can complete.
             # Otherwise, we hang in the `await server.wait_closed()` call below
             if starting is not None and not starting.done():
-                starting.cancel('Terminating Server')
+                starting.cancel()
             if running is not None and not running.done():
-                running.cancel('Terminating Server')
+                running.cancel()
             if reconnect is not None and not reconnect.done():
-                reconnect.cancel('Terminating')
+                reconnect.cancel()
             print('Server on port {0} is attempting close operation'.format(port))
             await server.wait_closed()
             print('Server on port {0} has completed close operation'.format(port))
 
     finally:
         if stop is not None and not stop.done():
-            stop.cancel('Terminating')
+            stop.cancel()
         cf.close()
