@@ -88,7 +88,6 @@ subprojects {
     apply plugin: 'eclipse'
 
     if (!['extpsdk', 'pyExecSource'].contains(it.name)) {
-        println("Applying java plugin to ${it.name}")
         apply plugin: 'java'
     }
 
