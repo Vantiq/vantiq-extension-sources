@@ -12,7 +12,7 @@ python {
     environment = [:]
 
     // minimal required python version (m.m.m)
-    minPythonVersion = '3.10'
+    minPythonVersion = '3.8'
     // minimal required pip version (m.m.m)
     minPipVersion = '9'
 
