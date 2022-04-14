@@ -183,8 +183,8 @@ sources={source_name}
                 await run_server_test(unused_tcp_port, filename, 25, conn)
             # [Errno 8] nodename nor servname provided, or not known
             assert len(exc.value.args) == 2
-            assert exc.value.args[0] == 8
-            assert exc.value.args[1] == 'nodename nor servname provided, or not known'
+            # Actual errors returned vary from OS & version to OS & version.  Can't really test much
+            # here except that we got an error.
         finally:
             os.remove('server.config')
             os.remove('badserver.config')
