@@ -53,3 +53,8 @@ windows/
 # Python infrastructure
 **/__pycache__
 **/*.egg-info/*
+**/.pytest_cache
+
+# Local changes
+**/Vantiq.log
+**/VantiqConnector.log
