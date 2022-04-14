@@ -48,8 +48,12 @@ async def run_server_test(port, config, pub_count, connector: VantiqSourceConnec
         await asyncio.gather(*tasks, return_exceptions=False)
         pass
     finally:
+        tasks = []
         for t in tasks:
             t.cancel()
+            tasks.append(t)
+        # To avoid spurious errors in the log(s), wait for these tasks to complete.
+        await asyncio.gather(*tasks)
 
 
 class TestFaultyConnections:
