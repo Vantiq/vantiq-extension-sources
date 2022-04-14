@@ -25,10 +25,8 @@ setup(
         "Programming Language :: Python :: 3.9",
         "Programming Language :: Python :: 3.10",
     ],
-    python_requires=">=3.8",
     install_requires=[
         "websockets>=10.2",
-        "asyncio>=3.4.3",
         "jprops>=2.0.2"
     ],
     entry_points={},

@@ -43,17 +43,25 @@ python {
     envCopy = false
 
     pip 'pip:22.0.4'
+
+    // Product use
+    pip 'websockets:10.2'
+    pip 'jprops:2.0.2'
+
+    // For testing
     pip 'pytest:6.2.5'
     pip 'pytest-asyncio:0.18.3'
     pip 'pytest-pythonpath:0.7.4'
     pip 'pytest-timeout:2.1.0'
-    pip 'websockets:10.2'
-    pip 'jprops:2.0.2'
-    pip 'asyncio:3.4.3'
 }
 
 task pytest(type: PythonTask) {
     module = 'pytest'
 }
 
+task pyclean(type: Delete) {
+    delete "${project.projectDir}/dist"
+}
+
 test.dependsOn pytest
+clean.dependsOn pyclean
