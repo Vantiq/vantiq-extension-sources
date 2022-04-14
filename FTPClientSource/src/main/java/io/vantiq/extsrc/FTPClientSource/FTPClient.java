@@ -654,17 +654,21 @@ public class FTPClient {
             Map<String, ?> request = (Map<String, ?>) message.getObject();
             Map<String, Object> body = (Map<String, Object>) request.get(checkedAttribute);
 
-            String token = "eyJhbGciOiJSUzI1NiIsInR5cCIgOiAiSldUIiwia2lkIiA6ICJaUlEybmJROHhvTHNwS3RBaE9mMllESENPeWVqa0tOVHhOSnlpT1RKeWZJIn0.eyJleHAiOjE2MTgyMTA3MTYsImlhdCI6MTYxODEyNDMxNiwiYXV0aF90aW1lIjoxNjE4MTIwNjk3LCJqdGkiOiI1MzJiM2RhMC1kYTNiLTQ0YjUtOGQ4Yi0yMWEyYTMwMDhiM2YiLCJpc3MiOiJodHRwczovL2Rldi52YW50aXEuY29tL2F1dGgvcmVhbG1zL2Rldi52YW50aXEuY29tIiwic3ViIjoiZjM4YTJjYWQtZTc5ZS00OTgyLTk1MjMtMTUxZjE0OTgxOTEzIiwidHlwIjoiQmVhcmVyIiwiYXpwIjoidmFudGlxU2VydmVyIiwic2Vzc2lvbl9zdGF0ZSI6ImIwMjI1ZDlhLTc2NzktNDZmNC1iZmYyLTA5OTMxNTA2ODlmYSIsImFjciI6IjEiLCJzY29wZSI6Im9wZW5pZCBwcm9maWxlIGVtYWlsIiwiZW1haWxfdmVyaWZpZWQiOnRydWUsIm5hbWUiOiJJc3NhYyBTaG5lb3Jzb24iLCJwcmVmZXJyZWRfdXNlcm5hbWUiOiJpdHppazk3IiwiZ2l2ZW5fbmFtZSI6Iklzc2FjIiwiZmFtaWx5X25hbWUiOiJTaG5lb3Jzb24iLCJlbWFpbCI6InRobWhlMkBnbWFpbC5jb20ifQ.qA6s3uxHVTEj_cvmNDuQdAXWydZOtoQmebthzmfdpN9cxf73OoOEShV-0SL81kj0R1ULyHDT-s9Ul7X3bgLhcfiIzadocRfq3Fs2N9htSf0IkBjpyMDDvuZ6yGXfNe9D-3bNsPzCAVOa4I8Y325rveFIUupZaaKTl2TkBITIiQUmA1NGDkdv8ph_JBJW5wXD4YyNtFdSe0OTZwTFgsqXS9c4hLmh-4puJI-XFxA8Pu48bQanenaUIzFW81NqdA88ru9rKlNXgSv1wgK0vk1Rq1lrL-R2i2Si_2Qjuum28xhv8Z5diwh-AWdZV3jRcORKnVQEgCM_h9w_g4r05-Z2DA";
-            checkedAttribute = FTPClientHandleConfiguration.BASE_DOCUMENT_PATH;
-            String defBaseFolder = (String) config.get(FTPClientHandleConfiguration.BASE_DOCUMENT_PATH);
-            String basePathStr = defBaseFolder;
+            checkedAttribute = FTPClientHandleConfiguration.SOURCE_DOCUMENT_SERVER_PATH;
+            String sourceDocumentServerPath = (String) SetFieldStringValue(checkedAttribute, body,
+                    defaultServer.sourceDocumentServerPath, true);
+
+            String basePathStr = sourceDocumentServerPath;
 
             checkedAttribute = REMOTE_PATH_KEYWORD;
             sourcePathStr = SetFieldStringValue(checkedAttribute, body, "", true);
 
             checkedAttribute = LOCAL_PATH_KEYWORD;
             destinationPathStr = SetFieldStringValue(checkedAttribute, body, "", true);
-            new File(destinationPathStr).mkdirs();
+
+            File p = new File(destinationPathStr);
+            String p1 = p.getParent();
+            new File(p1).mkdirs();
 
             if (sourcePathStr == "" || destinationPathStr == "") {
                 rsArray = CreateResponse(FTPClient_DOWNLOAD_DOCUMENT_FAILED_CODE,
@@ -673,9 +677,8 @@ public class FTPClient {
 
                 VantiqUtil vantiqUtil = new VantiqUtil(log);
 
-                String fullSourcePath = basePathStr + "/" + sourcePathStr + "?token=" + token;
+                String fullSourcePath = basePathStr + "/" + sourcePathStr.replace("public/", "");
 
-                // destinationStruct dest = setDestination(body);
                 if (!vantiqUtil.downloadFromVantiq(fullSourcePath, destinationPathStr)) {
                     rsArray = CreateResponse(FTPClient_DOWNLOAD_DOCUMENT_FAILED_CODE,
                             FTPClient_DOWNLOAD_FOLDER_FAILED_MESSAGE, fullSourcePath);
@@ -809,7 +812,6 @@ public class FTPClient {
             checkedAttribute = FTPClientHandleConfiguration.SOURCE_DOCUMENT_SERVER_PATH;
             String sourceDocumentServerPath = (String) SetFieldStringValue(checkedAttribute, body,
                     defaultServer.sourceDocumentServerPath, true);
-            
 
             checkedAttribute = FILENAME_KEYWORD;
             String fileName = SetFieldStringValue(checkedAttribute, body, "", true);
