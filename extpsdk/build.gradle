@@ -2,6 +2,10 @@ plugins {
     id 'ru.vyarus.use-python' version '2.3.0'
 }
 
+ext {
+    resultPath = "${project.buildDir}/reports/tests/test"
+}
+
 python {
     // python binary name (python or python3 by default)
     pythonBinary
@@ -53,15 +57,36 @@ python {
     pip 'pytest-asyncio:0.18.3'
     pip 'pytest-pythonpath:0.7.4'
     pip 'pytest-timeout:2.1.0'
+    pip 'pytest-html:3.1.1'   // To generate html reports from pytest cases
+}
+
+task ensure_test_directory() {
+    doLast {
+        println('Creating our directory: ' + "${project.buildDir}/test-results/test")
+        mkdir "${project.buildDir}/test-results/test"
+    }
 }
 
 task pytest(type: PythonTask) {
     module = 'pytest'
 }
 
+// These tasks exist since there appear to be issues creating files whose path ends with 'test'
+task pyFixupTest(type: Copy) {
+    from "${project.buildDir}/reports/tests/atest"
+    into "${resultPath}"
+    include "*"
+}
+
+task pyDeleteOld(type: Delete) {
+    delete "${project.buildDir}/reports/tests/atest"
+}
+
 task pyclean(type: Delete) {
     delete "${project.projectDir}/dist"
 }
 
+pytest.configure { finalizedBy pyFixupTest }
+pyFixupTest.configure { finalizedBy pyDeleteOld}
 test.dependsOn pytest
 clean.dependsOn pyclean
