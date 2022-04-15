@@ -90,7 +90,7 @@ _BODY = 'body'
 _RESPONSE_ADDRESS_HEADER = "X-Reply-Address"
 _MESSAGE_HEADERS = 'messageHeaders'
 _ORIGIN_ADDRESS = 'REPLY_ADDR_HEADER'
-# FIXME -- check these & rename to _...
+
 _OPERATION = 'op'
 _RESOURCE_NAME = 'resourceName'
 _RESOURCE_ID = 'resourceId'
