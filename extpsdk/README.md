@@ -26,6 +26,8 @@ The following sections describe the use of this SDK to construct a connector.
 
 ## Building a Connector
 
+Running this code required Python 3.8 or later.
+
 To use the SDK, install it into your Python environment.  Using `pip`, 
 
 ```commandline
