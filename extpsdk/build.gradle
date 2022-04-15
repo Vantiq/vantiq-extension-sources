@@ -60,13 +60,6 @@ python {
     pip 'pytest-html:3.1.1'   // To generate html reports from pytest cases
 }
 
-task ensure_test_directory() {
-    doLast {
-        println('Creating our directory: ' + "${project.buildDir}/test-results/test")
-        mkdir "${project.buildDir}/test-results/test"
-    }
-}
-
 task pytest(type: PythonTask) {
     outputs.upToDateWhen { false }
     module = 'pytest'
