@@ -216,7 +216,7 @@ Query errors are sent when a Query cannot be completed successfully. To send a Q
 `VantiqSourceConnection.send_query_error(ctx, message)`. 
 
 The `ctx` or query context was passed in to the `handle_query` callback.
-The `message` (`dict`) paramter must contain the following items.
+The `message` (`dict`) parameter must contain the following items.
 
 * `VantiqConnector.ERROR_CODE` -- the short name for the error
 * `VantiqConnector.ERROR_TEMPLATE` -- template for there error message.  Templates contain zero0-based indexed references for parameters list (_e.g._,`{0}` to refer to the first parameter, `{1}` the second, etc.).
