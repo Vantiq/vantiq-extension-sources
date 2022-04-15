@@ -68,25 +68,17 @@ task ensure_test_directory() {
 }
 
 task pytest(type: PythonTask) {
+    outputs.upToDateWhen { false }
     module = 'pytest'
 }
 
-// These tasks exist since there appear to be issues creating files whose path ends with 'test'
-task pyFixupTest(type: Copy) {
-    from "${project.buildDir}/reports/tests/atest"
-    into "${resultPath}"
-    include "*"
-}
-
-task pyDeleteOld(type: Delete) {
-    delete "${project.buildDir}/reports/tests/atest"
-}
+// Note: pytest must run AFTER the 'test' task.  That task prepares (i.e. deletes) the directory
+// into which the results are to be placed.  Because of that, if pytest runs later, its results
+// are deleted.
+test.finalizedBy pytest
 
 task pyclean(type: Delete) {
     delete "${project.projectDir}/dist"
 }
 
-pytest.configure { finalizedBy pyFixupTest }
-pyFixupTest.configure { finalizedBy pyDeleteOld}
-test.dependsOn pytest
 clean.dependsOn pyclean
