@@ -29,7 +29,7 @@ The following sections describe the use of this SDK to construct a connector.
 To use the SDK, install it into your Python environment.  Using `pip`, 
 
 ```commandline
-pip install vantiq-connector
+pip install vantiq-connector-sdk
 ```
 
 Other Python environment tools may use different commands.
