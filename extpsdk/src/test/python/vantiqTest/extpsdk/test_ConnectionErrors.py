@@ -43,7 +43,8 @@ async def run_server_test(port, config, pub_count, connector: VantiqSourceConnec
     tasks = []
     try:
         loop = asyncio.get_event_loop()
-        tasks.append(loop.create_task(run_server(port, config, pub_count)))
+        if port > 0:
+            tasks.append(loop.create_task(run_server(port, config, pub_count)))
         tasks.append(loop.create_task(connector.connect_to_vantiq()))
         await asyncio.gather(*tasks, return_exceptions=False)
         pass
@@ -154,44 +155,33 @@ sources={source_name}
 
     @pytest.mark.asyncio
     @pytest.mark.timeout(10)
-    async def test_connect_bad_url(self, unused_tcp_port):
+    async def test_connect_bad_url(self):
         # Construct a server config file to use...
         source_name = 'pythonSource'
         cf = f'''
-targetServer=http://server.does.not.exist:{unused_tcp_port}
+targetServer=http://server.does.not.exist:9999
 authToken=junk
 sources={source_name}
 failOnConnectionError=true
 '''
-
-        correct_config_in_wrong_place = f'''
-targetServer=http://localhost:{unused_tcp_port}
-authToken=testtoken
-sources={source_name}
-'''
-
         try:
             scf = open('server.config', encoding='utf-8', mode='wt')
             scf.write(cf)
             scf.close()
 
-            scf = open('badserver.config', encoding='utf-8', mode='wt')
-            scf.write(correct_config_in_wrong_place)
-            filename = scf.name
-            scf.close()
             vc = VantiqConnectorSet()
             vc.configure_handlers_for_all(self.close_handler, self.connect_handler,
                                           self.publish_handler, self.query_handler)
             conn = vc.get_connection_for_source(source_name)
             with pytest.raises(OSError) as exc:
-                await run_server_test(unused_tcp_port, filename, 25, conn)
+                # For this case, we don't need a server so don't bother to start one
+                await run_server_test(0, None, 25, conn)
             # [Errno 8] nodename nor servname provided, or not known
             assert len(exc.value.args) == 2
             # Actual errors returned vary from OS & version to OS & version.  Can't really test much
             # here except that we got an error.
         finally:
             os.remove('server.config')
-            os.remove('badserver.config')
 
     async def close_handler(self):
         assert self._is_connected

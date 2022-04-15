@@ -61,7 +61,8 @@ async def handler(websocket):
                     ok_message = {'status': 401, 'body': [{ 'code':'authFailure', 'message': 'invalid authToken'}]}
                     await websocket.send(json.dumps(ok_message))
                     await asyncio.sleep(10)
-                    stop.set_result('Got auth issues')
+                    if not stop.done():
+                        stop.set_result('Got auth issues')
                 else:
                     await websocket.send(json.dumps(ok_message))
                     # Now, we expect to get a connectExtension message
@@ -210,4 +211,5 @@ async def run_server(port, config, pub_count, note_count=0, server_disc_count=0)
     finally:
         if stop is not None and not stop.done():
             stop.cancel()
+            await stop
         cf.close()
