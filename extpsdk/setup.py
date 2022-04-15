@@ -25,6 +25,7 @@ setup(
         "Programming Language :: Python :: 3.9",
         "Programming Language :: Python :: 3.10",
     ],
+    python_reuires='>=3.8',
     install_requires=[
         "websockets>=10.2",
         "jprops>=2.0.2"
