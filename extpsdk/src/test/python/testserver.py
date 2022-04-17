@@ -6,7 +6,8 @@ import jprops
 import websockets
 from websockets import WebSocketServer
 import json
-import vantiq.extpsdk.VantiqConnector as VantiqConnector
+import vantiqconnectorsdk
+from vantiqconnectorsdk import VantiqConnector
 from typing import Union
 
 props = None
@@ -29,10 +30,10 @@ def message_dumper(message):
     if 'op' in message:
         op = message['op']
         print('Test server received operation:', op)
-    if VantiqConnector._RESOURCE_NAME in message:
-        print('Test server', op, 'resourceName: ', message[VantiqConnector._RESOURCE_NAME])
-    if VantiqConnector._RESOURCE_ID in message:
-        print('Test server', op, 'resourceId:', message[VantiqConnector._RESOURCE_ID])
+    if vantiqconnectorsdk._RESOURCE_NAME in message:
+        print('Test server', op, 'resourceName: ', message[vantiqconnectorsdk._RESOURCE_NAME])
+    if vantiqconnectorsdk._RESOURCE_ID in message:
+        print('Test server', op, 'resourceId:', message[vantiqconnectorsdk._RESOURCE_ID])
     if 'object' in message:
         print('Test server', op, 'object:', message['object'])
 
@@ -49,7 +50,7 @@ async def handler(websocket):
     wait_for_notifications = asyncio.get_event_loop().create_future()
     wait_for_publications = asyncio.get_event_loop().create_future()
 
-    print ('Config properties: ', props)
+    print('Config properties: ', props)
     while True:
         try:
             raw_message = await websocket.recv()
@@ -58,7 +59,7 @@ async def handler(websocket):
             if message['op'] == 'validate':
                 ok_message = {'status': 200}
                 if 'object' not in message or message['object'] != props['authToken']:
-                    ok_message = {'status': 401, 'body': [{ 'code':'authFailure', 'message': 'invalid authToken'}]}
+                    ok_message = {'status': 401, 'body': [{'code': 'authFailure', 'message': 'invalid authToken'}]}
                     await websocket.send(json.dumps(ok_message))
                     await asyncio.sleep(10)
                     if not stop.done():
@@ -70,15 +71,16 @@ async def handler(websocket):
                     message = json.loads(raw_message)
                     message_dumper(message)
 
-                    assert VantiqConnector._RESOURCE_NAME in message
+                    assert vantiqconnectorsdk._RESOURCE_NAME in message
                     assert 'op' in message
-                    assert VantiqConnector._RESOURCE_ID in message
-                    assert message[VantiqConnector._OPERATION] == VantiqConnector._OP_CONNECT_EXTENSION
-                    assert message[VantiqConnector._RESOURCE_ID] == props[VantiqConnector.SOURCES]
-                    assert message[VantiqConnector._RESOURCE_NAME] == VantiqConnector.SOURCES
+                    assert vantiqconnectorsdk._RESOURCE_ID in message
+                    assert message[vantiqconnectorsdk._OPERATION] == vantiqconnectorsdk._OP_CONNECT_EXTENSION
+                    assert message[vantiqconnectorsdk._RESOURCE_ID] == props[VantiqConnector.SOURCES]
+                    assert message[vantiqconnectorsdk._RESOURCE_NAME] == VantiqConnector.SOURCES
 
                     # Now just send some message back
-                    await websocket.send(json.dumps({"op": "configureExtension", "object": { 'config': { 'someProp': "message content"}}}))
+                    await websocket.send(json.dumps({"op": "configureExtension", "object":
+                                                     {'config': {'someProp': "message content"}}}))
 
                     running.set_result('Ready to proceed')
                     await asyncio.gather(
@@ -90,7 +92,7 @@ async def handler(websocket):
                     await wait_for_publications
                     print('wait_for_notifications returned:', wait_for_notifications.result())
                     print('Sending _TEST_CLOSE operation to shut things down')
-                    await websocket.send(json.dumps({'op': VantiqConnector._TEST_CLOSE}))
+                    await websocket.send(json.dumps({'op': vantiqconnectorsdk._TEST_CLOSE}))
                     await asyncio.sleep(0.1)  # Let message get sent before closing server
                     stop.set_result('done')
         except websockets.ConnectionClosed:
@@ -107,7 +109,8 @@ async def do_publishes(websocket, pub_count: int, disc_count: int):
         if disc_count > 0 and i > 0 and (i % disc_count == 0):
             await force_reconnect_dance()
         publish_count -= 1
-        await websocket.send(json.dumps({"op": VantiqConnector._OP_PUBLISH, 'object': {"stuff": "junk", "count": i}}))
+        await websocket.send(json.dumps({"op": vantiqconnectorsdk._OP_PUBLISH,
+                                         'object': {"stuff": "junk", "count": i}}))
 
         # Inject these very brief "yields" to get a better intermixed behavior for the tests
         # Due to the coroutine nature of asyncio, without them, we tend to get all the notifies
@@ -147,7 +150,7 @@ async def wait_for_receives(websocket, note_count: int):
                 await asyncio.sleep(2)  # Let server start up
                 pass
     except Exception as e:
-        print('Uhexpected exception during wait_for_receives(): {0}'.format(type(e).__name__))
+        print('Unexpected exception during wait_for_receives(): {0}'.format(type(e).__name__))
     print('wait_for_receives() has completed')
     if wait_for_notifications is not None:
         wait_for_notifications.set_result(note_count)

@@ -1,10 +1,10 @@
 import pytest
 import websockets.exceptions
 
-from vantiq.extpsdk import VantiqConnector
-from vantiq.extpsdk.VantiqConnector import VantiqConnectorSet
+import vantiqconnectorsdk
+from vantiqconnectorsdk import VantiqConnectorSet, VantiqConnector
 import asyncio
-from .testserver import run_server
+from testserver import run_server
 import re
 import os
 
@@ -35,6 +35,8 @@ datefmt=
 
 if not os.path.exists('serverConfig'):
     os.makedirs('serverConfig')
+print('>>>> ', os.getcwd(), '::')
+
 lg = open('serverConfig/logger.ini', mode='wt')
 lg.write(loginit)
 lg.close()
@@ -118,7 +120,7 @@ class TestSingleConnection:
             lg.close()
             if os.path.exists('VantiqConnector.log'):
                os.remove('VantiqConnector.log')
-            VantiqConnector.setup_logging()
+            vantiqconnectorsdk.setup_logging()
         except:
             pass
 
@@ -157,7 +159,7 @@ class TestSingleConnection:
             assert sc[VantiqConnector.TARGET_SERVER] is not None
             assert sc[VantiqConnector.AUTH_TOKEN] is not None
             assert sc[VantiqConnector.TARGET_SERVER].startswith('ws')
-            assert re.match(VantiqConnector._WEBSOCKET_URL_PATTERN, sc[VantiqConnector.TARGET_SERVER])
+            assert re.match(vantiqconnectorsdk._WEBSOCKET_URL_PATTERN, sc[VantiqConnector.TARGET_SERVER])
             assert self._close_count == 0
             assert self._connect_count == 0
             assert self._publish_count == 0

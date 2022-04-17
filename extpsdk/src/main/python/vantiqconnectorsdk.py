@@ -15,18 +15,18 @@ Constants:
     The following constants are available to support the callers use of the interface.
 
         Server response control
-            QUERY_EMPTY -- used when a query returns no data
-            QUERY_PARTIAL -- used when there will be more than one call to send_query_response()
-            QUERY_COMPLETE -- used to indicate the last (or only) call to send_query_complete()
+            VantiqConnector.QUERY_EMPTY -- used when a query returns no data
+            VantiqConnector.QUERY_PARTIAL -- used when there will be more than one call to send_query_response()
+            VantiqConnector.QUERY_COMPLETE -- used to indicate the last (or only) call to send_query_complete()
                               (when the response is not empty)
 
         server.config file properties
-           SOURCES -- list of sources whose connection is defined by this config file
-           TARGET_SERVER -- URI for the Vantiq server
-           AUTH_TOKEN -- Access token to be used to connect.  This is generally better done by leaving it
+           VantiqConnector.SOURCES -- list of sources whose connection is defined by this config file
+           VantiqConnector.TARGET_SERVER -- URI for the Vantiq server
+           VantiqConnector.AUTH_TOKEN -- Access token to be used to connect.  This is generally better done by leaving it
                          out and using the CONNECTOR_AUTH_TOKEN environment variable
            CONNECTOR_AUTH_TOKEN -- Environment variable name from which to get the access token
-           SEND_PINGS -- whether this connector should send pings periodically.  It is a good idea to set this to true
+           VantiqConnector.SEND_PINGS -- whether this connector should send pings periodically.  It is a good idea to set this to true
                when the connector will have idle time. Some network connections will terminate when not used
                for a while.
 """
@@ -36,22 +36,12 @@ __copyright__ = "Copyright 2022, Vantiq, Inc."
 __license__ = "MIT License"
 __email__ = "support@vantiq.com"
 __all__ = ['VantiqSourceConnection',
+           'VantiqConnector',
            'VantiqConnectorSet',
            'VantiqConnectorConfigException',
            'VantiqConnectorException',
-           'SOURCE_NAME',
-           'RESPONSE_ADDRESS',
-           'ERROR_CODE',
-           'ERROR_TEMPLATE',
-           'ERROR_PARAMETERS',
-           'QUERY_EMPTY',
-           'QUERY_COMPLETE',
-           'QUERY_PARTIAL',
-           'QUERY_ERROR',
-           'TARGET_SERVER',
-           'AUTH_TOKEN',
-           'CONNECTOR_AUTH_TOKEN',
-           'SEND_PINGS']
+           'setup_logging',
+           ]
 
 import sys
 import string
@@ -97,31 +87,8 @@ _RESOURCE_ID = 'resourceId'
 _SOURCES_RESOURCE = 'sources'
 _OBJECT = 'object'
 
-# External Use
-
-ERROR_CODE = 'messageCode'
-ERROR_TEMPLATE = 'messageTemplate'
-ERROR_PARAMETERS = 'parameters'
-
-# Context properties
-SOURCE_NAME = 'source_name'
-RESPONSE_ADDRESS = 'response_address'
-
-# Status Codes
-QUERY_COMPLETE = 200
-QUERY_EMPTY = 204
-QUERY_PARTIAL = 100
-QUERY_ERROR = 400
-
 _WEBSOCKET_URL_PATTERN = '.*/api/v[0-9]+/wsock/websocket'
 _WEBSOCKET_V1_PATH = '/api/v1/wsock/websocket'
-
-SOURCES = 'sources'
-TARGET_SERVER = 'targetServer'
-AUTH_TOKEN = 'authToken'
-CONNECTOR_AUTH_TOKEN = 'CONNECTOR_AUTH_TOKEN'
-SEND_PINGS = 'sendPings'
-FAIL_ON_CONNECTION_ERROR = 'failOnConnectionError'
 
 # Initialise the logging module
 _vlog: Union[Logger, None] = None
@@ -166,6 +133,32 @@ def sanitize_url(user_url):
     clean_url = parse.urlunparse(ts._replace(path=path, scheme=scheme))
     _vlog.debug('Configured URL %s converted to %s', user_url, clean_url)
     return clean_url
+
+
+class VantiqConnector:
+    """A set of interface constants for use with the Vantiq Connector SDK"""
+    # External Use
+
+    ERROR_CODE = 'messageCode'
+    ERROR_TEMPLATE = 'messageTemplate'
+    ERROR_PARAMETERS = 'parameters'
+
+    # Context properties
+    SOURCE_NAME = 'source_name'
+    RESPONSE_ADDRESS = 'response_address'
+
+    # Status Codes
+    QUERY_COMPLETE = 200
+    QUERY_EMPTY = 204
+    QUERY_PARTIAL = 100
+    QUERY_ERROR = 400
+
+    SOURCES = 'sources'
+    TARGET_SERVER = 'targetServer'
+    AUTH_TOKEN = 'authToken'
+    CONNECTOR_AUTH_TOKEN = 'CONNECTOR_AUTH_TOKEN'
+    SEND_PINGS = 'sendPings'
+    FAIL_ON_CONNECTION_ERROR = 'failOnConnectionError'
 
 
 class VantiqConnectorException(RuntimeError):
@@ -268,16 +261,16 @@ class VantiqSourceConnection:
             if scf is not None:
                 scf.close()
 
-        if server_config is not None and TARGET_SERVER in server_config:
+        if server_config is not None and VantiqConnector.TARGET_SERVER in server_config:
             # If things are looking reasonable, fetch the authToken if necessary
-            if AUTH_TOKEN not in server_config:
+            if VantiqConnector.AUTH_TOKEN not in server_config:
                 # Defined behavior is that serverConfig.authToken overrides env. variable
-                auth_tok = os.environ.get(CONNECTOR_AUTH_TOKEN)
-                server_config[AUTH_TOKEN] = auth_tok
+                auth_tok = os.environ.get(VantiqConnector.CONNECTOR_AUTH_TOKEN)
+                server_config[VantiqConnector.AUTH_TOKEN] = auth_tok
 
-            fixed_url = sanitize_url(server_config[TARGET_SERVER])
+            fixed_url = sanitize_url(server_config[VantiqConnector.TARGET_SERVER])
             if fixed_url is not None:
-                server_config[TARGET_SERVER] = fixed_url
+                server_config[VantiqConnector.TARGET_SERVER] = fixed_url
 
         return server_config
         # serverConfig holds the properties from our server.config file.  These are used to define the server connection
@@ -290,25 +283,25 @@ class VantiqSourceConnection:
         """
         global _vlog
 
-        if self.config is None or TARGET_SERVER not in self.config:
+        if self.config is None or VantiqConnector.TARGET_SERVER not in self.config:
             raise VantiqConnectorConfigException('No valid server.config file was found.  Working directory: {0}.'
                                                  .format(os.getcwd()))
 
         _vlog.debug('Using character set: %s', sys.getdefaultencoding())
         do_pings = True
-        if SEND_PINGS not in self.config or self.config[SEND_PINGS] == 'false':
+        if VantiqConnector.SEND_PINGS not in self.config or self.config[VantiqConnector.SEND_PINGS] == 'false':
             do_pings = False
 
         self._is_connected_future = asyncio.get_event_loop().create_future()
 
         fail_fast = False
-        if FAIL_ON_CONNECTION_ERROR in self.config:
-            fail_fast = self.config[FAIL_ON_CONNECTION_ERROR]
+        if VantiqConnector.FAIL_ON_CONNECTION_ERROR in self.config:
+            fail_fast = self.config[VantiqConnector.FAIL_ON_CONNECTION_ERROR]
         reason = None
         fail_count = 0
         while reason != _TEST_CLOSE:  # reason can be CLOSED in test scenarios only
             _vlog.info('Connector for source %s is connecting to Vantiq at: %s',
-                       self.source_name, self.config[TARGET_SERVER])
+                       self.source_name, self.config[VantiqConnector.TARGET_SERVER])
             try:
                 reason = await self._perform_connection(do_pings)
                 fail_count = 0
@@ -330,7 +323,7 @@ class VantiqSourceConnection:
                 fail_count += 1
                 reason = e
                 _vlog.debug('Connection error to %s: %s',
-                            self.config[TARGET_SERVER], type(reason).__name__)
+                            self.config[VantiqConnector.TARGET_SERVER], type(reason).__name__)
             except Exception as exc:
                 reason = exc
                 fail_count += 1
@@ -352,21 +345,21 @@ class VantiqSourceConnection:
                     await asyncio.sleep(wait_period)
             _vlog.debug('Looping in connector with reason: %s', str(reason))
         _vlog.info('Connector for source %s via Vantiq at: %s is completing',
-                   self.source_name, self.config[TARGET_SERVER])
+                   self.source_name, self.config[VantiqConnector.TARGET_SERVER])
 
     async def _perform_connection(self, do_pings: bool) -> string:
         global _vlog
 
         try:
-            _vlog.debug('perform_connection() to %s', self.config[TARGET_SERVER])
-            async with websockets.connect(uri=self.config[TARGET_SERVER],
+            _vlog.debug('perform_connection() to %s', self.config[VantiqConnector.TARGET_SERVER])
+            async with websockets.connect(uri=self.config[VantiqConnector.TARGET_SERVER],
                                           ping_interval=20 if do_pings else None,
                                           ping_timeout=20 if do_pings else None) as websocket:
                 _vlog.debug('Connection completed')
                 auth_msg = {
                     _OPERATION: _OP_VALIDATE,
                     _RESOURCE_NAME: 'system.credentials',
-                    _OBJECT: self.config[AUTH_TOKEN]
+                    _OBJECT: self.config[VantiqConnector.AUTH_TOKEN]
                 }
 
                 await websocket.send(json.dumps(auth_msg))
@@ -426,7 +419,8 @@ class VantiqSourceConnection:
         try:
             # The future below allows holding off work until the connection is ready
             self._is_connected_future.set_result('Connected to src {0} at {1}'
-                                                 .format(self.source_name, self.config[TARGET_SERVER]))
+                                                 .format(self.source_name,
+                                                         self.config[VantiqConnector.TARGET_SERVER]))
             retval = 'COMPLETED'
             async for rawMessage in self.connection:
                 message = json.loads(rawMessage)
@@ -508,18 +502,18 @@ class VantiqSourceConnection:
                                        ['some_param_name', some_bad_value])
         """
         if (ctx is None
-                or SOURCE_NAME not in ctx
-                or ctx[SOURCE_NAME] != self.source_name
-                or RESPONSE_ADDRESS not in ctx
-                or ctx[RESPONSE_ADDRESS] is None):
+                or VantiqConnector.SOURCE_NAME not in ctx
+                or ctx[VantiqConnector.SOURCE_NAME] != self.source_name
+                or VantiqConnector.RESPONSE_ADDRESS not in ctx
+                or ctx[VantiqConnector.RESPONSE_ADDRESS] is None):
             raise VantiqConnectorException('send_query_error(): Missing or incomplete context: {0}'.format(ctx))
         if (message is None
-                or message[ERROR_CODE] is None
-                or message[ERROR_TEMPLATE] is None
-                or message[ERROR_PARAMETERS] is None):
+                or message[VantiqConnector.ERROR_CODE] is None
+                or message[VantiqConnector.ERROR_TEMPLATE] is None
+                or message[VantiqConnector.ERROR_PARAMETERS] is None):
             raise VantiqConnectorException('send_query_error(): Missing or incomplete error message information: {0}'
                                            .format(message))
-        await self._do_message_send(ctx, QUERY_ERROR, message)
+        await self._do_message_send(ctx, VantiqConnector.QUERY_ERROR, message)
 
     async def send_query_response(self, ctx: dict, code: int, message: Union[dict, list, None]):
         """(Async) Respond to a Vantiq query
@@ -543,22 +537,22 @@ class VantiqSourceConnection:
                     await cnx.send_query_response(ctx, VantiqConnector.QUERY_COMPLETE,
                                                  {'name': 'someName', 'otherProperty': 'some value'})
             """
-        if code not in [QUERY_EMPTY, QUERY_COMPLETE, QUERY_PARTIAL]:
+        if code not in [VantiqConnector.QUERY_EMPTY, VantiqConnector.QUERY_COMPLETE, VantiqConnector.QUERY_PARTIAL]:
             raise VantiqConnectorException('send_query_response(): Invalid Code: {0}.'.format(code))
-        if code != QUERY_EMPTY and message is None:
+        if code != VantiqConnector.QUERY_EMPTY and message is None:
             raise VantiqConnectorException('send_query_response(): Non-empty responses require a message parameter.')
         await self._do_message_send(ctx, code, message)
 
     async def _do_message_send(self, ctx: dict, code: int, message):
         if (ctx is None
-                or SOURCE_NAME not in ctx
-                or ctx[SOURCE_NAME] != self.source_name
-                or RESPONSE_ADDRESS not in ctx
-                or ctx[RESPONSE_ADDRESS] is None):
+                or VantiqConnector.SOURCE_NAME not in ctx
+                or ctx[VantiqConnector.SOURCE_NAME] != self.source_name
+                or VantiqConnector.RESPONSE_ADDRESS not in ctx
+                or ctx[VantiqConnector.RESPONSE_ADDRESS] is None):
             raise VantiqConnectorException('Query response is missing or has incomplete context: {0}'.format(ctx))
 
-        msg_to_send = {_STATUS: code, 'headers': {_RESPONSE_ADDRESS_HEADER: ctx[RESPONSE_ADDRESS]}}
-        if code != QUERY_EMPTY:
+        msg_to_send = {_STATUS: code, 'headers': {_RESPONSE_ADDRESS_HEADER: ctx[VantiqConnector.RESPONSE_ADDRESS]}}
+        if code != VantiqConnector.QUERY_EMPTY:
             body = message
             msg_to_send[_BODY] = body
 
@@ -617,13 +611,13 @@ class VantiqSourceConnection:
             raise e from None
 
     def _create_context(self, message: Union[dict, None]):
-        ctx: dict = {SOURCE_NAME: self.source_name}
+        ctx: dict = {VantiqConnector.SOURCE_NAME: self.source_name}
         if (message is not None
                 and _MESSAGE_HEADERS in message
                 and message[_MESSAGE_HEADERS] is not None
                 and _ORIGIN_ADDRESS in message[_MESSAGE_HEADERS]
                 and message[_MESSAGE_HEADERS][_ORIGIN_ADDRESS] is not None):
-            ctx[RESPONSE_ADDRESS] = message[_MESSAGE_HEADERS][_ORIGIN_ADDRESS]
+            ctx[VantiqConnector.RESPONSE_ADDRESS] = message[_MESSAGE_HEADERS][_ORIGIN_ADDRESS]
         return ctx
 
 
@@ -681,9 +675,10 @@ class VantiqConnectorSet:
             raise VantiqConnectorConfigException('No server.config file found.')
 
         self._server_config = sc
-        self._sources = sc[SOURCES].replace(' ', '').split(',')
+        self._sources = sc[VantiqConnector.SOURCES].replace(' ', '').split(',')
 
     def _read_config_from_file(self, file_name) -> Union[dict, None]:
+        print('>>>> ', os.getcwd(), '::', file_name)
         server_config = None
         scf = None
         try:
@@ -697,16 +692,16 @@ class VantiqConnectorSet:
             if scf is not None:
                 scf.close()
 
-        if server_config is not None and TARGET_SERVER in server_config:
+        if server_config is not None and VantiqConnector.TARGET_SERVER in server_config:
             # If things are looking reasonable, fetch the authToken if necessary
-            if AUTH_TOKEN not in server_config:
+            if VantiqConnector.AUTH_TOKEN not in server_config:
                 # Defined behavior is that serverConfig.authToken overrides env. variable
-                auth_tok = os.environ.get(CONNECTOR_AUTH_TOKEN)
-                server_config[AUTH_TOKEN] = auth_tok
+                auth_tok = os.environ.get(VantiqConnector.CONNECTOR_AUTH_TOKEN)
+                server_config[VantiqConnector.AUTH_TOKEN] = auth_tok
 
-            fixed_url = sanitize_url(server_config[TARGET_SERVER])
+            fixed_url = sanitize_url(server_config[VantiqConnector.TARGET_SERVER])
             if fixed_url is not None:
-                server_config[TARGET_SERVER] = fixed_url
+                server_config[VantiqConnector.TARGET_SERVER] = fixed_url
 
         return server_config
 

@@ -1,9 +1,10 @@
 
 import pytest
-from vantiq.extpsdk.VantiqConnector import VantiqSourceConnection, VantiqConnectorSet, VantiqConnectorConfigException
-from vantiq.extpsdk import VantiqConnector
+import vantiqconnectorsdk
+from vantiqconnectorsdk import VantiqConnector, VantiqSourceConnection, VantiqConnectorSet,\
+    VantiqConnectorConfigException
 import asyncio
-from .testserver import run_server
+from testserver import run_server
 import re
 import os
 
@@ -62,7 +63,7 @@ class TestFaultyConnections:
     @classmethod
     def setup_class(cls):
         try:
-            VantiqConnector.setup_logging()
+            vantiqconnectorsdk.setup_logging()
         except:
             pass
 
@@ -110,7 +111,7 @@ class TestFaultyConnections:
             assert sc[VantiqConnector.TARGET_SERVER] is not None
             assert sc[VantiqConnector.AUTH_TOKEN] is not None
             assert sc[VantiqConnector.TARGET_SERVER].startswith('ws')
-            assert re.match(VantiqConnector._WEBSOCKET_URL_PATTERN, sc[VantiqConnector.TARGET_SERVER])
+            assert re.match(vantiqconnectorsdk._WEBSOCKET_URL_PATTERN, sc[VantiqConnector.TARGET_SERVER])
         finally:
             if filename is not None:
                 os.remove(filename)

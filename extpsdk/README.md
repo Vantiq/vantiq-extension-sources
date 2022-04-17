@@ -39,29 +39,29 @@ Other Python environment tools may use different commands.
 Once it is installed, you can import it.
 
 ```python
-from vantiq.extpsdk import VantiqConnector
-```
 
-This will import the `VantiqConnector`.
+from vantiqconnectorsdk import VantiqConnector, VantiqConnectorSet, VantiqConnectorException, VantiqSourceConnection
+```
 
 The SDK is built using _asyncio_.  For details about working with _asyncio_, please see [Python `asyncio` documentation](https://docs.python.org/3/library/asyncio.html).
 
-The `VantiqConnector` includes the following items:
+The Vantiq Connector SDK includes the following items:
 
+* VantiqConnector -- a set of conststants defined as part of the interface.
 * VantiqConnectorSet -- a class that manages the connections for this set of connectors
 * VantiqSourceConnection -- a class that manages the message flow and state for a single connector
 * a set of constants to help in the use of these two classes:
     * For construction errors:
-        * ERROR_CODE -- the short name for an error
-        * ERROR_TEMPLATE -- the template for the message itself
-        * ERROR_PARAMETERS -- parameters for the error message
+        * VantiqConnector.ERROR_CODE -- the short name for an error
+        * VantiqConnector.ERROR_TEMPLATE -- the template for the message itself
+        * VantiqConnector.ERROR_PARAMETERS -- parameters for the error message
     * For context reference during callbacks:
-        * SOURCE_NAME -- the name of the source for which this callback is intended
-        * RESPONSE_ADDRESS -- routing information to ensure that a query response is delivered to the correct query
+        * VantiqConnector.SOURCE_NAME -- the name of the source for which this callback is intended
+        * VantiqConnector.RESPONSE_ADDRESS -- routing information to ensure that a query response is delivered to the correct query
     * Status codes for query responses:
-        * QUERY_COMPLETE -- the last response for this query
-        * QUERY_PARTIAL -- a partial response to a query
-        * QUERY_EMPTY -- an indication that there is no response available for this query
+        * VantiqConnector.QUERY_COMPLETE -- the last response for this query
+        * VantiqConnector.QUERY_PARTIAL -- a partial response to a query
+        * VantiqConnector.QUERY_EMPTY -- an indication that there is no response available for this query
 
 
 ### Logging
