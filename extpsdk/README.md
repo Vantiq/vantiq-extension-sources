@@ -31,7 +31,7 @@ Running this code required Python 3.8 or later.
 To use the SDK, install it into your Python environment.  Using `pip`, 
 
 ```commandline
-pip install vantiq-connector-sdk
+pip install vantiqconnectorsdk
 ```
 
 Other Python environment tools may use different commands.
