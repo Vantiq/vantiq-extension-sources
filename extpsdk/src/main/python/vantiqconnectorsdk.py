@@ -455,6 +455,7 @@ class VantiqSourceConnection:
         """(Async) Close the connection to the Vantiq server."""
         if self.connection is not None:
             await self.connection.close()
+            self.connection = None
 
     async def _process_message(self, op: string, message: dict):
         global _vlog
@@ -750,5 +751,5 @@ class VantiqConnectorSet:
 
         This will close the connections for all sources in this set.
         """
-        for conn in self._connections:
-            conn.close()
+        for src in self._sources:
+            await self._connections[src].close()
