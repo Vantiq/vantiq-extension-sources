@@ -61,9 +61,11 @@ async def handler(websocket):
                 if 'object' not in message or message['object'] != props['authToken']:
                     ok_message = {'status': 401, 'body': [{'code': 'authFailure', 'message': 'invalid authToken'}]}
                     await websocket.send(json.dumps(ok_message))
-                    await asyncio.sleep(10)
                     if not stop.done():
                         stop.set_result('Got auth issues')
+                    # Once our bad auth test is done, our simple server simulator should exit.  The stop condition
+                    # is set above, but we also need to break out of our reconnect loop.
+                    break
                 else:
                     await websocket.send(json.dumps(ok_message))
                     # Now, we expect to get a connectExtension message
