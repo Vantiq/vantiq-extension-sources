@@ -23,10 +23,11 @@ Constants:
         server.config file properties
            VantiqConnector.SOURCES -- list of sources whose connection is defined by this config file
            VantiqConnector.TARGET_SERVER -- URI for the Vantiq server
-           VantiqConnector.AUTH_TOKEN -- Access token to be used to connect.  This is generally better done by leaving it
-                         out and using the CONNECTOR_AUTH_TOKEN environment variable
+           VantiqConnector.AUTH_TOKEN -- Access token to be used to connect.  This is generally better done by leaving
+                         it out and using the CONNECTOR_AUTH_TOKEN environment variable
            CONNECTOR_AUTH_TOKEN -- Environment variable name from which to get the access token
-           VantiqConnector.SEND_PINGS -- whether this connector should send pings periodically.  It is a good idea to set this to true
+           VantiqConnector.SEND_PINGS -- whether this connector should send pings periodically.  It is a good idea
+                         to set this to true
                when the connector will have idle time. Some network connections will terminate when not used
                for a while.
 """
@@ -43,23 +44,22 @@ __all__ = ['VantiqSourceConnection',
            'setup_logging',
            ]
 
-import sys
-import string
-from typing import Awaitable, Callable, Union
-import traceback
-from urllib import parse
-import re
-
-import jprops
+import asyncio
+import json
 import logging
 import logging.config
 from logging import Logger
-
 import os
-import json
-import websockets
-import asyncio
+import re
 import socket
+import string
+import sys
+import traceback
+from typing import Awaitable, Callable, Union
+from urllib import parse
+
+import jprops
+import websockets
 
 _OP_AUTHENTICATE = 'authenticate'  # used for user/pw
 _OP_VALIDATE = 'validate'   # used for auth tokens
@@ -130,6 +130,7 @@ def sanitize_url(user_url):
     if not re.fullmatch(_WEBSOCKET_URL_PATTERN, path):
         path = _WEBSOCKET_V1_PATH
 
+    # noinspection PyProtectedMember
     clean_url = parse.urlunparse(ts._replace(path=path, scheme=scheme))
     _vlog.debug('Configured URL %s converted to %s', user_url, clean_url)
     return clean_url
@@ -648,7 +649,7 @@ class VantiqConnectorSet:
         This returns the set of VantiqSourceConnections, indexed by source name.
 
         Returns:
-             dict where the item key is the source name, and the item value is a VqntiqSourceConnection.
+             dict where the item key is the source name, and the item value is a VantiqSourceConnection.
         """
         return self._connections
 

@@ -1,14 +1,20 @@
 #!/usr/bin/env python
 
+__author__ = 'fhcarter'
+__copyright__ = "Copyright 2022, Vantiq, Inc."
+__license__ = "MIT License"
+__email__ = "support@vantiq.com"
+
 import asyncio
+import json
+from typing import Union
 
 import jprops
 import websockets
-from websockets import WebSocketServer
-import json
+from websockets import ConnectionClosed, WebSocketServer
+
 import vantiqconnectorsdk
 from vantiqconnectorsdk import VantiqConnector
-from typing import Union
 
 props = None
 publish_count = 0
@@ -97,7 +103,7 @@ async def handler(websocket):
                     await websocket.send(json.dumps({'op': vantiqconnectorsdk._TEST_CLOSE}))
                     await asyncio.sleep(0.1)  # Let message get sent before closing server
                     stop.set_result('done')
-        except websockets.ConnectionClosed:
+        except ConnectionClosed:
             # This is OK -- we sent our client a "go away" message so...
             pass
             break
@@ -148,7 +154,7 @@ async def wait_for_receives(websocket, note_count: int):
                 notify_count -= 1
                 message = json.loads(msg)
                 print('Server: Got message: ', message)
-            except websockets.ConnectionClosed:
+            except ConnectionClosed:
                 await asyncio.sleep(2)  # Let server start up
                 pass
     except Exception as e:

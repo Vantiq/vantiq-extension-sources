@@ -1,12 +1,20 @@
+
+
+__author__ = 'fhcarter'
+__copyright__ = "Copyright 2022, Vantiq, Inc."
+__license__ = "MIT License"
+__email__ = "support@vantiq.com"
+
+import asyncio
+import re
+import os
+
 import pytest
 import websockets.exceptions
 
-import vantiqconnectorsdk
-from vantiqconnectorsdk import VantiqConnectorSet, VantiqConnector
-import asyncio
 from testserver import run_server
-import re
-import os
+# noinspection PyProtectedMember
+from vantiqconnectorsdk import VantiqConnectorSet, VantiqConnector, setup_logging, _WEBSOCKET_URL_PATTERN
 
 loginit = """
 [loggers]
@@ -86,9 +94,9 @@ async def do_notifications(connector, note_count):
                     # then all the publishes.  That still happens sometimes, but these very slight pauses
                     # allow other parts of the test to operate.  This more thoroughly exercises the SDK.
                     await asyncio.sleep(0.01)
-                except RuntimeError as re:
-                    print('Failed to send message number {0} due to {1}'.format(i, re))
-                    assert re is None   # This will never be true here but will show us the error
+                except RuntimeError as r_e:
+                    print('Failed to send message number {0} due to {1}'.format(i, r_e))
+                    assert r_e is None   # This will never be true here but will show us the error
                 except websockets.exceptions.ConnectionClosed:
                     # Means that our test closed the connecting out from under us.  Ignore
                     await asyncio.sleep(0)  # Yield CPU so that server can start back up...
@@ -112,16 +120,17 @@ class TestSingleConnection:
 
     @classmethod
     def setup_class(cls):
+        # noinspection PyBroadException
         try:
             if not os.path.exists('serverConfig'):
                 os.makedirs('serverConfig')
-            lg = open('serverConfig/logger.ini', mode='wt')
-            lg.write(loginit)
-            lg.close()
+            log_init = open('serverConfig/logger.ini', mode='wt')
+            log_init.write(loginit)
+            log_init.close()
             if os.path.exists('VantiqConnector.log'):
-               os.remove('VantiqConnector.log')
-            vantiqconnectorsdk.setup_logging()
-        except:
+                os.remove('VantiqConnector.log')
+            setup_logging()
+        except Exception:
             pass
 
     @classmethod
@@ -159,7 +168,7 @@ class TestSingleConnection:
             assert sc[VantiqConnector.TARGET_SERVER] is not None
             assert sc[VantiqConnector.AUTH_TOKEN] is not None
             assert sc[VantiqConnector.TARGET_SERVER].startswith('ws')
-            assert re.match(vantiqconnectorsdk._WEBSOCKET_URL_PATTERN, sc[VantiqConnector.TARGET_SERVER])
+            assert re.match(_WEBSOCKET_URL_PATTERN, sc[VantiqConnector.TARGET_SERVER])
             assert self._close_count == 0
             assert self._connect_count == 0
             assert self._publish_count == 0
@@ -184,7 +193,6 @@ sources={source_name}
             filename = scf.name
             scf.close()
             vc = VantiqConnectorSet()
-            connector = vc.get_connection_for_source(source_name)
             vc.configure_handlers_for_all(self.close_handler, self.connect_handler,
                                           self.publish_handler, self.query_handler)
             expected_message_count = 125
@@ -243,7 +251,6 @@ sources={source_name}
             filename = scf.name
             scf.close()
             vc = VantiqConnectorSet()
-            connector = vc.get_connection_for_source(source_name)
             vc.configure_handlers_for_all(self.close_handler, self.connect_handler,
                                           self.publish_handler, self.query_handler)
             expected_message_count = 125
@@ -271,7 +278,7 @@ sources={source_name}
         # Connects & closes should mirror one another
         assert self._close_count == self._connect_count
 
-    async def connect_handler(self, ctx:dict, message: dict):
+    async def connect_handler(self, ctx: dict, message: dict):
         self.check_context(ctx)
 
         assert 'someProp' in message

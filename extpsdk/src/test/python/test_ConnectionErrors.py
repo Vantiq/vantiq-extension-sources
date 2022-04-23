@@ -1,12 +1,20 @@
 
+__author__ = 'fhcarter'
+__copyright__ = "Copyright 2022, Vantiq, Inc."
+__license__ = "MIT License"
+__email__ = "support@vantiq.com"
+
+import asyncio
+import re
+import os
+
 import pytest
+
 import vantiqconnectorsdk
 from vantiqconnectorsdk import VantiqConnector, VantiqSourceConnection, VantiqConnectorSet,\
     VantiqConnectorConfigException
-import asyncio
 from testserver import run_server
-import re
-import os
+
 
 loginit = """
 [loggers]
@@ -50,7 +58,7 @@ async def run_server_test(port, config, pub_count, connector: VantiqSourceConnec
         await asyncio.gather(*tasks, return_exceptions=False)
         pass
     finally:
-        stopped_tasks =[]
+        stopped_tasks = []
         for t in tasks:
             t.cancel()
             stopped_tasks.append(t)
@@ -62,9 +70,10 @@ class TestFaultyConnections:
 
     @classmethod
     def setup_class(cls):
+        # noinspection PyBroadException
         try:
             vantiqconnectorsdk.setup_logging()
-        except:
+        except Exception:
             pass
 
     @pytest.fixture(autouse=True)
