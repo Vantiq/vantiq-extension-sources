@@ -18,7 +18,7 @@ import java.io.File;
 import java.util.List;
 
 public class VantiqUtil {
-    private final static Logger LOGGER = LoggerFactory.getLogger(VantiqUtil.class);
+    private static final  Logger LOGGER = LoggerFactory.getLogger(VantiqUtil.class);
     public String outputDir = null; // Added to remember the output dir for each instance
     public Vantiq vantiq = null; // Added to allow image saving with VANTIQ
     public String sourceName = null;

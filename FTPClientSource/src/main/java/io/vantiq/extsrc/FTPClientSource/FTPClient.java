@@ -739,8 +739,7 @@ public class FTPClient {
             String token = SetFieldStringValue(checkedAttribute, body, defaultServer.documentServerToken, false);
 
             checkedAttribute = FTPClientHandleConfiguration.BASE_DOCUMENT_PATH;
-            String defBaseFolder = (String) config.get(FTPClientHandleConfiguration.BASE_DOCUMENT_PATH);
-            String basePathStr = defBaseFolder;
+            String basePathStr = (String) config.get(FTPClientHandleConfiguration.BASE_DOCUMENT_PATH);
 
             checkedAttribute = LOCAL_PATH_KEYWORD;
             sourcePathStr = SetFieldStringValue(checkedAttribute, body, "", true);

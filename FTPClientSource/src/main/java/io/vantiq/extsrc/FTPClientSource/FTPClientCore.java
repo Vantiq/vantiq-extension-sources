@@ -197,8 +197,8 @@ public class FTPClientCore {
                     case "downloadimage": {
                         HashMap[] queryArray = localFTPClient.processDownloadImage(message);
                         sendDataFromQuery(queryArray, message);
-                        break;
                     }
+                        break;
                     case "uploadimage": {
                         HashMap[] queryArray = localFTPClient.processUploadImage(message);
                         sendDataFromQuery(queryArray, message);
