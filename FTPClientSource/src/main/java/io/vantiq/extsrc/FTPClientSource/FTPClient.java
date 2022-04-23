@@ -12,14 +12,19 @@ import io.vantiq.client.ResponseHandler;
 import io.vantiq.client.Vantiq;
 import io.vantiq.client.VantiqError;
 import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.net.URI;
 import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.nio.file.Files;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Random;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.ExecutorService;
@@ -182,6 +187,12 @@ public class FTPClient {
     public static String FTPClient_IMPORT_UPLOAD_DOCUMENT_FAILED_MESSAGE = "Import upload document failure";
     public static String FTPClient_IMPORT_DOCUMENT_SOURCE_MISSING_MESSAGE = "Must supply source server URL , source server token and SourceServerPath";
     public static String FTPClient_IMPORT_DOCUMENT_FILE_MISSING_MESSAGE = "Must supply File name and WorkFolderPath to import";
+
+    public static String FTPClient_SUCCESS_DOWNLOAD_HTTP_MESSAGE = "Download Http finished successfully";
+    public static String FTPClient_DOWNLOAD_HTTP_FAILED_CODE = "io.vantiq.extsrc.FTPClientsource.DownloadHttpFailure";
+    public static String FTPClient_DOWNLOAD_HTTP_SOURCE_MISSING_MESSAGE = "Must supply source url File name to download";
+    public static String FTPClient_DOWNLOAD_HTTP_FILE_MISSING_MESSAGE = "Must supply destination File name to download";
+    public static String FTPClient_DOWNLOAD_HTTP_DOCUMENT_FAILED_MESSAGE = "Download Http failed";
 
     public static String FTPClient_NOFILE_CODE = "io.vantiq.extsrc.FTPClientsource.nofile";
     public static String FTPClient_NOFILE_MESSAGE = "File does not exist.";
@@ -862,6 +873,88 @@ public class FTPClient {
                         rsArray = CreateResponse(FTPClient_IMPORT_DOCUMENT_FAILED_CODE,
                                 FTPClient_IMPORT_DOWNLOAD_DOCUMENT_FAILED_MESSAGE, fileURL);
 
+                    }
+
+                }
+            }
+
+            return rsArray;
+        } catch (Exception ex) {
+            if (checkedAttribute != "") {
+                throw new VantiqFTPClientException(
+                        String.format("Illegal request structure , attribute %s doesn't exist", checkedAttribute), ex);
+            } else {
+                throw new VantiqFTPClientException("General Error", ex);
+            }
+        } finally {
+
+        }
+    }
+
+    /**
+     * The method used to execute an upload imgae command, triggered by a SELECT on
+     * the respective source from VANTIQ.
+     * 
+     * @param message
+     * @return
+     * @throws VantiqFTPClientException
+     */
+    public HashMap[] processHttpDownload(ExtensionServiceMessage message) throws VantiqFTPClientException {
+        HashMap[] rsArray = null;
+        String checkedAttribute = BODY_KEYWORD;
+        String sourcePathStr = "";
+        String destinationPathStr = "";
+        String name = "default";
+
+        FTPServerEntry currEntry = null;
+
+        try {
+            Map<String, ?> request = (Map<String, ?>) message.getObject();
+            Map<String, Object> body = (Map<String, Object>) request.get(checkedAttribute);
+
+            checkedAttribute = FTPClientHandleConfiguration.SERVER_NAME;
+            if (body.get(FTPClientHandleConfiguration.SERVER_NAME) instanceof String) {
+                name = (String) body.get(FTPClientHandleConfiguration.SERVER_NAME);
+                currEntry = findServer(name);
+            } else {
+                currEntry = defaultServer;
+            }
+
+            checkedAttribute = REMOTE_PATH_KEYWORD;
+            sourcePathStr = SetFieldStringValue(checkedAttribute, body, "", true);
+
+            checkedAttribute = LOCAL_PATH_KEYWORD;
+            destinationPathStr = SetFieldStringValue(checkedAttribute, body, currEntry.localFolderPath, true);
+            new File(destinationPathStr).mkdirs();
+
+            checkedAttribute = FILENAME_KEYWORD;
+            String fileName = SetFieldStringValue(checkedAttribute, body, "", true);
+
+            if (sourcePathStr == null || destinationPathStr == "" || fileName == null) {
+                rsArray = CreateResponse(FTPClient_DOWNLOAD_HTTP_FAILED_CODE,
+                        FTPClient_DOWNLOAD_HTTP_SOURCE_MISSING_MESSAGE, sourcePathStr);
+            } else {
+                if (fileName == null || fileName == "") {
+                    rsArray = CreateResponse(FTPClient_DOWNLOAD_HTTP_FAILED_CODE,
+                            FTPClient_DOWNLOAD_HTTP_FILE_MISSING_MESSAGE, fileName);
+
+                } else {
+
+                    String fullDestinationPath = destinationPathStr + "/" + fileName;
+                    Files.deleteIfExists(Paths.get(fullDestinationPath));
+
+                    Random r = new Random();
+                    sourcePathStr += "?" + String.valueOf(r.nextInt());
+                    log.info("attempt to download " + sourcePathStr);
+
+                    try (InputStream in = URI.create(sourcePathStr).toURL().openStream()) {
+                        Files.copy(in, Paths.get(fullDestinationPath));
+                        rsArray = CreateResponse(FTPClient_SUCCESS_CODE, FTPClient_SUCCESS_DOWNLOAD_HTTP_MESSAGE,
+                                fullDestinationPath);
+                    } catch (IOException ex) {
+                        log.error("FTPClient DownloadHttp failed  ", ex);
+                        rsArray = CreateResponse(FTPClient_DOWNLOAD_HTTP_FAILED_CODE,
+                                ex.toString(), fullDestinationPath);
                     }
 
                 }
