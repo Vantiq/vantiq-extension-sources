@@ -14,8 +14,6 @@ import java.nio.channels.ReadableByteChannel;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import io.vantiq.client.internal.VantiqSession;
-
 import java.io.File;
 import java.util.List;
 
@@ -30,18 +28,14 @@ public class VantiqUtil {
     public int longEdge = 0;
     public Boolean uploadAsImage = false;
 
-    final Logger Log;
-
     // Used to upload image to VANTIQ as VANTIQ Image
-    final static String IMAGE_RESOURCE_PATH = "/resources/images";
-    final static String DOCUMENT_RESOURCE_PATH = "/resources/documents";
+    static final String IMAGE_RESOURCE_PATH = "/resources/images";
+    static final String DOCUMENT_RESOURCE_PATH = "/resources/documents";
 
     public VantiqUtil(Logger log) {
-        this.Log = log;
     }
 
     public VantiqUtil(Logger log, String server, String authToken) {
-        this.Log = log;
         vantiq = new io.vantiq.client.Vantiq(server);
         vantiq.setAccessToken(authToken);
     }
