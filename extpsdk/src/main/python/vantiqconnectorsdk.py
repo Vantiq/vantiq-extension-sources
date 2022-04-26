@@ -382,8 +382,8 @@ class VantiqSourceConnection:
                 await websocket.send(json.dumps(connect_msg))
                 raw_resp = await websocket.recv()
                 resp = json.loads(raw_resp)
-                _vlog.debug('Connect returned: %s', resp)
                 if _STATUS in resp:
+                    _vlog.debug('Connect returned: %s', resp[_STATUS])
                     status = resp[_STATUS]
                     if status >= 300:
                         return _CONNECTION_FAILED
