@@ -678,7 +678,11 @@ class Connectors:
         await self.connector_set.close()
 
 
-if __name__ == '__main__':
+def main():
     setup_logging()
     connectors = Connectors()
     asyncio.run(connectors.run())
+
+
+if __name__ == '__main__':
+    main()

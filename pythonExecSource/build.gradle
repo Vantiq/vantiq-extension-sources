@@ -2,6 +2,14 @@ plugins {
     id 'ru.vyarus.use-python' version '2.3.0'
 }
 
+ext {
+    if (project.rootProject.hasProperty('pypi_repo')) {
+        pypi_repo = project.rootProject.findProperty('pypi_repo')
+    } else {
+        pypi_repo = 'testpypi'
+    }
+}
+
 python {
     // python binary name (python or python3 by default)
     pythonBinary
@@ -67,8 +75,13 @@ python {
     // cache from gradle, things will work as expected.
 
     // (also for product use)
-    pip 'vantiqconnectorsdk:0.9.4'
-    pip 'vantiqsdk:0.9.3'
+    pip 'vantiqconnectorsdk:0.9.5'
+    pip 'vantiqsdk:0.9.4'
+
+     // For build generation
+    pip 'build:0.7.0'  // For building the distribution
+    // For publication
+    pip 'twine:4.0.0'
 }
 
 tasks.withType(PythonTask) {
@@ -91,4 +104,26 @@ task pytest(type: PythonTask) {
     module = 'pytest'
 }
 
+task build_distribution(type: PythonTask) {
+    module = 'build'
+}
+
+task publish(type: PythonTask) {
+    command = "upload --verbose -r ${pypi_repo} dist/*"
+    module = 'twine'
+}
+
+publish.mustRunAfter build_distribution
+
+// Note: pytest must run AFTER the 'test' task.  That task prepares (i.e. deletes) the directory
+// into which the results are to be placed.  Because of that, if pytest runs later, its results
+// are deleted.
 test.finalizedBy pytest
+assemble.finalizedBy build_distribution
+
+task pyclean(type: Delete) {
+    delete "${project.projectDir}/dist"
+}
+
+clean.dependsOn pyclean
+
