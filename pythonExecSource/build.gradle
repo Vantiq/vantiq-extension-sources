@@ -1,0 +1,94 @@
+plugins {
+    id 'ru.vyarus.use-python' version '2.3.0'
+}
+
+python {
+    // python binary name (python or python3 by default)
+    pythonBinary
+    // path to python binary (global by default)
+    pythonPath
+    // additional environment variables, visible for all python commands
+    // Note: We specify the directory paths to search in the pytest.ini file
+    environment = [:]
+
+    // minimal required python version (m.m.m)
+    minPythonVersion = '3.8'
+    // minimal required pip version (m.m.m)
+    minPipVersion = '9'
+
+    // show all installed modules versions after pip installation
+    showInstalledVersions = true
+    // always call module install, even if correct version is already installed
+    alwaysInstallModules = false
+    // may be used to disable pip cache (--no-cache-dir option)
+    usePipCache = true
+    // additional pip repositories (--extra-index-url option)
+    // FIXME: Remove test.pypi... when sdk's are fully published
+    extraIndexUrls = [ 'https://test.pypi.org/simple/' ]
+    // trusted hosts for pip install (--trusted-host option)
+    trustedHosts = []
+
+    // pip modules installation scope (project local, os user dir, global)
+    scope = VIRTUALENV_OR_USER
+    // automatically install virtualenv module (if pip modules declared and scope allows)
+    installVirtualenv = true
+    // if virtualenv not installed (in --user scope), plugin will install exactly this version
+    // (known to be working version) to avoid side effects
+    virtualenvVersion = '20.4.2'
+    // minimal required virtualenv (v20 is recommended, but by default 16 set to not fail previous
+    // setups)
+    minVirtualenvVersion = '20'
+    // used virtualenv path (if virtualenv used, see 'scope')
+    envPath
+    // copy virtualenv instead of symlink (when created)
+    envCopy = false
+
+    pip 'pip:22.0.4'
+
+    // For product runtime
+    pip 'websockets:10.2'
+    pip 'codetiming:1.3.0'
+
+    // For testing
+    pip 'aioresponses:0.7.3'
+    pip 'pytest:6.2.5'
+    pip 'pytest-asyncio:0.18.3'
+    pip 'pytest-pythonpath:0.7.4'
+    pip 'pytest-timeout:2.1.0'
+    pip 'pytest-html:3.1.1'   // To generate html reports from pytest cases
+
+    // Note:  Placing these last even though they have to do with the product
+    // There appears to be an issue with the pytest-asyncio that's present in the test.pypi,org
+    // site such that if we try & install from scratch (on my mac), the tests fail with some import
+    // problem with pytest-asyncio.  When installed without the test.pypi repo, things work correctly.
+    // However, early in the game, we haven't published the SDK's to the public pypi repo (awaiting local
+    // review & validation).  By putting these last, we can set up the environment from the general repo.
+    // Things fail, but then we can go back and re-enable the test.pypi repo and, without clearing the environment and
+    // cache from gradle, things will work as expected.
+
+    // (also for product use)
+    pip 'vantiqconnectorsdk:0.9.4'
+    pip 'vantiqsdk:0.9.3'
+}
+
+tasks.withType(PythonTask) {
+    if (rootProject.hasProperty("TestAccessToken")) {
+        environment 'VANTIQ_ACCESS_TOKEN', rootProject.findProperty("TestAccessToken") ?: "empty"
+    }
+    if (rootProject.hasProperty("TestVantiqServer")) {
+        environment 'VANTIQ_URL', rootProject.findProperty('TestVantiqServer')
+    }
+    if (rootProject.hasProperty('TestVantiqUsername')) {
+        environment 'VANTIQ_USERNAME', rootProject.findProperty('TestVantiqUsername') ?: 'empty'
+    }
+    if (rootProject.hasProperty('TestVantiqPassword')) {
+        environment 'VANTIQ_PASSWORD', rootProject.findProperty('TestVantiqPassword') ?: 'empty'
+    }
+}
+
+task pytest(type: PythonTask) {
+    println project.projectDir
+    module = 'pytest'
+}
+
+test.finalizedBy pytest
