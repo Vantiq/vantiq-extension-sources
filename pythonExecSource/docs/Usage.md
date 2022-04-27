@@ -52,11 +52,11 @@ Once that type is loaded,
 you can create a source of that type.
 This is done by first selecting the `PYTHONEXECUTION` type for the source,
 
-![Selecting a type for a source](docs/images/pyExecExampleSelectType.png)
+![Selecting a type for a source](images/pyExecExampleSelectType.png)
 
 and then providing a configuration.  We will examine the configuration just below.
 
-![Providing a Python Execution Source Configuration](docs/images/pyExecExampleConfiguration.png)
+![Providing a Python Execution Source Configuration](images/pyExecExampleConfiguration.png)
 
 #### <a name="configuration" id="configuration"></a>Configuration
 
