@@ -108,6 +108,22 @@ task build_distribution(type: PythonTask) {
     module = 'build'
 }
 
+task verifyRequirements() {
+    doLast {
+        if (!rootProject.hasProperty('connectorSpecificInclusions')) {
+            throw new GradleException("Missing 'connectorSpecificInclusions' property. " +
+                "Building the ${project.name} docker image requires that you provide a (possibly empty) " +
+                "localRequirements.txt file in the directory specified by the 'connectorSpecificInclusions' property.")
+        } else if (!file("${rootProject.getProperty('connectorSpecificInclusions')}/localRequirements.txt").exists()) {
+            throw new GradleException("Missing 'localRequirements.txt' file. Building the ${project.name} docker image " +
+                " requires that you provide a (possibly empty) localRequirements.txt file in the " +
+                " directory specified by the 'connectorSpecificInclusions' property.")
+        }
+    }
+}
+
+buildConnectorImage.dependsOn verifyRequirements
+
 task publish(type: PythonTask) {
     command = "upload --verbose -r ${pypi_repo} dist/*"
     module = 'twine'
