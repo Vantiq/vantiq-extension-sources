@@ -238,7 +238,7 @@ The underlying sequence of events is as follows:
 The sequence above requires that the connector be told of the Vantiq installation to which to connect, appropriate credentials for doing so, and the name of the source it to perform the `connectExtension` operation.
 
 This information should be provided in a configuraiton file. 
-(Please read the [Connector SDK's server config documentation](../extpsdk/README.md#serverConfig) first.)
+(Please read the [Connector SDK's server config documentation](../../extpsdk/README.md#serverConfig) first.)
 Specifically, create a file named `server.config` on a `serverConfig` directory within the working directory in which the connector run.
 
 The information required is placed in that file as follows:
@@ -265,6 +265,37 @@ Otherwise, if the `authToken` is not set in the configuration file, the system w
 
 You should also provide an approriate `logger.ini` file in the same directory.
 An example one is provided at `src/test/resources/logger.ini` in this project.
+
+#### Creating a Docker Image for your Connector
+
+The general process for creating a docker image is described in the Extension Sources Overview. We will not repeat that here.
+
+However, except for the most trival cases, you will generally want to include other Python packages in the installation within which the connector runs.  If, for example, you are using some machine learning functions in the code to run, you will want to have the appropriate packages installed in the connector's Python environment.
+
+In the case of a Docker image, each such image is its own environment.  Consequently, you must provide for the installations of the Python packages for each Docker image created.
+
+To do this, we make use of the `connectorSpecificInclusions` property to perform the build. The `connectorSpecificInclusions` identifies a directory that contains files that are to be included in the connector's Docker image.  For the this connector, we require that that property be specified, and that the directory specified contain a file named `localRequirements.txt`.  This should be a file in the [pip requirements format](https://pip.pypa.io/en/stable/reference/requirements-file-format/).  This file will be provided to pip as part of the Docker image build to load the Python packages required by this connector.
+
+In the rare case where no Python packages are necessary, the `localRequirements.txt` file can be empty.
+
+For example, if one were expecting to run Python code making use of the _numpy_ package, one would create a `localRequirements.txt` file with the following contents:
+
+```
+numpy
+```
+
+Assuming that that file is place in the `/Users/me/pythonReqs` directory, one could use the following command to create a Docker image for your use.
+
+```shell
+./gradlew -PconnectorSpecificInclusions=/Users/me/pythonReqs \
+          -PdockerRegistry=docker.io \
+          -PpathToRepo=myorg \
+          -PrepositoryName=numpyEnabledPyExecSource \
+          -PimageTag=1.0.1 \
+       pythonExecSource:buildImages
+```
+
+This would produce a docker image named `docker.io/myorg/numpyenabledpyexecsource:1.0.1`.
 
 # Copyright and License
 
