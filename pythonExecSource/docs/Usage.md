@@ -1,13 +1,13 @@
 # Python Execution Connector/Extension Source
 
-This module contains the source code for the [VANTIQ](https://vantiq.com) Python Execution Connector or Extension Source.
+This module contains the source code for the [Vantiq](https://vantiq.com) Python Execution Connector or Extension Source.
 
 The Python Execution Connector (Extension Source) is a Connector that provides for the execution of Python code. The connector is used to allow Vantiq/VAIL procedures to request the execution
 of Python code and the return of the results to the Vantiq server.
 
-This document describes the operation of the source itself as well as how to make use of it within a VANTIQ system.
+This document describes the operation of the source itself as well as how to make use of it within a Vantiq system.
 
-> Note: VANTIQ Extension Sources are first supported in VANTIQ version 1.23.
+> Note: Vantiq Extension Sources are first supported in Vantiq version 1.23.
 
 ## Connectors or Extension Sources
 
@@ -26,13 +26,13 @@ Briefly, extension sources connect to the Vantiq system via a websocket connecti
  - notification -- data sent from the source to VANTIQ
    - These appear to Vantiq as a message from the source
 
-More information about how to work with these operations can be found in the [Extension Source SDK for Java](../../extjsdk/README.md) documentation.
+More information about how to work with these operations can be found in the [Extension Sources Overview](../../README.md) documentation.
 
 Note: The term _extension source_ is an older term, but it is still evident in the API. That said, this document will use the term _connector_.
 
 ## Python Execution Connector Operation
 
-### Defining the Source in VANTIQ
+### Defining the Source in Vantiq
 
 #### Creating the Source
 
@@ -40,13 +40,13 @@ When creating a source for the Python Execution connector,
 you must first create the Python Execution source type or implementation.
 This is done by using the `pythonExecImpl.json` file found in
 `src/main/resources/pythonExecImpl.json`.
-To make the source type known to VANTIQ, use the `vantiq` cli command
+To make the source type known to Vantiq, use the `vantiq` cli command
 
 ```
 vantiq -s <profileName> load sourceimpls <fileName>`
 ```
 
-where `<profileName>` is replaced by the VANTIQ profile name, and `<fileName>` is the file to be loaded, in this case, the `pythonExecImpl.json` file mentioned above.
+where `<profileName>` is replaced by the Vantiq profile name, and `<fileName>` is the file to be loaded, in this case, the `pythonExecImpl.json` file mentioned above.
 
 Once that type is loaded,
 you can create a source of that type.
@@ -58,7 +58,7 @@ and then providing a configuration.  We will examine the configuration just belo
 
 ![Providing a Python Execution Source Configuration](docs/images/pyExecExampleConfiguration.png)
 
-#### <a name="configuration" id="configuration></a>Configuration
+#### <a name="configuration" id="configuration"></a>Configuration
 
 > Note:  It is assumed here that the reader is familiar with Python concepts and terminology.
 > This source tries to use terminology familiar to an Python practitioner where possible.
@@ -71,7 +71,7 @@ named `'pythonExecConfig`, which contains the `general` section. This section ca
 
 - `codeCacheSize` -- this is the number of compiled python code entries this connector will contain. The default is 128, and that should be sufficient for most purposes.
 - `returnRuntimeInformation` -- this instructs the the connector to return runtime information as part of the return from code execution. This is primarily for collecting performance information. It defaults to `false`.
-    - The return of runtime information is supported only when the connector is returning the results directly.  In cases where the executed code is sending results (see `codeHandlesReturn` [below](#withParameters), there is no vehicle for the return of runtime information.
+    - The return of runtime information is supported only when the connector is returning the results directly.  In cases where the executed code is sending results (see `codeHandlesReturn` [below](#withParameters)), there is no vehicle for the return of runtime information.
 
 An example configuration document specifying the return of runtime information would look like the following:
 
@@ -89,7 +89,7 @@ An example configuration document specifying the return of runtime information w
 If no changes to the defaults are required, no configuration is necessary.
 
 
-### Working with VANTIQ
+### Working with Vantiq
 
 To a Vantiq user,
 an extension source is indistinguishable from a source provided within the system.
@@ -97,14 +97,14 @@ Details about how to interact with a Vantiq source can be found in the Vantiq do
 here we will provide a few examples.
 
 
-#### Query from VANTIQ
+#### Query from Vantiq
 
 To execute some Python code,
 you can run a query using the SELECT statement.
 
 ```js
     var pythonCode = "print('loop count', loop_count)"
-
+    
     var result = SELECT * FROM SOURCE MyPythonExecSource
         WITH name = "py_code_example", code = pythonCode, presetValues = { loop_count: 20 }
     log.info("Got result: {{}}", [result])
@@ -115,15 +115,15 @@ This query runs the code in the variable `pythonCode`, in this case, a `print` s
 The following works in a similar way, but instructs the connector to fetch the Python script from a Vantiq Document (this is probably a more common case).
 
 ```js
-  var result
-                var allResults = []
-                for (result in select * from source {PY_EXEC_SOURCE_NAME}
-                    with script = "myPythonDoc",
-                        codeHandlesReturn = true,
-                        presetValues = {{ loop_count: 20 }}) {
-                      log.info("Got (partial) document result: {{}}", [result])
-                      allResults.push(result)
-                }
+    var result
+    var allResults = []
+    for (result in select * from source {PY_EXEC_SOURCE_NAME}
+    with script = "myPythonDoc",
+        codeHandlesReturn = true,
+        presetValues = {{ loop_count: 20 }}) {
+      log.info("Got (partial) document result: {{}}", [result])
+      allResults.push(result)
+    }
 ``` 
 
 This query runs the python code contained in the document _myPythonDoc_.
@@ -172,7 +172,7 @@ In addition, any values specified in the `presetValues` parameter will be set as
 
 #### Receiving Data from the Source
 
-Although probably unusual, the Python code being executed can send events to the associated Vantiq source. This is done using the `send_notificaiton()` method in the Vantiq Connector SDK. This is a method associate with the `connector_connection` global variable outlined above.  To make such a call, use
+Although probably unusual, the Python code being executed can send events to the associated Vantiq source. This is done using the `send_notification()` method in the Vantiq Connector SDK. This is a method associate with the `connector_connection` global variable outlined above.  To make such a call, use
 
 ```python
     await connector_connection.send_notification({'id': str(uuid.uuid4())})
@@ -261,14 +261,14 @@ For users who may not want to write the `authToken` property to a file because o
 Otherwise, if the `authToken` is not set in the configuration file, the system will retrieve whatever value is provided in the environment variable.
 
 > Note that this token will not work -- you will need to create your own
-> within a VANTIQ installation
+> within a Vantiq installation
 
 You should also provide an approriate `logger.ini` file in the same directory.
 An example one is provided at `src/test/resources/logger.ini` in this project.
 
 #### Creating a Docker Image for your Connector
 
-The general process for creating a docker image is described in the Extension Sources Overview. We will not repeat that here.
+The general process for creating a docker image is described in the Extension Sources Overview.
 
 However, except for the most trival cases, you will generally want to include other Python packages in the installation within which the connector runs.  If, for example, you are using some machine learning functions in the code to run, you will want to have the appropriate packages installed in the connector's Python environment.
 
