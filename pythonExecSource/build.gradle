@@ -76,7 +76,7 @@ python {
 
     // (also for product use)
     pip 'vantiqconnectorsdk:0.9.5'
-    pip 'vantiqsdk:0.9.4'
+    pip 'vantiqsdk:0.9.5'
 
      // For build generation
     pip 'build:0.7.0'  // For building the distribution

@@ -537,7 +537,10 @@ class PyExecConnector:
                     if cache_entry is not None:
                         compiled_code = cache_entry[CACHE_ENTRY_CODE]
                         using_cached = True
-                    faux_file_path = name + '.py'
+                    if name.endswith('.py'):
+                        faux_file_path = name
+                    else:
+                        faux_file_path = name + '.py'
                     if code_text is not None:
                         signer = hashlib.new('sha256')
                         signer.update(code_text.encode('utf-8'))
