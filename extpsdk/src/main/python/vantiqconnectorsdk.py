@@ -6,9 +6,9 @@
 This module contains the Vantiq Connector SDK for the Python language.
 
 Structure:
-    The SDK consists of two (2) classes.  These classes are as follows:
+    The SDK consists of two (2) primary classes.  These classes are as follows:
         VantiqSourceConnection -- this is a class holding the client connection for a single source
-        VantiqConnector -- this class manages the runtime connections for all sources instantiated by a single
+        VantiqConnectorSet -- this class manages the runtime connections for all sources instantiated by a single
             server.config file.
     
 Constants:
@@ -168,6 +168,12 @@ class VantiqConnectorException(RuntimeError):
     def __init__(self, *args, **kwargs):  # real signature unknown
         pass
 
+    def __repr__(self):
+        return f'VantiqConnectorException({self.args})'
+
+    def __str__(self):
+        return f'VantiqConnectorException: {getattr(self, "message", repr(self))}'
+
     __weakref__ = property(lambda self: object(), lambda self, v: None, lambda self: None)  # default
     """list of weak references to the object (if defined)"""
 
@@ -177,6 +183,12 @@ class VantiqConnectorConfigException(VantiqConnectorException):
 
     def __init__(self, *args, **kwargs):  # real signature unknown
         pass
+
+    def __repr__(self):
+        return f'VantiqConnectorConfigException({self.args})'
+
+    def __str__(self):
+        return f'VantiqConnectorConfigException: {getattr(self, "message", repr(self))}'
 
     __weakref__ = property(lambda self: object(), lambda self, v: None, lambda self: None)  # default
 
@@ -202,6 +214,12 @@ class VantiqSourceConnection:
         self.config = config
         self.is_connected = False
         self._is_connected_future = None
+
+    def __str__(self):
+        return f'VantiqSourceConnection for source: {self.source_name}, is_connected: {self.is_connected}'
+
+    def __repr__(self):
+        return f'VantiqSourceConnection(source_name={self.source_name}, config={self.config})'
 
     def get_source(self) -> string:
         """Return the source name with which this connection is associated
@@ -285,8 +303,8 @@ class VantiqSourceConnection:
         global _vlog
 
         if self.config is None or VantiqConnector.TARGET_SERVER not in self.config.keys():
-            raise VantiqConnectorConfigException('No valid server.config file was found.  Working directory: {0}.'
-                                                 .format(os.getcwd()))
+            raise VantiqConnectorConfigException(f'No valid server.config file was found.  '
+                                                 f'Working directory: {os.getcwd()}.')
 
         _vlog.debug('Using character set: %s', sys.getdefaultencoding())
         do_pings = True
@@ -338,12 +356,12 @@ class VantiqSourceConnection:
                         await local(self._create_context(None))
                 self.is_connected = False
                 if fail_fast and fail_count > 0:
-                    _vlog.error('failOnConnectionError set & could not connect: {0}'.format(reason))
+                    _vlog.error(f'failOnConnectionError set & could not connect: {reason}')
                     raise reason from None
                 # After a disconnect & subsequent reconnect failure, wait a bit to let things settle down.
                 if fail_count > 0:
                     wait_period = 0.5 * fail_count
-                    _vlog.warning('Waiting {0} to reconnect...'.format(wait_period))
+                    _vlog.warning(f'Waiting {wait_period} to reconnect...')
                     await asyncio.sleep(wait_period)
             _vlog.debug('Looping in connector with reason: %s', str(reason))
         _vlog.info('Connector for source %s via Vantiq at: %s is completing',
@@ -400,12 +418,12 @@ class VantiqSourceConnection:
                             if local:
                                 await local(self._create_context(None), resp[_OBJECT]['config'])
                         else:
-                            error = 'Malformed configuration message: {0}. Please report to Vantiq.'.format(resp)
+                            error = f'Malformed configuration message: {resp}. Please report to Vantiq.'
                             _vlog.error(error)
                             raise VantiqConnectorException(error)
                     else:
-                        error = 'Unexpected operation for configuration: {0} -- {1}. Please report to Vantiq'\
-                            .format(resp[_OPERATION], resp)
+                        error = f'Unexpected operation for configuration: {resp[_OPERATION]} -- {resp}. ' \
+                            f'Please report to Vantiq'
                         _vlog.error(error)
                         raise VantiqConnectorException(error)
                 self.connection = websocket
@@ -420,9 +438,9 @@ class VantiqSourceConnection:
         # If we've gotten this far, then we loop processing messages
         try:
             # The future below allows holding off work until the connection is ready
-            self._is_connected_future.set_result('Connected to src {0} at {1}'
-                                                 .format(self.source_name,
-                                                         self.config[VantiqConnector.TARGET_SERVER]))
+            self._is_connected_future.set_result(f'Connected to src {self.source_name} '
+                                                 f'at {self.config[VantiqConnector.TARGET_SERVER]}')
+
             retval = 'COMPLETED'
             async for rawMessage in self.connection:
                 message = json.loads(rawMessage)
@@ -441,9 +459,9 @@ class VantiqSourceConnection:
                     # Then this is a http response message.  Accept that if it's OK.
                     if message[_STATUS] >= 300:
                         # Then we have some error condition.  Log it & move on
-                        _vlog.error('Received status message indicating a problem: {0}'.format(message))
+                        _vlog.error(f'Received status message indicating a problem: {message}')
                 else:
-                    _vlog.error('Malformed message received from server: %s', message)
+                    _vlog.error(f'Malformed message received from server: {message}')
             return retval
         finally:
             old_future = self._is_connected_future
@@ -477,9 +495,8 @@ class VantiqSourceConnection:
                 await local(self._create_context(message),
                             message[_OBJECT] if message and _OBJECT in message.keys() else None)
             except Exception as e:  # pylint: disable=broad-except
-                _vlog.error('Exception {0} thrown by {1} handler while processing message {2}'
-                            .format(op, type(e).__name__, message))
-                _vlog.error('Trace: %s', traceback.format_exc())
+                _vlog.error(f'Exception {type(e).__name__} thrown by {op} handler while processing message {message}')
+                _vlog.error(f'Trace: {traceback.format_exc()}')
         else:
             _vlog.error('No handler found for operation %s', op)
 
@@ -509,13 +526,13 @@ class VantiqSourceConnection:
                 or ctx[VantiqConnector.SOURCE_NAME] != self.source_name
                 or VantiqConnector.RESPONSE_ADDRESS not in ctx
                 or ctx[VantiqConnector.RESPONSE_ADDRESS] is None):
-            raise VantiqConnectorException('send_query_error(): Missing or incomplete context: {0}'.format(ctx))
+            raise VantiqConnectorException(f'send_query_error(): Missing or incomplete context: {ctx}.')
         if (message is None
                 or message[VantiqConnector.ERROR_CODE] is None
                 or message[VantiqConnector.ERROR_TEMPLATE] is None
                 or message[VantiqConnector.ERROR_PARAMETERS] is None):
-            raise VantiqConnectorException('send_query_error(): Missing or incomplete error message information: {0}'
-                                           .format(message))
+            raise VantiqConnectorException(f'send_query_error(): Missing or incomplete error message information: '
+                                           f'{message}')
         await self._do_message_send(ctx, VantiqConnector.QUERY_ERROR, message)
 
     async def send_query_response(self, ctx: dict, code: int, message: Union[dict, list, None]):
@@ -541,7 +558,7 @@ class VantiqSourceConnection:
                                                  {'name': 'someName', 'otherProperty': 'some value'})
             """
         if code not in [VantiqConnector.QUERY_EMPTY, VantiqConnector.QUERY_COMPLETE, VantiqConnector.QUERY_PARTIAL]:
-            raise VantiqConnectorException('send_query_response(): Invalid Code: {0}.'.format(code))
+            raise VantiqConnectorException(f'send_query_response(): Invalid Code: {code}.')
         if code != VantiqConnector.QUERY_EMPTY and message is None:
             raise VantiqConnectorException('send_query_response(): Non-empty responses require a message parameter.')
         await self._do_message_send(ctx, code, message)
@@ -552,7 +569,7 @@ class VantiqSourceConnection:
                 or ctx[VantiqConnector.SOURCE_NAME] != self.source_name
                 or VantiqConnector.RESPONSE_ADDRESS not in ctx
                 or ctx[VantiqConnector.RESPONSE_ADDRESS] is None):
-            raise VantiqConnectorException('Query response is missing or has incomplete context: {0}'.format(ctx))
+            raise VantiqConnectorException(f'Query response is missing or has incomplete context: {ctx}.')
 
         msg_to_send = {_STATUS: code, 'headers': {_RESPONSE_ADDRESS_HEADER: ctx[VantiqConnector.RESPONSE_ADDRESS]}}
         if code != VantiqConnector.QUERY_EMPTY:
@@ -577,8 +594,7 @@ class VantiqSourceConnection:
         try:
             await self.connection.send(raw_msg)
         except Exception as e:
-            _vlog.error('Trapped exception during sending response for source {0}: {1}'
-                        .format(self.source_name, type(e).__name__))
+            _vlog.error(f'Trapped exception during sending response for source {self.source_name}: {type(e).__name__}')
             raise e from None
 
     async def send_notification(self, message: dict):
@@ -625,6 +641,11 @@ class VantiqSourceConnection:
 
 
 class VantiqConnectorSet:
+    """This is set of and managment interface for the set of VantiqSourceCoonnection managed by this process.
+
+    It takes its input from the serverConfig/server.config file, and manages the creation and operation
+    of these connections.
+    """
 
     def __init__(self):
         self._sources = []
@@ -635,6 +656,14 @@ class VantiqConnectorSet:
         # Initialize the set of connections for the caller
         for src in self._sources:
             self._connections[src] = VantiqSourceConnection(src, self._server_config)
+
+    def __str__(self):
+        ret_val = 'VantiqConnectorSet for '
+        for src in self._sources:
+            ret_val += '\n\t' + str(self._connections[src])
+
+    def __repr__(self):
+        return 'VantiqConnectorSet()'
 
     def get_logger(self) -> Union[Logger, None]:
         """Returns the logger in use"""
