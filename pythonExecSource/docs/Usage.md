@@ -118,7 +118,7 @@ The following works in a similar way, but instructs the connector to fetch the P
     var result
     var allResults = []
     for (result in SELECT * FROM SOURCE MyPythonSource
-        with script = "myPythonDoc",
+        WITH script = "myPythonDoc",
              codeHandlesReturn = true,
              presetValues = { loop_count: 20 } ) {
       log.info("Got (partial) document result: {}", [result])
