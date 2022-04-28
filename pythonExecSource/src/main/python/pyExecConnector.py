@@ -201,22 +201,22 @@ class PyExecConnector:
         """Record that this connector is now closed, and release resources as appropriate"""
         self.is_open = False
         self.source_config = None
-        if self.vantiq_client is not None:
+        if self.vantiq_client:
             await self.vantiq_client.close()
             self.vantiq_client = None
 
     async def connect_handler(self, ctx: dict, config: dict):
         """Note that we are connected & save the name & config."""
         self.source_config = config
-        if 'config' in config:
+        if 'config' in config.keys():
             config = config['config']
         cache_size = 128
         py_exec_config = None
-        if PYTHON_EXEC_SECTION in config and GENERAL_SECTION in config[PYTHON_EXEC_SECTION]:
+        if PYTHON_EXEC_SECTION in config.keys() and GENERAL_SECTION in config[PYTHON_EXEC_SECTION].keys():
             py_exec_config = config[PYTHON_EXEC_SECTION][GENERAL_SECTION]
-            if CODE_CACHE_SIZE in py_exec_config:
+            if CODE_CACHE_SIZE in py_exec_config.keys():
                 cache_size = py_exec_config[CODE_CACHE_SIZE]
-            if RETURN_RUNTIME_INFO in py_exec_config:
+            if RETURN_RUNTIME_INFO in py_exec_config.keys():
                 self._return_runtime_info = getBooleanValue(py_exec_config[RETURN_RUNTIME_INFO])
 
         self._code_cache = CodeCache(cache_size)
@@ -241,25 +241,25 @@ class PyExecConnector:
 
         code = None
         script = None
-        if CODE in msg:
+        if CODE in msg.keys():
             code = msg[CODE]
-        elif SCRIPT in msg:
+        elif SCRIPT in msg.keys():
             script = msg[SCRIPT]
 
         name = None
-        if script is not None:
+        if script:
             name = script
-        elif 'name' in msg:
+        elif 'name' in msg.keys():
             name = msg['name']
 
         # By default, if given a name, we will cache the result.  Can be overridden using cache_code = False
         cache_result = True and name is not None
-        if CACHE_CODE in msg:
+        if CACHE_CODE in msg.keys():
             cache_result = msg[CACHE_CODE]
             cache_result = getBooleanValue(cache_result)
 
         exec_does_return = False
-        if EXEC_HANDLES_RETURN in msg:
+        if EXEC_HANDLES_RETURN in msg.keys():
             # Then our user is claiming that the called code will send the results back.
             # For this to happen, we'll have to pass the appropriate calls in, so
             # we need to remember that we're doing so.  Also, in this case, it's an error
@@ -267,7 +267,7 @@ class PyExecConnector:
             exec_does_return = getBooleanValue(msg[EXEC_HANDLES_RETURN])
 
         values_of_interest = None
-        if LIMIT_RETURN_TO in msg:
+        if LIMIT_RETURN_TO in msg.keys():
             values_of_interest = []
             vals = msg[LIMIT_RETURN_TO]
             if isinstance(vals, str):
@@ -292,12 +292,12 @@ class PyExecConnector:
                 await self.connection.send_query_error(ctx, error_msg)
                 return
 
-        if REPLACE_CACHE_ENTRY in msg:
+        if REPLACE_CACHE_ENTRY in msg.keys():
             replace_result = getBooleanValue(msg[REPLACE_CACHE_ENTRY])
-            if replace_result and name is not None:
+            if replace_result and name:
                 self._code_cache.remove(name)  # We're going to replace it, so just remove it now
         global_presets = {}
-        if PRESET_VALUES in msg:
+        if PRESET_VALUES in msg.keys():
             global_presets = msg[PRESET_VALUES]
             if not isinstance(global_presets, dict):
                 error_msg = {VantiqConnector.ERROR_CODE: 'io.vantiq.pyexecsource.runpython.badglobalpreset',
@@ -319,14 +319,14 @@ class PyExecConnector:
                              'No code was provided to execute. Message was {0}, but no {1} value was present.',
                          VantiqConnector.ERROR_PARAMETERS: [msg, CODE]}
             await self.connection.send_query_error(ctx, error_msg)
-        elif code is not None and script is not None:
+        elif code is not None and script:
             error_msg = {VantiqConnector.ERROR_CODE: 'io.vantiq.pyexecsource.runpython.ambiguouscode',
                          VantiqConnector.ERROR_TEMPLATE:
                              'Both the code and script parameters were specified.  Specify either one or the other. '
                              'Message was {0}.',
                          VantiqConnector.ERROR_PARAMETERS: [msg]}
             await self.connection.send_query_error(ctx, error_msg)
-        elif script is not None and name != script:
+        elif script and name != script:
             error_msg = {VantiqConnector.ERROR_CODE: 'io.vantiq.pyexecsource.runpython.ambiguousname',
                          VantiqConnector.ERROR_TEMPLATE:
                              'A query was made to source {0} including both the script and name parameters.'
@@ -407,7 +407,7 @@ class PyExecConnector:
                      VantiqConnector.ERROR_PARAMETERS: []}
         finally:
             self._lock.release()
-        if error is not None:
+        if error:
             return False, None, None, error
 
         # Here, we are connected to Vantiq.  Let's go fetch the document, using its mod date to validate the cache
@@ -417,7 +417,7 @@ class PyExecConnector:
         if vr.is_success:
             doc: dict = vr.body
             print('Doc is', doc)
-            if 'isIncomplete' in doc and doc['isIncomplete']:
+            if 'isIncomplete' in doc.keys() and doc['isIncomplete']:
                 error = {VantiqConnector.ERROR_CODE: 'io.vantiq.pyexecsource.docincomplete',
                          VantiqConnector.ERROR_TEMPLATE: 'Document {0} is incomplete and cannot be used.',
                          VantiqConnector.ERROR_PARAMETERS: [script_to_fetch]}
@@ -426,7 +426,7 @@ class PyExecConnector:
                          VantiqConnector.ERROR_TEMPLATE: 'Document {0} has an invalid length.',
                          VantiqConnector.ERROR_PARAMETERS: [script_to_fetch, doc['contentSize']]}
             else:
-                if 'ars_modifiedAt' in doc:
+                if 'ars_modifiedAt' in doc.keys():
                     mod_date = doc['ars_modifiedAt']
                 else:
                     mod_date = doc['ars_createdAt']
@@ -438,14 +438,14 @@ class PyExecConnector:
             error = {VantiqConnector.ERROR_CODE: vr.errors[0].code,
                      VantiqConnector.ERROR_TEMPLATE: vr.errors[0].message,
                      VantiqConnector.ERROR_PARAMETERS: vr.errors[0].params}
-        if error is not None:
+        if error:
             return False, None, None, error
 
         # If we get here, we think there's content to run.  Let's check the cache first
         entry = await self._code_cache.get(script_to_fetch)
         using_cached = False
 
-        if entry is not None:
+        if entry:
             if mod_date != entry[CACHE_MODIFICATION_DATE]:
                 # Then the code has changed.  Remove it & continue...
                 await self._code_cache.remove(script_to_fetch)
@@ -465,7 +465,7 @@ class PyExecConnector:
                      VantiqConnector.ERROR_PARAMETERS: vr.errors[0].params}
             return False, None, None, error
         else:
-            if vr.body is not None:
+            if vr.body:
                 raw_bytes = await vr.body.read()   # Get all the data.
                 code = raw_bytes.decode('utf-8')
             else:
@@ -508,7 +508,7 @@ class PyExecConnector:
         Returns:
             None
         """
-        if script_to_fetch is not None:
+        if script_to_fetch:
             self.logger.debug('Executing python code from: %s', script_to_fetch)
         else:
             self.logger.debug('Executing python code: %s', code_text)
@@ -521,7 +521,7 @@ class PyExecConnector:
             compile_time = None
             with Timer('Connector Timer') as connector_timer:
                 connector_timer.logger = None
-                if script_to_fetch is not None:
+                if script_to_fetch:
                     using_cached, mod_date, result, error_msg = await self.fetch_script(ctx, script_to_fetch)
                     if error_msg is None:
                         if using_cached:
@@ -532,9 +532,9 @@ class PyExecConnector:
                     else:
                         await self.connection.send_query_error(ctx, error_msg)
                         return
-                elif name is not None:
+                elif name:
                     cache_entry = await self._code_cache.get(name)
-                    if cache_entry is not None:
+                    if cache_entry:
                         compiled_code = cache_entry[CACHE_ENTRY_CODE]
                         using_cached = True
                     if name.endswith('.py'):
@@ -545,14 +545,14 @@ class PyExecConnector:
                         signer = hashlib.new('sha256')
                         signer.update(code_text.encode('utf-8'))
                         sig = signer.hexdigest()
-                        if cache_entry is not None:
+                        if cache_entry:
                             if sig != cache_entry[CACHE_ENTRY_SIGNATURE]:
                                 # Then the code has changed for this name.  Update accordingly...
                                 compiled_code = None
                                 await self._code_cache.remove(name)
                                 using_cached = False
                 if compiled_code is None:
-                    if code_text is None and name is not None:
+                    if code_text is None and name:
                         error_msg = {VantiqConnector.ERROR_CODE: 'io.vantiq.pyexecsource.runpython.nocache',
                                      VantiqConnector.ERROR_TEMPLATE:
                                          'No cached code was found for name: {0}.',
@@ -562,7 +562,7 @@ class PyExecConnector:
                                      VantiqConnector.ERROR_TEMPLATE:
                                          'No code was provided to execute.',
                                      VantiqConnector.ERROR_PARAMETERS: []}
-                if error_msg is not None:
+                if error_msg:
                     await self.connection.send_query_error(ctx, error_msg)
                 else:
                     if compiled_code is None:
@@ -575,7 +575,7 @@ class PyExecConnector:
                         self.logger.debug('Using just-compiled code for name: %s', name)
                     # Else we're using cached code
 
-                    if name is not None and cache_result and code_text is not None and not using_cached:
+                    if name and cache_result and code_text is not None and not using_cached:
                         self.logger.debug('Caching code for name: %s', name)
                         cached_new = True
                         if script_to_fetch is None:
@@ -613,16 +613,16 @@ class PyExecConnector:
                 # If our configuration asks us to return runtime information, do so
                 connector_time = connector_timer.last
                 connector_info = {'using_cached': using_cached}
-                if name is not None:
+                if name:
                     connector_info['name'] = name
                 connector_info[NEW_CACHE_ENTRY] = cached_new and not using_cached
-                if compile_time is not None:
+                if compile_time:
                     connector_info[COMPILE_TIME] = compile_time
-                if exec_time is not None:
+                if exec_time:
                     connector_info[EXECUTION_TIME] = exec_time
-                if connector_time is not None:
+                if connector_time:
                     connector_info[TOTAL_TIME] = connector_time
-                if query_time is not None:
+                if query_time:
                     connector_info[QUERY_TIME] = query_time
                 connector_info[CURRENT_CACHE_SIZE] = len(self._code_cache)
                 connector_info[CACHE_CAPACITY] = self._code_cache.get_capacity()
@@ -644,7 +644,7 @@ class PyExecConnector:
                                 self.logger.debug('Could not encode global %s to JSON.  Skipping it.', name)
 
                 ret_msg = {SCRIPT_RESULTS: msg_to_return}
-                if connector_info is not None:
+                if connector_info:
                     ret_msg[CONNECTOR_INFO] = connector_info
                 await self.connection.send_query_response(ctx, VantiqConnector.QUERY_COMPLETE, ret_msg)
         except Exception as exc:
