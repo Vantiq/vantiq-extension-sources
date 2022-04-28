@@ -107,7 +107,7 @@ you can run a query using the SELECT statement.
     
     var result = SELECT * FROM SOURCE MyPythonExecSource
         WITH name = "py_code_example", code = pythonCode, presetValues = { loop_count: 20 }
-    log.info("Got result: {{}}", [result])
+    log.info("Got result: {}", [result])
 ```
 
 This query runs the code in the variable `pythonCode`, in this case, a `print` statement.
@@ -117,11 +117,11 @@ The following works in a similar way, but instructs the connector to fetch the P
 ```js
     var result
     var allResults = []
-    for (result in select * from source {PY_EXEC_SOURCE_NAME}
-    with script = "myPythonDoc",
-        codeHandlesReturn = true,
-        presetValues = {{ loop_count: 20 }}) {
-      log.info("Got (partial) document result: {{}}", [result])
+    for (result in SELECT * FROM SOURCE MyPythonSource
+        with script = "myPythonDoc",
+             codeHandlesReturn = true,
+             presetValues = { loop_count: 20 } ) {
+      log.info("Got (partial) document result: {}", [result])
       allResults.push(result)
     }
 ``` 
@@ -276,7 +276,7 @@ In the case of a Docker image, each such image is its own environment.  Conseque
 
 To do this, we make use of the `connectorSpecificInclusions` property to perform the build. The `connectorSpecificInclusions` identifies a directory that contains files that are to be included in the connector's Docker image.  For the this connector, we require that that property be specified, and that the directory specified contain a file named `localRequirements.txt`.  This should be a file in the [pip requirements format](https://pip.pypa.io/en/stable/reference/requirements-file-format/).  This file will be provided to pip as part of the Docker image build to load the Python packages required by this connector.
 
-In the rare case where no Python packages are necessary, the `localRequirements.txt` file can be empty.
+In the rare case where no other Python packages are necessary, the `localRequirements.txt` file can be empty.
 
 For example, if one were expecting to run Python code making use of the _numpy_ package, one would create a `localRequirements.txt` file with the following contents:
 
