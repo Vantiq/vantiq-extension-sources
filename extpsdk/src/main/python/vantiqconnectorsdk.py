@@ -262,9 +262,9 @@ class VantiqSourceConnection:
             if scf is not None:
                 scf.close()
 
-        if server_config is not None and VantiqConnector.TARGET_SERVER in server_config:
+        if server_config and VantiqConnector.TARGET_SERVER in server_config.keys():
             # If things are looking reasonable, fetch the authToken if necessary
-            if VantiqConnector.AUTH_TOKEN not in server_config:
+            if VantiqConnector.AUTH_TOKEN not in server_config.keys():
                 # Defined behavior is that serverConfig.authToken overrides env. variable
                 auth_tok = os.environ.get(VantiqConnector.CONNECTOR_AUTH_TOKEN)
                 server_config[VantiqConnector.AUTH_TOKEN] = auth_tok
@@ -284,19 +284,20 @@ class VantiqSourceConnection:
         """
         global _vlog
 
-        if self.config is None or VantiqConnector.TARGET_SERVER not in self.config:
+        if self.config is None or VantiqConnector.TARGET_SERVER not in self.config.keys():
             raise VantiqConnectorConfigException('No valid server.config file was found.  Working directory: {0}.'
                                                  .format(os.getcwd()))
 
         _vlog.debug('Using character set: %s', sys.getdefaultencoding())
         do_pings = True
-        if VantiqConnector.SEND_PINGS not in self.config or self.config[VantiqConnector.SEND_PINGS] == 'false':
+        if VantiqConnector.SEND_PINGS not in self.config.keys() \
+                or self.config[VantiqConnector.SEND_PINGS].lower == 'false':
             do_pings = False
 
         self._is_connected_future = asyncio.get_event_loop().create_future()
 
         fail_fast = False
-        if VantiqConnector.FAIL_ON_CONNECTION_ERROR in self.config:
+        if VantiqConnector.FAIL_ON_CONNECTION_ERROR in self.config.keys():
             fail_fast = self.config[VantiqConnector.FAIL_ON_CONNECTION_ERROR]
         reason = None
         fail_count = 0
@@ -368,7 +369,7 @@ class VantiqSourceConnection:
                 resp = json.loads(raw_resp)
 
                 _vlog.debug('Authenticate returned: %s', resp)
-                if _STATUS in resp:
+                if _STATUS in resp.keys():
                     # then we probably have an error
                     if resp[_STATUS] != 200:
                         _vlog.error('Connect call failed: %s :: %s:%s', resp[_STATUS],
@@ -382,21 +383,21 @@ class VantiqSourceConnection:
                 await websocket.send(json.dumps(connect_msg))
                 raw_resp = await websocket.recv()
                 resp = json.loads(raw_resp)
-                if _STATUS in resp:
+                if _STATUS in resp.keys():
                     _vlog.debug('Connect returned: %s', resp[_STATUS])
                     status = resp[_STATUS]
                     if status >= 300:
                         return _CONNECTION_FAILED
 
                 # Otherwise, we should have a configExtension message
-                if _OPERATION in resp:
+                if _OPERATION in resp.keys():
                     if resp[_OPERATION] == _OP_CONFIGURE_EXTENSION:
                         # Here, we have a configuration that's been returned.  Process it
                         _vlog.debug('Configuration message: %s', resp[_OPERATION])
-                        if _OBJECT in resp and 'config' in resp[_OBJECT]:
+                        if _OBJECT in resp.keys() and 'config' in resp[_OBJECT].keys():
                             _vlog.debug('Configuration is: %s', resp[_OBJECT]['config'])
                             local = self.connect_handler
-                            if local is not None:
+                            if local:
                                 await local(self._create_context(None), resp[_OBJECT]['config'])
                         else:
                             error = 'Malformed configuration message: {0}. Please report to Vantiq.'.format(resp)
@@ -426,7 +427,7 @@ class VantiqSourceConnection:
             async for rawMessage in self.connection:
                 message = json.loads(rawMessage)
                 _vlog.debug('VantiqConnector received message: %s', message)
-                if 'op' in message:
+                if 'op' in message.keys():
                     op = message[_OPERATION]
                     if op == _OP_RECONNECT_REQUIRED:
                         retval = _OP_RECONNECT_REQUIRED
@@ -436,7 +437,7 @@ class VantiqSourceConnection:
                         break
                     else:
                         await self._process_message(op, message)
-                elif _STATUS in message:
+                elif _STATUS in message.keys():
                     # Then this is a http response message.  Accept that if it's OK.
                     if message[_STATUS] >= 300:
                         # Then we have some error condition.  Log it & move on
@@ -474,7 +475,7 @@ class VantiqSourceConnection:
         if local is not None:
             try:
                 await local(self._create_context(message),
-                            message[_OBJECT] if message is not None and _OBJECT in message else None)
+                            message[_OBJECT] if message and _OBJECT in message.keys() else None)
             except Exception as e:  # pylint: disable=broad-except
                 _vlog.error('Exception {0} thrown by {1} handler while processing message {2}'
                             .format(op, type(e).__name__, message))
@@ -694,9 +695,9 @@ class VantiqConnectorSet:
             if scf is not None:
                 scf.close()
 
-        if server_config is not None and VantiqConnector.TARGET_SERVER in server_config:
+        if server_config and VantiqConnector.TARGET_SERVER in server_config.keys():
             # If things are looking reasonable, fetch the authToken if necessary
-            if VantiqConnector.AUTH_TOKEN not in server_config:
+            if VantiqConnector.AUTH_TOKEN not in server_config.keys():
                 # Defined behavior is that serverConfig.authToken overrides env. variable
                 auth_tok = os.environ.get(VantiqConnector.CONNECTOR_AUTH_TOKEN)
                 server_config[VantiqConnector.AUTH_TOKEN] = auth_tok

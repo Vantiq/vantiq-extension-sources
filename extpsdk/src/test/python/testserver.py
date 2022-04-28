@@ -30,17 +30,17 @@ wait_for_notifications: Union[asyncio.Future, None] = None
 wait_for_publications: Union[asyncio.Future, None] = None
 
 
-def message_dumper(message):
+def message_dumper(message: dict):
     print('Test server got message: ', message)
 
-    if 'op' in message:
+    if 'op' in message.keys():
         op = message['op']
         print('Test server received operation:', op)
-    if vantiqconnectorsdk._RESOURCE_NAME in message:
+    if vantiqconnectorsdk._RESOURCE_NAME in message.keys():
         print('Test server', op, 'resourceName: ', message[vantiqconnectorsdk._RESOURCE_NAME])
-    if vantiqconnectorsdk._RESOURCE_ID in message:
+    if vantiqconnectorsdk._RESOURCE_ID in message.keys():
         print('Test server', op, 'resourceId:', message[vantiqconnectorsdk._RESOURCE_ID])
-    if 'object' in message:
+    if 'object' in message.keys():
         print('Test server', op, 'object:', message['object'])
 
 
@@ -64,7 +64,7 @@ async def handler(websocket):
             message_dumper(message)
             if message['op'] == 'validate':
                 ok_message = {'status': 200}
-                if 'object' not in message or message['object'] != props['authToken']:
+                if 'object' not in message.keys() or message['object'] != props['authToken']:
                     ok_message = {'status': 401, 'body': [{'code': 'authFailure', 'message': 'invalid authToken'}]}
                     await websocket.send(json.dumps(ok_message))
                     if not stop.done():
@@ -160,7 +160,7 @@ async def wait_for_receives(websocket, note_count: int):
     except Exception as e:
         print('Unexpected exception during wait_for_receives(): {0}'.format(type(e).__name__))
     print('wait_for_receives() has completed')
-    if wait_for_notifications is not None:
+    if wait_for_notifications:
         wait_for_notifications.set_result(note_count)
 
 
@@ -209,18 +209,18 @@ async def run_server(port, config, pub_count, note_count=0, server_disc_count=0)
 
             # Need to cancel our outstanding waiters so that our close can complete.
             # Otherwise, we hang in the `await server.wait_closed()` call below
-            if starting is not None and not starting.done():
+            if starting and not starting.done():
                 starting.cancel()
-            if running is not None and not running.done():
+            if running and not running.done():
                 running.cancel()
-            if reconnect is not None and not reconnect.done():
+            if reconnect and not reconnect.done():
                 reconnect.cancel()
             print('Server on port {0} is attempting close operation'.format(port))
             await server.wait_closed()
             print('Server on port {0} has completed close operation'.format(port))
 
     finally:
-        if stop is not None and not stop.done():
+        if stop and not stop.done():
             stop.cancel()
             await stop
         cf.close()

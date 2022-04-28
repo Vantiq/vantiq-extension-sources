@@ -122,7 +122,7 @@ class TestFaultyConnections:
             assert sc[VantiqConnector.TARGET_SERVER].startswith('ws')
             assert re.match(vantiqconnectorsdk._WEBSOCKET_URL_PATTERN, sc[VantiqConnector.TARGET_SERVER])
         finally:
-            if filename is not None:
+            if filename:
                 os.remove(filename)
 
     @pytest.mark.asyncio
@@ -199,7 +199,7 @@ failOnConnectionError=true
         self._close_count += 1
 
     async def connect_handler(self, message: dict):
-        assert message is not None
+        assert message
         assert 'someProp' in message
         assert message['someProp'] == 'message content'
         assert not self._is_connected
@@ -207,13 +207,13 @@ failOnConnectionError=true
         self._connect_count += 1
 
     async def publish_handler(self, message: dict):
-        assert message is not None
+        assert message
         assert self._is_connected
         self._message_count += 1
         self._publish_count += 1
 
     async def query_handler(self, message: dict):
         assert self._is_connected
-        assert message is not None
+        assert message
         self._message_count += 1
         self._query_count += 1

@@ -79,7 +79,7 @@ async def do_notifications(connector, note_count):
             incomplete_count += 1
             print('Connection is not complete: ({0} times) for note_count: {1}'.format(incomplete_count, note_count))
             await asyncio.sleep(0.1)
-        assert connector.connection is not None
+        assert connector.connection
         sent_count = 0
         while sent_count < note_count:
             # sent_count facilitates retry when exceptions occur during the send_notification() call
@@ -164,9 +164,9 @@ class TestSingleConnection:
             source = connector.get_source()
             assert source == source_name
             sc = connector.get_server_config()
-            assert sc is not None
-            assert sc[VantiqConnector.TARGET_SERVER] is not None
-            assert sc[VantiqConnector.AUTH_TOKEN] is not None
+            assert sc
+            assert sc[VantiqConnector.TARGET_SERVER]
+            assert sc[VantiqConnector.AUTH_TOKEN]
             assert sc[VantiqConnector.TARGET_SERVER].startswith('ws')
             assert re.match(_WEBSOCKET_URL_PATTERN, sc[VantiqConnector.TARGET_SERVER])
             assert self._close_count == 0
@@ -174,7 +174,7 @@ class TestSingleConnection:
             assert self._publish_count == 0
             assert self._query_count == 0
         finally:
-            if filename is not None:
+            if filename:
                 os.remove(filename)
 
     @pytest.mark.asyncio
@@ -266,8 +266,8 @@ sources={source_name}
             os.remove('server.config')
 
     def check_context(self, ctx: dict):
-        assert ctx is not None
-        assert ctx[VantiqConnector.SOURCE_NAME] is not None
+        assert ctx
+        assert ctx[VantiqConnector.SOURCE_NAME]
 
     async def close_handler(self, ctx: dict):
         self.check_context(ctx)
@@ -291,13 +291,13 @@ sources={source_name}
 
     async def publish_handler(self, ctx: dict, message: dict):
         self.check_context(ctx)
-        assert message is not None
+        assert message
         assert self._is_connected
         self._message_count += 1
         self._publish_count += 1
 
     async def query_handler(self, ctx: dict, message: dict):
         self.check_context(ctx)
-        assert message is not None
+        assert message
         assert self._is_connected
         self._message_count += 1
