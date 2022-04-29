@@ -11,6 +11,7 @@ RUN pip install --no-cache-dir --upgrade pip
 # If no additional packages are required, this file should be empty
 COPY localRequirements.txt /app
 WORKDIR /app
-RUN pip install --no-cache-dir -i https://test.pypi.org/simple --extra-index-url https://pypi.org/simple/ vantiqPythonExecConnector==0.9.1
-RUN pip install --no-cache-dir -r localRequirements.txt
+RUN pip install --no-cache-dir -i https://test.pypi.org/simple \
+        --extra-index-url https://pypi.org/simple/ vantiqPythonExecConnector==0.9.3 &&  \
+    pip install --no-cache-dir -r localRequirements.txt
 ENTRYPOINT ["vantiqPythonExecConnector"]
