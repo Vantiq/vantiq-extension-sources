@@ -91,7 +91,7 @@ if __name__ == '__main__':
 
 TEST_TYPE = 'PyConnectorTestType'
 TEST_RULE = 'PyConnectorTestRule'
-TEST_SIMPLE_CODE = 'testSimpleCode'
+TEST_SIMPLE_CODE = 'performSimpleCode'
 TEST_SIMPLE_DOC = 'testSimpleDoc'
 PYTHON_TEST_DOC = 'pythonDocFullOfCode'
 py_code_simple = \
@@ -181,7 +181,7 @@ class TestLiveConnection:
             vr = await client.delete_one(VantiqResources.TYPES, TEST_TYPE)
 
             vr = await client.upsert(VantiqResources.SOURCE_IMPLS, PY_EXEC_SOURCE_IMPL)
-            self.dump_errors('Creating source impl', vr)
+            self.dump_result('Creating source impl', vr)
             assert vr.is_success
             cfg = {'config':
                    {PYTHON_EXEC_SECTION:
@@ -193,7 +193,7 @@ class TestLiveConnection:
             src_def = {'name': PY_EXEC_SOURCE_NAME, 'type': PY_EXEC_SOURCE_TYPE,
                        'config': cfg, 'active': True}
             vr = await client.upsert(VantiqResources.SOURCES, src_def)
-            self.dump_errors('Creating Source', vr)
+            self.dump_result('Creating Source', vr)
             assert vr.is_success
 
             proc_def = {'ruleText': f'''PROCEDURE {TEST_SIMPLE_CODE}()
@@ -213,7 +213,7 @@ class TestLiveConnection:
             vr = await client.insert(VantiqResources.DOCUMENTS, doc)
             assert isinstance(vr, VantiqResponse)
             assert vr.is_success
-            self.dump_errors('Creating Document', vr)
+            self.dump_result('Creating Document', vr)
             assert vr.is_success
 
             proc_def = {'ruleText': f'''PROCEDURE {TEST_SIMPLE_DOC}()
@@ -256,7 +256,7 @@ class TestLiveConnection:
         file_content = py_code_self_returning.replace("'item'", "'line_item'")
         doc = {'name': doc_name, 'fileType': 'text/x-python', 'content': file_content}
         vr = await client.insert(VantiqResources.DOCUMENTS, doc)
-        self.dump_errors('Updating Document', vr)
+        self.dump_result('Updating Document', vr)
         assert vr.is_success
 
     @pytest.fixture(autouse=True)
@@ -288,12 +288,8 @@ class TestLiveConnection:
         except Exception:
             pass
 
-    def dump_errors(self, tag: str, vr: VantiqResponse):
-        if not vr.is_success:
-            for err in vr.errors:
-                print('{0}: {1}'.format(tag, err))
-        else:
-            print('{0} is OK'.format(tag))
+    def dump_result(self, tag: str, vr: VantiqResponse):
+        print(f'{tag} response: ', str(vr))
 
     async def run_server_test(self, config, qry_count: int, conn_info: bool, use_documents: bool):
 
@@ -305,7 +301,7 @@ class TestLiveConnection:
         doc_changed = False
         for i in range(qry_count):
             vr: VantiqResponse = await self.vantiq_connection.execute(proc_name, {})
-            self.dump_errors(f'Exec {proc_name}', vr)
+            self.dump_result(f'Exec {proc_name}', vr)
             assert vr.is_success
             assert vr.body is not None
             assert isinstance(vr.body, list)
@@ -346,6 +342,7 @@ class TestLiveConnection:
                     doc_changed = True
 
         if use_documents:
+            await asyncio.sleep(2)  # Let the rules run in Vantiq
             vr = await self.vantiq_connection.count(TEST_TYPE, {})
             assert vr.is_success
             print("Count result:", vr.count)
@@ -385,6 +382,7 @@ class TestLiveConnection:
             loop = asyncio.get_event_loop()
             self.connector_task = loop.create_task(connectors.run())
             tasks.append(self.connector_task)
+
             tasks.append(loop.create_task(self.run_server_test(filename, qry_count, use_conn_info, use_documents)))
             try:
                 await asyncio.gather(*tasks)

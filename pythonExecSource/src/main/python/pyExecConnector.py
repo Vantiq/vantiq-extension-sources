@@ -155,7 +155,7 @@ class CodeCache:
         """
         try:
             async with self._lock:
-                self._cache.pop(key)
+                self._cache.pop(key, None)
         except KeyError:
             # If entity doesn't exist, consider it removed
             pass
@@ -353,14 +353,12 @@ class PyExecConnector:
             scheme = parsed[0]
         return f'{scheme}://{parsed[1]}'
 
-    async def fetch_script(self, ctx, script_to_fetch: str):
+    async def fetch_script(self, script_to_fetch: str):
         """Query the Vantiq server for the named document.  This is used to fetch
         Python code stored in a Vantiq document.
 
         Parameters:
-            ctx : dict
-                The context to be used.
-            script_to_fetch : str
+             script_to_fetch : str
                 The name of the document to fetch from Vantiq.
         Returns:
             tuple consisting of a boolean indicating whether this was found in the cache,
@@ -433,8 +431,8 @@ class PyExecConnector:
                 content_to_fetch = doc['content']
         else:
             for err in vr.errors:
-                self.logger.error('Error fetching Document {0} from Vantiq: code: {1}, message: {2}, params: {3}'
-                                  .format(script_to_fetch, err.code, err.message, err.params))
+                self.logger.error(f'Error fetching Document {script_to_fetch} from Vantiq: '
+                                  f'code: {err.code}, message: {err.message}, params: {err.params}')
             error = {VantiqConnector.ERROR_CODE: vr.errors[0].code,
                      VantiqConnector.ERROR_TEMPLATE: vr.errors[0].message,
                      VantiqConnector.ERROR_PARAMETERS: vr.errors[0].params}
@@ -458,8 +456,8 @@ class PyExecConnector:
         vr = await self.vantiq_client.download(content_to_fetch)
         if not vr.is_success:
             for err in vr.errors:
-                self.logger.error('Error fetching Document {0} content from Vantiq: code: {1}, message: {2}, '
-                                  'params: {3}'.format(script_to_fetch, err.code, err.message, err.params))
+                self.logger.error(f'Error fetching Document {script_to_fetch} content from Vantiq: '
+                                  f'code: {err.code}, message: {err.message}, params: {err.params}')
             error = {VantiqConnector.ERROR_CODE: vr.errors[0].code,
                      VantiqConnector.ERROR_TEMPLATE: vr.errors[0].message,
                      VantiqConnector.ERROR_PARAMETERS: vr.errors[0].params}
@@ -522,7 +520,7 @@ class PyExecConnector:
             with Timer('Connector Timer') as connector_timer:
                 connector_timer.logger = None
                 if script_to_fetch:
-                    using_cached, mod_date, result, error_msg = await self.fetch_script(ctx, script_to_fetch)
+                    using_cached, mod_date, result, error_msg = await self.fetch_script(script_to_fetch)
                     if error_msg is None:
                         if using_cached:
                             compiled_code = result
@@ -566,7 +564,7 @@ class PyExecConnector:
                     await self.connection.send_query_error(ctx, error_msg)
                 else:
                     if compiled_code is None:
-                        faux_file_path = "code-for-source-{0}-{1}".format(self.source_name, uuid.uuid4()) \
+                        faux_file_path = f'code-for-source-{self.source_name}-{uuid.uuid4()}' \
                             if script_to_fetch is None else script_to_fetch
                         with Timer(COMPILE_TIME) as compile_timer:
                             compile_timer.logger = None
