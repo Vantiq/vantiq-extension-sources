@@ -60,7 +60,7 @@ import io.vantiq.client.Vantiq;
  * 
  * No additional data is given.
  */
-
+@SuppressWarnings({"PMD.TooManyFields"})
 public class YoloProcessor extends NeuralNetUtils implements NeuralNetInterface2 {
 
     Logger log = LoggerFactory.getLogger(this.getClass());
@@ -120,10 +120,13 @@ public class YoloProcessor extends NeuralNetUtils implements NeuralNetInterface2
     private static SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd--HH-mm-ss");
 
     @Override
-    public void setupImageProcessing(Map<String, ?> neuralNetConfig, String sourceName, String modelDirectory, String authToken, String server) throws Exception {
+    @SuppressWarnings({"PMD.UseObjectForClearerAPI"})
+    public void setupImageProcessing(Map<String, ?> neuralNetConfig, String sourceName, String modelDirectory,
+                                     String authToken, String server) throws Exception {
         setup(neuralNetConfig, sourceName, modelDirectory, authToken, server);
         try {
-            objectDetector = new ObjectDetector(threshold, pbFile, labelsFile, metaFile, anchorArray, imageUtil, outputDir, labelImage, saveRate, vantiq, sourceName);
+            objectDetector = new ObjectDetector(threshold, pbFile, labelsFile, metaFile, anchorArray,
+                    imageUtil, outputDir, labelImage, saveRate, vantiq, sourceName);
         } catch (Exception e) {
             throw new Exception(this.getClass().getCanonicalName() + ".yoloBackendSetupError: " 
                     + "Failed to create new ObjectDetector", e);

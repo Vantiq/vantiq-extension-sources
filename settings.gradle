@@ -5,11 +5,9 @@ include 'extpsdk'
 include 'udpSource'
 include 'CSVSource'
 include 'testConnector'
+include 'objectRecognitionSource'
 if (System.env.EASY_MODBUS_LOC) {
     include 'EasyModbusSource' 
-}
-if (System.env.OPENCV_LOC) {
-    include 'objectRecognitionSource'
 }
 if (System.env.JDBC_DRIVER_LOC) {
     include 'jdbcSource'

@@ -58,12 +58,24 @@ public class TestNoProcessor extends NeuralNetTestBase {
         if (testAuthToken != null && testVantiqServer != null) {
             vantiq = new io.vantiq.client.Vantiq(testVantiqServer);
             vantiq.setAccessToken(testAuthToken);
+
+            try {
+                createSourceImpl(vantiq);
+            } catch (Exception e) {
+                fail("Trapped exception creating source impl: " + e);
+            }
         }
     }
 
     @AfterClass
     public static void deleteFromVantiq() throws InterruptedException {
         if (vantiq != null && vantiq.isAuthenticated()) {
+
+            try {
+                deleteSourceImpl(vantiq);
+            } catch (Exception e) {
+                fail("Trapped exception deleting source impl: " + e);
+            }
             // Deleting files saved as documents
             for (String vantiqSavedFile : vantiqSavedFiles) {
                 Thread.sleep(1000);
@@ -114,7 +126,7 @@ public class TestNoProcessor extends NeuralNetTestBase {
 
     @Test
     public void testInvalidConfig() {
-        Map config = new LinkedHashMap<>();
+        Map<String, Object> config = new LinkedHashMap<>();
         NoProcessor npProcessor = new NoProcessor();
         NoProcessor npProcessor2 = new NoProcessor();
 
@@ -131,7 +143,7 @@ public class TestNoProcessor extends NeuralNetTestBase {
 
     @Test
     public void testValidConfig() {
-        Map config = new LinkedHashMap<>();
+        Map<String, Object> config = new LinkedHashMap<>();
         NoProcessor npProcessor = new NoProcessor();
         NoProcessor npProcessor2 = new NoProcessor();
         NoProcessor npProcessor3 = new NoProcessor();
@@ -158,7 +170,7 @@ public class TestNoProcessor extends NeuralNetTestBase {
         assumeTrue(testAuthToken != null && testVantiqServer != null);
 
         String lastFilename;
-        Map config = new LinkedHashMap<>();
+        Map<String, Object> config = new LinkedHashMap<>();
         NoProcessor npProcessor = new NoProcessor();
 
         config.put("outputDir", OUTPUT_DIR);
@@ -181,8 +193,10 @@ public class TestNoProcessor extends NeuralNetTestBase {
             // Should save first image with timestamp
             assert d.exists();
             assert d.isDirectory();
-            assert d.listFiles().length == 1;
-            assert d.listFiles()[0].getName().matches(timestampPattern);
+            File[] lf = d.listFiles();
+            assert lf != null;
+            assert lf.length == 1;
+            assert lf[0].getName().matches(timestampPattern);
 
             // Check it didn't save to VANTIQ
             lastFilename = "objectRecognition/" + SOURCE_NAME + '/' + npProcessor.lastFilename;
@@ -195,19 +209,21 @@ public class TestNoProcessor extends NeuralNetTestBase {
             // Every other so second should not save
             assert d.exists();
             assert d.isDirectory();
-            assert d.listFiles().length == 1;
+            lf = d.listFiles();
+            assert lf != null;
+            assert lf.length == 1;
             
-            
-            results = null;
             results = npProcessor.processImage(getTestImage());
             assert results.getResults() == null;
 
             // Every other so third and first should be saved
             assert d.exists();
             assert d.isDirectory();
-            assert d.listFiles().length == 2;
-            assert d.listFiles()[0].getName().matches(timestampPattern) || d.listFiles()[0].getName().matches(sameTimestampPattern);
-            assert d.listFiles()[1].getName().matches(timestampPattern) || d.listFiles()[1].getName().matches(sameTimestampPattern);
+            lf = d.listFiles();
+            assert lf != null;
+            assert lf.length == 2;
+            assert lf[0].getName().matches(timestampPattern) || lf[0].getName().matches(sameTimestampPattern);
+            assert lf[1].getName().matches(timestampPattern) || lf[1].getName().matches(sameTimestampPattern);
 
             // Check it didn't save to VANTIQ
             lastFilename = "objectRecognition/" + SOURCE_NAME + '/' + npProcessor.lastFilename;
@@ -231,7 +247,7 @@ public class TestNoProcessor extends NeuralNetTestBase {
         assumeTrue(testAuthToken != null && testVantiqServer != null);
 
         String lastFilename;
-        Map config = new LinkedHashMap<>();
+        Map<String, Object> config = new LinkedHashMap<>();
         NoProcessor npProcessor = new NoProcessor();
 
         config.put("outputDir", OUTPUT_DIR);
@@ -252,8 +268,10 @@ public class TestNoProcessor extends NeuralNetTestBase {
             // Should save first image with timestamp
             assert d.exists();
             assert d.isDirectory();
-            assert d.listFiles().length == 1;
-            assert d.listFiles()[0].getName().matches(timestampPattern);
+            File[] lf = d.listFiles();
+            assert lf != null;
+            assert lf.length == 1;
+            assert lf[0].getName().matches(timestampPattern);
 
             // Checking that image was saved to VANTIQ
             Thread.sleep(1000);
@@ -268,18 +286,21 @@ public class TestNoProcessor extends NeuralNetTestBase {
             // Every other so second should not save
             assert d.exists();
             assert d.isDirectory();
-            assert d.listFiles().length == 1;
+            lf = d.listFiles();
+            assert lf != null;
+            assert lf.length == 1;
 
-            results = null;
             results = npProcessor.processImage(getTestImage());
             assert results.getResults() == null;
 
             // Every other so third and first should be saved
             assert d.exists();
             assert d.isDirectory();
-            assert d.listFiles().length == 2;
-            assert d.listFiles()[0].getName().matches(timestampPattern);
-            assert d.listFiles()[1].getName().matches(timestampPattern);
+            lf = d.listFiles();
+            assert lf != null;
+            assert lf.length == 2;
+            assert lf[0].getName().matches(timestampPattern);
+            assert lf[1].getName().matches(timestampPattern);
 
             // Checking that image was saved to VANTIQ
             Thread.sleep(1000);
@@ -306,7 +327,7 @@ public class TestNoProcessor extends NeuralNetTestBase {
         assumeTrue(testAuthToken != null && testVantiqServer != null);
 
         String lastFilename;
-        Map config = new LinkedHashMap<>();
+        Map<String, Object> config = new LinkedHashMap<>();
         NoProcessor npProcessor = new NoProcessor();
 
         config.put("outputDir", OUTPUT_DIR);
@@ -349,7 +370,7 @@ public class TestNoProcessor extends NeuralNetTestBase {
         assumeTrue(testAuthToken != null && testVantiqServer != null);
 
         String lastFilename;
-        Map config = new LinkedHashMap<>();
+        Map<String, Object> config = new LinkedHashMap<>();
         NoProcessor npProcessor = new NoProcessor();
 
         config.put("outputDir", OUTPUT_DIR);
@@ -370,7 +391,7 @@ public class TestNoProcessor extends NeuralNetTestBase {
                 deleteDirectory(queryOutputDir);
             }
 
-            Map request = new LinkedHashMap<>();
+            Map<String, String> request = new LinkedHashMap<>();
             NeuralNetResults results = npProcessor.processImage(getTestImage(), request);
             assert results.getResults().isEmpty();
 
@@ -391,7 +412,6 @@ public class TestNoProcessor extends NeuralNetTestBase {
             request.remove("NNsaveImage");
             request.put("NNsaveImage", "vantiq");
             request.put("NNfileName", queryOutputFileVantiq);
-            results = null;
             results = npProcessor.processImage(getTestImage(), request);
             assert results.getResults().isEmpty();
 
@@ -407,15 +427,16 @@ public class TestNoProcessor extends NeuralNetTestBase {
             request.put("NNsaveImage", "both");
             request.put("NNfileName", queryOutputFile);
             request.put("NNoutputDir", queryOutputDir);
-            results = null;
             results = npProcessor.processImage(getTestImage(), request);
             assert results.getResults().isEmpty();
 
             // Should have saved the image at queryOutputFile + ".jpg"
             assert dNew.exists();
             assert dNew.isDirectory();
-            assert dNew.listFiles().length == 1;
-            assert dNew.listFiles()[0].getName().equals(queryOutputFile + ".jpg");
+            File[] lf = dNew.listFiles();
+            assert lf != null;
+            assert lf.length == 1;
+            assert lf[0].getName().equals(queryOutputFile + ".jpg");
 
             // Checking that image was saved in VANTIQ
             Thread.sleep(1000);
@@ -427,7 +448,6 @@ public class TestNoProcessor extends NeuralNetTestBase {
             request.remove("NNfileName");
             request.remove("NNsaveImage");
             request.put("NNsaveImage", "local");
-            results = null;
             results = npProcessor.processImage(getTestImage(), request);
             assert results.getResults().isEmpty();
 
@@ -435,6 +455,7 @@ public class TestNoProcessor extends NeuralNetTestBase {
             assert dNew.exists();
             assert dNew.isDirectory();
             File[] listOfFiles = dNew.listFiles();
+            assert listOfFiles != null;
             assert listOfFiles.length == 2;
 
             // listFiles() Returns data in no specific order, so we check to make sure we are grabbing correct file
@@ -451,11 +472,12 @@ public class TestNoProcessor extends NeuralNetTestBase {
 
             queryOutputFile += ".jpeg";
             request.put("NNfileName", queryOutputFile);
-            results = null;
             results = npProcessor.processImage(getTestImage(), request);
             assert results.getResults().isEmpty();
 
-            assert dNew.listFiles().length == 3;
+            listOfFiles = dNew.listFiles();
+            assert listOfFiles != null;
+            assert listOfFiles.length == 3;
 
         } finally {
             // delete the directory even if the test fails
@@ -476,7 +498,7 @@ public class TestNoProcessor extends NeuralNetTestBase {
         assumeTrue(testAuthToken != null && testVantiqServer != null);
 
         String lastFilename;
-        Map config = new LinkedHashMap<>();
+        Map<String, Object> config = new LinkedHashMap<>();
         NoProcessor npProcessor = new NoProcessor();
 
         config.put("outputDir", OUTPUT_DIR);

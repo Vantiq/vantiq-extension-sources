@@ -10,6 +10,8 @@
 package io.vantiq.extsrc.objectRecognition;
 
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeTrue;
 
@@ -75,7 +77,7 @@ public class TestObjRecConfig {
         // Should return null when not a valid class
         className = "Not a class";
         ir = handler.getImageRetriever(className);
-        assertTrue(ir == null);
+        assertNull(ir);
         assertTrue("Should fail when not given a valid class name", configIsFailed());
     }
     @Test
@@ -85,7 +87,7 @@ public class TestObjRecConfig {
         // Should return null when not an ImageRetrieverInterface
         className = this.getClass().getCanonicalName();
         ir = handler.getImageRetriever(className);
-        assertTrue(ir == null);
+        assertNull(ir);
         assertTrue("Should fail when not given a class that's not an image retriever", configIsFailed());
     }
     @Test
@@ -96,7 +98,7 @@ public class TestObjRecConfig {
         className = BasicTestRetriever.class.getCanonicalName();
         ir = handler.getImageRetriever(className);
         assertFalse("Should succeed when given an image retriever", configIsFailed());
-        assertTrue(ir instanceof ImageRetrieverInterface);
+        assertNotNull(ir);
         assertTrue(ir instanceof BasicTestRetriever);
     }
     
@@ -107,7 +109,7 @@ public class TestObjRecConfig {
         // Should return null when not a valid class
         className = "Not a class";
         nn = handler.getNeuralNet(className);
-        assertTrue(nn == null);
+        assertNull(nn);
         assertTrue("Should fail when not given a valid class name", configIsFailed());
     }
     @Test
@@ -117,7 +119,7 @@ public class TestObjRecConfig {
         // Should return null when not a NeuralNetInterface
         className = this.getClass().getCanonicalName();
         nn = handler.getNeuralNet(className);
-        assertTrue(nn == null);
+        assertNull(nn);
         assertTrue("Should fail when not given a class that's not an image retriever", configIsFailed());
     }
     @Test
@@ -128,20 +130,20 @@ public class TestObjRecConfig {
         className = BasicTestNeuralNet.class.getCanonicalName();
         nn = handler.getNeuralNet(className);
         assertFalse("Should succeed when given an image retriever", configIsFailed());
-        assertTrue(nn instanceof NeuralNetInterface);
+        assertNotNull(nn);
         assertTrue(nn instanceof BasicTestNeuralNet);
     }
-    
+
     @Test
     public void testEmptyConfig() {
-        Map conf = new LinkedHashMap<>();
+        Map<String, Object> conf = new LinkedHashMap<>();
         sendConfig(conf);
         assertTrue("Should fail on empty configuration", configIsFailed());
     }
     
     @Test
     public void testMissingGeneral() {
-        Map conf = minimalConfig();
+        Map<String, Object> conf = minimalConfig();
         conf.remove("general");
         sendConfig(conf);
         assertTrue("Should fail when missing 'general' configuration", configIsFailed());
@@ -149,7 +151,7 @@ public class TestObjRecConfig {
     
     @Test
     public void testMissingDataSource() {
-        Map conf = minimalConfig();
+        Map<String, Object> conf = minimalConfig();
         conf.remove("dataSource");
         sendConfig(conf);
         assertTrue("Should fail when missing 'dataSource' configuration", configIsFailed());
@@ -157,7 +159,7 @@ public class TestObjRecConfig {
     
     @Test
     public void testMissingNeuralNet() {
-        Map conf = minimalConfig();
+        Map<String, Object> conf = minimalConfig();
         conf.remove("neuralNet");
         sendConfig(conf);
         assertTrue("Should fail when missing 'neuralNet' configuration", configIsFailed());
@@ -165,7 +167,7 @@ public class TestObjRecConfig {
     
     @Test
     public void testInvalidThreshold() {
-        Map conf = minimalConfig();
+        Map<String, Object> conf = minimalConfig();
         neuralNet.put("threshold", 1000);
         sendConfig(conf);
         assertFalse("Should not fail when threshold is large int.", configIsFailed());
@@ -178,7 +180,7 @@ public class TestObjRecConfig {
     
     @Test
     public void testValidThreshold() {
-        Map conf = minimalConfig();
+        Map<String, Object> conf = minimalConfig();
         neuralNet.put("threshold", 0);
         sendConfig(conf);
         assertFalse("Should not fail when threshold is 0.", configIsFailed());
@@ -196,9 +198,9 @@ public class TestObjRecConfig {
     
     @Test
     public void testInvalidThreadConfigs() {
-        Map conf = minimalConfig();
-        general.put("maxRunningThreads", "jibberish");
-        general.put("maxQueuedTasks", "moreJibberish");
+        Map<String, Object> conf = minimalConfig();
+        general.put("maxRunningThreads", "gibberish");
+        general.put("maxQueuedTasks", "moreGibberish");
         sendConfig(conf);
         assertFalse("Should not fail when thread config options are strings.", configIsFailed());
         
@@ -210,7 +212,7 @@ public class TestObjRecConfig {
     
     @Test
     public void testValidThreadConfigs() {
-        Map conf = minimalConfig();
+        Map<String, Object> conf = minimalConfig();
         general.put("maxRunningThreads", 5);
         general.put("maxQueuedTasks", 10);
         sendConfig(conf);
@@ -224,7 +226,7 @@ public class TestObjRecConfig {
 
     @Test
     public void testInvalidImageUploadConfig() {
-        Map conf = minimalConfig();
+        Map<String, Object> conf = minimalConfig();
         neuralNet.put("uploadAsImage", "jibberish");
         sendConfig(conf);
         assertFalse("Should not fail when image upload config is a string", configIsFailed());
@@ -236,7 +238,7 @@ public class TestObjRecConfig {
 
     @Test
     public void testValidImageUploadConfig() {
-        Map conf = minimalConfig();
+        Map<String, Object> conf = minimalConfig();
         neuralNet.put("uploadAsImage", true);
         sendConfig(conf);
         assertFalse("Should not fail when image upload config is true", configIsFailed());
@@ -250,7 +252,7 @@ public class TestObjRecConfig {
     public void testMinimalConfig() {
         nCore.start(5); // Need a client to avoid NPEs on sends
         
-        Map conf = minimalConfig();
+        Map<String, Object> conf = minimalConfig();
         sendConfig(conf);
         assertFalse("Should not fail with minimal configuration", configIsFailed());
         
@@ -258,14 +260,14 @@ public class TestObjRecConfig {
         general.put("pollTime", 300000);
         sendConfig(conf);
         assertFalse("Should not fail with minimal configuration", configIsFailed());
-        assertTrue("Timer should exist after pollTime set to positive number", nCore.pollTimer != null); 
+        assertNotNull("Timer should exist after pollTime set to positive number", nCore.pollTimer);
         
         // Making sure pollRate works (backwards compatibility)
         general.remove("pollTime");
         general.put("pollRate", 300000);
         sendConfig(conf);
         assertFalse("Should not fail with minimal configuration", configIsFailed());
-        assertTrue("Timer should exist after pollRate set to positive number", nCore.pollTimer != null); 
+        assertNotNull("Timer should exist after pollRate set to positive number", nCore.pollTimer);
         
         general.remove("pollRate");
         general.put("allowQueries", true);
@@ -276,7 +278,7 @@ public class TestObjRecConfig {
     @Test
     public void testEmptyPostProcessor() {
         postProcessor = new HashMap<>();
-        Map conf = minimalConfig();
+        Map<String, Object> conf = minimalConfig();
         sendConfig(conf);
         assertFalse("Should not fail with empty postProcessor", configIsFailed());
     }
@@ -285,11 +287,12 @@ public class TestObjRecConfig {
     public void testEmptyPPMapper() {
         postProcessor = new HashMap<>();
         postProcessor.put(ObjectRecognitionConfigHandler.LOCATION_MAPPER, new HashMap<String, Object>());
-        Map conf = minimalConfig();
+        Map<String, Object> conf = minimalConfig();
         sendConfig(conf);
         assertFalse("Should not fail with empty postProcessor", configIsFailed());
     }
 
+    @SuppressWarnings("rawtypes")
     @Test
     public void testBadCoords() {
         postProcessor = new HashMap<>();
@@ -298,7 +301,7 @@ public class TestObjRecConfig {
         mapper.put(ObjectRecognitionConfigHandler.IMAGE_COORDINATES, imgCoords);
         postProcessor.put(ObjectRecognitionConfigHandler.LOCATION_MAPPER, mapper);
 
-        Map conf = minimalConfig();
+        Map<String, Object> conf = minimalConfig();
         sendConfig(conf);
         assertTrue("Should fail with missing mapping coordinate sets", configIsFailed());
 
@@ -372,6 +375,7 @@ public class TestObjRecConfig {
         assertTrue("Should fail with invalid coordinate lists (5)", configIsFailed());
     }
 
+    @SuppressWarnings("rawtypes")
     @Test
     public void testInvalidResultSpec() {
         postProcessor = new HashMap<>();
@@ -403,16 +407,17 @@ public class TestObjRecConfig {
         }
 
         mapper.put(ObjectRecognitionConfigHandler.RESULTS_AS_GEOJSON, 37);
-        Map conf = minimalConfig();
+        Map<String, Object> conf = minimalConfig();
         sendConfig(conf);
         assertTrue("Should fail with non-boolean-ish " + ObjectRecognitionConfigHandler.RESULTS_AS_GEOJSON,
                 configIsFailed());
     }
 
+    @SuppressWarnings("rawtypes")
     @Test
     public void testValidPostProcessor() {
         postProcessor = new HashMap<>();
-        Map<String, Object> mapper = new HashMap<String,Object>();
+        Map<String, Object> mapper = new HashMap<>();
         List<Map> imgCoords = new ArrayList<>();
         List<Map> mappedCoords = new ArrayList<>();
 
@@ -439,25 +444,25 @@ public class TestObjRecConfig {
             imgCoords.add(aCoord);
         }
 
-        Map conf = minimalConfig();
+        Map<String, Object> conf = minimalConfig();
         sendConfig(conf);
         assertFalse("Should not fail with valid setup", configIsFailed());
 
-        mapper = new HashMap<String,Object>();
+        mapper = new HashMap<>();
         mapper.put(ObjectRecognitionConfigHandler.IMAGE_COORDINATES, imgCoords);
         mapper.put(ObjectRecognitionConfigHandler.MAPPED_COORDINATES, mappedCoords);
         mapper.put(ObjectRecognitionConfigHandler.RESULTS_AS_GEOJSON, true);
-        postProcessor = new HashMap<String, Object>();
+        postProcessor = new HashMap<>();
         postProcessor.put(ObjectRecognitionConfigHandler.LOCATION_MAPPER, mapper);
         conf = minimalConfig();
         sendConfig(conf);
         assertFalse("Should not fail with valid setup & resultsAsGeoJSON", configIsFailed());
 
-        mapper = new HashMap<String,Object>();
+        mapper = new HashMap<>();
         mapper.put(ObjectRecognitionConfigHandler.IMAGE_COORDINATES, imgCoords);
         mapper.put(ObjectRecognitionConfigHandler.MAPPED_COORDINATES, mappedCoords);
         mapper.put(ObjectRecognitionConfigHandler.RESULTS_AS_GEOJSON, "false");
-        postProcessor = new HashMap<String, Object>();
+        postProcessor = new HashMap<>();
         postProcessor.put(ObjectRecognitionConfigHandler.LOCATION_MAPPER, mapper);
         conf = minimalConfig();
         sendConfig(conf);
