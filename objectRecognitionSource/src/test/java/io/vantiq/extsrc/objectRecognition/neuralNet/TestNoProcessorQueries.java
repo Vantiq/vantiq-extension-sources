@@ -1,5 +1,6 @@
 package io.vantiq.extsrc.objectRecognition.neuralNet;
 
+import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeTrue;
 
 import java.io.File;
@@ -37,6 +38,13 @@ public class TestNoProcessorQueries extends NeuralNetTestBase {
             vantiq = new io.vantiq.client.Vantiq(testVantiqServer);
             vantiq.setAccessToken(testAuthToken);
 
+            try {
+                createServerConfig();
+                createSourceImpl(vantiq);
+            } catch (Exception e) {
+                fail("Trapped exception creating source impl: " + e);
+            }
+
             setupSource(createSourceDef());
         }
     }
@@ -51,6 +59,11 @@ public class TestNoProcessorQueries extends NeuralNetTestBase {
         if (vantiq != null && vantiq.isAuthenticated()) {
             deleteSource();
 
+            try {
+                deleteSourceImpl(vantiq);
+            } catch (Exception e) {
+                fail("Trapped exception deleting source impl: " + e);
+            }
             for (String vantiqUploadFile : vantiqUploadFiles) {
                 deleteFileFromVantiq(vantiqUploadFile);
             }
@@ -82,6 +95,7 @@ public class TestNoProcessorQueries extends NeuralNetTestBase {
         
         // Check there is only one file, and it's name is equivalent to QUERY_FILENAME
         File[] outputDirFiles = outputDir.listFiles();
+        assert outputDirFiles != null;
         assert outputDirFiles.length == 1;
         assert outputDirFiles[0].getName().equals(IMAGE.get("name") + ".jpg");
         
@@ -99,6 +113,7 @@ public class TestNoProcessorQueries extends NeuralNetTestBase {
         
         // Check there is only one file, and it's name is equivalent to QUERY_FILENAME
         outputDirFiles = outputDir.listFiles();
+        assert outputDirFiles != null;
         assert outputDirFiles.length == 1;
         assert outputDirFiles[0].getName().equals(IMAGE.get("name") + ".jpg");
         
@@ -116,6 +131,7 @@ public class TestNoProcessorQueries extends NeuralNetTestBase {
         
         // Check there is only one file, and it's name is equivalent to the last saved file
         outputDirFiles = outputDir.listFiles();
+        assert outputDirFiles != null;
         assert outputDirFiles.length == 1;
         
         int index = core.lastQueryFilename.lastIndexOf('/') + 1;
@@ -189,6 +205,7 @@ public class TestNoProcessorQueries extends NeuralNetTestBase {
         
         // Check there is only one file, and it's name is equivalent to QUERY_FILENAME
         File[] outputDirFiles = outputDir.listFiles();
+        assert outputDirFiles != null;
         assert outputDirFiles.length == 1;
         assert outputDirFiles[0].getName().equals(IMAGE.get("name") + ".jpg");
         
@@ -213,6 +230,7 @@ public class TestNoProcessorQueries extends NeuralNetTestBase {
         
         // Check there is only one file, and it's name is equivalent to QUERY_FILENAME
         outputDirFiles = outputDir.listFiles();
+        assert outputDirFiles != null;
         assert outputDirFiles.length == 1;
         assert outputDirFiles[0].getName().equals(IMAGE.get("name") + ".jpg");
         
@@ -237,6 +255,7 @@ public class TestNoProcessorQueries extends NeuralNetTestBase {
         
         // Check there is only one file, and it's name is equivalent to the last saved file
         outputDirFiles = outputDir.listFiles();
+        assert outputDirFiles != null;
         assert outputDirFiles.length == 1;
         
         int index = core.lastQueryFilename.lastIndexOf('/') + 1;

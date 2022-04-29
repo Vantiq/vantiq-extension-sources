@@ -103,6 +103,12 @@ public class TestUploadAndDeleteQuery extends NeuralNetTestBase {
             vantiqUploadFiles.add(IMAGE_5.get("filename"));
             vantiqUploadFiles.add(IMAGE_6.get("filename"));
             vantiqUploadFiles.add(IMAGE_7.get("filename"));
+
+            try {
+                createSourceImpl(vantiq);
+            } catch (Exception e) {
+                fail("Trapped exception creating source impl: " + e);
+            }
         }
     }
     
@@ -139,6 +145,14 @@ public class TestUploadAndDeleteQuery extends NeuralNetTestBase {
     @SuppressWarnings("PMD.JUnit4TestShouldUseAfterAnnotation")
     @AfterClass
     public static void tearDown() {
+
+        if (vantiq != null) {
+            try {
+                deleteSourceImpl(vantiq);
+            } catch (Exception e) {
+                fail("Trapped exception deleting source impl: " + e);
+            }
+        }
         core.stop();
     }
     

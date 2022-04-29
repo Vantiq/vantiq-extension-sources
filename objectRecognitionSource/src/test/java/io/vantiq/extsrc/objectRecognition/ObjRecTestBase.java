@@ -74,7 +74,11 @@ public class ObjRecTestBase {
             File[] subFiles = d.listFiles();
             if (subFiles != null) {
                 for (File f : subFiles) {
-                    Files.delete(f.toPath());
+                    if (f.isDirectory()) {
+                        deleteDirectory(f.getAbsolutePath());
+                    } else {
+                        Files.delete(f.toPath());
+                    }
                 }
             }
             Files.deleteIfExists(d.toPath());

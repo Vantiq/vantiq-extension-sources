@@ -11,6 +11,7 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
+import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeTrue;
 
@@ -27,6 +28,13 @@ public class TestParallelProcessing extends NeuralNetTestBase {
         if (testVantiqServer != null && testAuthToken != null) {
             vantiq = new io.vantiq.client.Vantiq(testVantiqServer);
             vantiq.setAccessToken(testAuthToken);
+
+            try {
+                createServerConfig();
+                createSourceImpl(vantiq);
+            } catch (Exception e) {
+                fail("Trapped exception creating source impl: " + e);
+            }
         }
     }
 
@@ -38,6 +46,12 @@ public class TestParallelProcessing extends NeuralNetTestBase {
             deleteSource(vantiq);
             deleteType(vantiq);
             deleteRule(vantiq);
+
+            try {
+                deleteSourceImpl(vantiq);
+            } catch (Exception e) {
+                fail("Trapped exception deleting source impl: " + e);
+            }
         }
     }
 
