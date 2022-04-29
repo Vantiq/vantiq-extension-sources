@@ -237,7 +237,7 @@ The underlying sequence of events is as follows:
 
 The sequence above requires that the connector be told of the Vantiq installation to which to connect, appropriate credentials for doing so, and the name of the source it to perform the `connectExtension` operation.
 
-This information should be provided in a configuraiton file. 
+This information should be provided in a configuration file. 
 (Please read the [Connector SDK's server config documentation](../../extpsdk/README.md#serverConfig) first.)
 Specifically, create a file named `server.config` on a `serverConfig` directory within the working directory in which the connector run.
 

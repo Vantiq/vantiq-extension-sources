@@ -3,7 +3,7 @@
 FROM python:3.8.13-slim-buster
 RUN mkdir /app
 ENV PYTHONPATH /app
-RUN pip install --upgrade pip
+RUN pip install --no-cache-dir --upgrade pip
 # The localRequirements.txt file is a requirements.txt formatted file specfiying any local package installations
 # desired.  This may be necessary if, for example, the python code this connector may execute requires additional
 # python packages installed (e.g., tensorflow).
