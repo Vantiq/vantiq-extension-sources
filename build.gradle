@@ -87,7 +87,7 @@ subprojects {
     apply plugin: 'idea'
     apply plugin: 'eclipse'
 
-    if (!['extpsdk', 'pyExecSource'].contains(it.name)) {
+    if (!['extpsdk'].contains(it.name)) {
         apply plugin: 'java'
     }
 
