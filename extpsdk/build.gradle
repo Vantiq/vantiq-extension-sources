@@ -67,7 +67,6 @@ python {
     pip 'build:0.7.0'  // For building the distribution
     // For publication
     pip 'twine:4.0.0'
-
 }
 
 task pytest(type: PythonTask) {

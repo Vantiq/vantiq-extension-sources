@@ -641,7 +641,7 @@ class VantiqSourceConnection:
 
 
 class VantiqConnectorSet:
-    """This is set of and managment interface for the set of VantiqSourceCoonnection managed by this process.
+    """This is set of and management interface for the set of VantiqSourceConnection managed by this process.
 
     It takes its input from the serverConfig/server.config file, and manages the creation and operation
     of these connections.

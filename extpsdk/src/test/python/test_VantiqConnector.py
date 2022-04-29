@@ -43,7 +43,6 @@ datefmt=
 
 if not os.path.exists('serverConfig'):
     os.makedirs('serverConfig')
-print('>>>> ', os.getcwd(), '::')
 
 lg = open('serverConfig/logger.ini', mode='wt')
 lg.write(loginit)
