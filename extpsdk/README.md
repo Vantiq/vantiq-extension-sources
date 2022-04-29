@@ -132,7 +132,6 @@ For the handle_connect, handle_query, and handle_publish calls, there will b be 
 
 Note that the handlers all return an _Awaitable_.  This means that they can operate using _asyncio_ to do other things.  However, _asyncio_ operations should be careful not to block the event loop. If an handler is going to take a long time to run, you will want to set it running separately.
 
-
 #### <a name="connect" id="connect"></a>Connection (Configuration)
 
 The `handle_connect` callback is called as part of the Vantiq connection sequence, delivering the source configuration to the connector. receives the message containing a configuration document created on the Vantiq client.
@@ -150,11 +149,9 @@ This operation is unavoidable, but is generally transparent to the connector.  W
 
 This process is automatic.  No special work by the connector is required.
 
-
 ### Processing Messages
 
 Messages involving a source come in three (3) flavors:
-
 
 * Messages (events) sent by a source
 * Query messages sent to a source. Query messages, in turn, have responses.
@@ -253,13 +250,11 @@ and a message parameter containing
 
 The connector can then act on the message as it deems appropriate.
 
-
 ##### <a name="closeHandler" id="closeHandler"></a>Close
 The closure handler does not deal with a specific message or type of message, but instead is called when either your
 code calls `VantiqSourceConnection.close()` or the WebSocket connection is forced to close, most likely due to a problem with the connection.
 
 The `handle_close` is passed a context containing the source name (see [publish](#publish)). At the time the handler is called, the connection has already been closed.  No interaction with the Vantiq server is possible;  this handler call allows the connector to perform an resource deallocation or other cleanup necessary.
-
 
 ## License
 The source code in this project is licensed under the [MIT License](https://opensource.org/licenses/MIT).  
