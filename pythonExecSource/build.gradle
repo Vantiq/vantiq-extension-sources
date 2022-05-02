@@ -122,7 +122,11 @@ task verifyRequirements() {
     }
 }
 
-buildConnectorImage.dependsOn verifyRequirements
+if (project.tasks.findByName('buildConnectorImage')) {
+    // When all the docker* properties are not present, we may skip constructing this task.
+    // In such cases, no dependency is necessary
+    buildConnectorImage.dependsOn verifyRequirements
+}
 
 task publish(type: PythonTask) {
     command = "upload --verbose -r ${pypi_repo} dist/*"
