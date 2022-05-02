@@ -77,8 +77,8 @@ python {
     // cache from gradle, things will work as expected.
 
     // (also for product use)
-    pip 'vantiqconnectorsdk:0.9.6'
-    pip 'vantiqsdk:0.9.9'
+    pip 'vantiqconnectorsdk:0.9.7'
+    pip 'vantiqsdk:0.9.10'
 
      // For build generation
     pip 'build:0.7.0'  // For building the distribution
