@@ -1,3 +1,5 @@
+import org.gradle.internal.os.OperatingSystem
+
 plugins {
     id 'ru.vyarus.use-python' version '2.3.0'
 }
@@ -105,7 +107,17 @@ task pytest(type: PythonTask) {
 }
 
 task build_distribution(type: PythonTask) {
-    module = 'build'
+    String osName = OperatingSystem.current().getName();
+    String osVersion = OperatingSystem.current().getVersion();
+    println "*** $osName $osVersion was detected."
+
+    if (!OperatingSystem.current().isLinux()) {
+        // Consider Linux.
+
+        module = 'build'
+    } else {
+        command = "-c print('Warning: build_distribution not supported on this platform')"
+    }
 }
 
 task verifyRequirements() {
