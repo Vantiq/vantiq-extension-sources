@@ -9,7 +9,7 @@ You will need credentials to a Vantiq server to use this SDK.  Please contact yo
 
 For details about the overall structure of a connector and the protocol used between the connector and the Vantiq source, please see [here](../README.md).  
 
-Each running instance of this code represents a set of connectors that connect to a single Vantiq namespace. The set of of sources for the connector & the connection information is found in the server config file.  We will describe the details later.
+Each running instance of this code represents a set of connectors that connect to a single Vantiq namespace. The set of sources for the connector & the connection information is found in the server config file.  We will describe the details later.
 
 Using the Python VantiqConnector SDK, the overall operation is as follows:
 
@@ -47,22 +47,21 @@ The SDK is built using _asyncio_.  For details about working with _asyncio_, ple
 
 The Vantiq Connector SDK includes the following items:
 
-* VantiqConnector -- a set of conststants defined as part of the interface.
+* VantiqConnector -- a set of constants defined as part of the interface.
+    * a set of constants to help in the use of these two classes:
+        * For construction errors:
+            * VantiqConnector.ERROR_CODE -- the short name for an error
+            * VantiqConnector.ERROR_TEMPLATE -- the template for the message itself
+            * VantiqConnector.ERROR_PARAMETERS -- parameters for the error message
+        * For context reference during callbacks:
+            * VantiqConnector.SOURCE_NAME -- the name of the source for which this callback is intended
+            * VantiqConnector.RESPONSE_ADDRESS -- routing information to ensure that a query response is delivered to the correct query
+        * Status codes for query responses:
+            * VantiqConnector.QUERY_COMPLETE -- the last response for this query
+            * VantiqConnector.QUERY_PARTIAL -- a partial response to a query
+            * VantiqConnector.QUERY_EMPTY -- an indication that there is no response available for this query
 * VantiqConnectorSet -- a class that manages the connections for this set of connectors
 * VantiqSourceConnection -- a class that manages the message flow and state for a single connector
-* a set of constants to help in the use of these two classes:
-    * For construction errors:
-        * VantiqConnector.ERROR_CODE -- the short name for an error
-        * VantiqConnector.ERROR_TEMPLATE -- the template for the message itself
-        * VantiqConnector.ERROR_PARAMETERS -- parameters for the error message
-    * For context reference during callbacks:
-        * VantiqConnector.SOURCE_NAME -- the name of the source for which this callback is intended
-        * VantiqConnector.RESPONSE_ADDRESS -- routing information to ensure that a query response is delivered to the correct query
-    * Status codes for query responses:
-        * VantiqConnector.QUERY_COMPLETE -- the last response for this query
-        * VantiqConnector.QUERY_PARTIAL -- a partial response to a query
-        * VantiqConnector.QUERY_EMPTY -- an indication that there is no response available for this query
-
 
 ### Logging
 
@@ -124,11 +123,11 @@ Call `VantiqSourceConnection.configure_handlers(close_handler, connect_handler, 
 * handle_publish : Callable[[dict, dict], Awaitable[None]
 * handle_query : Callable[[dict, dict], Awaitable[None]
 
-These parameters specify the callbacks to handle close, connect, publish, and query calls, respectively. For each, the first parameter is a dict providing the context for the operation.  The context will contain an entry keyed with 'source_name' whose value is the name of the source for which this is a callback.  For query calls, there will be an additional entry keyed with 'response_address'. The value here is used to route the query response back to the querier in the Vantiq server.
+These parameters specify the callbacks to handle close, connect, publish, and query calls, respectively. For each, the first parameter is a dict providing the context for the operation.  The context will contain an entry keyed with `VantiqConnector.SOURCE_NAME` whose value is the name of the source for which this is a callback.  For query calls, there will be an additional entry keyed with `VantiqConnector.RESPONSE_ADDRESS`. The value here is used to route the query response back to the caller in the Vantiq server.
  
 This context parameter is to be used in the various query response calls.
 
-For the handle_connect, handle_query, and handle_publish calls, there will b be a second dict parameter. This will contain the message sent from Vantiq to the connector (source).
+For the handle_connect, handle_query, and handle_publish calls, there will be a second dict parameter. This will contain the message sent from Vantiq to the connector (source).
 
 Note that the handlers all return an _Awaitable_.  This means that they can operate using _asyncio_ to do other things.  However, _asyncio_ operations should be careful not to block the event loop. If an handler is going to take a long time to run, you will want to set it running separately.
 
@@ -163,7 +162,7 @@ The following sections outline the work involved here.
 
 Notifications are messages that the source will pass on to Vantiq rules that include 
 `WHEN EVENT OCCURS ON "/sources/<source name>"`. To send one, simply call
-`Vantiq.send_notification(<message to be sent>)`, which will translate the message into JSON and add everything Vantiq needs to recognize the message.  The _message to be sent_ shoud be a `dict` object.
+`VantiqSourceConnection.send_notification(<message to be sent>)`, which will translate the message into JSON and add everything Vantiq needs to recognize the message.  The _message to be sent_ shoud be a `dict` object.
 
 #### Queries
 
@@ -186,8 +185,8 @@ Query responses are responses to a `SELECT` request from Vantiq that targets a s
 only be sent as part response to a query via the callback. 
 
 To enable this behavior, the callback is passed a _context_ parameter that provides information about the context of the query. This parameter will take the form of a `dict` object with two (2)
-items: a `source_name` item that contains a string specifying the source toward which this query is
-sent, and a `response_address` item that contains the routing information to allow the query resposnes (or error) to find their way back the the Vantiq code that issued the query.
+items: a `VantiqConnector.SOURCE_NAME` item that contains a string specifying the source toward which this query is
+sent, and a `VantiqConnector.RESPONSE_ADDRESS` item that contains the routing information to allow the query resposnes (or error) to find their way back the the Vantiq code that issued the query.
 
 ##### <a name="queryResponse" id="queryResponse"></a>Query Responses
 
@@ -216,14 +215,14 @@ The `ctx` or query context was passed in to the `handle_query` callback.
 The `message` (`dict`) parameter must contain the following items.
 
 * `VantiqConnector.ERROR_CODE` -- the short name for the error
-* `VantiqConnector.ERROR_TEMPLATE` -- template for there error message.  Templates contain zero0-based indexed references for parameters list (_e.g._,`{0}` to refer to the first parameter, `{1}` the second, etc.).
+* `VantiqConnector.ERROR_TEMPLATE` -- template for the error message.  Templates contain zero-based indexed references for parameters list (_e.g._,`{0}` to refer to the first parameter, `{1}` the second, etc.).
 * `VantiqConnector.ERROR_PARAMETERS` -- a list of parameters for the template.
 
 ##### <a name="publish" id="publish"></a>Published Messsages
 
 When the Vantiq server publishes an event to a source that is implemented using a connector, it is delivered via the `handle_publish` callback. As with a query message, the handler will be passed two (2) parameter:  A context and the message.
 
-The context in this case will contain the `source_name` item.  It need not contain the `response_address` item.  You can not respond to messages delivered via the `handle_publish` callback.
+The context in this case will contain the `VantiqConnector.SOURCE_NAME` item.  It need not contain the `VantiqConnector.RESPONSE_ADDRESS` item.  You can not respond to messages delivered via the `handle_publish` callback.
 
 If the Vantiq server executes VAIL code like
 
@@ -254,7 +253,7 @@ The connector can then act on the message as it deems appropriate.
 The closure handler does not deal with a specific message or type of message, but instead is called when either your
 code calls `VantiqSourceConnection.close()` or the WebSocket connection is forced to close, most likely due to a problem with the connection.
 
-The `handle_close` is passed a context containing the source name (see [publish](#publish)). At the time the handler is called, the connection has already been closed.  No interaction with the Vantiq server is possible;  this handler call allows the connector to perform an resource deallocation or other cleanup necessary.
+The `handle_close` is passed a context containing the source name (see [publish](#publish)). At the time the handler is called, the connection has already been closed.  No interaction with the Vantiq server is possible;  this handler call allows the connector to perform any resource deallocation or other cleanup necessary.
 
 ## License
 The source code in this project is licensed under the [MIT License](https://opensource.org/licenses/MIT).  
