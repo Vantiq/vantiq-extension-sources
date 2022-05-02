@@ -154,6 +154,7 @@ class VantiqConnector:
     QUERY_PARTIAL = 100
     QUERY_ERROR = 400
 
+    # Server Configuration properties
     SOURCES = 'sources'
     TARGET_SERVER = 'targetServer'
     AUTH_TOKEN = 'authToken'
@@ -164,33 +165,12 @@ class VantiqConnector:
 
 class VantiqConnectorException(RuntimeError):
     """An error from the connector/Vantiq interoperation."""
-
-    def __init__(self, *args, **kwargs):  # real signature unknown
-        pass
-
-    def __repr__(self):
-        return f'VantiqConnectorException({self.args})'
-
-    def __str__(self):
-        return f'VantiqConnectorException: {getattr(self, "message", repr(self))}'
-
-    __weakref__ = property(lambda self: object(), lambda self, v: None, lambda self: None)  # default
-    """list of weak references to the object (if defined)"""
+    pass  # No special handling required -- exception class is the marker
 
 
 class VantiqConnectorConfigException(VantiqConnectorException):
     """An error in the connector configuration."""
-
-    def __init__(self, *args, **kwargs):  # real signature unknown
-        pass
-
-    def __repr__(self):
-        return f'VantiqConnectorConfigException({self.args})'
-
-    def __str__(self):
-        return f'VantiqConnectorConfigException: {getattr(self, "message", repr(self))}'
-
-    __weakref__ = property(lambda self: object(), lambda self, v: None, lambda self: None)  # default
+    pass  # No special handling required -- exception class is the marker
 
 
 class VantiqSourceConnection:
@@ -249,13 +229,14 @@ class VantiqSourceConnection:
             handle_query : Callable[[dict, dict], Awaitable[None]]
                 These parameters specify the callbacks to handle close, connect, publish, and query calls, respectively.
                 For each, the first parameter is a dict providing the context for the operation.  The context will
-                contain an entry keyed with 'source_name' whose value is the name of the source for which this is a
-                callback.  For query calls, there will be an additional entry keyed with 'response_address'. The value
-                here is used to route the query response back to the querier in the Vantiq server.
+                contain an entry keyed with VantiqConnector.SOURCE_NAME whose value is the name of the source
+                for which this is a callback.  For query calls, there will be an additional entry keyed with
+                VantiqConnector.RESPONSE_ADDRESS. The value here is used to route the query response back to
+                the caller in the Vantiq server.
 
                 This context parameter is to be used in the various query response calls.
 
-                For the handle_connect, handle_query, and handle_publish calls, there will b be a second dict named
+                For the handle_connect, handle_query, and handle_publish calls, there will be a second dict named
                 parameter. This will contain the message sent from Vantiq to the connector (source).
 
         """
@@ -275,7 +256,6 @@ class VantiqSourceConnection:
         except FileNotFoundError:
             # This means that the file  wasn't there.  Let's look in the other std place.
             _vlog.warning('Failed to open %s', file_name)
-            pass
         finally:
             if scf is not None:
                 scf.close()
@@ -505,21 +485,23 @@ class VantiqSourceConnection:
 
         Parameters:
             ctx : dict
-                The context for the query.  Contains the 'source_name' and 'response_address' entries.
+                The context for the query.  Contains the VantiqConnector.SOURCE_NAME and
+                VantiqConnector.RESPONSE_ADDRESS entries.
             message : dict
                 The error message to return.  The error message should contain the following entries:
-                    'messageCode' --  a string containing a short name for the error
-                    'messageTemplate'  -- a string describing the problem.  Parameters in this template are indexed
-                                        from 0, and indicated using {index}.
-                    'parameters' -- a list/array containing the parameters to be substituted in the template.
+                    VantiqConnector.MESSAGE_CODE --  a string containing a short name for the error
+                    VantiqConnector.MESSAGE_TEMPLATE  -- a string describing the problem.  Parameters in this template
+                                        are indexed from 0, and indicated using {index}.
+                    VanticConnector.PARAMETERS -- a list/array containing the parameters to be substituted
+                                        in the template.
 
         Examples:
         ::
             # Assumes ctx was provided by the handler, and that cnx is the VantiqSourceConnection
 
-            await cnx.send_query_error(ctx, 'my.connector.badparameter',
-                                       'The parameter {0} with value {1} is invalid,
-                                       ['some_param_name', some_bad_value])
+            await cnx.send_query_error(ctx, {VantiqConnector.MESSAGE_CODE: 'my.connector.badparameter',
+                                       VantiqConnector:MESSAGE_TEMPLATE: 'The parameter {0} with value {1} is invalid',
+                                       VantiqConnector.MESSAGE_PARAMETERS: ['some_param_name', some_bad_value]})
         """
         if (ctx is None
                 or VantiqConnector.SOURCE_NAME not in ctx
@@ -540,7 +522,8 @@ class VantiqSourceConnection:
 
                 Parameters:
                     ctx : dict
-                        The context for the query.  Contains the 'source_name' and 'response_address' entries.
+                        The context for the query.  Contains the VantiqConnector.SOURCE_NAME and
+                        VantiConnector.RESPONSE_ADDRESS entries.
                     code : int
                         Status code to return.  Use VantiqConnector.QUERY_PARTIAL when making several
                         calls to return things. Use VantiqConnector.QUERY_COMPLETE to indicate
@@ -573,8 +556,7 @@ class VantiqSourceConnection:
 
         msg_to_send = {_STATUS: code, 'headers': {_RESPONSE_ADDRESS_HEADER: ctx[VantiqConnector.RESPONSE_ADDRESS]}}
         if code != VantiqConnector.QUERY_EMPTY:
-            body = message
-            msg_to_send[_BODY] = body
+            msg_to_send[_BODY] = message
 
         raw_msg = json.dumps(msg_to_send)
         ready = False
@@ -588,7 +570,6 @@ class VantiqSourceConnection:
                 if is_ready_future.exception() is not None or is_ready_future.cancelled():
                     # The system will reconnect here, replacing the future in the process.  Simply retry
                     is_ready_future = self._is_connected_future
-                    pass
                 else:
                     ready = True
         try:
@@ -620,7 +601,6 @@ class VantiqSourceConnection:
                 if is_ready_future.exception() is not None or is_ready_future.cancelled():
                     # The system will reconnect here, replacing the future in the process.  Simply retry
                     is_ready_future = self._is_connected_future
-                    pass
                 else:
                     ready = True
         try:
@@ -641,10 +621,11 @@ class VantiqSourceConnection:
 
 
 class VantiqConnectorSet:
-    """This is set of and management interface for the set of VantiqSourceConnection managed by this process.
+    """This is set of VantiqSourceConnection managed by this process. It includes the management interface
+    for this set of VantiqSourceConnection.
 
-    It takes its input from the serverConfig/server.config file, and manages the creation and operation
-    of these connections.
+    The VantiqConnectorSet takes its input from the serverConfig/server.config file, and manages the creation
+    and operation of these connections.
     """
 
     def __init__(self):
@@ -719,7 +700,6 @@ class VantiqConnectorSet:
         except FileNotFoundError:
             # This means that the file  wasn't there.  Let's look in the other std place.
             _vlog.warning('Failed to open %s', file_name)
-            pass
         finally:
             if scf is not None:
                 scf.close()
@@ -750,13 +730,14 @@ class VantiqConnectorSet:
              handle_query : Callable[[dict, dict], Awaitable[None]]
                  These parameters specify callbacks to handle close, connect, publish, and query calls, respectively.
                  For each, the first parameter is a dict providing the context for the operation.  The context will
-                 contain an entry keyed with 'source_name' whose value is the name of the source for which this is a
-                 callback.  For query calls, there will be an additional entry keyed with 'response_address'. The value
-                 here is used to route the query response back to the querier in the Vantiq server.
+                 contain an entry keyed with VantiqConnector.SOURCE_NAME whose value is the name of the source
+                 for which this is a callback.  For query calls, there will be an additional entry keyed with
+                 VantiqConnector.RESPONSE_ADDRESS. The value here is used to route the query response back
+                 to the caller in the Vantiq server.
 
                  This context parameter is to be used in the various query response calls.
 
-                 For handle_connect, handle_query, and handle_publish calls, there will b be a second dict parameter.
+                 For handle_connect, handle_query, and handle_publish calls, there will be a second dict parameter.
                  This will contain the message sent from Vantiq to the connector (source).
          """
 
