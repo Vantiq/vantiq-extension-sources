@@ -61,7 +61,7 @@ and then providing a configuration.  We will examine the configuration just belo
 #### <a name="configuration" id="configuration"></a>Configuration
 
 > Note:  It is assumed here that the reader is familiar with Python concepts and terminology.
-> This source tries to use terminology familiar to an Python practitioner where possible.
+> This source tries to use terminology familiar to a Python practitioner where possible.
 
 The configuration of a Vantiq connector is a JSON document.
 
@@ -70,7 +70,7 @@ Specifically, the document contains a root named `config`, which, in turn, conta
 named `'pythonExecConfig`, which contains the `general` section. This section can contain the following properties:
 
 - `codeCacheSize` -- this is the number of compiled python code entries this connector will contain. The default is 128, and that should be sufficient for most purposes.
-- `returnRuntimeInformation` -- this instructs the the connector to return runtime information as part of the return from code execution. This is primarily for collecting performance information. It defaults to `false`.
+- `returnRuntimeInformation` -- this instructs the connector to return runtime information as part of the return from code execution. This is primarily for collecting performance information. It defaults to `false`.
     - The return of runtime information is supported only when the connector is returning the results directly.  In cases where the executed code is sending results (see `codeHandlesReturn` [below](#withParameters)), there is no vehicle for the return of runtime information.
 
 An example configuration document specifying the return of runtime information would look like the following:
@@ -130,7 +130,7 @@ This query runs the python code contained in the document _myPythonDoc_.
 
 #####  <a name="withParameters" id="withParameters"></a>Query With Parameters
 
-You will note that the the SELECT queries above each have an associated _WITH_ clause.
+You will note that the SELECT queries above each have an associated _WITH_ clause.
 The _WITH_ is used to specify special instructions for the execution of the query, and the items specified in the _WITH_ clause are sent to the connector.  The following _WITH_ clause parameters are defined as part of this connector.
 
 - `code` (String) -- This specifies the code to run. 
@@ -139,9 +139,9 @@ The _WITH_ is used to specify special instructions for the execution of the quer
 
 Note that `code` and `name` can be provided together, but when `script` is used, that document name is used as the cached code's name.  Thus, `name` cannot be specified along with `script`.
 
-- `presetValues` (Object) -- This is used to set Python global variables for the executed code to access. This parameter should be a Vantiq object.  Each property within the object will create a Python global variable whose name is the property name, and whose value is the property value.  In the examples shown above, you can see that the python code contains a reference to `loop_count`, and the associated query sets that value via the `presetValues` parameter.
+- `presetValues` (Object) -- This is used to set Python global variables for the executed code to access. This parameter should be a Vantiq object.  Each property within the object will create a Python global variable whose name is the property name, and whose value is the property value.  In the examples shown above, you can see that the Python code contains a reference to `loop_count`, and the associated query sets that value via the `presetValues` parameter.
 - `codeHandlesReturn` (boolean) -- When `true`, this specifies that the executed code returns its own results (and errors, if necessary).  When `false` or absent, the connector assumes responsibility to returning the results (as outlined [below](#returningData).
-- `limitReturnTo` (List of String) -- When `codeHandlesReturns` is `false`, this instructs the connector to limit the values it returns to the (Python) variables in this list.
+- `limitReturnTo` (List of String) -- When `codeHandlesReturn` is `false`, this instructs the connector to limit the values it returns to the (Python) variables in this list.
 
 ##### <a name="returningData" id="returningData"></a>Returning Data
 
@@ -149,17 +149,17 @@ When code is executed, it is generally the case that the caller is interested in
 Data can be returned in two ways.
 
 When `codeHandlesReturn` is `false` or missing, the connector will, upon completion of the execution, return the values of the Python global variables at the end of execution. Specifically,
-the connector will return single result consisting of the following properties;
+the connector will return a single result consisting of the following properties;
 
 - `pythonCallResults` (Object) -- this is a VAIL object containing properties corresponding to the Python global variables of the code executed.  All Python global variables that can be encoded in JSON are returned unless limited by the `limitReturnTo` parameter.  If `limitReturnTo` is specified, then only the Python global variables listed are returned.
-- `connectorRuntimeInfo` (Object) -- this is a VAIL object containing some runtime information if 1) the connector has been configured to return such information (see `returnRuntimeInformation` [above](#configuration)), and 2) that `codeHandlesReturn` is absent of `false`.  When present, the value returned may contain some of the following properties:
+- `connectorRuntimeInfo` (Object) -- this is a VAIL object containing some runtime information if 1) the connector has been configured to return such information (see `returnRuntimeInformation` [above](#configuration)), and 2) that `codeHandlesReturn` is absent or `false`.  When present, the value returned may contain some of the following properties:
     - `totalTime` -- the amount of time used to run the code
     - `executionTime` -- the amount of time spent executing the code sent down
     - `compileTime` -- the amount of time spent compiling the code.  If missing, no compilation was performed.
     - `currentCacheSize`-- the number of items in the compiled code cache
     - `cacheCapacity`-- the size (in terms of number of items) in the compiled code cache.
 
-When `codeHandlesReturns` is `true`, the executed code takes on the responsibility for sending data back. This is done by calling the Python Connector SDK calls `send_query_response()` or `send_query_error()`. Please see that documentation for details about these calls.
+When `codeHandlesReturn` is `true`, the executed code takes on the responsibility for sending data back. This is done by calling the Python Connector SDK calls `send_query_response()` or `send_query_error()`. Please see that documentation for details about these calls.
 
 To provide context for the operation of your code, the following Python global variables will be set.
 
@@ -172,7 +172,7 @@ In addition, any values specified in the `presetValues` parameter will be set as
 
 #### Receiving Data from the Source
 
-Although probably unusual, the Python code being executed can send events to the associated Vantiq source. This is done using the `send_notification()` method in the Vantiq Connector SDK. This is a method associate with the `connector_connection` global variable outlined above.  To make such a call, use
+Although probably unusual, the Python code being executed can send events to the associated Vantiq source. This is done using the `send_notification()` method in the Vantiq Connector SDK. This is a method associated with the `connector_connection` global variable outlined above.  To make such a call, use
 
 ```python
     await connector_connection.send_notification({'id': str(uuid.uuid4())})
@@ -195,7 +195,7 @@ log.info("Got a message: {}", [message])
 
 ### Deploying a Python Execution Connector
 
-You can build the Python execution connector yourself, or, more commonly, simple install using `pip` (or equivalent).
+You can build the Python execution connector yourself, or, more commonly, simply install using `pip` (or equivalent).
 
 #### Install
 
@@ -235,11 +235,11 @@ The underlying sequence of events is as follows:
    - At this point, the source is *connected* and operational.
  - Once connected, the source can be the target of SELECT statements.
 
-The sequence above requires that the connector be told of the Vantiq installation to which to connect, appropriate credentials for doing so, and the name of the source it to perform the `connectExtension` operation.
+The sequence above requires that the connector be told of the Vantiq installation to which to connect, appropriate credentials for doing so, and the name of the source it uses to perform the `connectExtension` operation.
 
 This information should be provided in a configuration file. 
 (Please read the [Connector SDK's server config documentation](../../extpsdk/README.md#serverConfig) first.)
-Specifically, create a file named `server.config` on a `serverConfig` directory within the working directory in which the connector run.
+Specifically, create a file named `server.config` in a `serverConfig` directory within the working directory in which the connector runs.
 
 The information required is placed in that file as follows:
 
@@ -270,11 +270,11 @@ An example one is provided at `src/test/resources/logger.ini` in this project.
 
 The general process for creating a docker image is described in the Extension Sources Overview.
 
-However, except for the most trival cases, you will generally want to include other Python packages in the installation within which the connector runs.  If, for example, you are using some machine learning functions in the code to run, you will want to have the appropriate packages installed in the connector's Python environment.
+However, except for the most trivial cases, you will generally want to include other Python packages in the installation within which the connector runs.  If, for example, you are using some machine learning functions in the code to run, you will want to have the appropriate packages installed in the connector's Python environment.
 
 In the case of a Docker image, each such image is its own environment.  Consequently, you must provide for the installations of the Python packages for each Docker image created.
 
-To do this, we make use of the `connectorSpecificInclusions` property to perform the build. The `connectorSpecificInclusions` identifies a directory that contains files that are to be included in the connector's Docker image.  For the this connector, we require that that property be specified, and that the directory specified contain a file named `localRequirements.txt`.  This should be a file in the [pip requirements format](https://pip.pypa.io/en/stable/reference/requirements-file-format/).  This file will be provided to pip as part of the Docker image build to load the Python packages required by this connector.
+To do this, we make use of the `connectorSpecificInclusions` property to perform the build. The `connectorSpecificInclusions` identifies a directory that contains files that are to be included in the connector's Docker image.  For this, we require that that property be specified, and that the directory specified contains a file named `localRequirements.txt`.  This should be a file in the [pip requirements format](https://pip.pypa.io/en/stable/reference/requirements-file-format/).  This file will be provided to pip as part of the Docker image build to load the Python packages required by this connector.
 
 In the rare case where no other Python packages are necessary, the `localRequirements.txt` file can be empty.
 
@@ -284,7 +284,7 @@ For example, if one were expecting to run Python code making use of the _numpy_ 
 numpy
 ```
 
-Assuming that that file is place in the `/Users/me/pythonReqs` directory, one could use the following command to create a Docker image for your use.
+Assuming that the file is placed in the `/Users/me/pythonReqs` directory, one could use the following command to create a Docker image for your use.
 
 ```shell
 ./gradlew -PconnectorSpecificInclusions=/Users/me/pythonReqs \

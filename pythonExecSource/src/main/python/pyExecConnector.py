@@ -414,7 +414,6 @@ class PyExecConnector:
         vr: VantiqResponse = await self.vantiq_client.select_one(VantiqResources.DOCUMENTS, script_to_fetch)
         if vr.is_success:
             doc: dict = vr.body
-            print('Doc is', doc)
             if 'isIncomplete' in doc.keys() and doc['isIncomplete']:
                 error = {VantiqConnector.ERROR_CODE: 'io.vantiq.pyexecsource.docincomplete',
                          VantiqConnector.ERROR_TEMPLATE: 'Document {0} is incomplete and cannot be used.',
@@ -633,7 +632,7 @@ class PyExecConnector:
                         # Ensure that we can encode the values on the way back
                         if desired_results is None or name in desired_results:
                             try:
-                                # we try & serialize to ensure that what we're retuning can be serialized
+                                # we try & serialize to ensure that what we're returning can be serialized
                                 # If there's an exception, skip this value.  We don't use the results otherwise.
                                 json.dumps(value)
                                 msg_to_return[name] = value

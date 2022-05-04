@@ -708,7 +708,7 @@ class TestSingleConnection:
     @pytest.mark.asyncio
     @pytest.mark.timeout(10)
     async def test_single_doc_queries(self, unused_tcp_port):
-        # To run this test, se have to mock up the query returns representing the VantiqSDK
+        # To run this test, we have to mock up the query returns representing the VantiqSDK
         with aioresponses() as mocked:
             mocked.get('/authenticate',
                        status=200,
@@ -722,7 +722,7 @@ class TestSingleConnection:
     @pytest.mark.asyncio
     @pytest.mark.timeout(10)
     async def test_single_doc_queries_multiple(self, unused_tcp_port):
-        # To run this test, se have to mock up the query returns representing the VantiqSDK
+        # To run this test, we have to mock up the query returns representing the VantiqSDK
         with aioresponses() as mocked:
             mocked.get('/authenticate',
                        status=200,
@@ -736,7 +736,7 @@ class TestSingleConnection:
     async def test_single_doc_queries_multiple_notify(self, unused_tcp_port):
         testserver.set_py_documents(py_docs_with_notifies)
 
-        # To run this test, se have to mock up the query returns representing the VantiqSDK
+        # To run this test, we have to mock up the query returns representing the VantiqSDK
         with aioresponses() as mocked:
             mocked.get('/authenticate',
                        status=200,

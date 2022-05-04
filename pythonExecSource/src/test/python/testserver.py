@@ -281,7 +281,7 @@ async def do_query_operations(websocket, snd_count: int, conc_count: int, do_par
                 vantiqconnectorsdk._MESSAGE_HEADERS: {vantiqconnectorsdk._ORIGIN_ADDRESS: this_query},
                 "op": vantiqconnectorsdk._OP_QUERY,
                 "resourceName": vantiqconnectorsdk._SOURCES_RESOURCE,
-                "resourceId": props[VantiqConnector.SOURCES],
+                "resourceId": props[VantiqConnector.SOURCES]
             }
             if use_documents:
                 script_to_use = generate_python_script_ref((qry_number + op_count) % len(py_code_documents))
