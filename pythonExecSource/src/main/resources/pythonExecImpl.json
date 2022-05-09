@@ -1,0 +1,8 @@
+{
+   "name" : "PYTHONEXECUTION",
+   "baseType" : "EXTENSION",
+   "verticle" : "service:extensionSource",
+   "config" : {},
+   "baseConfigProperties": [],
+   "operations": ["notification", "query"]
+}

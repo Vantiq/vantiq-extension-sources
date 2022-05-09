@@ -86,11 +86,9 @@ subprojects {
     apply plugin: 'groovy'
     apply plugin: 'idea'
     apply plugin: 'eclipse'
-
-    if (!['extpsdk'].contains(it.name)) {
+    if (!['extpdk', 'pythonExecSource'].contains(it.name)) {
         apply plugin: 'java'
     }
-
     apply plugin: 'com.chrisgahlert.gradle-dcompose-plugin'
 
     // Using gradle-dcompose-plugin to build/push docker images

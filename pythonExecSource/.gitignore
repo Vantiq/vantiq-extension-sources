@@ -1,0 +1,7 @@
+**/serverConfig/*
+**/.pytest_cache
+.pytest_cache
+serverConfig/
+dist/
+**/__pycache__
+**/*.egg-info
