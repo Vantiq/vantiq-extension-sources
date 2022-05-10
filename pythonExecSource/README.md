@@ -50,10 +50,6 @@ Otherwise, if the `authToken` is not set in the configuration file, the system w
 
 For the full documentation on the SDK, see the documentation available at the github repository.
 
-## Examples
-
-Example projects can be found under the [examples directory](./examples).
-
 ## Developers
 
 The project is set up as a `gradle` project.  To run the tests, use
