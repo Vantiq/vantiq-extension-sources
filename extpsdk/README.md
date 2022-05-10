@@ -257,7 +257,9 @@ Internally, `declare_healthy()` and `declare_unhealthy()` open and close a TCP s
 
 The socket is opened on port 8000 by default, but this can be changed by including tcpProbePort:<portNumberHere> in the connector's `server.config` document. It is the responsibility of the connector developer to manage when the connector is healthy and when it is not.
 
-Note that `declare_healthy()` and `declare_unhealthy()` are available from the `VantiqSourceConnection` as well.  These make calls to the containing `VantiqConnetorSet`. Health status is available only on a `VantiqConnectorSet` basis.
+Note that `declare_healthy()` and `declare_unhealthy()` are available from the `VantiqSourceConnection` as well.  These make calls to the containing `VantiqConnectorSet`. Health status is available only on a `VantiqConnectorSet` basis.
+
+The `VantiqConnectorSet` and `VantiqSourceConnection` classes both offer the `is_healthy()` method.  This will return `True` if the connector set has been declared healthy, `False` if it has been declared unhealthy, and `None` if no health declaration has been made.
 
 ##### <a name="closeHandler" id="closeHandler"></a>Close
 The closure handler does not deal with a specific message or type of message, but instead is called when either your

@@ -236,6 +236,15 @@ class VantiqSourceConnection:
         if self._connector_set is not None:
             await self._connector_set.declare_unhealthy()
 
+    def is_healthy(self):
+        """Returns the health status of the containing connector set.
+
+       Returns None when no health status has been set;  otherwise, returns a boolean
+       indicating whether the connector set is healthy.
+       """
+        if self._connector_set is not None:
+            return self._connector_set.is_healthy()
+
     def get_source(self) -> string:
         """Return the source name with which this connection is associated
         Returns:
@@ -669,7 +678,7 @@ class VantiqConnectorSet:
         self._stop_healthy_future: Union[Future, None] = None
         self._health_control_lock = asyncio.Lock()
         self._health_responder_task = None
-        self.healthy = True
+        self.healthy = None  # Be healthy by default
         self._server_config: Union[dict, None] = None
         self._read_configuration()
 
@@ -840,6 +849,11 @@ class VantiqConnectorSet:
             self._stop_healthy_future = None
 
     def is_healthy(self):
+        """Returns the health status of this connector set.
+
+        Returns None when no health status has been set;  otherwise, returns a boolean
+        indicating whether the connector set is healthy.
+        """
         return self.healthy
 
     async def run_connectors(self) -> None:
