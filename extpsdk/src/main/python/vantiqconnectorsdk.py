@@ -878,3 +878,7 @@ class VantiqConnectorSet:
             await self._connections[src].close()
         if self._health_responder_task:
             self._health_responder_task.cancel()
+            wait_count = 0
+            while not self._health_responder_task.done() and wait_count < 50:
+                await asyncio.sleep(0.1)
+                wait_count += 1
