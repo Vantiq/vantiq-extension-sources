@@ -33,7 +33,9 @@ python {
     // may be used to disable pip cache (--no-cache-dir option)
     usePipCache = true
     // additional pip repositories (--extra-index-url option)
-    extraIndexUrls = []
+    // Remove in product, but useful in development
+    extraIndexUrls = [ 'https://test.pypi.org/simple']
+    // extraIndexUrls = []
     // trusted hosts for pip install (--trusted-host option)
     trustedHosts = []
 
@@ -76,7 +78,7 @@ python {
     // cache from gradle, things will work as expected.
 
     // (also for product use)
-    pip 'vantiqconnectorsdk:1.0.1'
+    pip 'vantiqconnectorsdk:1.1.1'
     pip 'vantiqsdk:1.0.1'
 
      // For build generation
