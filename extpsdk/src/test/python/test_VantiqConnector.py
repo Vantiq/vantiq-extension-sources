@@ -267,13 +267,16 @@ sources={source_name}
     @pytest.mark.asyncio
     @pytest.mark.timeout(20)
     async def test_server_healthcheck(self, unused_tcp_port_factory):
-        # Construct a server config file to use...
+        # Construct a server config file to use.
+        server_port = unused_tcp_port_factory()
+        healthcheck_port = unused_tcp_port_factory()
+
         source_name = 'pythonTestSource'
         cf = f'''
-targetServer=http://localhost:{unused_tcp_port_factory()}
+targetServer=http://localhost:{server_port}
 authToken=testtoken
 sources={source_name}
-{VantiqConnector.PORT_PROPERTY_NAME} = {unused_tcp_port_factory()}
+{VantiqConnector.PORT_PROPERTY_NAME} = {healthcheck_port}
             '''
         try:
             scf = open('server.config', encoding='utf-8', mode='wt')
@@ -340,11 +343,15 @@ sources={source_name}
     async def test_source_healthcheck(self, unused_tcp_port_factory):
         # Construct a server config file to use...
         source_name = 'pythonTestSource'
+        # Separated these from being inline with the file content. Seemed to be some sync issues
+        # when they were embedded in the file content.  Separately, they seem more reliable.
+        server_port = unused_tcp_port_factory()
+        healthcheck_port = unused_tcp_port_factory()
         cf = f'''
-targetServer=http://localhost:{unused_tcp_port_factory()}
+targetServer=http://localhost:{server_port}
 authToken=testtoken
 sources={source_name}
-{VantiqConnector.PORT_PROPERTY_NAME} = {unused_tcp_port_factory()}
+{VantiqConnector.PORT_PROPERTY_NAME} = {healthcheck_port}
             '''
         try:
             scf = open('server.config', encoding='utf-8', mode='wt')
@@ -409,8 +416,9 @@ sources={source_name}
     async def test_server_healthcheck_default_port(self, unused_tcp_port_factory):
         # Construct a server config file to use...
         source_name = 'pythonTestSource'
+        server_port = unused_tcp_port_factory()
         cf = f'''
-targetServer=http://localhost:{unused_tcp_port_factory()}
+targetServer=http://localhost:{server_port}
 authToken=testtoken
 sources={source_name}
             '''
