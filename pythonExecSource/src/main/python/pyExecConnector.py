@@ -665,6 +665,7 @@ class Connectors:
     def __init__(self):
         self.connector_set = VantiqConnectorSet()
         self.logger = logging.getLogger('Vantiq.PyExecConnector')
+        self.logger.setLevel(logging.DEBUG)
 
     async def run(self):
         """Run the connectors.
@@ -679,8 +680,10 @@ class Connectors:
             pec.establish_handlers()
 
         self.logger.info('Running PyExecConnector.')
-
+        self.logger.info('Performing declare_healthy() action.')
         await self.connector_set.declare_healthy()
+        self.logger.info('Running connectors.')
+
         await self.connector_set.run_connectors()
         await self.connector_set.close()
 
