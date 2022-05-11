@@ -289,10 +289,10 @@ sources={source_name}
             got_connect_exception = False
             assert vc.is_healthy() is None  # No health status declared yet
             try:
-                res = await websockets.connect(f'ws://localhost:'
-                                               f'{vc._server_config[VantiqConnector.PORT_PROPERTY_NAME]}',
-                                               open_timeout=2)
-                assert res is None
+                reader, writer = await asyncio.open_connection(None,
+                                                               vc._server_config[VantiqConnector.PORT_PROPERTY_NAME])
+                assert reader is None
+                assert writer is None
             except OSError as ose:
                 # This is what we want
                 got_connect_exception = True
@@ -305,9 +305,10 @@ sources={source_name}
             await vc.declare_healthy()
             assert vc.is_healthy()
             try:
-                res = await websockets.connect(f'ws://localhost:{vc._server_config[VantiqConnector.PORT_PROPERTY_NAME]}',
-                                               open_timeout=2)
-                assert res is not None
+                reader, writer = await asyncio.open_connection(None,
+                                                               vc._server_config[VantiqConnector.PORT_PROPERTY_NAME])
+                assert reader is not None
+                assert writer is not None
             except Exception as e:
                 got_connect_exception = True
                 assert e is None
@@ -317,9 +318,10 @@ sources={source_name}
             await vc.declare_unhealthy()
             assert not vc.is_healthy()
             try:
-                res = await websockets.connect(f'ws://localhost:{vc._server_config[VantiqConnector.PORT_PROPERTY_NAME]}',
-                                               open_timeout=2)
-                assert res is None
+                reader, writer = await asyncio.open_connection(None,
+                                                               vc._server_config[VantiqConnector.PORT_PROPERTY_NAME])
+                assert reader is None
+                assert writer is None
             except OSError as ose:
                 # This is what we want
                 got_connect_exception = True
@@ -358,14 +360,13 @@ sources={source_name}
             got_connect_exception = False
             assert vc.get_connection_for_source(source_name).is_healthy() is None
             try:
-                res = await websockets.connect(f'ws://localhost:'
-                                               f'{vc._server_config[VantiqConnector.PORT_PROPERTY_NAME]}',
-                                               open_timeout=2)
-                assert res is None
+                reader, writer = await asyncio.open_connection(None,
+                                                               vc._server_config[VantiqConnector.PORT_PROPERTY_NAME])
+                assert reader is None
+                assert writer is None
             except OSError as ose:
                 # This is what we want
                 got_connect_exception = True
-
             except Exception as e:
                 assert e is None
 
@@ -374,23 +375,22 @@ sources={source_name}
             await vc.get_connection_for_source(source_name).declare_healthy()
             assert vc.get_connection_for_source(source_name).is_healthy()
             try:
-                res = await websockets.connect(
-                    f'ws://localhost:{vc._server_config[VantiqConnector.PORT_PROPERTY_NAME]}',
-                    open_timeout=2)
-                assert res is not None
+                reader, writer = await asyncio.open_connection(None,
+                                                               vc._server_config[VantiqConnector.PORT_PROPERTY_NAME])
+
+                assert reader is not None
             except Exception as e:
                 got_connect_exception = True
                 assert e is None
-
             assert not got_connect_exception
             got_connect_exception = False
             await vc.get_connection_for_source(source_name).declare_unhealthy()
             assert not vc.get_connection_for_source(source_name).is_healthy()
             try:
-                res = await websockets.connect(
-                    f'ws://localhost:{vc._server_config[VantiqConnector.PORT_PROPERTY_NAME]}',
-                    open_timeout=2)
-                assert res is None
+                reader, writer = await asyncio.open_connection(None,
+                                                               vc._server_config[VantiqConnector.PORT_PROPERTY_NAME])
+                assert reader is None
+                assert writer is None
             except OSError as ose:
                 # This is what we want
                 got_connect_exception = True
@@ -427,13 +427,12 @@ sources={source_name}
             await asyncio.sleep(0.5)
             got_connect_exception = False
             try:
-                res = await websockets.connect(f'ws://localhost:{VantiqConnector.TCP_PROBE_PORT_DEFAULT}',
-                                               open_timeout=2)
-                assert res is None
+                reader, writer = await asyncio.open_connection(None, VantiqConnector.TCP_PROBE_PORT_DEFAULT)
+                assert reader is None
+                assert writer is None
             except OSError as ose:
                 # This is what we want
                 got_connect_exception = True
-
             except Exception as e:
                 assert e is None
 
@@ -441,10 +440,9 @@ sources={source_name}
             got_connect_exception = False
             await vc.declare_healthy()
             try:
-                res = await websockets.connect(
-                    f'ws://localhost:{VantiqConnector.TCP_PROBE_PORT_DEFAULT}',
-                    open_timeout=2)
-                assert res is not None
+                reader, writer = await asyncio.open_connection(None, VantiqConnector.TCP_PROBE_PORT_DEFAULT)
+                assert reader is not None
+                assert writer is not None
             except Exception as e:
                 got_connect_exception = True
                 assert e is None
@@ -453,10 +451,9 @@ sources={source_name}
             got_connect_exception = False
             await vc.declare_unhealthy()
             try:
-                res = await websockets.connect(
-                    f'ws://localhost:{VantiqConnector.TCP_PROBE_PORT_DEFAULT}',
-                    open_timeout=2)
-                assert res is None
+                reader, writer = await asyncio.open_connection(None, VantiqConnector.TCP_PROBE_PORT_DEFAULT)
+                assert reader is None
+                assert writer is None
             except OSError as ose:
                 # This is what we want
                 got_connect_exception = True

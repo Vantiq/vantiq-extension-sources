@@ -98,8 +98,10 @@ _vlog: Union[Logger, None] = None
 def setup_logging():
     """Read the log configuration file & initialize appropriately"""
     global _vlog
+    logging_config_file = 'serverConfig/logger.ini'
     # load the logging configuration
-    logging.config.fileConfig('serverConfig/logger.ini', disable_existing_loggers=False)
+    if os.path.exists(logging_config_file):
+        logging.config.fileConfig(logging_config_file, disable_existing_loggers=False)
     _vlog = logging.getLogger(__name__)
     _vlog.setLevel(logging.DEBUG)
     # create a file handler
@@ -675,9 +677,8 @@ class VantiqConnectorSet:
     def __init__(self):
         self._sources = []
         self._connections = {}
-        self._stop_healthy_future: Union[Future, None] = None
         self._health_control_lock = asyncio.Lock()
-        self._health_responder_task = None
+        self.socket_server = None
         self.healthy = None  # Be healthy by default
         self._server_config: Union[dict, None] = None
         self._read_configuration()
@@ -793,7 +794,7 @@ class VantiqConnectorSet:
             conn: VantiqSourceConnection = self._connections[src]
             conn.configure_handlers(handle_close, handle_connect, handle_publish, handle_query)
 
-    async def _tcp_handler(self, message):
+    async def _tcp_handler(self, reader, writer):
         """This handler handles messages for the Kubernetes probe.
 
         There are no messages sent here -- the Kubernetes TPC probe is successful if the connection
@@ -805,21 +806,6 @@ class VantiqConnectorSet:
         """
         return
 
-    async def _healthy_responder(self, probe_port: int):
-        """A server the connector can set up (via declare_healthy().
-
-        This server just provides a socket to which the Kubernetes health check can connect. This server simply
-        accepts connections, When the _stop_healthy_future is set, the server will exit.
-
-        Parameters:
-            probe_port : int
-                The port on which to accept connections.
-        """
-        self.healthy = True
-        async with websockets.serve(self._tcp_handler, port=probe_port):
-            await self._stop_healthy_future
-        self._health_responder_task = None
-
     async def declare_healthy(self):
         """(Async) Declare that this connector is healthy.
 
@@ -829,12 +815,11 @@ class VantiqConnectorSet:
 
         self.healthy = True
         async with self._health_control_lock:
-            if self._stop_healthy_future is None:
+            if self.socket_server is None:
                 port: int = VantiqConnector.TCP_PROBE_PORT_DEFAULT
                 if VantiqConnector.PORT_PROPERTY_NAME in self._server_config.keys():
                     port = self._server_config[VantiqConnector.PORT_PROPERTY_NAME]
-                self._stop_healthy_future = asyncio.get_event_loop().create_future()
-                self._health_responder_task = asyncio.create_task(self._healthy_responder(port))
+                self.socket_server = await asyncio.start_server(self._tcp_handler, port=port)
 
     async def declare_unhealthy(self):
         """(Async) Declares that this connector is not healthy.
@@ -844,9 +829,10 @@ class VantiqConnectorSet:
         """
         self.healthy = False
         async with self._health_control_lock:
-            if self._stop_healthy_future:
-                self._stop_healthy_future.set_result('Declared Unhealthy')
-            self._stop_healthy_future = None
+            if self.socket_server is not None:
+                self.socket_server.close()
+                await self.socket_server.wait_closed()
+                self.socket_server = None
 
     def is_healthy(self):
         """Returns the health status of this connector set.
@@ -876,9 +862,6 @@ class VantiqConnectorSet:
         """
         for src in self._sources:
             await self._connections[src].close()
-        if self._health_responder_task:
-            self._health_responder_task.cancel()
-            wait_count = 0
-            while not self._health_responder_task.done() and wait_count < 50:
-                await asyncio.sleep(0.1)
-                wait_count += 1
+        if self.socket_server:
+            self.socket_server.close()
+            await self.socket_server.wait_closed()
