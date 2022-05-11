@@ -1,6 +1,6 @@
 [metadata]
 name = vantiqPythonExecConnector
-version = 1.1.6
+version = ${pyExecSrcVersion}
 description= Vantiq Connector for Execution of Python Code
 long_description = file: README.md, LICENSE.txt
 long_description_content_type = text/markdown
@@ -22,8 +22,8 @@ install_requires=
     aiohttp>=3.8
     websockets>=10.2
     codetiming>=1.3.0
-    vantiqsdk>=1.0.1
-    vantiqconnectorsdk>=1.1.9
+    vantiqsdk>=${vantiqSdkVersion}
+    vantiqconnectorsdk>=${vantiqConnectorSdkVersion}
 
 [options.entry_points]
 console_scripts =
