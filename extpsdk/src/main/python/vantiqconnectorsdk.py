@@ -98,7 +98,9 @@ def setup_logging():
     """Read the log configuration file & initialize appropriately"""
     global _vlog
     # load the logging configuration
-    logging.config.fileConfig('serverConfig/logger.ini', disable_existing_loggers=False)
+    logger_config = 'serverConfig/logger.ini'
+    if os.path.exists(logger_config):
+        logging.config.fileConfig(logger_config, disable_existing_loggers=False)
     _vlog = logging.getLogger(__name__)
     _vlog.setLevel(logging.DEBUG)
     # create a file handler
