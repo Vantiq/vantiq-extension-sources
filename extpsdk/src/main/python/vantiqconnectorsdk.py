@@ -246,6 +246,8 @@ class VantiqSourceConnection:
        """
         if self._connector_set is not None:
             return self._connector_set.is_healthy()
+        else:
+            return None
 
     def get_source(self) -> string:
         """Return the source name with which this connection is associated
@@ -801,8 +803,8 @@ class VantiqConnectorSet:
         can be opened. But a handler is required, so here it is.
 
         Parameters:
-            message : *
-                The message.  It's ignored if present
+            reader, writer : StreamReader, StreamWriter
+                Reader & writer for the socket.  No currently used since we only care about opening the socket.
         """
         return
 
@@ -819,7 +821,7 @@ class VantiqConnectorSet:
                 port: int = VantiqConnector.TCP_PROBE_PORT_DEFAULT
                 if VantiqConnector.PORT_PROPERTY_NAME in self._server_config.keys():
                     port = self._server_config[VantiqConnector.PORT_PROPERTY_NAME]
-                self.socket_server = await asyncio.start_server(self._tcp_handler, port=port)
+                self.socket_server = await asyncio.start_server(self._tcp_handler, host='', port=port)
 
     async def declare_unhealthy(self):
         """(Async) Declares that this connector is not healthy.
@@ -829,7 +831,9 @@ class VantiqConnectorSet:
         """
         self.healthy = False
         async with self._health_control_lock:
+            _vlog.warning('Connector is unhealthy')
             if self.socket_server is not None:
+                _vlog.warning('Connector is unhealthy, disabling health probe')
                 self.socket_server.close()
                 await self.socket_server.wait_closed()
                 self.socket_server = None

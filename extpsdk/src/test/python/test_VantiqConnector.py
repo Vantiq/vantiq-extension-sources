@@ -439,6 +439,7 @@ sources={source_name}
             assert got_connect_exception
             got_connect_exception = False
             await vc.declare_healthy()
+            assert vc.is_healthy()
             try:
                 reader, writer = await asyncio.open_connection(None, VantiqConnector.TCP_PROBE_PORT_DEFAULT)
                 assert reader is not None
@@ -450,6 +451,7 @@ sources={source_name}
             assert not got_connect_exception
             got_connect_exception = False
             await vc.declare_unhealthy()
+            assert not vc.is_healthy()
             try:
                 reader, writer = await asyncio.open_connection(None, VantiqConnector.TCP_PROBE_PORT_DEFAULT)
                 assert reader is None
