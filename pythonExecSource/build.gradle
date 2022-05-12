@@ -148,7 +148,6 @@ generateSetupCfg.outputs.upToDateWhen { false }
 generateRequirementsTxt.outputs.upToDateWhen { false }
 generateDockerFile.outputs.upToDateWhen { false }
 
-
 task build_distribution(type: PythonTask) {
     String osName = OperatingSystem.current().getName();
     String osVersion = OperatingSystem.current().getVersion();
@@ -207,14 +206,16 @@ task pyclean(type: Delete) {
     delete "${project.projectDir}/src/main/docker/Dockerfile"
 }
 
+clean.dependsOn pyclean
+
 // make every other task depend on the generate* tasks.  This way, they run first and the
 // gradle dependency analyzer remains happy.
 // matching() and all() are "live" so any tasks declared after this line will also depend on generate*
-tasks.matching { !it.name.startsWith('generate') }.all { Task task ->
+tasks.matching { !it.name.startsWith('generate')
+                    && it.name != 'pyclean'
+                    && it.name != 'clean' }.all { Task task ->
     task.mustRunAfter generateDockerFile, generateSetupCfg, generateRequirementsTxt
 }
-
-clean.dependsOn pyclean
 
 // Faux dependencies to keep gradle happy
 generateSetupCfg.mustRunAfter generateRequirementsTxt
