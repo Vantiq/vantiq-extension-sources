@@ -143,6 +143,12 @@ task generateRequirementsTxt(type: Copy) {
     rename ~/(.*)\.tmpl/, '$1'
 }
 
+// Always regenerate these files since we can't tell when the versions on which they depend have changed.
+generateSetupCfg.outputs.upToDateWhen { false }
+generateRequirementsTxt.outputs.upToDateWhen { false }
+generateDockerFile.outputs.upToDateWhen { false }
+
+
 task build_distribution(type: PythonTask) {
     String osName = OperatingSystem.current().getName();
     String osVersion = OperatingSystem.current().getVersion();
@@ -176,7 +182,7 @@ task verifyRequirements() {
 if (project.tasks.findByName('buildConnectorImage')) {
     // When all the docker* properties are not present, we may skip constructing this task.
     // In such cases, no dependency is necessary
-    buildConnectorImage.dependsOn generateRequirementsTxt, generateDockerFile, verifyRequirements
+    buildConnectorImage.dependsOn generateRequirementsTxt, generateSetupCfg, generateDockerFile, verifyRequirements
 }
 
 task publish(type: PythonTask) {
@@ -201,11 +207,15 @@ task pyclean(type: Delete) {
     delete "${project.projectDir}/src/main/docker/Dockerfile"
 }
 
+// make every other task depend on the generate* tasks.  This way, they run first and the
+// gradle dependency analyzer remains happy.
+// matching() and all() are "live" so any tasks declared after this line will also depend on generate*
+tasks.matching { !it.name.startsWith('generate') }.all { Task task ->
+    task.mustRunAfter generateDockerFile, generateSetupCfg, generateRequirementsTxt
+}
+
 clean.dependsOn pyclean
 
 // Faux dependencies to keep gradle happy
 generateSetupCfg.mustRunAfter generateRequirementsTxt
-jar.mustRunAfter generateSetupCfg, generateRequirementsTxt
-processResources.mustRunAfter generateSetupCfg, generateRequirementsTxt
-processTestResources.mustRunAfter generateSetupCfg, generateRequirementsTxt
-
+generateDockerFile.mustRunAfter generateSetupCfg
