@@ -10,7 +10,9 @@ ext {
     } else {
         pypi_repo = 'testpypi'
     }
-    vantiqConnectorSdkVersion = '1.1.9'
+    if (!project.rootProject.hasProperty('vantiqConnectorSdkVersion')) {
+        vantiqConnectorSdkVersion = '1.1.9'
+    }
 }
 
 python {
