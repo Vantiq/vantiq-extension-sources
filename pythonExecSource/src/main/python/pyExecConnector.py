@@ -35,6 +35,7 @@ __all__ = [
 ]
 
 import asyncio
+import os
 from collections import OrderedDict
 import hashlib
 import json
@@ -680,8 +681,10 @@ class Connectors:
             pec.establish_handlers()
 
         self.logger.info('Running PyExecConnector.')
-        self.logger.info('Performing declare_healthy() action.')
-        await self.connector_set.declare_healthy()
+        running_in_k8s = os.getenv('KUBERNETES_SERVICE_HOST')
+        if running_in_k8s:
+            self.logger.info('Performing declare_healthy() action.')
+            await self.connector_set.declare_healthy()
         self.logger.info('Running connectors.')
 
         await self.connector_set.run_connectors()
