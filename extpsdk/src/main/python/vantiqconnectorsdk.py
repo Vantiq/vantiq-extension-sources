@@ -98,10 +98,10 @@ _vlog: Union[Logger, None] = None
 def setup_logging():
     """Read the log configuration file & initialize appropriately"""
     global _vlog
-    logging_config_file = 'serverConfig/logger.ini'
     # load the logging configuration
-    if os.path.exists(logging_config_file):
-        logging.config.fileConfig(logging_config_file, disable_existing_loggers=False)
+    logger_config = 'serverConfig/logger.ini'
+    if os.path.exists(logger_config):
+        logging.config.fileConfig(logger_config, disable_existing_loggers=False)
     _vlog = logging.getLogger(__name__)
     _vlog.setLevel(logging.DEBUG)
     # create a file handler
