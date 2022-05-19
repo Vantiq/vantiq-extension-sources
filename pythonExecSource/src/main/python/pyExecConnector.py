@@ -666,7 +666,7 @@ class Connectors:
     def __init__(self):
         self.connector_set = VantiqConnectorSet()
         self.logger = logging.getLogger('Vantiq.PyExecConnector')
-        self.logger.setLevel(logging.DEBUG)
+        self.logger.setLevel(logging.DEBUG)  # TODO:  Remove this after a  bit of burn-in.  Would prefer more data now.
 
     async def run(self):
         """Run the connectors.
