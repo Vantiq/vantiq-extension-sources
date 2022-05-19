@@ -109,7 +109,7 @@ If the connection closes, the SDK will automatically re-initiate the connection.
 
 
 	
-## <a name="VantiqSourceConnection" id="sourceConnection"></a>Using ExtensionWebSocketClient
+## <a name="VantiqSourceConnection" id="sourceConnection"></a>Using VantiqSourceConnection
 Every `VantiqSourceConnection` deals with a single source via its own WebSocket connection. 
 
 ### Setup
@@ -248,6 +248,18 @@ and a message parameter containing
 ```
 
 The connector can then act on the message as it deems appropriate.
+
+#### Kubernetes Operation and TCP Probe
+
+In the case that the connector is deployed within a Kubernetes cluster, the `VantiqConnectorSet` offers support for TCP Startup/Liveness/Readiness probes. The class defines two methods: `declare_healthy()` and `declare_unhealthy()`, that can be used to make the respective declarations.
+
+Internally, `declare_healthy()` and `declare_unhealthy()` open and close a TCP socket, respectively; the Kubernetes probes attempt to connect to that port. If connection is successful, the probe is considered successful; if not, the probe is unsuccessful. 
+
+The socket is opened on port 8000 by default, but this can be changed by including tcpProbePort:<portNumberHere> in the connector's `server.config` document. It is the responsibility of the connector developer to manage when the connector is healthy and when it is not.
+
+Note that `declare_healthy()` and `declare_unhealthy()` are available from the `VantiqSourceConnection` as well.  These make calls to the containing `VantiqConnectorSet`. Health status is available only on a `VantiqConnectorSet` basis.
+
+The `VantiqConnectorSet` and `VantiqSourceConnection` classes both offer the `is_healthy()` method.  This will return `True` if the connector set has been declared healthy, `False` if it has been declared unhealthy, and `None` if no health declaration has been made.
 
 ##### <a name="closeHandler" id="closeHandler"></a>Close
 The closure handler does not deal with a specific message or type of message, but instead is called when either your

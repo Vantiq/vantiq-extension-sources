@@ -264,6 +264,219 @@ sources={source_name}
         finally:
             os.remove('server.config')
 
+    @pytest.mark.asyncio
+    @pytest.mark.timeout(20)
+    async def test_server_healthcheck(self, unused_tcp_port_factory):
+        # Construct a server config file to use.
+        server_port = unused_tcp_port_factory()
+        healthcheck_port = unused_tcp_port_factory()
+
+        source_name = 'pythonTestSource'
+        cf = f'''
+targetServer=http://localhost:{server_port}
+authToken=testtoken
+sources={source_name}
+{VantiqConnector.PORT_PROPERTY_NAME} = {healthcheck_port}
+            '''
+        try:
+            scf = open('server.config', encoding='utf-8', mode='wt')
+            scf.write(cf)
+            filename = scf.name
+            scf.close()
+            vc = VantiqConnectorSet()
+            vc.configure_handlers_for_all(self.close_handler, self.connect_handler,
+                                          self.publish_handler, self.query_handler)
+
+            connector_task = asyncio.get_event_loop().create_task(vc.run_connectors())
+            await asyncio.sleep(0.5)
+            got_connect_exception = False
+            assert vc.is_healthy() is None  # No health status declared yet
+            try:
+                reader, writer = await asyncio.open_connection(None,
+                                                               vc._server_config[VantiqConnector.PORT_PROPERTY_NAME])
+                assert reader is None
+                assert writer is None
+            except OSError as ose:
+                # This is what we want
+                got_connect_exception = True
+
+            except Exception as e:
+                assert e is None
+
+            assert got_connect_exception
+            got_connect_exception = False
+            await vc.declare_healthy()
+            assert vc.is_healthy()
+            try:
+                reader, writer = await asyncio.open_connection(None,
+                                                               vc._server_config[VantiqConnector.PORT_PROPERTY_NAME])
+                assert reader is not None
+                assert writer is not None
+            except Exception as e:
+                got_connect_exception = True
+                assert e is None
+
+            assert not got_connect_exception
+            got_connect_exception = False
+            await vc.declare_unhealthy()
+            assert not vc.is_healthy()
+            try:
+                reader, writer = await asyncio.open_connection(None,
+                                                               vc._server_config[VantiqConnector.PORT_PROPERTY_NAME])
+                assert reader is None
+                assert writer is None
+            except OSError as ose:
+                # This is what we want
+                got_connect_exception = True
+            except Exception as e:
+                assert e is None
+            assert got_connect_exception
+            await vc.close()
+            connector_task.cancel()
+            while not connector_task.done():
+                await asyncio.sleep(0.1)
+        finally:
+            os.remove('server.config')
+
+    @pytest.mark.asyncio
+    @pytest.mark.timeout(20)
+    async def test_source_healthcheck(self, unused_tcp_port_factory):
+        # Construct a server config file to use...
+        source_name = 'pythonTestSource'
+        # Separated these from being inline with the file content. Seemed to be some sync issues
+        # when they were embedded in the file content.  Separately, they seem more reliable.
+        server_port = unused_tcp_port_factory()
+        healthcheck_port = unused_tcp_port_factory()
+        cf = f'''
+targetServer=http://localhost:{server_port}
+authToken=testtoken
+sources={source_name}
+{VantiqConnector.PORT_PROPERTY_NAME} = {healthcheck_port}
+            '''
+        try:
+            scf = open('server.config', encoding='utf-8', mode='wt')
+            scf.write(cf)
+            filename = scf.name
+            scf.close()
+            vc = VantiqConnectorSet()
+            vc.configure_handlers_for_all(self.close_handler, self.connect_handler,
+                                          self.publish_handler, self.query_handler)
+
+            connector_task = asyncio.get_event_loop().create_task(vc.run_connectors())
+            await asyncio.sleep(0.5)
+            got_connect_exception = False
+            assert vc.get_connection_for_source(source_name).is_healthy() is None
+            try:
+                reader, writer = await asyncio.open_connection(None,
+                                                               vc._server_config[VantiqConnector.PORT_PROPERTY_NAME])
+                assert reader is None
+                assert writer is None
+            except OSError as ose:
+                # This is what we want
+                got_connect_exception = True
+            except Exception as e:
+                assert e is None
+
+            assert got_connect_exception
+            got_connect_exception = False
+            await vc.get_connection_for_source(source_name).declare_healthy()
+            assert vc.get_connection_for_source(source_name).is_healthy()
+            try:
+                reader, writer = await asyncio.open_connection(None,
+                                                               vc._server_config[VantiqConnector.PORT_PROPERTY_NAME])
+
+                assert reader is not None
+            except Exception as e:
+                got_connect_exception = True
+                assert e is None
+            assert not got_connect_exception
+            got_connect_exception = False
+            await vc.get_connection_for_source(source_name).declare_unhealthy()
+            assert not vc.get_connection_for_source(source_name).is_healthy()
+            try:
+                reader, writer = await asyncio.open_connection(None,
+                                                               vc._server_config[VantiqConnector.PORT_PROPERTY_NAME])
+                assert reader is None
+                assert writer is None
+            except OSError as ose:
+                # This is what we want
+                got_connect_exception = True
+            except Exception as e:
+                assert e is None
+            assert got_connect_exception
+            await vc.close()
+            connector_task.cancel()
+            while not connector_task.done():
+                await asyncio.sleep(0.1)
+        finally:
+            os.remove('server.config')
+
+    @pytest.mark.asyncio
+    @pytest.mark.timeout(20)
+    async def test_server_healthcheck_default_port(self, unused_tcp_port_factory):
+        # Construct a server config file to use...
+        source_name = 'pythonTestSource'
+        server_port = unused_tcp_port_factory()
+        cf = f'''
+targetServer=http://localhost:{server_port}
+authToken=testtoken
+sources={source_name}
+            '''
+        try:
+            scf = open('server.config', encoding='utf-8', mode='wt')
+            scf.write(cf)
+            filename = scf.name
+            scf.close()
+            vc = VantiqConnectorSet()
+            vc.configure_handlers_for_all(self.close_handler, self.connect_handler,
+                                          self.publish_handler, self.query_handler)
+
+            connector_task = asyncio.get_event_loop().create_task(vc.run_connectors())
+            await asyncio.sleep(0.5)
+            got_connect_exception = False
+            try:
+                reader, writer = await asyncio.open_connection(None, VantiqConnector.TCP_PROBE_PORT_DEFAULT)
+                assert reader is None
+                assert writer is None
+            except OSError as ose:
+                # This is what we want
+                got_connect_exception = True
+            except Exception as e:
+                assert e is None
+
+            assert got_connect_exception
+            got_connect_exception = False
+            await vc.declare_healthy()
+            assert vc.is_healthy()
+            try:
+                reader, writer = await asyncio.open_connection(None, VantiqConnector.TCP_PROBE_PORT_DEFAULT)
+                assert reader is not None
+                assert writer is not None
+            except Exception as e:
+                got_connect_exception = True
+                assert e is None
+
+            assert not got_connect_exception
+            got_connect_exception = False
+            await vc.declare_unhealthy()
+            assert not vc.is_healthy()
+            try:
+                reader, writer = await asyncio.open_connection(None, VantiqConnector.TCP_PROBE_PORT_DEFAULT)
+                assert reader is None
+                assert writer is None
+            except OSError as ose:
+                # This is what we want
+                got_connect_exception = True
+            except Exception as e:
+                assert e is None
+            assert got_connect_exception
+            await vc.close()
+            connector_task.cancel()
+            while not connector_task.done():
+                await asyncio.sleep(0.1)
+        finally:
+            os.remove('server.config')
+
     def check_context(self, ctx: dict):
         assert ctx
         assert ctx[VantiqConnector.SOURCE_NAME]

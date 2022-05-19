@@ -45,6 +45,7 @@ __all__ = ['VantiqSourceConnection',
            ]
 
 import asyncio
+from asyncio import Future
 import json
 import logging
 import logging.config
@@ -163,6 +164,8 @@ class VantiqConnector:
     CONNECTOR_AUTH_TOKEN = 'CONNECTOR_AUTH_TOKEN'
     SEND_PINGS = 'sendPings'
     FAIL_ON_CONNECTION_ERROR = 'failOnConnectionError'
+    PORT_PROPERTY_NAME = "tcpProbePort"
+    TCP_PROBE_PORT_DEFAULT = 8000
 
 
 class VantiqConnectorException(RuntimeError):
@@ -196,12 +199,55 @@ class VantiqSourceConnection:
         self.config = config
         self.is_connected = False
         self._is_connected_future = None
+        self._connector_set = None
 
     def __str__(self):
         return f'VantiqSourceConnection for source: {self.source_name}, is_connected: {self.is_connected}'
 
     def __repr__(self):
         return f'VantiqSourceConnection(source_name={self.source_name}, config={self.config})'
+
+    def set_connector_set(self, conn_set):
+        """ Set the connector set to which this connector belongs
+
+        Parameters:
+            conn_set : VantiqConnectorSet
+                The VantiqConnectorSet to which this source connection belongs
+        """
+        self._connector_set = conn_set
+
+    def get_connector_set(self):
+        """Fetch the VantiqConnectorSet to which this connection belongs.
+
+        Returns:
+            The VantiqConnectorSet to which this connection belongs, None if
+            the VantiqconnectorSet is not available
+        """
+
+        return self._connector_set
+
+    async def declare_healthy(self) -> None:
+        """(Async) Declare the health status of the associated connector set."""
+
+        if self._connector_set is not None:
+            await self._connector_set.declare_healthy()
+
+    async def declare_unhealthy(self) -> None:
+        """(Async) Declare the health status of the associated connector set."""
+
+        if self._connector_set is not None:
+            await self._connector_set.declare_unhealthy()
+
+    def is_healthy(self):
+        """Returns the health status of the containing connector set.
+
+       Returns None when no health status has been set;  otherwise, returns a boolean
+       indicating whether the connector set is healthy.
+       """
+        if self._connector_set is not None:
+            return self._connector_set.is_healthy()
+        else:
+            return None
 
     def get_source(self) -> string:
         """Return the source name with which this connection is associated
@@ -633,12 +679,16 @@ class VantiqConnectorSet:
     def __init__(self):
         self._sources = []
         self._connections = {}
+        self._health_control_lock = asyncio.Lock()
+        self.socket_server = None
+        self.healthy = None  # Start om undeclared state.
         self._server_config: Union[dict, None] = None
         self._read_configuration()
 
         # Initialize the set of connections for the caller
         for src in self._sources:
             self._connections[src] = VantiqSourceConnection(src, self._server_config)
+            self._connections[src].set_connector_set(self)
 
     def __str__(self):
         ret_val = 'VantiqConnectorSet for '
@@ -693,7 +743,6 @@ class VantiqConnectorSet:
         self._sources = sc[VantiqConnector.SOURCES].replace(' ', '').split(',')
 
     def _read_config_from_file(self, file_name) -> Union[dict, None]:
-        print('>>>> ', os.getcwd(), '::', file_name)
         server_config = None
         scf = None
         try:
@@ -747,6 +796,56 @@ class VantiqConnectorSet:
             conn: VantiqSourceConnection = self._connections[src]
             conn.configure_handlers(handle_close, handle_connect, handle_publish, handle_query)
 
+    async def _tcp_handler(self, reader, writer):
+        """This handler handles messages for the Kubernetes probe.
+
+        There are no messages sent here -- the Kubernetes TPC probe is successful if the connection
+        can be opened. But a handler is required, so here it is.
+
+        Parameters:
+            reader, writer : StreamReader, StreamWriter
+                Reader & writer for the socket.  Not currently used since we only care about opening the socket.
+        """
+        return
+
+    async def declare_healthy(self):
+        """(Async) Declare that this connector is healthy.
+
+        Declaring that the server is healthy sets up a responder for TCP health checks such as those performed
+        by Kubernetes.  The connector is also marked as healthy so that any callers can ask about the current state.
+        """
+
+        self.healthy = True
+        async with self._health_control_lock:
+            if self.socket_server is None:
+                port: int = VantiqConnector.TCP_PROBE_PORT_DEFAULT
+                if VantiqConnector.PORT_PROPERTY_NAME in self._server_config.keys():
+                    port = self._server_config[VantiqConnector.PORT_PROPERTY_NAME]
+                self.socket_server = await asyncio.start_server(self._tcp_handler, host='', port=port)
+
+    async def declare_unhealthy(self):
+        """(Async) Declares that this connector is not healthy.
+
+        Change the health state of the server.  If a health check responder has been set up, cancel it.
+        Once cancelled (until restarted via declare_healthy() call), Kubernetes health checks will fail.
+        """
+        self.healthy = False
+        async with self._health_control_lock:
+            _vlog.warning('Connector is unhealthy')
+            if self.socket_server is not None:
+                _vlog.warning('Connector is unhealthy, disabling health probe')
+                self.socket_server.close()
+                await self.socket_server.wait_closed()
+                self.socket_server = None
+
+    def is_healthy(self):
+        """Returns the health status of this connector set.
+
+        Returns None when no health status has been set;  otherwise, returns a boolean
+        indicating whether the connector set is healthy.
+        """
+        return self.healthy
+
     async def run_connectors(self) -> None:
         """(Async) Make the connection(s) to Vantiq
 
@@ -767,3 +866,6 @@ class VantiqConnectorSet:
         """
         for src in self._sources:
             await self._connections[src].close()
+        if self.socket_server:
+            self.socket_server.close()
+            await self.socket_server.wait_closed()

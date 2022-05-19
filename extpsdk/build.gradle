@@ -10,6 +10,9 @@ ext {
     } else {
         pypi_repo = 'testpypi'
     }
+    if (!project.rootProject.hasProperty('vantiqConnectorSdkVersion')) {
+        vantiqConnectorSdkVersion = '1.1.9'
+    }
 }
 
 python {
@@ -76,6 +79,18 @@ task pytest(type: PythonTask) {
     module = 'pytest'
 }
 
+task generateSetupCfg(type: Copy) {
+    into project.projectDir
+    from 'src/main/templates'
+    include '**/setup.cfg.tmpl'
+    expand(
+        vantiqConnectorSdkVersion: vantiqConnectorSdkVersion)
+    rename ~/(.*)\.tmpl/, '$1'
+}
+
+// Always regenerate these files since we can't tell when the versions on which they depend have changed.
+generateSetupCfg.outputs.upToDateWhen { false }
+
 task build_distribution(type: PythonTask) {
     String osName = OperatingSystem.current().getName();
     String osVersion = OperatingSystem.current().getVersion();
@@ -90,12 +105,15 @@ task build_distribution(type: PythonTask) {
     }
 }
 
+build_distribution.dependsOn generateSetupCfg
+
 task publish(type: PythonTask) {
     command = "upload --verbose -r ${pypi_repo} dist/*"
     module = 'twine'
 }
 
 publish.mustRunAfter build_distribution
+publish.dependsOn generateSetupCfg
 
 // Note: pytest must run AFTER the 'test' task.  That task prepares (i.e. deletes) the directory
 // into which the results are to be placed.  Because of that, if pytest runs later, its results
@@ -103,8 +121,19 @@ publish.mustRunAfter build_distribution
 test.finalizedBy pytest
 assemble.finalizedBy build_distribution
 
+// delete all the generated files.
 task pyclean(type: Delete) {
     delete "${project.projectDir}/dist"
+    delete "${project.projectDir}/setup.cfg"
 }
 
 clean.dependsOn pyclean
+
+// make every other task depend on the generate* tasks.  This way, they run first and the
+// gradle dependency analyzer remains happy.
+// matching() and all() are "live" so any tasks declared after this line will also depend on generate*
+tasks.matching { !it.name.startsWith('generate')
+                    && it.name != 'pyclean'
+                    && it.name != 'clean' }.all { Task task ->
+    task.mustRunAfter generateSetupCfg
+}
