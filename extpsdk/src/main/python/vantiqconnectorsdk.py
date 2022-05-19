@@ -681,7 +681,7 @@ class VantiqConnectorSet:
         self._connections = {}
         self._health_control_lock = asyncio.Lock()
         self.socket_server = None
-        self.healthy = None  # Be healthy by default
+        self.healthy = None  # Start om undeclared state.
         self._server_config: Union[dict, None] = None
         self._read_configuration()
 
@@ -804,7 +804,7 @@ class VantiqConnectorSet:
 
         Parameters:
             reader, writer : StreamReader, StreamWriter
-                Reader & writer for the socket.  No currently used since we only care about opening the socket.
+                Reader & writer for the socket.  Not currently used since we only care about opening the socket.
         """
         return
 
