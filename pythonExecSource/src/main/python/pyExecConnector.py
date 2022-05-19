@@ -653,7 +653,7 @@ class PyExecConnector:
                          VantiqConnector.ERROR_PARAMETERS: [type(exc).__name__, str(traceback.format_exc())]}
             await self.connection.send_query_error(ctx, error_msg)
             if isinstance(exc, MemoryError):
-                # If we've gotten the purportedly recoverable out of memory error, we'll declare ourselves
+                # If we've gotten the purportedly unrecoverable out of memory error, we'll declare ourselves
                 # unhealthy.  In a K8s environment, we'll get restarted (assuming they who've deployed us
                 # set the probes up correctly).  Otherwise, we'll continue.  If things are really recoverable,
                 # we'll recover.  Otherwise, exit will be called and someone will restart us.
