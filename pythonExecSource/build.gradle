@@ -39,9 +39,7 @@ python {
     // may be used to disable pip cache (--no-cache-dir option)
     usePipCache = true
     // additional pip repositories (--extra-index-url option)
-    // Remove in product, but useful in development
-    extraIndexUrls = [ 'https://test.pypi.org/simple']
-    // extraIndexUrls = []
+    extraIndexUrls = []
     // trusted hosts for pip install (--trusted-host option)
     trustedHosts = []
 
