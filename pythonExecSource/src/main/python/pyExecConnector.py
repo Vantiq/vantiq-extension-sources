@@ -35,6 +35,7 @@ __all__ = [
 ]
 
 import asyncio
+import os
 from collections import OrderedDict
 import hashlib
 import json
@@ -651,6 +652,12 @@ class PyExecConnector:
                              'Executing the python code resulted in an exception: {0} :: {1}',
                          VantiqConnector.ERROR_PARAMETERS: [type(exc).__name__, str(traceback.format_exc())]}
             await self.connection.send_query_error(ctx, error_msg)
+            if isinstance(exc, MemoryError):
+                # If we've gotten the purportedly unrecoverable out of memory error, we'll declare ourselves
+                # unhealthy.  In a K8s environment, we'll get restarted (assuming they who've deployed us
+                # set the probes up correctly).  Otherwise, we'll continue.  If things are really recoverable,
+                # we'll recover.  Otherwise, exit will be called and someone will restart us.
+                await self.connection.declare_unhealthy()
 
 
 class Connectors:
@@ -659,6 +666,7 @@ class Connectors:
     def __init__(self):
         self.connector_set = VantiqConnectorSet()
         self.logger = logging.getLogger('Vantiq.PyExecConnector')
+        self.logger.setLevel(logging.DEBUG)  # TODO:  Remove this after a  bit of burn-in.  Would prefer more data now.
 
     async def run(self):
         """Run the connectors.
@@ -673,6 +681,11 @@ class Connectors:
             pec.establish_handlers()
 
         self.logger.info('Running PyExecConnector.')
+        running_in_k8s = os.getenv('KUBERNETES_SERVICE_HOST')
+        if running_in_k8s:
+            self.logger.info('Performing declare_healthy() action.')
+            await self.connector_set.declare_healthy()
+        self.logger.info('Running connectors.')
 
         await self.connector_set.run_connectors()
         await self.connector_set.close()

@@ -10,6 +10,12 @@ ext {
     } else {
         pypi_repo = 'testpypi'
     }
+
+    if (!project.rootProject.hasProperty('pyExecSrcVersion')) {
+        pyExecSrcVersion = '1.1.7'
+    }
+    vantiqSdkVersion = '1.0.2'
+    vantiqConnectorSdkVersion = '1.1.9'
 }
 
 python {
@@ -76,8 +82,8 @@ python {
     // cache from gradle, things will work as expected.
 
     // (also for product use)
-    pip 'vantiqconnectorsdk:1.0.2'
-    pip 'vantiqsdk:1.0.1'
+    pip "vantiqconnectorsdk:${vantiqConnectorSdkVersion}"
+    pip "vantiqsdk:${vantiqSdkVersion}"
 
      // For build generation
     pip 'build:0.7.0'  // For building the distribution
@@ -105,6 +111,44 @@ task pytest(type: PythonTask) {
     module = 'pytest'
 }
 
+task generateDockerFile(type: Copy) {
+    into 'src/main/docker'
+    from 'src/main/templates'
+    include '**/Dockerfile.tmpl'
+    expand(
+            vantiqConnectorSdkVersion: vantiqConnectorSdkVersion,
+            vantiqSdkVersion: vantiqSdkVersion,
+            pyExecSrcVersion  : pyExecSrcVersion)
+    rename ~/(.*)\.tmpl/, '$1'
+}
+
+task generateSetupCfg(type: Copy) {
+    into project.projectDir
+    from 'src/main/templates'
+    include '**/setup.cfg.tmpl'
+    expand(
+            vantiqConnectorSdkVersion: vantiqConnectorSdkVersion,
+            vantiqSdkVersion: vantiqSdkVersion,
+            pyExecSrcVersion  : pyExecSrcVersion)
+    rename ~/(.*)\.tmpl/, '$1'
+}
+
+task generateRequirementsTxt(type: Copy) {
+    into project.projectDir
+    from 'src/main/templates'
+    include '**/requirements.txt.tmpl'
+    expand(
+            vantiqConnectorSdkVersion: vantiqConnectorSdkVersion,
+            vantiqSdkVersion: vantiqSdkVersion,
+            pyExecSrcVersion  : pyExecSrcVersion)
+    rename ~/(.*)\.tmpl/, '$1'
+}
+
+// Always regenerate these files since we can't tell when the versions on which they depend have changed.
+generateSetupCfg.outputs.upToDateWhen { false }
+generateRequirementsTxt.outputs.upToDateWhen { false }
+generateDockerFile.outputs.upToDateWhen { false }
+
 task build_distribution(type: PythonTask) {
     String osName = OperatingSystem.current().getName();
     String osVersion = OperatingSystem.current().getVersion();
@@ -118,6 +162,8 @@ task build_distribution(type: PythonTask) {
         command = "-c print('Warning: build_distribution not supported on this platform')"
     }
 }
+
+build_distribution.dependsOn generateSetupCfg, generateRequirementsTxt
 
 task verifyRequirements() {
     doLast {
@@ -136,7 +182,7 @@ task verifyRequirements() {
 if (project.tasks.findByName('buildConnectorImage')) {
     // When all the docker* properties are not present, we may skip constructing this task.
     // In such cases, no dependency is necessary
-    buildConnectorImage.dependsOn verifyRequirements
+    buildConnectorImage.dependsOn generateRequirementsTxt, generateSetupCfg, generateDockerFile, verifyRequirements
 }
 
 task publish(type: PythonTask) {
@@ -145,6 +191,7 @@ task publish(type: PythonTask) {
 }
 
 publish.mustRunAfter build_distribution
+publish.dependsOn generateSetupCfg, generateRequirementsTxt, generateDockerFile
 
 // Note: pytest must run AFTER the 'test' task.  That task prepares (i.e. deletes) the directory
 // into which the results are to be placed.  Because of that, if pytest runs later, its results
@@ -154,7 +201,23 @@ assemble.finalizedBy build_distribution
 
 task pyclean(type: Delete) {
     delete "${project.projectDir}/dist"
+    // The following files are generated from templates so we should remove them on 'clean' action
+    delete "${project.projectDir}/requirements.txt"
+    delete "${project.projectDir}/setup.cfg"
+    delete "${project.projectDir}/src/main/docker/Dockerfile"
 }
 
 clean.dependsOn pyclean
 
+// make every other task depend on the generate* tasks.  This way, they run first and the
+// gradle dependency analyzer remains happy.
+// matching() and all() are "live" so any tasks declared after this line will also depend on generate*
+tasks.matching { !it.name.startsWith('generate')
+                    && it.name != 'pyclean'
+                    && it.name != 'clean' }.all { Task task ->
+    task.mustRunAfter generateDockerFile, generateSetupCfg, generateRequirementsTxt
+}
+
+// Faux dependencies to keep gradle happy
+generateSetupCfg.mustRunAfter generateRequirementsTxt
+generateDockerFile.mustRunAfter generateSetupCfg
