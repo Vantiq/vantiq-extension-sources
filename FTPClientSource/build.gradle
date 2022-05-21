@@ -1,0 +1,83 @@
+group 'io.vantiq'
+version 'unspecified'
+
+apply plugin: 'java'
+apply plugin: 'application'
+
+sourceCompatibility = 1.8
+
+repositories {
+    mavenCentral()
+    jcenter()
+    
+    // Used for checking VANTIQ date format behavior with VANTIQ SDK
+    maven {
+    	url "https://dl.bintray.com/vantiq/maven"
+    }
+}
+
+mainClassName = 'io.vantiq.extsrc.FTPClientSource.FTPClientMain'
+
+startScripts{
+    doLast{
+        def windowsScriptFile = file getWindowsScript()
+        def unixScriptFile = file getUnixScript()
+        // Add the log Config to the top of the classpath
+        windowsScriptFile.text = windowsScriptFile.text.replace("CLASSPATH=", "CLASSPATH=%APP_HOME%\\logConfig;")
+        unixScriptFile.text = unixScriptFile.text.replace('CLASSPATH=', 'CLASSPATH=$APP_HOME/logConfig:')
+    }
+}
+
+// Copies the logger setup into logConfig in the distribution
+applicationDistribution.from("src/main/resources") {
+    include "log4j2.xml"
+    into "logConfig"
+}
+
+dependencies {
+    // This dependency is used internally, and not exposed to consumers on their own compile classpath.
+    implementation 'com.google.guava:guava:23.0'
+    
+    compile project(':extjsdk')
+    
+    compile "org.slf4j:slf4j-api:1.7.25"
+    compile "org.apache.logging.log4j:log4j-slf4j-impl:2.11.0"
+    
+    // https://mvnrepository.com/artifact/commons-net/commons-net
+    implementation group: 'commons-net', name: 'commons-net', version: '3.6'
+
+      
+    // Used for checking VANTIQ date format behavior with VANTIQ SDK
+    compile 'io.vantiq:vantiq-sdk:1.0.28'
+    
+    // Use JUnit test framework
+    testCompile 'junit:junit:4.12'
+    testCompile project(path:":extjsdk", configuration:"testArtifacts")
+}
+
+tasks.withType(Test) {
+    if (rootProject.hasProperty('TestAuthToken')) {
+        systemProperty 'TestAuthToken', rootProject.findProperty('TestAuthToken') ?: 'empty'
+    }
+    if (rootProject.hasProperty('TestVantiqServer')) {
+        systemProperty 'TestVantiqServer', rootProject.findProperty('TestVantiqServer') ?: 'empty'
+    }
+    if (rootProject.hasProperty('EntServerIPAddress')) {
+        systemProperty 'EntServerIPAddress', rootProject.findProperty('EntServerIPAddress') ?: '127.0.0.1'
+    }
+    if (rootProject.hasProperty('EntIPPort')) {
+        systemProperty 'EntIPPort', rootProject.findProperty('EntIPPort') ?: '23'
+    }
+    if (rootProject.hasProperty('EntUsername')) {
+        systemProperty 'EntUsername', rootProject.findProperty('EntUsername')
+    }
+    if (rootProject.hasProperty('EntPassword')) {
+        systemProperty 'EntPassword', rootProject.findProperty('EntPassword')
+    }
+    if (rootProject.hasProperty('EntLocalFolderPath')) {
+        systemProperty 'EntLocalFolderPath', rootProject.findProperty('EntLocalFolderPath')
+    }
+    if (rootProject.hasProperty('EntRemoteFolderPath')) {
+        systemProperty 'EntRemoteFolderPath', rootProject.findProperty('EntRemoteFolderPath')
+    }
+}

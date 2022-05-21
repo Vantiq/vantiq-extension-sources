@@ -1,0 +1,7 @@
+{
+   "name" : "FTPClient",
+   "baseType" : "EXTENSION",
+   "verticle" : "service:extensionSource",
+   "config" : {},
+   "operations": [ "notification" ]
+}
