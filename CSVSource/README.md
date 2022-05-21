@@ -224,6 +224,32 @@ the configuration should be similar to
    },
 ```
 
+### Mixed Fixed Length Records
+
+an extension for the Fixed Length Record but can support two record sizes ,
+the shorter one is given in the parameter `shortRecordSize` and the larger record size in `fixedRecordSize`
+
+The extension will read using the sorter value , in case the last two bytes equals to CRLF it start process the line, otherwise it read additial buffer
+in order to complete ti the larger record size, all keyword level processing is the same as the Fixed Record Length , in case there is offset which is above
+the current record size , it is not processed.
+
+...
+"csvConfig": {
+"archiveFolderPath": "c:/bizerba/archive",
+"delimiter": ",",
+"fileExtension": "txt",
+"fileFolderPath": "c:/bizerba",
+"filePrefix": "plu",
+"fileType": "MixedFixedLength",
+"fixedRecordSize": 86,
+"shortRecordSize" : 55 ,
+"maxLinesInEvent": 50,
+"saveToArchive": true,
+"schema": {
+"Code": {
+
+...
+
 ### XML Object
 
 CSV Reader supports sending xml file, converted to JSON and send as an event to Vantiq

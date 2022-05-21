@@ -23,6 +23,7 @@ import java.util.concurrent.ExecutorService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import groovy.ui.Console;
 import io.vantiq.extjsdk.ExtensionServiceMessage;
 import io.vantiq.extjsdk.ExtensionWebSocketClient;
 import io.vantiq.extjsdk.Handler;
@@ -234,6 +235,13 @@ public class JDBCCore {
 
                 // Send empty response back
                 client.sendQueryResponse(204, replyAddress, new LinkedHashMap<>());
+            } else if (request.get("execute") instanceof String) {
+                String ExecuteString = (String) request.get("execute");
+                // Check if SQL Query is an update statement, or query statement
+
+                HashMap[] queryArray = localJDBC.processExecute(ExecuteString);
+                sendDataFromQuery(queryArray, message);
+
             } else {
                 log.error("Query could not be executed because query was not a String.");
                 client.sendQueryError(replyAddress, this.getClass().getName() + ".queryNotString",
@@ -380,9 +388,11 @@ public class JDBCCore {
 
                 // If we reached the last row, send with 200 code
                 if (i + bundleFactor >= len) {
+                    System.out.print("***** TX http200 %d\n");
                     client.sendQueryResponse(200, replyAddress, rowBundle);
                 } else {
                     // Otherwise, send row with 100 code signifying more data to come
+                    System.out.print("***** TX http100");
                     client.sendQueryResponse(100, replyAddress, rowBundle);
                 }
                 lastRowBundle = rowBundle;

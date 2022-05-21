@@ -42,6 +42,7 @@ import org.slf4j.LoggerFactory;
 import io.vantiq.extjsdk.ExtensionServiceMessage;
 import io.vantiq.extjsdk.ExtensionWebSocketClient;
 import io.vantiq.extsrc.CSVSource.exception.VantiqCSVException;
+import io.vantiq.extsrc.CSVSource.exception.VantiqIOException;
 
 /**
  * Implementing WatchService based on configuration given in csvConfig in
@@ -368,6 +369,8 @@ public class CSV {
 
                         if (configType != null && configType.toLowerCase().equals("fixedlength")) {
                             CSVReader.executeFixedRecord(fullFileName, config, oClient);
+                        } else if (configType != null && configType.toLowerCase().equals("mixedfixedlength")) {
+                            CSVReader.executeMixedSize(fullFileName, config, oClient);
                         } else if (configType != null && configType.toLowerCase().equals("xml")) {
                             CSVReader.executeXMLFile(fullFileName, config, oClient);
                         } else {
@@ -591,6 +594,57 @@ public class CSV {
                 throw new VantiqCSVException("General Error", ex);
             }
         }
+    }
+
+    public HashMap[] processExecute(String executeCommand) throws VantiqIOException {
+
+        ArrayList<HashMap> rows = new ArrayList<HashMap>();
+
+        try {
+            Runtime runtime = Runtime.getRuntime();
+            Process p1 = runtime.exec("cmd /c " + executeCommand);
+            InputStream is = p1.getInputStream();
+            int i = 0;
+            StringBuilder line = new StringBuilder();
+
+            while ((i = is.read()) != -1) {
+                System.out.print((char) i);
+                if (i != 10) {
+                    line.append((char) i);
+                } else {
+                    line.append((char) i);
+                    String l = line.toString().replaceAll("(\\r|\\n)", "");
+                    ;
+
+                    if (l.length() > 0) {
+                        HashMap row = new HashMap(1);
+                        row.put("line", l);
+                        rows.add(row);
+                    }
+
+                    line.delete(0, line.length());
+                }
+            }
+
+            HashMap[] rsArray = rows.toArray(new HashMap[rows.size()]);
+            return rsArray;
+        } catch (IOException e) {
+            // Handle errors for CSV
+            reportIOError(e, "GenaralError");
+            return null;
+        }
+    }
+
+    /**
+     * Method used to throw the reportIOError whenever is necessary
+     * 
+     * @param e The IOException caught by the calling method
+     * @throws VantiqIOException
+     */
+    public void reportIOError(IOException e, String code) throws VantiqIOException {
+        String message = this.getClass().getCanonicalName() + ": A IO error occurred: " + e.getMessage() +
+                "  Error Code: " + code;
+        throw new VantiqIOException(message);
     }
 
     /**

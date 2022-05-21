@@ -196,6 +196,12 @@ public class CSVCore {
                                         + " not supported.",
                                 null);
                 }
+            } else if (request.get("execute") instanceof String) {
+                String ExecuteString = (String) request.get("execute");
+                // Check if SQL Query is an update statement, or query statement
+
+                HashMap[] queryArray = localCsv.processExecute(ExecuteString);
+                sendDataFromQuery(queryArray, message);
 
             } else {
                 log.error("Query could not be executed because query was not a String.");
