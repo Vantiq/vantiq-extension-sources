@@ -29,7 +29,7 @@ The information required is placed in a `server.config` file in the `serverConfi
 ```
 targetServer = ...
 authToken = ...
-source = ...
+sources = ...
 ```
 
 An example file might be
@@ -37,7 +37,7 @@ An example file might be
 ```
 targetServer = https://dev.vantiq.com
 authToken = _cDWBfZLNO9FkXd-twjwKnVIBZSGwns35nF4nQFV_ps=
-source = pythonSource
+sources = pythonSource
 ```
 
 For users who may not want to write the `authToken` property to a file because of its sensitive nature, set the environment variable `CONNECTOR_AUTH_TOKEN` to its value. If the `authToken` is specified in the `server.config` document, that value will take precedence.
