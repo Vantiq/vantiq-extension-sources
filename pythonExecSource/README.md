@@ -19,6 +19,8 @@ The Vantiq Python Execution Connector requires Python version 3.8 or better.
 
 ## Quick Start
 
+### Connector Configuration
+
 You will need valid credentials on a Vantiq server in the form of an
 access token.  If you have a private Vantiq server,
 contact your administrator for credentials.  If you wish to use the
@@ -46,9 +48,23 @@ Otherwise, if the `authToken` is not set in the configuration file, the system w
 > Note that this token will not work -- you will need to create your own
 > within a VANTIQ installation
 
+You should also provide an appropriate `logger.ini` file in the same directory.
+An example file is provided at `src/test/resources/logger.ini` in this project's github repository.
+
+### Running the Connector
+
+Once you have the connector configuration (`serverConfig/server.config`) and logging configuration (`serverConfig/logger.ini`) files set up, you can run the connector using the command
+
+```shell
+    vantiqPythonExecConnector
+```
+
+On startup, the connector will connect to the configured Vantiq server awaiting calls to run Python code. No other interaction is necessary.
+
+
 ## Documentation
 
-For the full documentation on the SDK, see the documentation available at the github repository.
+For the full documentation on the SDK, see the documentation available at the github repository.  This README file provides the basics;  more detailed information is available in [docs/Usage.md](https://github.com/Vantiq/vantiq-extension-sources/blob/master/pythonExecSource/docs/Usage.md).
 
 ## Developers
 

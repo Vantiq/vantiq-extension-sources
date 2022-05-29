@@ -306,7 +306,7 @@ Otherwise, if the `authToken` is not set in the configuration file, the system w
 > within a Vantiq installation
 
 You should also provide an appropriate `logger.ini` file in the same directory.
-An example one is provided at `src/test/resources/logger.ini` in this project.
+An example file is provided at `src/test/resources/logger.ini` in this project.
 
 #### Creating a Docker Image for your Connector
 
