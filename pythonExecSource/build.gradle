@@ -12,9 +12,9 @@ ext {
     }
 
     if (!project.rootProject.hasProperty('pyExecSrcVersion')) {
-        pyExecSrcVersion = '1.1.7'
+        pyExecSrcVersion = '1.1.8'
     }
-    vantiqSdkVersion = '1.0.2'
+    vantiqSdkVersion = '1.1.1'
     vantiqConnectorSdkVersion = '1.1.9'
 }
 

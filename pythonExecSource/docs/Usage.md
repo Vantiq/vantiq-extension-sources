@@ -82,8 +82,7 @@ An example configuration document specifying the return of runtime information w
             "returnRuntimeInformation" : true
         }
     }
-}
-    
+} 
 ```
 
 If no changes to the defaults are required, no configuration is necessary.
@@ -127,6 +126,49 @@ The following works in a similar way, but instructs the connector to fetch the P
 ``` 
 
 This query runs the python code contained in the document _myPythonDoc_.
+
+Some Python code that would run using this call might be the following:
+
+```python
+import asyncio
+import uuid
+
+async def looper(count):
+    global connector_context
+    global connector_connection
+    print('Looper: Context: ', connector_context)
+    print('Looper: Our source is: ', connector_connection.get_source())
+
+    try:
+        for i in range(count-1):
+            print('Looper: In loop, returning results for iteration: ', i)
+            await connector_connection.send_query_response(connector_context, 100, 
+                                                           {'item': 'I am list item {0}'.format(i)})
+        print('Looper: In loop, returning final result')
+        await connector_connection.send_query_response(connector_context, 200, {'item': 'I am the last item'})
+        await connector_connection.send_notification({'notify_msg':
+                                                      'note this is a notification: ' + str(uuid.uuid4())})
+
+        print('Connector connection is: ', connector_connection)
+        print('Looper: Loop completed')
+    except Exception as exc:
+        print('Looper TRAPPED EXCEPTION', exc)
+
+def main():
+    print('Looper -- in main')
+    loop = asyncio.get_event_loop()
+    tasks = []
+    tasks.append(loop.create_task(looper(loop_count)))
+    print('Looper -- about to wait for the loop')
+    asyncio.gather(*tasks)
+    print('Looper -- done with wait')
+
+    
+if __name__ == '__main__':
+    main()
+```
+
+(Note that `loop_count` is provided by the connector based in the query `presetValues` parameters.)
 
 #####  <a name="withParameters" id="withParameters"></a>Query With Parameters
 
@@ -246,7 +288,7 @@ The information required is placed in that file as follows:
 ```
 targetServer = ...
 authToken = ...
-source = ...
+sources = ...
 ```
 
 An example file might be
@@ -254,7 +296,7 @@ An example file might be
 ```
 targetServer = https://dev.vantiq.com
 authToken = _cDWBfZLNO9FkXd-twjwKnVIBZSGwns35nF4nQFV_ps=
-source = pythonSource
+sources = pythonSource
 ```
 
 For users who may not want to write the `authToken` property to a file because of its sensitive nature, set the environment variable `CONNECTOR_AUTH_TOKEN` to its value. If the `authToken` is specified in the `server.config` document, that value will take precedence.
@@ -263,8 +305,8 @@ Otherwise, if the `authToken` is not set in the configuration file, the system w
 > Note that this token will not work -- you will need to create your own
 > within a Vantiq installation
 
-You should also provide an approriate `logger.ini` file in the same directory.
-An example one is provided at `src/test/resources/logger.ini` in this project.
+You should also provide an appropriate `logger.ini` file in the same directory.
+An example file is provided at `src/test/resources/logger.ini` in this project.
 
 #### Creating a Docker Image for your Connector
 
