@@ -429,14 +429,26 @@ class VantiqSourceConnection:
                 await websocket.send(json.dumps(connect_msg))
                 raw_resp = await websocket.recv()
                 resp = json.loads(raw_resp)
-                if _STATUS in resp.keys():
-                    _vlog.debug('Connect returned: %s', resp[_STATUS])
-                    status = resp[_STATUS]
-                    if status >= 300:
-                        return _CONNECTION_FAILED
 
-                # Otherwise, we should have a configExtension message
-                if _OPERATION in resp.keys():
+                possible_status_message = 0
+                # Sometimes we get a status message back.  If so & it's OK, wait for the config message
+                while _OPERATION not in resp.keys() and possible_status_message < 10:
+                    possible_status_message += 1
+                    if _STATUS in resp.keys():
+                        _vlog.debug('Connect returned: %s', resp[_STATUS])
+                        status = resp[_STATUS]
+                        if status >= 300:
+                            return _CONNECTION_FAILED
+                    raw_resp = await websocket.recv()
+                    resp = json.loads(raw_resp)
+
+                if _OPERATION not in resp.keys():
+                    error = f'Unable to make connection. No {_OP_CONFIGURE_EXTENSION} ' \
+                                f'message received after {possible_status_message} tries.'
+                    _vlog.error(error)
+                    raise VantiqConnectorException(error)
+                else:
+                    # Otherwise, we should have a configExtension message
                     if resp[_OPERATION] == _OP_CONFIGURE_EXTENSION:
                         # Here, we have a configuration that's been returned.  Process it
                         _vlog.debug('Configuration message: %s', resp[_OPERATION])
