@@ -434,6 +434,9 @@ class VantiqSourceConnection:
                     status = resp[_STATUS]
                     if status >= 300:
                         return _CONNECTION_FAILED
+                    # Sometimes we get a status message back.  If so & it's OK, wait for the config message
+                    raw_resp = await websocket.recv()
+                    resp = json.loads(raw_resp)
 
                 # Otherwise, we should have a configExtension message
                 if _OPERATION in resp.keys():
