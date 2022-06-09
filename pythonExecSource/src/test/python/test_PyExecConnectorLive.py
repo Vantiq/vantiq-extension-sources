@@ -12,7 +12,7 @@ from typing import Union
 
 import pytest
 
-from vantiqconnectorsdk import VantiqSourceConnection, setup_logging
+from vantiqconnectorsdk import VantiqConnector, VantiqSourceConnection, setup_logging
 from vantiqsdk import Vantiq, VantiqResponse, VantiqResources
 from pyExecConnector \
     import Connectors, COMPILE_TIME, CONNECTOR_INFO, EXECUTION_TIME, \
@@ -81,7 +81,6 @@ def main():
     tasks = []
     tasks.append(loop.create_task(looper(loop_count)))
     print('Looper -- about to wait for the loop')
-    asyncio.gather(*tasks)
     print('Looper -- done with wait')
 
     
@@ -110,6 +109,98 @@ def looper(count):
 
 if __name__ == '__main__':
     looper(loop_count)
+"""
+
+TEST_SYNTAX_ERROR = 'testSyntaxError'
+py_code_syntax_error = \
+"""
+import os
+
+some_list = { 'error': 'oopsy' ]
+three = 3
+somevar = {'message': 'from Python'}
+where_are_we = os.getcwd()
+
+def looper(count):
+    global some_list
+    for i in range(count):
+         some_list.append('I am list item {0}'.format(i))
+
+if __name__ == '__main__':
+    looper(loop_count)
+"""
+
+TEST_INDENT_ERROR = 'testIndentError'
+py_code_indent_error = \
+"""
+import os
+
+some_list = []
+three = 3
+somevar = {'message': 'from Python'}
+where_are_we = os.getcwd()
+
+def looper(count):
+global some_list
+for i in range(count):
+some_list.append('I am list item {0}'.format(i))
+
+if __name__ == '__main__':
+    looper(loop_count)
+"""
+
+TEST_IMPORT_ERROR = 'testImportError'
+py_code_import_error = \
+"""
+from os import os_bogus_module_which_does_not_exist
+
+some_list = []
+three = 3
+somevar = {'message': 'from Python'}
+where_are_we = os.getcwd()
+
+def looper(count):
+    global some_list
+    # use the bogus import
+    os_bogus_module_which_does_not_exist.do_something()
+    for i in range(count):
+         some_list.append('I am list item {0}'.format(i))
+
+if __name__ == '__main__':
+    looper(loop_count)
+"""
+
+TEST_TIMEOUT = 'testTimeout'
+py_code_timeout = \
+"""
+import time
+
+def looper(count):
+    for i in range(count):
+        print('Waiting 1 second of', count)
+        time.sleep(1)
+        # await asyncio.sleep(1)
+     
+def main():
+    print('Looper -- in main')
+    print('Looper -- about to wait for the loop')
+    looper(loop_count)
+    print('Looper -- done with wait')
+
+if __name__ == '__main__':
+    main()
+"""
+
+py_code_verify_liveness = \
+"""
+i_am_alive = 'dead'
+def main():
+    global i_am_alive
+    i_am_alive = 'Because I think'
+    print('i_am_alive = ', i_am_alive)
+    
+if __name__ == '__main__':
+    main()
 """
 
 _server_url: Union[str, None] = None
@@ -177,6 +268,11 @@ class TestLiveConnection:
             vr: VantiqResponse = await client.delete_one(VantiqResources.DOCUMENTS, PYTHON_TEST_DOC)
             vr = await client.delete_one('system.procedures', TEST_SIMPLE_CODE)
             vr = await client.delete_one('system.procedures', TEST_SIMPLE_DOC)
+            vr = await client.delete_one('system.procedures', TEST_SYNTAX_ERROR)
+            vr = await client.delete_one('system.procedures', TEST_INDENT_ERROR)
+            vr = await client.delete_one('system.procedures', TEST_IMPORT_ERROR)
+            vr = await client.delete_one('system.procedures', TEST_TIMEOUT)
+
             vr = await client.delete_one(VantiqResources.RULES, TEST_RULE)
             vr = await client.delete_one(VantiqResources.TYPES, TEST_TYPE)
 
@@ -227,6 +323,51 @@ class TestLiveConnection:
                 }}
                 return allResults
                 '''}
+            vr = await client.insert('system.procedures', proc_def)
+            assert vr.is_success
+            assert vr.errors is None or vr.errors == []
+
+            # Set up procedures to verify compile error processing
+            for k, v in {TEST_SYNTAX_ERROR: py_code_syntax_error,
+                         TEST_INDENT_ERROR: py_code_indent_error,
+                         TEST_IMPORT_ERROR: py_code_import_error}.items():
+                proc_def = {'ruleText': f'''PROCEDURE {k}()
+                var pythonCode = "{v}"
+    
+                var result = select * from source {PY_EXEC_SOURCE_NAME}
+                    with name = "py_code_timeout", code = pythonCode, presetValues = {{ loop_count: 3 }},
+                        codeHandlesReturn = true
+                log.info("Got result: {{}}", [result])
+                return result
+                '''}
+                vr = await client.insert('system.procedures', proc_def)
+                assert vr.is_success
+                assert vr.errors is None or vr.errors == []
+
+            proc_def = {'ruleText': f'''PROCEDURE {TEST_TIMEOUT}()
+            var pythonCode = "{py_code_timeout}"
+
+            try {{
+                // Note that this code does NOT handle returning information.  Which will cause the timeout.
+                var result = select * from source {PY_EXEC_SOURCE_NAME}
+                    with name = "py_code_timeout", code = pythonCode, presetValues = {{loop_count: 3}},
+                        codeHandlesReturn = true
+                    log.info("Got result: {{}}", [result])
+            }} catch (timeoutError) {{
+                if (timeoutError.code != "io.vantiq.sourcemgr.request.timeout") {{
+                    exception("pyexec.test.failure", "query did not time out.  Instead {0}", [timeoutError])
+                }}
+            }}
+            
+            // Having performed a timeout, verify that the connector is still up & responsive
+            pythonCode = "{py_code_verify_liveness}"
+
+            var result = select * from source {PY_EXEC_SOURCE_NAME}
+                with name = "py_code_verify_liveness", code = pythonCode, presetValues = {{ i_am_alive: "I hope" }}
+            log.info("Got result: {{}}", [result])
+
+            return result
+            '''}
             vr = await client.insert('system.procedures', proc_def)
             assert vr.is_success
             assert vr.errors is None or vr.errors == []
@@ -291,73 +432,93 @@ class TestLiveConnection:
     def dump_result(self, tag: str, vr: VantiqResponse):
         print(f'{tag} response: ', str(vr))
 
-    async def run_server_test(self, config, qry_count: int, conn_info: bool, use_documents: bool):
+    async def run_server_test(self, config, qry_count: int, conn_info: bool, proc_name:str,
+                              expected_error: Union[dict, None], expected_result: Union[dict, None] = None):
 
         assert self.vantiq_connection is not None
         await asyncio.sleep(1)
-        proc_name = TEST_SIMPLE_CODE
-        if use_documents:
-            proc_name = TEST_SIMPLE_DOC
         doc_changed = False
-        for i in range(qry_count):
+        if not expected_error and not expected_result:
+            for i in range(qry_count):
+                vr: VantiqResponse = await self.vantiq_connection.execute(proc_name, {})
+                self.dump_result(f'Exec {proc_name}', vr)
+                assert vr.is_success
+                assert vr.body is not None
+                assert isinstance(vr.body, list)
+                assert isinstance(vr.body[0], dict)
+                if proc_name == TEST_SIMPLE_CODE:
+                    res: dict = vr.body[0]
+                    assert SCRIPT_RESULTS in res
+                    pcr = res[SCRIPT_RESULTS]
+                    assert 'somevar' in pcr
+                    assert 'where_are_we' in pcr
+                    assert 'some_list' in pcr
+                    assert len(pcr['some_list']) == qry_count
+
+                    if conn_info:
+                        assert CONNECTOR_INFO in res
+                        ci = res[CONNECTOR_INFO]
+                        assert TOTAL_TIME in ci
+                        assert EXECUTION_TIME in ci
+                        if i == 0:
+                            assert COMPILE_TIME in ci
+                        else:
+                            assert COMPILE_TIME not in ci
+                    else:
+                        assert CONNECTOR_INFO not in res
+                elif proc_name == TEST_SIMPLE_DOC:
+                    assert len(vr.body) == qry_count
+                    for j in range(len(vr.body)):
+                        line: dict = vr.body[j]
+                        if doc_changed:
+                            assert 'line_item' in line
+                        else:
+                            assert 'item' in line
+
+                    if i == qry_count // 2:
+                        # Update our document to change something we test.
+                        # Do this to verify that our cache updates work as expected.
+                        await self.update_document(self.vantiq_connection, PYTHON_TEST_DOC)
+                        doc_changed = True
+
+            if proc_name == TEST_SIMPLE_DOC:
+                await asyncio.sleep(2)  # Let the rules run in Vantiq
+                vr = await self.vantiq_connection.count(TEST_TYPE, {})
+                assert vr.is_success
+                print("Count result:", vr.count)
+                assert vr.count >= qry_count - 1
+        elif expected_result:
             vr: VantiqResponse = await self.vantiq_connection.execute(proc_name, {})
             self.dump_result(f'Exec {proc_name}', vr)
             assert vr.is_success
             assert vr.body is not None
-            assert isinstance(vr.body, list)
-            assert isinstance(vr.body[0], dict)
-            if not use_documents:
-                res: dict = vr.body[0]
-                assert SCRIPT_RESULTS in res
-                pcr = res[SCRIPT_RESULTS]
-                assert 'somevar' in pcr
-                assert 'where_are_we' in pcr
-                assert 'some_list' in pcr
-                assert len(pcr['some_list']) == qry_count
-
-                if conn_info:
-                    assert CONNECTOR_INFO in res
-                    ci = res[CONNECTOR_INFO]
-                    assert TOTAL_TIME in ci
-                    assert EXECUTION_TIME in ci
-                    if i == 0:
-                        assert COMPILE_TIME in ci
-                    else:
-                        assert COMPILE_TIME not in ci
-                else:
-                    assert CONNECTOR_INFO not in res
-            else:
-                assert len(vr.body) == qry_count
-                for j in range(len(vr.body)):
-                    line: dict = vr.body[j]
-                    if doc_changed:
-                        assert 'line_item' in line
-                    else:
-                        assert 'item' in line
-
-                if i == qry_count // 2:
-                    # Update our document to change something we test.
-                    # Do this to verify that our cache updates work as expected.
-                    await self.update_document(self.vantiq_connection, PYTHON_TEST_DOC)
-                    doc_changed = True
-
-        if use_documents:
-            await asyncio.sleep(2)  # Let the rules run in Vantiq
-            vr = await self.vantiq_connection.count(TEST_TYPE, {})
-            assert vr.is_success
-            print("Count result:", vr.count)
-            assert vr.count >= qry_count - 1
+            res: dict = vr.body[0]
+            assert SCRIPT_RESULTS in res
+            pcr: dict = res[SCRIPT_RESULTS]
+            for k, v in expected_result.items():
+                assert k in pcr.keys()
+                assert v in pcr[k]
+        else:
+            vr: VantiqResponse = await self.vantiq_connection.execute(proc_name, {})
+            self.dump_result(f'Exec {proc_name}', vr)
+            assert not vr.is_success
+            assert vr.body is None
+            assert len(vr.errors) == 1
+            assert vr.errors[0].code == expected_error[VantiqConnector.ERROR_CODE]
+            assert expected_error[VantiqConnector.ERROR_TEMPLATE] in vr.errors[0].message
 
         if self.connector_task is not None:
             self.connector_task.cancel()
 
     async def do_connector_test_raw_code(self, use_conn_info: bool, qry_count: int, at_once: int):
-        await self.do_connector_test(use_conn_info, qry_count, at_once, False)
+        await self.do_connector_test(use_conn_info, qry_count, at_once, TEST_SIMPLE_CODE, None, None)
 
     async def do_connector_test_documents(self, use_conn_info: bool, qry_count: int, at_once: int):
-        await self.do_connector_test(use_conn_info, qry_count, at_once, True)
+        await self.do_connector_test(use_conn_info, qry_count, at_once, TEST_SIMPLE_DOC, None, None)
 
-    async def do_connector_test(self, use_conn_info: bool, qry_count: int, at_once: int, use_documents: bool):
+    async def do_connector_test(self, use_conn_info: bool, qry_count: int, at_once: int,
+                                proc_to_run: str, expected_error: Union[dict, None],
+                                expected_result: Union[dict, None]):
         # Construct a server config file to use...
         assert at_once == 0 or qry_count % at_once == 0  # Test config failure -- at once must be multiples
         cf = f'''
@@ -383,7 +544,9 @@ class TestLiveConnection:
             self.connector_task = loop.create_task(connectors.run())
             tasks.append(self.connector_task)
 
-            tasks.append(loop.create_task(self.run_server_test(filename, qry_count, use_conn_info, use_documents)))
+            tasks.append(loop.create_task(self.run_server_test(filename, qry_count,
+                                                               use_conn_info, proc_to_run,
+                                                               expected_error, expected_result)))
             try:
                 await asyncio.gather(*tasks)
             except CancelledError:
@@ -400,6 +563,40 @@ class TestLiveConnection:
     def check_test_conditions():
         if _server_url is None or _access_token is None or (_username is None and _password is None):
             pytest.skip('Need access to Vantiq server.')
+
+    @pytest.mark.asyncio
+    @pytest.mark.timeout(10)
+    async def test_syntax_error(self):
+        self.check_test_conditions()
+        await self.do_connector_test(False, 1, 1, TEST_SYNTAX_ERROR,
+                                     {VantiqConnector.ERROR_CODE: 'io.vantiq.pyexecsource.compile.syntaxerror',
+                                      VantiqConnector.ERROR_TEMPLATE: 'SyntaxError'}, None)
+
+    @pytest.mark.asyncio
+    @pytest.mark.timeout(10)
+    async def test_import_error(self):
+        self.check_test_conditions()
+        # Import errors (also subclass ModuleNotFound errors) are found at execution time, generally, rather
+        # than compile time.  So we'll check them there as well as compile time.
+        await self.do_connector_test(False, 1, 1, TEST_IMPORT_ERROR,
+                                     {VantiqConnector.ERROR_CODE: 'io.vantiq.pyexecsource.execution.importerror',
+                                      VantiqConnector.ERROR_TEMPLATE: 'ImportError'}, None)
+
+    @pytest.mark.asyncio
+    @pytest.mark.timeout(135)
+    async def test_timeout_error(self):
+        self.check_test_conditions()
+        # Import errors (also subclass ModuleNotFound errors) are found at execution time, generally, rather
+        # than compile time.  So we'll check them there as well as compile time.
+        await self.do_connector_test(False, 1, 1, TEST_TIMEOUT, None, {'i_am_alive': 'Because I think'})
+
+    @pytest.mark.asyncio
+    @pytest.mark.timeout(10)
+    async def test_indent_error(self):
+        self.check_test_conditions()
+        await self.do_connector_test(False, 1, 1, TEST_INDENT_ERROR,
+                                     {VantiqConnector.ERROR_CODE: 'io.vantiq.pyexecsource.compile.syntaxerror',
+                                      VantiqConnector.ERROR_TEMPLATE: 'IndentationError'}, None)
 
     @pytest.mark.asyncio
     @pytest.mark.timeout(10)
