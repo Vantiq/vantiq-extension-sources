@@ -104,4 +104,5 @@ VANTIQ_PASSWORD <Password for that Vantiq user>
 
 ## Copyright and License
 
-Copyright &copy; 2022 Vantiq, Inc.  Code released under the [MIT license](./LICENSE.txt).
+Copyright &copy; 2022 Vantiq, Inc.  Code released under the
+[MIT license](https://github.com/Vantiq/vantiq-extension-sources/blob/master/pythonExecSource/LICENSE.txt).
