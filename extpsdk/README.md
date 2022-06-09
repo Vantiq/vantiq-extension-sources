@@ -7,7 +7,8 @@ You will need credentials to a Vantiq server to use this SDK.  Please contact yo
 
 ## Overview of a Connector
 
-For details about the overall structure of a connector and the protocol used between the connector and the Vantiq source, please see [here](../README.md).  
+For details about the overall structure of a connector and the protocol used between the connector and the Vantiq source, please see
+[here](https://github.com/Vantiq/vantiq-extension-sources#readme).  
 
 Each running instance of this code represents a set of connectors that connect to a single Vantiq namespace. The set of sources for the connector & the connection information is found in the server config file.  We will describe the details later.
 
