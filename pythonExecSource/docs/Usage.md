@@ -32,6 +32,14 @@ Note: The term _extension source_ is an older term, but it is still evident in t
 
 ## Python Execution Connector Operation
 
+### Warning
+
+This connector provides the ability to execute arbitrary Python code. That code will run in the same context in which the connector runs. That is, it will start in the same working directory and run with the same privileges at the connector itself.
+
+This means that _malicious_ code could be executed, and it could do anything that any other Python script could do. While this is generally the goal, it is important to recognize this and take appropriate precautions to control developer access to the namespace in which the Python Execution Connector is defined.
+
+Note that this is no different than any other connector (JDBC, JMS, etc.) where the connector can affect the state of the system to which it is connected. The execution of Python code just makes the possibilities more obvious.
+
 ### Defining the Source in Vantiq
 
 #### Creating the Source
@@ -98,6 +106,8 @@ here we will provide a few examples.
 
 #### Query from Vantiq
 
+(See the [Warning](#warning) section.)
+
 To execute some Python code,
 you can run a query using the SELECT statement.
 
@@ -159,9 +169,6 @@ def main():
     loop = asyncio.get_event_loop()
     tasks = []
     tasks.append(loop.create_task(looper(loop_count)))
-    print('Looper -- about to wait for the loop')
-    asyncio.gather(*tasks)
-    print('Looper -- done with wait')
 
     
 if __name__ == '__main__':
