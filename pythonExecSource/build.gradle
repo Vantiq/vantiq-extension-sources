@@ -15,7 +15,7 @@ ext {
         pyExecSrcVersion = '1.1.10'
     }
     vantiqSdkVersion = '1.1.2'
-    vantiqConnectorSdkVersion = '1.1.11'
+    vantiqConnectorSdkVersion = '1.1.12'
 }
 
 python {
