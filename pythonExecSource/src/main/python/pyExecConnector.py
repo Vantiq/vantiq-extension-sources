@@ -197,6 +197,7 @@ class PyExecConnector:
         self.logger = logging.getLogger('Vantiq.PyExecConnector')
         self.vantiq_client: Union[Vantiq, None] = None
         self._lock = asyncio.Lock()
+        self.user_tasks = []
 
     async def close_handler(self, ctx: dict):
         """Record that this connector is now closed, and release resources as appropriate"""
@@ -228,6 +229,16 @@ class PyExecConnector:
         """The Vantiq server has published a message to this connector/source"""
         self.logger.warning('Connector for source %s: Unexpected call to publish handler -- context: %s, message: %s',
                             self.source_name, ctx, msg)
+
+    def delete_user_task(self, user_task):
+        print('Removing task from user_task list', user_task)
+        try:
+            self.user_tasks.remove(user_task)
+        except ValueError:
+            self.logger.warning('Delete of user task which was not present in user_tasks list: %s',
+                                user_task)
+        except Exception as e:
+            self.logger.warning('Delete of user task failed unexpectedly: %s -- %s.', user_task, e)
 
     async def query_handler(self, ctx: dict, msg: dict):
         """The Vantiq server has sent a query message to this connector/source"""
@@ -335,8 +346,18 @@ class PyExecConnector:
                          VantiqConnector.ERROR_PARAMETERS: [ctx[VantiqConnector.SOURCE_NAME], msg]}
             await self.connection.send_query_error(ctx, error_msg)
         else:
-            await self.run_python_code(ctx, code, script,
-                                       name, cache_result, exec_does_return, values_of_interest, global_presets)
+            task_name = f'user_code-{name if name is not None else "unnamed"}-{str(uuid.uuid4())}'
+            # Here we don't await -- we'll let things run at their own pace, but we don't want to single-thread.
+            new_task = asyncio.create_task(
+                self.run_python_code(ctx, code, script, name, cache_result,
+                                     exec_does_return, values_of_interest, global_presets),
+                name=task_name)
+            # We need to do two things with the created tasks
+            # 1) Save a reference so that the task is not garbage collected while it is running
+            self.user_tasks.append(new_task)
+            # 2) Add a callback that will remove it from the list when completed so that it can be garbage collected
+            #    as appropriate
+            new_task.add_done_callback(self.delete_user_task)
 
     def establish_handlers(self):
         """Set up the handlers for this connector."""
@@ -562,13 +583,43 @@ class PyExecConnector:
                                      VantiqConnector.ERROR_PARAMETERS: []}
                 if error_msg:
                     await self.connection.send_query_error(ctx, error_msg)
+                    return
                 else:
                     if compiled_code is None:
                         faux_file_path = f'code-for-source-{self.source_name}-{uuid.uuid4()}' \
                             if script_to_fetch is None else script_to_fetch
                         with Timer(COMPILE_TIME) as compile_timer:
-                            compile_timer.logger = None
-                            compiled_code = compile(code_text, faux_file_path, 'exec')
+                            try:
+                                compile_timer.logger = None
+                                compiled_code = compile(code_text, faux_file_path, 'exec')
+                            except SyntaxError as se:
+                                error_msg = {VantiqConnector.ERROR_CODE: 'io.vantiq.pyexecsource.compile.syntaxerror',
+                                             VantiqConnector.ERROR_TEMPLATE:
+                                                 'Compilation resulted in: {0} :: file {1}, line {2}, offset {3} -- {4}',
+                                             VantiqConnector.ERROR_PARAMETERS: [type(se).__name__,
+                                                                                se.filename,
+                                                                                se.lineno,
+                                                                                se.offset,
+                                                                                se.text]}
+                            except ImportError as ie:
+                                error_msg = {VantiqConnector.ERROR_CODE: 'io.vantiq.pyexecsource.compile.importerror',
+                                             VantiqConnector.ERROR_TEMPLATE:
+                                                 'Compilation resulted in: {0} :: {1}',
+                                             VantiqConnector.ERROR_PARAMETERS: [type(ie).__name__, ie]}
+                            except ImportWarning as ie:
+                                error_msg = {VantiqConnector.ERROR_CODE: 'io.vantiq.pyexecsource.compile.importwarning',
+                                             VantiqConnector.ERROR_TEMPLATE:
+                                                 'Compilation resulted in: {0} :: {1}',
+                                             VantiqConnector.ERROR_PARAMETERS: [type(ie).__name__, ie]}
+                            except Exception as e:
+                                error_msg = {VantiqConnector.ERROR_CODE: 'io.vantiq.pyexecsource.compile.exception',
+                                             VantiqConnector.ERROR_TEMPLATE:
+                                                 'Compilation resulted in: {0} :: {1}',
+                                             VantiqConnector.ERROR_PARAMETERS: [type(e).__name__, e]}
+                            finally:
+                                if error_msg:
+                                    await self.connection.send_query_error(ctx, error_msg)
+                                    return
                         compile_time = compile_timer.last
                         self.logger.debug('Using just-compiled code for name: %s', name)
                     # Else we're using cached code
@@ -602,7 +653,35 @@ class PyExecConnector:
 
                 with Timer('Execution Time') as exec_timer:
                     exec_timer.logger = None
-                    exec(compiled_code, global_vars, None)
+                    try:
+                        exec(compiled_code, global_vars, None)
+                    except ImportError as ie:
+                        error_msg = {VantiqConnector.ERROR_CODE: 'io.vantiq.pyexecsource.execution.importerror',
+                                     VantiqConnector.ERROR_TEMPLATE:
+                                         'Execution raised exception: {0} :: {1}',
+                                     VantiqConnector.ERROR_PARAMETERS: [type(ie).__name__, ie.msg]}
+                    except ImportWarning as ie:
+                        error_msg = {VantiqConnector.ERROR_CODE: 'io.vantiq.pyexecsource.execution.importwarning',
+                                     VantiqConnector.ERROR_TEMPLATE:
+                                         'Executing code raised exception: {0} :: {1}',
+                                     VantiqConnector.ERROR_PARAMETERS: [type(ie).__name__, ie.msg]}
+                    except Exception as exc:
+                        # Our user code had a problem. Assume the worst and finish things up for them
+                        error_msg = {VantiqConnector.ERROR_CODE: 'io.vantiq.pyexecsource.execution.exception',
+                                     VantiqConnector.ERROR_TEMPLATE:
+                                         'Executing code raised exception: {0} :: {1}',
+                                     VantiqConnector.ERROR_PARAMETERS: [type(exc).__name__,
+                                                                        str(traceback.format_exc())]}
+                        if isinstance(exc, MemoryError):
+                            # If we've gotten the purportedly unrecoverable out of memory error, we'll declare ourselves
+                            # unhealthy.  In a K8s environment, we'll get restarted (assuming they who've deployed us
+                            # set the probes up correctly). Otherwise, we'll continue. If things are really recoverable,
+                            # we'll recover. Otherwise, exit will be called and someone will restart us.
+                            await self.connection.declare_unhealthy()
+                    finally:
+                        if error_msg:
+                            await self.connection.send_query_error(ctx, error_msg)
+                            return
                 exec_time = exec_timer.last
 
             query_time = connector_timer.last
@@ -649,15 +728,15 @@ class PyExecConnector:
             self.logger.exception('Execution of Python code resulted in exception.')
             error_msg = {VantiqConnector.ERROR_CODE: 'io.vantiq.pyexecsource.runpython.exception',
                          VantiqConnector.ERROR_TEMPLATE:
-                             'Executing the python code resulted in an exception: {0} :: {1}',
+                             'Executing python code in connector resulted in an exception: {0} :: {1}',
                          VantiqConnector.ERROR_PARAMETERS: [type(exc).__name__, str(traceback.format_exc())]}
-            await self.connection.send_query_error(ctx, error_msg)
             if isinstance(exc, MemoryError):
                 # If we've gotten the purportedly unrecoverable out of memory error, we'll declare ourselves
-                # unhealthy.  In a K8s environment, we'll get restarted (assuming they who've deployed us
-                # set the probes up correctly).  Otherwise, we'll continue.  If things are really recoverable,
-                # we'll recover.  Otherwise, exit will be called and someone will restart us.
+                # unhealthy. In a K8s environment, we'll get restarted (assuming they who've deployed us
+                # set the probes up correctly). Otherwise, we'll continue. If things are really recoverable,
+                # we'll recover. Otherwise, exit will be called and someone will restart us.
                 await self.connection.declare_unhealthy()
+            await self.connection.send_query_error(ctx, error_msg)
 
 
 class Connectors:
@@ -674,18 +753,23 @@ class Connectors:
         Sets up the connector set & runs things.  Generally does not return.
         """
         vantiq_connectors = self.connector_set.get_connections().items()
-
+        sources = []
         for name, conn in vantiq_connectors:
             self.logger.info('Creating PyExecConnector for connection to source: %s', name)
             pec = PyExecConnector(conn)
             pec.establish_handlers()
+            sources.append(name)
 
         self.logger.info('Running PyExecConnector.')
         running_in_k8s = os.getenv('KUBERNETES_SERVICE_HOST')
         if running_in_k8s:
             self.logger.info('Performing declare_healthy() action.')
             await self.connector_set.declare_healthy()
-        self.logger.info('Running connectors.')
+        plural = "s" if len(sources) > 1 else ""
+        startup_message = f'Running connector{plural} for Vantiq source{plural} ' \
+                          f'{",".join(sources)}{" in Kubernetes" if running_in_k8s else ""}'
+        print(startup_message)
+        self.logger.info(startup_message)
 
         await self.connector_set.run_connectors()
         await self.connector_set.close()
