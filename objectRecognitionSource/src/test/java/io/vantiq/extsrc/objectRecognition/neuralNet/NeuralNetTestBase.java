@@ -91,11 +91,17 @@ public class NeuralNetTestBase extends ObjRecTestBase {
     protected static void deleteSourceImpl(Vantiq vantiq) throws Exception {
         if (createdImpl) {
             vantiq.deleteOne(VANTIQ_SOURCE_IMPL, OR_SRC_TYPE);
+            createdImpl = false;
         }
 
         VantiqResponse resp = vantiq.selectOne(VANTIQ_SOURCE_IMPL, OR_SRC_TYPE);
         if (resp.hasErrors()) {
-            fail("Error deleting source impl" + resp.getErrors());
+            List<VantiqError> errors = resp.getErrors();
+            if (errors.size() != 1 || !errors.get(0).getCode().equals("io.vantiq.resource.not.found")) {
+                fail("Error deleting source impl" + resp.getErrors());
+            }
+        } else {
+            fail(OR_SRC_TYPE + " source impl found after deletion.");
         }
     }
 
