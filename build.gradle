@@ -9,7 +9,7 @@ buildscript {
 }
 
 plugins {
-    id 'io.franzbecker.gradle-lombok' version '1.14' apply false
+    id 'io.franzbecker.gradle-lombok' version '5.0.0' apply false
     id 'pl.allegro.tech.build.axion-release' version '1.6.0'
     id 'jacoco'
     id 'com.chrisgahlert.gradle-dcompose-plugin' version '0.17.1' apply false
@@ -44,6 +44,7 @@ ext {
     eclipseMiloVersion = '0.2.1'
     vantiqSDKVersion = '1.0.31'
     log4jVersion = '2.17.0'
+    lombokVersion = '1.18.24'
 }
 
 
@@ -164,7 +165,7 @@ subprojects {
     }
 
     dependencies {
-        provided 'org.projectlombok:lombok:1.16.18'
+        provided "org.projectlombok:lombok:${lombokVersion}"
 
         implementation 'org.codehaus.groovy:groovy-all:2.4.11'
         implementation "org.slf4j:slf4j-api:${slf4jApiVersion}"

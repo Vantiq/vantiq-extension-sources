@@ -119,7 +119,6 @@ configurations {
 
 ext {
     currentCocoVersion = '1.2'
-    lombokVersion = '1.16.18'
     javaCvVersion = '1.5.6'
 }
 
