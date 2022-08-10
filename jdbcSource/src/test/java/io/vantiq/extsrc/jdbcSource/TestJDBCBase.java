@@ -58,7 +58,7 @@ public class TestJDBCBase {
         testTopicName = System.getProperty("EntConTestTopicName", "/test/topic/name");
     }
 
-    static boolean createdImpl = false;
+    private static boolean createdImpl = false;
     @SuppressWarnings("unchecked")
     protected static void createSourceImpl(Vantiq vantiq) throws Exception {
         VantiqResponse resp = vantiq.selectOne(VANTIQ_SOURCE_IMPL, JDBC_SRC_TYPE);
