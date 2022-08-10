@@ -8,6 +8,7 @@
 
 package io.vantiq.extsrc.jdbcSource;
 
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
@@ -187,6 +188,11 @@ public class TestJDBC extends TestJDBCBase {
         jdbc = new JDBC();
         vantiq = new io.vantiq.client.Vantiq(testVantiqServer);
         vantiq.setAccessToken(testAuthToken);
+        try {
+            createSourceImpl(vantiq);
+        } catch (Exception e) {
+            fail("Could not create sourceImpl: " + e.getMessage());
+        }
     }
 
     @BeforeClass
@@ -299,6 +305,12 @@ public class TestJDBC extends TestJDBCBase {
             deleteTopic();
             deleteProcedure();
             deleteRule();
+
+            try {
+                deleteSourceImpl(vantiq);
+            } catch (Exception e) {
+                // Not much we can do here...
+            }
         }
 
         // Close JDBCCore if still open
@@ -801,7 +813,7 @@ public class TestJDBC extends TestJDBCBase {
         createParams.put("query", CREATE_TABLE_MAX_MESSAGE_SIZE);
         vantiq.publish("sources", testSourceName, createParams);
 
-        // Insert 2000 rows into the the table
+        // Insert 2000 rows into the table
         Map<String, Object> insertParams = new LinkedHashMap<>();
         insertParams.put("query", INSERT_ROW_MAX_MESSAGE_SIZE);
         for (int i = 0; i < numRows; i ++) {
@@ -920,8 +932,8 @@ public class TestJDBC extends TestJDBCBase {
         // Execute Procedure to trigger asynchronous publish/queries (assign to variable to ensure that procedure has finished before selecting from type)
         VantiqResponse response = vantiq.execute(testProcedureName, new LinkedHashMap<>());
 
-        // Sleep for 6 seconds to allow all queries to finish
-        Thread.sleep(6000);
+        // Sleep for 10 seconds to allow all queries to finish
+        Thread.sleep(10000);
 
         // Select from the type and make sure all of our results are there as expected
         response = vantiq.select(testTypeName, null, null, null);
@@ -1162,7 +1174,10 @@ public class TestJDBC extends TestJDBCBase {
 
         Map<String, String> where = new LinkedHashMap<>();
         where.put("name", "JDBC");
-        VantiqResponse implResp = vantiq.select("system.sourceimpls", null, where, null);
+        VantiqResponse implResp = vantiq.select(VANTIQ_SOURCE_IMPL, null, where, null);
+        assertFalse("Errors from fetching source impl", implResp.hasErrors());
+        ArrayList responseBody = (ArrayList) implResp.getBody();
+        assertEquals("Missing sourceimpl -- expected a count of 1", 1, responseBody.size());
 
         VantiqResponse insertResponse = vantiq.insert("system.sources", sourceDef);
         if (insertResponse.isSuccess()) {
