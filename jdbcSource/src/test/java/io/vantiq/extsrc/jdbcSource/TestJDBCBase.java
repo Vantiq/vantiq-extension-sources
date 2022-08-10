@@ -83,13 +83,14 @@ public class TestJDBCBase {
             where.put("name", "JDBC");
             VantiqResponse implResp = vantiq.select(VANTIQ_SOURCE_IMPL, null, where, null);
             assertFalse("Errors from fetching source impl", implResp.hasErrors());
+            @SuppressWarnings({"rawtypes"})
             ArrayList responseBody = (ArrayList) implResp.getBody();
-            assertEquals("Missing sourceimpl -- expected a count of 1", 1, responseBody.size());
+            assertEquals("Missing sourceImpl -- expected a count of 1", 1, responseBody.size());
             createdImpl = true;
         }
     }
 
-    protected static void deleteSourceImpl(Vantiq vantiq) throws Exception {
+    protected static void deleteSourceImpl(Vantiq vantiq) {
         if (createdImpl) {
             vantiq.deleteOne(VANTIQ_SOURCE_IMPL, JDBC_SRC_TYPE);
             createdImpl = false;

@@ -306,11 +306,7 @@ public class TestJDBC extends TestJDBCBase {
             deleteProcedure();
             deleteRule();
 
-            try {
-                deleteSourceImpl(vantiq);
-            } catch (Exception e) {
-                // Not much we can do here...
-            }
+            deleteSourceImpl(vantiq);
         }
 
         // Close JDBCCore if still open
