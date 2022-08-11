@@ -5,6 +5,7 @@ import java.awt.image.RasterFormatException;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.util.Base64;
 
 import javax.imageio.ImageIO;
 
@@ -48,5 +49,14 @@ public abstract class NeuralNetUtils {
         }
         
         return image;
+    }
+
+    /**
+     * Converts the incoming image (well, really, any byte array) to a base 64 string
+     * @param image byte[] byte encoding of the image
+     * @return String containing the base64 encoding of the image bytes
+     */
+    public static String convertToBase64(byte[] image) {
+        return Base64.getEncoder().encodeToString(image);
     }
 }

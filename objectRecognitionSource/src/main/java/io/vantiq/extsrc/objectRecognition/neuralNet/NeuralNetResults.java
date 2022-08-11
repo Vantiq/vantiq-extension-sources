@@ -20,6 +20,9 @@ public class NeuralNetResults {
      * A Map containing any data that should be passed to the source
      */
     protected Map<String, ?>          otherData   = null;
+
+    /* String containing the base64-encoded image that was just evaluated, assuming that's desired */
+    protected String                  encodedImage = null;
     
     public NeuralNetResults() {
         // Do nothing
@@ -76,10 +79,23 @@ public class NeuralNetResults {
     }
 
     /**
-     * @param otherData A Map containing any data that should be passed to the source
+     * @param lastFilename A String containing the name of the last saved image file.  Used in testing
      */
     public void setLastFilename(String lastFilename) {
         this.lastFilename = lastFilename;
     }
-    
+
+    /**
+     * @param ei String the base64-encoded image to return
+     */
+    public void setEncodedImage(String ei) {
+        this.encodedImage = ei;
+    }
+
+    /**
+     * @return String the base64-encoded image to return
+     */
+    public String getEncodedImage() {
+        return encodedImage;
+    }
 }

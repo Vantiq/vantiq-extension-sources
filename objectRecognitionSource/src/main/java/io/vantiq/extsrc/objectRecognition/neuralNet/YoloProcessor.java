@@ -79,7 +79,8 @@ public class YoloProcessor extends NeuralNetUtils implements NeuralNetInterface2
     float threshold = 0.5f;
     int saveRate = 1;
     boolean uploadAsImage = false;
-    
+    boolean includeEncodedImage = false;
+
     // Variables for pre crop
     int x = -1;
     int y = -1; 
@@ -103,6 +104,7 @@ public class YoloProcessor extends NeuralNetUtils implements NeuralNetInterface2
     private static final String SAVE_IMAGE = "saveImage";
     private static final String BOTH = "both";
     private static final String LOCAL = "local";
+    private static final String INCLUDE_ENCODED_IMAGE = "includeEncodedImage";
     private static final String VANTIQ = "vantiq";
     private static final String OUTPUT_DIR = "outputDir";
     private static final String LABEL_IMAGE = "labelImage";
@@ -141,7 +143,8 @@ public class YoloProcessor extends NeuralNetUtils implements NeuralNetInterface2
      * @param authToken         The authToken used to with the VANTIQ SDK
      * @throws Exception        Thrown when an invalid configuration is requested
      */
-    private void setup(Map<String, ?> neuralNet, String sourceName, String modelDirectory, String authToken, String server) throws Exception {
+    private void setup(Map<String, ?> neuralNet, String sourceName, String modelDirectory,
+                       String authToken, String server) throws Exception {
         this.server = server;
         this.authToken = authToken;
         this.sourceName = sourceName;
@@ -163,10 +166,12 @@ public class YoloProcessor extends NeuralNetUtils implements NeuralNetInterface2
            
        } else {
            throw new Exception(this.getClass().getCanonicalName() + ".missingConfig: Invalid Configuration: " 
-                   + "A YOLO NeuralNet configuration requires a pbFile and a metaFile and/or labelFile. " 
-                   + "pbFile: " + (neuralNet.get(PB_FILE) instanceof String ? (String) neuralNet.get(PB_FILE)  : " ") 
-                   + ", metaFile: " + (neuralNet.get(META_FILE) instanceof String ? (String) neuralNet.get(META_FILE)  : " ") 
-                   + ", labelFile: " + (neuralNet.get(LABEL_FILE) instanceof String ? (String) neuralNet.get(LABEL_FILE)  : " "));
+               + "A YOLO NeuralNet configuration requires a pbFile and a metaFile and/or labelFile. "
+               + "pbFile: " + (neuralNet.get(PB_FILE) instanceof String ? (String) neuralNet.get(PB_FILE)  : " ")
+               + ", metaFile: " + (neuralNet.get(META_FILE) instanceof String ?
+                   (String) neuralNet.get(META_FILE)  : " ")
+               + ", labelFile: " + (neuralNet.get(LABEL_FILE) instanceof String ?
+                   (String) neuralNet.get(LABEL_FILE)  : " "));
        }
        
        if (neuralNet.get(THRESHOLD) instanceof Number) {
@@ -186,6 +191,7 @@ public class YoloProcessor extends NeuralNetUtils implements NeuralNetInterface2
        
        // Get anchor values if they exist
        if (neuralNet.get(ANCHORS) instanceof List) {
+           @SuppressWarnings("rawtypes")
            List tempAnchorList = (List) neuralNet.get(ANCHORS);
            // Checking that the number of anchor pairs matches NUMBER_OF_BOUNDING_BOXES * 2
            if (tempAnchorList.size() != YOLOClassifier.NUMBER_OF_BOUNDING_BOX * 2) {
@@ -247,9 +253,10 @@ public class YoloProcessor extends NeuralNetUtils implements NeuralNetInterface2
                    uploadAsImage = (Boolean) neuralNet.get(UPLOAD_AS_IMAGE);
                }
            }
-           
+
            // Check if any resolution configurations have been set
            if (neuralNet.get(SAVED_RESOLUTION) instanceof Map) {
+               @SuppressWarnings("rawtypes")
                Map savedResolution = (Map) neuralNet.get(SAVED_RESOLUTION);
                if (savedResolution.get(LONG_EDGE) instanceof Integer) {
                    int longEdge = (Integer) savedResolution.get(LONG_EDGE);
@@ -277,9 +284,27 @@ public class YoloProcessor extends NeuralNetUtils implements NeuralNetInterface2
            // Flag to mark that we should not save images
            imageUtil.saveImage = false;
        }
-       
-       // Checking if pre cropping was specified in config
+
+        includeEncodedImage = false;
+        if (neuralNet.get(INCLUDE_ENCODED_IMAGE) instanceof String) {
+            String ieiString = (String) neuralNet.get(INCLUDE_ENCODED_IMAGE);
+            try {
+                includeEncodedImage = Boolean.parseBoolean(ieiString);
+            } catch (Exception e) {
+                log.error("The config value for " + INCLUDE_ENCODED_IMAGE + " must be a boolean value ('" +
+                        ieiString + "' was provided). The encoded image will not be included in the results.");
+            }
+        } else if (neuralNet.get(INCLUDE_ENCODED_IMAGE) instanceof Boolean) {
+            includeEncodedImage = (Boolean) neuralNet.get(INCLUDE_ENCODED_IMAGE);
+        } else if (neuralNet.get(INCLUDE_ENCODED_IMAGE) != null) {
+            log.error("The config value for " + INCLUDE_ENCODED_IMAGE + " must be a boolean value ('" +
+                    neuralNet.get(INCLUDE_ENCODED_IMAGE) + "' was provided). The encoded image will" +
+                    "not be included in the results.");
+        }
+
+        // Checking if pre cropping was specified in config
        if (neuralNet.get(CROP_BEFORE) instanceof Map) {
+           @SuppressWarnings("rawtypes")
            Map preCrop = (Map) neuralNet.get(CROP_BEFORE);
            if (preCrop.get(X) instanceof Integer && (Integer) preCrop.get(X) >= 0) {
                x = (Integer) preCrop.get(X);
@@ -304,6 +329,7 @@ public class YoloProcessor extends NeuralNetUtils implements NeuralNetInterface2
 
     /**
      * Deprecated method, should not be used anymore.
+     * @ Deprecated at interface level.
      */
     @Override
     public NeuralNetResults processImage(byte[] image) throws ImageProcessingException {
@@ -313,6 +339,7 @@ public class YoloProcessor extends NeuralNetUtils implements NeuralNetInterface2
     
     /**
      * Deprecated method, should not be used anymore.
+     * @ Deprecated at interface level.
      */
     @Override
     public NeuralNetResults processImage(byte[] image,  Map<String, ?> request) throws ImageProcessingException {
@@ -322,6 +349,8 @@ public class YoloProcessor extends NeuralNetUtils implements NeuralNetInterface2
     
     /**
      * Run the image through a YOLO net. May save the resulting image depending on the settings.
+     * This overload of processImage() operates as the connector fetches new images from its image source.
+     * As such, its configuration is provided via the setup() method above.
      */
     @Override
     public NeuralNetResults processImage(Map<String, ?> processingParams, byte[] image) throws ImageProcessingException {
@@ -359,20 +388,31 @@ public class YoloProcessor extends NeuralNetUtils implements NeuralNetInterface2
             results.setLastFilename("objectRecognition/" + sourceName + '/' + objectDetector.lastFilename);
         }
         results.setResults(foundObjects);
+
+        // If the processor was configured to include the Base64 encoded image in the results, do so now.
+        // We include the pre-cropped image as we'd like the image to correspond to the reported object locations.
+        if (includeEncodedImage) {
+            results.setEncodedImage(NeuralNetUtils.convertToBase64(image));
+        }
         return results;
     }
     
     /**
      * Run the image through a YOLO net. May save the resulting image depending on the request.
+     * This version of processImage() is used for processing queries from Vantiq.  The other is used as images are
+     * fetched by the connector.
      */
     @Override
     public NeuralNetResults processImage(Map<String, ?> processingParams, byte[] image, Map<String, ?> request) throws ImageProcessingException {
         List<Map<String, ?>> foundObjects;
         NeuralNetResults results = new NeuralNetResults();
+        // This method duplicates a number of the config value settings. These are determined on a per-query basis,
+        // but duplicating them here makes the code easier to move about.
         String saveImage = null;
         String outputDir = null;
         String fileName = null;
         Vantiq vantiq = null;
+        boolean includeEncodedImage;
         boolean uploadAsImage = false;
 
         Date timestamp;
@@ -407,12 +447,30 @@ public class YoloProcessor extends NeuralNetUtils implements NeuralNetInterface2
                 }
             }
         }
+
+        includeEncodedImage = false;
+        if (request.get(INCLUDE_ENCODED_IMAGE) instanceof String) {
+            String ieiString = (String) request.get(INCLUDE_ENCODED_IMAGE);
+            try {
+                includeEncodedImage = Boolean.parseBoolean(ieiString);
+            } catch (Exception e) {
+                log.error("The config value for " + INCLUDE_ENCODED_IMAGE + " must be a boolean value ('" +
+                        ieiString + "' was provided). The encoded image will not be included in the results.");
+            }
+        } else if (request.get(INCLUDE_ENCODED_IMAGE) instanceof Boolean) {
+            includeEncodedImage = (Boolean) request.get(INCLUDE_ENCODED_IMAGE);
+        } else if (request.get(INCLUDE_ENCODED_IMAGE) != null) {
+            log.error("The config value for " + INCLUDE_ENCODED_IMAGE + " must be a boolean value ('" +
+                    request.get(INCLUDE_ENCODED_IMAGE) + "' was provided). The encoded image will" +
+                    "not be included in the results.");
+        }
                 
         // Checking if pre cropping was specified in query parameters
         boolean queryCrop = false;
         int x, y, w, h;
         x = y = w = h = -1;
         if (request.get(CROP_BEFORE) instanceof Map) {
+            @SuppressWarnings("rawtypes")
             Map preCrop = (Map) request.get(CROP_BEFORE);
             if (preCrop.get(X) instanceof Integer && (Integer) preCrop.get(X) >= 0) {
                 x = (Integer) preCrop.get(X);
@@ -464,7 +522,14 @@ public class YoloProcessor extends NeuralNetUtils implements NeuralNetInterface2
         } else {
             results.setLastFilename("objectRecognition/" + sourceName + '/' + objectDetector.lastFilename);
         }
+
         results.setResults(foundObjects);
+
+        // If the processor was configured to include the Base64 encoded image in the results, do so now.
+        // We include the pre-cropped image as we'd like the image to correspond to the reported object locations.
+        if (includeEncodedImage) {
+            results.setEncodedImage(NeuralNetUtils.convertToBase64(image));
+        }
         return results;
     }
 
