@@ -26,6 +26,7 @@ import java.io.InputStream;
 import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Base64;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -38,6 +39,7 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 
+import edu.ml.tensorflow.util.ImageUtil;
 import io.vantiq.client.BaseResponseHandler;
 import io.vantiq.client.Vantiq;
 import io.vantiq.client.VantiqError;
@@ -45,6 +47,7 @@ import io.vantiq.client.VantiqResponse;
 import io.vantiq.extjsdk.ExtensionServiceMessage;
 import io.vantiq.extsrc.objectRecognition.exception.ImageProcessingException;
 import io.vantiq.extsrc.objectRecognition.ObjectRecognitionCore;
+import lombok.extern.slf4j.Slf4j;
 import okhttp3.Response;
 import okio.BufferedSource;
 import org.junit.AfterClass;
@@ -55,6 +58,7 @@ import org.junit.runners.MethodSorters;
 
 
 @SuppressWarnings({"PMD.ExcessiveClassLength", "PMD.AbbreviationAsWordInNameCheck"})
+@Slf4j
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
 public class TestYoloProcessor extends NeuralNetTestBase {
 
@@ -348,7 +352,6 @@ public class TestYoloProcessor extends NeuralNetTestBase {
         YoloProcessor ypImageSaver = new YoloProcessor();
         ExtensionServiceMessage msg = createRealConfig(neuralNetJSON1);
 
-
         Map<String, Object> config = (Map<String, Object>) msg.getObject();
         Map<String, ?> neuralNetConfig = (Map<String, ?>) config.get("neuralNet");
 
@@ -518,7 +521,6 @@ public class TestYoloProcessor extends NeuralNetTestBase {
 
     @Test
     public void testImageSavingWithoutLabels() throws ImageProcessingException {
-
         // Only run test with intended vantiq availability
         assumeTrue(testAuthToken != null && testVantiqServer != null);
         labelTestHelper(false);
@@ -526,7 +528,6 @@ public class TestYoloProcessor extends NeuralNetTestBase {
 
     @Test
     public void testImageSavingWithLabels() throws ImageProcessingException {
-
         // Only run test with intended vantiq availability
         assumeTrue(testAuthToken != null && testVantiqServer != null);
         labelTestHelper(true);
@@ -573,10 +574,13 @@ public class TestYoloProcessor extends NeuralNetTestBase {
             assert lf.length == 1;
             assert lf[0].getName().matches(timestampPattern);
 
-            try {
+            byte[] imgBytes = getTestImage();
+            assert imgBytes != null;
+
+            try (ByteArrayInputStream bis = new ByteArrayInputStream(imgBytes);
+                    ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
                 // Converting original test image to buffered image, since this is how we save images
-                BufferedImage tempOriginal = ImageIO.read(new ByteArrayInputStream(getTestImage()));
-                ByteArrayOutputStream baos = new ByteArrayOutputStream();
+                BufferedImage tempOriginal = ImageIO.read(bis);
                 ImageIO.write(tempOriginal, "jpg", baos);
                 baos.flush();
 
@@ -590,8 +594,6 @@ public class TestYoloProcessor extends NeuralNetTestBase {
                 } else {
                     assertArrayEquals("Images should be identical", originalImg, savedImg);
                 }
-
-                baos.close();
             } catch (IOException e) {
                 fail("Should not catch exception when checking saved image vs. original.");
             }
@@ -626,7 +628,7 @@ public class TestYoloProcessor extends NeuralNetTestBase {
         
         // The longEdge is a negative number which is not allowed, should not do any resizing
         savedResolution.put("longEdge", -100);
-        config.put("savedResolution", savedResolution); 
+        config.put("savedResolution", savedResolution);
         checkInvalidResizing(config);
         
         // The longEdge is not an integer which is not allowed, should not do any resizing
@@ -677,7 +679,6 @@ public class TestYoloProcessor extends NeuralNetTestBase {
             // Original dimensions
             assert resizedImage.getWidth() == TEST_IMAGE_WIDTH;
             assert resizedImage.getHeight() == TEST_IMAGE_HEIGHT;
-
         } finally {
             if (d.exists()) {
                 deleteDirectory(OUTPUT_DIR);
@@ -733,7 +734,6 @@ public class TestYoloProcessor extends NeuralNetTestBase {
             
             assert resizedImage.getWidth() == RESIZED_IMAGE_WIDTH;
             assert resizedImage.getHeight() == RESIZED_IMAGE_HEIGHT;
-
         } finally {
             if (d.exists()) {
                 deleteDirectory(OUTPUT_DIR);
@@ -766,7 +766,6 @@ public class TestYoloProcessor extends NeuralNetTestBase {
             fail("Could not setup the JSON YoloProcessor");
         }
         try {
-
             NeuralNetResults results = ypImageSaver.processImage(getTestImage());
             assert results != null;
             assert results.getResults() != null;
@@ -789,10 +788,8 @@ public class TestYoloProcessor extends NeuralNetTestBase {
             InputStream imageStream = new ByteArrayInputStream(imageBytes);
             BufferedImage resizedImage = ImageIO.read(imageStream);
             
-            
             assert resizedImage.getWidth() == RESIZED_IMAGE_WIDTH;
             assert resizedImage.getHeight() == RESIZED_IMAGE_HEIGHT;
-
         } finally {
             ypImageSaver.close();
         }
@@ -863,22 +860,18 @@ public class TestYoloProcessor extends NeuralNetTestBase {
             InputStream imageStream = new ByteArrayInputStream(imageBytes);
             resizedImage = ImageIO.read(imageStream);
             
-            
             assert resizedImage.getWidth() == RESIZED_IMAGE_WIDTH;
             assert resizedImage.getHeight() == RESIZED_IMAGE_HEIGHT;
-
         } finally {
             if (d.exists()) {
                 deleteDirectory(OUTPUT_DIR);
             }
-
             ypImageSaver.close();
         }
     }
 
     @Test
     public void testImageSavingLocal() throws ImageProcessingException, InterruptedException {
-
         // Only run test with intended vantiq availability
         assumeTrue(testAuthToken != null && testVantiqServer != null);
 
@@ -1298,7 +1291,7 @@ public class TestYoloProcessor extends NeuralNetTestBase {
         preCrop.put("y", -1);
         preCrop.put("width", CROPPED_WIDTH);
         preCrop.put("height", CROPPED_HEIGHT);
-        config.put("cropBeforeAnalysis", preCrop); 
+        config.put("cropBeforeAnalysis", preCrop);
         checkInvalidPreCropping(config);
         
         // Just x coordinate is negative, should not do any resizing
@@ -1306,7 +1299,7 @@ public class TestYoloProcessor extends NeuralNetTestBase {
         preCrop.put("y", PRECROP_TOP_LEFT_Y_COORDINATE);
         preCrop.put("width", CROPPED_WIDTH);
         preCrop.put("height", CROPPED_HEIGHT);
-        config.put("cropBeforeAnalysis", preCrop); 
+        config.put("cropBeforeAnalysis", preCrop);
         checkInvalidPreCropping(config);
         
         // Just y coordinate is negative, should not do any resizing
@@ -1314,7 +1307,7 @@ public class TestYoloProcessor extends NeuralNetTestBase {
         preCrop.put("y", -1);
         preCrop.put("width", CROPPED_WIDTH);
         preCrop.put("height", CROPPED_HEIGHT);
-        config.put("cropBeforeAnalysis", preCrop); 
+        config.put("cropBeforeAnalysis", preCrop);
         checkInvalidPreCropping(config);
         
         // Two values are not integers, should not do any resizing
@@ -1466,7 +1459,6 @@ public class TestYoloProcessor extends NeuralNetTestBase {
             fail("Could not setup the YoloProcessor");
         }
         try {
-
             NeuralNetResults results = ypImageSaver.processImage(getTestImage());
             assert results != null;
             assert results.getResults() != null;
@@ -1821,6 +1813,121 @@ public class TestYoloProcessor extends NeuralNetTestBase {
         }
     }
 
+    @Test
+    public void testEncodeImage() throws ImageProcessingException, InterruptedException {
+        performTestEncodedImage(false);
+    }
+
+    @Test
+    public void testEncodeImageWithSave() throws ImageProcessingException, InterruptedException {
+        performTestEncodedImage(true);
+    }
+
+    public void performTestEncodedImage(boolean shouldSaveImage) throws ImageProcessingException, InterruptedException {
+        // Only run test with intended vantiq availability
+        assumeTrue(testAuthToken != null && testVantiqServer != null);
+
+        Map<String, Object> config = new LinkedHashMap<>();
+        YoloProcessor ypImageSaver = new YoloProcessor();
+
+        config.put("pbFile", PB_FILE);
+        config.put("metaFile", META_FILE);
+        config.put("outputDir", OUTPUT_DIR);
+        config.put("saveRate", SAVE_RATE);
+        if (shouldSaveImage) {
+            config.put("saveImage", "vantiq");
+            config.put("uploadAsImage", true);
+        }
+        config.put("includeEncodedImage", true);
+
+        try {
+            ypImageSaver.setupImageProcessing(config, SOURCE_NAME, MODEL_DIRECTORY, testAuthToken, testVantiqServer);
+            log.debug("Saving spec: {}", ypImageSaver.imageUtil.saveImage);
+            assert ypImageSaver.imageUtil.saveImage == shouldSaveImage;
+        } catch (Exception e) {
+            fail("Could not setup the YoloProcessor");
+        }
+        try {
+            byte[] image = getTestImage();
+            BufferedImage testImage = ImageUtil.createImageFromBytes(image);
+
+            // The image gets re-encoded before processing (to force format, amongst other reasons), so we cannot
+            // just compare the base64 rendering of the image we thought we had.  Instead, we'll do what the
+            // image processor does & compare those results.
+
+            byte[] imageAsProcessed = ImageUtil.getBytesForImage(testImage);
+            String imageBase64 = NeuralNetUtils.convertToBase64(imageAsProcessed);
+
+            // Process the image...
+            NeuralNetResults results = ypImageSaver.processImage(null, image);
+
+            assert results != null;
+            assert results.getResults() != null;
+            assert results.getEncodedImage() != null;
+            assert results.getEncodedImage().equals(imageBase64);
+
+            // Fetch the byte array representing the uploaded image.
+            byte[] decodedBytes = Base64.getDecoder().decode(results.getEncodedImage());
+            // For insurance, we'll also ensure that we can decode the bits & that our images are at
+            // least the same size.
+            BufferedImage encodedImage = ImageUtil.createImageFromBytes(decodedBytes);
+            assert testImage.getWidth() == encodedImage.getWidth();
+            assert testImage.getHeight() == encodedImage.getHeight();
+
+            if (shouldSaveImage) {
+                // Checking that image was saved to VANTIQ
+                Thread.sleep(1000);
+                log.debug("Checking for image file: {}", results.getLastFilename());
+                checkUploadToVantiq(results.getLastFilename(), vantiq, VANTIQ_IMAGES);
+                vantiqSavedImageFiles.add(results.getLastFilename());
+            }
+        } finally {
+            ypImageSaver.close();
+        }
+    }
+
+    @Test
+    public void testPreCroppingIncludeEncoded() {
+        performPreCroppingIncludeEncoded(false);
+    }
+
+    @Test
+    public void testPreCroppingLabelIncludeEncoded() {
+        performPreCroppingIncludeEncoded(true);
+    }
+
+    public void performPreCroppingIncludeEncoded(boolean labelOption) {
+        // Only run test with intended vantiq availability
+        assumeTrue(testAuthToken != null && testVantiqServer != null);
+
+        Map<String, Object> config = new LinkedHashMap<>();
+        Map<String, Object> preCrop = new LinkedHashMap<>();
+        YoloProcessor ypImageSaver = new YoloProcessor();
+
+        preCrop.put("x", PRECROP_KEYBOARD_TOP_LEFT_X_COORDINATE);
+        preCrop.put("y", PRECROP_KEYBOARD_TOP_LEFT_Y_COORDINATE);
+        preCrop.put("width", KEYBOARD_CROPPED_WIDTH);
+        preCrop.put("height", KEYBOARD_CROPPED_HEIGHT);
+
+        config.put("pbFile", PB_FILE);
+        config.put("metaFile", META_FILE);
+        config.put("cropBeforeAnalysis", preCrop);
+        config.put("includeEncodedImage", true);
+        if (labelOption) {
+            config.put("labelImage", "true");
+        }
+
+        // Config with meta file, label file, pb file, and anchors
+        try {
+            ypImageSaver.setupImageProcessing(config, SOURCE_NAME, MODEL_DIRECTORY, testAuthToken, testVantiqServer);
+            verifyProcessing(ypImageSaver, croppedImageResultsAsString);
+        } catch (Exception e) {
+            fail("Should not fail with valid config: " + e.getClass().getName() + "::" + e.getMessage());
+        } finally {
+            ypImageSaver.close();
+        }
+    }
+
     // ================================================= Helper functions =================================================
 
     String imageResultsAsString = "[" +
@@ -1934,13 +2041,44 @@ public class TestYoloProcessor extends NeuralNetTestBase {
     }
 
     void verifyProcessing(YoloProcessor ypImageSaver, String resultsAsString) throws ImageProcessingException {
-        NeuralNetResults results = ypImageSaver.processImage(getTestImage());
+
+        byte[] image = getTestImage();
+        String encoded = null;
+        if (ypImageSaver.includeEncodedImage) {
+            if (ypImageSaver.preCropping) {
+                byte[] croppedImage =
+                        ypImageSaver.cropImage(image, ypImageSaver.x, ypImageSaver.y, ypImageSaver.w, ypImageSaver.h);
+                encoded = NeuralNetUtils.convertToBase64(imageAsSeenByProcessor(croppedImage));
+            } else {
+                encoded = NeuralNetUtils.convertToBase64(imageAsSeenByProcessor(image));
+            }
+        }
+        NeuralNetResults results = ypImageSaver.processImage(image);
         assert results != null;
         assert results.getResults() != null;
+        // If the image is labeled, our copy from above should be different from the returned value.
+        // Otherwise, they should be the same.
+        if (encoded != null) {
+            log.debug("Labeling: {}, length expected encoded: {}, length returned: {}", ypImageSaver.labelImage,
+                    encoded.length(),  results.getEncodedImage().length());
+            assert ((encoded.length() == results.getEncodedImage().length()) != ypImageSaver.labelImage);
+            assert (results.getEncodedImage().equals(encoded) != ypImageSaver.labelImage);
+        } else {
+            assert results.getEncodedImage() == null;
+        }
         try {
             resultsEquals(results.getResults(), getExpectedResults(resultsAsString)); // Will throw assert error with a message when not equivalent
         } catch (IOException e) {
             fail("Could not interpret json string" + e.getMessage());
+        }
+    }
+
+    byte[] imageAsSeenByProcessor(byte[] input) {
+        try (ByteArrayInputStream bis = new ByteArrayInputStream(input)){
+            BufferedImage bi = ImageIO.read(bis);
+            return ImageUtil.getBytesForImage(bi);
+        } catch (IOException e) {
+            return new byte[0];
         }
     }
 

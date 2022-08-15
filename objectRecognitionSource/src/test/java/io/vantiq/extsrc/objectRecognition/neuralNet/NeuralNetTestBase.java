@@ -91,7 +91,6 @@ public class NeuralNetTestBase extends ObjRecTestBase {
     protected static void deleteSourceImpl(Vantiq vantiq) throws Exception {
         if (createdImpl) {
             vantiq.deleteOne(VANTIQ_SOURCE_IMPL, OR_SRC_TYPE);
-            createdImpl = false;
         }
 
         VantiqResponse resp = vantiq.selectOne(VANTIQ_SOURCE_IMPL, OR_SRC_TYPE);
@@ -100,9 +99,10 @@ public class NeuralNetTestBase extends ObjRecTestBase {
             if (errors.size() != 1 || !errors.get(0).getCode().equals("io.vantiq.resource.not.found")) {
                 fail("Error deleting source impl" + resp.getErrors());
             }
-        } else {
+        } else if (createdImpl) {
             fail(OR_SRC_TYPE + " source impl found after deletion.");
         }
+        createdImpl = false;
     }
 
     public static byte[] getTestImage() {
@@ -120,7 +120,6 @@ public class NeuralNetTestBase extends ObjRecTestBase {
         int retries = 0;
         int maxRetries = WAIT_FOR_ASYNC_MILLIS / 50;
         while (!done) {
-            done = true;
             VantiqResponse vantiqResponse = vantiq.selectOne(resourceName, name);
             if (vantiqResponse.hasErrors()) {
                 if (++retries < maxRetries) {
@@ -134,6 +133,11 @@ public class NeuralNetTestBase extends ObjRecTestBase {
                         }
                     }
                 }
+            } else if (vantiqResponse.isSuccess()) {
+                done = true;
+            } else {
+                retries += 1;
+                Thread.sleep(50);
             }
         }
     }
