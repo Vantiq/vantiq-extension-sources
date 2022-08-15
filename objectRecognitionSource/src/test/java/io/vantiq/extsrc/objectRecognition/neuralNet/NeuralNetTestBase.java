@@ -114,7 +114,8 @@ public class NeuralNetTestBase extends ObjRecTestBase {
             return null;
         }
     }
-
+    
+    @SuppressWarnings("PMD.CognitiveComplexity")
     public static void checkUploadToVantiq(String name, Vantiq vantiq, String resourceName) throws InterruptedException {
         boolean done = false;
         int retries = 0;

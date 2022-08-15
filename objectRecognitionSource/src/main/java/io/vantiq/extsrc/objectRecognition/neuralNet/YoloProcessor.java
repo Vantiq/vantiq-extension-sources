@@ -128,7 +128,7 @@ public class YoloProcessor extends NeuralNetUtils implements NeuralNetInterface2
         setup(neuralNetConfig, sourceName, modelDirectory, authToken, server);
         try {
             objectDetector = new ObjectDetector(threshold, pbFile, labelsFile, metaFile, anchorArray,
-                    imageUtil, outputDir, labelImage, saveRate, vantiq, sourceName);
+                    imageUtil, labelImage, saveRate, vantiq, sourceName);
         } catch (Exception e) {
             throw new Exception(this.getClass().getCanonicalName() + ".yoloBackendSetupError: " 
                     + "Failed to create new ObjectDetector", e);
@@ -143,6 +143,7 @@ public class YoloProcessor extends NeuralNetUtils implements NeuralNetInterface2
      * @param authToken         The authToken used to with the VANTIQ SDK
      * @throws Exception        Thrown when an invalid configuration is requested
      */
+    @SuppressWarnings("PMD.CognitiveComplexity")
     private void setup(Map<String, ?> neuralNet, String sourceName, String modelDirectory,
                        String authToken, String server) throws Exception {
         this.server = server;
@@ -279,31 +280,16 @@ public class YoloProcessor extends NeuralNetUtils implements NeuralNetInterface2
            imageUtil.saveImage = false;
        }
 
-        includeEncodedImage = false;
-        if (neuralNet.get(INCLUDE_ENCODED_IMAGE) instanceof String) {
-            String ieiString = (String) neuralNet.get(INCLUDE_ENCODED_IMAGE);
-            try {
-                includeEncodedImage = Boolean.parseBoolean(ieiString);
-            } catch (Exception e) {
-                log.error("The config value for " + INCLUDE_ENCODED_IMAGE + " must be a boolean value ('" +
-                        ieiString + "' was provided). The encoded image will not be included in the results.");
-            }
-        } else if (neuralNet.get(INCLUDE_ENCODED_IMAGE) instanceof Boolean) {
-            includeEncodedImage = (Boolean) neuralNet.get(INCLUDE_ENCODED_IMAGE);
-        } else if (neuralNet.get(INCLUDE_ENCODED_IMAGE) != null) {
-            log.error("The config value for " + INCLUDE_ENCODED_IMAGE + " must be a boolean value ('" +
-                    neuralNet.get(INCLUDE_ENCODED_IMAGE) + "' was provided). The encoded image will" +
-                    "not be included in the results.");
-        }
+       includeEncodedImage = checkEncodedImageParam(neuralNet);
 
-        // We can label the saved image, but we'll also label an included, encoded image if desired.
-        if (imageUtil.saveImage || includeEncodedImage) {
-            // Check if user wants to include image with labels in the upload.
-            if (neuralNet.get(LABEL_IMAGE) instanceof String) {
-                String labelImageString = (String) neuralNet.get(LABEL_IMAGE);
-                labelImage = labelImageString.equalsIgnoreCase("true");
-            }
-        }
+       // We can label the saved image, but we'll also label an included, encoded image if desired.
+       if (imageUtil.saveImage || includeEncodedImage) {
+           // Check if user wants to include image with labels in the upload.
+           if (neuralNet.get(LABEL_IMAGE) instanceof String) {
+               String labelImageString = (String) neuralNet.get(LABEL_IMAGE);
+               labelImage = "true".equalsIgnoreCase(labelImageString);
+           }
+       }
 
         // Checking if pre cropping was specified in config
        if (neuralNet.get(CROP_BEFORE) instanceof Map) {
@@ -328,6 +314,30 @@ public class YoloProcessor extends NeuralNetUtils implements NeuralNetInterface2
                        + "integer.");
            }
        }
+   }
+   
+   private boolean checkEncodedImageParam(Map<String, ?> config) {
+       boolean iei = false;
+       if (config.get(INCLUDE_ENCODED_IMAGE) instanceof String) {
+           String ieiString = (String) config.get(INCLUDE_ENCODED_IMAGE);
+           try {
+               iei = Boolean.parseBoolean(ieiString);
+           } catch (Exception e) {
+               if (log.isErrorEnabled()) {
+                   log.error("The config value for " + INCLUDE_ENCODED_IMAGE + " must be a boolean value ('" +
+                           ieiString + "' was provided). The encoded image will not be included in the results.");
+               }
+           }
+       } else if (config.get(INCLUDE_ENCODED_IMAGE) instanceof Boolean) {
+           iei = (Boolean) config.get(INCLUDE_ENCODED_IMAGE);
+       } else if (config.get(INCLUDE_ENCODED_IMAGE) != null) {
+           if (log.isErrorEnabled()) {
+               log.error("The value for " + INCLUDE_ENCODED_IMAGE + " must be a boolean value ('" +
+                       config.get(INCLUDE_ENCODED_IMAGE) + "' was provided). The encoded image will" +
+                       "not be included in the results.");
+           }
+       }
+       return iei;
    }
 
     /**
@@ -409,6 +419,7 @@ public class YoloProcessor extends NeuralNetUtils implements NeuralNetInterface2
      * This version of processImage() is used for processing queries from Vantiq.  The other is used as images are
      * fetched by the connector.
      */
+    @SuppressWarnings("PMD.CognitiveComplexity")
     @Override
     public NeuralNetResults processImage(Map<String, ?> processingParams, byte[] image, Map<String, ?> request) throws ImageProcessingException {
         List<Map<String, ?>> foundObjects;
@@ -459,22 +470,7 @@ public class YoloProcessor extends NeuralNetUtils implements NeuralNetInterface2
             }
         }
 
-        includeEncodedImage = false;
-        if (request.get(INCLUDE_ENCODED_IMAGE) instanceof String) {
-            String ieiString = (String) request.get(INCLUDE_ENCODED_IMAGE);
-            try {
-                includeEncodedImage = Boolean.parseBoolean(ieiString);
-            } catch (Exception e) {
-                log.error("The config value for " + INCLUDE_ENCODED_IMAGE + " must be a boolean value ('" +
-                        ieiString + "' was provided). The encoded image will not be included in the results.");
-            }
-        } else if (request.get(INCLUDE_ENCODED_IMAGE) instanceof Boolean) {
-            includeEncodedImage = (Boolean) request.get(INCLUDE_ENCODED_IMAGE);
-        } else if (request.get(INCLUDE_ENCODED_IMAGE) != null) {
-            log.error("The config value for " + INCLUDE_ENCODED_IMAGE + " must be a boolean value ('" +
-                    request.get(INCLUDE_ENCODED_IMAGE) + "' was provided). The encoded image will" +
-                    "not be included in the results.");
-        }
+        includeEncodedImage = checkEncodedImageParam(request);
 
         if (includeEncodedImage || savingSomewhere) {
             // If we are saving somewhere, we'll allow a local override of the label request
@@ -558,9 +554,13 @@ public class YoloProcessor extends NeuralNetUtils implements NeuralNetInterface2
         if (includeEncodedImage) {
             log.debug("Attempting to encode the image from a query");
             results.setEncodedImage(NeuralNetUtils.convertToBase64(image));
-            log.trace("Encoded image in results: " + results.getEncodedImage());
+            if (log.isTraceEnabled()) {
+                log.trace("Encoded image in results: " + results.getEncodedImage());
+            }
         }
-        log.debug("Returning {} results.", results.getResults().size());
+        if (log.isDebugEnabled()) {
+            log.debug("Returning {} results.", results.getResults().size());
+        }
         return results;
     }
 

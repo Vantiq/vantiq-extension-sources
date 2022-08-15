@@ -32,11 +32,10 @@ public class ImageUtil {
     public Boolean queryResize = false;
     public int longEdge = 0;
     public Boolean uploadAsImage = false;
-    public Boolean labelImage = false;
 
     // Used to upload image to VANTIQ as VANTIQ Image
-    final static String IMAGE_RESOURCE_PATH = "/resources/images";
-    final static String IMAGE_SAVE_FORMAT = "jpg";
+    static final String IMAGE_RESOURCE_PATH = "/resources/images";
+    static final String IMAGE_SAVE_FORMAT = "jpg";
 
     /**
      * Label image with classes and predictions given by the TensorFLow YOLO Implementation
@@ -67,6 +66,7 @@ public class ImageUtil {
      * @param image     The image to save
      * @param target    The name of the file to be written
      */
+    @SuppressWarnings({"PMD.CognitiveComplexity"})
     public void saveImage(final BufferedImage image, final String target) {
         File fileToUpload = null;
         if (outputDir != null) {
@@ -86,10 +86,7 @@ public class ImageUtil {
             }
         }
         if (vantiq != null) {
-            LOGGER.error("Uploading {} ...", target);
             if (fileToUpload != null) {
-                LOGGER.error("Uploading {}", fileToUpload.getName());
-
                 uploadImage(fileToUpload, target);
             } else {
                 try {
@@ -101,8 +98,6 @@ public class ImageUtil {
                         BufferedImage resizedImage = resizeImage(image);
                         ImageIO.write(resizedImage, IMAGE_SAVE_FORMAT, imgFile);
                     }
-                    LOGGER.error("Uploading null file {}", imgFile.getName());
-
                     uploadImage(imgFile, target);
                 } catch (IOException e) {
                     LOGGER.error("Unable to save image {}", target, e);
@@ -238,7 +233,7 @@ public class ImageUtil {
 
     public static byte[] getBytesForImage(final BufferedImage bi) {
 
-        try (ByteArrayOutputStream baos = new ByteArrayOutputStream()){
+        try (ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
             ImageIO.write(bi, IMAGE_SAVE_FORMAT, baos);
             baos.flush();
             return baos.toByteArray();

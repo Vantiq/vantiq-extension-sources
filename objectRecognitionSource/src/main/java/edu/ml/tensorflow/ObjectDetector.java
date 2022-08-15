@@ -35,6 +35,7 @@ import static edu.ml.tensorflow.Config.MEAN;
 /**
  * ObjectDetector class to detect objects using pre-trained models with TensorFlow Java API.
  */
+@SuppressWarnings("PMD.TooManyFields")
 public class ObjectDetector {
     private final static Logger LOGGER = LoggerFactory.getLogger(ObjectDetector.class);
     private byte[] graph_def;
@@ -57,7 +58,7 @@ public class ObjectDetector {
     private Vantiq vantiq = null;
     private String sourceName = null;
     private double[] anchorArray;
-    private Map<String,Object> metaFileMap;    
+    private Map<String, Object> metaFileMap;
     
     private Graph yoloGraph;
     private Session yoloSession;
@@ -84,7 +85,6 @@ public class ObjectDetector {
      * @param metaFile      The location of the meta file used to retrieve anchors and labels if a labelFile is not provided.
      * @param anchorArray   The list of anchor pairs used by the YOLOClassifier to label recognitions.
      * @param imageUtil     The instance of the ImageUtil class used to save images. Either initialized, or set to null.
-     * @param outputDir     The directory to which images will be saved.
      * @param labelImage    The boolean flag signifying if images should be saved with or without bounding boxes. If true,
      *                      the frames will be saved with bounding boxes, and vice versa.     
      * @param saveRate      The rate at which images will be saved, once per every saveRate frames. Non-positive values are
@@ -92,16 +92,17 @@ public class ObjectDetector {
      * @param vantiq        The Vantiq variable used to connect to the VANTIQ SDK. Either authenticated, or set to null.
      * @param sourceName    The name of the VANTIQ Source
      */
+    @SuppressWarnings({"PMD.ParamNumberCheck", "PMD.CognitiveComplexity", "PMD.ExcessiveParameterList"})
     public ObjectDetector(float thresh, String graphFile, String labelFile, String metaFile, double[] anchorArray,
-                          ImageUtil imageUtil, String outputDir, Boolean labelImage, int saveRate,
+                          ImageUtil imageUtil, Boolean labelImage, int saveRate,
                           Vantiq vantiq, String sourceName) {
         try {
             graph_def = IOUtil.readAllBytesOrExit(graphFile);
             // Parse meta file if it exists, and get all general information we need
             if (metaFile != null) {
                 parseMetaFile(metaFile);
-                int frameHeight = (int) ((Map<String,Object>) metaFileMap.get("net")).get("height");
-                int frameWidth = (int) ((Map<String,Object>) metaFileMap.get("net")).get("width");
+                int frameHeight = (int) ((Map<String, Object>) metaFileMap.get("net")).get("height");
+                int frameWidth = (int) ((Map<String, Object>) metaFileMap.get("net")).get("width");
                 // Check that meta file has appropriate frame size, and that user has not overwritten frame size in Config
                 if (frameHeight == frameWidth && frameHeight % 32 == 0 && metaConfigOptions.useMetaIfAvailable) {
                     // Set config value to the .meta file's frame size
@@ -263,7 +264,7 @@ public class ObjectDetector {
      */
     private void parseMetaFile(String metaFile) throws JsonParseException, JsonMappingException, IOException {
         byte[] metaFileData = Files.readAllBytes(Paths.get(metaFile));
-        this.metaFileMap = new HashMap<String,Object>();
+        this.metaFileMap = new HashMap<String, Object>();
         ObjectMapper objectMapper = new ObjectMapper();
         this.metaFileMap = objectMapper.readValue(metaFileData, HashMap.class);
     }

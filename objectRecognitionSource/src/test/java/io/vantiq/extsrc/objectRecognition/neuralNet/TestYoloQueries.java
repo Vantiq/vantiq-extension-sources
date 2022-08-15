@@ -851,8 +851,10 @@ public class TestYoloQueries extends NeuralNetTestBase {
         String encodedImage = NeuralNetUtils.convertToBase64(resizedImageBytes);
         
         if (resp.hasErrors()) {
-            for (VantiqError err: resp.getErrors()) {
-                log.error("Query had errors: {}::{}", err.getCode(), err.getMessage());
+            if (log.isErrorEnabled()) {
+                for (VantiqError err : resp.getErrors()) {
+                    log.error("Query had errors: {}::{}", err.getCode(), err.getMessage());
+                }
             }
         }
         assert resp.isSuccess();

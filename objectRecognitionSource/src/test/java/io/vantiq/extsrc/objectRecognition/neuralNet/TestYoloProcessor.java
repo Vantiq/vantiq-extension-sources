@@ -57,7 +57,7 @@ import org.junit.Test;
 import org.junit.runners.MethodSorters;
 
 
-@SuppressWarnings({"PMD.ExcessiveClassLength", "PMD.AbbreviationAsWordInNameCheck"})
+@SuppressWarnings({"PMD.ExcessiveClassLength", "PMD.AbbreviationAsWordInNameCheck", "PMD.ExcessivePublicCount"})
 @Slf4j
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
 public class TestYoloProcessor extends NeuralNetTestBase {
@@ -1877,7 +1877,9 @@ public class TestYoloProcessor extends NeuralNetTestBase {
             if (shouldSaveImage) {
                 // Checking that image was saved to VANTIQ
                 Thread.sleep(1000);
-                log.debug("Checking for image file: {}", results.getLastFilename());
+                if (log.isDebugEnabled()) {
+                    log.debug("Checking for image file: {}", results.getLastFilename());
+                }
                 checkUploadToVantiq(results.getLastFilename(), vantiq, VANTIQ_IMAGES);
                 vantiqSavedImageFiles.add(results.getLastFilename());
             }
@@ -2059,8 +2061,10 @@ public class TestYoloProcessor extends NeuralNetTestBase {
         // If the image is labeled, our copy from above should be different from the returned value.
         // Otherwise, they should be the same.
         if (encoded != null) {
-            log.debug("Labeling: {}, length expected encoded: {}, length returned: {}", ypImageSaver.labelImage,
-                    encoded.length(),  results.getEncodedImage().length());
+            if (log.isDebugEnabled()) {
+                log.debug("Labeling: {}, length expected encoded: {}, length returned: {}", ypImageSaver.labelImage,
+                        encoded.length(), results.getEncodedImage().length());
+            }
             assert ((encoded.length() == results.getEncodedImage().length()) != ypImageSaver.labelImage);
             assert (results.getEncodedImage().equals(encoded) != ypImageSaver.labelImage);
         } else {
@@ -2074,7 +2078,7 @@ public class TestYoloProcessor extends NeuralNetTestBase {
     }
 
     byte[] imageAsSeenByProcessor(byte[] input) {
-        try (ByteArrayInputStream bis = new ByteArrayInputStream(input)){
+        try (ByteArrayInputStream bis = new ByteArrayInputStream(input)) {
             BufferedImage bi = ImageIO.read(bis);
             return ImageUtil.getBytesForImage(bi);
         } catch (IOException e) {

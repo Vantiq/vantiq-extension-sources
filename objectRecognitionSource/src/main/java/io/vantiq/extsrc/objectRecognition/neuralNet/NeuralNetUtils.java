@@ -13,6 +13,7 @@ import javax.imageio.ImageIO;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+@SuppressWarnings("PMD.AbstractClassWithoutAbstractMethod")
 public abstract class NeuralNetUtils {
     
     Logger log = LoggerFactory.getLogger(this.getClass());
