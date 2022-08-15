@@ -8,16 +8,23 @@
 
 package io.vantiq.extsrc.objectRecognition.neuralNet;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeTrue;
 
+import java.awt.image.BufferedImage;
 import java.io.File;
+import java.lang.reflect.Array;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Base64;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
+import edu.ml.tensorflow.util.ImageUtil;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.FixMethodOrder;
@@ -317,6 +324,72 @@ public class TestNoProcessor extends NeuralNetTestBase {
             npProcessor.close();
         }
     }
+    
+    // Similar to testImageSavingVantiq(), but includes returning the image in a Base64-encoded form.
+    // No images should be saved locally.
+    @Test
+    public void testImageSavingVantiqPlusEncoded() throws ImageProcessingException, InterruptedException {
+        
+        // Only run test with intended vantiq availability
+        assumeTrue(testAuthToken != null && testVantiqServer != null);
+        
+        String lastFilename;
+        Map<String, Object> config = new LinkedHashMap<>();
+        NoProcessor npProcessor = new NoProcessor();
+        
+        config.put("outputDir", OUTPUT_DIR);
+        config.put("saveRate", SAVE_RATE);
+        config.put("saveImage", "vantiq");
+        config.put("includeEncodedImage", true);
+        npProcessor.setupImageProcessing(config, SOURCE_NAME, MODEL_DIRECTORY, testAuthToken, testVantiqServer);
+        assert npProcessor.includeEncodedImage;
+        
+        File d = new File(OUTPUT_DIR);
+        try {
+            // Ensure no results from previous tests
+            if (d.exists()) {
+                deleteDirectory(OUTPUT_DIR);
+            }
+            
+            byte[] testImage = getTestImage();
+            NeuralNetResults results = npProcessor.processImage(testImage);
+            assert results.getResults() == null;
+            assert results.getEncodedImage() != null;
+    
+            String incImage = results.getEncodedImage();
+            assert incImage != null;
+            byte[] retBytes = Base64.getDecoder().decode(incImage.getBytes(StandardCharsets.UTF_8));
+    
+            // For insurance, we'll also ensure that we can decode the bits & that our images are at
+            // least the same size.
+            BufferedImage encodedImage = ImageUtil.createImageFromBytes(retBytes);
+            BufferedImage origImage = ImageUtil.createImageFromBytes(testImage);
+            assert origImage.getWidth() == encodedImage.getWidth();
+            assert origImage.getHeight() == encodedImage.getHeight();
+            // Round trip from bytes to base64 to bytes for images can have slightly varying lengths, probably
+            // due to image compression, etc.  Semantically, the images are the same, so we'll look at them as a JPEG,
+            // then  get the bytes back to compare.
+            testImage = ImageUtil.getBytesForImage(origImage);
+            assert testImage.length == retBytes.length;
+            assert Arrays.equals(testImage, retBytes);
+            
+            // Should not exist since images are not being saved locally.
+            assert !d.exists();
+            
+            // Checking that image was saved to VANTIQ
+            Thread.sleep(1000);
+            lastFilename = "objectRecognition/" + SOURCE_NAME + '/' + npProcessor.lastFilename;
+            checkUploadToVantiq(lastFilename, vantiq, VANTIQ_DOCUMENTS);
+            vantiqSavedFiles.add(lastFilename);
+        } finally {
+            // delete the directory even if the test fails
+            if (d.exists()) {
+                deleteDirectory(OUTPUT_DIR);
+            }
+            
+            npProcessor.close();
+        }
+    }
 
     // Similar to testImageSavingLocal() and testImageSavingBoth(), but saveImage is set to "vantiq".
     // No images should be saved locally.
@@ -366,6 +439,15 @@ public class TestNoProcessor extends NeuralNetTestBase {
 
     @Test
     public void testQuery() throws ImageProcessingException, InterruptedException {
+        doQueryTest(false);
+    }
+    
+    @Test
+    public void testQueryWithEncoded() throws ImageProcessingException, InterruptedException {
+        doQueryTest(true);
+    }
+    
+    void doQueryTest(boolean includeEncoded) throws ImageProcessingException, InterruptedException {
         // Only run test with intended vantiq availability
         assumeTrue(testAuthToken != null && testVantiqServer != null);
 
@@ -401,10 +483,29 @@ public class TestNoProcessor extends NeuralNetTestBase {
             // Test when saveImage is not set correctly
             request.put("NNsaveImage", "jibberish");
             request.put("NNoutputDir", queryOutputDir);
-            results = null;
-            results = npProcessor.processImage(getTestImage(), request);
+            if (includeEncoded) {
+                request.put("includeEncodedImage", "true");
+            }
+            
+            byte[] testImage = getTestImage();
+            results = npProcessor.processImage(testImage, request);
             assert results.getResults().isEmpty();
+            assert (results.getEncodedImage() == null) != includeEncoded;
 
+            if (includeEncoded) {
+                String incImage = results.getEncodedImage();
+                assert incImage != null;
+                byte[] retBytes = Base64.getDecoder().decode(incImage.getBytes(StandardCharsets.UTF_8));
+    
+                // For insurance, we'll also ensure that we can decode the bits & that our images are at
+                // least the same size.
+                BufferedImage encodedImage = ImageUtil.createImageFromBytes(retBytes);
+                BufferedImage origImage = ImageUtil.createImageFromBytes(testImage);
+                assert origImage.getWidth() == encodedImage.getWidth();
+                assert origImage.getHeight() == encodedImage.getHeight();
+                assert testImage != null;
+                assert testImage.length == retBytes.length;
+            }
             // Should not have saved the image
             assert !dNew.exists();
 
