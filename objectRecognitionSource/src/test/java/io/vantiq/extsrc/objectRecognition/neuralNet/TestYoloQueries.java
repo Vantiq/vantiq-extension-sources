@@ -212,7 +212,7 @@ public class TestYoloQueries extends NeuralNetTestBase {
         assert !outputDir.exists();
         
         // Run query without setting "operation":"processNextFrame"
-        Map<String,Object> params = new LinkedHashMap<String,Object>();
+        Map<String, Object> params = new LinkedHashMap<>();
         params.put("NNsaveImage", "local");
         params.put("NNoutputDir", OUTPUT_DIR);
         params.put("NNfileName", IMAGE_8.get("name"));
@@ -276,7 +276,7 @@ public class TestYoloQueries extends NeuralNetTestBase {
         assumeTrue(testAuthToken != null && testVantiqServer != null);
         
         // Run query without setting "operation":"processNextFrame"
-        Map<String,Object> params = new LinkedHashMap<String,Object>();
+        Map<String, Object> params = new LinkedHashMap<>();
         params.put("NNsaveImage", "vantiq");
         params.put("NNfileName", QUERY_FILENAME);
         
@@ -322,7 +322,7 @@ public class TestYoloQueries extends NeuralNetTestBase {
         assert !outputDir.exists();
         
         // Run query without setting "operation":"processNextFrame"
-        Map<String,Object> params = new LinkedHashMap<String,Object>();
+        Map<String, Object> params = new LinkedHashMap<>();
         params.put("NNsaveImage", "both");
         params.put("NNoutputDir", OUTPUT_DIR);
         params.put("NNfileName", IMAGE_8.get("name"));
@@ -408,7 +408,7 @@ public class TestYoloQueries extends NeuralNetTestBase {
         
         addLocalTestImages();
         
-        Map<String,Object> params = new LinkedHashMap<String,Object>();
+        Map<String, Object> params = new LinkedHashMap<>();
         params.put("operation", "upload");
         params.put("imageName", IMAGE_2.get("date"));
         
@@ -434,7 +434,7 @@ public class TestYoloQueries extends NeuralNetTestBase {
         
         addLocalTestImages();
         
-        Map<String,Object> params = new LinkedHashMap<String,Object>();
+        Map<String, Object> params = new LinkedHashMap<>();
         params.put("operation", "upload");
         
         List<String> imageDate = new ArrayList<String>();
@@ -462,7 +462,7 @@ public class TestYoloQueries extends NeuralNetTestBase {
         
         addLocalTestImages();
         
-        Map<String,Object> params = new LinkedHashMap<String,Object>();
+        Map<String, Object> params = new LinkedHashMap<>();
         params.put("operation", "upload");
         
         List<String> imageDate = new ArrayList<String>();
@@ -492,7 +492,7 @@ public class TestYoloQueries extends NeuralNetTestBase {
         
         addLocalTestImages();
         
-        Map<String,Object> params = new LinkedHashMap<String,Object>();
+        Map<String, Object> params = new LinkedHashMap<>();
         params.put("operation", "upload");
         
         List<String> imageDate = new ArrayList<String>();
@@ -522,7 +522,7 @@ public class TestYoloQueries extends NeuralNetTestBase {
         
         addLocalTestImages();
         
-        Map<String,Object> params = new LinkedHashMap<String,Object>();
+        Map<String, Object> params = new LinkedHashMap<>();
         params.put("operation", "upload");
         
         List<String> imageDate = new ArrayList<String>();
@@ -552,7 +552,7 @@ public class TestYoloQueries extends NeuralNetTestBase {
         
         addLocalTestImages();
         
-        Map<String,Object> params = new LinkedHashMap<String,Object>();
+        Map<String, Object> params = new LinkedHashMap<>();
         params.put("operation", "upload");
         
         List<String> imageDate = new ArrayList<String>();
@@ -582,7 +582,7 @@ public class TestYoloQueries extends NeuralNetTestBase {
         
         addLocalTestImages();
         
-        Map<String,Object> params = new LinkedHashMap<String,Object>();
+        Map<String, Object> params = new LinkedHashMap<>();
         params.put("operation", "upload");
         
         Map<String, Object> savedResolution = new LinkedHashMap<>();
@@ -628,7 +628,7 @@ public class TestYoloQueries extends NeuralNetTestBase {
         
         addLocalTestImages();
         
-        Map<String,Object> params = new LinkedHashMap<String,Object>();
+        Map<String, Object> params = new LinkedHashMap<>();
         params.put("operation", "delete");
         params.put("imageName", IMAGE_3.get("date"));
         
@@ -657,7 +657,7 @@ public class TestYoloQueries extends NeuralNetTestBase {
         
         addLocalTestImages();
         
-        Map<String,Object> params = new LinkedHashMap<String,Object>();
+        Map<String, Object> params = new LinkedHashMap<>();
         params.put("operation", "delete");
         
         List<String> imageDate = new ArrayList<String>();
@@ -682,7 +682,7 @@ public class TestYoloQueries extends NeuralNetTestBase {
         
         addLocalTestImages();
         
-        Map<String,Object> params = new LinkedHashMap<String,Object>();
+        Map<String, Object> params = new LinkedHashMap<>();
         params.put("operation", "delete");
         
         List<String> imageDate = new ArrayList<String>();
@@ -712,7 +712,7 @@ public class TestYoloQueries extends NeuralNetTestBase {
         
         addLocalTestImages();
         
-        Map<String,Object> params = new LinkedHashMap<String,Object>();
+        Map<String, Object> params = new LinkedHashMap<>();
         params.put("operation", "delete");
         
         List<String> imageDate = new ArrayList<String>();
@@ -739,7 +739,7 @@ public class TestYoloQueries extends NeuralNetTestBase {
         
         addLocalTestImages();
         
-        Map<String,Object> params = new LinkedHashMap<String,Object>();
+        Map<String, Object> params = new LinkedHashMap<>();
         params.put("operation", "delete");
         
         List<String> imageDate = new ArrayList<String>();
@@ -772,7 +772,7 @@ public class TestYoloQueries extends NeuralNetTestBase {
         File outputDir = new File(OUTPUT_DIR);
         assert !outputDir.exists();
         
-        Map<String,Object> params = new LinkedHashMap<String,Object>();
+        Map<String, Object> params = new LinkedHashMap<>();
         
         // Invalid preCrop, it isn't a map
         params.put("cropBeforeAnalysis", "jibberish");
@@ -809,7 +809,7 @@ public class TestYoloQueries extends NeuralNetTestBase {
         File outputDir = new File(OUTPUT_DIR);
         assert !outputDir.exists();
         
-        Map<String,Object> params = new LinkedHashMap<String,Object>();
+        Map<String, Object> params = new LinkedHashMap<>();
         Map<String, Object> preCrop = new LinkedHashMap<>();
         
         preCrop.put("x", PRECROP_TOP_LEFT_X_COORDINATE);
@@ -863,8 +863,13 @@ public class TestYoloQueries extends NeuralNetTestBase {
         JsonObject responseObj = (JsonObject) resp.getBody();
         assert responseObj.has("encodedImage");
         String returnedImage = responseObj.getAsJsonPrimitive("encodedImage").getAsString();
-        log.debug("Encoded image size: {} -- returned image size: {}", encodedImage.length(), returnedImage.length());
-        log.trace("Encoded image: {} -- returned image: {}", encodedImage, returnedImage);
+        if (log.isDebugEnabled()) {
+            log.debug("Encoded image size: {} -- returned image size: {}", encodedImage.length(),
+                    returnedImage.length());
+            if (log.isTraceEnabled()) {
+                log.trace("Encoded image: {} -- returned image: {}", encodedImage, returnedImage);
+            }
+        }
         byte[] retBytes = Base64.getDecoder().decode(returnedImage.getBytes(StandardCharsets.UTF_8));
         try (ByteArrayInputStream retImgStream = new ByteArrayInputStream(retBytes)) {
             BufferedImage retImg = ImageIO.read(retImgStream);
@@ -896,7 +901,7 @@ public class TestYoloQueries extends NeuralNetTestBase {
         File outputDir = new File(OUTPUT_DIR);
         assert !outputDir.exists();
         
-        Map<String,Object> params = new LinkedHashMap<String,Object>();
+        Map<String, Object> params = new LinkedHashMap<>();
         
         // Run query without setting "operation":"processNextFrame"
         if (saveImage) {
@@ -912,8 +917,10 @@ public class TestYoloQueries extends NeuralNetTestBase {
         
         VantiqResponse resp = querySourceWithResponse(params);
         if (resp.hasErrors()) {
-            for (VantiqError err : resp.getErrors()) {
-                log.error("Query had errors: {}::{}", err.getCode(), err.getMessage());
+            if (log.isErrorEnabled()) {
+                for (VantiqError err : resp.getErrors()) {
+                    log.error("Query had errors: {}::{}", err.getCode(), err.getMessage());
+                }
             }
         }
         assert resp.isSuccess();
@@ -948,8 +955,10 @@ public class TestYoloQueries extends NeuralNetTestBase {
             String returnedImage = responseObj.getAsJsonPrimitive("encodedImage").getAsString();
             
             if (encodedImage != null) {
-                log.debug("Encoded image size: {} -- returned image size: {}",
-                        encodedImage.length(), returnedImage.length());
+                if (log.isDebugEnabled()) {
+                    log.debug("Encoded image size: {} -- returned image size: {}",
+                            encodedImage.length(), returnedImage.length());
+                }
             }
             byte[] retBytes = Base64.getDecoder().decode(returnedImage.getBytes(StandardCharsets.UTF_8));
             try (ByteArrayInputStream retImgStream = new ByteArrayInputStream(retBytes)) {
@@ -977,7 +986,7 @@ public class TestYoloQueries extends NeuralNetTestBase {
         File outputDir = new File(OUTPUT_DIR);
         assert !outputDir.exists();
                 
-        Map<String,Object> params = new LinkedHashMap<String,Object>();
+        Map<String, Object> params = new LinkedHashMap<>();
         Map<String, Object> preCrop = new LinkedHashMap<>();
         
         preCrop.put("x", PRECROP_TOP_LEFT_X_COORDINATE);
@@ -1018,7 +1027,7 @@ public class TestYoloQueries extends NeuralNetTestBase {
 
         addLocalTestImages();
 
-        Map<String,Object> params = new LinkedHashMap<String,Object>();
+        Map<String, Object> params = new LinkedHashMap<>();
         params.put("operation", "upload");
         params.put("uploadAsImage", true);
 
@@ -1053,7 +1062,7 @@ public class TestYoloQueries extends NeuralNetTestBase {
     
     // ================================================= Helper functions =================================================
     
-    public static void setupSource(Map<String,Object> sourceDef) {
+    public static void setupSource(Map<String, Object> sourceDef) {
         VantiqResponse insertResponse = vantiq.insert("system.sources", sourceDef);
         if (insertResponse.isSuccess()) {
             core = new ObjectRecognitionCore(SOURCE_NAME, testAuthToken, testVantiqServer, MODEL_DIRECTORY);;
@@ -1061,11 +1070,11 @@ public class TestYoloQueries extends NeuralNetTestBase {
         }
     }
     
-    public static void querySource(Map<String,Object> params) {
+    public static void querySource(Map<String, Object> params) {
         vantiq.query(SOURCE_NAME, params);
     }
 
-    public static VantiqResponse querySourceWithResponse(Map<String,Object> params) {
+    public static VantiqResponse querySourceWithResponse(Map<String, Object> params) {
         return vantiq.query(SOURCE_NAME, params);
     }
     
@@ -1074,7 +1083,7 @@ public class TestYoloQueries extends NeuralNetTestBase {
         vantiq.deleteOne(VANTIQ_IMAGES, filename);
     }
     
-    public void checkQueryError(Map<String,Object> params, String operation) {
+    public void checkQueryError(Map<String, Object> params, String operation) {
         vantiqResponse = vantiq.query(SOURCE_NAME, params);
         assert vantiqResponse.hasErrors();
         String errorMessage = vantiqResponse.getErrors().get(0).getMessage();
@@ -1084,7 +1093,7 @@ public class TestYoloQueries extends NeuralNetTestBase {
         }
     }
     
-    public void checkQueryErrorImageDateListSize(Map<String,Object> params) {
+    public void checkQueryErrorImageDateListSize(Map<String, Object> params) {
         vantiqResponse = vantiq.query(SOURCE_NAME, params);
         assert vantiqResponse.hasErrors();
         String errorMessage = vantiqResponse.getErrors().get(0).getMessage();
@@ -1094,7 +1103,7 @@ public class TestYoloQueries extends NeuralNetTestBase {
         }
     }
     
-    public void checkQueryErrorInvalidDate(Map<String,Object> params) {
+    public void checkQueryErrorInvalidDate(Map<String, Object> params) {
         vantiqResponse = vantiq.query(SOURCE_NAME, params);
         assert vantiqResponse.hasErrors();
         String errorMessage = vantiqResponse.getErrors().get(0).getMessage();
@@ -1104,7 +1113,7 @@ public class TestYoloQueries extends NeuralNetTestBase {
         }
     }
     
-    public void invalidParametersHelper(Map<String,Object> params, String operation) {
+    public void invalidParametersHelper(Map<String, Object> params, String operation) {
         // Not including imageName or imageDate
         checkQueryError(params, operation);
         
@@ -1147,13 +1156,13 @@ public class TestYoloQueries extends NeuralNetTestBase {
         checkQueryErrorImageDateListSize(params);
     }
     
-    public static Map<String,Object> createSourceDef() {
-        Map<String,Object> sourceDef = new LinkedHashMap<String,Object>();
-        Map<String,Object> sourceConfig = new LinkedHashMap<String,Object>();
-        Map<String,Object> objRecConfig = new LinkedHashMap<String,Object>();
-        Map<String,Object> dataSource = new LinkedHashMap<String,Object>();
-        Map<String,Object> general = new LinkedHashMap<String,Object>();
-        Map<String,Object> neuralNet = new LinkedHashMap<String,Object>();
+    public static Map<String, Object> createSourceDef() {
+        Map<String, Object> sourceDef = new LinkedHashMap<>();
+        Map<String, Object> sourceConfig = new LinkedHashMap<>();
+        Map<String, Object> objRecConfig = new LinkedHashMap<>();
+        Map<String, Object> dataSource = new LinkedHashMap<>();
+        Map<String, Object> general = new LinkedHashMap<>();
+        Map<String, Object> neuralNet = new LinkedHashMap<>();
         
         // Setting up dataSource config options
         dataSource.put("camera", IP_CAMERA_URL);

@@ -12,6 +12,7 @@ import java.awt.image.BufferedImage;
 import java.text.SimpleDateFormat;
 import java.util.Collections;
 import java.util.Date;
+import java.util.Locale;
 import java.util.Map;
 
 import org.slf4j.Logger;
@@ -40,7 +41,8 @@ public class NoProcessor implements NeuralNetInterface {
     
     // This will be used to create
     // "year-month-date-hour-minute-seconds"
-    private static final SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd--HH-mm-ss");
+    private static final SimpleDateFormat format =
+            new SimpleDateFormat("yyyy-MM-dd--HH-mm-ss", Locale.getDefault());
     
     public String lastFilename;
     public Boolean isSetup = false;
@@ -58,7 +60,8 @@ public class NoProcessor implements NeuralNetInterface {
     int fileCount = 0; // Used for saving files with same name
     boolean uploadAsImage = false;
     boolean includeEncodedImage = false;
-
+    
+    @SuppressWarnings("PMD.CognitiveComplexity")
     @Override
     public void setupImageProcessing(Map<String, ?> neuralNetConfig, String sourceName, String modelDirectory, String authToken, String server) {
         this.server = server;
@@ -104,23 +107,8 @@ public class NoProcessor implements NeuralNetInterface {
                     + "If allowQueries is set, then the user can query the source and save images based on the query options.");
         }
     
-        includeEncodedImage = false;
-        if (neuralNetConfig.get(INCLUDE_ENCODED_IMAGE) instanceof String) {
-            String ieiString = (String) neuralNetConfig.get(INCLUDE_ENCODED_IMAGE);
-            try {
-                includeEncodedImage = Boolean.parseBoolean(ieiString);
-            } catch (Exception e) {
-                log.error("The config value for " + INCLUDE_ENCODED_IMAGE + " must be a boolean value ('" +
-                        ieiString + "' was provided). The encoded image will not be included in the results.");
-            }
-        } else if (neuralNetConfig.get(INCLUDE_ENCODED_IMAGE) instanceof Boolean) {
-            includeEncodedImage = (Boolean) neuralNetConfig.get(INCLUDE_ENCODED_IMAGE);
-        } else if (neuralNetConfig.get(INCLUDE_ENCODED_IMAGE) != null) {
-            log.error("The config value for " + INCLUDE_ENCODED_IMAGE + " must be a boolean value ('" +
-                    neuralNetConfig.get(INCLUDE_ENCODED_IMAGE) + "' was provided). The encoded image will" +
-                    "not be included in the results.");
-        }
-        
+        includeEncodedImage = checkEncodedImageParam(neuralNetConfig);
+
         isSetup = true;
     }
 
@@ -154,6 +142,7 @@ public class NoProcessor implements NeuralNetInterface {
     }
 
     // Does no processing, just saves images
+    @SuppressWarnings("PMD.CognitiveComplexity")
     @Override
     public NeuralNetResults processImage(byte[] image, Map<String, ?> request) throws ImageProcessingException {
         String saveImage = null;
@@ -199,22 +188,7 @@ public class NoProcessor implements NeuralNetInterface {
             queryImageUtil.saveImage = false;
         }
     
-        includeEncodedImage = false;
-        if (request.get(INCLUDE_ENCODED_IMAGE) instanceof String) {
-            String ieiString = (String) request.get(INCLUDE_ENCODED_IMAGE);
-            try {
-                includeEncodedImage = Boolean.parseBoolean(ieiString);
-            } catch (Exception e) {
-                log.error("The config value for " + INCLUDE_ENCODED_IMAGE + " must be a boolean value ('" +
-                        ieiString + "' was provided). The encoded image will not be included in the results.");
-            }
-        } else if (request.get(INCLUDE_ENCODED_IMAGE) instanceof Boolean) {
-            includeEncodedImage = (Boolean) request.get(INCLUDE_ENCODED_IMAGE);
-        } else if (request.get(INCLUDE_ENCODED_IMAGE) != null) {
-            log.error("The config value for " + INCLUDE_ENCODED_IMAGE + " must be a boolean value ('" +
-                    request.get(INCLUDE_ENCODED_IMAGE) + "' was provided). The encoded image will" +
-                    "not be included in the results.");
-        }
+        includeEncodedImage = checkEncodedImageParam(request);
         
         if (queryImageUtil.saveImage) {
             Date now = new Date(); // Saves the time before
@@ -238,6 +212,30 @@ public class NoProcessor implements NeuralNetInterface {
             results.setEncodedImage(NeuralNetUtils.convertToBase64(image));
         }
         return results;
+    }
+    
+    private boolean checkEncodedImageParam(Map<String, ?> config) {
+        boolean iei = false;
+        if (config.get(INCLUDE_ENCODED_IMAGE) instanceof String) {
+            String ieiString = (String) config.get(INCLUDE_ENCODED_IMAGE);
+            try {
+                iei = Boolean.parseBoolean(ieiString);
+            } catch (Exception e) {
+                if (log.isErrorEnabled()) {
+                    log.error("The config value for " + INCLUDE_ENCODED_IMAGE + " must be a boolean value ('" +
+                            ieiString + "' was provided). The encoded image will not be included in the results.");
+                }
+            }
+        } else if (config.get(INCLUDE_ENCODED_IMAGE) instanceof Boolean) {
+            iei = (Boolean) config.get(INCLUDE_ENCODED_IMAGE);
+        } else if (config.get(INCLUDE_ENCODED_IMAGE) != null) {
+            if (log.isErrorEnabled()) {
+                log.error("The value for " + INCLUDE_ENCODED_IMAGE + " must be a boolean value ('" +
+                        config.get(INCLUDE_ENCODED_IMAGE) + "' was provided). The encoded image will" +
+                        "not be included in the results.");
+            }
+        }
+        return iei;
     }
 
     @Override

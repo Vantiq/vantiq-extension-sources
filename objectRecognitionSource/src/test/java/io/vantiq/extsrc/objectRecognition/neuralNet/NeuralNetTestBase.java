@@ -174,7 +174,7 @@ public class NeuralNetTestBase extends ObjRecTestBase {
     }
 
     public static void deleteSource(Vantiq vantiq) {
-        Map<String,Object> where = new LinkedHashMap<String,Object>();
+        Map<String, Object> where = new LinkedHashMap<>();
         where.put("name", testSourceName);
         VantiqResponse response = vantiq.delete("system.sources", where);
     }
@@ -192,7 +192,7 @@ public class NeuralNetTestBase extends ObjRecTestBase {
     }
 
     public static void deleteType(Vantiq vantiq) {
-        Map<String,Object> where = new LinkedHashMap<String,Object>();
+        Map<String, Object> where = new LinkedHashMap<>();
         where.put("name", testTypeName);
         VantiqResponse response = vantiq.delete("system.types", where);
     }
@@ -210,7 +210,7 @@ public class NeuralNetTestBase extends ObjRecTestBase {
     }
 
     public static void deleteRule(Vantiq vantiq) {
-        Map<String,Object> where = new LinkedHashMap<String,Object>();
+        Map<String, Object> where = new LinkedHashMap<>();
         where.put("name", testRuleName);
         VantiqResponse response = vantiq.delete("system.rules", where);
     }

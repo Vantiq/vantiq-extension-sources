@@ -121,7 +121,10 @@ public class ImageUtil {
                 ImageIO.write(resizedImage, IMAGE_SAVE_FORMAT, tmpFile);
                 fileToUpload = tmpFile;
             } catch (IOException e) {
-                LOGGER.error("An error occurred while reading and/or resizing the locally saved image file. " + e.getMessage());
+                if (LOGGER.isErrorEnabled()) {
+                    LOGGER.error("An error occurred while reading and/or resizing the locally saved image file. "
+                            + e.getMessage());
+                }
             }
         }
         uploadToVantiq(fileToUpload, target);

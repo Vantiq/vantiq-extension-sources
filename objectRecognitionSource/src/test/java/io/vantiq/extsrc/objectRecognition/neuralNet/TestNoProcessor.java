@@ -8,14 +8,12 @@
 
 package io.vantiq.extsrc.objectRecognition.neuralNet;
 
-import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeTrue;
 
 import java.awt.image.BufferedImage;
 import java.io.File;
-import java.lang.reflect.Array;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;

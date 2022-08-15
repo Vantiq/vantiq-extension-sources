@@ -43,7 +43,7 @@ public class ObjectDetector {
 
     // This will be used to create
     // "year-month-date-hour-minute-seconds"
-    private static SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd--HH-mm-ss");
+    private static final  SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd--HH-mm-ss");
     
     // Getting meta config options for YOLO Processor
     public MetaBasedConfig metaConfigOptions = new MetaBasedConfig();
@@ -92,7 +92,7 @@ public class ObjectDetector {
      * @param vantiq        The Vantiq variable used to connect to the VANTIQ SDK. Either authenticated, or set to null.
      * @param sourceName    The name of the VANTIQ Source
      */
-    @SuppressWarnings({"PMD.ParamNumberCheck", "PMD.CognitiveComplexity", "PMD.ExcessiveParameterList"})
+    @SuppressWarnings({"PMD.ParameterNumberCheck", "PMD.CognitiveComplexity", "PMD.ExcessiveParameterList"})
     public ObjectDetector(float thresh, String graphFile, String labelFile, String metaFile, double[] anchorArray,
                           ImageUtil imageUtil, Boolean labelImage, int saveRate,
                           Vantiq vantiq, String sourceName) {
