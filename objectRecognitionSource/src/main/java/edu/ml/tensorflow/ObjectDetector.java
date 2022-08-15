@@ -228,7 +228,7 @@ public class ObjectDetector {
         try (Tensor<Float> normalizedImage = normalizeImage(image)) {
             List<Recognition> recognitions = YOLOClassifier.getInstance(threshold, anchorArray, frameSize).classifyImage(executeYOLOGraph(normalizedImage), labels);
             BufferedImage buffImage = ImageUtil.createImageFromBytes(image);
-
+            
             // Saves an image if requested
             if (outputDir != null || vantiq != null || this.imageUtil.saveImage) {
                 ImageUtil imageUtil = new ImageUtil();

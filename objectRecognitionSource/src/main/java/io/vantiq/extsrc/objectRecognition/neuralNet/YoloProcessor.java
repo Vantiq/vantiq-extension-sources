@@ -247,7 +247,7 @@ public class YoloProcessor extends NeuralNetUtils implements NeuralNetInterface2
                    uploadAsImage = (Boolean) neuralNet.get(UPLOAD_AS_IMAGE);
                }
            }
-
+           
            // Check if any resolution configurations have been set
            if (neuralNet.get(SAVED_RESOLUTION) instanceof Map) {
                @SuppressWarnings("rawtypes")

@@ -280,7 +280,6 @@ public class TestObjRecConfig {
         assertFalse("Should not fail when image include config is false String", configIsFailed());
     }
 
-
     @Test
     public void testMinimalConfig() {
         nCore.start(5); // Need a client to avoid NPEs on sends
