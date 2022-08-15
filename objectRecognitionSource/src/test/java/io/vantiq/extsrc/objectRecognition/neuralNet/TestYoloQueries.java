@@ -201,7 +201,7 @@ public class TestYoloQueries extends NeuralNetTestBase {
         
         invalidParametersHelper(params, "delete");
     }
-
+    
     @Test
     public void testProcessNextFrameLocal() {
         // Only run test with intended vantiq availability
@@ -236,11 +236,11 @@ public class TestYoloQueries extends NeuralNetTestBase {
         // Running query with operation set to "processNextFrame"
         params.put("operation", "processNextFrame");
         querySource(params);
-
+        
         // Check we saved a file in the output directory
         outputDir = new File(OUTPUT_DIR);
         assert outputDir.exists();
-
+        
         // Check there is only one file, and it's name is equivalent to QUERY_FILENAME
         outputDirFiles = outputDir.listFiles();
         assert outputDirFiles != null;
@@ -554,7 +554,8 @@ public class TestYoloQueries extends NeuralNetTestBase {
         
         Map<String,Object> params = new LinkedHashMap<String,Object>();
         params.put("operation", "upload");
-                List<String> imageDate = new ArrayList<String>();
+        
+        List<String> imageDate = new ArrayList<String>();
         imageDate.add(START_DATE);
         imageDate.add(END_DATE);
         params.put("imageDate", imageDate);
