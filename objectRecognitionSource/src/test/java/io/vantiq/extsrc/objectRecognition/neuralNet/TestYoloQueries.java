@@ -893,6 +893,7 @@ public class TestYoloQueries extends NeuralNetTestBase {
         doLabelTest(true, true, false);
     }
     
+    @SuppressWarnings("PMD.CognitiveComplexity")
     public void doLabelTest(boolean localLabelRequest, boolean includeEncoded, boolean saveImage) throws IOException {
         // Only run test with intended vantiq availability
         assumeTrue(testAuthToken != null && testVantiqServer != null);
@@ -954,11 +955,9 @@ public class TestYoloQueries extends NeuralNetTestBase {
         if (includeEncoded) {
             String returnedImage = responseObj.getAsJsonPrimitive("encodedImage").getAsString();
             
-            if (encodedImage != null) {
-                if (log.isDebugEnabled()) {
-                    log.debug("Encoded image size: {} -- returned image size: {}",
-                            encodedImage.length(), returnedImage.length());
-                }
+            if (encodedImage != null && log.isDebugEnabled()) {
+                log.debug("Encoded image size: {} -- returned image size: {}",
+                        encodedImage.length(), returnedImage.length());
             }
             byte[] retBytes = Base64.getDecoder().decode(returnedImage.getBytes(StandardCharsets.UTF_8));
             try (ByteArrayInputStream retImgStream = new ByteArrayInputStream(retBytes)) {

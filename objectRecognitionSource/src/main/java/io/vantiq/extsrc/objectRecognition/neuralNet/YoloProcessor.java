@@ -143,7 +143,7 @@ public class YoloProcessor extends NeuralNetUtils implements NeuralNetInterface2
      * @param authToken         The authToken used to with the VANTIQ SDK
      * @throws Exception        Thrown when an invalid configuration is requested
      */
-    @SuppressWarnings({"PMD.CognitiveComplexity", "CheckStyle.MethodLengthCheck"})
+    @SuppressWarnings({"PMD.CognitiveComplexity", "Checkstyle.MethodLengthCheck"})
     private void setup(Map<String, ?> neuralNet, String sourceName, String modelDirectory,
                        String authToken, String server) throws Exception {
         this.server = server;
