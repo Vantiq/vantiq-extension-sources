@@ -165,21 +165,21 @@ The Configuration document may look similar to the following example:
 ### Options Available for General
 At least one of these options must be set for the source to function
 
-*   pollTime: This indicates how often an image should be captured. A positive number represents the number of
+*   `pollTime`: This indicates how often an image should be captured. A positive number represents the number of
 milliseconds between captures. If the specified time is less than the amount of time it takes to process the image then
 images will be taken as soon as the previous finishes. If this is set to 0, the next image will be captured as soon as
 the previous is sent. 
     *   (**NOTE:** Previously named "pollRate". For a limited amount of time, both "pollTime" and "pollRate"
     will be valid General Config options, but in the future only "pollTime" will be supported.)
-*   allowQueries: This option allows Queries to be received when set to `true'
-*   maxRunningThreads: Optional. Only used if `pollTime` has been specified. The maximum number of threads running at any 
+*   `allowQueries`: This option allows Queries to be received when set to `true'
+*   `maxRunningThreads`: Optional. Only used if `pollTime` has been specified. The maximum number of threads running at any 
 given point for polling requests from the specific VANTIQ source. Must be a positive integer. Default value is 10.
-*   maxQueuedTask: Optional. Only used if `pollTime` has been specified. The maximum number of queued tasks at any given point 
+*   `maxQueuedTask`: Optional. Only used if `pollTime` has been specified. The maximum number of queued tasks at any given point 
 for polling requests from the specific VANTIQ source. Must be a positive integer. Default value is 20.
     *   **NOTE:** The default behavior of the Object Recognition Source is to process up to 10 captured frames in parallel at 
     a time. If you would like the source to only process one frame at a time, then `maxRunningThreads` and `maxQueuedTasks` 
     must both be set to 1.
-*   suppressEmptyNeuralNetResults: Optional. Only used if `pollTime` has been specified. Must be a boolean value. If set to 
+*   `suppressEmptyNeuralNetResults`: Optional. Only used if `pollTime` has been specified. Must be a boolean value. If set to 
 `true`, only the neural net results containing recognitions, (from polled frames), will be sent back to the VANTIQ Source as a 
 Notificiation.
 
@@ -189,7 +189,7 @@ Most of the options required for dataSource are dependent on the specific implem
 [ImageRetrieverInterface](#retrieveInterface). The ones that are the same across all implementations
 are:
 
-*   type: Optional. Can be one of three situations
+*   `type`: Optional. Can be one of three situations
     1.  The fully qualified class name of an implementation of ImageRetrieverInterface, e.g.
         "io.vantiq.extsrc.objectRecognition.imageRetriever.CameraRetriever".
     2.  The short name of one of the standard implementations, i.e. one of "[file](#fileRet)", "[camera](#camRet)",
@@ -203,7 +203,8 @@ are:
 Most of the options required for neuralNet are dependent on the specific implementation of
 [NeuralNetInterface](#netInterface). For an example of neural net specific configurations, please look at the [YOLO Processor 
 configuration options](#yoloNet). The ones that are the same across all implementations are:
-*   type: Optional. Can be one of three situations
+
+*   `type`: Optional. Can be one of three situations
     1.  The fully qualified class name of an implementation of NeuralNetInterface, e.g.
         "io.vantiq.extsrc.objectRecognition.neuralNet.YoloProcessor".
     2.  The short name of one of the standard implementations, i.e. one of "[yolo](#yoloNet)", "[none](#noNet)" or
@@ -211,34 +212,35 @@ configuration options](#yoloNet). The ones that are the same across all implemen
     3.  Empty, in which case the program will try to find an implementation with the name "DefaultProcessor" in
         the `io.vantiq.objectRecognition.neuralNet` package. This implementation is not provided, and must be written by
         the user.
-*   threshold: Optional. Threshold is used to decide if the Neural Net's result is a valid one, by comparing the resulting confidence of the recognition against the threshold value. A high threshold will lead to fewer results, all with a higher confidence. A low threshold will lead to more results, some of which having a lower confidence. Threshold defaults to 0.5 if not specified, or if invalid. There are two ways to specify this value:
+*   `threshold`: Optional. Threshold is used to decide if the Neural Net's result is a valid one, by comparing the resulting confidence of the recognition against the threshold value. A high threshold will lead to fewer results, all with a higher confidence. A low threshold will lead to more results, some of which having a lower confidence. Threshold defaults to 0.5 if not specified, or if invalid. There are two ways to specify this value:
     1.  The value can be a number between 0 and 1 (i.e. 0.4, or 0.2, etc...)
     2.  The value can be a number between 0 and 100 (i.e. 40, or 20, etc...)
-*   cropBeforeAnalysis: Optional. Used to crop the retrieved images before they are processed by the Neural Net. This option 
+*   `cropBeforeAnalysis`: Optional. Used to crop the retrieved images before they are processed by the Neural Net. This option 
 *must* contain the following values:
     *   **x**: The top left x-coordinate used to crop the image.
     *   **y**: The top left y-coordinate used to crop the image.
     *   **width**: The width of the cropped image, (starting at the x-coordinate specified above).
     *   **height**: The height of the cropped image, (starting at the y-coordinate specified above).
-*   saveImage: Optional. The value can be one of the following three options:
+*   `saveImage`: Optional. The value can be one of the following three options:
     1.  "local"     - This will save images to the disk (outputDir must be specified in order for this to work).
     2.  "vantiq"    - This will save images as documents in VANTIQ. No images will be saved locally even if outputDir is specified.
     3.  "both"      - This will save the images both to the disk and as documents in VANTIQ. (outputDir must be specified in order to save locally)
+* `includeEncodedImage`: Optional.  If set, the Base64-encoded image will be included in the results. The image encoded and included is the same one that would be saved if `saveImage` is/was set. _E.g._, if `labelImage` (see below) is set, the encoded image will contain the labeling.  Note that `includeEncodedImage` and `saveImage` are independent of one another;  either or both can be set.
     
-**NOTE:** All of the following options are relevant only if the "saveImage" option has been set.
+**NOTE:** All of the following options are relevant only if the `saveImage` or `includedEncodedImage` (for `labelImage` and `savedResolution`) options are set.
 
-*   outputDir: Optional. The directory in which images will be saved locally. Images will only be saved locally if saveImage 
+*   `outputDir`: Optional. The directory in which images will be saved locally. Images will only be saved locally if saveImage 
 is set to be either "local" or "both".
-*   saveRate: Optional. The rate at which images will be saved (i.e. "saveRate": 3 - This will save every 3rd image that is 
+*   `saveRate`: Optional. The rate at which images will be saved (i.e. "saveRate": 3 - This will save every 3rd image that is 
 captured). If not specified, the value will default to 1 which saves every captured image.
-*   labelImage: Optional. If set to "true", images will be saved with bounding boxes and labels. If set to "false", or if not 
+*   `labelImage`: Optional. If set to "true", images will be saved with bounding boxes and labels. If set to "false", or if not 
 set at all, the images will be saved with no bounding boxes or labels.
-*   uploadAsImage: Optional. If set to "true", images will be uploaded to VANTIQ as VANTIQ Images, (the default behavior 
+*   `uploadAsImage`: Optional. If set to "true", images will be uploaded to VANTIQ as VANTIQ Images, (the default behavior 
 uploads images as VANTIQ Documents).
     *   **NOTE**: This option is only relevant if "saveImage" has been set to either "vantiq" or "both".
-*   savedResolution: Optional. A map containing options for adjusting the resolution of the saved images.
+*   `savedResolution`: Optional. A map containing options for adjusting the resolution of the saved images.
     * *Options for savedResolution:*
-    1. longEdge: Optional. This sets the maximum long edge dimension for saved images. Must be a non-negative integer that is 
+    1. `longEdge`: Optional. This sets the maximum long edge dimension for saved images. Must be a non-negative integer that is 
     smaller than the long edge of the image to be saved. This value will become the new long edge dimension, and the short 
     edge will be scaled down to maintain the same aspect ratio as the original image.
         *   **NOTE:** We do not support enlarging images. This feature can be used *only* to resize images to smaller 
@@ -535,7 +537,7 @@ identified, in the format used by the neural [net implementation](#netInterface)
 
 Options available for all Queries (not prepended by anything) are:
 
-*   sendFullResponse: Optional. Specifies that this request should send back data in the same format as a notification
+*   `sendFullResponse`: Optional. Specifies that this request should send back data in the same format as a notification
     instead of only the objects recognized. Note that the data will be the sole occupant of a 1-element array when
     received, instead of being immediately available as a JSON object. This is because Query results are mandated
     to be arrays. Default is false.
@@ -597,12 +599,14 @@ it will be set to the default value, "processNextFrame".
         *   "cropBeforeAnalysis": Optional. This value can be set exactly like the "cropBeforeAnalysis" value in the source 
         configuration. If no cropBeforeAnalysis value is set as a query parameter, the source configuration's 
         cropBeforeAnalysis value will be used.
-        *   uploadAsImage: Optional. If set to "true", images will be uploaded to VANTIQ as VANTIQ Images, (the default 
+        *   "uploadAsImage": Optional. If set to "true", images will be uploaded to VANTIQ as VANTIQ Images, (the default 
         behavior uploads images as VANTIQ Documents).
+        *   "includeEncodedImage": Optional.  If set to "true", a Base64-encoded image will be included in the results when `sendFullResponse` is set.
     
 **EXAMPLE QUERIES**:
 
 *   Upload Query using imageName:
+
 ```
 SELECT * FROM SOURCE Camera1 AS results WITH
     	operation:"upload",
@@ -611,14 +615,16 @@ SELECT * FROM SOURCE Camera1 AS results WITH
 ```
 
 *   Upload Query using imageDate, uploading as VANTIQ Images:
+
 ```
 SELECT * FROM SOURCE Camera1 AS results WITH
-    	operation:"upload",
-    	imageDate:["2019-02-08--10-33-36", "2019-02-08--12-45-18"],
+        operation:"upload",
+        imageDate:["2019-02-08--10-33-36", "2019-02-08--12-45-18"],
         uploadAsImage: true
 ```
 
 *   Delete Query using imageName:
+
 ```
 SELECT * FROM SOURCE Camera1 AS results WITH
     	operation:"delete",
@@ -626,6 +632,7 @@ SELECT * FROM SOURCE Camera1 AS results WITH
 ```
 
 *   Delete Query using imageDate to delete everything after a certain date:
+
 ```
 SELECT * FROM SOURCE Camera1 AS results WITH
     	operation:"delete",
@@ -633,6 +640,7 @@ SELECT * FROM SOURCE Camera1 AS results WITH
 ```
 
 *   Delete Query using imageDate to delete all images:
+
 ```
 SELECT * FROM SOURCE Camera1 AS results WITH
     	operation:"delete",
@@ -640,21 +648,23 @@ SELECT * FROM SOURCE Camera1 AS results WITH
 ```
 
 *   Process Next Frame Query:
+
 ```
 SELECT * FROM SOURCE Camera1 AS results WITH
         operation:"processNextFrame",
-    	NNsaveImage:"local",
-    	NNoutputDir:"testDir",
-    	NNfileName:"testFile"
+        NNsaveImage:"local",
+        NNoutputDir:"testDir",
+        NNfileName:"testFile"
 ```
 
 *   Process Next Frame Query, with preCrop set:
+
 ```
 SELECT * FROM SOURCE Camera1 AS results WITH
         operation:"processNextFrame",
-    	NNsaveImage:"local",
-    	NNoutputDir:"testDir",
-    	NNfileName:"testFile",
+        NNsaveImage:"local",
+        NNoutputDir:"testDir",
+        NNfileName:"testFile",
         cropBeforeAnalysis: {
             x: 50,
             y: 100,
@@ -664,20 +674,22 @@ SELECT * FROM SOURCE Camera1 AS results WITH
 ```
 
 * Process Next Frame Query, uploading as VANTIQ Image:
+
 ```
 SELECT * FROM SOURCE Camera1 AS results WITH
         operation:"processNextFrame",
-    	NNsaveImage:"vantiq",
-    	NNfileName:"testFile",
+        NNsaveImage:"vantiq",
+        NNfileName:"testFile",
         uploadAsImage: true
 ```
 
 *   Process Next Frame Query without specifying operation *(not recommended)*:
+
 ```
 SELECT * FROM SOURCE Camera1 AS results WITH
-    	NNsaveImage:"local",
-    	NNoutputDir:"testDir",
-    	NNfileName:"testFile"
+        NNsaveImage:"local",
+        NNoutputDir:"testDir",
+        NNfileName:"testFile"
 ```
 
 ### Error Messages
