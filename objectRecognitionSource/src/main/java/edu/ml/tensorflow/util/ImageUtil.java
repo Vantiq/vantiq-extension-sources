@@ -14,6 +14,7 @@ import javax.imageio.ImageIO;
 import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.util.List;
@@ -31,9 +32,11 @@ public class ImageUtil {
     public Boolean queryResize = false;
     public int longEdge = 0;
     public Boolean uploadAsImage = false;
+    public Boolean labelImage = false;
 
     // Used to upload image to VANTIQ as VANTIQ Image
     final static String IMAGE_RESOURCE_PATH = "/resources/images";
+    final static String IMAGE_SAVE_FORMAT = "jpg";
 
     /**
      * Label image with classes and predictions given by the TensorFLow YOLO Implementation
@@ -70,10 +73,12 @@ public class ImageUtil {
             try {
                 IOUtil.createDirIfNotExists(new File(outputDir));
                 if (longEdge == 0) {
-                    ImageIO.write(image, "jpg", new File(outputDir + File.separator + target));
+                    ImageIO.write(image, IMAGE_SAVE_FORMAT,
+                            new File(outputDir + File.separator + target));
                 } else {
                     BufferedImage resizedImage = resizeImage(image);
-                    ImageIO.write(resizedImage, "jpg", new File(outputDir + File.separator + target));
+                    ImageIO.write(resizedImage, IMAGE_SAVE_FORMAT,
+                            new File(outputDir + File.separator + target));
                 }
                 fileToUpload = new File(outputDir + File.separator + target);
             } catch (IOException e) {
@@ -81,18 +86,23 @@ public class ImageUtil {
             }
         }
         if (vantiq != null) {
+            LOGGER.error("Uploading {} ...", target);
             if (fileToUpload != null) {
+                LOGGER.error("Uploading {}", fileToUpload.getName());
+
                 uploadImage(fileToUpload, target);
             } else {
                 try {
                     File imgFile = File.createTempFile("tmp", ".jpg");
                     imgFile.deleteOnExit();
                     if (longEdge == 0) {
-                        ImageIO.write(image, "jpg", imgFile);
+                        ImageIO.write(image, IMAGE_SAVE_FORMAT, imgFile);
                     } else {
                         BufferedImage resizedImage = resizeImage(image);
-                        ImageIO.write(resizedImage, "jpg", imgFile);
+                        ImageIO.write(resizedImage, IMAGE_SAVE_FORMAT, imgFile);
                     }
+                    LOGGER.error("Uploading null file {}", imgFile.getName());
+
                     uploadImage(imgFile, target);
                 } catch (IOException e) {
                     LOGGER.error("Unable to save image {}", target, e);
@@ -113,10 +123,10 @@ public class ImageUtil {
                 BufferedImage resizedImage = resizeImage(ImageIO.read(imgFile));
                 File tmpFile = File.createTempFile("tmp", ".jpg");
                 tmpFile.deleteOnExit();
-                ImageIO.write(resizedImage, "jpg", tmpFile);
+                ImageIO.write(resizedImage, IMAGE_SAVE_FORMAT, tmpFile);
                 fileToUpload = tmpFile;
             } catch (IOException e) {
-                LOGGER.error("An error occured while reading and/or resizing the locally saved image file. " + e.getMessage());
+                LOGGER.error("An error occurred while reading and/or resizing the locally saved image file. " + e.getMessage());
             }
         }
         uploadToVantiq(fileToUpload, target);
@@ -217,12 +227,23 @@ public class ImageUtil {
         return resizedImage;
     }
 
-    public BufferedImage createImageFromBytes(final byte[] imageData) {
-        ByteArrayInputStream bais = new ByteArrayInputStream(imageData);
-        try {
+    public static BufferedImage createImageFromBytes(final byte[] imageData) {
+
+        try (ByteArrayInputStream bais = new ByteArrayInputStream(imageData)) {
             return ImageIO.read(bais);
         } catch (IOException ex) {
-            throw new ServiceException("Unable to create image from bytes!", ex);
+            throw new ServiceException("Unable to create image from bytes.", ex);
+        }
+    }
+
+    public static byte[] getBytesForImage(final BufferedImage bi) {
+
+        try (ByteArrayOutputStream baos = new ByteArrayOutputStream()){
+            ImageIO.write(bi, IMAGE_SAVE_FORMAT, baos);
+            baos.flush();
+            return baos.toByteArray();
+        } catch (IOException e) {
+            return new byte[0];
         }
     }
 }

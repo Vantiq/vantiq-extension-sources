@@ -69,6 +69,11 @@ public class ObjectDetector {
     
     public String lastFilename;
 
+    public class ResultHolder {
+        public List<Map<String, ?>> results;
+        public byte[] image;
+    }
+
     /**
      * Initializes the ObjectDetector with the given graph and and labels.
      * <br>Edited to initialize and save the graph for reuse, and allow the files to be specified dynamically.
@@ -87,8 +92,9 @@ public class ObjectDetector {
      * @param vantiq        The Vantiq variable used to connect to the VANTIQ SDK. Either authenticated, or set to null.
      * @param sourceName    The name of the VANTIQ Source
      */
-    public ObjectDetector(float thresh, String graphFile, String labelFile, String metaFile, double[] anchorArray, ImageUtil imageUtil, String outputDir, 
-            Boolean labelImage, int saveRate, Vantiq vantiq, String sourceName) {
+    public ObjectDetector(float thresh, String graphFile, String labelFile, String metaFile, double[] anchorArray,
+                          ImageUtil imageUtil, String outputDir, Boolean labelImage, int saveRate,
+                          Vantiq vantiq, String sourceName) {
         try {
             graph_def = IOUtil.readAllBytesOrExit(graphFile);
             // Parse meta file if it exists, and get all general information we need
@@ -138,9 +144,7 @@ public class ObjectDetector {
             }
         } catch (ServiceException ex) {
             throw new IllegalArgumentException(ex.getLocalizedMessage(), ex);
-        } catch (JsonParseException ex) {
-            throw new IllegalArgumentException("Problem reading the meta file.", ex);
-        } catch (JsonMappingException ex) {
+        } catch (JsonParseException | JsonMappingException ex) {
             throw new IllegalArgumentException("Problem reading the meta file.", ex);
         } catch (IOException ex) {
             throw new IllegalArgumentException("Problem reading one of the model files.", ex);
@@ -160,15 +164,17 @@ public class ObjectDetector {
      * <br>Edited to return the results as a map and conditionally save the image
      * @param image     The image in jpeg format
      * @param timestamp The timestamp corresponding to when the frame was captured. Used to name the image if it is being saved
-     * @return          A List of Maps, each of which has a {@code label} stating the type of the object identified,
-     *                  a {@code confidence} specifying on a scale of 0-1 how confident the neural net is that the
-     *                  identification is accurate, and a {@code location} containing the coordinates for the
-     *                  {@code top},{@code left}, {@code bottom}, and {@code right} edges of the bounding box for the object.
+     * @return ResultHolder containing a List of Maps, each of which has a {@code label} stating the type
+     *                      of the object identified, a {@code confidence} specifying on a scale of 0-1 how confident
+     *                      the neural net is that the identification is accurate, and a {@code location} containing
+     *                      the coordinates for the {@code top},{@code left}, {@code bottom}, and {@code right} edges
+     *                      of the bounding box for the object; and the bufferedImage (possibly labeled) that may
+     *                      was returned.
      */
-    public List<Map<String, ?>> detect(final byte[] image, Date timestamp) {
+    public ResultHolder detect(final byte[] image, Date timestamp) {
         try (Tensor<Float> normalizedImage = normalizeImage(image)) {
             List<Recognition> recognitions = YOLOClassifier.getInstance(threshold, anchorArray, frameSize).classifyImage(executeYOLOGraph(normalizedImage), labels);
-            BufferedImage buffImage = imageUtil.createImageFromBytes(image);
+            BufferedImage buffImage = ImageUtil.createImageFromBytes(image);
             
             // Saves an image every saveRate frames
             if (imageUtil.saveImage && ++frameCount >= saveRate) {
@@ -185,6 +191,9 @@ public class ObjectDetector {
                 }
                 imageUtil.saveImage(buffImage, fileName);
                 frameCount = 0;
+            } else if (labelImage) {
+                buffImage = imageUtil.labelImage(buffImage, recognitions);
+                lastFilename = null;
             } else {
                 lastFilename = null;
             }
@@ -203,18 +212,23 @@ public class ObjectDetector {
      *                      and {@code outputDir} is non-null, then the file is saved as
      *                      "&lt;year&gt;-&lt;month&gt;-&lt;day&gt;--&lt;hour&gt;-&lt;minute&gt;-&lt;second&gt;.jpg"
      * @param vantiq        The Vantiq variable used to connect to the VANTIQ SDK. Either authenticated, or set to null.
-     * @param uploadAsImage The boolean flag used to specify if images should be uploaded to VANTIQ as Documents or VANTIQ Images
-     * @return              A List of Maps, each of which has a {@code label} stating the type of the object identified, a
-     *                      {@code confidence} specifying on a scale of 0-1 how confident the neural net is that the
-     *                      identification is accurate, and a {@code location} containing the coordinates for the
-     *                      {@code top},{@code left}, {@code bottom}, and {@code right} edges of the bounding box for
-     *                      the object.
+     * @param uploadAsImage The boolean flag used to specify if images should be uploaded to VANTIQ as
+     *                      Documents or VANTIQ Images
+     * @param localLabelImage Boolean indicating whether this query should produce labels, overriding
+     *                      the connector setting.
+     * @return              ResultHolder containing a List of Maps, each of which has a {@code label} stating the type
+     *                      of the object identified, a {@code confidence} specifying on a scale of 0-1 how confident
+     *                      the neural net is that the identification is accurate, and a {@code location} containing
+     *                      the coordinates for the {@code top},{@code left}, {@code bottom}, and {@code right} edges
+     *                      of the bounding box for the object; and the bufferedImage (possibly labeled) that may
+     *                      was returned.
      */
-    public List<Map<String, ?>> detect(final byte[] image, String outputDir, String fileName, Vantiq vantiq, boolean uploadAsImage) {
+    public ResultHolder detect(final byte[] image, String outputDir, String fileName, Vantiq vantiq,
+                               boolean uploadAsImage, boolean localLabelImage) {
         try (Tensor<Float> normalizedImage = normalizeImage(image)) {
             List<Recognition> recognitions = YOLOClassifier.getInstance(threshold, anchorArray, frameSize).classifyImage(executeYOLOGraph(normalizedImage), labels);
-            BufferedImage buffImage = imageUtil.createImageFromBytes(image);
-            
+            BufferedImage buffImage = ImageUtil.createImageFromBytes(image);
+
             // Saves an image if requested
             if (outputDir != null || vantiq != null || this.imageUtil.saveImage) {
                 ImageUtil imageUtil = new ImageUtil();
@@ -224,10 +238,13 @@ public class ObjectDetector {
                 imageUtil.frameSize = frameSize;
                 imageUtil.uploadAsImage = uploadAsImage;
                 lastFilename = fileName;
-                if (labelImage) {
+                if (labelImage || localLabelImage) {
                     buffImage = imageUtil.labelImage(buffImage, recognitions);
                 }
                 imageUtil.saveImage(buffImage, fileName);
+            } else if (labelImage || localLabelImage) {
+                buffImage = imageUtil.labelImage(buffImage, recognitions);
+                lastFilename = null;
             } else {
                 lastFilename = null;
             }
@@ -323,8 +340,9 @@ public class ObjectDetector {
     /**
      * ADDED BY NAMIR - Used to convert recognitions to JSON
      * @param recognitions
+     * @return ResultHolder including the list of recognitions & the resulting image.
      */
-    private List<Map<String, ?>> returnJSON(final List<Recognition> recognitions, BufferedImage buffImage) {
+    private ResultHolder returnJSON(final List<Recognition> recognitions, BufferedImage buffImage) {
         List<Map<String, ?>> jsonRecognitions = new ArrayList<>();
         for (Recognition recognition : recognitions) {
         	HashMap map = new HashMap();
@@ -348,8 +366,12 @@ public class ObjectDetector {
         	
         	LOGGER.info("{}", map);
         }
+
+        ResultHolder res = new ResultHolder();
+        res.results = jsonRecognitions;
+        res.image = ImageUtil.getBytesForImage(buffImage);
         
-        return jsonRecognitions;
+        return res;
     }
     
     /**
