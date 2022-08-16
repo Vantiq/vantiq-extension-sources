@@ -16,13 +16,18 @@ import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Base64;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
 import javax.imageio.ImageIO;
 
+import lombok.extern.slf4j.Slf4j;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -38,6 +43,7 @@ import io.vantiq.extsrc.objectRecognition.ObjectRecognitionCore;
 import okio.BufferedSource;
 
 @SuppressWarnings({"PMD.ExcessiveClassLength"})
+@Slf4j
 public class TestYoloQueries extends NeuralNetTestBase {
     
     static Vantiq vantiq;
@@ -206,11 +212,11 @@ public class TestYoloQueries extends NeuralNetTestBase {
         assert !outputDir.exists();
         
         // Run query without setting "operation":"processNextFrame"
-        Map<String,Object> params = new LinkedHashMap<String,Object>();
+        Map<String, Object> params = new LinkedHashMap<>();
         params.put("NNsaveImage", "local");
         params.put("NNoutputDir", OUTPUT_DIR);
         params.put("NNfileName", IMAGE_8.get("name"));
-                
+        
         querySource(params);
         
         // Check we saved a file in the output directory
@@ -270,10 +276,10 @@ public class TestYoloQueries extends NeuralNetTestBase {
         assumeTrue(testAuthToken != null && testVantiqServer != null);
         
         // Run query without setting "operation":"processNextFrame"
-        Map<String,Object> params = new LinkedHashMap<String,Object>();
+        Map<String, Object> params = new LinkedHashMap<>();
         params.put("NNsaveImage", "vantiq");
         params.put("NNfileName", QUERY_FILENAME);
-                
+        
         querySource(params);
         
         // Check that file was saved to Vantiq
@@ -316,11 +322,11 @@ public class TestYoloQueries extends NeuralNetTestBase {
         assert !outputDir.exists();
         
         // Run query without setting "operation":"processNextFrame"
-        Map<String,Object> params = new LinkedHashMap<String,Object>();
+        Map<String, Object> params = new LinkedHashMap<>();
         params.put("NNsaveImage", "both");
         params.put("NNoutputDir", OUTPUT_DIR);
         params.put("NNfileName", IMAGE_8.get("name"));
-                
+        
         querySource(params);
         
         // Check we saved a file in the output directory
@@ -402,7 +408,7 @@ public class TestYoloQueries extends NeuralNetTestBase {
         
         addLocalTestImages();
         
-        Map<String,Object> params = new LinkedHashMap<String,Object>();
+        Map<String, Object> params = new LinkedHashMap<>();
         params.put("operation", "upload");
         params.put("imageName", IMAGE_2.get("date"));
         
@@ -428,14 +434,14 @@ public class TestYoloQueries extends NeuralNetTestBase {
         
         addLocalTestImages();
         
-        Map<String,Object> params = new LinkedHashMap<String,Object>();
+        Map<String, Object> params = new LinkedHashMap<>();
         params.put("operation", "upload");
         
         List<String> imageDate = new ArrayList<String>();
         imageDate.add("-");
         imageDate.add("-");
         params.put("imageDate", imageDate);
-                
+        
         querySource(params);
         
         // Checking that all images were uploaded to VANTIQ
@@ -456,16 +462,16 @@ public class TestYoloQueries extends NeuralNetTestBase {
         
         addLocalTestImages();
         
-        Map<String,Object> params = new LinkedHashMap<String,Object>();
+        Map<String, Object> params = new LinkedHashMap<>();
         params.put("operation", "upload");
         
         List<String> imageDate = new ArrayList<String>();
         imageDate.add(START_DATE);
         imageDate.add(START_DATE);
         params.put("imageDate", imageDate);
-                
+        
         querySource(params);
-                        
+        
         // Checking that all images were uploaded to VANTIQ
         Thread.sleep(1000);
         checkUploadToVantiq(IMAGE_2.get("filename"), vantiq, VANTIQ_DOCUMENTS);
@@ -486,16 +492,16 @@ public class TestYoloQueries extends NeuralNetTestBase {
         
         addLocalTestImages();
         
-        Map<String,Object> params = new LinkedHashMap<String,Object>();
+        Map<String, Object> params = new LinkedHashMap<>();
         params.put("operation", "upload");
         
         List<String> imageDate = new ArrayList<String>();
         imageDate.add("-");
         imageDate.add(START_DATE);
         params.put("imageDate", imageDate);
-                
+        
         querySource(params);
-                
+        
         // Checking that all images were uploaded to VANTIQ
         Thread.sleep(1000);
         checkUploadToVantiq(IMAGE_1.get("filename"), vantiq, VANTIQ_DOCUMENTS);
@@ -516,16 +522,16 @@ public class TestYoloQueries extends NeuralNetTestBase {
         
         addLocalTestImages();
         
-        Map<String,Object> params = new LinkedHashMap<String,Object>();
+        Map<String, Object> params = new LinkedHashMap<>();
         params.put("operation", "upload");
         
         List<String> imageDate = new ArrayList<String>();
         imageDate.add(END_DATE);
         imageDate.add("-");
         params.put("imageDate", imageDate);
-                
+        
         querySource(params);
-                
+        
         // Checking that all images were uploaded to VANTIQ
         Thread.sleep(1000);
         checkUploadToVantiq(IMAGE_4.get("filename"), vantiq, VANTIQ_DOCUMENTS);
@@ -546,16 +552,16 @@ public class TestYoloQueries extends NeuralNetTestBase {
         
         addLocalTestImages();
         
-        Map<String,Object> params = new LinkedHashMap<String,Object>();
+        Map<String, Object> params = new LinkedHashMap<>();
         params.put("operation", "upload");
         
         List<String> imageDate = new ArrayList<String>();
         imageDate.add(START_DATE);
         imageDate.add(END_DATE);
         params.put("imageDate", imageDate);
-                
+        
         querySource(params);
-                
+        
         // Checking that all images were uploaded to VANTIQ
         Thread.sleep(3000);
         checkUploadToVantiq(IMAGE_2.get("filename"), vantiq, VANTIQ_DOCUMENTS);
@@ -576,7 +582,7 @@ public class TestYoloQueries extends NeuralNetTestBase {
         
         addLocalTestImages();
         
-        Map<String,Object> params = new LinkedHashMap<String,Object>();
+        Map<String, Object> params = new LinkedHashMap<>();
         params.put("operation", "upload");
         
         Map<String, Object> savedResolution = new LinkedHashMap<>();
@@ -584,7 +590,7 @@ public class TestYoloQueries extends NeuralNetTestBase {
         
         params.put("imageName", IMAGE_2.get("date"));
         params.put("savedResolution", savedResolution);
-                
+        
         querySource(params);
         
         // Checking that image was saved to VANTIQ
@@ -611,7 +617,6 @@ public class TestYoloQueries extends NeuralNetTestBase {
         InputStream imageStream = new ByteArrayInputStream(imageBytes);
         BufferedImage resizedImage = ImageIO.read(imageStream);
         
-        
         assert resizedImage.getWidth() == RESIZED_IMAGE_WIDTH;
         assert resizedImage.getHeight() == RESIZED_IMAGE_HEIGHT;
     }
@@ -623,7 +628,7 @@ public class TestYoloQueries extends NeuralNetTestBase {
         
         addLocalTestImages();
         
-        Map<String,Object> params = new LinkedHashMap<String,Object>();
+        Map<String, Object> params = new LinkedHashMap<>();
         params.put("operation", "delete");
         params.put("imageName", IMAGE_3.get("date"));
         
@@ -652,7 +657,7 @@ public class TestYoloQueries extends NeuralNetTestBase {
         
         addLocalTestImages();
         
-        Map<String,Object> params = new LinkedHashMap<String,Object>();
+        Map<String, Object> params = new LinkedHashMap<>();
         params.put("operation", "delete");
         
         List<String> imageDate = new ArrayList<String>();
@@ -677,7 +682,7 @@ public class TestYoloQueries extends NeuralNetTestBase {
         
         addLocalTestImages();
         
-        Map<String,Object> params = new LinkedHashMap<String,Object>();
+        Map<String, Object> params = new LinkedHashMap<>();
         params.put("operation", "delete");
         
         List<String> imageDate = new ArrayList<String>();
@@ -707,7 +712,7 @@ public class TestYoloQueries extends NeuralNetTestBase {
         
         addLocalTestImages();
         
-        Map<String,Object> params = new LinkedHashMap<String,Object>();
+        Map<String, Object> params = new LinkedHashMap<>();
         params.put("operation", "delete");
         
         List<String> imageDate = new ArrayList<String>();
@@ -734,7 +739,7 @@ public class TestYoloQueries extends NeuralNetTestBase {
         
         addLocalTestImages();
         
-        Map<String,Object> params = new LinkedHashMap<String,Object>();
+        Map<String, Object> params = new LinkedHashMap<>();
         params.put("operation", "delete");
         
         List<String> imageDate = new ArrayList<String>();
@@ -744,7 +749,7 @@ public class TestYoloQueries extends NeuralNetTestBase {
         params.put("imageDate", imageDate);
         
         querySource(params);
-
+        
         File d = new File(OUTPUT_DIR);
         File[] dList = d.listFiles();
         assert dList != null;
@@ -766,8 +771,8 @@ public class TestYoloQueries extends NeuralNetTestBase {
         // Make sure that output directory has not yet been created
         File outputDir = new File(OUTPUT_DIR);
         assert !outputDir.exists();
-                
-        Map<String,Object> params = new LinkedHashMap<String,Object>();
+        
+        Map<String, Object> params = new LinkedHashMap<>();
         
         // Invalid preCrop, it isn't a map
         params.put("cropBeforeAnalysis", "jibberish");
@@ -776,7 +781,7 @@ public class TestYoloQueries extends NeuralNetTestBase {
         params.put("NNsaveImage", "local");
         params.put("NNoutputDir", OUTPUT_DIR);
         params.put("NNfileName", "testInvalidPreCrop");
-                
+        
         querySource(params);
         
         // Check we saved a file in the output directory
@@ -794,7 +799,184 @@ public class TestYoloQueries extends NeuralNetTestBase {
         // If we're here, then we can read the image which is what we expect
     }
     
+    @SuppressWarnings("rawtypes")
     @Test
+    public void testPreCroppingQueryEncode() throws IOException {
+        // Only run test with intended vantiq availability
+        assumeTrue(testAuthToken != null && testVantiqServer != null);
+        
+        // Make sure that output directory has not yet been created
+        File outputDir = new File(OUTPUT_DIR);
+        assert !outputDir.exists();
+        
+        Map<String, Object> params = new LinkedHashMap<>();
+        Map<String, Object> preCrop = new LinkedHashMap<>();
+        
+        preCrop.put("x", PRECROP_TOP_LEFT_X_COORDINATE);
+        preCrop.put("y", PRECROP_TOP_LEFT_Y_COORDINATE);
+        preCrop.put("width", CROPPED_WIDTH);
+        preCrop.put("height", CROPPED_HEIGHT);
+        
+        params.put("cropBeforeAnalysis", preCrop);
+        
+        // Run query without setting "operation":"processNextFrame"
+        params.put("NNsaveImage", "local");
+        params.put("NNoutputDir", OUTPUT_DIR);
+        params.put("NNfileName", "testPreCrop");
+        params.put("includeEncodedImage", true);
+        params.put("sendFullResponse", true);
+        
+        VantiqResponse resp = querySourceWithResponse(params);
+        
+        // Check we saved a file in the output directory
+        outputDir = new File(OUTPUT_DIR);
+        assert outputDir.exists();
+        
+        // Check there is only one file, and it's name is equivalent to QUERY_FILENAME
+        File[] outputDirFiles = outputDir.listFiles();
+        assert outputDirFiles != null;
+        assert outputDirFiles.length == 1;
+        assert outputDirFiles[0].getName().equals("testPreCrop.jpg");
+        
+        File resizedImageFile = new File(OUTPUT_DIR + "/" + outputDirFiles[0].getName());
+        byte[] resizedImageBytes = Files.readAllBytes(Paths.get(resizedImageFile.getAbsolutePath()));
+        
+        ByteArrayInputStream img = new ByteArrayInputStream(resizedImageBytes);
+        BufferedImage resizedImage = ImageIO.read(img);
+        
+        assert resizedImage.getWidth() == CROPPED_WIDTH;
+        assert resizedImage.getHeight() == CROPPED_HEIGHT;
+        
+        // Now, check that this image has been encoded correctly.
+        String encodedImage = NeuralNetUtils.convertToBase64(resizedImageBytes);
+        
+        if (resp.hasErrors()) {
+            if (log.isErrorEnabled()) {
+                for (VantiqError err : resp.getErrors()) {
+                    log.error("Query had errors: {}::{}", err.getCode(), err.getMessage());
+                }
+            }
+        }
+        assert resp.isSuccess();
+        assert resp.getBody() != null;
+        assert resp.getBody() instanceof JsonObject;
+        JsonObject responseObj = (JsonObject) resp.getBody();
+        assert responseObj.has("encodedImage");
+        String returnedImage = responseObj.getAsJsonPrimitive("encodedImage").getAsString();
+        if (log.isDebugEnabled()) {
+            log.debug("Encoded image size: {} -- returned image size: {}", encodedImage.length(),
+                    returnedImage.length());
+            if (log.isTraceEnabled()) {
+                log.trace("Encoded image: {} -- returned image: {}", encodedImage, returnedImage);
+            }
+        }
+        byte[] retBytes = Base64.getDecoder().decode(returnedImage.getBytes(StandardCharsets.UTF_8));
+        try (ByteArrayInputStream retImgStream = new ByteArrayInputStream(retBytes)) {
+            BufferedImage retImg = ImageIO.read(retImgStream);
+            
+            assert retImg.getWidth() == CROPPED_WIDTH;
+            assert retImg.getHeight() == CROPPED_HEIGHT;
+            assert encodedImage.length() == returnedImage.length();
+            assert returnedImage.equals(encodedImage);
+        }
+    }
+    
+    @SuppressWarnings("rawtypes")
+    @Test
+    public void testLocalLabelQueryEncode() throws IOException {
+        doLabelTest(true, true, true);
+    }
+    
+    @SuppressWarnings("rawtypes")
+    @Test
+    public void testLocalLabelNoSaveQueryEncode() throws IOException {
+        doLabelTest(true, true, false);
+    }
+    
+    @SuppressWarnings("PMD.CognitiveComplexity")
+    public void doLabelTest(boolean localLabelRequest, boolean includeEncoded, boolean saveImage) throws IOException {
+        // Only run test with intended vantiq availability
+        assumeTrue(testAuthToken != null && testVantiqServer != null);
+        
+        // Make sure that output directory has not yet been created
+        File outputDir = new File(OUTPUT_DIR);
+        assert !outputDir.exists();
+        
+        Map<String, Object> params = new LinkedHashMap<>();
+        
+        // Run query without setting "operation":"processNextFrame"
+        if (saveImage) {
+            params.put("NNsaveImage", "local");
+            params.put("NNoutputDir", OUTPUT_DIR);
+            params.put("NNfileName", "testLabel");
+        }
+        params.put("includeEncodedImage", includeEncoded);
+        params.put("sendFullResponse", true);
+        if (localLabelRequest) {
+            params.put("labelImage", "true");
+        }
+        
+        VantiqResponse resp = querySourceWithResponse(params);
+        if (resp.hasErrors()) {
+            if (log.isErrorEnabled()) {
+                for (VantiqError err : resp.getErrors()) {
+                    log.error("Query had errors: {}::{}", err.getCode(), err.getMessage());
+                }
+            }
+        }
+        assert resp.isSuccess();
+        assert resp.getBody() != null;
+        assert resp.getBody() instanceof JsonObject;
+        JsonObject responseObj = (JsonObject) resp.getBody();
+        assert responseObj.has("encodedImage") == includeEncoded;
+        
+        BufferedImage image = null;
+        String encodedImage = null;
+        if (saveImage) {
+            // Check we saved a file in the output directory
+            outputDir = new File(OUTPUT_DIR);
+            assert outputDir.exists();
+            
+            // Check there is only one file, and it's name is equivalent to QUERY_FILENAME
+            File[] outputDirFiles = outputDir.listFiles();
+            assert outputDirFiles != null;
+            assert outputDirFiles.length == 1;
+            assert outputDirFiles[0].getName().equals("testLabel.jpg");
+            
+            File imageFile = new File(OUTPUT_DIR + "/" + outputDirFiles[0].getName());
+            byte[] imageBytes = Files.readAllBytes(Paths.get(imageFile.getAbsolutePath()));
+            
+            ByteArrayInputStream img = new ByteArrayInputStream(imageBytes);
+            image = ImageIO.read(img);
+            // Now, check that this image has been encoded correctly.
+            encodedImage = NeuralNetUtils.convertToBase64(imageBytes);
+        }
+        
+        if (includeEncoded) {
+            String returnedImage = responseObj.getAsJsonPrimitive("encodedImage").getAsString();
+            
+            if (encodedImage != null && log.isDebugEnabled()) {
+                log.debug("Encoded image size: {} -- returned image size: {}",
+                        encodedImage.length(), returnedImage.length());
+            }
+            byte[] retBytes = Base64.getDecoder().decode(returnedImage.getBytes(StandardCharsets.UTF_8));
+            try (ByteArrayInputStream retImgStream = new ByteArrayInputStream(retBytes)) {
+                BufferedImage retImg = ImageIO.read(retImgStream);
+                
+                // In the no-save case, we'll just validate that we got an encoded image back & that we can
+                // turn it into an image.
+                
+                if (image != null) {
+                    assert retImg.getWidth() == image.getWidth();
+                    assert retImg.getHeight() == image.getHeight();
+                    assert (encodedImage.length() == returnedImage.length());
+                    assert returnedImage.equals(encodedImage);
+                }
+            }
+        }
+    }
+    
+   @Test
     public void testPreCroppingQuery() throws IOException {
         // Only run test with intended vantiq availability
         assumeTrue(testAuthToken != null && testVantiqServer != null);
@@ -803,7 +985,7 @@ public class TestYoloQueries extends NeuralNetTestBase {
         File outputDir = new File(OUTPUT_DIR);
         assert !outputDir.exists();
                 
-        Map<String,Object> params = new LinkedHashMap<String,Object>();
+        Map<String, Object> params = new LinkedHashMap<>();
         Map<String, Object> preCrop = new LinkedHashMap<>();
         
         preCrop.put("x", PRECROP_TOP_LEFT_X_COORDINATE);
@@ -844,7 +1026,7 @@ public class TestYoloQueries extends NeuralNetTestBase {
 
         addLocalTestImages();
 
-        Map<String,Object> params = new LinkedHashMap<String,Object>();
+        Map<String, Object> params = new LinkedHashMap<>();
         params.put("operation", "upload");
         params.put("uploadAsImage", true);
 
@@ -879,7 +1061,7 @@ public class TestYoloQueries extends NeuralNetTestBase {
     
     // ================================================= Helper functions =================================================
     
-    public static void setupSource(Map<String,Object> sourceDef) {
+    public static void setupSource(Map<String, Object> sourceDef) {
         VantiqResponse insertResponse = vantiq.insert("system.sources", sourceDef);
         if (insertResponse.isSuccess()) {
             core = new ObjectRecognitionCore(SOURCE_NAME, testAuthToken, testVantiqServer, MODEL_DIRECTORY);;
@@ -887,8 +1069,12 @@ public class TestYoloQueries extends NeuralNetTestBase {
         }
     }
     
-    public static void querySource(Map<String,Object> params) {
+    public static void querySource(Map<String, Object> params) {
         vantiq.query(SOURCE_NAME, params);
+    }
+
+    public static VantiqResponse querySourceWithResponse(Map<String, Object> params) {
+        return vantiq.query(SOURCE_NAME, params);
     }
     
     public static void deleteFileFromVantiq(String filename) {
@@ -896,7 +1082,7 @@ public class TestYoloQueries extends NeuralNetTestBase {
         vantiq.deleteOne(VANTIQ_IMAGES, filename);
     }
     
-    public void checkQueryError(Map<String,Object> params, String operation) {
+    public void checkQueryError(Map<String, Object> params, String operation) {
         vantiqResponse = vantiq.query(SOURCE_NAME, params);
         assert vantiqResponse.hasErrors();
         String errorMessage = vantiqResponse.getErrors().get(0).getMessage();
@@ -906,7 +1092,7 @@ public class TestYoloQueries extends NeuralNetTestBase {
         }
     }
     
-    public void checkQueryErrorImageDateListSize(Map<String,Object> params) {
+    public void checkQueryErrorImageDateListSize(Map<String, Object> params) {
         vantiqResponse = vantiq.query(SOURCE_NAME, params);
         assert vantiqResponse.hasErrors();
         String errorMessage = vantiqResponse.getErrors().get(0).getMessage();
@@ -916,7 +1102,7 @@ public class TestYoloQueries extends NeuralNetTestBase {
         }
     }
     
-    public void checkQueryErrorInvalidDate(Map<String,Object> params) {
+    public void checkQueryErrorInvalidDate(Map<String, Object> params) {
         vantiqResponse = vantiq.query(SOURCE_NAME, params);
         assert vantiqResponse.hasErrors();
         String errorMessage = vantiqResponse.getErrors().get(0).getMessage();
@@ -926,7 +1112,7 @@ public class TestYoloQueries extends NeuralNetTestBase {
         }
     }
     
-    public void invalidParametersHelper(Map<String,Object> params, String operation) {
+    public void invalidParametersHelper(Map<String, Object> params, String operation) {
         // Not including imageName or imageDate
         checkQueryError(params, operation);
         
@@ -969,13 +1155,13 @@ public class TestYoloQueries extends NeuralNetTestBase {
         checkQueryErrorImageDateListSize(params);
     }
     
-    public static Map<String,Object> createSourceDef() {
-        Map<String,Object> sourceDef = new LinkedHashMap<String,Object>();
-        Map<String,Object> sourceConfig = new LinkedHashMap<String,Object>();
-        Map<String,Object> objRecConfig = new LinkedHashMap<String,Object>();
-        Map<String,Object> dataSource = new LinkedHashMap<String,Object>();
-        Map<String,Object> general = new LinkedHashMap<String,Object>();
-        Map<String,Object> neuralNet = new LinkedHashMap<String,Object>();
+    public static Map<String, Object> createSourceDef() {
+        Map<String, Object> sourceDef = new LinkedHashMap<>();
+        Map<String, Object> sourceConfig = new LinkedHashMap<>();
+        Map<String, Object> objRecConfig = new LinkedHashMap<>();
+        Map<String, Object> dataSource = new LinkedHashMap<>();
+        Map<String, Object> general = new LinkedHashMap<>();
+        Map<String, Object> neuralNet = new LinkedHashMap<>();
         
         // Setting up dataSource config options
         dataSource.put("camera", IP_CAMERA_URL);

@@ -5,12 +5,15 @@ import java.awt.image.RasterFormatException;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.util.Base64;
 
 import javax.imageio.ImageIO;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+@SuppressWarnings("PMD.AbstractClassWithoutAbstractMethod")
 public abstract class NeuralNetUtils {
     
     Logger log = LoggerFactory.getLogger(this.getClass());
@@ -37,7 +40,7 @@ public abstract class NeuralNetUtils {
             // Convert BufferedImage to byte[] and save it
             ImageIO.write(croppedImage, "jpg", baos);
             baos.flush();
-            image = baos.toByteArray();
+            return baos.toByteArray();
         } catch (IOException e) {
             log.error("An error occured when trying to crop the captured image. Image will not be cropped.");
         } catch (RasterFormatException e) {
@@ -48,5 +51,15 @@ public abstract class NeuralNetUtils {
         }
         
         return image;
+    }
+
+    /**
+     * Converts the incoming image (well, really, any byte array) to a base 64 string
+     * @param image byte[] byte encoding of the image
+     * @return String containing the base64 encoding of the image bytes
+     */
+    public static String convertToBase64(byte[] image) {
+        byte[] encBytes = Base64.getEncoder().encode(image);
+        return new String(encBytes, StandardCharsets.UTF_8);
     }
 }

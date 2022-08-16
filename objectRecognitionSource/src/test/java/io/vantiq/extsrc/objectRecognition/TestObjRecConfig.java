@@ -227,7 +227,7 @@ public class TestObjRecConfig {
     @Test
     public void testInvalidImageUploadConfig() {
         Map<String, Object> conf = minimalConfig();
-        neuralNet.put("uploadAsImage", "jibberish");
+        neuralNet.put("uploadAsImage", "gibberish");
         sendConfig(conf);
         assertFalse("Should not fail when image upload config is a string", configIsFailed());
 
@@ -247,7 +247,39 @@ public class TestObjRecConfig {
         sendConfig(conf);
         assertFalse("Should not fail when image upload config is false", configIsFailed());
     }
-    
+
+    @Test
+    public void testInvalidIncludeEncodedConfig() {
+        Map<String, Object> conf = minimalConfig();
+        neuralNet.put("includeEncodedImage", "gibberish");
+        sendConfig(conf);
+        assertFalse("Should not fail when image include is garbage", configIsFailed());
+
+        neuralNet.put("includeEncodedImage", 10);
+        sendConfig(conf);
+        assertFalse("Should not fail when image include config is an int", configIsFailed());
+    }
+
+    @Test
+    public void testValidIncludeEncodedConfig() {
+        Map<String, Object> conf = minimalConfig();
+        neuralNet.put("includeEncodedImage", true);
+        sendConfig(conf);
+        assertFalse("Should not fail when image include config is true", configIsFailed());
+
+        neuralNet.put("includeEncodedImage", false);
+        sendConfig(conf);
+        assertFalse("Should not fail when image include config is false", configIsFailed());
+
+        neuralNet.put("includeEncodedImage", "true");
+        sendConfig(conf);
+        assertFalse("Should not fail when image include config is true String", configIsFailed());
+
+        neuralNet.put("includeEncodedImage", "false");
+        sendConfig(conf);
+        assertFalse("Should not fail when image include config is false String", configIsFailed());
+    }
+
     @Test
     public void testMinimalConfig() {
         nCore.start(5); // Need a client to avoid NPEs on sends

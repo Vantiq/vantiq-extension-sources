@@ -678,6 +678,11 @@ public class ObjectRecognitionCore {
        if (neuralNetResults.getLastFilename() != null) {
            map.put("filename", neuralNetResults.getLastFilename());
        }
+
+       String encodedImage = neuralNetResults.getEncodedImage();
+       if (encodedImage != null) {
+           map.put("encodedImage", encodedImage);
+       }
        
        map.put("sourceName", sourceName);
        map.put("timestamp", imageResults.getTimestamp());
@@ -695,6 +700,7 @@ public class ObjectRecognitionCore {
        } else {
            map.put("neuralNet", new LinkedHashMap<>());
        }
+
        if (locationMapper != null) {
            // Then our source is configured to create a set of mapped results in addition to the NN results.
            List<Map<String, ?>> mappedResults = locationMapper.mapResults(nnRes);

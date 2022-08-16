@@ -93,7 +93,6 @@ public class TestJDBCBase {
     protected static void deleteSourceImpl(Vantiq vantiq) {
         if (createdImpl) {
             vantiq.deleteOne(VANTIQ_SOURCE_IMPL, JDBC_SRC_TYPE);
-            createdImpl = false;
         }
 
         VantiqResponse resp = vantiq.selectOne(VANTIQ_SOURCE_IMPL, JDBC_SRC_TYPE);
@@ -102,7 +101,7 @@ public class TestJDBCBase {
             if (errors.size() != 1 || !errors.get(0).getCode().equals("io.vantiq.resource.not.found")) {
                 fail("Error deleting source impl" + resp.getErrors());
             }
-        } else {
+        } else if (createdImpl) {
             fail(JDBC_SRC_TYPE + " source impl found after deletion.");
         }
     }
