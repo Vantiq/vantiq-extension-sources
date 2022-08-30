@@ -14,11 +14,7 @@ package io.vantiq.extjsdk;
 
 // For decoding of the messages received
 import com.fasterxml.jackson.databind.ObjectMapper;
-
-// WebSocket imports
-import okhttp3.OkHttpClient;
-import okhttp3.Request;
-import okhttp3.WebSocket;
+import com.google.common.collect.EvictingQueue;
 
 import java.io.IOException;
 import java.net.ServerSocket;
@@ -29,17 +25,19 @@ import java.util.Map;
 import java.util.concurrent.*;
 import java.util.Queue;
 import java.util.UUID;
-
-import com.google.common.collect.EvictingQueue;
-
-// Logging
+// WebSocket imports
 import okio.ByteString;
+import okhttp3.OkHttpClient;
+import okhttp3.Request;
+import okhttp3.WebSocket;
+// Logging
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
  * A client that handles the WebSocket connection with a Vantiq deployment, for the purposes of Extension sources.
  */
+@SuppressWarnings("PMD.TooManyFields")
 public class ExtensionWebSocketClient {
     
     /**

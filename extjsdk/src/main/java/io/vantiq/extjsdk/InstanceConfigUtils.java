@@ -1,3 +1,11 @@
+/*
+ * Copyright (c) 2022 Vantiq, Inc.
+ *
+ * All rights reserved.
+ *
+ * SPDX: MIT
+ */
+
 package io.vantiq.extjsdk;
 
 import static io.vantiq.extjsdk.Utils.AUTH_TOKEN_PROPERTY_NAME;
