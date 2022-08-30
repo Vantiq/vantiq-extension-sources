@@ -10,10 +10,6 @@ import java.util.Properties;
  */
 
 public class Utils {
-
-    // String used by methods to synch on
-    private final String SYNCH_LOCK = "synchLockString";
-
     public static final String SEND_PING_PROPERTY_NAME = "sendPings";
     public static final String PORT_PROPERTY_NAME = "tcpProbePort";
     public static final String SERVER_CONFIG_DIR = "serverConfig";
