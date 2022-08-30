@@ -297,7 +297,6 @@ public class ExtensionWebSocketClient {
         return localProbeFuture != null && localLivenessSocket != null && !localLivenessSocket.isClosed();
     }
     
-    
     /**
      * Attempts to connect to the source using the given target url and authentication token. If the connection fails,
      * {@link #isOpen}, {@link #isAuthed}, and {@link #isConnected} can be used to identify if the connection failed
@@ -344,7 +343,6 @@ public class ExtensionWebSocketClient {
     public synchronized CompletableFuture<Boolean> initiateWebsocketConnection(String url) {
         boolean sendPings = utils.obtainSendPingStatus();
         return initiateWebsocketConnection(url, sendPings);
-    
     }
     /**
      * Creates a WebSocket connection to the given URL. Does nothing if a connection has already been established
