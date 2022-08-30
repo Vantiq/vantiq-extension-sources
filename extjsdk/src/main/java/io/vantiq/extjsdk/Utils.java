@@ -10,6 +10,8 @@ import java.util.Properties;
  */
 
 public class Utils {
+    
+    private static final String SYNCH_LOCK = "UtilsSyncLock";
     public static final String SEND_PING_PROPERTY_NAME = "sendPings";
     public static final String PORT_PROPERTY_NAME = "tcpProbePort";
     public static final String SERVER_CONFIG_DIR = "serverConfig";
@@ -18,16 +20,14 @@ public class Utils {
     public static final String TARGET_SERVER_PROPERTY_NAME = "targetServer";
     public static final String AUTH_TOKEN_PROPERTY_NAME = "authToken";
     public static final String SOURCES_PROPERTY_NAME = "sources";
-    public static final String CONFIG_WAS_PROGRAMMATIC = "configWasProgrammatic";
-
-    // The properties object containing the data from the server configuration file
-    private Properties serverConfigProperties;
     
-    static InstanceConfigUtils staticInstance = null;
+    private static InstanceConfigUtils staticInstance = null;
     
     private static void ensureStaticInstance() {
-        if (staticInstance == null) {
-            staticInstance = new InstanceConfigUtils();
+        synchronized (SYNCH_LOCK) {
+            if (staticInstance == null) {
+                staticInstance = new InstanceConfigUtils();
+            }
         }
     }
     

@@ -17,10 +17,6 @@ import java.nio.file.Files;
 import java.util.Properties;
 
 public class InstanceConfigUtils {
-
-    // String used by methods to synch on
-    private final String SYNCH_LOCK = "synchLockString";
-    
     public static final String CONFIG_WAS_PROGRAMMATIC = "configWasProgrammatic";
 
     // The properties object containing the data from the server configuration file
@@ -61,7 +57,7 @@ public class InstanceConfigUtils {
         }
         localSCP.put(CONFIG_WAS_PROGRAMMATIC, true);
         
-        synchronized (SYNCH_LOCK) {
+        synchronized (this) {
             serverConfigProperties = localSCP;
         }
         return serverConfigProperties;
@@ -78,7 +74,7 @@ public class InstanceConfigUtils {
      * @return          The properties specified in the file.
      */
     public Properties obtainServerConfig(String fileName) {
-        synchronized (SYNCH_LOCK) {
+        synchronized (this) {
             boolean wasProgrammatic = false;
             if (serverConfigProperties != null) {
                 if (serverConfigProperties.get(CONFIG_WAS_PROGRAMMATIC) instanceof Boolean) {
@@ -130,7 +126,7 @@ public class InstanceConfigUtils {
         Properties localServerConfigProps;
 
         // Get a local copy of the props while synchronized
-        synchronized (SYNCH_LOCK) {
+        synchronized (this) {
             localServerConfigProps = serverConfigProperties;
         }
 
@@ -158,7 +154,7 @@ public class InstanceConfigUtils {
         Properties localServerConfigProps;
 
         // Get a local copy of the props while synchronized
-        synchronized (SYNCH_LOCK) {
+        synchronized (this) {
             localServerConfigProps = serverConfigProperties;
         }
 
@@ -180,7 +176,7 @@ public class InstanceConfigUtils {
      * Method used to clear the local copy of server.config properties
      */
     public void clearServerConfigProperties() {
-        synchronized (SYNCH_LOCK) {
+        synchronized (this) {
             serverConfigProperties = null;
         }
     }

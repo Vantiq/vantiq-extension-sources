@@ -343,7 +343,7 @@ public class ExtensionWebSocketClient {
      * @return      A {@link CompletableFuture} that will return true when the connection succeeds, or false
      *              WebSocket fails to connect.
      */
-    synchronized public CompletableFuture<Boolean> initiateWebsocketConnection(String url) {
+    public synchronized CompletableFuture<Boolean> initiateWebsocketConnection(String url) {
         boolean sendPings = utils.obtainSendPingStatus();
         return initiateWebsocketConnection(url, sendPings);
     
@@ -357,7 +357,7 @@ public class ExtensionWebSocketClient {
      * @return      A {@link CompletableFuture} that will return true when the connection succeeds, or false
      *              WebSocket fails to connect.
      */
-    synchronized public CompletableFuture<Boolean> initiateWebsocketConnection(String url, boolean sendPings) {
+    public synchronized CompletableFuture<Boolean> initiateWebsocketConnection(String url, boolean sendPings) {
         // Only create the webSocketFuture if the websocket connection has completed or it has failed
         if (webSocket == null || !webSocketFuture.getNow(true)) {
             webSocketFuture = new CompletableFuture<>();
@@ -635,7 +635,7 @@ public class ExtensionWebSocketClient {
      * @return      A {@link CompletableFuture} that will return true when the authentication succeeds, or false
      *              when the WebSocket connection fails before authentication can occur.
      */
-    synchronized public CompletableFuture<Boolean> authenticate(String user, String pass) {
+    public synchronized CompletableFuture<Boolean> authenticate(String user, String pass) {
         Map<String, String> authData = new LinkedHashMap<>();
         authData.put("username", user);
         authData.put("password", pass);
@@ -669,7 +669,7 @@ public class ExtensionWebSocketClient {
      * @return      A {@link CompletableFuture} that will return true when the authentication succeeds, or false
      *              when the WebSocket connection fails before authentication can occur.
      */
-    synchronized public CompletableFuture<Boolean> authenticate(String token) {
+    public synchronized CompletableFuture<Boolean> authenticate(String token) {
         authData = token;
         // Only create the authFuture if there has been no request or a failed request, and a websocket request has 
         // been made
@@ -724,7 +724,7 @@ public class ExtensionWebSocketClient {
      */
     // Send a connection request for the source
     // Note that this client MUST already be authenticated or else the message will be ignored
-    synchronized public CompletableFuture<Boolean> connectToSource() {
+    public synchronized CompletableFuture<Boolean> connectToSource() {
         // Only create the authFuture if there has been no request or a failed request, and a websocket request has 
         // been made
         if (authFuture != null && (sourceFuture == null || !sourceFuture.getNow(true))) {
