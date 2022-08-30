@@ -178,7 +178,16 @@ public class ExtensionWebSocketClient {
      * @param sourceName    The name of the source to which this client will be connected
      */
     public ExtensionWebSocketClient (String sourceName) {
-        this(sourceName, DEFAULT_FAILED_MESSAGE_QUEUE_SIZE);
+        this(sourceName, DEFAULT_FAILED_MESSAGE_QUEUE_SIZE, null);
+    }
+    
+    /**
+     * Creates an {@link ExtensionWebSocketClient} that will connect to the source {@code sourceName}.
+     * @param sourceName    The name of the source to which this client will be connected
+     * @param utility       Utils Utils instance used for this client.
+     */
+    public ExtensionWebSocketClient (String sourceName, InstanceConfigUtils utility) {
+        this(sourceName, DEFAULT_FAILED_MESSAGE_QUEUE_SIZE, utility);
     }
 
     /**
@@ -186,21 +195,40 @@ public class ExtensionWebSocketClient {
      * shared secret allows instances of this client to perform reconnects to the server.
      */
     protected static final String clientReconnectSecret = UUID.randomUUID().toString();
-
+    
+    /**
+     * Utility object used to collect & store config parameters
+     */
+    protected InstanceConfigUtils utils = null;
+    
     /**
      * Creates an {@link ExtensionWebSocketClient} that will connect to the source {@code sourceName}.
      * @param sourceName                The name of the source to which this client will be connected
      * @param failedMessageQueueSize    The max size of the failedMessageQueue
      */
     public ExtensionWebSocketClient (String sourceName, int failedMessageQueueSize) {
+        this(sourceName, failedMessageQueueSize, null);
+    }
+        
+        /**
+         * Creates an {@link ExtensionWebSocketClient} that will connect to the source {@code sourceName}.
+         * @param sourceName                The name of the source to which this client will be connected
+         * @param failedMessageQueueSize    The max size of the failedMessageQueue
+         * @param utility                   Utils Utils instance to be used for this client
+         */
+    public ExtensionWebSocketClient (String sourceName, int failedMessageQueueSize, InstanceConfigUtils utility) {
         this.sourceName = sourceName;
         outstandingNotifications = new Semaphore(5, true);
         log = LoggerFactory.getLogger(this.getClass().getCanonicalName() + "#" + sourceName);
+        if (utility == null) {
+            utility = Utils.getInstanceUtilsConfigInstance();
+            utils = utility;
+        }
         listener = new ExtensionWebSocketListener(this);
 
         // Check for Environment Variable to overwrite failedMessageQueue size, otherwise use default
         if (System.getenv(FAILED_MESAGE_QUEUE_SIZE) != null) {
-            int customQueueSize = new Integer(System.getenv(FAILED_MESAGE_QUEUE_SIZE));
+            int customQueueSize = Integer.parseInt(System.getenv(FAILED_MESAGE_QUEUE_SIZE));
             failedMessageQueue = EvictingQueue.create(customQueueSize);
         } else {
             failedMessageQueue = EvictingQueue.create(failedMessageQueueSize);
@@ -218,7 +246,7 @@ public class ExtensionWebSocketClient {
             return;
         }
 
-        Integer port = Utils.obtainTCPProbePort();
+        Integer port = utils.obtainTCPProbePort();
         if (port == null) {
             port = DEFAULT_TCP_PROBE_PORT;
         }
@@ -270,9 +298,10 @@ public class ExtensionWebSocketClient {
         ServerSocket localLivenessSocket = livenessSocket;
         return localProbeFuture != null && localLivenessSocket != null && !localLivenessSocket.isClosed();
     }
-
+    
+    
     /**
-     * Attempts to connect to the source using the given target url and authentication token. If the connection fails, 
+     * Attempts to connect to the source using the given target url and authentication token. If the connection fails,
      * {@link #isOpen}, {@link #isAuthed}, and {@link #isConnected} can be used to identify if the connection failed
      * or succeeded at the WebSocket, authentication attempt, and source, respectively. This function may be called
      * again regardless of where the failure occurred.
@@ -287,7 +316,25 @@ public class ExtensionWebSocketClient {
         authenticate(token);
         return connectToSource();
     }
-
+    
+    /**
+     * Attempts to connect to the source using the given target url and authentication token. If the connection fails,
+     * {@link #isOpen}, {@link #isAuthed}, and {@link #isConnected} can be used to identify if the connection failed
+     * or succeeded at the WebSocket, authentication attempt, and source, respectively. This function may be called
+     * again regardless of where the failure occurred.
+     *
+     * @param url   The url of the target Vantiq server.
+     * @param token The authentication token for the target namespace.
+     * @param sendPings boolean indicating whether to send ping messages
+     * @return      An {@link CompletableFuture} that completes as {@code true} when the connection to the source is
+     *              fully completed, or {@code false} when the connection fails at any point along the way.
+     */
+    public CompletableFuture<Boolean> initiateFullConnection(String url, String token, boolean sendPings) {
+        initiateWebsocketConnection(url, sendPings);
+        authenticate(token);
+        return connectToSource();
+    }
+    
     /**
      * Creates a WebSocket connection to the given URL. Does nothing if a connection has already been established
      *
@@ -297,6 +344,20 @@ public class ExtensionWebSocketClient {
      *              WebSocket fails to connect.
      */
     synchronized public CompletableFuture<Boolean> initiateWebsocketConnection(String url) {
+        boolean sendPings = utils.obtainSendPingStatus();
+        return initiateWebsocketConnection(url, sendPings);
+    
+    }
+    /**
+     * Creates a WebSocket connection to the given URL. Does nothing if a connection has already been established
+     *
+     * @param url   The url of the Vantiq system to which you wish to connect.
+     *              Typically "wss://dev.vantiq.com/api/v1/wsock/websocket"
+     * @param sendPings boolean indicating whether to send pings.
+     * @return      A {@link CompletableFuture} that will return true when the connection succeeds, or false
+     *              WebSocket fails to connect.
+     */
+    synchronized public CompletableFuture<Boolean> initiateWebsocketConnection(String url, boolean sendPings) {
         // Only create the webSocketFuture if the websocket connection has completed or it has failed
         if (webSocket == null || !webSocketFuture.getNow(true)) {
             webSocketFuture = new CompletableFuture<>();
@@ -305,8 +366,6 @@ public class ExtensionWebSocketClient {
             OkHttpClient.Builder clientBuilder = new OkHttpClient.Builder()
                     .readTimeout(0, TimeUnit.MILLISECONDS)
                     .writeTimeout(0, TimeUnit.MILLISECONDS);
-
-            boolean sendPings = Utils.obtainSendPingStatus();
             if (sendPings) {
                 clientBuilder.pingInterval(5000, TimeUnit.MILLISECONDS);
             }
