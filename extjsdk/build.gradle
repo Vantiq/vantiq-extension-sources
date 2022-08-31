@@ -4,12 +4,11 @@ buildscript {
 
 plugins {
     id 'java'
+    id 'maven-publish'
 }
 
 group 'io.vantiq'
 version 'unspecified'
-
-sourceCompatibility = 1.8
 
 ext {
     // Open the Git repository in the current directory and get commit id of HEAD.
@@ -102,4 +101,15 @@ task fatJar(type: Jar) {
     from configurations.runtimeClasspath.
                 findAll( { it.name.endsWith('jar') && !it.name.startsWith('groovy')}).
                 collect( { zipTree(it) })
+}
+
+publishing {
+    publications {
+        maven(MavenPublication) {
+            from components.java
+            groupId = 'io.vantiq'
+            artifactId = 'extjsdk'
+            version = '1.0'
+        }
+    }
 }

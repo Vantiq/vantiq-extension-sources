@@ -1,5 +1,6 @@
 rootProject.name = 'vantiq-extension-source'
 include 'extjsdk'
+include 'camelComponent'
 include 'extpsdk'
 include 'opcuaSource'
 include 'pythonExecSource'

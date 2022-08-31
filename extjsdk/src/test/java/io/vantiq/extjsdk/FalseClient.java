@@ -17,6 +17,7 @@ import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import lombok.Setter;
 
 /**
  * Provides a Client that will fake its WebSocket connection and can retrieve the data it sent via the fake connection.
@@ -25,17 +26,42 @@ import com.fasterxml.jackson.databind.ObjectMapper;
  *
  */
 public class FalseClient extends ExtensionWebSocketClient {
+    
+    @Setter
+    private boolean defeatAutoAck = false;
     public FalseClient(String sourceName) {
         super(sourceName);
+        listener = new TestListener(this);
     }
     
     ObjectMapper mapper = new ObjectMapper();
-
+    
+    /**
+     * Acknowledge the send.
+     *
+     * In the "real" client, this happens when the response message is received.  Here, since we don't have a response
+     * message (since we have no real message), we'll do the ack automatically when someone reads the message.  Since
+     * these messages are meant to be visited immediately, this is sufficient.
+     *
+     * We allow this behavior to be defeated if desired (using this.setDefeatAutoAck(true);).  Yes, it's backwards,
+     * but it is unusual to do this.
+     */
     @Override
-    public CompletableFuture<Boolean> initiateWebsocketConnection(String url) {
+    void acknowledgeNotification() {
+        if (!defeatAutoAck) {
+            super.acknowledgeNotification();
+        }
+    }
+    @Override
+    public CompletableFuture<Boolean> initiateWebsocketConnection(String url, boolean sendPings) {
         webSocketFuture = new CompletableFuture<Boolean>();
         webSocket = new FalseWebSocket();
         return webSocketFuture;
+    }
+    
+    @Override
+    public CompletableFuture<Boolean> initiateWebsocketConnection(String url) {
+        return initiateWebsocketConnection(url, false);
     }
     
     /**
@@ -100,6 +126,7 @@ public class FalseClient extends ExtensionWebSocketClient {
      *          message has been sent.
      */
     public byte[] getLastMessageAsBytes() {
+        acknowledgeNotification();
         return ((FalseWebSocket) webSocket).getMessage();
     }
     
@@ -110,6 +137,7 @@ public class FalseClient extends ExtensionWebSocketClient {
      * @return  The last message sent by the client as a Map, or null if no message has been sent yet.
      */
     public Map getLastMessageAsMap() {
+        acknowledgeNotification();
         try {
             return mapper.readValue(((FalseWebSocket) webSocket).getMessage(), Map.class);
         } catch(IOException e) {
@@ -125,7 +153,9 @@ public class FalseClient extends ExtensionWebSocketClient {
      * @throws  IOException if the message could not be interpreted as a Response. This is most likely to occur if
      *          the last message was not a Response.
      */
-    public Response getLastMessageAsResponse() throws IOException{
+    public Response getLastMessageAsResponse() throws IOException {
+        acknowledgeNotification();
+    
         byte[] bytes = ((FalseWebSocket) webSocket).getMessage();
         if (bytes == null) {
             return null;
@@ -142,7 +172,8 @@ public class FalseClient extends ExtensionWebSocketClient {
      * @throws  IOException if the message could not be interpreted as a ExtensionServiceMessage. This is most
      *          likely to occur if the last message was not a ExtensionServiceMessage.
      */
-    public ExtensionServiceMessage getLastMessageAsExtSvcMsg() throws IOException{
+    public ExtensionServiceMessage getLastMessageAsExtSvcMsg() throws IOException {
+        acknowledgeNotification();
         byte[] bytes = ((FalseWebSocket) webSocket).getMessage();
         if (bytes == null) {
             return null;
