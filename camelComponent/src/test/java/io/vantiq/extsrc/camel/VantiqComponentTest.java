@@ -35,8 +35,6 @@ public class VantiqComponentTest extends CamelTestSupport {
     private static final String TEST_MSG_PREAMBLE = "published message from FauxVantiq";
     private static final String TEST_MSG_KEY = "someRandomKey";
     
-    private final EventBusHelper eventBusHelper = EventBusHelper.getInstance();
-    
     private final String routeStartUri = "direct:start";
     private final String routeEndUri = "mock:direct:result";
     private final String vantiqEndpointUri = "vantiq://doesntmatter/" +
@@ -243,18 +241,5 @@ public class VantiqComponentTest extends CamelTestSupport {
                 
             }
         };
-    }
-
-    private void simulateEventTrigger() {
-        final TimerTask task = new TimerTask() {
-            @Override
-            public void run() {
-                final Date now = new Date();
-                // publish events to the event bus
-                eventBusHelper.publish(now);
-            }
-        };
-
-        new Timer().scheduleAtFixedRate(task, 1000L, 1000L);
     }
 }

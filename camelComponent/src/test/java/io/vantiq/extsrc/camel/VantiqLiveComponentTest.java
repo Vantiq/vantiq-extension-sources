@@ -51,8 +51,6 @@ public class VantiqLiveComponentTest extends CamelTestSupport {
     public static String vantiqAccessToken = System.getProperty("TestAuthToken");
     
     private static Vantiq vantiq;
-    private final EventBusHelper eventBusHelper = EventBusHelper.getInstance();
-    
     
     private final String routeStartUri = "direct:start";
     private final String routeEndUri = "mock:direct:result";
