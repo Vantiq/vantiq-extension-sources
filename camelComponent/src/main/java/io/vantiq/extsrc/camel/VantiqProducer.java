@@ -6,6 +6,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.camel.Exchange;
 import org.apache.camel.converter.stream.InputStreamCache;
+import org.apache.camel.InvalidPayloadException;
 import org.apache.camel.support.DefaultProducer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -54,9 +55,9 @@ public class VantiqProducer extends DefaultProducer {
             } else if (msg instanceof JsonNode) {
                 vMsg = mapper.convertValue(msg, new TypeReference<>(){});
             } else {
-                log.error("Unexpected type: {}.  Unable to convert to Map to send to Vantiq.", msg.getClass().getName());
-                throw new IllegalArgumentException("Message to vantiq must be either a String or a Map, got unconvertable " +
+                log.error("Unexpected type: {}.  Unable to convert to Map to send to Vantiq.",
                         msg.getClass().getName());
+                throw new InvalidPayloadException(exchange, Map.class);
             }
         }
         log.trace("Sending message: {}", vMsg);

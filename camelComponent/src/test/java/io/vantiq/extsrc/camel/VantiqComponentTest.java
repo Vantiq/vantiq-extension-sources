@@ -9,22 +9,20 @@ import io.vantiq.extjsdk.FalseWebSocket;
 import io.vantiq.extjsdk.TestListener;
 import okhttp3.WebSocket;
 import okio.ByteString;
-import org.apache.camel.Endpoint;
 import org.apache.camel.Exchange;
+import org.apache.camel.InvalidPayloadException;
+import org.apache.camel.LoggingLevel;
 import org.apache.camel.builder.RouteBuilder;
 import org.apache.camel.component.mock.MockEndpoint;
 import org.apache.camel.test.junit4.CamelTestSupport;
 import org.junit.Test;
 
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.Timer;
-import java.util.TimerTask;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -37,6 +35,8 @@ public class VantiqComponentTest extends CamelTestSupport {
     
     private final String routeStartUri = "direct:start";
     private final String routeEndUri = "mock:direct:result";
+    
+    private final String exceptionEndpoint = "mock:direct:error";
     private final String vantiqEndpointUri = "vantiq://doesntmatter/" +
             "?sourceName=" + testSourceName +
             "&accessToken=" + accessToken;
@@ -162,6 +162,38 @@ public class VantiqComponentTest extends CamelTestSupport {
     }
     
     @Test
+    public void testVantiqProducerInvalid() throws Exception {
+        
+        // First, grab our test environment.
+        FauxVantiqComponent vc = (FauxVantiqComponent) context.getComponent("vantiq");
+        assert vc != null;
+        // Note that we need to fetch the endpoints by URI since there are more than one of them.
+        FauxVantiqEndpoint ep = (FauxVantiqEndpoint) context.getEndpoint(vantiqEndpointUri);
+        FalseClient fc = ep.myClient;
+        
+        ArrayList<Integer> msgs = new ArrayList<>();
+        
+        int itemCount = 10;
+        for (int i = 0; i < itemCount; i++) {
+            msgs.add(i);
+        }
+    
+        MockEndpoint mocked = getMockEndpoint(exceptionEndpoint);
+        mocked.expectedMinimumMessageCount(itemCount);
+        
+        for (Object item: msgs) {
+            log.info("Sending msg: " + item);
+            
+            assert item != null;
+            sendBody(routeStartUri, item);
+        }
+    
+        mocked.await(5L, TimeUnit.SECONDS);
+    
+        assertEquals("Mocked service expected vs. actual", itemCount, mocked.getReceivedCounter());
+    }
+    
+    @Test
     public void testVantiqConsumer() throws Exception {
     
         // First, grab our test environment.
@@ -217,6 +249,7 @@ public class VantiqComponentTest extends CamelTestSupport {
         return new RouteBuilder() {
             public void configure() {
     
+                
                 // Override the component type to be used...
                 context.addComponent("vantiq", new FauxVantiqComponent());
                 for (String name: context.getComponentNames()) {
@@ -231,6 +264,10 @@ public class VantiqComponentTest extends CamelTestSupport {
 //                        .unmarshal()
 //                        .json();
     
+                onException(InvalidPayloadException.class)
+                        .log(LoggingLevel.ERROR, "Got InvalidPayloadException")
+                                .to(exceptionEndpoint);
+                
                 from(routeStartUri)
                   .to(vantiqEndpointUri);
                 
