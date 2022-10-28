@@ -1,3 +1,11 @@
+/*
+ * Copyright (c) 2022 Vantiq, Inc.
+ *
+ * All rights reserved.
+ *
+ * SPDX: MIT
+ */
+
 package io.vantiq.extsrc.camel;
 
 import java.util.Map;

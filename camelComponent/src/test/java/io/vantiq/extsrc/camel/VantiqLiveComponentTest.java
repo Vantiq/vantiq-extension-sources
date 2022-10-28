@@ -1,3 +1,11 @@
+/*
+ * Copyright (c) 2022 Vantiq, Inc.
+ *
+ * All rights reserved.
+ *
+ * SPDX: MIT
+ */
+
 package io.vantiq.extsrc.camel;
 
 import static org.junit.Assume.assumeTrue;
@@ -32,8 +40,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class VantiqLiveComponentTest extends CamelTestSupport {
-    
-    
     private static final String SRC_IMPL_TYPE = "CAMEL_COMPONENT";
     private static final String IMPL_DEF = "camelComponentImpl.json";
     private static final Integer IMPL_MAX_SIZE = 1000;
