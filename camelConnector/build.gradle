@@ -1,0 +1,78 @@
+plugins {
+    id 'java'
+    id 'maven-publish'
+}
+
+repositories {
+    mavenCentral()
+}
+
+ext {
+    camelVersion='3.18.1'
+    log4JVersion='2.17.2'
+    extjsdkVersion='1.0'
+    jacksonVersion = '2.9.3' // FIXME: check latest version & promote to parent build.
+}
+
+
+dependencies {
+    annotationProcessor "org.projectlombok:lombok:${lombokVersion}"
+
+    implementation "org.apache.camel:camel-core:${camelVersion}"
+    implementation "org.apache.camel:camel-support:${camelVersion}"
+    implementation "org.apache.camel:camel-jackson:${camelVersion}"
+    implementation "org.apache.commons:commons-lang3:3.12.0"
+
+    implementation project(":extjsdk")
+    implementation project(":camelComponent")    // The Vantiq Camel Component is automatically included
+    implementation "org.projectlombok:lombok:${lombokVersion}"
+    implementation "com.fasterxml.jackson.core:jackson-databind:${jacksonVersion}"
+    implementation 'com.google.code.gson:gson:2.9.1'
+
+    testImplementation "org.apache.logging.log4j:log4j-slf4j-impl:${log4JVersion}"
+    testImplementation "org.apache.camel:camel-test:${camelVersion}"
+    testImplementation "org.apache.camel:camel-xml-io-dsl:${camelVersion}"
+    testImplementation "io.vantiq:vantiq-sdk:${vantiqSDKVersion}"
+    testImplementation project(path: ":extjsdk", configuration: 'testArtifacts')
+}
+
+group = 'io.vantiq.extsrc.camelconnector'
+version = 'unspecified'
+description = 'Vantiq Camel Connector'
+java.sourceCompatibility = 1.11
+java.targetCompatibility = JavaVersion.VERSION_11
+
+publishing {
+    publications {
+        maven(MavenPublication) {
+            from(components.java)
+            pom {
+                licenses {
+                    license {
+                        name = 'The MIT License'
+                        url = 'https://opensource.org/licenses/MIT'
+                    }
+                }
+            }
+        }
+    }
+}
+
+tasks.withType(JavaCompile) {
+    options.encoding = 'UTF-8'
+}
+
+tasks.withType(Test) {
+    if (rootProject.hasProperty("TestAuthToken")) {
+        systemProperty "TestAuthToken", rootProject.findProperty("TestAuthToken") ?: "empty"
+    }
+    if (rootProject.hasProperty("TestVantiqServer")) {
+        systemProperty "TestVantiqServer", rootProject.findProperty("TestVantiqServer") ?: "empty"
+    }
+    // Use the build dir as a base to get our various test artifacts.
+    systemProperty "buildDir", "${buildDir}"
+}
+
+test {
+    useJUnitPlatform()
+}
