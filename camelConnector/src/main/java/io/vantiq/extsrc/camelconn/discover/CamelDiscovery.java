@@ -45,7 +45,7 @@ public class CamelDiscovery {
             ExtendedCamelContext ectx = ctx.adapt(ExtendedCamelContext.class);
             EnumeratingComponentResolver ecr = new EnumeratingComponentResolver(ectx.getComponentResolver());
             ectx.setComponentResolver(ecr);
-            log.debug("Discovering components using context: {}", ectx.getName());
+            log.debug("Discovering Camel (version {}) components using context: {}", ectx.getVersion(), ectx.getName());
     
             assert ectx.getComponentResolver() instanceof EnumeratingComponentResolver;
             try {
