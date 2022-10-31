@@ -1,3 +1,8 @@
+import groovy.json.JsonOutput
+import groovy.json.JsonSlurper
+import groovy.namespace.QName
+import groovy.xml.XmlParser
+
 plugins {
     id 'java'
     id 'maven-publish'
@@ -8,7 +13,7 @@ repositories {
 }
 
 ext {
-    camelVersion='3.18.1'
+    camelVersion='3.18.3'
     log4JVersion='2.17.2'
     extjsdkVersion='1.0'
     jacksonVersion = '2.9.3' // FIXME: check latest version & promote to parent build.
@@ -73,6 +78,105 @@ tasks.withType(Test) {
     systemProperty "buildDir", "${buildDir}"
 }
 
+/**
+ * This task generates a JSON file containing a map from the component scheme to the required component
+ * This is used when we are discovering components.
+ *
+ * This task requires the gradle property 'camelRoot' is defined, and that it points to the root directory
+ * of a git repo representing the version of camel against which we expect to run.  We use this to scan
+ * the collected pom.xml & META-INF service definitions to build up the map mentioned above.
+ *
+ * We consider this up to date when the version in the existing file matches the version of camel against
+ * which we are building/running.
+ *
+ * The file produced by this task is added to the project's jar file, so there is a dependency from the jar
+ * task to this task.
+ */
+
+final String ARTIFACT_MAP_PATH = project.buildDir.absolutePath + '/resources/main/artifactMap.json'
+tasks.register('generateComponentList', ) {
+    it.outputs.file(ARTIFACT_MAP_PATH)
+    it.outputs.upToDateWhen ({ param ->
+        def f = file(ARTIFACT_MAP_PATH)
+        logger.debug('Exists: {} :: {}', f.exists(), f.getPath())
+        if (f.exists()) {
+            Map artMap = new JsonSlurper().parse(f)
+            def fileVersion = artMap.get('camelVersion')
+            logger.debug('UpToDate: {} vs. build version {}', fileVersion.substring(0,4), camelVersion.substring(0,4))
+            return fileVersion.substring(0, 4) == camelVersion.substring(0, 4)
+        }
+        logger.debug('Returning false')
+        return false
+    })
+    doFirst {
+        if (!rootProject.hasProperty('camelRoot')) {
+            throw new GradleException('"camelRoot" property is required to generate the component list')
+        }
+    }
+    doLast {
+        def camRootSpec = rootProject.getProperty('camelRoot')
+        logger.error('CamelRootSpec: {}', camRootSpec)
+        def camelRoot = file(camRootSpec)
+        logger.info('Camel root is {}', camelRoot.absolutePath)
+        def components = file("${camelRoot.absolutePath}/components")
+        logger.info('Components is: {}', components.absolutePath)
+        def compDef = fileTree(dir: components, include: '**/src/**/META-INF/services/org/apache/camel/component/*').
+            getFiles()
+        logger.info("Found {} component definition files.", compDef.size())
+        logger.debug("Component definition files: ")
+        Map<String, String> compMap = [:]
+        boolean foundErrors = false
+        compDef.each { aComp ->
+            def f = file(aComp)
+            if (!f.path.contains("target/classes/META-INF")) {
+                logger.debug("    --> {} at {}", f.name, f.parent)
+                def pomLoc = file(aComp.parent + "../../../../../../../../../../pom.xml")
+                logger.debug("    --> (pom.xml exists): {} :: {}", pomLoc.exists(), pomLoc.path)
+                def parsed = new XmlParser().parse(pomLoc)
+                def artifactId = parsed.artifactId
+                // Getting a node named 'parent' (the simple way) conflicts with the getting the parent node
+                // Things tend to work, but let's do things properly so that we can avoid complications in the future.
+                def parentNodeName = new QName(parsed.name().namespaceURI, "parent")
+                def componentVersion = parsed.getAt(parentNodeName).version.text()
+                if (artifactId.text().endsWith('-parent')) {
+                    logger.error(">>>> This is a parent <<<<")
+                    foundErrors = true
+                }
+                if (componentVersion.substring(0, 4) != camelVersion.substring(0, 4)) {
+                    logger.error('Version mismatch -- component version {} vs our camelVersion: {}',
+                        componentVersion, camelVersion)
+                    foundErrors = true
+                }
+                logger.debug('Artifact {} produced by pom.xml file : {}', artifactId.text(), pomLoc.path)
+                logger.debug('Scheme {} requires Artifact {}', aComp.name, artifactId.text())
+                if (compMap[aComp.name] != null) {
+                    if (compMap[aComp.name] != artifactId.text()) {
+                        foundErrors = true
+                        logger.error("Scheme {} has artifact name confusion/collision: {} vs {}", aComp.name,
+                            compMap[aComp.name], artifactId.text())
+                    }
+                }
+                compMap.put(aComp.name, artifactId.text())
+            } else {
+                logger.debug("            (skipping {} since it's a build artifact duplicate)", aComp.path)
+            }
+        }
+        if (foundErrors) {
+            throw new GradleException("Found errors gathering scheme to artifact mapping.")
+        }
+        def artifactDef = [ camelVersion: camelVersion, artifacts: compMap]
+        def jsonPretty = JsonOutput.prettyPrint(JsonOutput.toJson(artifactDef))
+        def compFile = file(ARTIFACT_MAP_PATH)
+        if (compFile.exists()) {
+            compFile.delete()
+        }
+        compFile.createNewFile()
+        compFile.write(jsonPretty)
+    }
+}
+
 test {
     useJUnitPlatform()
 }
+
+jar.dependsOn generateComponentList
