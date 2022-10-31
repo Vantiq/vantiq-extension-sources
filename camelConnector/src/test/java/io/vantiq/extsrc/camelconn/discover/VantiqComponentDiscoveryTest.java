@@ -136,6 +136,31 @@ public class VantiqComponentDiscoveryTest extends CamelTestSupport {
                      expectedCTL.size(),  discResults.get(CamelDiscovery.COMPONENTS_TO_LOAD).size());
         assertEquals("System Components:", expectedSysComp.size(),
                      discResults.get(CamelDiscovery.SYSTEM_COMPONENTS).size());
+        
+        // Double check that things are loadable
+    
+        discResults.get(CamelDiscovery.COMPONENTS_TO_LOAD).forEach(compSchema -> {
+            try {
+                if (!compSchema.equals("vantiq")) {
+                    String loadable = discoverer.findComponentForScheme(compSchema);
+                    log.debug("Need to load {} for scheme: {}", loadable, compSchema);
+                    assertNotNull("Missing loadable artifact: " + compSchema, loadable);
+                }
+            } catch (DiscoveryException de) {
+                fail("Trapped DiscoveryException: " + de.getMessage());
+            }
+        });
+        
+        // Same thing should be true of system stuff, though we won't really load them
+        discResults.get(CamelDiscovery.SYSTEM_COMPONENTS).forEach(compSchema -> {
+            try {
+                String loadable = discoverer.findComponentForScheme(compSchema);
+                log.debug("Need to load {} for scheme: {}", loadable, compSchema);
+                assertNotNull("Missing loadable artifact: " + compSchema, loadable);
+            } catch (DiscoveryException de) {
+                fail("Trapped DiscoveryException: " + de.getMessage());
+            }
+        });
     }
     
     interface TestExpectations {
@@ -187,11 +212,9 @@ public class VantiqComponentDiscoveryTest extends CamelTestSupport {
         
         @Override
         public void configure() {
-            // From some atomix resource, check the message content.  If it's an error, log it & send to jmx queue
+            // From some AWS S3 resource, check the message content.  If it's an error, log it & send to jmx queue
             // Otherwise, send to the Vantiq app
-            from("atomix:someAtomixResource?atomix=someAtomixInstance&broadcastType=ALL&channelName=foo" +
-                            "&transport=io.atomix.catalyst.transport.netty.NettyTransport&bridgeErrorHandler=true" +
-                            "&synchronous=true")
+            from("aws2-s3://helloBucket?accessKey=yourAccessKey&secretKey=yourSecretKey&prefix=hello.txt")
                 .choice()
                     .when(xpath("/record/error"))
                         .to("log:error")
@@ -203,7 +226,7 @@ public class VantiqComponentDiscoveryTest extends CamelTestSupport {
         }
         @Override
         public List<String> getExpectedComponentsToLoad() {
-            return List.of("atomix", "jmx", "vantiq");
+            return List.of("aws2-s3", "jmx", "vantiq");
         }
         
         @Override

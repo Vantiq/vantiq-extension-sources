@@ -8,11 +8,15 @@
 
 package io.vantiq.extsrc.camelconn.discover;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.camel.ExtendedCamelContext;
 import org.apache.camel.builder.RouteBuilder;
 import org.apache.camel.impl.DefaultCamelContext;
 
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
@@ -27,6 +31,9 @@ public class CamelDiscovery {
     
     public static final String SYSTEM_COMPONENTS = "systemComponents";
     public static final String COMPONENTS_TO_LOAD = "componentsToLoad";
+    
+    private static Map<String, Object> artifactMap;
+    private static Map<String, String> artifacts;
     
     /**
      * Determine the set of components used in the routes in a route builder.
@@ -70,6 +77,37 @@ public class CamelDiscovery {
         } catch (Exception e) {
             log.error("Trapped exception preparing or completing component discovery", e);
             throw new DiscoveryException("Exception preparing or completing component discovery processing", e);
+        }
+    }
+    
+    @SuppressWarnings({"unchecked"})
+    String findComponentForScheme(String scheme) throws DiscoveryException {
+        if (artifactMap == null || artifacts == null) {
+            loadArtifactMap();
+            artifacts = (Map<String, String>) artifactMap.get("artifacts");
+        }
+        return artifacts.get(scheme);
+    }
+    
+    /**
+     * Load the artifact map.
+     *
+     * This is loaded once per class load rather than once/instance.  It's produced by the build and will not change
+     * over the time that the system is running.
+     *
+     * @throws DiscoveryException If there are issues loading the artifact
+     */
+    static synchronized void loadArtifactMap() throws DiscoveryException {
+        try (InputStream in =
+                     CamelDiscovery.class.getResourceAsStream("/artifactMap.json")) {
+            if (in == null) {
+                throw new DiscoveryException("Unable to load artifactMap.json file.");
+            }
+            String jsonString = new String(in.readAllBytes());
+            log.debug("Map is {}", jsonString);
+            artifactMap = new ObjectMapper().readValue(jsonString, new TypeReference<>() {});
+        } catch (IOException ioe) {
+            throw new DiscoveryException("Error loading artifact map from classpath", ioe);
         }
     }
 }
