@@ -38,7 +38,7 @@ public class VantiqComponentDiscoveryTest extends CamelTestSupport {
     @BeforeClass
     public static void setup() throws Exception {
         URI vuri = new URI("http://localhost:8080");
-        String endpointUri = "vantiq://" + vuri.getHost();
+        String endpointUri = CamelDiscovery.VANTIQ_COMPONENT_SCHEME + "://" + vuri.getHost();
         if (vuri.getPort() > 0) {
             endpointUri = endpointUri + ":" + vuri.getPort();
         }
@@ -48,6 +48,54 @@ public class VantiqComponentDiscoveryTest extends CamelTestSupport {
         if (("http".equals(vuri.getScheme()) || "ws".equals(vuri.getScheme()))) {
             vantiqEndpointUri = vantiqEndpointUri + "&noSsl=true";
         }
+    }
+    
+    @Test
+    public void testVersioning() throws DiscoveryException {
+        CamelDiscovery cd = new CamelDiscovery();
+        String artifactVersion = cd.getComponentListVersion();
+        String camelVersion = context.getVersion();
+        assertTrue("Build version " + artifactVersion + " is incompatible with camel version " + camelVersion,
+                   cd.isVersionCompatible(camelVersion));
+        assertFalse("Bad version -- too short", cd.isVersionCompatible("1"));
+        assertFalse("Bad version -- Major different", cd.isVersionCompatible("6000.3456"));
+        String[] camelVersionParts = camelVersion.split("\\.");
+        assertFalse("Bad version -- Minor different",
+                    cd.isVersionCompatible(camelVersionParts[0] + ".9247877"));
+        assertTrue("Different extraneous parts",
+                   cd.isVersionCompatible(camelVersionParts[0] + "." + camelVersionParts[1] +
+                           "." + "1234.566778"));
+    }
+    
+    @Test
+    public void testComponentLookup() throws DiscoveryException {
+        
+        // Check basic mechanism
+        
+        List<String> shouldExist = List.of("aws2-s3", "jdbc", "activemq", "jms", "box", "salesforce" );
+        List<String> shouldNotExist = List.of("vantiq", "bozoSoftware", "homersHouse");
+        
+        CamelDiscovery cd = new CamelDiscovery();
+        String artifactVersion = cd.getComponentListVersion();
+        String camelVersion = context.getVersion();
+        assertTrue("Build version " + artifactVersion + " is incompatible with camel version " + camelVersion,
+            cd.isVersionCompatible(camelVersion));
+        
+        shouldExist.forEach(comp -> {
+            try {
+                assertNotNull("Missing loadable for " + comp, cd.findComponentForScheme(comp));
+            } catch (DiscoveryException de) {
+                fail("Trapped exception looking up " + comp +"::" + de.getMessage());
+            }
+        });
+    
+        shouldNotExist.forEach(comp -> {
+            try {
+                assertNull("Extraneous loadable for " + comp, cd.findComponentForScheme(comp));
+            } catch (DiscoveryException de) {
+                fail("Trapped exception looking up " + comp +"::" + de.getMessage());
+            }
+        });
     }
     
     /**
@@ -144,7 +192,11 @@ public class VantiqComponentDiscoveryTest extends CamelTestSupport {
                 if (!compSchema.equals("vantiq")) {
                     String loadable = discoverer.findComponentForScheme(compSchema);
                     log.debug("Need to load {} for scheme: {}", loadable, compSchema);
-                    assertNotNull("Missing loadable artifact: " + compSchema, loadable);
+                    if (compSchema.equals(CamelDiscovery.VANTIQ_COMPONENT_SCHEME)) {
+                        assertNull("Vantiq scheme should not have a loadable component", loadable);
+                    } else {
+                        assertNotNull("Missing loadable artifact: " + compSchema, loadable);
+                    }
                 }
             } catch (DiscoveryException de) {
                 fail("Trapped DiscoveryException: " + de.getMessage());
