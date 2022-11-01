@@ -95,6 +95,7 @@ tasks.withType(Test) {
 
 final String ARTIFACT_MAP_PATH = project.buildDir.absolutePath + '/resources/main/artifactMap.json'
 tasks.register('generateComponentList', ) {
+    String[] camVersionParts = camelVersion.tokenize('.')
     it.outputs.file(ARTIFACT_MAP_PATH)
     it.outputs.upToDateWhen ({ param ->
         def f = file(ARTIFACT_MAP_PATH)
@@ -102,8 +103,10 @@ tasks.register('generateComponentList', ) {
         if (f.exists()) {
             Map artMap = new JsonSlurper().parse(f)
             def fileVersion = artMap.get('camelVersion')
-            logger.debug('UpToDate: {} vs. build version {}', fileVersion.substring(0,4), camelVersion.substring(0,4))
-            return fileVersion.substring(0, 4) == camelVersion.substring(0, 4)
+            def fileVersionParts = fileVersion.tokenize('.')
+            logger.error('UpToDate: {} vs. build version {}', fileVersion.substring(0,4), camelVersion.substring(0,4))
+            return fileVersionParts[0] == camVersionParts[0] &&
+                fileVersionParts[1] == camVersionParts[1]
         }
         logger.debug('Returning false')
         return false
@@ -137,12 +140,14 @@ tasks.register('generateComponentList', ) {
                 // Getting a node named 'parent' (the simple way) conflicts with the getting the parent node
                 // Things tend to work, but let's do things properly so that we can avoid complications in the future.
                 def parentNodeName = new QName(parsed.name().namespaceURI, "parent")
-                def componentVersion = parsed.getAt(parentNodeName).version.text()
+                String componentVersion = parsed.getAt(parentNodeName).version.text()
                 if (artifactId.text().endsWith('-parent')) {
                     logger.error(">>>> This is a parent <<<<")
                     foundErrors = true
                 }
-                if (componentVersion.substring(0, 4) != camelVersion.substring(0, 4)) {
+                String[] compVersionParts = componentVersion.tokenize('.')
+                if (compVersionParts[0] != camVersionParts[0] ||
+                    compVersionParts[1] != camVersionParts[1]) {
                     logger.error('Version mismatch -- component version {} vs our camelVersion: {}',
                         componentVersion, camelVersion)
                     foundErrors = true
