@@ -18,8 +18,10 @@ import org.apache.camel.impl.DefaultCamelContext;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.HashMap;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
+import java.util.StringTokenizer;
 
 /**
  * Support for discovery of system components from a (set of) Camel routes.  We will use this information to load the
@@ -31,6 +33,11 @@ public class CamelDiscovery {
     
     public static final String SYSTEM_COMPONENTS = "systemComponents";
     public static final String COMPONENTS_TO_LOAD = "componentsToLoad";
+    
+    public static final String VANTIQ_COMPONENT_SCHEME = "vantiq";
+    
+    private static final String ARTIFACTS_KEY_NAME = "artifacts";
+    private static final String CAMEL_VERSION_KEY_NAME = "camelVersion";
     
     private static Map<String, Object> artifactMap;
     private static Map<String, String> artifacts;
@@ -80,13 +87,45 @@ public class CamelDiscovery {
         }
     }
     
-    @SuppressWarnings({"unchecked"})
+    /**
+     * Find the name of the camel component from which it runs these components based on the scheme.
+     *
+     * Using the generated artifactsMap (see {@link build.gradle#generateComponentList}), lookup the schema
+     * name and return the component name found.  It (will be) assumed that these are all in org.apache.camel, and
+     * that they all share the save camel version as that which we are running.  This is the Apache Camel way.
+     *
+     * @param scheme String name of component scheme used to define endpoints, etc.
+     * @return String identifying the name of the loadable artifact that contains the code to run the component.  Can
+     *         be null if no artifact is found.
+     * @throws DiscoveryException If errors occur attempting to find the artifact
+     */
+
     String findComponentForScheme(String scheme) throws DiscoveryException {
         if (artifactMap == null || artifacts == null) {
             loadArtifactMap();
-            artifacts = (Map<String, String>) artifactMap.get("artifacts");
         }
         return artifacts.get(scheme);
+    }
+    
+    String getComponentListVersion() throws DiscoveryException {
+        if (artifactMap == null || artifacts == null) {
+            loadArtifactMap();
+        }
+        
+        if (artifactMap.get(CAMEL_VERSION_KEY_NAME) instanceof String) {
+            return (String) artifactMap.get(CAMEL_VERSION_KEY_NAME);
+        } else {
+            throw new DiscoveryException("No " + CAMEL_VERSION_KEY_NAME + " property present");
+        }
+    }
+    
+    boolean isVersionCompatible(String comparisonVersion) throws DiscoveryException {
+    
+        StringTokenizer artifactVersionParts = new StringTokenizer(getComponentListVersion(), ".");
+        StringTokenizer comparisonVersionParts = new StringTokenizer(comparisonVersion, ".");
+        return artifactVersionParts.countTokens() >= 2 && comparisonVersionParts.countTokens() >= 2 &&
+                artifactVersionParts.nextToken().equals(comparisonVersionParts.nextToken()) &&
+                artifactVersionParts.nextToken().equals(comparisonVersionParts.nextToken());
     }
     
     /**
@@ -97,6 +136,8 @@ public class CamelDiscovery {
      *
      * @throws DiscoveryException If there are issues loading the artifact
      */
+    @SuppressWarnings({"unchecked"})
+
     static synchronized void loadArtifactMap() throws DiscoveryException {
         try (InputStream in =
                      CamelDiscovery.class.getResourceAsStream("/artifactMap.json")) {
@@ -106,6 +147,7 @@ public class CamelDiscovery {
             String jsonString = new String(in.readAllBytes());
             log.debug("Map is {}", jsonString);
             artifactMap = new ObjectMapper().readValue(jsonString, new TypeReference<>() {});
+            artifacts = (Map<String, String>) artifactMap.get(ARTIFACTS_KEY_NAME);
         } catch (IOException ioe) {
             throw new DiscoveryException("Error loading artifact map from classpath", ioe);
         }
