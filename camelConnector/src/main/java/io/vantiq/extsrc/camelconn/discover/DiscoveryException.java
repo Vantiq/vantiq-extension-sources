@@ -9,7 +9,7 @@
 package io.vantiq.extsrc.camelconn.discover;
 
 /**
- * Marker for exceptions found during the discovery process/
+ * Marker for exceptions found during the component discovery process
  */
 public class DiscoveryException extends Exception {
     public DiscoveryException(String message, Throwable cause) {
