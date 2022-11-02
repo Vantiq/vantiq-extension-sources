@@ -16,7 +16,8 @@ ext {
     camelVersion='3.18.3'
     log4JVersion='2.17.2'
     extjsdkVersion='1.0'
-    jacksonVersion = '2.9.3' // FIXME: check latest version & promote to parent build.
+    jacksonVersion = '2.13.4.2'
+    junitVersion = '4.13.2'
 }
 
 
@@ -41,6 +42,9 @@ dependencies {
     testImplementation "org.apache.camel:camel-xml-io-dsl:${camelVersion}"
     testImplementation "io.vantiq:vantiq-sdk:${vantiqSDKVersion}"
     testImplementation project(path: ":extjsdk", configuration: 'testArtifacts')
+
+    testImplementation("junit:junit:${junitVersion}")
+    testRuntimeOnly("org.junit.vintage:junit-vintage-engine:5.8.2")
 }
 
 group = 'io.vantiq.extsrc.camelconnector'
@@ -69,17 +73,6 @@ tasks.withType(JavaCompile) {
     options.encoding = 'UTF-8'
 }
 
-tasks.withType(Test) {
-    if (rootProject.hasProperty("TestAuthToken")) {
-        systemProperty "TestAuthToken", rootProject.findProperty("TestAuthToken") ?: "empty"
-    }
-    if (rootProject.hasProperty("TestVantiqServer")) {
-        systemProperty "TestVantiqServer", rootProject.findProperty("TestVantiqServer") ?: "empty"
-    }
-    // Use the build dir as a base to get our various test artifacts.
-    systemProperty "buildDir", "${buildDir}"
-}
-
 /**
  * This task generates a JSON file containing a map from the component scheme to the required component
  * This is used when we are discovering components.
@@ -96,9 +89,11 @@ tasks.withType(Test) {
  */
 
 final String ARTIFACT_MAP_PATH = project.buildDir.absolutePath + '/resources/main/artifactMap.json'
+final File ARTIFACT_MAP_FILE = new File(ARTIFACT_MAP_PATH)
 tasks.register('generateComponentList', ) {
     String[] camVersionParts = camelVersion.tokenize('.')
     it.outputs.file(ARTIFACT_MAP_PATH)
+//    it.outputs.dir(project.buildDir.absolutePath + '/resources/main')
     it.outputs.upToDateWhen ({ param ->
         def f = file(ARTIFACT_MAP_PATH)
         logger.debug('Exists: {} :: {}', f.exists(), f.getPath())
@@ -182,8 +177,22 @@ tasks.register('generateComponentList', ) {
     }
 }
 
+tasks.withType(Test) {
+    if (rootProject.hasProperty("TestAuthToken")) {
+        systemProperty "TestAuthToken", rootProject.findProperty("TestAuthToken") ?: "empty"
+    }
+    if (rootProject.hasProperty("TestVantiqServer")) {
+        systemProperty "TestVantiqServer", rootProject.findProperty("TestVantiqServer") ?: "empty"
+    }
+    // Use the build dir as a base to get our various test artifacts.
+    systemProperty "buildDir", "${buildDir}"
+}
+
+
 test {
     useJUnitPlatform()
 }
 
 jar.dependsOn generateComponentList
+test.dependsOn generateComponentList
+compileTestJava.dependsOn generateComponentList
