@@ -88,14 +88,13 @@ tasks.withType(JavaCompile) {
  * task to this task.
  */
 
-final String ARTIFACT_MAP_PATH = project.buildDir.absolutePath + '/resources/main/artifactMap.json'
-final File ARTIFACT_MAP_FILE = new File(ARTIFACT_MAP_PATH)
+final String ARTIFACT_MAP_PATH = project.projectDir.absolutePath + '/src/main/resources'
+final String ARTIFACT_MAP_FILE = ARTIFACT_MAP_PATH + '/artifactMap.json'
 tasks.register('generateComponentList', ) {
     String[] camVersionParts = camelVersion.tokenize('.')
-    it.outputs.file(ARTIFACT_MAP_PATH)
-//    it.outputs.dir(project.buildDir.absolutePath + '/resources/main')
+    it.outputs.file(ARTIFACT_MAP_FILE)
     it.outputs.upToDateWhen ({ param ->
-        def f = file(ARTIFACT_MAP_PATH)
+        def f = file(ARTIFACT_MAP_FILE)
         logger.debug('Exists: {} :: {}', f.exists(), f.getPath())
         if (f.exists()) {
             Map artMap = new JsonSlurper().parse(f)
@@ -168,7 +167,7 @@ tasks.register('generateComponentList', ) {
         }
         def artifactDef = [ camelVersion: camelVersion, artifacts: compMap]
         def jsonPretty = JsonOutput.prettyPrint(JsonOutput.toJson(artifactDef))
-        def compFile = file(ARTIFACT_MAP_PATH)
+        def compFile = file(ARTIFACT_MAP_FILE)
         if (compFile.exists()) {
             compFile.delete()
         }
@@ -192,7 +191,3 @@ tasks.withType(Test) {
 test {
     useJUnitPlatform()
 }
-
-jar.dependsOn generateComponentList
-test.dependsOn generateComponentList
-compileTestJava.dependsOn generateComponentList
