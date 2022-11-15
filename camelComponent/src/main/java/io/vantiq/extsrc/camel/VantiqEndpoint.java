@@ -223,8 +223,8 @@ public class VantiqEndpoint extends DefaultEndpoint {
      *
      * This is used by the DefaultEndpoint code when no endpoint URI is specified.  In the Vantiq case, we will
      * interpret the lack of URI specification to mean that this VantiqEndpoint is to connect to the Vantiq
-     * described in the standard connector source.config file.  We will provide the parameters as is appropriate from
-     * data gleaned from the source.config file.
+     * described in the standard connector server.config file.  We will provide the parameters as is appropriate from
+     * data gleaned from the server.config file.
      *
      * @return String representing the URI provided by the source.config file.
      * @throws IllegalArgumentException when no source.config file is present or the data present is incorrect.
