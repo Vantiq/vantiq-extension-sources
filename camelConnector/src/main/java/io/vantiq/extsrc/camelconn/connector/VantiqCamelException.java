@@ -6,7 +6,7 @@
  * SPDX: MIT
  */
 
-package io.vantiq.extsrc.camelconn.connector.exception;
+package io.vantiq.extsrc.camelconn.connector;
 
 /**
  * A custom exception used to extract the useful information from a SQLException
