@@ -16,17 +16,15 @@ import org.apache.camel.spi.UriEndpoint;
 import org.apache.camel.spi.UriParams;
 
 /**
- * vantiq component which does bla bla.
- *
- * TODO: Update one line description above what the component does.
- */
+ * vantiq endpoint, managing communications with the vantiq server.
+ **/
 @UriEndpoint(firstVersion = "1.0-SNAPSHOT", scheme = "vantiq", title = "vantiq", syntax="vantiq:name",
              category = {Category.JAVA})
 @UriParams
 @Slf4j
 public class FauxVantiqEndpoint extends VantiqEndpoint {
     public FalseClient myClient = null;
-    FauxVantiqEndpoint(String uri, VantiqComponent component) {
+    FauxVantiqEndpoint(String uri, VantiqComponent component) throws Exception {
         super(uri, component);
     }
     /**

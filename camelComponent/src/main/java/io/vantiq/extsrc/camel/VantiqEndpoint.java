@@ -8,6 +8,12 @@
 
 package io.vantiq.extsrc.camel;
 
+import static io.vantiq.extjsdk.Utils.AUTH_TOKEN_PROPERTY_NAME;
+import static io.vantiq.extjsdk.Utils.SEND_PING_PROPERTY_NAME;
+import static io.vantiq.extjsdk.Utils.SERVER_CONFIG_FILENAME;
+import static io.vantiq.extjsdk.Utils.SOURCES_PROPERTY_NAME;
+import static io.vantiq.extjsdk.Utils.TARGET_SERVER_PROPERTY_NAME;
+
 import io.vantiq.extjsdk.ExtensionWebSocketClient;
 import io.vantiq.extjsdk.InstanceConfigUtils;
 import lombok.Getter;
@@ -25,6 +31,9 @@ import org.apache.camel.spi.UriEndpoint;
 import org.apache.camel.spi.UriParam;
 import org.apache.commons.lang3.StringUtils;
 
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.util.Properties;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
@@ -79,12 +88,32 @@ public class VantiqEndpoint extends DefaultEndpoint {
     public VantiqEndpoint() {
         utils = new InstanceConfigUtils();
     }
-
-    public VantiqEndpoint(String uri, VantiqComponent component) {
-        super(uri, component);
+    
+    /**
+     * Create the Vantiq endpoint based on the URI provided.
+     *
+     * We have some special handling for the URI.  If it's null (generally harder to do except from bean-style
+     * configurations), we'll let that through.  In such cases, our superclass will call our overridden method
+     * createEndpointUri().  This will construct the URI from the information in the containing connector's
+     * server.config file (if any). As noted, this is sometimes hard to do given programmatic route construction. So,
+     * the alternative is to allow for a URI of "vantiq://server.config".  If see a "host" name of "server.config",
+     * we will call the superclass constructor with a uri of null, and the processing described above will take over.
+     * This capability is primarily of use in the case of the Camel connector, allowing the user to avoid repeatedly
+     * haveing to specify the connection information.
+     *
+     * @param uri String the URI to which to connect
+     * @param component VantiqComponent the Camel component from which to get the endpoint.
+     * @throws Exception when the URI is invalid or there are other issues constructing the endpoint
+     */
+    public VantiqEndpoint(String uri, VantiqComponent component) throws Exception {
+        // A bit of a strange construct, but necessary given the required interface and Java's requirement that the
+        // super() call be the first functional line of a constructor. A "factory method" here might be a better
+        // choice, but the constructor interface is fixed by Camel.
+        super( (uri != null && new URI(uri).getHost().equalsIgnoreCase(SERVER_CONFIG_FILENAME)) ?
+                      null : uri, component);
         log.info("Creating VantiqEndpoint for uri: {} with sourceName: {}, accessToken: {}",
-                uri, sourceName, accessTokenForLog());
-         utils = new InstanceConfigUtils();
+                 uri, sourceName, accessTokenForLog());
+        utils = new InstanceConfigUtils();
     }
     
     private void buildEndpointName() {
@@ -187,6 +216,60 @@ public class VantiqEndpoint extends DefaultEndpoint {
     
     public boolean isConnected() {
         return started;
+    }
+    
+    /**
+     * Create and endpoint URI for our VantiqEndpoint.
+     *
+     * This is used by the DefaultEndpoint code when no endpoint URI is specified.  In the Vantiq case, we will
+     * interpret the lack of URI specification to mean that this VantiqEndpoint is to connect to the Vantiq
+     * described in the standard connector source.config file.  We will provide the parameters as is appropriate from
+     * data gleaned from the source.config file.
+     *
+     * @return String representing the URI provided by the source.config file.
+     * @throws IllegalArgumentException when no source.config file is present or the data present is incorrect.
+     */
+    @Override
+    public String createEndpointUri() {
+        
+        Properties scProps = utils.obtainServerConfig();
+        String baseUri = scProps.getProperty(TARGET_SERVER_PROPERTY_NAME);
+        String accessToken = scProps.getProperty(AUTH_TOKEN_PROPERTY_NAME);
+        String sourceName = scProps.getProperty(SOURCES_PROPERTY_NAME);
+        String sendPings = scProps.getProperty(SEND_PING_PROPERTY_NAME);
+        if (StringUtils.isEmpty(baseUri) || StringUtils.isEmpty(accessToken)) {
+            throw new IllegalArgumentException("source.config file is missing or does not contain sufficent " +
+                                                       "information from which to construct an endpoint URI.");
+        }
+        if (StringUtils.isEmpty(sourceName) || sourceName.contains(",")) {
+            throw new IllegalArgumentException("Default vantiq: endpoints require a source.config file with a single" +
+                                                       " source name. Found: '" + sourceName + "'.");
+        }
+        
+        try {
+            URI vantiqURI = new URI(baseUri);
+            this.setEndpointUri(baseUri);
+            String origScheme = vantiqURI.getScheme();
+            
+            StringBuffer epString = new StringBuffer(vantiqURI.toString());
+            epString.append("?sourceName=").append(sourceName);
+            this.sourceName = sourceName;
+            epString.append("&accessToken=").append(accessToken);
+            this.accessToken = accessToken;
+            if (sendPings != null) {
+                epString.append("&sendPings=").append(sendPings);
+                this.sendPings = Boolean.parseBoolean(sendPings);
+            }
+            if (origScheme.equals("http") || origScheme.equals("ws")) {
+                epString.append("&noSsl=").append("true");
+            }
+            epString.replace(0, origScheme.length(), "vantiq");
+            URI endpointUri = URI.create(String.valueOf(epString));
+            return endpointUri.toString();
+        } catch (URISyntaxException  mue) {
+            throw new IllegalArgumentException(TARGET_SERVER_PROPERTY_NAME + " from server config file is invalid",
+                                               mue);
+        }
     }
     
     @Override
