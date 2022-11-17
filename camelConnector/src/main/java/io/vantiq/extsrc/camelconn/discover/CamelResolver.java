@@ -1,3 +1,11 @@
+/*
+ * Copyright (c) 2022 Vantiq, Inc.
+ *
+ * All rights reserved.
+ *
+ * SPDX: MIT
+ */
+
 package io.vantiq.extsrc.camelconn.discover;
 
 import lombok.extern.slf4j.Slf4j;
@@ -15,6 +23,7 @@ import org.apache.ivy.core.resolve.ResolveOptions;
 import org.apache.ivy.core.retrieve.RetrieveOptions;
 import org.apache.ivy.core.retrieve.RetrieveReport;
 import org.apache.ivy.core.settings.IvySettings;
+import org.apache.ivy.plugins.resolver.ChainResolver;
 import org.apache.ivy.plugins.resolver.IBiblioResolver;
 import org.slf4j.helpers.MessageFormatter;
 
@@ -22,16 +31,18 @@ import java.io.File;
 import java.net.MalformedURLException;
 import java.net.URI;
 import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
 
 @Slf4j
 public class CamelResolver {
     private final String name;
-    private final URI repo;
+    private final List<URI> repos;
     private final File cache;
     private final File destination;
     
     final IvySettings ivySettings;
-    protected final IBiblioResolver resolver;
+    protected final ChainResolver resolver;
     protected final ResolveOptions resolveOptions;
     protected final RetrieveOptions retrieveOptions;
     
@@ -44,20 +55,25 @@ public class CamelResolver {
     /**
      * Create resolver for necessary artifacts
      *
-     * @param name String name of repo
-     * @@param repo URI repo from which to fetch.  If null, use maven central
+     * @param name String name of resolver.  Primarily for logging & debugging
+     * @@param repos URI repos from which to fetch.  If null, use maven central
      * @param cache File Specification of directory for ivy's cache.  If null, take Ivy's defaults.
      * @param destination File Specification of directory to which to copy files
      * @throws IllegalArgumentException for invalid parameters
      */
+    
     CamelResolver(String name, URI repo, File cache, File destination) {
+        this(name, (repo == null ? Collections.emptyList() : List.of(repo)), cache, destination);
+    }
+    
+    CamelResolver(String name, List<URI> repos, File cache, File destination) {
         if (name != null) {
             this.name = name;
         } else {
             unnamedResolverCount += 1;
             this.name = "UnnamedResolver-" + unnamedResolverCount;
         }
-        this.repo = repo;
+        this.repos = repos;
         this.cache = cache;
         this.destination = destination;
         
@@ -70,19 +86,34 @@ public class CamelResolver {
         if (cache != null) {
             ivySettings.setDefaultCache(cache);
         }
-        // resolver for configuration of maven repo.  Defaults to including maven central
-        resolver = new IBiblioResolver();
-        if (repo != null) {
-            try {
-                resolver.setRoot(repo.toURL().toExternalForm());
-            } catch (MalformedURLException mue) {
-                throw new IllegalArgumentException("Malformed repo URL: " + repo.toString(), mue);
+        // resolver for configuration of maven repos.  Defaults to including maven central
+        resolver = new ChainResolver();
+        resolver.setName(name + "::Chain");
+        if (repos.size() > 0) {
+            for (URI repo : repos) {
+                IBiblioResolver aResolver = new IBiblioResolver();
+                try {
+                    String repoUrl = repo.toURL().toExternalForm();
+                    aResolver.setRoot(repoUrl);
+                    aResolver.setName(name + "::" + repoUrl);
+    
+                } catch (MalformedURLException mue) {
+                    throw new IllegalArgumentException("Malformed repos URL: " + repo.toString(), mue);
+                }
+                
+                aResolver.setM2compatible(true);
+                aResolver.setUsepoms(true);
+                resolver.add(aResolver);
             }
+        } else {
+            IBiblioResolver aResolver = new IBiblioResolver();
+    
+            aResolver.setM2compatible(true);
+            aResolver.setUsepoms(true);
+            aResolver.setName(name);
+            resolver.add(aResolver);
         }
-        resolver.setM2compatible(true);
-        resolver.setUsepoms(true);
-        resolver.setName(name);
-        //adding maven repo resolver
+        //adding maven repos resolver
         ivySettings.addResolver(resolver);
         //set to the default resolver
         ivySettings.setDefaultResolver(resolver.getName());
@@ -105,10 +136,10 @@ public class CamelResolver {
     }
     
     String identity() {
-        String rep = this.repo != null ? this.repo.toString() : "<null>";
+        String rep = this.repos != null ? this.repos.toString() : "<null>";
         String ourCache = this.cache != null ? this.cache.getAbsolutePath() : "<null>";
         String dest = this.destination != null ? this.destination.getAbsolutePath() : "<null>";
-        return MessageFormatter.arrayFormat("CamelResolver {}, repo: {}, cache: {}, destination: {}",
+        return MessageFormatter.arrayFormat("CamelResolver {}, repos: {}, cache: {}, destination: {}",
                                 new Object[]{this.name, rep, ourCache, dest}).getMessage();
     }
     /**
