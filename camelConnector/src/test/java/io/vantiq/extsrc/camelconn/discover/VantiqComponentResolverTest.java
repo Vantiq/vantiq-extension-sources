@@ -9,6 +9,8 @@
 package io.vantiq.extsrc.camelconn.discover;
 
 import lombok.extern.slf4j.Slf4j;
+import org.apache.camel.CamelContext;
+import org.apache.camel.Endpoint;
 import org.apache.camel.EndpointInject;
 import org.apache.camel.Exchange;
 import org.apache.camel.Predicate;
@@ -17,6 +19,7 @@ import org.apache.camel.ProducerTemplate;
 import org.apache.camel.builder.RouteBuilder;
 import org.apache.camel.component.mock.MockEndpoint;
 import org.apache.camel.test.junit4.CamelTestSupport;
+import org.apache.commons.lang3.function.TriFunction;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.ivy.util.FileUtil;
 import org.junit.Before;
@@ -35,7 +38,6 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.function.BiFunction;
 
 /**
  * Perform unit tests for component resolution
@@ -216,9 +218,9 @@ public class VantiqComponentResolverTest extends CamelTestSupport {
         RouteBuilder rb = new SimpleExternalRoute();
         assertNotNull("No routebuilder", rb);
         setUseRouteBuilder(false);
-        CamelRunner runner = new CamelRunner(context, this.getTestMethodName(), null, IVY_CACHE_PATH, DEST_PATH);
-        ClassLoader routeLoader = runner.constructClassLoader(rb);
-        runner.runRouteWithLoader(rb, routeLoader);
+        CamelRunner runner = new CamelRunner(this.getTestMethodName(), context, rb, null, IVY_CACHE_PATH, DEST_PATH);
+//        ClassLoader routeLoader = runner.constructClassLoader(rb);
+        runner.runRouteWithLoader(rb);
     }
     
     // FIXME: Need test(s) for list of repos
@@ -232,9 +234,9 @@ public class VantiqComponentResolverTest extends CamelTestSupport {
         List<URI> repoList = new ArrayList<>();
         repoList.add(new URI("https://vantiqmaven.s3.amazonaws.com/"));
         repoList.add(new URI("https://repo.maven.apache.org/maven2/"));
-        CamelRunner runner = new CamelRunner(context, this.getTestMethodName(), repoList, IVY_CACHE_PATH, DEST_PATH);
-        ClassLoader routeLoader = runner.constructClassLoader(rb);
-        runner.runRouteWithLoader(rb, routeLoader);
+        CamelRunner runner = new CamelRunner(this.getTestMethodName(), context, rb, repoList, IVY_CACHE_PATH,
+                                             DEST_PATH);
+        runner.runRouteWithLoader(rb);
     }
     
     private static final String QUERY_MONKEY = "monkey.wp.dg.cx";
@@ -251,7 +253,9 @@ public class VantiqComponentResolverTest extends CamelTestSupport {
             "nocturnal mammal native to Africa. It is the only living species of the order Tubulidentata, although " +
             "other prehistoric species and genera of Tubulidentata are known. " +
             "http://en.wikipedia.org/wi\" \"ki/Aardvark\"";
-    
+    // Leaving this for now.  Since, in this test, we are starting up a new Camel instance (that's what we're testing),
+    // we cannot use the @EndpointInjected endpoint since it's a different instance.  Instead, in the test code that
+    // uses it, we find the endpoint in the current context and use that.
     @EndpointInject("mock:result")
     protected MockEndpoint resultEndpoint;
     
@@ -272,25 +276,40 @@ public class VantiqComponentResolverTest extends CamelTestSupport {
         // results is presented.
         //
         // In this case, our MakeDigCall route uses the (dynamically loaded) dns component to make a dig call.
-       BiFunction<String, String, Boolean> verifyOperation = (query, answer) -> {
+       TriFunction<CamelContext, List<String>, List<String>, Boolean> verifyOperation = (context, query, answer) -> {
            boolean worked = true;
            try {
+               if (context.isStopped()) {
+                   log.error("At test start, context {} is stopped", context.getName());
+               }
+               Endpoint res = context.getEndpoint("mock://result");
+               assert res instanceof MockEndpoint;
+               MockEndpoint resultEndpoint = (MockEndpoint) res;
+               
+               ProducerTemplate template = context.createProducerTemplate();
+               log.debug("Test code using context: {}", context.getName());
+               
                // .reset() leaves mock endpoint in an odd state where it fires index errors on some array internally.
                // Since we invoke this multiple times & we expect a single result each time, we'll just adjust our
                // expectations based on what we've already done.
-               resultEndpoint.expectedMessageCount(resultEndpoint.getReceivedCounter() + 1);
+               resultEndpoint.expectedMessageCount(query.size());
                resultEndpoint.expectedMessagesMatches(new Predicate() {
                    public boolean matches(Exchange exchange) {
                        String str =
                                ((Message) exchange.getIn().getBody()).getSectionArray(Section.ANSWER)[0].rdataToString();
                        log.debug("Dig lookup got {}", str);
-                       return answer.equals(str);
+                       return answer.get(0).contains(str);
                    }
                });
-               Map<String, Object> headers = new HashMap<>();
-               headers.put("dns.name", query);
-               headers.put("dns.type", "TXT");
-               template.sendBodyAndHeaders(null, headers);
+               for (int i = 0; i < query.size(); i++) {
+                   Map<String, Object> headers = new HashMap<>();
+                   headers.put("dns.name", query.get(i));
+                   headers.put("dns.type", "TXT");
+                   if (context.isStopped()) {
+                       log.error("Context {} is stopped", context.getName());
+                   }
+                   template.sendBodyAndHeaders("direct:start", null, headers);
+               }
                resultEndpoint.assertIsSatisfied();
             } catch (Exception e) {
                 log.error("Trapped exception", e);
@@ -299,9 +318,8 @@ public class VantiqComponentResolverTest extends CamelTestSupport {
             return worked;
        };
        
-       CamelRunner runner = new CamelRunner(context, this.getTestMethodName(), null, IVY_CACHE_PATH, DEST_PATH);
-       ClassLoader routeLoader = runner.constructClassLoader(rb);
-       runner.runRouteWithLoader(rb, routeLoader, verifyOperation,
+       CamelRunner runner = new CamelRunner(this.getTestMethodName(), rb, null, IVY_CACHE_PATH, DEST_PATH);
+       runner.runRouteWithLoader(rb, verifyOperation,
                            List.of(new ImmutablePair<>(QUERY_MONKEY, RESPONSE_MONKEY),
                                    new ImmutablePair<>(QUERY_AARDVARK, RESPONSE_AARDVARK)));
     }

@@ -10,7 +10,12 @@ package io.vantiq.extsrc.camelconn.discover;
 
 import lombok.extern.slf4j.Slf4j;
 import org.apache.camel.CamelContext;
+import org.apache.camel.ProducerTemplate;
+import org.apache.camel.impl.DefaultCamelContext;
+import org.apache.camel.main.MainRegistry;
+import org.apache.camel.main.MainSupport;
 import org.apache.camel.builder.RouteBuilder;
+import org.apache.commons.lang3.function.TriFunction;
 import org.apache.commons.lang3.tuple.Pair;
 
 import java.io.File;
@@ -24,27 +29,57 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.function.BiFunction;
 
 @Slf4j
-public class CamelRunner {
-    
-    private final CamelContext context;
+public class CamelRunner extends MainSupport {
     private final String appName;
     private final List<URI> repositories;
     
     private final File ivyCache;
     private final File loadedLibraries;
     
-    CamelRunner(CamelContext context, String appName, List<URI> repos, String cacheDirectory, String loadedLibDir) {
-        this.context = context;
+    private final RouteBuilder routeBuilder;
+    private ClassLoader routeBasedCL;
+    private ClassLoader originalClassLoader;
+    
+    private CamelContext initialContext;
+    
+    protected final MainRegistry registry;
+    
+    CamelRunner(String appName, RouteBuilder routeBuilder, List<URI> repos,
+                String cacheDirectory,
+                String loadedLibDir) throws Exception {
+        super();
+        this.registry = new MainRegistry();
         this.appName = appName;
         this.repositories = repos;
         this.ivyCache = new File(cacheDirectory);
         this.loadedLibraries = new File(loadedLibDir);
+        this.routeBuilder = routeBuilder;
+        mainConfigurationProperties.setRoutesBuilders(List.of(routeBuilder));
+        mainConfigurationProperties.setRoutesCollectorEnabled(false);
+        createCamelContext();
+    }
+    CamelRunner(String appName, CamelContext initialContext, RouteBuilder routeBuilder, List<URI> repos,
+                String cacheDirectory,
+                String loadedLibDir) throws Exception {
+        super();
+        this.initialContext = initialContext; // Used in tests
+        this.registry = new MainRegistry();
+        this.appName = appName;
+        this.repositories = repos;
+        this.ivyCache = new File(cacheDirectory);
+        this.loadedLibraries = new File(loadedLibDir);
+        this.routeBuilder = routeBuilder;
+        mainConfigurationProperties.setRoutesBuilders(List.of(routeBuilder));
+        mainConfigurationProperties.setRoutesCollectorEnabled(false);
+        createCamelContext();
     }
     
-    ClassLoader constructClassLoader(RouteBuilder rb) throws Exception {
+    private ClassLoader constructClassLoader(RouteBuilder rb) throws Exception {
+        if (getCamelContext() == null) {
+            throw new IllegalStateException("Camel context does not exist.");
+        }
         CamelDiscovery discoverer = new CamelDiscovery();
         Map<String, Set<String>> discResults = discoverer.performComponentDiscovery(rb);
     
@@ -77,7 +112,7 @@ public class CamelRunner {
     
         // Now, we'll set up a classLoader based on that list of jar files and use that to run our routes.
     
-        ClassLoader parent = context.getApplicationContextClassLoader();
+        ClassLoader parent = getCamelContext().getApplicationContextClassLoader();
         if (parent == null) {
             // Note that this is often the case.  But in our case, we want to include the various camel components
             // and runtime that we include in our connector class path.  So, we'll have our current classloader be
@@ -85,7 +120,7 @@ public class CamelRunner {
             // in the generated classloader's list of URIs, but this seems a cleaner solution.
             // TODO: Change to trace
             log.debug("Camel context {} has no applicationContextClassLoader, using class's loader as parent",
-                      context.getName());
+                      getCamelContext().getName());
             parent = this.getClass().getClassLoader();
         }
         return new URLClassLoader(urlList.toArray(new URL[0]), parent);
@@ -105,6 +140,9 @@ public class CamelRunner {
     private Set<File> resolveFromRepo(List<URI> repositories, Set<String> componentsToResolve,
                                       CamelDiscovery discoverer)
             throws Exception {
+        if (getCamelContext() == null) {
+            throw new IllegalStateException("Camel context does not exist.");
+        }
         Set<File> jarSet = new LinkedHashSet<>();
         CamelResolver cr = new CamelResolver(appName, repositories,
                                              ivyCache, loadedLibraries);
@@ -118,43 +156,127 @@ public class CamelRunner {
             // Thus, we will see an error here only if the artifact is resolved by none of the repos in our list.
             // We could learn to ignore it & let camel throw the error, but our throwing the ResolutionException
             // seems cleaner.  Notify about the problems closer to the source.
-            Collection<File> resolved = cr.resolve("org.apache.camel", lib, context.getVersion());
+            Collection<File> resolved = cr.resolve("org.apache.camel", lib, getCamelContext().getVersion());
             jarSet.addAll(resolved);
         }
         return jarSet;
     }
     
-    void runRouteWithLoader(RouteBuilder rb, ClassLoader routeClassLoader) throws Exception {
-        ClassLoader original = context.getApplicationContextClassLoader();
+    void runRouteWithLoader(RouteBuilder rb) throws Exception {
+
         try {
-            context.setApplicationContextClassLoader(routeClassLoader);
-            context.addRoutes(rb);
-            context.start();
+            log.debug("Calling Run()");
+            new Thread(() -> {
+                try {
+                    run();
+                } catch (Exception e) {
+                    throw new RuntimeException("run() in runRouteWithLoader failed", e);
+                }
+            }).start();
+            while (!isStarted()) {
+                log.trace("Awaiting camel startup");
+                Thread.sleep(500);
+            }
+            log.debug("Camel is started");
         } finally {
-            context.stop();
-            context.setApplicationContextClassLoader(original);
+            completed();
+            if (getCamelContext().isStopped()) {
+                getCamelContext().stop();
+                getCamelContext().close();
+            }
         }
     }
     
     // Test version of above
-    void runRouteWithLoader(RouteBuilder rb, ClassLoader routeClassLoader,
-                            BiFunction<String, String, Boolean> testCode,
+    void runRouteWithLoader(RouteBuilder rb,
+                            TriFunction<CamelContext, List<String>, List<String>, Boolean> testCode,
                             List<Pair<String, String>> args) throws Exception {
-        ClassLoader original = context.getApplicationContextClassLoader();
+
         try {
-            context.setApplicationContextClassLoader(routeClassLoader);
-            context.addRoutes(rb);
-            context.start();
+
+            log.debug("Calling Run()");
+            new Thread(() -> {
+                try {
+                    run();
+                } catch (Exception e) {
+                    throw new RuntimeException("run() in runRouteWithLoader failed", e);
+                }
+            }).start();
+            while (!isStarted()) {
+                log.debug("Awaiting camel startup");
+                Thread.sleep(500);
+    
+            }
+            log.debug("Camel is started, context {} started: {}", getCamelContext().getName(),
+                      getCamelContext().isStarted());
+//            Thread.sleep(10_000);
+//            log.debug("Waited 10 seconds, now running tests. Context {} stopped: {}", getCamelContext().getName(),
+//                      getCamelContext().isStopped());
+
             if (testCode != null && args != null) {
-                args.forEach(entry -> {
-                    if (!testCode.apply(entry.getKey(), entry.getValue())) {
-                        throw new RuntimeException("Test code operation returned false");
-                    }
-                });
+                List<String> query = List.of(args.get(0).getKey(), args.get(1).getKey());
+                List<String> answer =List.of(args.get(0).getValue(), args.get(1).getValue());
+                if (!testCode.apply(getCamelContext(), query, answer)) {
+                    throw new RuntimeException("Test code operation returned false");
+                }
             }
         } finally {
-            context.stop();
-            context.setApplicationContextClassLoader(original);
+            completed();
+            if (getCamelContext().isStopped()) {
+                getCamelContext().stop();
+                getCamelContext().close();
+            }
         }
+    }
+    
+    @Override
+    protected ProducerTemplate findOrCreateCamelTemplate() {
+        if (getCamelContext() != null) {
+            return getCamelContext().createProducerTemplate();
+        } else {
+            return null;
+        }
+    }
+    
+    @Override
+    protected void beforeStart() {
+        if (routeBasedCL == null) {
+            if (routeBuilder != null) {
+                try {
+                    routeBasedCL = constructClassLoader(routeBuilder);
+                } catch (Exception e) {
+                    throw new RuntimeException("Unable to create route-based class loader", e);
+                }
+                originalClassLoader = camelContext.getApplicationContextClassLoader();
+                camelContext.setApplicationContextClassLoader(routeBasedCL);
+                try {
+                    camelContext.addRoutes(routeBuilder);
+                } catch (Exception e) {
+                    throw new RuntimeException("Adding routes to camel context failed", e);
+                }
+            }
+        }
+    }
+    
+    @Override
+    protected void doStart() throws Exception {
+        super.doStart();
+        getCamelContext().start();
+    }
+    
+    @Override
+    protected CamelContext createCamelContext() {
+        if (camelContext == null) {
+            // FIXME: Remove initial context if not necessary.
+            if (initialContext == null) {
+                camelContext = new DefaultCamelContext();
+            } else {
+                log.debug("Using passed-in context: {}", initialContext.getName());
+                camelContext = initialContext;
+            }
+            log.debug(">>>Using context: {}, stopped: {}", camelContext.getName(), camelContext.isStopped());
+        }
+
+        return camelContext;
     }
 }

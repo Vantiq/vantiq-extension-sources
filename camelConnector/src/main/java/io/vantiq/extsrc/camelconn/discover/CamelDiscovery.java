@@ -144,7 +144,7 @@ public class CamelDiscovery {
                 throw new DiscoveryException("Unable to load artifactMap.json file.");
             }
             String jsonString = new String(in.readAllBytes());
-            log.debug("Map is {}", jsonString);
+            log.trace("Map is {}", jsonString);
             artifactMap = new ObjectMapper().readValue(jsonString, new TypeReference<>() {});
             artifacts = (Map<String, String>) artifactMap.get(ARTIFACTS_KEY_NAME);
         } catch (IOException ioe) {

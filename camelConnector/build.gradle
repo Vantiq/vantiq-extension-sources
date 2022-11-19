@@ -32,6 +32,7 @@ dependencies {
     annotationProcessor "org.projectlombok:lombok:${lombokVersion}"
 
     implementation "org.apache.camel:camel-core:${camelVersion}"
+    implementation "org.apache.camel:camel-main:${camelVersion}"
     implementation "org.apache.camel:camel-support:${camelVersion}"
     implementation "org.apache.camel:camel-jackson:${camelVersion}"
     implementation "org.apache.commons:commons-lang3:${apacheCommonsLangVersion}"
