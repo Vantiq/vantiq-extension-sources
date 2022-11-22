@@ -103,7 +103,7 @@ public class VantiqLiveComponentTest extends CamelTestSupport {
         });
         
         sendBody(routeStartUri, "{\"bye\": \"mom\"}");
-        Thread.sleep(2000);
+        Thread.sleep(5000);
         
         VantiqResponse vr = vantiq.select(testTypeName, null, null, null);
         Map<String, Set<String>> countBySubject = new HashMap<>();
@@ -135,9 +135,9 @@ public class VantiqLiveComponentTest extends CamelTestSupport {
                 }
             }
         });
-        assert countBySubject.get("mom").size() == itemCount;
-        assert countBySubject.get("dad").size() == itemCount;
-        assert countBySubject.get("aki").size() == itemCount;
+        assertEquals("Mom count", itemCount, countBySubject.get("mom").size());
+        assertEquals("Dad count", itemCount, countBySubject.get("dad").size());
+        assertEquals("Aki count", itemCount, countBySubject.get("aki").size());
         assert retVal.size() == 3 * itemCount + 1;
     }
     
