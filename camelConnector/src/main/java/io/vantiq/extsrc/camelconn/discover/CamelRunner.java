@@ -15,9 +15,8 @@ import org.apache.camel.impl.DefaultCamelContext;
 import org.apache.camel.main.MainRegistry;
 import org.apache.camel.main.MainSupport;
 import org.apache.camel.builder.RouteBuilder;
-import org.apache.commons.lang3.function.TriFunction;
-import org.apache.commons.lang3.tuple.Pair;
 
+import java.io.Closeable;
 import java.io.File;
 import java.net.URI;
 import java.net.URL;
@@ -31,7 +30,7 @@ import java.util.Map;
 import java.util.Set;
 
 @Slf4j
-public class CamelRunner extends MainSupport {
+public class CamelRunner extends MainSupport implements Closeable {
     private final String appName;
     private final List<URI> repositories;
     
@@ -42,9 +41,9 @@ public class CamelRunner extends MainSupport {
     private ClassLoader routeBasedCL;
     private ClassLoader originalClassLoader;
     
-    private CamelContext initialContext;
-    
     protected final MainRegistry registry;
+    
+    private Thread camelThread;
     
     CamelRunner(String appName, RouteBuilder routeBuilder, List<URI> repos,
                 String cacheDirectory,
@@ -58,30 +57,34 @@ public class CamelRunner extends MainSupport {
         this.routeBuilder = routeBuilder;
         mainConfigurationProperties.setRoutesBuilders(List.of(routeBuilder));
         mainConfigurationProperties.setRoutesCollectorEnabled(false);
-        createCamelContext();
     }
-    CamelRunner(String appName, CamelContext initialContext, RouteBuilder routeBuilder, List<URI> repos,
-                String cacheDirectory,
-                String loadedLibDir) throws Exception {
-        super();
-        this.initialContext = initialContext; // Used in tests
-        this.registry = new MainRegistry();
-        this.appName = appName;
-        this.repositories = repos;
-        this.ivyCache = new File(cacheDirectory);
-        this.loadedLibraries = new File(loadedLibDir);
-        this.routeBuilder = routeBuilder;
-        mainConfigurationProperties.setRoutesBuilders(List.of(routeBuilder));
-        mainConfigurationProperties.setRoutesCollectorEnabled(false);
+    
+    @Override
+    protected void doInit() throws Exception {
+        super.doInit();
         createCamelContext();
     }
     
-    private ClassLoader constructClassLoader(RouteBuilder rb) throws Exception {
+    /**
+     * Build the application classload we will use.
+     *
+     * Construct a URLClassLoader that includes the requirements determined during the discovery phase.  We set the
+     * parent classloader to the current application classloader (if any) or that of this class.  This allows this
+     * classloader to find anything built into the caller.
+     *
+     * Constructing this classloader will trigger the requirement resolution, and may involve downloading the
+     * packages required to run the provided routes (via the routeBuilder parameter).
+     *
+     * @return ClassLoader (specifically, a URLClassLoader)
+     * @throws Exception for errors during the process.  IllegalStateException if called before there is a Camel
+     *                   context available.  Others may be thrown by called methods.
+     */
+    private ClassLoader constructClassLoader() throws Exception {
         if (getCamelContext() == null) {
             throw new IllegalStateException("Camel context does not exist.");
         }
         CamelDiscovery discoverer = new CamelDiscovery();
-        Map<String, Set<String>> discResults = discoverer.performComponentDiscovery(rb);
+        Map<String, Set<String>> discResults = discoverer.performComponentDiscovery(routeBuilder);
     
         // Now, generate the component list to load...
         // We use a set to avoid duplicates, but we want things resolved in the order they are found in the
@@ -112,14 +115,13 @@ public class CamelRunner extends MainSupport {
     
         // Now, we'll set up a classLoader based on that list of jar files and use that to run our routes.
     
-        ClassLoader parent = getCamelContext().getApplicationContextClassLoader();
+        ClassLoader parent = getCamelContext() != null ? getCamelContext().getApplicationContextClassLoader() : null;
         if (parent == null) {
             // Note that this is often the case.  But in our case, we want to include the various camel components
             // and runtime that we include in our connector class path.  So, we'll have our current classloader be
             // the parent so those are included.  An alternative would be to include the classpath of the connector
             // in the generated classloader's list of URIs, but this seems a cleaner solution.
-            // TODO: Change to trace
-            log.debug("Camel context {} has no applicationContextClassLoader, using class's loader as parent",
+            log.trace("Camel context {} has no applicationContextClassLoader, using class's loader as parent",
                       getCamelContext().getName());
             parent = this.getClass().getClassLoader();
         }
@@ -163,70 +165,55 @@ public class CamelRunner extends MainSupport {
     }
     
     void runRouteWithLoader(RouteBuilder rb) throws Exception {
+        runRouteWithLoader(rb, true);
+    }
+    void runRouteWithLoader(RouteBuilder rb, boolean waitForThread) throws Exception {
 
         try {
             log.debug("Calling Run()");
-            new Thread(() -> {
+            camelThread = new Thread(() -> {
                 try {
                     run();
                 } catch (Exception e) {
                     throw new RuntimeException("run() in runRouteWithLoader failed", e);
                 }
-            }).start();
+            });
+            camelThread.start();
             while (!isStarted()) {
                 log.trace("Awaiting camel startup");
                 Thread.sleep(500);
             }
             log.debug("Camel is started");
+            if (waitForThread) {
+                camelThread.join();
+            }
         } finally {
-            completed();
-            if (getCamelContext().isStopped()) {
-                getCamelContext().stop();
-                getCamelContext().close();
+            if (waitForThread) {
+               close();
             }
         }
     }
     
-    // Test version of above
-    void runRouteWithLoader(RouteBuilder rb,
-                            TriFunction<CamelContext, List<String>, List<String>, Boolean> testCode,
-                            List<Pair<String, String>> args) throws Exception {
-
-        try {
-
-            log.debug("Calling Run()");
-            new Thread(() -> {
-                try {
-                    run();
-                } catch (Exception e) {
-                    throw new RuntimeException("run() in runRouteWithLoader failed", e);
-                }
-            }).start();
-            while (!isStarted()) {
-                log.debug("Awaiting camel startup");
-                Thread.sleep(500);
-    
-            }
-            log.debug("Camel is started, context {} started: {}", getCamelContext().getName(),
-                      getCamelContext().isStarted());
-//            Thread.sleep(10_000);
-//            log.debug("Waited 10 seconds, now running tests. Context {} stopped: {}", getCamelContext().getName(),
-//                      getCamelContext().isStopped());
-
-            if (testCode != null && args != null) {
-                List<String> query = List.of(args.get(0).getKey(), args.get(1).getKey());
-                List<String> answer =List.of(args.get(0).getValue(), args.get(1).getValue());
-                if (!testCode.apply(getCamelContext(), query, answer)) {
-                    throw new RuntimeException("Test code operation returned false");
-                }
-            }
-        } finally {
-            completed();
-            if (getCamelContext().isStopped()) {
-                getCamelContext().stop();
+    /**
+     * Close this CamelRunner and the context associated with it.
+     *
+     * Once done, this entity cannot be reused.
+     */
+    public void close() {
+        completed();
+        if (!getCamelContext().isStopped()) {
+            getCamelContext().stop();
+            try {
                 getCamelContext().close();
+            } catch (Exception e) {
+                // Ignore -- this is going away anyway
+                log.error("Error closing camel context used in runner:", e);
             }
         }
+    }
+    
+    public Thread getCamelThread() {
+        return camelThread;
     }
     
     @Override
@@ -243,7 +230,7 @@ public class CamelRunner extends MainSupport {
         if (routeBasedCL == null) {
             if (routeBuilder != null) {
                 try {
-                    routeBasedCL = constructClassLoader(routeBuilder);
+                    routeBasedCL = constructClassLoader();
                 } catch (Exception e) {
                     throw new RuntimeException("Unable to create route-based class loader", e);
                 }
@@ -267,16 +254,9 @@ public class CamelRunner extends MainSupport {
     @Override
     protected CamelContext createCamelContext() {
         if (camelContext == null) {
-            // FIXME: Remove initial context if not necessary.
-            if (initialContext == null) {
-                camelContext = new DefaultCamelContext();
-            } else {
-                log.debug("Using passed-in context: {}", initialContext.getName());
-                camelContext = initialContext;
-            }
+            camelContext = new DefaultCamelContext();
             log.debug(">>>Using context: {}, stopped: {}", camelContext.getName(), camelContext.isStopped());
         }
-
         return camelContext;
     }
 }

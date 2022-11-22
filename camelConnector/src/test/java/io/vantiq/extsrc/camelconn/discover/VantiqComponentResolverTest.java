@@ -218,12 +218,13 @@ public class VantiqComponentResolverTest extends CamelTestSupport {
         RouteBuilder rb = new SimpleExternalRoute();
         assertNotNull("No routebuilder", rb);
         setUseRouteBuilder(false);
-        CamelRunner runner = new CamelRunner(this.getTestMethodName(), context, rb, null, IVY_CACHE_PATH, DEST_PATH);
-//        ClassLoader routeLoader = runner.constructClassLoader(rb);
-        runner.runRouteWithLoader(rb);
+        try (CamelRunner runner = new CamelRunner(this.getTestMethodName(), rb, null,
+                                                  IVY_CACHE_PATH, DEST_PATH)) {
+            runner.runRouteWithLoader(rb, false);
+        }
     }
     
-    // FIXME: Need test(s) for list of repos
+    // FIXME: Need better test(s) for list of repos.  Specifically, things that load from multiple repos.
     
     @Test
     public void testStartRouteLoadedComponentsMultiRepo() throws Exception {
@@ -234,9 +235,9 @@ public class VantiqComponentResolverTest extends CamelTestSupport {
         List<URI> repoList = new ArrayList<>();
         repoList.add(new URI("https://vantiqmaven.s3.amazonaws.com/"));
         repoList.add(new URI("https://repo.maven.apache.org/maven2/"));
-        CamelRunner runner = new CamelRunner(this.getTestMethodName(), context, rb, repoList, IVY_CACHE_PATH,
-                                             DEST_PATH);
-        runner.runRouteWithLoader(rb);
+        try (CamelRunner runner = new CamelRunner(this.getTestMethodName(),rb, repoList, IVY_CACHE_PATH, DEST_PATH)) {
+            runner.runRouteWithLoader(rb, false);
+        }
     }
     
     private static final String QUERY_MONKEY = "monkey.wp.dg.cx";
@@ -248,19 +249,11 @@ public class VantiqComponentResolverTest extends CamelTestSupport {
             + "species that live primarily on the ground, such as baboons... "
             + "http://en.wikipedia.org/wiki/Monkey\"";
     
-    private static final String QUERY_AARDVARK = "aardvark.wp.dg.dx";
+    private static final String QUERY_AARDVARK = "aardvark.wp.dg.cx";
     private static final String RESPONSE_AARDVARK = "\"The aardvark (Orycteropus afer) is a medium-sized, burrowing, " +
             "nocturnal mammal native to Africa. It is the only living species of the order Tubulidentata, although " +
             "other prehistoric species and genera of Tubulidentata are known. " +
             "http://en.wikipedia.org/wi\" \"ki/Aardvark\"";
-    // Leaving this for now.  Since, in this test, we are starting up a new Camel instance (that's what we're testing),
-    // we cannot use the @EndpointInjected endpoint since it's a different instance.  Instead, in the test code that
-    // uses it, we find the endpoint in the current context and use that.
-    @EndpointInject("mock:result")
-    protected MockEndpoint resultEndpoint;
-    
-    @Produce("direct:start")
-    protected ProducerTemplate template;
     
     @Test
     public void testStartRunLoadedComponents() throws Exception {
@@ -276,7 +269,7 @@ public class VantiqComponentResolverTest extends CamelTestSupport {
         // results is presented.
         //
         // In this case, our MakeDigCall route uses the (dynamically loaded) dns component to make a dig call.
-       TriFunction<CamelContext, List<String>, List<String>, Boolean> verifyOperation = (context, query, answer) -> {
+       TriFunction<CamelContext, String, String, Boolean> verifyOperation = (context, query, answer) -> {
            boolean worked = true;
            try {
                if (context.isStopped()) {
@@ -289,51 +282,79 @@ public class VantiqComponentResolverTest extends CamelTestSupport {
                ProducerTemplate template = context.createProducerTemplate();
                log.debug("Test code using context: {}", context.getName());
                
-               // .reset() leaves mock endpoint in an odd state where it fires index errors on some array internally.
-               // Since we invoke this multiple times & we expect a single result each time, we'll just adjust our
-               // expectations based on what we've already done.
-               resultEndpoint.expectedMessageCount(query.size());
+
+               resultEndpoint.expectedMessageCount(2);
                resultEndpoint.expectedMessagesMatches(new Predicate() {
                    public boolean matches(Exchange exchange) {
                        String str =
                                ((Message) exchange.getIn().getBody()).getSectionArray(Section.ANSWER)[0].rdataToString();
-                       log.debug("Dig lookup got {}", str);
-                       return answer.get(0).contains(str);
+                       log.debug("Matches: Dig lookup got {}", str);
+                       return answer.contains(str);
                    }
                });
-               for (int i = 0; i < query.size(); i++) {
-                   Map<String, Object> headers = new HashMap<>();
-                   headers.put("dns.name", query.get(i));
-                   headers.put("dns.type", "TXT");
-                   if (context.isStopped()) {
-                       log.error("Context {} is stopped", context.getName());
-                   }
-                   template.sendBodyAndHeaders("direct:start", null, headers);
+               
+               Map<String, Object> headers = new HashMap<>();
+               headers.put("dns.name", query);
+               headers.put("dns.type", "TXT");
+               if (context.isStopped()) {
+                   log.error("Context {} is stopped", context.getName());
                }
-               resultEndpoint.assertIsSatisfied();
+               template.sendBodyAndHeaders("direct:start", null, headers);
+             
+               List<Exchange> exchanges = resultEndpoint.getReceivedExchanges();
+               boolean found = false;
+               for (Exchange exch: exchanges) {
+                   String str =
+                           ((Message) exch.getIn().getBody()).getSectionArray(Section.ANSWER)[0].rdataToString();
+                   log.debug("Exchange check: Dig lookup got {}", str);
+                   if (answer.contains(str)) {
+                       found = true;
+                   }
+               }
+               assertTrue("Found expected message in messages", found);
+               if (resultEndpoint.getReceivedCounter() > 1) {
+                   resultEndpoint.assertIsSatisfied();
+               }
             } catch (Exception e) {
                 log.error("Trapped exception", e);
                 worked = false;
             }
             return worked;
        };
+    
+        CamelContext runnerContext = null;
+        Thread runnerThread = null;
+        CamelRunner openedRunner = null;
+    
+        try (CamelRunner runner =
+                     new CamelRunner(this.getTestMethodName(), rb, null, IVY_CACHE_PATH, DEST_PATH)) {
+            openedRunner = runner;
+            runner.runRouteWithLoader(rb, false);
+            runnerContext = runner.getCamelContext();
+            runnerThread = runner.getCamelThread();
+            assert runner.isStarted();
+    
+            assert verifyOperation.apply(runnerContext, QUERY_MONKEY, RESPONSE_MONKEY);
+            assert verifyOperation.apply(runnerContext, QUERY_AARDVARK, RESPONSE_AARDVARK);
+        }
+        
+        while (!openedRunner.isStopped()) {
+            Thread.sleep(500);
+        }
        
-       CamelRunner runner = new CamelRunner(this.getTestMethodName(), rb, null, IVY_CACHE_PATH, DEST_PATH);
-       runner.runRouteWithLoader(rb, verifyOperation,
-                           List.of(new ImmutablePair<>(QUERY_MONKEY, RESPONSE_MONKEY),
-                                   new ImmutablePair<>(QUERY_AARDVARK, RESPONSE_AARDVARK)));
+       assert runnerThread != null && !runnerThread.isAlive();
+       assert runnerContext != null && runnerContext.isStopped();
     }
     
     private static class SimpleExternalRoute extends RouteBuilder  {
         @Override
         public void configure() {
-            // From some AWS S3 resource, check the message content.  If it's an error, log it & send to jmx queue
-            // Otherwise, send to the Vantiq app
+            // From some jetty resource, get the message content & log it.
             
             // The following does nothing, but verifies that things all start up.  All we are really verifying here
             // is that all the classes are loaded so that camel & its associated components are operating.
-    
-            from("aws2-s3://vanti-maven?prefix=vantiq.models:coco-1.1.meta&useDefaultCredentialsProvider=true")
+            
+            from("jetty:http://0.0.0.0/myapp/myservice/?sessionSupport=true")
                     .to("log:" + log.getName()  + "level=debug");
         }
     }
