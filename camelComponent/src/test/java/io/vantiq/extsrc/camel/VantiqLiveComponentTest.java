@@ -18,6 +18,7 @@ import com.google.gson.JsonObject;
 import io.vantiq.client.Vantiq;
 import io.vantiq.client.VantiqError;
 import io.vantiq.client.VantiqResponse;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.camel.Exchange;
 import org.apache.camel.builder.RouteBuilder;
 import org.apache.camel.component.jackson.converter.JacksonTypeConvertersLoader;
@@ -39,6 +40,7 @@ import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
+@Slf4j
 public class VantiqLiveComponentTest extends CamelTestSupport {
     private static final String SRC_IMPL_TYPE = "CAMEL_COMPONENT";
     private static final String IMPL_DEF = "camelComponentImpl.json";
@@ -205,6 +207,7 @@ public class VantiqLiveComponentTest extends CamelTestSupport {
             }
             vantiq = new Vantiq(vantiqInstallation);
             vantiq.setAccessToken(vantiqAccessToken);
+            assertTrue("Vantiq Auth'd", vantiq.isAuthenticated());
             createSourceImpl();
             createSource();
             createType();
@@ -307,6 +310,9 @@ public class VantiqLiveComponentTest extends CamelTestSupport {
             Map<String, Object> implMap = new LinkedHashMap<>();
             implMap = mapper.readValue(implDef, implMap.getClass());
             resp = vantiq.insert(VANTIQ_SOURCE_IMPL, implMap);
+            if (!resp.isSuccess()) {
+                System.out.println("Got errors: " +  resp);
+            }
             assert resp.isSuccess();
             
             Map<String, String> where = new LinkedHashMap<>();

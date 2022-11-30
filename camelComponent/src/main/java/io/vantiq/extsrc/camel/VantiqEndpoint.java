@@ -16,12 +16,14 @@ import static io.vantiq.extjsdk.Utils.TARGET_SERVER_PROPERTY_NAME;
 
 import io.vantiq.extjsdk.ExtensionWebSocketClient;
 import io.vantiq.extjsdk.InstanceConfigUtils;
+import io.vantiq.extsrc.camel.utils.ClientRegistry;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.camel.CamelException;
 import org.apache.camel.Category;
 import org.apache.camel.Consumer;
+import org.apache.camel.ExpectedBodyTypeException;
 import org.apache.camel.Processor;
 import org.apache.camel.Producer;
 import org.apache.camel.spi.UriParams;
@@ -79,6 +81,7 @@ public class VantiqEndpoint extends DefaultEndpoint {
     
     private String correctedVantiqUrl = null;
     private boolean started = false;
+    private boolean runningInConnector = false;
     
     @Getter
     private String endpointName;
@@ -147,14 +150,25 @@ public class VantiqEndpoint extends DefaultEndpoint {
      * Constructs & returns an ExtensionWebSocketClient.
      *
      * This is here primarily to override for unit testing. In unit test cases, we override to return a client
-     * that doesn't send to the (nonexistent Vantiq installation);
+     * that doesn't send to the (nonexistent) Vantiq installation;
      *
      * @param source        String name of the source to which to connect
      * @param msgQueueSize  int number of messages to queue when the connection is broken.
      * @return ExtensionWebSocketClient
      */
     protected ExtensionWebSocketClient buildVantiqClient(String source, int msgQueueSize) {
-       return  new ExtensionWebSocketClient(sourceName, failedMessageQueueSize, utils);
+        return new ExtensionWebSocketClient(sourceName, failedMessageQueueSize, utils);
+    }
+    
+    protected ExtensionWebSocketClient buildVantiqClientFromTarget(String source, String targetServer) {
+        return new ExtensionWebSocketClient(sourceName, failedMessageQueueSize,
+                                                                              utils);
+    }
+    
+    protected ExtensionWebSocketClient findVantiqClient(String source) {
+        return ClientRegistry.registerClient(source,
+                                             utils.obtainServerConfig().getProperty(TARGET_SERVER_PROPERTY_NAME),
+                                      this::buildVantiqClientFromTarget);
     }
     
     protected void completeFuturesForFauxInstances() {
@@ -179,32 +193,44 @@ public class VantiqEndpoint extends DefaultEndpoint {
             log.trace("Fixed-up Vantiq URL: {}", correctedVantiqUrl);
             // TODO:  Add fetching of TCP port from somewhere. This doesn't seem like it should be on the URL.
             utils.provideServerConfig(correctedVantiqUrl, accessToken, sourceName, sendPings, null);
-            vantiqClient = buildVantiqClient(sourceName, failedMessageQueueSize);
             buildEndpointName();
-            CompletableFuture<Boolean> fut = vantiqClient.initiateFullConnection(correctedVantiqUrl, accessToken, sendPings);
     
-            completeFuturesForFauxInstances();
-            if (fut.get()) {
-                started = true; // Mark that we've successfully started up.
-                vantiqClient.setAutoReconnect(true);
+            // If we are running inside a Vantiq Camel connector, the connector runtime may have already created a
+            // client. If that's the case, use, that client,  Otherwise, we'll create our own, knowing that the
+            // conector runtime is not managing our client.
+            
+            vantiqClient = ClientRegistry.fetchClient(sourceName, correctedVantiqUrl);
+            if (vantiqClient != null) {
+                runningInConnector = true;
+                started = true;
                 return;
             } else {
-                String errMsg = "Failed to initiate connection to Vantiq server: " + vtq +
-                        " (" + correctedVantiqUrl + "), source: " + sourceName;
-                // Something didn't work.  Let's try & get a better diagnosis of what went awry.
-                if (!vantiqClient.isOpen()) {
-                    // Then we failed to connected.
-                    errMsg = "Failed to connect to Vantiq server: " + vtq +
-                            " (" + correctedVantiqUrl + ").";
-                } else if (!vantiqClient.isAuthed()) {
-                    errMsg = "Authentication failure connecting to " + vtq +
-                            " (" + correctedVantiqUrl + ").";
-                } else if (!vantiqClient.isConnected()) {
-                    errMsg = "Failed to connect to Vantiq source " + sourceName + " at server: " + vtq +
-                            " (" + correctedVantiqUrl + ").";
+                vantiqClient = buildVantiqClient(sourceName, failedMessageQueueSize);
+                CompletableFuture<Boolean> fut = vantiqClient.initiateFullConnection(correctedVantiqUrl, accessToken, sendPings);
+    
+                completeFuturesForFauxInstances();
+                if (fut.get()) {
+                    started = true; // Mark that we've successfully started up.
+                    vantiqClient.setAutoReconnect(true);
+                    return;
+                } else {
+                    String errMsg = "Failed to initiate connection to Vantiq server: " + vtq +
+                            " (" + correctedVantiqUrl + "), source: " + sourceName;
+                    // Something didn't work.  Let's try & get a better diagnosis of what went awry.
+                    if (!vantiqClient.isOpen()) {
+                        // Then we failed to connected.
+                        errMsg = "Failed to connect to Vantiq server: " + vtq +
+                                " (" + correctedVantiqUrl + ").";
+                    } else if (!vantiqClient.isAuthed()) {
+                        errMsg = "Authentication failure connecting to " + vtq +
+                                " (" + correctedVantiqUrl + ").";
+                    } else if (!vantiqClient.isConnected()) {
+                        errMsg = "Failed to connect to Vantiq source " + sourceName + " at server: " + vtq +
+                                " (" + correctedVantiqUrl + ").";
+                    }
+                    log.error(errMsg);
+                    failure = new CamelException(errMsg);
                 }
-                log.error(errMsg);
-                failure = new CamelException(errMsg);
             }
         } catch (InterruptedException | ExecutionException e) {
             log.error("Failed to initiate connection to Vantiq server: {}, source: {}",
