@@ -30,24 +30,29 @@ ext {
 
 dependencies {
     annotationProcessor "org.projectlombok:lombok:${lombokVersion}"
+    implementation "org.projectlombok:lombok:${lombokVersion}"
 
     implementation "org.apache.camel:camel-core:${camelVersion}"
     implementation "org.apache.camel:camel-main:${camelVersion}"
     implementation "org.apache.camel:camel-support:${camelVersion}"
     implementation "org.apache.camel:camel-jackson:${camelVersion}"
     implementation "org.apache.commons:commons-lang3:${apacheCommonsLangVersion}"
-
     implementation "org.apache.ivy:ivy:${ivyVersion}"
-
     implementation project(":extjsdk")
     implementation project(":camelComponent")    // The Vantiq Camel Component is automatically included
-    implementation "org.projectlombok:lombok:${lombokVersion}"
     implementation "com.fasterxml.jackson.core:jackson-databind:${jacksonVersion}"
     implementation "com.google.code.gson:gson:${gsonVersion}"
 
+
+    // The following are the DSL libraries to include for support of the various route builders.
+    // We need to include them in the base product (as oppose to using our constructed classloader)
+    // since we need to parse the routes to determine what extend via our constructed classloader.
+    implementation "org.apache.camel:camel-xml-io-dsl:${camelVersion}"
+    implementation "org.apache.camel:camel-yaml-dsl:${camelVersion}"
+    // End of DSL-specific inclusions.
+
     testImplementation "org.apache.logging.log4j:log4j-slf4j-impl:${log4JVersion}"
     testImplementation "org.apache.camel:camel-test:${camelVersion}"
-    testImplementation "org.apache.camel:camel-xml-io-dsl:${camelVersion}"
     testImplementation "io.vantiq:vantiq-sdk:${vantiqSDKVersion}"
     testImplementation project(path: ":extjsdk", configuration: 'testArtifacts')
     testImplementation "dnsjava:dnsjava:${dnsJavaVersion}"
