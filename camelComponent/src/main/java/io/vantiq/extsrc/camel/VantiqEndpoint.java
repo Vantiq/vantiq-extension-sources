@@ -191,7 +191,6 @@ public class VantiqEndpoint extends DefaultEndpoint {
             }
             correctedVantiqUrl = vtq.replace("vantiq", protocol);
             log.trace("Fixed-up Vantiq URL: {}", correctedVantiqUrl);
-            // TODO:  Add fetching of TCP port from somewhere. This doesn't seem like it should be on the URL.
             utils.provideServerConfig(correctedVantiqUrl, accessToken, sourceName, sendPings, null);
             buildEndpointName();
     
@@ -205,6 +204,11 @@ public class VantiqEndpoint extends DefaultEndpoint {
                 started = true;
                 return;
             } else {
+                // FIXME: When running as a component (not in the connector), we need to establish a reconfig
+                //  handler, I think, so that the component can respond appropriately.  There may be nothing to do as
+                //  we don't (currently) define any source config properties about which we care, but we'll have to
+                //  close & reconnect as appropriate.  This may be done inline with other processing, but it needs to
+                //  be done.
                 vantiqClient = buildVantiqClient(sourceName, failedMessageQueueSize);
                 CompletableFuture<Boolean> fut = vantiqClient.initiateFullConnection(correctedVantiqUrl, accessToken, sendPings);
     
