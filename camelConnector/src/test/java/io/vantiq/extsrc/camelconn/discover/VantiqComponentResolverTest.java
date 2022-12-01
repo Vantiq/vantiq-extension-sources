@@ -11,16 +11,14 @@ package io.vantiq.extsrc.camelconn.discover;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.camel.CamelContext;
 import org.apache.camel.Endpoint;
-import org.apache.camel.EndpointInject;
 import org.apache.camel.Exchange;
 import org.apache.camel.Predicate;
-import org.apache.camel.Produce;
 import org.apache.camel.ProducerTemplate;
 import org.apache.camel.builder.RouteBuilder;
+
 import org.apache.camel.component.mock.MockEndpoint;
 import org.apache.camel.test.junit4.CamelTestSupport;
 import org.apache.commons.lang3.function.TriFunction;
-import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.ivy.util.FileUtil;
 import org.junit.Before;
 import org.junit.FixMethodOrder;
@@ -220,7 +218,7 @@ public class VantiqComponentResolverTest extends CamelTestSupport {
         setUseRouteBuilder(false);
         try (CamelRunner runner = new CamelRunner(this.getTestMethodName(), rb, null,
                                                   IVY_CACHE_PATH, DEST_PATH)) {
-            runner.runRouteWithLoader(rb, false);
+            runner.runRoutes(false);
         }
     }
     
@@ -236,7 +234,7 @@ public class VantiqComponentResolverTest extends CamelTestSupport {
         repoList.add(new URI("https://vantiqmaven.s3.amazonaws.com/"));
         repoList.add(new URI("https://repo.maven.apache.org/maven2/"));
         try (CamelRunner runner = new CamelRunner(this.getTestMethodName(),rb, repoList, IVY_CACHE_PATH, DEST_PATH)) {
-            runner.runRouteWithLoader(rb, false);
+            runner.runRoutes(false);
         }
     }
     
@@ -263,76 +261,136 @@ public class VantiqComponentResolverTest extends CamelTestSupport {
         RouteBuilder rb = new MakeDigCall();
         assertNotNull("No routebuilder", rb);
         
-        // At this point, the route is running -- let's verify that it works.
-        // To do this, we'll create a callable that the test method will call. In this case, the callable "sends"
-        // message to the route which, in turn, makes the dig call to lookup a monkey.  We verify that the expected
-        // results is presented.
-        //
-        // In this case, our MakeDigCall route uses the (dynamically loaded) dns component to make a dig call.
-       TriFunction<CamelContext, String, String, Boolean> verifyOperation = (context, query, answer) -> {
-           boolean worked = true;
-           try {
-               if (context.isStopped()) {
-                   log.error("At test start, context {} is stopped", context.getName());
-               }
-               Endpoint res = context.getEndpoint("mock://result");
-               assert res instanceof MockEndpoint;
-               MockEndpoint resultEndpoint = (MockEndpoint) res;
-               
-               ProducerTemplate template = context.createProducerTemplate();
-               log.debug("Test code using context: {}", context.getName());
-               
-
-               resultEndpoint.expectedMessageCount(2);
-               resultEndpoint.expectedMessagesMatches(new Predicate() {
-                   public boolean matches(Exchange exchange) {
-                       String str =
-                               ((Message) exchange.getIn().getBody()).getSectionArray(Section.ANSWER)[0].rdataToString();
-                       log.debug("Matches: Dig lookup got {}", str);
-                       return answer.contains(str);
-                   }
-               });
-               
-               Map<String, Object> headers = new HashMap<>();
-               headers.put("dns.name", query);
-               headers.put("dns.type", "TXT");
-               if (context.isStopped()) {
-                   log.error("Context {} is stopped", context.getName());
-               }
-               template.sendBodyAndHeaders("direct:start", null, headers);
-             
-               List<Exchange> exchanges = resultEndpoint.getReceivedExchanges();
-               boolean found = false;
-               for (Exchange exch: exchanges) {
-                   String str =
-                           ((Message) exch.getIn().getBody()).getSectionArray(Section.ANSWER)[0].rdataToString();
-                   log.debug("Exchange check: Dig lookup got {}", str);
-                   if (answer.contains(str)) {
-                       found = true;
-                   }
-               }
-               assertTrue("Found expected message in messages", found);
-               if (resultEndpoint.getReceivedCounter() > 1) {
-                   resultEndpoint.assertIsSatisfied();
-               }
+        performLoadAndRunTest(rb);
+ 
+    }
+    
+    
+    @Test
+    public void testStartRunLoadedComponentsFromXmlText() throws Exception {
+        FileUtil.forceDelete(cache);    // Clear the cache
+        
+        setUseRouteBuilder(false);
+        String content = ""
+                + "<routes xmlns=\"http://camel.apache.org/schema/spring\" xmlns:foo=\"http://io.vantiq/foo\">"
+                + "   <route id=\"xml-route\">"
+                + "      <from uri=\"direct:start\"/>"
+                + "      <to uri=\"dns:dig\"/>"
+                + "      <to uri=\"mock:result\"/>"
+                + "   </route>"
+                + "</routes>";
+        
+        performLoadAndRunTest(content, "xml");
+    }
+    
+    @Test
+    public void testStartRunLoadedComponentsFromYamlText() throws Exception {
+        FileUtil.forceDelete(cache);    // Clear the cache
+        setUseRouteBuilder(false);
+        // Note: Unlike the example on the site, the following will fail to start (claiming > 1 consumer for
+        // direct:start) if th top-level "- route" line is missing.
+        String content = "\n"
+                + "- route:\n"
+                + "    id: \"yaml-route\"\n"
+                + "    from:\n"
+                + "      uri: \"direct:start\"\n"
+                + "      steps:\n"
+                + "        - to:\n"
+                + "            uri: \"dns:dig\"\n"
+                + "        - to:\n"
+                + "            uri: \"mock:result\"\n";
+    
+        performLoadAndRunTest(content, "yaml");
+    }
+    
+    /**
+     * Create a callable that the test method will call.
+     *
+     * In this case, the callable "sends"
+     * message to the route which, in turn, makes the dig call to lookup a monkey.  We verify that the expected
+     * results is presented.
+     *
+     * In this case, our MakeDigCall route uses the (dynamically loaded) dns component to make a dig call.
+     * @return TriFunction<CamelContext, String, String, Boolean>
+     */
+    private TriFunction<CamelContext, String, String, Boolean> defineVerifyOperation() {
+        TriFunction<CamelContext, String, String, Boolean> verifyOperation = (context, query, answer) -> {
+            boolean worked = true;
+            try {
+                if (context.isStopped()) {
+                    log.error("At test start, context {} is stopped", context.getName());
+                }
+                Endpoint res = context.getEndpoint("mock://result");
+                assert res instanceof MockEndpoint;
+                MockEndpoint resultEndpoint = (MockEndpoint) res;
+            
+                ProducerTemplate template = context.createProducerTemplate();
+                log.debug("Test code using context: {}", context.getName());
+            
+            
+                resultEndpoint.expectedMessageCount(2);
+                resultEndpoint.expectedMessagesMatches(new Predicate() {
+                    public boolean matches(Exchange exchange) {
+                        String str =
+                                ((Message) exchange.getIn().getBody()).getSectionArray(Section.ANSWER)[0].rdataToString();
+                        log.debug("Matches: Dig lookup got {}", str);
+                        return answer.contains(str);
+                    }
+                });
+            
+                Map<String, Object> headers = new HashMap<>();
+                headers.put("dns.name", query);
+                headers.put("dns.type", "TXT");
+                if (context.isStopped()) {
+                    log.error("Context {} is stopped", context.getName());
+                }
+                template.sendBodyAndHeaders("direct:start", null, headers);
+            
+                List<Exchange> exchanges = resultEndpoint.getReceivedExchanges();
+                boolean found = false;
+                for (Exchange exch: exchanges) {
+                    String str =
+                            ((Message) exch.getIn().getBody()).getSectionArray(Section.ANSWER)[0].rdataToString();
+                    log.debug("Exchange check: Dig lookup got {}", str);
+                    if (answer.contains(str)) {
+                        found = true;
+                    }
+                }
+                assertTrue("Found expected message in messages", found);
+                if (resultEndpoint.getReceivedCounter() > 1) {
+                    resultEndpoint.assertIsSatisfied();
+                }
             } catch (Exception e) {
                 log.error("Trapped exception", e);
                 worked = false;
             }
             return worked;
-       };
+        };
+        return verifyOperation;
+    }
     
+    public void performLoadAndRunTest(String content, String contentType) throws Exception {
+        // To do this test, we'll create a callable that the test method will call. In this case, the callable "sends"
+        // message to the route which, in turn, makes the dig call to lookup a monkey.  We verify that the expected
+        // results is presented.
+        //
+        // In this case, our MakeDigCall route uses the (dynamically loaded) dns component to make a dig call.
+    
+        TriFunction<CamelContext, String, String, Boolean> verifyOperation = defineVerifyOperation();
+        
         CamelContext runnerContext = null;
         Thread runnerThread = null;
         CamelRunner openedRunner = null;
-    
+        
         try (CamelRunner runner =
-                     new CamelRunner(this.getTestMethodName(), rb, null, IVY_CACHE_PATH, DEST_PATH)) {
+                     new CamelRunner(this.getTestMethodName(), content, contentType, null, IVY_CACHE_PATH, DEST_PATH)) {
             openedRunner = runner;
-            runner.runRouteWithLoader(rb, false);
+            runner.runRoutes(false);
             runnerContext = runner.getCamelContext();
             runnerThread = runner.getCamelThread();
             assert runner.isStarted();
+    
+            // At this point, the route is running -- let's verify that it works.
     
             assert verifyOperation.apply(runnerContext, QUERY_MONKEY, RESPONSE_MONKEY);
             assert verifyOperation.apply(runnerContext, QUERY_AARDVARK, RESPONSE_AARDVARK);
@@ -341,9 +399,43 @@ public class VantiqComponentResolverTest extends CamelTestSupport {
         while (!openedRunner.isStopped()) {
             Thread.sleep(500);
         }
-       
-       assert runnerThread != null && !runnerThread.isAlive();
-       assert runnerContext != null && runnerContext.isStopped();
+        
+        assert runnerThread != null && !runnerThread.isAlive();
+        assert runnerContext != null && runnerContext.isStopped();
+    }
+    
+    public void performLoadAndRunTest(RouteBuilder rb) throws Exception {
+        // To do this test, we'll create a callable that the test method will call. In this case, the callable "sends"
+        // message to the route which, in turn, makes the dig call to lookup a monkey.  We verify that the expected
+        // results is presented.
+        //
+        // In this case, our MakeDigCall route uses the (dynamically loaded) dns component to make a dig call.
+        TriFunction<CamelContext, String, String, Boolean> verifyOperation = defineVerifyOperation();
+    
+        CamelContext runnerContext = null;
+        Thread runnerThread = null;
+        CamelRunner openedRunner = null;
+    
+        try (CamelRunner runner =
+                     new CamelRunner(this.getTestMethodName(), rb, null, IVY_CACHE_PATH, DEST_PATH)) {
+            openedRunner = runner;
+            runner.runRoutes(false);
+            runnerContext = runner.getCamelContext();
+            runnerThread = runner.getCamelThread();
+            assert runner.isStarted();
+    
+            // At this point, the route is running -- let's verify that it works.
+    
+            assert verifyOperation.apply(runnerContext, QUERY_MONKEY, RESPONSE_MONKEY);
+            assert verifyOperation.apply(runnerContext, QUERY_AARDVARK, RESPONSE_AARDVARK);
+        }
+    
+        while (!openedRunner.isStopped()) {
+            Thread.sleep(500);
+        }
+    
+        assert runnerThread != null && !runnerThread.isAlive();
+        assert runnerContext != null && runnerContext.isStopped();
     }
     
     private static class SimpleExternalRoute extends RouteBuilder  {

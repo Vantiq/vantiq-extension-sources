@@ -10,11 +10,18 @@ package io.vantiq.extsrc.camelconn.discover;
 
 import lombok.extern.slf4j.Slf4j;
 import org.apache.camel.CamelContext;
+import org.apache.camel.ExtendedCamelContext;
 import org.apache.camel.ProducerTemplate;
+import org.apache.camel.RoutesBuilder;
 import org.apache.camel.impl.DefaultCamelContext;
 import org.apache.camel.main.MainRegistry;
 import org.apache.camel.main.MainSupport;
 import org.apache.camel.builder.RouteBuilder;
+import org.apache.camel.spi.Resource;
+import org.apache.camel.spi.RoutesBuilderLoader;
+import org.apache.camel.spi.RoutesLoader;
+import org.apache.camel.support.ResourceHelper;
+import org.apache.commons.lang3.StringUtils;
 
 import java.io.Closeable;
 import java.io.File;
@@ -37,7 +44,10 @@ public class CamelRunner extends MainSupport implements Closeable {
     private final File ivyCache;
     private final File loadedLibraries;
     
-    private final RouteBuilder routeBuilder;
+    private RouteBuilder routeBuilder;
+    
+    private final String routeSpec;
+    private final String routeSpecType;
     private ClassLoader routeBasedCL;
     private ClassLoader originalClassLoader;
     
@@ -45,9 +55,42 @@ public class CamelRunner extends MainSupport implements Closeable {
     
     private Thread camelThread;
     
+    /**
+     * Create a CamelRunner instance
+     *
+     * @param appName String Name for this instance
+     * @param routeSpecification String specification for the route(s) to run.  Syntax must match
+     *                                  routeSpecificationType
+     * @param routeSpecificationType String the type of specification provided
+     * @param repos List<URI> The list of repos to search for libraries needed by the route(s)
+     * @param cacheDirectory String Directory path to use to cache downloaded libraries
+     * @param loadedLibDir String Directory path into which to put the libraries needed at run time.
+     */
+    CamelRunner(String appName, String routeSpecification, String routeSpecificationType, List<URI> repos,
+                String cacheDirectory, String loadedLibDir) {
+        super();
+        this.registry = new MainRegistry();
+        this.appName = appName;
+        this.repositories = repos;
+        this.ivyCache = new File(cacheDirectory);
+        this.loadedLibraries = new File(loadedLibDir);
+        this.routeBuilder = null;
+        this.routeSpec = routeSpecification;
+        this.routeSpecType = routeSpecificationType;
+        mainConfigurationProperties.setRoutesCollectorEnabled(false);
+    }
+    
+    /**
+     * Create a CamelRunner instance
+     *
+     * @param appName String Name for this instance
+     * @param routeBuilder RouteBuilder specification for the route(s) to run
+     * @param repos List<URI> The list of repos to search for libraries needed by the route(s)
+     * @param cacheDirectory String Directory path to use to cache downloaded libraries
+     * @param loadedLibDir String Directory path into which to put the libraries needed at run time.
+     */
     CamelRunner(String appName, RouteBuilder routeBuilder, List<URI> repos,
-                String cacheDirectory,
-                String loadedLibDir) throws Exception {
+                String cacheDirectory, String loadedLibDir) {
         super();
         this.registry = new MainRegistry();
         this.appName = appName;
@@ -55,6 +98,8 @@ public class CamelRunner extends MainSupport implements Closeable {
         this.ivyCache = new File(cacheDirectory);
         this.loadedLibraries = new File(loadedLibDir);
         this.routeBuilder = routeBuilder;
+        this.routeSpecType = null;
+        this.routeSpec = null;
         mainConfigurationProperties.setRoutesBuilders(List.of(routeBuilder));
         mainConfigurationProperties.setRoutesCollectorEnabled(false);
     }
@@ -164,18 +209,20 @@ public class CamelRunner extends MainSupport implements Closeable {
         return jarSet;
     }
     
-    void runRouteWithLoader(RouteBuilder rb) throws Exception {
-        runRouteWithLoader(rb, true);
-    }
-    void runRouteWithLoader(RouteBuilder rb, boolean waitForThread) throws Exception {
-
+    /**
+     * Run the routes specified in this CamelRunner
+     *
+     * @param waitForThread boolean indicating whether to await the completion of the thread started by this method
+     * @throws Exception if camel thread throws an exception.
+     */
+    void runRoutes(boolean waitForThread) throws Exception {
         try {
             log.debug("Calling Run()");
             camelThread = new Thread(() -> {
                 try {
                     run();
                 } catch (Exception e) {
-                    throw new RuntimeException("run() in runRouteWithLoader failed", e);
+                    throw new RuntimeException("run() in runRoutes failed", e);
                 }
             });
             camelThread.start();
@@ -225,8 +272,25 @@ public class CamelRunner extends MainSupport implements Closeable {
         }
     }
     
+    /**
+     * Set up runtime environment.
+     *
+     * In addition to the super() stuff, we'll (optionally, build and) add our route(s) to the context.  At startup,
+     * these routes/applications will begin to operate.
+     *
+     * @throws IllegalStateException when no routes have been specified.
+     * @throws RuntimeException when routes cannot be added to the Camel environment.
+     */
     @Override
-    protected void beforeStart() {
+    protected void beforeStart() throws Exception {
+        if (routeBuilder == null) {
+            if (StringUtils.isEmpty(routeSpec) || StringUtils.isEmpty(routeSpecType)) {
+                log.error("No routes have been specified to run.  Either {} or {} and {} are " +
+                        "required.", "routeBuilder", "routeSpec", "routeSpecType");
+                throw new IllegalStateException("No routes have been specified to run.");
+            }
+            routeBuilder = loadRouteFromText(this.routeSpec, this.routeSpecType);
+        }
         if (routeBasedCL == null) {
             if (routeBuilder != null) {
                 try {
@@ -243,6 +307,33 @@ public class CamelRunner extends MainSupport implements Closeable {
                 }
             }
         }
+        super.beforeStart();
+    }
+    
+    /**
+     * Load a route from a textual description of the route.
+     *
+     * Here, we'll use the camel runtime to construct a RouteBuilder from the text specification and specificaiton
+     * type we are given.  We let the underlying Camel system find the route loaders so that this code extends to
+     * support new specification types.  Changes to the set of libraries loaded in this image may be required to load
+     * the new DSL interpreters of the new specification types.
+     *
+     * @param specification String specification of the route(s) to load
+     * @param specificationType String syntactic type of the specification (xml, yaml, etc.)
+     * @return RouteBuilder containing the route defined by the specification.
+     * @throws Exception for errors in loading the routes.
+     */
+    protected RouteBuilder loadRouteFromText(String specification, String specificationType) throws Exception {
+        log.debug("Loading route (specificationType {}): {}", specificationType, specification);
+        ExtendedCamelContext extendedCamelContext = camelContext.adapt(ExtendedCamelContext.class);
+        RoutesLoader loader = extendedCamelContext.getRoutesLoader();
+        Resource resource = ResourceHelper.fromString("in-memory." + specificationType, specification);
+        loader.loadRoutes(resource);
+        RoutesBuilderLoader rbl = loader.getRoutesLoader(specificationType);
+        RoutesBuilder rb = rbl.loadRoutesBuilder(resource);
+        log.trace("Route builder: {}", rb.toString());
+        
+        return (RouteBuilder) rb;
     }
     
     @Override
