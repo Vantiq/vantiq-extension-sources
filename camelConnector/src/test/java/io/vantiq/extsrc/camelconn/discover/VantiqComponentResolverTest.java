@@ -24,6 +24,8 @@ import org.junit.Before;
 import org.junit.FixMethodOrder;
 import org.junit.Test;
 import org.junit.runners.MethodSorters;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.xbill.DNS.Message;
 import org.xbill.DNS.Section;
 
@@ -43,8 +45,9 @@ import java.util.Map;
 
 // Method order used to check caching for SimpleCamelResolution
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
-@Slf4j
+// @Slf4j
 public class VantiqComponentResolverTest extends CamelTestSupport {
+    private static final Logger log =  LoggerFactory.getLogger(VantiqComponentResolverTest.class);
     public static final String DEST_PATH = "build/loadedlib";
     public static final String IVY_CACHE_PATH = "build/ivyCache";
     
@@ -238,8 +241,8 @@ public class VantiqComponentResolverTest extends CamelTestSupport {
         }
     }
     
-    private static final String QUERY_MONKEY = "monkey.wp.dg.cx";
-    private static final String RESPONSE_MONKEY = "\"A Macaque, an old world species of "
+    public static final String QUERY_MONKEY = "monkey.wp.dg.cx";
+    public static final String RESPONSE_MONKEY = "\"A Macaque, an old world species of "
             + "monkey native to Southeast Asia|thumb]A monkey is a primate of the "
             + "Haplorrhini suborder and simian infraorder, either an Old World monkey "
             + "or a New World monkey, but excluding apes. There are about 260 known "
@@ -247,8 +250,8 @@ public class VantiqComponentResolverTest extends CamelTestSupport {
             + "species that live primarily on the ground, such as baboons... "
             + "http://en.wikipedia.org/wiki/Monkey\"";
     
-    private static final String QUERY_AARDVARK = "aardvark.wp.dg.cx";
-    private static final String RESPONSE_AARDVARK = "\"The aardvark (Orycteropus afer) is a medium-sized, burrowing, " +
+    public static final String QUERY_AARDVARK = "aardvark.wp.dg.cx";
+    public static final String RESPONSE_AARDVARK = "\"The aardvark (Orycteropus afer) is a medium-sized, burrowing, " +
             "nocturnal mammal native to Africa. It is the only living species of the order Tubulidentata, although " +
             "other prehistoric species and genera of Tubulidentata are known. " +
             "http://en.wikipedia.org/wi\" \"ki/Aardvark\"";
@@ -256,51 +259,73 @@ public class VantiqComponentResolverTest extends CamelTestSupport {
     @Test
     public void testStartRunLoadedComponents() throws Exception {
         FileUtil.forceDelete(cache);    // Clear the cache
-    
+        
         setUseRouteBuilder(false);
         RouteBuilder rb = new MakeDigCall();
         assertNotNull("No routebuilder", rb);
         
         performLoadAndRunTest(rb);
- 
     }
     
+    // Test that caching works as expected when thing downloaded, then only cached, and then already in place.
+    // In all cases, our internal classloader should load the things needed by the routes in question.
+    @Test
+    public void testStartRunLoadedComponentsUsingPreviouslyRetrievedComponents() throws Exception {
+        FileUtil.forceDelete(cache);    // Clear the cache
+        
+        setUseRouteBuilder(false);
+        RouteBuilder rb = new MakeDigCall();
+        assertNotNull("No routebuilder", rb);
+        
+        // First run: cache & lib/dest deleted.  Download all
+        performLoadAndRunTest(rb);
+        
+        // Second run, leave the cache but delete the library.  Should copy from cache
+        if (dest.exists()) {
+            FileUtil.forceDelete(dest);
+        }
+        performLoadAndRunTest(rb);
+        // Finally, leave everything.  Resolution should do nothing but code will run
+        performLoadAndRunTest(rb);
+    }
+    
+    public static final String XML_ROUTE = ""
+            + "<routes xmlns=\"http://camel.apache.org/schema/spring\" xmlns:foo=\"http://io.vantiq/foo\">"
+            + "   <route id=\"xml-route\">"
+            + "      <from uri=\"direct:start\"/>"
+            + "      <to uri=\"dns:dig\"/>"
+            + "      <to uri=\"mock:result\"/>"
+            + "   </route>"
+            + "</routes>";
+    
+    // Note: Unlike the example on the site, the following will fail to start (claiming > 1 consumer for
+    // direct:start) if th top-level "- route" line is missing.d
+    public static final String YAML_ROUTE =  "\n"
+            + "- route:\n"
+            + "    id: \"yaml-route\"\n"
+            + "    from:\n"
+            + "      uri: \"direct:start\"\n"
+            + "      steps:\n"
+            + "        - to:\n"
+            + "            uri: \"dns:dig\"\n"
+            + "        - to:\n"
+            + "            uri: \"mock:result\"\n";
     
     @Test
     public void testStartRunLoadedComponentsFromXmlText() throws Exception {
         FileUtil.forceDelete(cache);    // Clear the cache
-        
+    
         setUseRouteBuilder(false);
-        String content = ""
-                + "<routes xmlns=\"http://camel.apache.org/schema/spring\" xmlns:foo=\"http://io.vantiq/foo\">"
-                + "   <route id=\"xml-route\">"
-                + "      <from uri=\"direct:start\"/>"
-                + "      <to uri=\"dns:dig\"/>"
-                + "      <to uri=\"mock:result\"/>"
-                + "   </route>"
-                + "</routes>";
-        
-        performLoadAndRunTest(content, "xml");
+    
+        performLoadAndRunTest(XML_ROUTE, "xml");
     }
     
     @Test
     public void testStartRunLoadedComponentsFromYamlText() throws Exception {
         FileUtil.forceDelete(cache);    // Clear the cache
         setUseRouteBuilder(false);
-        // Note: Unlike the example on the site, the following will fail to start (claiming > 1 consumer for
-        // direct:start) if th top-level "- route" line is missing.
-        String content = "\n"
-                + "- route:\n"
-                + "    id: \"yaml-route\"\n"
-                + "    from:\n"
-                + "      uri: \"direct:start\"\n"
-                + "      steps:\n"
-                + "        - to:\n"
-                + "            uri: \"dns:dig\"\n"
-                + "        - to:\n"
-                + "            uri: \"mock:result\"\n";
     
-        performLoadAndRunTest(content, "yaml");
+        performLoadAndRunTest(YAML_ROUTE, "yaml");
     }
     
     /**
@@ -313,7 +338,7 @@ public class VantiqComponentResolverTest extends CamelTestSupport {
      * In this case, our MakeDigCall route uses the (dynamically loaded) dns component to make a dig call.
      * @return TriFunction<CamelContext, String, String, Boolean>
      */
-    private TriFunction<CamelContext, String, String, Boolean> defineVerifyOperation() {
+    public static TriFunction<CamelContext, String, String, Boolean> defineVerifyOperation() {
         TriFunction<CamelContext, String, String, Boolean> verifyOperation = (context, query, answer) -> {
             boolean worked = true;
             try {
