@@ -212,11 +212,13 @@ public class CamelResolver {
         
         
         RetrieveReport rr = ivy.retrieve(md.getModuleRevisionId(), retrieveOptions);
-        Collection<File> copiedFiles = rr.getCopiedFiles();
-        for (File f: copiedFiles) {
-            log.debug("Retrieved file: {} ({})", f.getAbsolutePath(), identity());
+        // This is the union of files retrieved & those found up-to-date.  We need to include both since our
+        // classloader needs to be able to load all the classes, new or otherwise.
+        Collection<File> necessaryFiles = rr.getRetrievedFiles();
+        for (File f: necessaryFiles) {
+            log.debug("Retrieved or up-to-date file: {} ({})", f.getAbsolutePath(), identity());
         }
-        log.debug("{} -- Retrieve fetched {} artifacts", identity(), copiedFiles.size());
-        return copiedFiles;
+        log.debug("{} -- Making {} artifacts available", identity(), necessaryFiles.size());
+        return necessaryFiles;
     }
 }
