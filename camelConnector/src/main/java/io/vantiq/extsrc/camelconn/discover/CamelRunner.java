@@ -55,6 +55,9 @@ public class CamelRunner extends MainSupport implements Closeable {
     
     private Thread camelThread;
     
+    private Boolean startupCompleted = false;
+    private final static String startupSync = "startupSync";
+    
     /**
      * Create a CamelRunner instance
      *
@@ -66,8 +69,8 @@ public class CamelRunner extends MainSupport implements Closeable {
      * @param cacheDirectory String Directory path to use to cache downloaded libraries
      * @param loadedLibDir String Directory path into which to put the libraries needed at run time.
      */
-    CamelRunner(String appName, String routeSpecification, String routeSpecificationType, List<URI> repos,
-                String cacheDirectory, String loadedLibDir) {
+    public CamelRunner(String appName, String routeSpecification, String routeSpecificationType, List<URI> repos,
+                       String cacheDirectory, String loadedLibDir) {
         super();
         this.registry = new MainRegistry();
         this.appName = appName;
@@ -215,7 +218,7 @@ public class CamelRunner extends MainSupport implements Closeable {
      * @param waitForThread boolean indicating whether to await the completion of the thread started by this method
      * @throws Exception if camel thread throws an exception.
      */
-    void runRoutes(boolean waitForThread) throws Exception {
+    public void runRoutes(boolean waitForThread) throws Exception {
         try {
             log.debug("Calling Run()");
             camelThread = new Thread(() -> {
@@ -226,14 +229,15 @@ public class CamelRunner extends MainSupport implements Closeable {
                 }
             });
             camelThread.start();
-            while (!isStarted()) {
-                log.trace("Awaiting camel startup");
-                Thread.sleep(500);
-            }
+            log.trace("Awaiting camel startup");
+            awaitStartup();
+
             log.debug("Camel is started");
             if (waitForThread) {
                 camelThread.join();
             }
+        } catch (Exception e) {
+            log.error("Exception from runtime", e);
         } finally {
             if (waitForThread) {
                close();
@@ -308,6 +312,34 @@ public class CamelRunner extends MainSupport implements Closeable {
             }
         }
         super.beforeStart();
+    }
+    
+    @Override
+    protected void afterStart() throws Exception {
+        super.afterStart();
+        notifyStarted();
+    }
+    
+    protected void notifyStarted() throws Exception {
+        log.debug("NotifyStarted()");
+        synchronized (startupSync) {
+            // Avoid busy-wait during startup.
+            startupCompleted = true;
+            startupSync.notify();
+        }
+        log.debug("NotifyStarted() completed");
+    
+    }
+    
+    protected void awaitStartup() throws Exception {
+        log.debug("AwaitStarted()");
+        synchronized (startupSync) {
+            if (!startupCompleted) {
+                // Avoid busy-wait during startup.
+                startupSync.wait();
+            }
+        }
+        log.debug("AwaitStarted() completed");
     }
     
     /**
