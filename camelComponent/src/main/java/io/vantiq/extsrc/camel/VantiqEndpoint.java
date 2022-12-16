@@ -23,7 +23,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.camel.CamelException;
 import org.apache.camel.Category;
 import org.apache.camel.Consumer;
-import org.apache.camel.ExpectedBodyTypeException;
 import org.apache.camel.Processor;
 import org.apache.camel.Producer;
 import org.apache.camel.spi.UriParams;
@@ -305,7 +304,10 @@ public class VantiqEndpoint extends DefaultEndpoint {
     @Override
     public void doStop() {
         if (vantiqClient != null) {
-            vantiqClient.close();
+            if (!runningInConnector) {
+                // Only close if we are the one that opened things
+                vantiqClient.close();
+            }
             vantiqClient = null;
         }
     }
