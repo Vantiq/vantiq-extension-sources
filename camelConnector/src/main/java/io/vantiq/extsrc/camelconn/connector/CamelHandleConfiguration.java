@@ -8,12 +8,19 @@
 
 package io.vantiq.extsrc.camelconn.connector;
 
+import static io.vantiq.client.Vantiq.SystemResources.DOCUMENTS;
+
+import com.google.gson.JsonObject;
+import io.vantiq.client.Vantiq;
+import io.vantiq.client.VantiqResponse;
 import io.vantiq.extjsdk.ExtensionServiceMessage;
 import io.vantiq.extjsdk.ExtensionWebSocketClient;
 import io.vantiq.extjsdk.Handler;
 import io.vantiq.extsrc.camelconn.discover.CamelRunner;
 import lombok.extern.slf4j.Slf4j;
+import okio.BufferedSource;
 
+import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
@@ -56,7 +63,7 @@ public class CamelHandleConfiguration extends Handler<ExtensionServiceMessage> {
     private static final int MAX_QUEUED_TASKS = 10;
 
     // Constants for getting config options
-    public static final String CAMEL_CONFIG = "camelConfig";
+    public static final String CAMEL_CONFIG = "config";
     public static final String CAMEL_APP = "camelRuntime";
     public static final String APP_NAME = "appName";
     public static final String APP_NAME_DEFAULT = "camelConnectorApp";
@@ -167,6 +174,13 @@ public class CamelHandleConfiguration extends Handler<ExtensionServiceMessage> {
             Map<String, String> routeSpec = null;
             if (routeDocName != null) {
                 routeSpec = fetchDocument(routeDocName);
+                if (routeSpec == null) {
+                    log.error("Camel connector operation requires a valid route specification. " +
+                                      "No document '{}' was found.",
+                              routeDocName);
+                    failConfig();
+                    return false;
+                }
             } else {
                 String format = (String) camelConfig.get(ROUTES_FORMAT);
                 String routes = null;
@@ -176,6 +190,10 @@ public class CamelHandleConfiguration extends Handler<ExtensionServiceMessage> {
                     routeSpec = new HashMap<>();
                     routeSpec.put(ROUTES_FORMAT, format);
                     routeSpec.put(ROUTES_LIST, routes);
+                } else {
+                    log.error("Camel connector requires a valid route specification.");
+                    failConfig();
+                    return false;
                 }
             }
     
@@ -197,6 +215,7 @@ public class CamelHandleConfiguration extends Handler<ExtensionServiceMessage> {
                 }
                 currentCamelRunner = null;
             }
+
     
             // Note:  Cannot use try-with-reousrce block here.  Since we don't await the run thread, we need to leave
             // the runner open (no auto-close), so make certain that we don't shut things down before we let things run.
@@ -218,7 +237,49 @@ public class CamelHandleConfiguration extends Handler<ExtensionServiceMessage> {
     }
     
     Map<String, String> fetchDocument(String docName) {
-        // FIXME
+        String token = source.authToken;
+        String url = source.targetVantiqServer;
+        Vantiq vantiq = new Vantiq(url, 1);
+        vantiq.setAccessToken(token);
+        Map<String, String> routeSpec = null;
+        
+        try {
+            VantiqResponse resp = vantiq.selectOne("system." + DOCUMENTS.value(), docName);
+            if (resp.isSuccess()) {
+                if (resp.getBody() instanceof JsonObject) {
+                    JsonObject doc = (JsonObject) resp.getBody();
+                    String docContents = doc.get("content").getAsString();
+                    log.debug("Fetching contents of document {} from path {}.", docName, docContents);
+                    resp = vantiq.download(docContents);
+                    if (resp.isSuccess()) {
+                        String routeDoc = ((BufferedSource) resp.getBody()).readUtf8();
+                        String routeFormat;
+                        if (docName.endsWith("xml")) {
+                            routeFormat = "xml";
+                        } else if (docName.endsWith("yml") || docName.endsWith("yaml")) {
+                            routeFormat = "yml";
+                        } else {
+                            log.error("Unknown format for document {}.", docName);
+                            return null;
+                        }
+                        routeSpec = new HashMap<>();
+                        routeSpec.put(ROUTES_FORMAT, routeFormat);
+                        routeSpec.put(ROUTES_LIST, routeDoc);
+                        return routeSpec;
+                    } else {
+                        log.error("Could not download contents of document '{}: {}.", docName, resp.getErrors());
+                        return null;
+                    }
+                }
+            } else {
+                log.error("Cannot fetch document: {}: {}", docName, resp.getErrors());
+                return null;
+            }
+        } catch (IOException e) {
+            log.error("Cannot read document '{}' contents.", docName, e);
+        } finally {
+            vantiq = null;
+        }
         return null;
     }
 

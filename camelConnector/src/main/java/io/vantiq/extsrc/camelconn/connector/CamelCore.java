@@ -52,7 +52,7 @@ public class CamelCore {
     public final Handler<ExtensionServiceMessage> reconnectHandler = new Handler<ExtensionServiceMessage>() {
         @Override
         public void handleMessage(ExtensionServiceMessage message) {
-            log.trace("Reconnect message received. Reinitializing configuration");
+            log.info("Reconnect message received. Reinitializing configuration");
 
             // Do connector-specific stuff here
             camelConfigHandler.configComplete = false;
@@ -64,6 +64,8 @@ public class CamelCore {
             // FIXME: Determine if the semantics here apply to us
             CompletableFuture<Boolean> reconnectResult = client.doCoreReconnect();
             reconnectResult.thenAccept(success -> {
+                log.info("Reconnect ran with success value: {}", success);
+    
                 if (!success) {
                     close();
                 }
@@ -236,6 +238,6 @@ public class CamelCore {
             }
             return false;
         }
-        return true;
+        return sourcesSucceeded;
     }
 }
