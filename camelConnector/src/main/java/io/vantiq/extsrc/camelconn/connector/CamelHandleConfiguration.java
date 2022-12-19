@@ -113,7 +113,7 @@ public class CamelHandleConfiguration extends Handler<ExtensionServiceMessage> {
         // Retrieve the Camel application and the vantiq config
         // FIXME: Do we require the VANTIQ config any more?  Is packageRows still required?
         if ( !(config.get(CAMEL_APP) instanceof Map)) { // && config.get(VANTIQ) instanceof Map) ) {
-            log.error("Configuration failed. Configuration must contain '{}' and '{}' fields.", CAMEL_APP, VANTIQ);
+            log.error("Configuration failed. Configuration must contain '{}' property.", CAMEL_APP);
             failConfig();
             return;
         }
@@ -121,6 +121,9 @@ public class CamelHandleConfiguration extends Handler<ExtensionServiceMessage> {
         camelConfig = (Map<String, Object>) config.get(CAMEL_APP);
         vantiq = (Map<String, Object>) config.get(VANTIQ);
         general = (Map<String, Object>) config.get(GENERAL);
+        if (general == null) {
+            general = new HashMap<>();
+        }
         boolean gotList = false;
         Object target = camelConfig.get(ROUTES_DOCUMENT);
         if (!(target instanceof String)) {

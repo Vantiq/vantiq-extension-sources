@@ -53,15 +53,13 @@ public class CamelCore {
         @Override
         public void handleMessage(ExtensionServiceMessage message) {
             log.info("Reconnect message received. Reinitializing configuration");
-
             // Do connector-specific stuff here
             camelConfigHandler.configComplete = false;
-
+            
             // Boilerplate reconnect method -- if reconnect fails then we call close(). The code in this reconnect
             // handler must finish executing before we can process another message from Vantiq, meaning the
             // reconnectResult will not complete until after we have exited the handler.
             
-            // FIXME: Determine if the semantics here apply to us
             CompletableFuture<Boolean> reconnectResult = client.doCoreReconnect();
             reconnectResult.thenAccept(success -> {
                 log.info("Reconnect ran with success value: {}", success);
