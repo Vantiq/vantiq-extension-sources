@@ -59,7 +59,7 @@ public class TestJDBC extends TestJDBCBase {
     static final String TIME = "9:24:18";
     static final String FORMATTED_TIMESTAMP = "2018-08-15T09:24:18.000-0700";
     static final String FORMATTED_TIME = "09:24:18.000-0800";
-    static final String VANTIQ_FORMATTED_TIMESTAMP = "2018-08-15T16:24:18Z";
+    static final String VANTIQ_FORMATTED_TIMESTAMP = "2018-08-15T16:24:18.000Z";
     
     // Queries to test oddball types
     static final String CREATE_TABLE_EXTENDED_TYPES = "create table TestTypes(id int, ts TIMESTAMP, testDate DATE, "
@@ -601,7 +601,7 @@ public class TestJDBC extends TestJDBCBase {
         String vantiqTimestamp = responseMap.get("timestamp").getAsString();
         
         // Check that the date was offset by adding 7 hours (since original date ends in 0700)
-        assert vantiqTimestamp.equals(VANTIQ_FORMATTED_TIMESTAMP);
+        assertEquals("Formatted time stamp", VANTIQ_FORMATTED_TIMESTAMP, vantiqTimestamp);
         
         // Delete the Type from VANTIQ
         deleteType();
