@@ -22,6 +22,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.EOFException;
 import java.net.ConnectException;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -269,6 +270,21 @@ public class ExtensionWebSocketListener extends WebSocketListener {
                 if (!client.isConnected() && (Integer) message.getStatus() >= 300) {
                     log.warn("Error occurred attempting to connect to source.");
                     log.debug("Error message was: {}", message);
+                    if (message.getBody() instanceof List) {
+                        List body = (List) message.getBody();
+                        if (body.size() >= 1 && body.get(0) instanceof Map) {
+                            Map errMap = (Map) body.get(0);
+                            if (errMap.containsKey("message")) {
+                                String errMsg = (String) errMap.get("message");
+                                if (errMsg.contains("does not have an associated stream")) {
+                                    // Then we've hit the window where the source is in the midst of
+                                    // re-activation/restart. Mark that the client should retry the connection.
+                                    // The client will handle the reconnect attempt once we mark things appropriately.
+                                    client.retryConnect = true;
+                                }
+                            }
+                        }
+                    }
                     client.sourceFuture.complete(false);
                 } else {
                     client.acknowledgeNotification();
