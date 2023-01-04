@@ -134,6 +134,9 @@ public class ExtensionWebSocketClient {
      * Whether it should automatically send a connection message after receiving a reconnect message
      */
     boolean autoReconnect = false;
+    
+    // Used by the listener to indicate that we've hit a window in reactivation logic.
+    boolean retryConnect = false;
 
     /**
      * The data to be used for authentication. This will be either a {@link String} containing an authentication token or
@@ -740,32 +743,50 @@ public class ExtensionWebSocketClient {
         }
         return sourceFuture;
     }
-
+    
+    private static final Integer MAX_RETRIES = 10;
     /**
      * Method called by reconnectHandlers that actually does the reconnect work.
      * @return  Returns boolean completable indicating if the reconnect was successful, used by the caller
      */
     public CompletableFuture<Boolean> doCoreReconnect() {
         return CompletableFuture.supplyAsync(() -> {
-            CompletableFuture<Boolean> success = connectToSource();
             boolean isReconnected = false;
-            try {
-                if ( !success.get(10, TimeUnit.SECONDS) ) {
-                    if (!isOpen()) {
-                        log.error("Failed to connect to server url .");
-                    } else if (!isAuthed()) {
-                        log.error("Failed to authenticate within 10 seconds using the given authentication data.");
+            // Ensure that retry is not turned on, possibly left from some previous connect attempt
+            retryConnect = false;
+            for (int retryCount = 0; retryCount < MAX_RETRIES; retryCount++) {
+                // This loop exists only for connection retry attempts.  In most cases, we break out of the loop
+                // immediately.  But when retries are necessary due to the restart window (between deactivation &
+                // reactivation), we will retry the connection attempt.  We limit those attempts since that restart
+                // window should not be very long.
+                
+                CompletableFuture<Boolean> success = connectToSource();
+                try {
+                    if (!success.get(10, TimeUnit.SECONDS)) {
+                        if (!isOpen()) {
+                            log.error("Failed to connect to server url .");
+                        } else if (!isAuthed()) {
+                            log.error("Failed to authenticate within 10 seconds using the given authentication data.");
+                        } else if (retryConnect) {
+                            // First, reset
+                            log.warn("Retrying connection (count: {}) due to hitting reactivation window", retryCount);
+                            retryConnect = false;
+                            continue;
+                        } else {
+                            log.error("Failed to connect within 10 seconds");
+                        }
                     } else {
-                        log.error("Failed to connect within 10 seconds");
+                        isReconnected = true;
                     }
-                } else {
-                    isReconnected = true;
+                } catch (InterruptedException | ExecutionException | TimeoutException e) {
+                    retryConnect = false;  // Just to make certain.
+                    log.error("Could not reconnect to source within 10 seconds: ", e);
                 }
-            } catch (InterruptedException | ExecutionException | TimeoutException e) {
-                log.error("Could not reconnect to source within 10 seconds: ", e);
+                break;
             }
-
+            
             return isReconnected;
+    
         });
     }
     
