@@ -34,6 +34,7 @@ import org.apache.commons.lang3.StringUtils;
 
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
@@ -143,6 +144,10 @@ public class VantiqEndpoint extends DefaultEndpoint {
     
     public void sendMessage(Object vMsg) {
         vantiqClient.sendNotification(vMsg);
+    }
+    
+    public void sendResponse(int httpStatus, String respAddress, Map vMsg) {
+        vantiqClient.sendQueryResponse(httpStatus, respAddress, vMsg);
     }
     
     /**

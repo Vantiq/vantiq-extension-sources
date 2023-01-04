@@ -11,8 +11,10 @@ package io.vantiq.extsrc.camel;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.vantiq.extjsdk.ExtensionServiceMessage;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.camel.Exchange;
+import org.apache.camel.ExchangePattern;
 import org.apache.camel.converter.stream.InputStreamCache;
 import org.apache.camel.InvalidPayloadException;
 import org.apache.camel.support.DefaultProducer;
@@ -69,7 +71,17 @@ public class VantiqProducer extends DefaultProducer {
             }
         }
         log.trace("Sending message: {}", vMsg);
-        endpoint.sendMessage(vMsg);
+        Object ra = exchange.getProperty(ExtensionServiceMessage.RESPONSE_ADDRESS_HEADER);
+        String responseAddr = null;
+        if (ra instanceof String) {
+            responseAddr = (String) ra;
+        }
+        if (exchange.getPattern() == ExchangePattern.InOut) {
+            log.debug("Sending response message: code; {}, addr: {}, msg: {}", 200, responseAddr, vMsg);
+            endpoint.sendResponse(200, responseAddr, vMsg);
+        } else {
+            endpoint.sendMessage(vMsg);
+        }
     }
     
     @Override
