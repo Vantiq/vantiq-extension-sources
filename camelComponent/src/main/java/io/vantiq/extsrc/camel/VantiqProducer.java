@@ -21,8 +21,10 @@ import org.apache.camel.support.DefaultProducer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.net.HttpURLConnection;
 import java.util.HashMap;
 import java.util.Map;
+
 @Slf4j
 public class VantiqProducer extends DefaultProducer {
     private static final Logger LOG = LoggerFactory.getLogger(VantiqProducer.class);
@@ -77,8 +79,16 @@ public class VantiqProducer extends DefaultProducer {
             responseAddr = (String) ra;
         }
         if (exchange.getPattern() == ExchangePattern.InOut) {
-            log.debug("Sending response message: code; {}, addr: {}, msg: {}", 200, responseAddr, vMsg);
-            endpoint.sendResponse(200, responseAddr, vMsg);
+            if (exchange.getException() != null) {
+                Exception e = exchange.getException();
+                String emsg = "Exception while processing message: {0}::{1}";
+                endpoint.sendQueryError(responseAddr, "io.vantiq.extsrc.camel.appexception",
+                                        emsg, new Object[] {e.getClass().getName(), e.getMessage()});
+            } else {
+                log.debug("Sending response message: code; {}, addr: {}, msg: {}",
+                          HttpURLConnection.HTTP_OK, responseAddr, vMsg);
+                endpoint.sendResponse(HttpURLConnection.HTTP_OK, responseAddr, vMsg);
+            }
         } else {
             endpoint.sendMessage(vMsg);
         }

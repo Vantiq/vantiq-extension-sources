@@ -150,6 +150,10 @@ public class VantiqEndpoint extends DefaultEndpoint {
         vantiqClient.sendQueryResponse(httpStatus, respAddress, vMsg);
     }
     
+    public void sendQueryError(String respAddress, String msgCode, String msgText, Object[] params) {
+        vantiqClient.sendQueryError(respAddress, msgCode, msgText, params);
+    }
+    
     /**
      * Constructs & returns an ExtensionWebSocketClient.
      *
