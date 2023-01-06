@@ -20,6 +20,7 @@ import io.vantiq.client.VantiqError;
 import io.vantiq.client.VantiqResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.camel.Exchange;
+import org.apache.camel.ExchangePattern;
 import org.apache.camel.builder.RouteBuilder;
 import org.apache.camel.component.jackson.converter.JacksonTypeConvertersLoader;
 import org.apache.camel.component.mock.MockEndpoint;
@@ -49,7 +50,12 @@ public class VantiqLiveComponentTest extends CamelTestSupport {
     
     // FIXME:  Get name from props
     private static final String publishStuffName = System.getProperty("TestCamelPublisher", "publishStuff");
+    private static final String queryStuffName = System.getProperty("TestCamelQuerier", "queryStuff");
+    
     private static final String testSourceName = System.getProperty("TestCamelSourceName", "camelSource");
+    
+    private static final String testQuerySourceName = System.getProperty("TestCamelSourceName",
+                                                                         "camelSource") + "Query";
     
     private static final String testRuleName = testSourceName + "Rule";
     private static final String testTypeName = testSourceName + "Type";
@@ -63,6 +69,9 @@ public class VantiqLiveComponentTest extends CamelTestSupport {
     private final String routeStartUri = "direct:start";
     private final String routeEndUri = "mock:direct:result";
     private static String vantiqEndpointUri;
+    
+    private static String vantiqQueryEndpointUri;
+    
     
     @Test
     public void testVantiqProducerLive() throws Exception {
@@ -173,7 +182,38 @@ public class VantiqLiveComponentTest extends CamelTestSupport {
         });
         assert uniqueMsgs.size() == expectedMsgCount;
     }
-
+    
+    @Test
+    public void testVantiqQueryLive() throws Exception {
+        log.info("tVCR: {}/{}", vantiqInstallation, vantiqAccessToken);
+        assumeTrue(vantiqInstallation != null && vantiqAccessToken != null);
+        for (String name: context.getComponentNames()) {
+            log.info("Component name: {}", name);
+        }
+        
+        int expectedMsgCount = 10;
+        MockEndpoint mocked = getMockEndpoint(routeEndUri);
+        mocked.expectedMinimumMessageCount(expectedMsgCount);
+        
+        Map<String, Object> params = Map.of("messageCount", expectedMsgCount);
+        VantiqResponse vr = vantiq.execute(queryStuffName, params);
+        assert vr.isSuccess();
+        
+        mocked.await(5L, TimeUnit.SECONDS);
+        assert mocked.getReceivedCounter() == expectedMsgCount;
+        List<Exchange> exchanges = mocked.getReceivedExchanges();
+        Set<String> uniqueMsgs = new HashSet<String>();
+        exchanges.forEach(exchange -> {
+            assert exchange.getIn().getBody() instanceof Map;
+            Map msg = exchange.getIn().getBody(Map.class);
+            assert msg.containsKey("test");
+            assert msg.get("test") instanceof String;
+            assert ((String) msg.get("test")).startsWith(testMsgPreamble);
+            uniqueMsgs.add(((String) msg.get("test")));
+        });
+        assert uniqueMsgs.size() == expectedMsgCount;
+    }
+    
     @Override
     protected RouteBuilder createRouteBuilder() throws Exception {
         return new RouteBuilder() {
@@ -187,6 +227,14 @@ public class VantiqLiveComponentTest extends CamelTestSupport {
                 
                 from(vantiqEndpointUri)
                         .to(routeEndUri);
+                
+                from(vantiqQueryEndpointUri)
+                        .to(routeEndUri)
+                        .setExchangePattern(ExchangePattern.InOut)
+                        .setBody(constant("{ \"Response\": \"Message\" }"))
+                        .to(vantiqQueryEndpointUri)
+                ;
+                
             }
         };
     }
@@ -205,13 +253,22 @@ public class VantiqLiveComponentTest extends CamelTestSupport {
             if (("http".equals(vuri.getScheme()) || "ws".equals(vuri.getScheme()))) {
                 vantiqEndpointUri = vantiqEndpointUri + "&noSsl=true";
             }
+            
+            vantiqQueryEndpointUri = endpointUri +
+                    "?sourceName=" + testQuerySourceName +
+                    "&accessToken=" + vantiqAccessToken;
+            if (("http".equals(vuri.getScheme()) || "ws".equals(vuri.getScheme()))) {
+                vantiqQueryEndpointUri = vantiqQueryEndpointUri + "&noSsl=true";
+            }
             vantiq = new Vantiq(vantiqInstallation);
             vantiq.setAccessToken(vantiqAccessToken);
             assertTrue("Vantiq Auth'd", vantiq.isAuthenticated());
             createSourceImpl();
             createSource();
+            createQuerySource();
             createType();
             setupPublishProcedure();
+            setupQueryProcedure();
             setupReceiverRule();
         }
     }
@@ -256,6 +313,23 @@ public class VantiqLiveComponentTest extends CamelTestSupport {
                         + "    log.info(\"Published message to source: {}\", [\"" + testSourceName + "\"])"
                         + "}";
        
+        VantiqResponse vr = vantiq.insert("system.procedures", procedure);
+        assert vr.isSuccess();
+    }
+    
+    public static void setupQueryProcedure() {
+        String procedure =
+                "PROCEDURE " + queryStuffName +  "(messageCount Integer)\n"
+                        + "for (i in range(0, messageCount)) {\n"
+                        + "    var resp = "
+                        +           "SELECT ONE * from SOURCE " + testQuerySourceName + " WITH test: \"" + testMsgPreamble
+                        + "               \" + i, iteration: i\n"
+                        + "    log.info(\"Query message to source: {}\", [\"" + testQuerySourceName + "\"])\n"
+                        + "    if (!resp.containsKey(\"Response\")) {\n"
+                        + "        exception(\"missing.required.key\", \"missing required key\")\n"
+                        + "    }\n"
+                        + "}\n";
+        
         VantiqResponse vr = vantiq.insert("system.procedures", procedure);
         assert vr.isSuccess();
     }
@@ -360,6 +434,26 @@ public class VantiqLiveComponentTest extends CamelTestSupport {
         sourceDef.put("direction", "BOTH");
         sourceDef.put("config", new LinkedHashMap<String, Object>());
     
+        VantiqResponse insertResponse = vantiq.insert("system.sources", sourceDef);
+        assert insertResponse.isSuccess();
+    }
+    
+    public static void createQuerySource() {
+        Map<String, String> where = new LinkedHashMap<>();
+        where.put("name", SRC_IMPL_TYPE);
+        VantiqResponse implResp = vantiq.select(VANTIQ_SOURCE_IMPL, null, where, null);
+        assertFalse("Errors from fetching source impl", implResp.hasErrors());
+        ArrayList responseBody = (ArrayList) implResp.getBody();
+        assertEquals("Missing sourceimpl -- expected a count of 1", 1, responseBody.size());
+        
+        Map<String, Object> sourceDef = new LinkedHashMap<>();
+        // Setting up the source definition
+        sourceDef.put("name", testQuerySourceName);
+        sourceDef.put("type", SRC_IMPL_TYPE);
+        sourceDef.put("active", "true");
+        sourceDef.put("direction", "BOTH");
+        sourceDef.put("config", new LinkedHashMap<String, Object>());
+        
         VantiqResponse insertResponse = vantiq.insert("system.sources", sourceDef);
         assert insertResponse.isSuccess();
     }
