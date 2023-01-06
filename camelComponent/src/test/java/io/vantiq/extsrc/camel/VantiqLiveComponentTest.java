@@ -48,7 +48,6 @@ public class VantiqLiveComponentTest extends CamelTestSupport {
     private static final Integer IMPL_MAX_SIZE = 1000;
     private static final String VANTIQ_SOURCE_IMPL = "system.sourceimpls";
     
-    // FIXME:  Get name from props
     private static final String publishStuffName = System.getProperty("TestCamelPublisher", "publishStuff");
     private static final String queryStuffName = System.getProperty("TestCamelQuerier", "queryStuff");
     
@@ -56,7 +55,6 @@ public class VantiqLiveComponentTest extends CamelTestSupport {
     
     private static final String testQuerySourceName = System.getProperty("TestCamelSourceName",
                                                                          "camelSource") + "Query";
-    
     private static final String testRuleName = testSourceName + "Rule";
     private static final String testTypeName = testSourceName + "Type";
     private static final String testMsgPreamble = "published message ";
@@ -71,7 +69,6 @@ public class VantiqLiveComponentTest extends CamelTestSupport {
     private static String vantiqEndpointUri;
     
     private static String vantiqQueryEndpointUri;
-    
     
     @Test
     public void testVantiqProducerLive() throws Exception {
@@ -232,9 +229,7 @@ public class VantiqLiveComponentTest extends CamelTestSupport {
                         .to(routeEndUri)
                         .setExchangePattern(ExchangePattern.InOut)
                         .setBody(constant("{ \"Response\": \"Message\" }"))
-                        .to(vantiqQueryEndpointUri)
-                ;
-                
+                        .to(vantiqQueryEndpointUri);
             }
         };
     }
