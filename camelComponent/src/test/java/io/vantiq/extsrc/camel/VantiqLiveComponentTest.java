@@ -272,9 +272,11 @@ public class VantiqLiveComponentTest extends CamelTestSupport {
     public static void teardownVantiqEnvironment() {
         if (vantiqInstallation != null && vantiqAccessToken != null) {
             deletePublishProcedure();
+            deleteQueryProcedure();
             deleteReceiverRule();
             deleteType();
             deleteSource();
+            deleteQuerySource();
             deleteSourceImpl();
             vantiq = null;
         }
@@ -336,6 +338,12 @@ public class VantiqLiveComponentTest extends CamelTestSupport {
         assert response.isSuccess();
     }
     
+    public static void deleteQueryProcedure() {
+        Map<String, Object> where = new LinkedHashMap<>();
+        where.put("name", queryStuffName);
+        VantiqResponse response = vantiq.delete("system.procedures", where);
+        assert response.isSuccess();
+    }
     public static void setupReceiverRule() {
         String rule =
                 "RULE " + testRuleName + "\n"
@@ -456,6 +464,13 @@ public class VantiqLiveComponentTest extends CamelTestSupport {
     public static void deleteSource() {
         Map<String, Object> where = new LinkedHashMap<>();
         where.put("name", testSourceName);
+        VantiqResponse response = vantiq.delete("system.sources", where);
+        assert response.isSuccess();
+    }
+    
+    public static void deleteQuerySource() {
+        Map<String, Object> where = new LinkedHashMap<>();
+        where.put("name", testQuerySourceName);
         VantiqResponse response = vantiq.delete("system.sources", where);
         assert response.isSuccess();
     }
