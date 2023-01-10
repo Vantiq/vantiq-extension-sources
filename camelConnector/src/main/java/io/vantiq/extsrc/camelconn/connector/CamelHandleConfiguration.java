@@ -78,7 +78,7 @@ public class CamelHandleConfiguration extends Handler<ExtensionServiceMessage> {
     public static final String COMPONENT_LIB = "componentLibraryDirectory";
     public static final String COMPONENT_LIB_DEFAULT = "componentLib";
     public static final String REPOSITORY_LIST = "repoList";
-    public static final String LOAD_COMPONENTS = "loadComponents";
+    public static final String ADDITIONAL_LIBRARIES = "additionalLibraries";
   
     private static String componentCache;
     private static String componentLib;
@@ -171,7 +171,7 @@ public class CamelHandleConfiguration extends Handler<ExtensionServiceMessage> {
                     repoList.add(new URI(item));
                 }
             }
-            List<String> componentsToLoad = (List<String>) general.get(LOAD_COMPONENTS);
+            List<String> additionalLibraries = (List<String>) general.get(ADDITIONAL_LIBRARIES);
             appName = (String) camelConfig.getOrDefault(APP_NAME, APP_NAME_DEFAULT);
             String routeDocName = (String) camelConfig.get(ROUTES_DOCUMENT);
             Map<String, String> routeSpec = null;
@@ -228,6 +228,9 @@ public class CamelHandleConfiguration extends Handler<ExtensionServiceMessage> {
                          new CamelRunner(appName, Objects.requireNonNull(routeSpec).get(ROUTES_LIST),
                                          routeSpec.get(ROUTES_FORMAT), repoList,
                                          componentCache, componentLib);
+            if (additionalLibraries != null) {
+                runner.setAdditionalLibraries(additionalLibraries);
+            }
             runner.runRoutes(false);
             currentCamelRunner = runner;
         } catch (URISyntaxException urie) {

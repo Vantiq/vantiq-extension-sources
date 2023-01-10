@@ -41,6 +41,8 @@ public class CamelRunner extends MainSupport implements Closeable {
     private final String appName;
     private final List<URI> repositories;
     
+    private List<String> additionalLibraries;
+    
     private final File ivyCache;
     private final File loadedLibraries;
     
@@ -80,6 +82,7 @@ public class CamelRunner extends MainSupport implements Closeable {
         this.routeBuilder = null;
         this.routeSpec = routeSpecification;
         this.routeSpecType = routeSpecificationType;
+        this.additionalLibraries = null;
         mainConfigurationProperties.setRoutesCollectorEnabled(false);
     }
     
@@ -103,8 +106,13 @@ public class CamelRunner extends MainSupport implements Closeable {
         this.routeBuilder = routeBuilder;
         this.routeSpecType = null;
         this.routeSpec = null;
+        this.additionalLibraries = null;
         mainConfigurationProperties.setRoutesBuilders(List.of(routeBuilder));
         mainConfigurationProperties.setRoutesCollectorEnabled(false);
+    }
+    
+    public void setAdditionalLibraries(List<String> libs) {
+        this.additionalLibraries = libs;
     }
     
     @Override
@@ -114,7 +122,7 @@ public class CamelRunner extends MainSupport implements Closeable {
     }
     
     /**
-     * Build the application classload we will use.
+     * Build the application classloader we will use.
      *
      * Construct a URLClassLoader that includes the requirements determined during the discovery phase.  We set the
      * parent classloader to the current application classloader (if any) or that of this class.  This allows this
@@ -133,22 +141,24 @@ public class CamelRunner extends MainSupport implements Closeable {
         }
         CamelDiscovery discoverer = new CamelDiscovery();
         Map<String, Set<String>> discResults = discoverer.performComponentDiscovery(routeBuilder);
-    
+        
         // Now, generate the component list to load...
         // We use a set to avoid duplicates, but we want things resolved in the order they are found in the
         // repositories, so we'll use a LinkedHashSet<>.  That acts as a set but retains the order in which elements
         // were inserted.
         Set<File> jarList = new LinkedHashSet<>();
         if (repositories != null && repositories.size() > 0) {
+            // If providing a list of repos, we require the user to include maven-central (if they want to use it).
+            // This allows test cases, etc., not to over-resolve.
             Set<File> aReposWorth = resolveFromRepo(repositories,
                                                     discResults.get(CamelDiscovery.COMPONENTS_TO_LOAD),
+                                                    this.additionalLibraries,
                                                     discoverer);
            jarList.addAll(aReposWorth);
         } else {
-            // If providing a list of repos, we require the user to include maven-central (if they want to use it).
-            // This allows test cases, etc., not to over-resolve.
             Set<File> aReposWorth = resolveFromRepo(Collections.<URI>emptyList(),
                                                     discResults.get(CamelDiscovery.COMPONENTS_TO_LOAD),
+                                                    this.additionalLibraries,
                                                     discoverer);
             jarList.addAll(aReposWorth);
         }
@@ -182,13 +192,14 @@ public class CamelRunner extends MainSupport implements Closeable {
      * @param repositories List<URI> Repository from which to (attempt) to load.  Not all components must be available
      * here.
      * @param componentsToResolve Set<String> the components to load
+     * @param additionalLibraries List<String> Extra libraries to load (overcome missing from discovery=
      * @param discoverer CamelDiscovery to use.
      * @return Set<File> The set of (jar) files downloaded.
      * @throws Exception when things go awry
      */
 
     private Set<File> resolveFromRepo(List<URI> repositories, Set<String> componentsToResolve,
-                                      CamelDiscovery discoverer)
+                                      List<String> additionalLibraries, CamelDiscovery discoverer)
             throws Exception {
         if (getCamelContext() == null) {
             throw new IllegalStateException("Camel context does not exist.");
@@ -208,6 +219,24 @@ public class CamelRunner extends MainSupport implements Closeable {
             // seems cleaner.  Notify about the problems closer to the source.
             Collection<File> resolved = cr.resolve("org.apache.camel", lib, getCamelContext().getVersion());
             jarSet.addAll(resolved);
+        }
+        // If our use has specified additional libraries to include, do those now.
+        if (additionalLibraries != null && !additionalLibraries.isEmpty()) {
+            for (String comp : additionalLibraries) {
+                String[] compParts = comp.split(":");
+                if (compParts.length != 3) {
+                    throw new IllegalArgumentException("The configuration's 'additionalLibraries' property must be a list " +
+                                                       "of library specifications of the form " +
+                                                       "<organization>:<name>:<revision>.  Found " + comp);
+                }
+                
+                // Our resolver is a chain resolver, including all the IBibloResolvers that are in our list of URLs.
+                // Thus, we will see an error here only if the artifact is resolved by none of the repos in our list.
+                // We could learn to ignore it & let camel throw the error, but our throwing the ResolutionException
+                // seems cleaner.  Notify about the problems closer to the source.
+                Collection<File> resolved = cr.resolve(compParts[0], compParts[1], compParts[2]);
+                jarSet.addAll(resolved);
+            }
         }
         return jarSet;
     }
