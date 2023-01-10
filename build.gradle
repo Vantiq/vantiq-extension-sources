@@ -136,6 +136,9 @@ subprojects {
     }
 
     sourceCompatibility = 1.8
+    java.sourceCompatibility = 1.8
+    java.targetCompatibility = JavaVersion.VERSION_1_8
+
 
     // Simulate provided dependencies
     configurations {
