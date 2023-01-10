@@ -204,7 +204,7 @@ public class VantiqEndpoint extends DefaultEndpoint {
     
             // If we are running inside a Vantiq Camel connector, the connector runtime may have already created a
             // client. If that's the case, use, that client,  Otherwise, we'll create our own, knowing that the
-            // conector runtime is not managing our client.
+            // connector runtime is not managing our client.
             
             vantiqClient = ClientRegistry.fetchClient(sourceName, correctedVantiqUrl);
             if (vantiqClient != null) {
@@ -212,11 +212,8 @@ public class VantiqEndpoint extends DefaultEndpoint {
                 started = true;
                 return;
             } else {
-                // FIXME: When running as a component (not in the connector), we need to establish a reconfig
-                //  handler, I think, so that the component can respond appropriately.  There may be nothing to do as
-                //  we don't (currently) define any source config properties about which we care, but we'll have to
-                //  close & reconnect as appropriate.  This may be done inline with other processing, but it needs to
-                //  be done.
+                // Reconfig's are handled here by auto-reconnect.
+
                 vantiqClient = buildVantiqClient(sourceName, failedMessageQueueSize);
                 CompletableFuture<Boolean> fut = vantiqClient.initiateFullConnection(correctedVantiqUrl, accessToken, sendPings);
     
