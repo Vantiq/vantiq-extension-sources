@@ -586,8 +586,12 @@ public class ExtensionWebSocketClient {
                     this.webSocket.send(ByteString.of(bytes));
                 }
             }
-        }
-        catch (Exception e) {
+        } catch (IllegalStateException ise) {
+            log.warn("Error sending to WebSocket", ise);
+            sourceHasDisconnected();
+            close();
+            throw new RuntimeException("Lost connection to Vantiq source", ise);
+        } catch (Exception e) {
             log.warn("Error sending to WebSocket", e);
         }
     }
