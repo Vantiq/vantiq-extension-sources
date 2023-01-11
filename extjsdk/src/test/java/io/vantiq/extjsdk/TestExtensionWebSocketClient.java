@@ -180,6 +180,41 @@ public class TestExtensionWebSocketClient extends ExtjsdkTestBase {
         assert socket.compareData("status", 200);
     }
     
+    boolean sawCloseHandler = false;
+    public Handler<ExtensionWebSocketClient> errorCloseHandler =  new Handler<ExtensionWebSocketClient>() {
+        @Override
+        public void handleMessage(ExtensionWebSocketClient message) {
+            sawCloseHandler = true;
+        }
+    };
+    
+    @Test
+    public void testLostConnection() {
+        Map<String, Object> queryData = new LinkedHashMap<>();
+        queryData.put("msg", "val");
+        queryData.put("val", "msg");
+        
+        markWsConnected(true);
+        markAuthSuccess(true);
+        markSourceConnected(true);
+        client.sendQueryResponse(200, queryAddress, queryData);
+        
+        assert socket.compareData("body", queryData);
+        assert socket.compareData("headers." + ExtensionServiceMessage.RESPONSE_ADDRESS_HEADER, queryAddress);
+        assert socket.compareData("status", 200);
+        
+        client.setCloseHandler(errorCloseHandler);
+        socket.setClosedByRemote(true);
+        sawCloseHandler = false;
+        try {
+            client.sendQueryResponse(200, queryAddress, queryData);
+        } catch (RuntimeException re) {
+            assert re.getCause() instanceof IllegalStateException;
+            assert !client.isOpen();
+            assert sawCloseHandler;
+        }
+    }
+    
     @Test
     public void testQueryResponseMapArray() {
         Map<String, Object>[] queryData = new Map[2];
@@ -517,9 +552,17 @@ public class TestExtensionWebSocketClient extends ExtjsdkTestBase {
         
         Map<String,Object> lastData = null;
         boolean messageReceived = false;
-
+    
+        private boolean closedByRemote = false;
+    
+        public void setClosedByRemote(boolean newState) {
+            closedByRemote = newState;
+        }
         @Override
         public boolean send(ByteString bytes) {
+            if (closedByRemote) {
+                throw new IllegalStateException("Asked to emulate unexpected closure of websocket");
+            }
             try {
                 lastData = mapper.readValue(bytes.toByteArray(), Map.class);
             } catch (IOException e) {
