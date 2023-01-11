@@ -32,13 +32,20 @@ import org.jetbrains.annotations.NotNull;
  */
 public class FalseWebSocket implements WebSocket {
     FalseBufferedSink s = new FalseBufferedSink();
+    boolean closedByRemote = false;
     
     public byte[] getMessage() {
         return s.retrieveSentBytes();
     }
     
+    public void setClosedByRemote(boolean newState) {
+        closedByRemote = newState;
+    }
     @Override
     public boolean send(@NotNull ByteString bytes) {
+        if (closedByRemote) {
+            throw new IllegalStateException("Emulating remote closure or other unexpected state");
+        }
         s.write(bytes);
         return true;
     }
