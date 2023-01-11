@@ -215,7 +215,6 @@ public class VantiqComponentResolverTest extends CamelTestSupport {
     }
     
     @Test
-    @Ignore("Possible Jenkins issue doing the Jetty startup")
     public void testStartRouteLoadedComponents() throws Exception {
         FileUtil.forceDelete(cache);    // Clear the cache
         RouteBuilder rb = new SimpleExternalRoute();
@@ -227,10 +226,7 @@ public class VantiqComponentResolverTest extends CamelTestSupport {
         }
     }
     
-    // FIXME: Need better test(s) for list of repos.  Specifically, things that load from multiple repos.
-    
     @Test
-    @Ignore("Possible Jenkins issue doing the Jetty startup")
     public void testStartRouteLoadedComponentsMultiRepo() throws Exception {
         FileUtil.forceDelete(cache);    // Clear the cache
         RouteBuilder rb = new SimpleExternalRoute();
@@ -474,7 +470,12 @@ public class VantiqComponentResolverTest extends CamelTestSupport {
             // The following does nothing, but verifies that things all start up.  All we are really verifying here
             // is that all the classes are loaded so that camel & its associated components are operating.
             
-            from("jetty:http://0.0.0.0/myapp/myservice/?sessionSupport=true")
+            // Since 1) we don't really care, and 2) Jenkins runs may not allow us to pick a "normal" port,
+            // we'll specify port 0 here.  Using port 0 tell Jetty to pick an unused port (well, actually, this tells
+            // the lower-level socket constructor, I think.  In either case, this allows this code to work in
+            // environments more constrained than one's own machine.
+            
+            from("jetty:http://0.0.0.0:0/myapp/myservice/?sessionSupport=true")
                     .to("log:" + log.getName()  + "level=debug");
         }
     }
