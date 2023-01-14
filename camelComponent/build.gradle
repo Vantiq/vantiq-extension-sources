@@ -29,7 +29,6 @@ dependencies {
     implementation "org.apache.camel:camel-jackson:${camelVersion}"
     implementation "org.apache.commons:commons-lang3:3.12.0"
 
-//    implementation "io.vantiq:extjsdk:${extjsdkVersion}"
     implementation project(":extjsdk")
     implementation "org.projectlombok:lombok:${lombokVersion}"
     implementation "com.fasterxml.jackson.core:jackson-databind:${jacksonVersion}"
