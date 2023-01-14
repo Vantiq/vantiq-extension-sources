@@ -42,13 +42,7 @@ import java.util.Objects;
  *          }
  *      }
  * }</pre>
- * 
- * The options for general are as follows. At least one must be valid for the source to function:
- * <ul>
- *      <li>{@code username}: The username to log into the SQL Database.
- *      <li>{@code password}: The password to log into the SQL Database.
- *      <li>{@code dbURL}: The URL of the SQL Database to be used. *                      
- * </ul>
+ *
  */
 
 @Slf4j

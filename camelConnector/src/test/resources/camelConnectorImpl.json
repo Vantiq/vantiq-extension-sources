@@ -1,0 +1,8 @@
+{
+  "name" : "CAMEL_CONNECTOR",
+  "baseType" : "EXTENSION",
+  "verticle" : "service:extensionSource",
+  "config" : {},
+  "baseConfigProperties": [
+  ]
+}
