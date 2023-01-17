@@ -37,7 +37,7 @@ ext {
     dnsJavaVersion = '3.4.2'
     extjsdkVersion='1.0'
     gsonVersion = '2.9.1'
-    ivyVersion = '2.5.0'
+    ivyVersion = '2.5.1'
     jacksonVersion = '2.13.4.2'
     junitVersion = '4.13.2'
     junitVintageEngineVersion = '5.8.2'
@@ -45,7 +45,6 @@ ext {
     junitVersion = '4.13.2'
     log4JVersion='2.17.2'
 }
-
 
 dependencies {
     annotationProcessor "org.projectlombok:lombok:${lombokVersion}"
@@ -63,8 +62,6 @@ dependencies {
     implementation "com.google.code.gson:gson:${gsonVersion}"
     // Used for downloading route documents
     implementation "io.vantiq:vantiq-sdk:${vantiqSDKVersion}"
-
-
 
     // The following are the DSL libraries to include for support of the various route builders.
     // We need to include them in the base product (as oppose to using our constructed classloader)
@@ -222,7 +219,6 @@ tasks.withType(Test) {
     // Use the build dir as a base to get our various test artifacts.
     systemProperty "buildDir", "${buildDir}"
 }
-
 
 test {
     useJUnitPlatform()
