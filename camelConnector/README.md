@@ -201,5 +201,5 @@ okhttp3, log4j, gson, and jackson-databind are licensed under
 
 slf4j and lombok are licensed under the [MIT License](https://opensource.org/licenses/MIT).  
 
-Apache, Camel, and Apache Camel are trademarks of the Apache Software Foundation and are licensed under
+Apache, Camel, Apache Camel, Ivy, and Apache Ivy are trademarks of the Apache Software Foundation and are licensed under
 [Apache Version 2.0 License](http://www.apache.org/licenses/LICENSE-2.0). 
