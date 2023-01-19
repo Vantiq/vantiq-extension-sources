@@ -14,6 +14,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.camel.ExtendedCamelContext;
 import org.apache.camel.builder.RouteBuilder;
 import org.apache.camel.impl.DefaultCamelContext;
+import org.apache.camel.spi.ConfigurerResolver;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -32,14 +33,19 @@ public class CamelDiscovery {
     
     public static final String SYSTEM_COMPONENTS = "systemComponents";
     public static final String COMPONENTS_TO_LOAD = "componentsToLoad";
+    public static final String SYSTEM_DATAFORMATS = "systemDataFormats";
+    public static final String DATAFORMATS_TO_LOAD = "dataFormatsToLoad";
+    
     
     public static final String VANTIQ_COMPONENT_SCHEME = "vantiq";
     
-    private static final String ARTIFACTS_KEY_NAME = "artifacts";
+    private static final String COMPONENTS_KEY_NAME = "components";
+    private static final String DATAFORMATS_KEY_NAME = "dataformats";
     private static final String CAMEL_VERSION_KEY_NAME = "camelVersion";
     
     private static Map<String, Object> artifactMap;
-    private static Map<String, String> artifacts;
+    private static Map<String, String> components;
+    private static Map<String, String> dataformats;
     
     /**
      * Determine the set of components used in the routes in a route builder.
@@ -58,6 +64,10 @@ public class CamelDiscovery {
             ExtendedCamelContext ectx = ctx.adapt(ExtendedCamelContext.class);
             EnumeratingComponentResolver ecr = new EnumeratingComponentResolver(ectx.getComponentResolver());
             ectx.setComponentResolver(ecr);
+            EnumeratingDataFormatResolver edfr = new EnumeratingDataFormatResolver(ectx.getDataFormatResolver());
+            ectx.setDataFormatResolver(edfr);
+            EnumeratingConfigurerResolver epcr = new EnumeratingConfigurerResolver();
+            ectx.setConfigurerResolver(epcr);
             log.debug("Discovering Camel (version {}) components using context: {}", ectx.getVersion(), ectx.getName());
     
             assert ectx.getComponentResolver() instanceof EnumeratingComponentResolver;
@@ -75,10 +85,18 @@ public class CamelDiscovery {
     
                 log.debug("System components (ignored): ");
                 ecr.getSystemComponentsUsed().forEach(comp -> log.debug("    ---> {}", comp));
+                
+                log.debug("DataFormat discovery complete:");
+                edfr.getDataFormatsToLoad().forEach(df -> log.debug("    ---> {}", df));
+                log.debug("System dataformats (ignored): ");
+                edfr.getSystemDataFormatsUsed().forEach(df -> log.debug("    ---> {}", df));
+    
             }
             Map<String, Set<String>> retVal = new HashMap<>();
             retVal.put(SYSTEM_COMPONENTS, ecr.getSystemComponentsUsed());
             retVal.put(COMPONENTS_TO_LOAD, ecr.getComponentsToLoad());
+            retVal.put(SYSTEM_DATAFORMATS, edfr.getSystemDataFormatsUsed());
+            retVal.put(DATAFORMATS_TO_LOAD, edfr.getDataFormatsToLoad());
             return retVal;
         } catch (Exception e) {
             log.error("Trapped exception preparing or completing component discovery", e);
@@ -100,14 +118,22 @@ public class CamelDiscovery {
      */
 
     String findComponentForScheme(String scheme) throws DiscoveryException {
-        if (artifactMap == null || artifacts == null) {
+        if (artifactMap == null || components == null) {
             loadArtifactMap();
         }
-        return artifacts.get(scheme);
+        return components.get(scheme);
     }
     
+    String findDataFormatForName(String dfName) throws DiscoveryException {
+        if (artifactMap == null || dataformats == null) {
+            loadArtifactMap();
+        }
+        return dataformats.get(dfName);
+    }
+    
+    
     String getComponentListVersion() throws DiscoveryException {
-        if (artifactMap == null || artifacts == null) {
+        if (artifactMap == null || components == null) {
             loadArtifactMap();
         }
         
@@ -146,7 +172,8 @@ public class CamelDiscovery {
             String jsonString = new String(in.readAllBytes());
             log.trace("Map is {}", jsonString);
             artifactMap = new ObjectMapper().readValue(jsonString, new TypeReference<>() {});
-            artifacts = (Map<String, String>) artifactMap.get(ARTIFACTS_KEY_NAME);
+            components = (Map<String, String>) artifactMap.get(COMPONENTS_KEY_NAME);
+            dataformats = (Map<String, String>) artifactMap.get(DATAFORMATS_KEY_NAME);
         } catch (IOException ioe) {
             throw new DiscoveryException("Error loading artifact map from classpath", ioe);
         }

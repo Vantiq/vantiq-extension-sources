@@ -58,6 +58,7 @@ public class CamelRunner extends MainSupport implements Closeable {
     private Thread camelThread;
     
     private Boolean startupCompleted = false;
+    private Exception startupFailed = null;
     private final static String startupSync = "startupSync";
     
     /**
@@ -152,12 +153,14 @@ public class CamelRunner extends MainSupport implements Closeable {
             // This allows test cases, etc., not to over-resolve.
             Set<File> aReposWorth = resolveFromRepo(repositories,
                                                     discResults.get(CamelDiscovery.COMPONENTS_TO_LOAD),
+                                                    discResults.get(CamelDiscovery.DATAFORMATS_TO_LOAD),
                                                     this.additionalLibraries,
                                                     discoverer);
            jarList.addAll(aReposWorth);
         } else {
             Set<File> aReposWorth = resolveFromRepo(Collections.<URI>emptyList(),
                                                     discResults.get(CamelDiscovery.COMPONENTS_TO_LOAD),
+                                                    discResults.get(CamelDiscovery.DATAFORMATS_TO_LOAD),
                                                     this.additionalLibraries,
                                                     discoverer);
             jarList.addAll(aReposWorth);
@@ -192,6 +195,7 @@ public class CamelRunner extends MainSupport implements Closeable {
      * @param repositories List<URI> Repository from which to (attempt) to load.  Not all components must be available
      * here.
      * @param componentsToResolve Set<String> the components to load
+     * @param dataformatsToResolve Set<String> the data formats to load
      * @param additionalLibraries List<String> Extra libraries to load (overcome missing from discovery=
      * @param discoverer CamelDiscovery to use.
      * @return Set<File> The set of (jar) files downloaded.
@@ -199,6 +203,7 @@ public class CamelRunner extends MainSupport implements Closeable {
      */
 
     private Set<File> resolveFromRepo(List<URI> repositories, Set<String> componentsToResolve,
+                                      Set<String> dataformatsToResolve,
                                       List<String> additionalLibraries, CamelDiscovery discoverer)
             throws Exception {
         if (getCamelContext() == null) {
@@ -212,6 +217,20 @@ public class CamelRunner extends MainSupport implements Closeable {
             if (lib == null) {
                 // If we don't know the name, we have no chance of resolving it.  So complain.
                 throw new ResolutionException("Unable to determine jar file for component: " + comp);
+            }
+            // Our resolver is a chain resolver, including all the IBibloResolvers that are in our list of URLs.
+            // Thus, we will see an error here only if the artifact is resolved by none of the repos in our list.
+            // We could learn to ignore it & let camel throw the error, but our throwing the ResolutionException
+            // seems cleaner.  Notify about the problems closer to the source.
+            Collection<File> resolved = cr.resolve("org.apache.camel", lib, getCamelContext().getVersion());
+            jarSet.addAll(resolved);
+        }
+    
+        for (String df : dataformatsToResolve) {
+            String lib = discoverer.findDataFormatForName(df);
+            if (lib == null) {
+                // If we don't know the name, we have no chance of resolving it.  So complain.
+                throw new ResolutionException("Unable to determine jar file for dataformat: " + df);
             }
             // Our resolver is a chain resolver, including all the IBibloResolvers that are in our list of URLs.
             // Thus, we will see an error here only if the artifact is resolved by none of the repos in our list.
@@ -260,15 +279,20 @@ public class CamelRunner extends MainSupport implements Closeable {
             camelThread.start();
             log.trace("Awaiting camel startup");
             awaitStartup();
-
-            log.debug("Camel is started");
-            if (waitForThread) {
-                camelThread.join();
+            
+            if (startupFailed == null) {
+                log.debug("Camel is started");
+                if (waitForThread) {
+                    camelThread.join();
+                }
             }
+            // else
+            // We have failed to successfully start.  Finally case below will wait for the thread to die
+            // then throw the exception problem
         } catch (Exception e) {
             log.error("Exception from runtime", e);
         } finally {
-            if (waitForThread) {
+            if (waitForThread || startupFailed != null) {
                close();
             }
         }
@@ -349,7 +373,7 @@ public class CamelRunner extends MainSupport implements Closeable {
         notifyStarted();
     }
     
-    protected void notifyStarted() throws Exception {
+    protected void notifyStarted() {
         log.debug("NotifyStarted()");
         synchronized (startupSync) {
             // Avoid busy-wait during startup.
@@ -357,7 +381,6 @@ public class CamelRunner extends MainSupport implements Closeable {
             startupSync.notify();
         }
         log.debug("NotifyStarted() completed");
-    
     }
     
     protected void awaitStartup() throws Exception {
@@ -401,6 +424,17 @@ public class CamelRunner extends MainSupport implements Closeable {
     protected void doStart() throws Exception {
         super.doStart();
         getCamelContext().start();
+    }
+    
+    @Override
+    protected void doFail(Exception e) {
+        // Save our failure reason
+        startupFailed = e;
+        // In the event of failure, cancel outstanding operations & let the system discover that by marking that
+        // things havew started.  Otherwise, we hang awaiting the startup monitor.
+        log.error("Camel startup has failed due to: ", e);
+        notifyStarted();
+        super.doFail(e);
     }
     
     @Override
