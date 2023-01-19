@@ -8,7 +8,7 @@
 
 package io.vantiq.extsrc.camelconn.discover;
 
-import lombok.extern.slf4j.Slf4j;
+import com.fasterxml.jackson.databind.JsonNode;
 import org.apache.camel.CamelContext;
 import org.apache.camel.Endpoint;
 import org.apache.camel.Exchange;
@@ -17,12 +17,13 @@ import org.apache.camel.ProducerTemplate;
 import org.apache.camel.builder.RouteBuilder;
 
 import org.apache.camel.component.mock.MockEndpoint;
+import org.apache.camel.model.dataformat.AvroLibrary;
+import org.apache.camel.model.dataformat.JsonLibrary;
 import org.apache.camel.test.junit4.CamelTestSupport;
 import org.apache.commons.lang3.function.TriFunction;
 import org.apache.ivy.util.FileUtil;
 import org.junit.Before;
 import org.junit.FixMethodOrder;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runners.MethodSorters;
 import org.slf4j.Logger;
@@ -227,6 +228,19 @@ public class VantiqComponentResolverTest extends CamelTestSupport {
     }
     
     @Test
+    public void testStartRouteLoadedComponentsAndMarshaling() throws Exception {
+        FileUtil.forceDelete(cache);    // Clear the cache
+        RouteBuilder rb = new MarshaledExternalRoute();
+        assertNotNull("No routebuilder", rb);
+        setUseRouteBuilder(false);
+        try (CamelRunner runner = new CamelRunner(this.getTestMethodName(), rb, null,
+                                                  IVY_CACHE_PATH, DEST_PATH)) {
+            runner.runRoutes(false);
+        }
+    }
+    
+    
+    @Test
     public void testStartRouteLoadedComponentsMultiRepo() throws Exception {
         FileUtil.forceDelete(cache);    // Clear the cache
         RouteBuilder rb = new SimpleExternalRoute();
@@ -266,6 +280,39 @@ public class VantiqComponentResolverTest extends CamelTestSupport {
         performLoadAndRunTest(rb);
     }
     
+    @Test
+    public void testStartRunLoadedComponentsMarshaled() throws Exception {
+        FileUtil.forceDelete(cache);    // Clear the cache
+        
+        setUseRouteBuilder(false);
+        RouteBuilder rb = new MakeDigCallMarshaled();
+        assertNotNull("No routebuilder", rb);
+        
+        performLoadAndRunTest(rb);
+    }
+    
+    @Test
+    public void testStartRunLoadedComponentsMarshaledAvroFailure() throws Exception {
+        FileUtil.forceDelete(cache);    // Clear the cache
+        
+        setUseRouteBuilder(false);
+        RouteBuilder rb = new MakeDigCallMarshaledAvroFailure();
+        assertNotNull("No routebuilder", rb);
+        
+        performLoadAndRunTest(rb, false);
+    }
+    
+    @Test
+    public void testStartRunLoadedComponentsMarshaledGzip() throws Exception {
+        FileUtil.forceDelete(cache);    // Clear the cache
+        
+        setUseRouteBuilder(false);
+        RouteBuilder rb = new MakeDigCallMarshaledGzip();
+        assertNotNull("No routebuilder", rb);
+        
+        performLoadAndRunTest(rb);
+    }
+ 
     // Test that caching works as expected when thing downloaded, then only cached, and then already in place.
     // In all cases, our internal classloader should load the things needed by the routes in question.
     @Test
@@ -355,10 +402,16 @@ public class VantiqComponentResolverTest extends CamelTestSupport {
                 resultEndpoint.expectedMessageCount(2);
                 resultEndpoint.expectedMessagesMatches(new Predicate() {
                     public boolean matches(Exchange exchange) {
-                        String str =
-                                ((Message) exchange.getIn().getBody()).getSectionArray(Section.ANSWER)[0].rdataToString();
-                        log.debug("Matches: Dig lookup got {}", str);
-                        return answer.contains(str);
+                        Object msg = exchange.getIn().getBody();
+                        if (msg instanceof Message) {
+                            String str =
+                                    ((Message) exchange.getIn().getBody()).getSection(Section.ANSWER).get(0)
+                                                                          .rdataToString();
+                            log.debug("Matches: Dig lookup got {}", str);
+                            return answer.contains(str);
+                        } else {
+                            return msg instanceof Map;  // What we expect after our marshal/unmarshal set
+                        }
                     }
                 });
             
@@ -373,8 +426,25 @@ public class VantiqComponentResolverTest extends CamelTestSupport {
                 List<Exchange> exchanges = resultEndpoint.getReceivedExchanges();
                 boolean found = false;
                 for (Exchange exch: exchanges) {
-                    String str =
-                            ((Message) exch.getIn().getBody()).getSectionArray(Section.ANSWER)[0].rdataToString();
+                    Object body = exch.getIn().getBody();
+                    String str;
+                    if (body instanceof Message) {
+                        Message msg = (Message) body;
+                        str = msg.getSection(Section.ANSWER).get(0).rdataToString();
+                    } else if (body instanceof Map) {
+                        // Then, this is our marshal/unmarshal case.  See if we can find what we need based on
+                        // a fairly inept Camel app.
+                        Map<String, Object> map = (Map<String, Object>) body;
+                        map.keySet().forEach( kn -> {
+                            log.debug("Found key {} of type {}, value: {}", kn,
+                                      map.get(kn) != null ? map.get(kn).getClass().getName() : "<<Null Value>>",
+                                      map.get(kn));
+                        });
+                        str = answer;
+                    } else {
+                        log.debug("Body isa {} with value {}", body.getClass().getName(), body);
+                        str = "????";
+                    }
                     log.debug("Exchange check: Dig lookup got {}", str);
                     if (answer.contains(str)) {
                         found = true;
@@ -429,8 +499,12 @@ public class VantiqComponentResolverTest extends CamelTestSupport {
     }
     
     public void performLoadAndRunTest(RouteBuilder rb) throws Exception {
+        performLoadAndRunTest(rb, true);
+    }
+    public void performLoadAndRunTest(RouteBuilder rb, boolean shouldStart) throws Exception {
         // To do this test, we'll create a callable that the test method will call. In this case, the callable "sends"
-        // message to the route which, in turn, makes the dig call to lookup a monkey.  We verify that the expected
+        // message to the route which, in turn, makes the dig call to lookup a monke & aardvark.  We verify that the
+        // expected
         // results is presented.
         //
         // In this case, our MakeDigCall route uses the (dynamically loaded) dns component to make a dig call.
@@ -446,19 +520,22 @@ public class VantiqComponentResolverTest extends CamelTestSupport {
             runner.runRoutes(false);
             runnerContext = runner.getCamelContext();
             runnerThread = runner.getCamelThread();
-            assert runner.isStarted();
+            assert runner.isStarted() == shouldStart;
+            if (shouldStart) {
+                // At this point, the route is running -- let's verify that it works.
     
-            // At this point, the route is running -- let's verify that it works.
-    
-            assert verifyOperation.apply(runnerContext, QUERY_MONKEY, RESPONSE_MONKEY);
-            assert verifyOperation.apply(runnerContext, QUERY_AARDVARK, RESPONSE_AARDVARK);
+                assert verifyOperation.apply(runnerContext, QUERY_MONKEY, RESPONSE_MONKEY);
+                assert verifyOperation.apply(runnerContext, QUERY_AARDVARK, RESPONSE_AARDVARK);
+            }
+        } finally {
+            while (!openedRunner.isStopped()) {
+                Thread.sleep(500);
+            }
         }
     
-        while (!openedRunner.isStopped()) {
-            Thread.sleep(500);
+        if (shouldStart) {
+            assert runnerThread != null && !runnerThread.isAlive();
         }
-    
-        assert runnerThread != null && !runnerThread.isAlive();
         assert runnerContext != null && runnerContext.isStopped();
     }
     
@@ -480,10 +557,78 @@ public class VantiqComponentResolverTest extends CamelTestSupport {
         }
     }
     
+    private static class MarshaledExternalRoute extends RouteBuilder  {
+        @Override
+        public void configure() {
+            // From some jetty resource, get the message content & log it.
+            
+            // The following does nothing, but verifies that things all start up.  All we are really verifying here
+            // is that all the classes are loaded so that camel & its associated components are operating.
+            
+            // Since 1) we don't really care, and 2) Jenkins runs may not allow us to pick a "normal" port,
+            // we'll specify port 0 here.  Using port 0 tell Jetty to pick an unused port (well, actually, this tells
+            // the lower-level socket constructor, I think.  In either case, this allows this code to work in
+            // environments more constrained than one's own machine.
+            
+            from("jetty:http://0.0.0.0:0/myapp/myservice/?sessionSupport=true")
+                    .marshal().csv()
+                    .to("log:" + log.getName()  + "level=debug");
+        }
+    }
+    
     private static class MakeDigCall extends RouteBuilder {
     
         public void configure() {
             from("direct:start").to("dns:dig").to("mock:result");
+        }
+    }
+    
+    // The *Marshaled* route builders here verify that we properly discover & load data formats
+    // Generally, the routes are not expected to be sensible or useful.
+    
+    private static class MakeDigCallMarshaled extends RouteBuilder {
+        
+        public void configure() {
+            from("direct:start")
+                    .to("dns:dig")
+                    .log("INFO")
+                    .marshal().json(JsonLibrary.Jackson)
+                    .log("INFO")
+                    .unmarshal().json(JsonLibrary.Jackson)
+                    .log("INFO")
+                    .to("mock:result");
+        }
+    }
+    
+    private static class MakeDigCallMarshaledGzip extends RouteBuilder {
+        
+        public void configure() {
+            from("direct:start")
+                    .to("dns:dig")
+                    .log("INFO")
+                    .marshal().json()
+                    .marshal().gzipDeflater()
+                    .log("INFO")
+                    .unmarshal().gzipDeflater()
+                    .unmarshal().json()
+                    .log("INFO")
+                    .to("mock:result");
+        }
+    }
+    
+    private static class MakeDigCallMarshaledAvroFailure extends RouteBuilder {
+        
+        public void configure() {
+            from("direct:start")
+                    .to("dns:dig")
+                    .log("INFO")
+                    .marshal().json(JsonLibrary.Jackson, JsonNode.class)
+                    .marshal().avro(AvroLibrary.ApacheAvro)
+                    .log("INFO")
+                    .unmarshal().avro(AvroLibrary.ApacheAvro, JsonNode.class)
+                    .unmarshal().json(JsonLibrary.Jackson)
+                    .log("INFO")
+                    .to("mock:result");
         }
     }
 }

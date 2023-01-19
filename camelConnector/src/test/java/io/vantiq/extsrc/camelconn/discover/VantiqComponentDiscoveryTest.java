@@ -98,6 +98,37 @@ public class VantiqComponentDiscoveryTest extends CamelTestSupport {
         });
     }
     
+    @Test
+    public void testDataFormatLookup() throws DiscoveryException {
+        
+        // Check basic mechanism
+        
+        List<String> shouldExist = List.of("csv", "avro");
+        List<String> shouldNotExist = List.of("vantiq", "bozoSoftware", "homersHouse");
+        
+        CamelDiscovery cd = new CamelDiscovery();
+        String artifactVersion = cd.getComponentListVersion();
+        String camelVersion = context.getVersion();
+        assertTrue("Build version " + artifactVersion + " is incompatible with camel version " + camelVersion,
+                   cd.isVersionCompatible(camelVersion));
+        
+        shouldExist.forEach(df -> {
+            try {
+                assertNotNull("Missing loadable for " + df, cd.findDataFormatForName(df));
+            } catch (DiscoveryException de) {
+                fail("Trapped exception looking up " + df +"::" + de.getMessage());
+            }
+        });
+        
+        shouldNotExist.forEach(df -> {
+            try {
+                assertNull("Extraneous loadable for " + df, cd.findDataFormatForName(df));
+            } catch (DiscoveryException de) {
+                fail("Trapped exception looking up " + df +"::" + de.getMessage());
+            }
+        });
+    }
+    
     /**
      * Verify that our transcription from code/doc of what's built into Camel core is correct.
      */
@@ -151,6 +182,12 @@ public class VantiqComponentDiscoveryTest extends CamelTestSupport {
     }
     
     @Test
+    public void testMarshallingRoutesDiscovery() throws Exception {
+        RouteBuilder rb = new MarshallingRoutes();
+        performDiscoveryTest(rb);
+    }
+    
+    @Test
     public void testXmlRouteDiscovery() throws Exception {
         RouteBuilder rb = new SimpleXmlRoutes();
         performDiscoveryTest(rb);
@@ -170,6 +207,9 @@ public class VantiqComponentDiscoveryTest extends CamelTestSupport {
         
         List<String> expectedCTL = ((TestExpectations) rb).getExpectedComponentsToLoad();
         List<String> expectedSysComp = ((TestExpectations) rb).getExpectedSystemComponents();
+        List<String> expectedDFL = ((TestExpectations) rb).getExpectedDataFormatsToLoad();
+        List<String> expectedSysDF = ((TestExpectations) rb).getExpectedSystemDataFormats();
+    
         discResults.get(CamelDiscovery.COMPONENTS_TO_LOAD).forEach(comp -> {
             log.debug("    ---> {}", comp);
             assertTrue("Unexpected component to load: " + comp, expectedCTL.contains(comp));
@@ -184,7 +224,26 @@ public class VantiqComponentDiscoveryTest extends CamelTestSupport {
                      expectedCTL.size(),  discResults.get(CamelDiscovery.COMPONENTS_TO_LOAD).size());
         assertEquals("System Components:", expectedSysComp.size(),
                      discResults.get(CamelDiscovery.SYSTEM_COMPONENTS).size());
+    
+        discResults.get(CamelDiscovery.DATAFORMATS_TO_LOAD).forEach(df -> {
+            log.debug("    ---> {}", df);
+            assertTrue("Unexpected dataformat to load: " + df, expectedDFL.contains(df));
+        });
+    
+        discResults.get(CamelDiscovery.SYSTEM_DATAFORMATS).forEach(df -> {
+            log.debug("    ---> {}", df);
+            assertTrue("Unexpected system dataformat: " + df, expectedSysDF.contains(df));
         
+        });
+        assertEquals("Enumerated Components:",
+                     expectedCTL.size(),  discResults.get(CamelDiscovery.COMPONENTS_TO_LOAD).size());
+        assertEquals("System Components:", expectedSysComp.size(),
+                     discResults.get(CamelDiscovery.SYSTEM_COMPONENTS).size());
+        assertEquals("Enumerated DataFormats:",
+                     expectedDFL.size(),  discResults.get(CamelDiscovery.DATAFORMATS_TO_LOAD).size());
+        assertEquals("System DataFormats:", expectedSysDF.size(),
+                     discResults.get(CamelDiscovery.SYSTEM_DATAFORMATS).size());
+    
         // Double check that things are loadable
     
         discResults.get(CamelDiscovery.COMPONENTS_TO_LOAD).forEach(compSchema -> {
@@ -202,6 +261,16 @@ public class VantiqComponentDiscoveryTest extends CamelTestSupport {
                 fail("Trapped DiscoveryException: " + de.getMessage());
             }
         });
+    
+        discResults.get(CamelDiscovery.DATAFORMATS_TO_LOAD).forEach(dfName -> {
+            try {
+                String loadable = discoverer.findDataFormatForName(dfName);
+                log.debug("Need to load {} for name: {}", loadable, dfName);
+                assertNotNull("Missing loadable dataFormat artifact: " + dfName, loadable);
+            } catch (DiscoveryException de) {
+                fail("Trapped DiscoveryException: " + de.getMessage());
+            }
+        });
         
         // Same thing should be true of system stuff, though we won't really load them
         discResults.get(CamelDiscovery.SYSTEM_COMPONENTS).forEach(compSchema -> {
@@ -213,11 +282,29 @@ public class VantiqComponentDiscoveryTest extends CamelTestSupport {
                 fail("Trapped DiscoveryException: " + de.getMessage());
             }
         });
+    
+        // Same thing should be true of system stuff, though we won't really load them
+        discResults.get(CamelDiscovery.SYSTEM_DATAFORMATS).forEach(dfName -> {
+            try {
+                String loadable = discoverer.findDataFormatForName(dfName);
+                log.debug("Need to load {} for name: {}", loadable, dfName);
+                assertNotNull("Missing loadable artifact: " + dfName, loadable);
+            } catch (DiscoveryException de) {
+                fail("Trapped DiscoveryException: " + de.getMessage());
+            }
+        });
     }
     
     interface TestExpectations {
         List<String> getExpectedComponentsToLoad();
         List<String> getExpectedSystemComponents();
+        
+        default List<String> getExpectedDataFormatsToLoad() {
+            return List.of();
+        }
+        default List<String> getExpectedSystemDataFormats() {
+            return List.of();
+        }
     }
     private class TwoSimpleRoutes extends RouteBuilder implements TestExpectations {
 
@@ -259,6 +346,32 @@ public class VantiqComponentDiscoveryTest extends CamelTestSupport {
             return List.of("direct-vm", "direct", "mock", "log");
         }
     }
+    
+    private class MarshallingRoutes extends RouteBuilder implements TestExpectations {
+        
+        @Override
+        public void configure() {
+            from(routeStartUri)
+                    .marshal().csv()
+                    .to("log:debug");
+            
+            
+            from(vantiqEndpointUri)
+                    .to(routeEndUri);
+        }
+        public List<String> getExpectedComponentsToLoad() {
+            return List.of("vantiq");
+        }
+        
+        public List<String> getExpectedSystemComponents() {
+            return List.of("direct", "mock", "log");
+        }
+        
+        public List<String> getExpectedDataFormatsToLoad() {
+            return List.of("csv");
+        }
+    }
+    
     
     private static class ComplexUrlRoutes extends RouteBuilder implements TestExpectations {
         
