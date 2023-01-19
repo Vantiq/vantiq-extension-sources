@@ -19,6 +19,8 @@ ext {
     log4JVersion='2.17.2'
     extjsdkVersion='1.0'
     jacksonVersion = '2.9.3' // FIXME: check latest version & promote to parent build.
+    gsonVersion = '2.9.1'
+    commonsLang3Version = '3.12.0'
 }
 
 dependencies {
@@ -27,12 +29,12 @@ dependencies {
     implementation "org.apache.camel:camel-core:${camelVersion}"
     implementation "org.apache.camel:camel-support:${camelVersion}"
     implementation "org.apache.camel:camel-jackson:${camelVersion}"
-    implementation "org.apache.commons:commons-lang3:3.12.0"
+    implementation "org.apache.commons:commons-lang3:${commonsLang3Version}"
 
     implementation project(":extjsdk")
     implementation "org.projectlombok:lombok:${lombokVersion}"
     implementation "com.fasterxml.jackson.core:jackson-databind:${jacksonVersion}"
-    implementation 'com.google.code.gson:gson:2.9.1'
+    implementation "com.google.code.gson:gson:${gsonVersion}"
 
     testImplementation "org.apache.logging.log4j:log4j-slf4j-impl:${log4JVersion}"
     testImplementation "org.apache.camel:camel-test:${camelVersion}"

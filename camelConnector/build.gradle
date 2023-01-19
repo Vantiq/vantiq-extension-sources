@@ -152,11 +152,12 @@ tasks.register('generateComponentList', ) {
         logger.info('Camel root is {}', camelRoot.absolutePath)
         def components = file("${camelRoot.absolutePath}/components")
         logger.info('Components is: {}', components.absolutePath)
-        def compDef = fileTree(dir: components, include: '**/src/**/META-INF/services/org/apache/camel/component/*').
-            getFiles()
+        def compDef = fileTree(dir: components,
+            include: '**/src/**/META-INF/services/org/apache/camel/component/*').getFiles()
         logger.info("Found {} component definition files.", compDef.size())
         logger.debug("Component definition files: ")
         Map<String, String> compMap = [:]
+
         boolean foundErrors = false
         compDef.each { aComp ->
             def f = file(aComp)
@@ -195,10 +196,58 @@ tasks.register('generateComponentList', ) {
                 logger.debug("            (skipping {} since it's a build artifact duplicate)", aComp.path)
             }
         }
+
+        def dfDef = fileTree(dir: components,
+            include: '**/src/**/META-INF/services/org/apache/camel/dataformat/*').getFiles()
+        logger.info("Found {} dataformat definition files.", dfDef.size())
+        logger.debug("DataFormat definition files: ")
+        Map<String, String> dfMap = [:]
+
+        dfDef.each { df ->
+            def f = file(df)
+            if (!f.path.contains("target/classes/META-INF")) {
+                logger.debug("    --> {} at {}", f.name, f.parent)
+                def pomLoc = file(df.parent + "../../../../../../../../../../pom.xml")
+                logger.debug("    --> (pom.xml exists): {} :: {}", pomLoc.exists(), pomLoc.path)
+                def parsed = new XmlParser().parse(pomLoc)
+                def artifactId = parsed.artifactId
+                // Getting a node named 'parent' (the simple way) conflicts with the getting the parent node
+                // Things tend to work, but let's do things properly so that we can avoid complications in the future.
+                def parentNodeName = new QName(parsed.name().namespaceURI, "parent")
+                String componentVersion = parsed.getAt(parentNodeName).version.text()
+                if (artifactId.text().endsWith('-parent')) {
+                    logger.error(">>>> This is a parent <<<<")
+                    foundErrors = true
+                }
+                String[] compVersionParts = componentVersion.tokenize('.')
+                if (compVersionParts[0] != camVersionParts[0] ||
+                    compVersionParts[1] != camVersionParts[1]) {
+                    logger.error('Version mismatch -- component version {} vs our camelVersion: {}',
+                        componentVersion, camelVersion)
+                    foundErrors = true
+                }
+                logger.debug('Artifact {} produced by pom.xml file : {}', artifactId.text(), pomLoc.path)
+                logger.debug('Scheme {} requires Artifact {}', df.name, artifactId.text())
+                if (dfMap[df.name] != null) {
+                    if (dfMap[df.name] != artifactId.text()) {
+                        foundErrors = true
+                        logger.error("Scheme {} has artifact name confusion/collision: {} vs {}", df.name,
+                            dfMap[df.name], artifactId.text())
+                    }
+                }
+                dfMap.put(df.name, artifactId.text())
+            } else {
+                logger.debug("            (skipping {} since it's a build artifact duplicate)", df.path)
+            }
+        }
+
+
         if (foundErrors) {
             throw new GradleException("Found errors gathering scheme to artifact mapping.")
         }
-        def artifactDef = [ camelVersion: camelVersion, artifacts: compMap]
+        def artifactDef = [ camelVersion: camelVersion,
+                            components: compMap,
+                            dataformats: dfMap]
         def jsonPretty = JsonOutput.prettyPrint(JsonOutput.toJson(artifactDef))
         def compFile = file(ARTIFACT_MAP_FILE)
         if (compFile.exists()) {
