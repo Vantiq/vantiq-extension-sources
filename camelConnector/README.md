@@ -132,12 +132,42 @@ that accepts message from the Vantiq server specified in the connector's `server
     </routes>
 ```
 
-## Messages from the Source
+#### Connector Operation
+
+Upon startup (or when the Vantiq Source configuration changes), the Camel Connector will examine the configuration
+to determine the route(s) to run. To configure itself, the connector will perform the following actions:
+
+* Read the configuration and determine the route(s) to be used.
+* Start the Camel routes in an internal _discovery_ mode where the componenets required to run the routes are
+discovered.
+* Based on the discovered components, download the required libraries and their dependencies.
+    * If the **additionalLibraries** property is provied as part of the configuration, the libraries listed
+therein are downloaded as well.
+    * The downloads happen based on the Maven Central repository, unless the **repoList** property is specified
+in the configuration.  If that is present, that list is used _instead_ of the Maven Central repository. Thus, if
+one wishes to add a repo in addition to Maven Central, one must include the Maven Central repository in the list.
+This allows the configurer to override things for testing, etc.
+* Once the downloads are completed, the runtime is augmented with the required components,
+and the Camel application is started (in _normal_ mode) to run the route(s) requested.
+* This discovery process happens on each restart or reconfiguration.
+However, libraries already downloaded will not be downloaded again (unless a version update is required).
+    * To force a new download, clear the directory specified (or defaulted) by the **componentCacheDirectory**
+configuration property.
+
+## Messages to the Source
 
 Messages are sent to the source as Notifications, and are delivered as _events_ to the associated source.
 The data arrives as a VAIL object, where the properties in the event correspond to those sent from the Camel application.
 being the column name and the values being the column value. If multiple rows of data are returned by the pollQuery, each row
-will be sent as a unique Notification. 
+will be sent as a unique Notification.
+The Vantiq Component expects messages in an exchange to arrive in the form of a Java Map.  However, messages arriving
+in Json format will be accepted as well.
+
+## Messages from the Source
+
+Messages that are sent to the component will arrive in a Camel Exchange as a Java Map, where the keys in the map
+correspond to the property names in the object sent from Vantiq.  Messages sent to Vantiq from the component will
+arrive as Vail objects, where the property names correspond to the Map keys.
 
 ## Select Statements
 

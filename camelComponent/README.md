@@ -73,6 +73,11 @@ Messages that are sent to the component will arrive in a Camel Exchange as a Jav
 correspond to the property names in the object sent from Vantiq.  Messages sent to Vantiq from the component will
 arrive as Vail objects, where the property names correspond to the Map keys.
 
+## Exchanges to Vantiq
+
+The Vantiq Component expects messages in an exchange to arrive in the form of a Java Map.  However, messages arriving
+in Json format will be accepted as well.
+
 ## Adding a Vantiq Component tp an Apache Camel Applications
 
 ### URI Format
