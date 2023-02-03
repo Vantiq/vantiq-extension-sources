@@ -65,7 +65,7 @@ dependencies {
 
     // The following are the DSL libraries to include for support of the various route builders.
     // We need to include them in the base product (as oppose to using our constructed classloader)
-    // since we need to parse the routes to determine what extend via our constructed classloader.
+    // since we need to parse the routes to determine what to extend via our constructed classloader.
     implementation "org.apache.camel:camel-xml-io-dsl:${camelVersion}"
     implementation "org.apache.camel:camel-yaml-dsl:${camelVersion}"
     // End of DSL-specific inclusions.
@@ -75,7 +75,6 @@ dependencies {
     testImplementation "io.vantiq:vantiq-sdk:${vantiqSDKVersion}"
     testImplementation project(path: ":extjsdk", configuration: 'testArtifacts')
     testImplementation "dnsjava:dnsjava:${dnsJavaVersion}"
-
     testImplementation("junit:junit:${junitVersion}")
     testRuntimeOnly("org.junit.vintage:junit-vintage-engine:${junitVintageEngineVersion}")
 }
@@ -267,6 +266,21 @@ tasks.withType(Test) {
     }
     // Use the build dir as a base to get our various test artifacts.
     systemProperty "buildDir", "${buildDir}"
+
+    if (rootProject.hasProperty("camel-salesforce-loginUrl")) {
+        systemProperty "camel-salesforce-loginUrl", rootProject.findProperty("camel-salesforce-loginUrl") ?: "empty"
+    }
+    if (rootProject.hasProperty("camel-salesforce-clientId")) {
+        systemProperty "camel-salesforce-clientId", rootProject.findProperty("camel-salesforce-clientId") ?: "empty"
+    }
+    if (rootProject.hasProperty("camel-salesforce-clientSecret")) {
+        systemProperty "camel-salesforce-clientSecret",
+            rootProject.findProperty("camel-salesforce-clientSecret") ?: "empty"
+    }
+    if (rootProject.hasProperty("camel-salesforce-refreshToken")) {
+        systemProperty "camel-salesforce-refreshToken",
+            rootProject.findProperty("camel-salesforce-refreshToken") ?: "empty"
+    }
 }
 
 test {
