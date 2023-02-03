@@ -182,8 +182,8 @@ public class VantiqComponentDiscoveryTest extends CamelTestSupport {
     }
     
     @Test
-    public void testMarshallingRoutesDiscovery() throws Exception {
-        RouteBuilder rb = new MarshallingRoutes();
+    public void testMarshalingRoutesDiscovery() throws Exception {
+        RouteBuilder rb = new MarshalingRoutes();
         performDiscoveryTest(rb);
     }
     
@@ -347,7 +347,7 @@ public class VantiqComponentDiscoveryTest extends CamelTestSupport {
         }
     }
     
-    private class MarshallingRoutes extends RouteBuilder implements TestExpectations {
+    private class MarshalingRoutes extends RouteBuilder implements TestExpectations {
         
         @Override
         public void configure() {

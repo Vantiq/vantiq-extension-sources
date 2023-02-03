@@ -224,7 +224,8 @@ public class VantiqComponentResolverTest extends CamelTestSupport {
         FileUtil.forceDelete(cache);    // Clear the cache
         URI s3Repo = new URI("https://vantiqmaven.s3.amazonaws.com/");
         CamelResolver cr = new CamelResolver(this.getTestMethodName(), s3Repo, cache, dest);
-        Collection<File> resolved = cr.resolve("vantiq.models", "coco", "1.1", "meta");
+        Collection<File> resolved = cr.resolve("vantiq.models", "coco", "1.1", "meta",
+                                                       testName.getMethodName());
         assertEquals("Resolved file count: " + resolved.size(), 1, resolved.size());
         File[] files = resolved.toArray(new File[0]);
         assertEquals("File name match", "coco-1.1.meta", files[0].getName());
