@@ -14,7 +14,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.camel.ExtendedCamelContext;
 import org.apache.camel.builder.RouteBuilder;
 import org.apache.camel.impl.DefaultCamelContext;
-import org.apache.camel.spi.ConfigurerResolver;
 
 import java.io.IOException;
 import java.io.InputStream;
