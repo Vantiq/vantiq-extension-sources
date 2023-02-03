@@ -22,6 +22,7 @@ import org.apache.camel.model.dataformat.JsonLibrary;
 import org.apache.camel.test.junit4.CamelTestSupport;
 import org.apache.commons.lang3.function.TriFunction;
 import org.apache.ivy.util.FileUtil;
+import org.junit.Assume;
 import org.junit.Before;
 import org.junit.FixMethodOrder;
 import org.junit.Test;
@@ -49,12 +50,19 @@ import java.util.Map;
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
 // @Slf4j
 public class VantiqComponentResolverTest extends CamelTestSupport {
+    public final static String MISSING_VALUE = "<missing>";
+    
     private static final Logger log =  LoggerFactory.getLogger(VantiqComponentResolverTest.class);
     public static final String DEST_PATH = "build/loadedlib";
     public static final String IVY_CACHE_PATH = "build/ivyCache";
     
     File dest;
     File cache = new File(IVY_CACHE_PATH);
+    
+    public static final String sfLoginUrl = System.getProperty("camel-salesforce-loginUrl");
+    public static final String sfClientId = System.getProperty("camel-salesforce-clientId");
+    public static final String sfClientSecret = System.getProperty("camel-salesforce-clientSecret");
+    public static final String sfRefreshToken = System.getProperty("camel-salesforce-refreshToken");
     
     @Before
     public void setup() {
@@ -98,7 +106,7 @@ public class VantiqComponentResolverTest extends CamelTestSupport {
                                                 this.getClass().getClassLoader());
        
         try {
-            Class sfClass = Class.forName("org.apache.camel.component.salesforce.SalesforceComponent", false, ucl);
+            Class<?> sfClass = Class.forName("org.apache.camel.component.salesforce.SalesforceComponent", false, ucl);
             assertNotNull("SalesforceComponent class null", sfClass);
             log.debug("Found SalesforceComponent class: {}::{}", sfClass.getPackageName(), sfClass.getName());
 
@@ -218,11 +226,12 @@ public class VantiqComponentResolverTest extends CamelTestSupport {
     @Test
     public void testStartRouteLoadedComponents() throws Exception {
         FileUtil.forceDelete(cache);    // Clear the cache
-        RouteBuilder rb = new SimpleExternalRoute();
+        RouteBuilderWithProps rb = new SimpleExternalRoute();
         assertNotNull("No routebuilder", rb);
         setUseRouteBuilder(false);
         try (CamelRunner runner = new CamelRunner(this.getTestMethodName(), rb, null,
-                                                  IVY_CACHE_PATH, DEST_PATH)) {
+                                                  IVY_CACHE_PATH, DEST_PATH,
+                                                  rb.getComponentsToInit())) {
             runner.runRoutes(false);
         }
     }
@@ -230,11 +239,12 @@ public class VantiqComponentResolverTest extends CamelTestSupport {
     @Test
     public void testStartRouteLoadedComponentsAndMarshaling() throws Exception {
         FileUtil.forceDelete(cache);    // Clear the cache
-        RouteBuilder rb = new MarshaledExternalRoute();
+        RouteBuilderWithProps rb = new MarshaledExternalRoute();
         assertNotNull("No routebuilder", rb);
         setUseRouteBuilder(false);
         try (CamelRunner runner = new CamelRunner(this.getTestMethodName(), rb, null,
-                                                  IVY_CACHE_PATH, DEST_PATH)) {
+                                                  IVY_CACHE_PATH, DEST_PATH,
+                                                  rb.getComponentsToInit())) {
             runner.runRoutes(false);
         }
     }
@@ -243,13 +253,14 @@ public class VantiqComponentResolverTest extends CamelTestSupport {
     @Test
     public void testStartRouteLoadedComponentsMultiRepo() throws Exception {
         FileUtil.forceDelete(cache);    // Clear the cache
-        RouteBuilder rb = new SimpleExternalRoute();
+        RouteBuilderWithProps rb = new SimpleExternalRoute();
         assertNotNull("No routebuilder", rb);
         setUseRouteBuilder(false);
         List<URI> repoList = new ArrayList<>();
         repoList.add(new URI("https://vantiqmaven.s3.amazonaws.com/"));
         repoList.add(new URI("https://repo.maven.apache.org/maven2/"));
-        try (CamelRunner runner = new CamelRunner(this.getTestMethodName(),rb, repoList, IVY_CACHE_PATH, DEST_PATH)) {
+        try (CamelRunner runner = new CamelRunner(this.getTestMethodName(),rb, repoList,
+                                                  IVY_CACHE_PATH, DEST_PATH, rb.getComponentsToInit())) {
             runner.runRoutes(false);
         }
     }
@@ -274,10 +285,10 @@ public class VantiqComponentResolverTest extends CamelTestSupport {
         FileUtil.forceDelete(cache);    // Clear the cache
         
         setUseRouteBuilder(false);
-        RouteBuilder rb = new MakeDigCall();
+        RouteBuilderWithProps rb = new MakeDigCall();
         assertNotNull("No routebuilder", rb);
         
-        performLoadAndRunTest(rb);
+        performLoadAndRunTest(rb, rb.getComponentsToInit());
     }
     
     @Test
@@ -285,10 +296,10 @@ public class VantiqComponentResolverTest extends CamelTestSupport {
         FileUtil.forceDelete(cache);    // Clear the cache
         
         setUseRouteBuilder(false);
-        RouteBuilder rb = new MakeDigCallMarshaled();
+        RouteBuilderWithProps rb = new MakeDigCallMarshaled();
         assertNotNull("No routebuilder", rb);
         
-        performLoadAndRunTest(rb);
+        performLoadAndRunTest(rb, rb.getComponentsToInit());
     }
     
     @Test
@@ -296,10 +307,10 @@ public class VantiqComponentResolverTest extends CamelTestSupport {
         FileUtil.forceDelete(cache);    // Clear the cache
         
         setUseRouteBuilder(false);
-        RouteBuilder rb = new MakeDigCallMarshaledAvroFailure();
+        RouteBuilderWithProps rb = new MakeDigCallMarshaledAvroFailure();
         assertNotNull("No routebuilder", rb);
         
-        performLoadAndRunTest(rb, false);
+        performLoadAndRunTest(rb, false, rb.getComponentsToInit());
     }
     
     @Test
@@ -307,10 +318,25 @@ public class VantiqComponentResolverTest extends CamelTestSupport {
         FileUtil.forceDelete(cache);    // Clear the cache
         
         setUseRouteBuilder(false);
-        RouteBuilder rb = new MakeDigCallMarshaledGzip();
+        RouteBuilderWithProps rb = new MakeDigCallMarshaledGzip();
         assertNotNull("No routebuilder", rb);
         
-        performLoadAndRunTest(rb);
+        performLoadAndRunTest(rb, rb.getComponentsToInit());
+    }
+    
+    @Test
+    public void testStartRunLoadedComponentsSalesforceRefreshToken() throws Exception {
+        Assume.assumeTrue(sfLoginUrl != null &&
+                                  sfClientId != null &&
+                                  sfClientSecret != null &&
+                                  sfRefreshToken != null);
+        FileUtil.forceDelete(cache);    // Clear the cache
+        
+        setUseRouteBuilder(false);
+        RouteBuilderWithProps rb = new SalesForceTasks();
+        assertNotNull("No routebuilder", rb);
+        
+        performLoadAndRunTest(rb, rb.getComponentsToInit());
     }
  
     // Test that caching works as expected when thing downloaded, then only cached, and then already in place.
@@ -320,24 +346,24 @@ public class VantiqComponentResolverTest extends CamelTestSupport {
         FileUtil.forceDelete(cache);    // Clear the cache
         
         setUseRouteBuilder(false);
-        RouteBuilder rb = new MakeDigCall();
+        RouteBuilderWithProps rb = new MakeDigCall();
         assertNotNull("No routebuilder", rb);
         
         // First run: cache & lib/dest deleted.  Download all
-        performLoadAndRunTest(rb);
+        performLoadAndRunTest(rb, rb.getComponentsToInit());
         
         // Second run, leave the cache but delete the library.  Should copy from cache
         if (dest.exists()) {
             FileUtil.forceDelete(dest);
         }
-        performLoadAndRunTest(rb);
+        performLoadAndRunTest(rb, rb.getComponentsToInit());
         // Finally, leave everything.  Resolution should do nothing but code will run
-        performLoadAndRunTest(rb);
+        performLoadAndRunTest(rb, rb.getComponentsToInit());
     }
     
     public static final String XML_ROUTE = ""
             + "<routes xmlns=\"http://camel.apache.org/schema/spring\" xmlns:foo=\"http://io.vantiq/foo\">"
-            + "   <route id=\"xml-route\">"
+            + "   <route id=\"Dig from xml-route\">"
             + "      <from uri=\"direct:start\"/>"
             + "      <to uri=\"dns:dig\"/>"
             + "      <to uri=\"mock:result\"/>"
@@ -348,7 +374,7 @@ public class VantiqComponentResolverTest extends CamelTestSupport {
     // direct:start) if th top-level "- route" line is missing.d
     public static final String YAML_ROUTE =  "\n"
             + "- route:\n"
-            + "    id: \"yaml-route\"\n"
+            + "    id: \"Dig from yaml-route\"\n"
             + "    from:\n"
             + "      uri: \"direct:start\"\n"
             + "      steps:\n"
@@ -363,7 +389,7 @@ public class VantiqComponentResolverTest extends CamelTestSupport {
     
         setUseRouteBuilder(false);
     
-        performLoadAndRunTest(XML_ROUTE, "xml");
+        performLoadAndRunTest(XML_ROUTE, "xml", null);
     }
     
     @Test
@@ -371,22 +397,38 @@ public class VantiqComponentResolverTest extends CamelTestSupport {
         FileUtil.forceDelete(cache);    // Clear the cache
         setUseRouteBuilder(false);
     
-        performLoadAndRunTest(YAML_ROUTE, "yaml");
+        performLoadAndRunTest(YAML_ROUTE, "yaml", null);
     }
     
     /**
      * Create a callable that the test method will call.
      *
      * In this case, the callable "sends"
-     * message to the route which, in turn, makes the dig call to lookup a monkey.  We verify that the expected
-     * results is presented.
+     * message to the route which, in turn, makes a call to return some data.  We verify that the expected
+     * results are presented.
      *
-     * In this case, our MakeDigCall route uses the (dynamically loaded) dns component to make a dig call.
-     * @return TriFunction<CamelContext, String, String, Boolean>
+     * In this case, our route uses the dynamically loaded component to make a call.
+     * @return TriFunction<CamelContext, String, Object, Boolean>
      */
-    public static TriFunction<CamelContext, String, String, Boolean> defineVerifyOperation() {
-        TriFunction<CamelContext, String, String, Boolean> verifyOperation = (context, query, answer) -> {
+    public static TriFunction<CamelContext, String, Object, Boolean> defineVerifyOperation() {
+        TriFunction<CamelContext, String, Object, Boolean> verifyOperation = (context, query, answerObj) -> {
             boolean worked = true;
+            String routeId = context.getRoutes().get(0).getId();
+            final String answerStr;
+            final Map<String, ?> answerMap;
+            
+            if (answerObj instanceof String) {
+                answerStr = (String) answerObj;
+                answerMap = null;
+            } else if (answerObj instanceof Map) {
+                //noinspection unchecked
+                answerMap = (Map<String, ?>) answerObj;
+                answerStr = null;
+            } else {
+                answerMap = null;
+                answerStr = null;
+            }
+    
             try {
                 if (context.isStopped()) {
                     log.error("At test start, context {} is stopped", context.getName());
@@ -396,9 +438,8 @@ public class VantiqComponentResolverTest extends CamelTestSupport {
                 MockEndpoint resultEndpoint = (MockEndpoint) res;
             
                 ProducerTemplate template = context.createProducerTemplate();
-                log.debug("Test code using context: {}", context.getName());
-            
-            
+                log.debug("Test code using context: {}, route id: {}", context.getName(), routeId);
+                
                 resultEndpoint.expectedMessageCount(2);
                 resultEndpoint.expectedMessagesMatches(new Predicate() {
                     public boolean matches(Exchange exchange) {
@@ -407,55 +448,42 @@ public class VantiqComponentResolverTest extends CamelTestSupport {
                             String str =
                                     ((Message) exchange.getIn().getBody()).getSection(Section.ANSWER).get(0)
                                                                           .rdataToString();
-                            log.debug("Matches: Dig lookup got {}", str);
-                            return answer.contains(str);
-                        } else {
-                            return msg instanceof Map;  // What we expect after our marshal/unmarshal set
+                            log.debug("Matches: Route {} got {}", routeId, str);
+                            assertNotNull(answerStr);
+                            return answerStr.contains(str);
+                        } else if (msg instanceof Map) {
+                            //noinspection unchecked
+                            Map<String, ?> msgMap = (Map<String, ?>) msg;
+                            assertNotNull(answerMap);
+                            boolean result = true;
+                            for (Map.Entry<String, ?> ansEnt: answerMap.entrySet()) {
+                                result &= msgMap.containsKey(ansEnt.getKey());
+                                if (!ansEnt.getValue().equals(MISSING_VALUE)) {
+                                    result &= msgMap.get(ansEnt.getKey()).equals(ansEnt.getValue());
+                                }
+                            }
+                            return result;
                         }
+                        return false;
                     }
                 });
-            
+    
                 Map<String, Object> headers = new HashMap<>();
-                headers.put("dns.name", query);
-                headers.put("dns.type", "TXT");
+                if (routeId.contains("Dig")) {
+                    headers.put("dns.name", query);
+                    headers.put("dns.type", "TXT");
+                }
                 if (context.isStopped()) {
                     log.error("Context {} is stopped", context.getName());
                 }
                 template.sendBodyAndHeaders("direct:start", null, headers);
-            
-                List<Exchange> exchanges = resultEndpoint.getReceivedExchanges();
-                boolean found = false;
-                for (Exchange exch: exchanges) {
-                    Object body = exch.getIn().getBody();
-                    String str;
-                    if (body instanceof Message) {
-                        Message msg = (Message) body;
-                        str = msg.getSection(Section.ANSWER).get(0).rdataToString();
-                    } else if (body instanceof Map) {
-                        // Then, this is our marshal/unmarshal case.  See if we can find what we need based on
-                        // a fairly inept Camel app.
-                        Map<String, Object> map = (Map<String, Object>) body;
-                        map.keySet().forEach( kn -> {
-                            log.debug("Found key {} of type {}, value: {}", kn,
-                                      map.get(kn) != null ? map.get(kn).getClass().getName() : "<<Null Value>>",
-                                      map.get(kn));
-                        });
-                        str = answer;
-                    } else {
-                        log.debug("Body isa {} with value {}", body.getClass().getName(), body);
-                        str = "????";
-                    }
-                    log.debug("Exchange check: Dig lookup got {}", str);
-                    if (answer.contains(str)) {
-                        found = true;
-                    }
-                }
-                assertTrue("Found expected message in messages", found);
+                
+                assertTrue("Expected some exchanges", resultEndpoint.getReceivedCounter() > 0);
                 if (resultEndpoint.getReceivedCounter() > 1) {
                     resultEndpoint.assertIsSatisfied();
                 }
             } catch (Exception e) {
-                log.error("Trapped exception", e);
+                log.error("Route " + routeId + ": Trapped exception", e);
                 worked = false;
             }
             return worked;
@@ -463,21 +491,23 @@ public class VantiqComponentResolverTest extends CamelTestSupport {
         return verifyOperation;
     }
     
-    public void performLoadAndRunTest(String content, String contentType) throws Exception {
+    public void performLoadAndRunTest(String content, String contentType,
+                                      List<Map<String, Object>> compToInit) throws Exception {
         // To do this test, we'll create a callable that the test method will call. In this case, the callable "sends"
         // message to the route which, in turn, makes the dig call to lookup a monkey.  We verify that the expected
         // results is presented.
         //
         // In this case, our MakeDigCall route uses the (dynamically loaded) dns component to make a dig call.
     
-        TriFunction<CamelContext, String, String, Boolean> verifyOperation = defineVerifyOperation();
+        TriFunction<CamelContext, String, Object, Boolean> verifyOperation = defineVerifyOperation();
         
         CamelContext runnerContext = null;
         Thread runnerThread = null;
         CamelRunner openedRunner = null;
         
         try (CamelRunner runner =
-                     new CamelRunner(this.getTestMethodName(), content, contentType, null, IVY_CACHE_PATH, DEST_PATH)) {
+                     new CamelRunner(this.getTestMethodName(), content, contentType, null,
+                                     IVY_CACHE_PATH, DEST_PATH, compToInit)) {
             openedRunner = runner;
             runner.runRoutes(false);
             runnerContext = runner.getCamelContext();
@@ -498,24 +528,26 @@ public class VantiqComponentResolverTest extends CamelTestSupport {
         assert runnerContext != null && runnerContext.isStopped();
     }
     
-    public void performLoadAndRunTest(RouteBuilder rb) throws Exception {
-        performLoadAndRunTest(rb, true);
+    public void performLoadAndRunTest(RouteBuilder rb, List<Map<String, Object>> compToInit) throws Exception {
+        performLoadAndRunTest(rb, true, compToInit);
     }
-    public void performLoadAndRunTest(RouteBuilder rb, boolean shouldStart) throws Exception {
+    public void performLoadAndRunTest(RouteBuilder rb, boolean shouldStart,
+                                      List<Map<String, Object>> componentToInit) throws Exception {
         // To do this test, we'll create a callable that the test method will call. In this case, the callable "sends"
         // message to the route which, in turn, makes the dig call to lookup a monke & aardvark.  We verify that the
         // expected
         // results is presented.
         //
         // In this case, our MakeDigCall route uses the (dynamically loaded) dns component to make a dig call.
-        TriFunction<CamelContext, String, String, Boolean> verifyOperation = defineVerifyOperation();
+        TriFunction<CamelContext, String, Object, Boolean> verifyOperation = defineVerifyOperation();
     
         CamelContext runnerContext = null;
         Thread runnerThread = null;
         CamelRunner openedRunner = null;
-    
+        
         try (CamelRunner runner =
-                     new CamelRunner(this.getTestMethodName(), rb, null, IVY_CACHE_PATH, DEST_PATH)) {
+                     new CamelRunner(this.getTestMethodName(), rb, null, IVY_CACHE_PATH, DEST_PATH,
+                                     componentToInit)) {
             openedRunner = runner;
             runner.runRoutes(false);
             runnerContext = runner.getCamelContext();
@@ -523,23 +555,48 @@ public class VantiqComponentResolverTest extends CamelTestSupport {
             assert runner.isStarted() == shouldStart;
             if (shouldStart) {
                 // At this point, the route is running -- let's verify that it works.
-    
-                assert verifyOperation.apply(runnerContext, QUERY_MONKEY, RESPONSE_MONKEY);
-                assert verifyOperation.apply(runnerContext, QUERY_AARDVARK, RESPONSE_AARDVARK);
+                String routeId = runnerContext.getRoutes().get(0).getId();
+                if (routeId.contains("Dig")) {
+                    if (routeId.contains("Marshaled")) {
+                        Map<String, ?> expectedMap =  Map.of("signed", MISSING_VALUE,
+                                                        "rcode", MISSING_VALUE,
+                                                        "verified", MISSING_VALUE,
+                                                        "opt", MISSING_VALUE,
+                                                        "tsig", MISSING_VALUE,
+                                                        "question", MISSING_VALUE,
+                                                        "resolver", MISSING_VALUE,
+                                                        "header", MISSING_VALUE);
+                        assert verifyOperation.apply(runnerContext, QUERY_MONKEY, expectedMap);
+                        assert verifyOperation.apply(runnerContext, QUERY_AARDVARK, expectedMap);
+                    } else {
+                        assert verifyOperation.apply(runnerContext, QUERY_MONKEY, RESPONSE_MONKEY);
+                        assert verifyOperation.apply(runnerContext, QUERY_AARDVARK, RESPONSE_AARDVARK);
+                    }
+                } else if (routeId.contains("Salesforce")) {
+                    assert verifyOperation.apply(runnerContext, "not used",
+                                                 Map.of ("totalSize", MISSING_VALUE, "done", true));
+                    assert verifyOperation.apply(runnerContext, "not used",
+                                                 Map.of ("totalSize", MISSING_VALUE, "done", true));
+                }
             }
         } finally {
-            while (!openedRunner.isStopped()) {
+            while (openedRunner != null && !openedRunner.isStopped()) {
                 Thread.sleep(500);
             }
         }
     
-        if (shouldStart) {
-            assert runnerThread != null && !runnerThread.isAlive();
-        }
+        assert !shouldStart || runnerThread != null && !runnerThread.isAlive();
         assert runnerContext != null && runnerContext.isStopped();
     }
     
-    private static class SimpleExternalRoute extends RouteBuilder  {
+    private static abstract class RouteBuilderWithProps extends RouteBuilder {
+        
+        public List<Map<String, Object>> getComponentsToInit() {
+            return null;
+        }
+    }
+    
+    private static class SimpleExternalRoute extends RouteBuilderWithProps  {
         @Override
         public void configure() {
             // From some jetty resource, get the message content & log it.
@@ -557,7 +614,8 @@ public class VantiqComponentResolverTest extends CamelTestSupport {
         }
     }
     
-    private static class MarshaledExternalRoute extends RouteBuilder  {
+    private static class MarshaledExternalRoute extends RouteBuilderWithProps  {
+        
         @Override
         public void configure() {
             // From some jetty resource, get the message content & log it.
@@ -576,20 +634,22 @@ public class VantiqComponentResolverTest extends CamelTestSupport {
         }
     }
     
-    private static class MakeDigCall extends RouteBuilder {
-    
+    private static class MakeDigCall extends RouteBuilderWithProps {
         public void configure() {
-            from("direct:start").to("dns:dig").to("mock:result");
+            from("direct:start")
+                    .routeId("Simple Dig Call")
+                    .to("dns:dig")
+                    .to("mock:result");
         }
     }
     
     // The *Marshaled* route builders here verify that we properly discover & load data formats
     // Generally, the routes are not expected to be sensible or useful.
     
-    private static class MakeDigCallMarshaled extends RouteBuilder {
-        
+    private static class MakeDigCallMarshaled extends RouteBuilderWithProps {
         public void configure() {
             from("direct:start")
+                    .routeId("Dig Call Marshaled")
                     .to("dns:dig")
                     .log("INFO")
                     .marshal().json(JsonLibrary.Jackson)
@@ -600,10 +660,11 @@ public class VantiqComponentResolverTest extends CamelTestSupport {
         }
     }
     
-    private static class MakeDigCallMarshaledGzip extends RouteBuilder {
-        
+    private static class MakeDigCallMarshaledGzip extends RouteBuilderWithProps {
+
         public void configure() {
             from("direct:start")
+                    .routeId("Dig Call MarshaledGzip")
                     .to("dns:dig")
                     .log("INFO")
                     .marshal().json()
@@ -616,10 +677,11 @@ public class VantiqComponentResolverTest extends CamelTestSupport {
         }
     }
     
-    private static class MakeDigCallMarshaledAvroFailure extends RouteBuilder {
+    private static class MakeDigCallMarshaledAvroFailure extends RouteBuilderWithProps {
         
         public void configure() {
             from("direct:start")
+                    .routeId("Dig Call Marshaled Avro Failure")
                     .to("dns:dig")
                     .log("INFO")
                     .marshal().json(JsonLibrary.Jackson, JsonNode.class)
@@ -628,6 +690,32 @@ public class VantiqComponentResolverTest extends CamelTestSupport {
                     .unmarshal().avro(AvroLibrary.ApacheAvro, JsonNode.class)
                     .unmarshal().json(JsonLibrary.Jackson)
                     .log("INFO")
+                    .to("mock:result");
+        }
+    }
+    
+    public static class SalesForceTasks extends RouteBuilderWithProps {
+        private final Map<String, String> propList = Map.of( "loginUrl", sfLoginUrl,
+                                                             "clientId", sfClientId,
+                                                             "clientSecret", sfClientSecret,
+                                                             "refreshToken", sfRefreshToken
+        );
+        
+        @Override
+        public List<Map<String, Object>> getComponentsToInit() {
+            return List.of(
+                    Map.of(CamelRunner.COMPONENT_NAME, "salesforce",
+                           CamelRunner.COMPONENT_PROPERTIES, propList));
+        }
+        
+        public void configure() {
+            
+            from("direct:start")
+                    .routeId("Salesforce Query")
+                    .to("salesforce:query?rawPayload=true" +
+                                "&SObjectQuery=SELECT Id, Subject, OwnerId from Task")
+                    .unmarshal().json()
+                    .to("log:info")
                     .to("mock:result");
         }
     }
