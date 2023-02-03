@@ -48,24 +48,21 @@ import java.util.Objects;
 @Slf4j
 public class CamelHandleConfiguration extends Handler<ExtensionServiceMessage> {
     String                  sourceName;
-    CamelCore source;
+    CamelCore               source;
     boolean                 configComplete = false; // Not currently used
-    Handler<ExtensionServiceMessage> queryHandler;
-    Handler<ExtensionServiceMessage> publishHandler;
-
-    private static final int MAX_ACTIVE_TASKS = 5;
-    private static final int MAX_QUEUED_TASKS = 10;
 
     // Constants for getting config options
     public static final String CAMEL_CONFIG = "config";
     public static final String CAMEL_APP = "camelRuntime";
     public static final String APP_NAME = "appName";
     public static final String APP_NAME_DEFAULT = "camelConnectorApp";
-    
     public static final String ROUTES_DOCUMENT = "routesDocument";
     public static final String ROUTES_LIST = "routesList";
     public static final String ROUTES_FORMAT = "routesFormat";
+    public static final String COMPONENT_PROPERTIES = "componentProperties";
+    
     public static final String VANTIQ = "vantiq";
+    
     public static final String GENERAL = "general";
     public static final String COMPONENT_CACHE = "componentCacheDirectory";
     public static final String COMPONENT_CACHE_DEFAULT = "componentCache";
@@ -104,16 +101,15 @@ public class CamelHandleConfiguration extends Handler<ExtensionServiceMessage> {
         }
         config = (Map<String, Object>) configObject.get(CAMEL_CONFIG);
         
-        // Retrieve the Camel application and the vantiq config
-        // FIXME: Do we require the VANTIQ config any more?  Is packageRows still required?
-        if ( !(config.get(CAMEL_APP) instanceof Map)) { // && config.get(VANTIQ) instanceof Map) ) {
+        // Retrieve the Camel application
+        if ( !(config.get(CAMEL_APP) instanceof Map)) {
             log.error("Configuration failed. Configuration must contain '{}' property.", CAMEL_APP);
             failConfig();
             return;
         }
         
         camelConfig = (Map<String, Object>) config.get(CAMEL_APP);
-        vantiq = (Map<String, Object>) config.get(VANTIQ);
+        // Not currently used. vantiq = (Map<String, Object>) config.get(VANTIQ);
         general = (Map<String, Object>) config.get(GENERAL);
         if (general == null) {
             general = new HashMap<>();
@@ -136,6 +132,24 @@ public class CamelHandleConfiguration extends Handler<ExtensionServiceMessage> {
                       ROUTES_LIST, ROUTES_FORMAT);
         }
         
+        target = camelConfig.get(COMPONENT_PROPERTIES);
+        if (target != null) {
+            if (!(target instanceof List)) {
+                log.error("Camel connector property {} should be a list (found {}).",
+                          COMPONENT_PROPERTIES, target.getClass().getName());
+                failConfig();
+            } else {
+                ((List<?>) target).forEach(obj -> {
+                    if (!(obj instanceof Map) ||
+                            (((Map<?, ?>) obj).get(CamelRunner.COMPONENT_NAME) == null) ||
+                            (((Map<?, ?>) obj).get(CamelRunner.COMPONENT_PROPERTIES) == null)) {
+                        log.error("Camel connector property {} should be a list of component names and properties.",
+                                  COMPONENT_PROPERTIES);
+                        failConfig();
+                    }
+                });
+            }
+        }
         boolean success;
         try {
             success = runCamelApp(camelConfig, general);
@@ -157,6 +171,7 @@ public class CamelHandleConfiguration extends Handler<ExtensionServiceMessage> {
         try {
             componentCache = (String) general.getOrDefault(COMPONENT_CACHE, COMPONENT_CACHE_DEFAULT);
             componentLib = (String) general.getOrDefault(COMPONENT_LIB, COMPONENT_LIB_DEFAULT);
+            //noinspection unchecked
             List<String> repoListRaw = (List<String>) general.get(REPOSITORY_LIST);
             List<URI> repoList = new ArrayList<>();
             if (repoListRaw != null) {
@@ -165,6 +180,7 @@ public class CamelHandleConfiguration extends Handler<ExtensionServiceMessage> {
                     repoList.add(new URI(item));
                 }
             }
+            //noinspection unchecked
             List<String> additionalLibraries = (List<String>) general.get(ADDITIONAL_LIBRARIES);
             appName = (String) camelConfig.getOrDefault(APP_NAME, APP_NAME_DEFAULT);
             String routeDocName = (String) camelConfig.get(ROUTES_DOCUMENT);
@@ -193,6 +209,11 @@ public class CamelHandleConfiguration extends Handler<ExtensionServiceMessage> {
                     return false;
                 }
             }
+            
+            // This is checked in the caller
+            //noinspection unchecked
+            List<Map<String, Object>> componentProperties =
+                    (List<Map<String, Object>>) camelConfig.get(COMPONENT_PROPERTIES);
     
             // If we get this far, then we're ready to run start from the new configuration.  If we have an old
             // configuration running, we'll need to shut it down first.
@@ -214,14 +235,14 @@ public class CamelHandleConfiguration extends Handler<ExtensionServiceMessage> {
             }
 
     
-            // Note:  Cannot use try-with-reousrce block here.  Since we don't await the run thread, we need to leave
+            // Note:  Cannot use try-with-resource block here.  Since we don't await the run thread, we need to leave
             // the runner open (no auto-close), so make certain that we don't shut things down before we let things run.
             // The connector (or this method, when things are reconfigured -- see a few lines up) will handle closing
             // things as appropriate.
             CamelRunner runner =
                          new CamelRunner(appName, Objects.requireNonNull(routeSpec).get(ROUTES_LIST),
                                          routeSpec.get(ROUTES_FORMAT), repoList,
-                                         componentCache, componentLib);
+                                         componentCache, componentLib, componentProperties);
             if (additionalLibraries != null) {
                 runner.setAdditionalLibraries(additionalLibraries);
             }
@@ -278,6 +299,8 @@ public class CamelHandleConfiguration extends Handler<ExtensionServiceMessage> {
         } catch (IOException e) {
             log.error("Cannot read document '{}' contents.", docName, e);
         } finally {
+            // code hygiene -- not used below now, but be safe for the future.
+            //noinspection ReassignedVariable
             vantiq = null;
         }
         return null;
@@ -292,8 +315,9 @@ public class CamelHandleConfiguration extends Handler<ExtensionServiceMessage> {
         // Should never happen, but just in case something changes in the backend
         if ( !(message.getObject() instanceof Map) ) {
             String replyAddress = ExtensionServiceMessage.extractReplyAddress(message);
-            client.sendQueryError(replyAddress, "io.vantiq.extsrc.JDBCHandleConfiguration.invalidQueryRequest",
-                    "Request must be a map", null);
+            client.sendQueryError(replyAddress,
+                                  "io.vantiq.extsrc." + this.getClass().getSimpleName() + ".invalidQueryRequest",
+                    "Request (query msg.getObject()) must be a map", null);
         }
 
         // Process query and send the results

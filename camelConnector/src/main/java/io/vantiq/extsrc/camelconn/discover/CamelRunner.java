@@ -25,6 +25,7 @@ import org.apache.commons.lang3.StringUtils;
 
 import java.io.Closeable;
 import java.io.File;
+import java.lang.reflect.Method;
 import java.net.URI;
 import java.net.URL;
 import java.net.URLClassLoader;
@@ -38,10 +39,13 @@ import java.util.Set;
 
 @Slf4j
 public class CamelRunner extends MainSupport implements Closeable {
+    public static final String COMPONENT_NAME = "componentName";
+    public static final String COMPONENT_PROPERTIES = "componentProperties";
     private final String appName;
     private final List<URI> repositories;
-    
     private List<String> additionalLibraries;
+    
+    private final List<Map<String, Object>> initComponents;
     
     private final File ivyCache;
     private final File loadedLibraries;
@@ -71,9 +75,11 @@ public class CamelRunner extends MainSupport implements Closeable {
      * @param repos List<URI> The list of repos to search for libraries needed by the route(s)
      * @param cacheDirectory String Directory path to use to cache downloaded libraries
      * @param loadedLibDir String Directory path into which to put the libraries needed at run time.
+     * @param initComponents List<Map<String, Object>> List of component names that need
+     *                          initialization using the properties included herein
      */
     public CamelRunner(String appName, String routeSpecification, String routeSpecificationType, List<URI> repos,
-                       String cacheDirectory, String loadedLibDir) {
+                       String cacheDirectory, String loadedLibDir, List<Map<String, Object>> initComponents) {
         super();
         this.registry = new MainRegistry();
         this.appName = appName;
@@ -82,8 +88,10 @@ public class CamelRunner extends MainSupport implements Closeable {
         this.loadedLibraries = new File(loadedLibDir);
         this.routeBuilder = null;
         this.routeSpec = routeSpecification;
-        this.routeSpecType = routeSpecificationType;
+        // Camel doesn't like simpler yml, so be helpful here.
+        this.routeSpecType = routeSpecificationType.equals("yml") ? "yaml" : routeSpecificationType;
         this.additionalLibraries = null;
+        this.initComponents = initComponents;
         mainConfigurationProperties.setRoutesCollectorEnabled(false);
     }
     
@@ -95,9 +103,11 @@ public class CamelRunner extends MainSupport implements Closeable {
      * @param repos List<URI> The list of repos to search for libraries needed by the route(s)
      * @param cacheDirectory String Directory path to use to cache downloaded libraries
      * @param loadedLibDir String Directory path into which to put the libraries needed at run time.
+     * @param initComponents List<Map<String, Object>> List of component names that need
+     *                          initialization using the properties included herein
      */
     CamelRunner(String appName, RouteBuilder routeBuilder, List<URI> repos,
-                String cacheDirectory, String loadedLibDir) {
+                String cacheDirectory, String loadedLibDir, List<Map<String, Object>> initComponents) {
         super();
         this.registry = new MainRegistry();
         this.appName = appName;
@@ -108,6 +118,8 @@ public class CamelRunner extends MainSupport implements Closeable {
         this.routeSpecType = null;
         this.routeSpec = null;
         this.additionalLibraries = null;
+        this.initComponents = initComponents;
+    
         mainConfigurationProperties.setRoutesBuilders(List.of(routeBuilder));
         mainConfigurationProperties.setRoutesCollectorEnabled(false);
     }
@@ -158,7 +170,7 @@ public class CamelRunner extends MainSupport implements Closeable {
                                                     discoverer);
            jarList.addAll(aReposWorth);
         } else {
-            Set<File> aReposWorth = resolveFromRepo(Collections.<URI>emptyList(),
+            Set<File> aReposWorth = resolveFromRepo(Collections.emptyList(),
                                                     discResults.get(CamelDiscovery.COMPONENTS_TO_LOAD),
                                                     discResults.get(CamelDiscovery.DATAFORMATS_TO_LOAD),
                                                     this.additionalLibraries,
@@ -266,7 +278,7 @@ public class CamelRunner extends MainSupport implements Closeable {
      * @param waitForThread boolean indicating whether to await the completion of the thread started by this method
      * @throws Exception if camel thread throws an exception.
      */
-    public void runRoutes(boolean waitForThread) throws Exception {
+    public void runRoutes(boolean waitForThread) {
         try {
             log.debug("Calling Run()");
             camelThread = new Thread(() -> {
@@ -333,7 +345,7 @@ public class CamelRunner extends MainSupport implements Closeable {
      * Set up runtime environment.
      *
      * In addition to the super() stuff, we'll (optionally, build and) add our route(s) to the context.  At startup,
-     * these routes/applications will begin to operate.
+     * these routes/applications will begin to operate. We will also do any specified component initialization.
      *
      * @throws IllegalStateException when no routes have been specified.
      * @throws RuntimeException when routes cannot be added to the Camel environment.
@@ -361,6 +373,62 @@ public class CamelRunner extends MainSupport implements Closeable {
                     camelContext.addRoutes(routeBuilder);
                 } catch (Exception e) {
                     throw new RuntimeException("Adding routes to camel context failed", e);
+                }
+            }
+        }
+        // Some routes may have components (e.g., Salesforce) that need specific configuration.
+        // If that's the case, do that now before we start our route(s).
+        if (initComponents != null && initComponents.size() > 0) {
+            for (Map<String, Object> compToInit: initComponents) {
+                Object propsObj = compToInit.get(COMPONENT_PROPERTIES);
+                Map<String, ?> props;
+                if (propsObj instanceof Map) {
+                    //noinspection unchecked
+                    props = (Map<String, ?>) propsObj;
+                } else {
+                    throw new IllegalArgumentException("Component initialization type is incorrect.");
+                }
+                if (!props.isEmpty()) {
+                    // Don't bother to go further if there are no properties to set
+    
+                    Object comp = camelContext.getComponent(compToInit.get(COMPONENT_NAME).toString());
+                    if (comp != null) {
+                        Class<?> toBeInit = comp.getClass();
+                        for (Map.Entry<String, ?> compProp : props.entrySet()) {
+                            // For each property to be initialized, we'll look for the setter method
+                            // (i.e., set${propertyName}(value) where the parameter's class matches the class of
+                            // the property value passed in).  If that exists, we'll call it.  Otherwise, log a
+                            // warning and ignore it. Things are likely to fail, but there's not much we can do about
+                            // improper specifications.
+                            String methName = "set" + compProp.getKey().substring(0, 1).toUpperCase() +
+                                            compProp.getKey().substring(1);
+                            Class<?>[] paramSpec = { compProp.getValue().getClass() };
+                            try {
+                                Method meth = toBeInit.getMethod(methName, paramSpec );
+                                log.debug("Initializing component class {}.{}{}) (from property {})",
+                                          comp.getClass().getSimpleName(),
+                                          meth.getName(), compProp.getValue().getClass().getName(), compProp.getKey());
+                                meth.invoke(comp, compProp.getValue());
+                            } catch (NoSuchMethodException nsme) {
+                                log.warn("No setter found for component class: {}.{}({}) :: " +
+                                                 "required by property name: {}",
+                                         toBeInit.getName(), methName,
+                                         compProp.getValue().getClass().getName(),
+                                         compProp.getKey());
+                            } catch (Exception e) {
+                                // This is generally a fatal condition, so we'll toss the error up the chain
+                                log.error("Cannot invoke {}.{}({}) due to Exception.", toBeInit.getName(),
+                                          methName, compProp.getValue().getClass().getName(), e);
+                                throw e;
+                            }
+                        }
+                    } else {
+                        log.warn("No instance of component {} to initialize.",
+                                 compToInit.get(COMPONENT_NAME).toString());
+                    }
+                } else {
+                    log.warn("Component {} was specified for initialization, but no properties were provided. " +
+                                "No initialization was performed.", compToInit.get(COMPONENT_NAME));
                 }
             }
         }
