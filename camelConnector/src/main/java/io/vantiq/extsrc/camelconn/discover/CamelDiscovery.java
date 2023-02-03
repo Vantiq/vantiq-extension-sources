@@ -130,7 +130,6 @@ public class CamelDiscovery {
         return dataformats.get(dfName);
     }
     
-    
     String getComponentListVersion() throws DiscoveryException {
         if (artifactMap == null || components == null) {
             loadArtifactMap();
@@ -144,7 +143,6 @@ public class CamelDiscovery {
     }
     
     boolean isVersionCompatible(String comparisonVersion) throws DiscoveryException {
-    
         StringTokenizer artifactVersionParts = new StringTokenizer(getComponentListVersion(), ".");
         StringTokenizer comparisonVersionParts = new StringTokenizer(comparisonVersion, ".");
         return artifactVersionParts.countTokens() >= 2 && comparisonVersionParts.countTokens() >= 2 &&

@@ -234,7 +234,8 @@ public class CamelRunner extends MainSupport implements Closeable {
             // Thus, we will see an error here only if the artifact is resolved by none of the repos in our list.
             // We could learn to ignore it & let camel throw the error, but our throwing the ResolutionException
             // seems cleaner.  Notify about the problems closer to the source.
-            Collection<File> resolved = cr.resolve("org.apache.camel", lib, getCamelContext().getVersion());
+            Collection<File> resolved = cr.resolve("org.apache.camel", lib, getCamelContext().getVersion(),
+                                                   "Component Resolution");
             jarSet.addAll(resolved);
         }
     
@@ -248,7 +249,8 @@ public class CamelRunner extends MainSupport implements Closeable {
             // Thus, we will see an error here only if the artifact is resolved by none of the repos in our list.
             // We could learn to ignore it & let camel throw the error, but our throwing the ResolutionException
             // seems cleaner.  Notify about the problems closer to the source.
-            Collection<File> resolved = cr.resolve("org.apache.camel", lib, getCamelContext().getVersion());
+            Collection<File> resolved = cr.resolve("org.apache.camel", lib, getCamelContext().getVersion(),
+                                                   "Dataformat Resolution");
             jarSet.addAll(resolved);
         }
         // If our use has specified additional libraries to include, do those now.
@@ -265,7 +267,8 @@ public class CamelRunner extends MainSupport implements Closeable {
                 // Thus, we will see an error here only if the artifact is resolved by none of the repos in our list.
                 // We could learn to ignore it & let camel throw the error, but our throwing the ResolutionException
                 // seems cleaner.  Notify about the problems closer to the source.
-                Collection<File> resolved = cr.resolve(compParts[0], compParts[1], compParts[2]);
+                Collection<File> resolved = cr.resolve(compParts[0], compParts[1], compParts[2],
+                                                       "Additional Library Resolution");
                 jarSet.addAll(resolved);
             }
         }

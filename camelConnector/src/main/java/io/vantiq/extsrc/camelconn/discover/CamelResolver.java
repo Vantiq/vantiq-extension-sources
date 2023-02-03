@@ -8,8 +8,10 @@
 
 package io.vantiq.extsrc.camelconn.discover;
 
+import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.ivy.Ivy;
+import org.apache.ivy.core.LogOptions;
 import org.apache.ivy.core.module.descriptor.Artifact;
 import org.apache.ivy.core.module.descriptor.DefaultArtifact;
 import org.apache.ivy.core.module.descriptor.DefaultDependencyArtifactDescriptor;
@@ -40,7 +42,6 @@ public class CamelResolver {
     private final List<URI> repos;
     private final File cache;
     private final File destination;
-    
     final IvySettings ivySettings;
     protected final ChainResolver resolver;
     protected final ResolveOptions resolveOptions;
@@ -49,7 +50,6 @@ public class CamelResolver {
     final Ivy ivy;
     
     private static int unnamedResolverCount = 0;
-    
     private static final String DEFAULT_CONFIGURATION = "default";
     
     /**
@@ -117,19 +117,27 @@ public class CamelResolver {
         ivySettings.addResolver(resolver);
         //set to the default resolver
         ivySettings.setDefaultResolver(resolver.getName());
-    
+        
         String[] confs = new String[1];
         confs[0] = DEFAULT_CONFIGURATION;
         resolveOptions = new ResolveOptions();
         resolveOptions.setConfs(confs);
         resolveOptions.setTransitive(true);
         resolveOptions.setDownload(true);
+        if (!log.isTraceEnabled()) {
+            // Reduce the volume of output from Ivy unless we really need/want it.
+            resolveOptions.setLog(LogOptions.LOG_QUIET);
+        }
     
         retrieveOptions = new RetrieveOptions();
         retrieveOptions.setConfs(confs);
         retrieveOptions.setDestArtifactPattern(destination.getAbsolutePath() +
                                                        "/[artifact]-[revision](-[classifier])" + ".[ext]");
         retrieveOptions.setOverwriteMode(RetrieveOptions.OVERWRITEMODE_NEWER);
+        if (!log.isTraceEnabled()) {
+            // Reduce the volume of output from Ivy unless we really need/want it.
+            retrieveOptions.setLog(LogOptions.LOG_QUIET);
+        }
         
         //creates an Ivy instance with settings
         ivy = Ivy.newInstance(ivySettings);
@@ -148,10 +156,11 @@ public class CamelResolver {
      * @param organization String organization/group for artifact
      * @param name String artifact name
      * @param revision String artifact revision
+     * @param purpose String purpose of this resolution.  Used to clarify things in logging.
      * @throws Exception When things go awry
      */
-    Collection<File> resolve(String organization, String name, String revision) throws Exception {
-        return resolve(organization, name, revision, null);
+    Collection<File> resolve(String organization, String name, String revision, @NonNull String purpose) throws Exception {
+        return resolve(organization, name, revision, null, purpose);
     }
     
     /**
@@ -160,9 +169,11 @@ public class CamelResolver {
      * @param name String artifact name
      * @param revision String artifact revision
      * @param type String type of artifact.  If null, assumes pom file will specify details
+     * @param purpose String purpose of this resolution.  Used to clarify things in logging.
      * @throws Exception When things go awry
      */
-    Collection<File> resolve(String organization, String name, String revision, String type) throws Exception {
+    Collection<File> resolve(String organization, String name, String revision, String type, @NonNull String purpose)
+            throws Exception {
         if (organization == null || name == null || revision == null) {
             throw new IllegalArgumentException("The parameters organization, name, and revision must be " +
                                                        "non-null. (CamelResolver " + identity() + ")");
@@ -190,6 +201,7 @@ public class CamelResolver {
         }
         md.addDependency(dd);
         
+        log.info("Resolving required libraries -- {}", purpose);
         //init resolve report
         ResolveReport report = ivy.resolve(md, resolveOptions);
         
@@ -198,16 +210,19 @@ public class CamelResolver {
                                                   String.join(", ", report.getAllProblemMessages()));
         }
         
-        ArtifactDownloadReport[] reps = report.getAllArtifactsReports();
-        for (ArtifactDownloadReport aRep: reps) {
-            Artifact artifact = aRep.getArtifact();
-            File lclFile = aRep.getLocalFile();
-            log.debug("   --> Cached artifact {}:{}:{} is now available at {} ({})",
-                      artifact.getModuleRevisionId().getOrganisation(),
-                      artifact.getName(),
-                      artifact.getModuleRevisionId().getRevision(),
-                      lclFile.getAbsolutePath(),
-                      identity());
+        if (log.isTraceEnabled()) {
+            // do long-winded report only when requested
+            ArtifactDownloadReport[] reps = report.getAllArtifactsReports();
+            for (ArtifactDownloadReport aRep : reps) {
+                Artifact artifact = aRep.getArtifact();
+                File lclFile = aRep.getLocalFile();
+                log.trace("   --> Cached artifact {}:{}:{} is now available at {} ({})",
+                          artifact.getModuleRevisionId().getOrganisation(),
+                          artifact.getName(),
+                          artifact.getModuleRevisionId().getRevision(),
+                          lclFile.getAbsolutePath(),
+                          identity());
+            }
         }
         
         
@@ -216,9 +231,9 @@ public class CamelResolver {
         // classloader needs to be able to load all the classes, new or otherwise.
         Collection<File> necessaryFiles = rr.getRetrievedFiles();
         for (File f: necessaryFiles) {
-            log.debug("Retrieved or up-to-date file: {} ({})", f.getAbsolutePath(), identity());
+            log.trace("Retrieved or up-to-date file: {} ({})", f.getAbsolutePath(), identity());
         }
-        log.debug("{} -- Making {} artifacts available", identity(), necessaryFiles.size());
+        log.debug("{} -- Making {} artifacts available to {}", identity(), necessaryFiles.size(), purpose);
         return necessaryFiles;
     }
 }

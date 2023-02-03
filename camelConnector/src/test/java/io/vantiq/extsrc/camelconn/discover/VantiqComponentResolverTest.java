@@ -25,7 +25,9 @@ import org.apache.ivy.util.FileUtil;
 import org.junit.Assume;
 import org.junit.Before;
 import org.junit.FixMethodOrder;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.TestName;
 import org.junit.runners.MethodSorters;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -51,6 +53,9 @@ import java.util.Map;
 // @Slf4j
 public class VantiqComponentResolverTest extends CamelTestSupport {
     public final static String MISSING_VALUE = "<missing>";
+    
+    @Rule
+    public TestName testName = new TestName();
     
     private static final Logger log =  LoggerFactory.getLogger(VantiqComponentResolverTest.class);
     public static final String DEST_PATH = "build/loadedlib";
@@ -79,7 +84,7 @@ public class VantiqComponentResolverTest extends CamelTestSupport {
         CamelResolver cr = new CamelResolver(this.getTestMethodName(), (URI) null,
                                              cache, dest);
         Collection<File> resolved = cr.resolve("org.apache.camel", "camel" + "-salesforce",
-                                               context.getVersion());
+                                               context.getVersion(), testName.getMethodName());
         assert resolved.size() > 0;
         File[] files = resolved.toArray(new File[0]);
         boolean foundRequested = false;
@@ -134,7 +139,8 @@ public class VantiqComponentResolverTest extends CamelTestSupport {
         // Here, we leave the cache alone
         CamelResolver cr = new CamelResolver(this.getTestMethodName(), (URI) null,
                                              cache, dest);
-        Collection<File> resolved = cr.resolve("org.apache.camel", "camel" + "-salesforce", context.getVersion());
+        Collection<File> resolved = cr.resolve("org.apache.camel", "camel" + "-salesforce",
+                                               context.getVersion(), testName.getMethodName());
         assert resolved.size() > 0;
         File[] files = resolved.toArray(new File[0]);
         boolean foundRequested = false;
@@ -157,7 +163,8 @@ public class VantiqComponentResolverTest extends CamelTestSupport {
         try {
             Collection<File> resolved = cr.resolve("org.apache.camel",
                                                          "camel" + "-horse-designed-by-committee",
-                                                         context.getVersion());
+                                                         context.getVersion(),
+                                                         testName.getMethodName());
         } catch (ResolutionException re) {
             assert re.getMessage().contains("Error(s) encountered during resolution: ");
             assert re.getMessage().contains("org.apache.camel#camel-horse-designed-by-committee;");
@@ -175,7 +182,7 @@ public class VantiqComponentResolverTest extends CamelTestSupport {
         }
     
         try {
-            cr.resolve(null, "somename", "someVersion");
+            cr.resolve(null, "somename", "someVersion", testName.getMethodName());
             fail("Null organization should not work");
         } catch (IllegalArgumentException iae) {
             assert iae.getMessage().contains("The parameters organization, name, and revision must be non-null");
@@ -185,7 +192,7 @@ public class VantiqComponentResolverTest extends CamelTestSupport {
     
         try {
             cr.resolve("somegroup", null,
-                             "someVersion");
+                             "someVersion", testName.getMethodName());
             fail("Null name should not work");
         } catch (IllegalArgumentException iae) {
             assert iae.getMessage().contains("The parameters organization, name, and revision must be non-null");
@@ -194,7 +201,7 @@ public class VantiqComponentResolverTest extends CamelTestSupport {
         }
         
         try {
-            cr.resolve("somegroup", "somename", null);
+            cr.resolve("somegroup", "somename", null, testName.getMethodName());
             fail("Null revision should not work");
         } catch (IllegalArgumentException iae) {
             assert iae.getMessage().contains("The parameters organization, name, and revision must be non-null");
@@ -203,7 +210,7 @@ public class VantiqComponentResolverTest extends CamelTestSupport {
         }
         
         try {
-            cr.resolve("somegroup", "somename", "someVersion");
+            cr.resolve("somegroup", "somename", "someVersion", testName.getMethodName());
             fail("Non-sensical resolution should fail");
         } catch (ResolutionException re) {
             assert re.getMessage().contains("Error(s) encountered during resolution: ");
