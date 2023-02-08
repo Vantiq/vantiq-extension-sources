@@ -114,7 +114,7 @@ public class VantiqEndpoint extends DefaultEndpoint {
         // choice, but the constructor interface is fixed by Camel.
         super( (uri != null && new URI(uri).getHost().equalsIgnoreCase(SERVER_CONFIG_FILENAME)) ?
                       null : uri, component);
-        log.info("Creating VantiqEndpoint for uri: {} with sourceName: {}, accessToken: {}",
+        log.debug("Creating VantiqEndpoint for uri: {} with sourceName: {}, accessToken: {}",
                  uri, sourceName, accessTokenForLog());
         utils = new InstanceConfigUtils();
     }
@@ -190,7 +190,7 @@ public class VantiqEndpoint extends DefaultEndpoint {
         }
         CamelException failure = null;
         try {
-            log.debug("Attempting to connect to URL: {}", getEndpointBaseUri());
+            log.debug("Attempting to connect to URL: {} from {}", getEndpointBaseUri(), getEndpointUri());
             String vtq = getEndpointBaseUri();
             String protocol = "https";
             if (noSsl) {
