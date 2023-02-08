@@ -297,6 +297,7 @@ public class VantiqEndpoint extends DefaultEndpoint {
             }
             if (origScheme.equals("http") || origScheme.equals("ws")) {
                 epString.append("&noSsl=").append("true");
+                noSsl = true;
             }
             epString.replace(0, origScheme.length(), "vantiq");
             URI endpointUri = URI.create(String.valueOf(epString));
