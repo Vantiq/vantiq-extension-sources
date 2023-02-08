@@ -124,6 +124,7 @@ public class CamelHandleConfiguration extends Handler<ExtensionServiceMessage> {
             log.error("Camel connector operation requires that the {} section contain either the {} or {} properties.",
                       CAMEL_CONFIG, ROUTES_DOCUMENT, ROUTES_LIST);
             failConfig();
+            return;
         }
         
         target = camelConfig.get(ROUTES_FORMAT);
@@ -138,16 +139,22 @@ public class CamelHandleConfiguration extends Handler<ExtensionServiceMessage> {
                 log.error("Camel connector property {} should be a list (found {}).",
                           COMPONENT_PROPERTIES, target.getClass().getName());
                 failConfig();
+                return;
             } else {
-                ((List<?>) target).forEach(obj -> {
+                boolean failed = false;
+                for (Object obj : (List<?>) target) {
                     if (!(obj instanceof Map) ||
                             (((Map<?, ?>) obj).get(CamelRunner.COMPONENT_NAME) == null) ||
                             (((Map<?, ?>) obj).get(CamelRunner.COMPONENT_PROPERTIES) == null)) {
                         log.error("Camel connector property {} should be a list of component names and properties.",
                                   COMPONENT_PROPERTIES);
-                        failConfig();
+                        failed = true;
                     }
-                });
+                }
+                if (failed) {
+                    failConfig();
+                    return;
+                }
             }
         }
         boolean success;
