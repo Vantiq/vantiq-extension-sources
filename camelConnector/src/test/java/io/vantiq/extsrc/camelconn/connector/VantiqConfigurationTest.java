@@ -160,14 +160,15 @@ public class VantiqConfigurationTest {
         + "    from:\n"
         + "      uri: \"direct:start\"\n"
         + "      steps:\n"
-        + "        - set-exchange-pattern: \"inOut\"\n"
+//        + "        - set-exchange-pattern: \"inOut\"\n" // Leaving as a reminder re: how to do in/out YAML routes
         + "        - to:\n"
         + "            uri: \"salesforce:query?rawPayload=true&SObjectQuery=SELECT Id, Subject, OwnerId from Task\"\n"
         + "        - unmarshal:\n"
         + "            json: {}\n"
         + "        - to:\n"
-        + "            uri: \"direct:start\"\n"; // in/out have to route their answer back to their source.
-    
+        + "            uri: \"mock:result\"\n";
+    // in/out have to route their answer back to their source. In our
+    // case, we're not really doing a "query", so this is fine.
     
     public List<Map<String, Object>> getComponentsToInit() {
         return List.of(

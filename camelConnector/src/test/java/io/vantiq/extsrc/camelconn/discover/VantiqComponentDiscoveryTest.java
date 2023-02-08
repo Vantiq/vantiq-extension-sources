@@ -248,14 +248,11 @@ public class VantiqComponentDiscoveryTest extends CamelTestSupport {
     
         discResults.get(CamelDiscovery.COMPONENTS_TO_LOAD).forEach(compSchema -> {
             try {
-                if (!compSchema.equals("vantiq")) {
+                if (!compSchema.equals(CamelDiscovery.VANTIQ_COMPONENT_SCHEME)) {
                     String loadable = discoverer.findComponentForScheme(compSchema);
                     log.debug("Need to load {} for scheme: {}", loadable, compSchema);
-                    if (compSchema.equals(CamelDiscovery.VANTIQ_COMPONENT_SCHEME)) {
-                        assertNull("Vantiq scheme should not have a loadable component", loadable);
-                    } else {
-                        assertNotNull("Missing loadable artifact: " + compSchema, loadable);
-                    }
+                    
+                    assertNotNull("Missing loadable artifact: " + compSchema, loadable);
                 }
             } catch (DiscoveryException de) {
                 fail("Trapped DiscoveryException: " + de.getMessage());
@@ -317,7 +314,7 @@ public class VantiqComponentDiscoveryTest extends CamelTestSupport {
                     .to(routeEndUri);
         }
         public List<String> getExpectedComponentsToLoad() {
-            return List.of("vantiq");
+            return Collections.emptyList();
         }
     
         public List<String> getExpectedSystemComponents() {
@@ -339,7 +336,7 @@ public class VantiqComponentDiscoveryTest extends CamelTestSupport {
                     .to(routeEndUri);
         }
         public List<String> getExpectedComponentsToLoad() {
-            return List.of("vantiq");
+            return Collections.emptyList();
         }
         
         public List<String> getExpectedSystemComponents() {
@@ -360,7 +357,7 @@ public class VantiqComponentDiscoveryTest extends CamelTestSupport {
                     .to(routeEndUri);
         }
         public List<String> getExpectedComponentsToLoad() {
-            return List.of("vantiq");
+            return Collections.emptyList();
         }
         
         public List<String> getExpectedSystemComponents() {
@@ -391,7 +388,7 @@ public class VantiqComponentDiscoveryTest extends CamelTestSupport {
         }
         @Override
         public List<String> getExpectedComponentsToLoad() {
-            return List.of("aws2-s3", "jmx", "vantiq");
+            return List.of("aws2-s3", "jmx");
         }
         
         @Override

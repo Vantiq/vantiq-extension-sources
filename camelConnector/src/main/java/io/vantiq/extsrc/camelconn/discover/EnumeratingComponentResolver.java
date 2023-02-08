@@ -8,6 +8,8 @@
 
 package io.vantiq.extsrc.camelconn.discover;
 
+import static io.vantiq.extsrc.camelconn.discover.CamelDiscovery.VANTIQ_COMPONENT_SCHEME;
+
 import lombok.extern.slf4j.Slf4j;
 import org.apache.camel.CamelContext;
 import org.apache.camel.Component;
@@ -35,7 +37,7 @@ class EnumeratingComponentResolver implements ComponentResolver {
     public static final Set<String> CORE_COMPONENTS_SCHEMES = new HashSet<>(
             Arrays.asList("bean", "binding", "browse", "class", "controlbus", "dataformat", "dataset", "direct",
                     "direct-vm", "file", "language", "log", "mock", "properties", "ref", "rest", "rest-api",
-                    "saga", "scheduler", "seda", "stub", "test", "timer", "validator", "vantiq", "vm", "xslt"));
+                    "saga", "scheduler", "seda", "stub", "test", "timer", "validator", "vm", "xslt"));
     
     // These don't load and hare handled specially internally
     public static final Set<String> NONLOADABLE_CORE_COMPONENT_SCHEMES =  new HashSet<>(
@@ -53,14 +55,19 @@ class EnumeratingComponentResolver implements ComponentResolver {
         if (CORE_COMPONENTS_SCHEMES.contains(name)) {
             log.debug("... but this is a system provided entity, so we'll skip our resolution");
             systemComponentsUsed.add(name);
-            if (originalResolver != null) {
-                return originalResolver.resolveComponent(name, context);
-            } else {
-                log.error("Original resolved not available to find system component: {}", name);
+            if (originalResolver == null) {
+                // Note for the record, but we'll continue on. Apache Camel may have things here, or the application
+                // will fail on startup (and probably give a better diagnostic).
+                log.error("Original resolver not available to find system component: {}", name);
             }
-        } else {
+        } else if (!name.equals(VANTIQ_COMPONENT_SCHEME)) {
+            // Our packaging includes the Vantiq component automatically, so we don't want to include it in the list
+            // of things to be resolved.  So we'll just filter it out here.
             componentsToLoad.add(name);
         }
+        // In either case, set up the PlaceHolder component.  We return a component here to faithfully satisfy the
+        // interface, but this pass through things is to discover the set of components we need to make available.
+        // Consequently, having the "real" component here is not necessary (or even useful).
         return new PlaceholderComponent();
     }
     
