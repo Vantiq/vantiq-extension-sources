@@ -18,7 +18,7 @@ ext {
     camelVersion='3.18.1'
     log4JVersion='2.17.2'
     extjsdkVersion='1.0'
-    jacksonVersion = '2.9.3' // FIXME: check latest version & promote to parent build.
+    jacksonVersion = '2.14.2'
     gsonVersion = '2.9.1'
     commonsLang3Version = '3.12.0'
 }

@@ -38,10 +38,9 @@ ext {
     extjsdkVersion='1.0'
     gsonVersion = '2.9.1'
     ivyVersion = '2.5.1'
-    jacksonVersion = '2.13.4.2'
+    jacksonVersion = '2.14.2'
     junitVersion = '4.13.2'
     junitVintageEngineVersion = '5.8.2'
-    jacksonVersion = '2.13.4.2'
     junitVersion = '4.13.2'
     log4JVersion='2.17.2'
 }
