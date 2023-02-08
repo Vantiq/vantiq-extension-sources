@@ -160,12 +160,13 @@ public class VantiqConfigurationTest {
         + "    from:\n"
         + "      uri: \"direct:start\"\n"
         + "      steps:\n"
+        + "        - set-exchange-pattern: \"inOut\"\n"
         + "        - to:\n"
         + "            uri: \"salesforce:query?rawPayload=true&SObjectQuery=SELECT Id, Subject, OwnerId from Task\"\n"
         + "        - unmarshal:\n"
         + "            json: {}\n"
         + "        - to:\n"
-            + "            uri: \"mock:result\"\n";
+        + "            uri: \"direct:start\"\n"; // in/out have to route their answer back to their source.
     
     
     public List<Map<String, Object>> getComponentsToInit() {
