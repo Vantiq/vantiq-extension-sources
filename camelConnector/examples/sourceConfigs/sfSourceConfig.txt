@@ -1,0 +1,17 @@
+{"camelRuntime": 
+    {
+    	"appName": "QueryGetTasks",
+    	"routesDocument": "sfGetTasks.yml",
+    	"componentProperties": [
+        	{
+            	"componentName": "salesforce",
+            	"componentProperties": {
+                	"loginUrl": "https://login.salesforce.com",
+                	"clientId": "@secrets(sfClientId)",
+                	"clientSecret": "@secrets(sfClientSecret)",
+                	"refreshToken": "@secrets(sfRefreshToken)"
+            	}
+       	 }
+   	   ]
+	}
+}
