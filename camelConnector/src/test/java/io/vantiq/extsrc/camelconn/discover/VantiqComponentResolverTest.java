@@ -357,6 +357,7 @@ public class VantiqComponentResolverTest extends CamelTestSupport {
         RouteBuilderWithProps rb = new MakeDigCall();
         assertNotNull("No routebuilder", rb);
         
+        log.info("Loading cache and library");
         // First run: cache & lib/dest deleted.  Download all
         performLoadAndRunTest(rb, rb.getComponentsToInit());
         
@@ -364,7 +365,10 @@ public class VantiqComponentResolverTest extends CamelTestSupport {
         if (dest.exists()) {
             FileUtil.forceDelete(dest);
         }
+        log.info("Cache loaded, deleted lib/dest, running same route");
         performLoadAndRunTest(rb, rb.getComponentsToInit());
+        
+        log.info("Leaving cache & lib/dest intact, running again");
         // Finally, leave everything.  Resolution should do nothing but code will run
         performLoadAndRunTest(rb, rb.getComponentsToInit());
     }
@@ -593,7 +597,9 @@ public class VantiqComponentResolverTest extends CamelTestSupport {
             }
         }
     
-        assert !shouldStart || runnerThread != null && !runnerThread.isAlive();
+        assertTrue("ShouldStart: " + shouldStart + ", runnerThread: " + runnerThread +
+                           ", ...isAlive: " + runnerThread.isAlive(),
+                   !shouldStart || runnerThread != null && !runnerThread.isAlive());
         assert runnerContext != null && runnerContext.isStopped();
     }
     
