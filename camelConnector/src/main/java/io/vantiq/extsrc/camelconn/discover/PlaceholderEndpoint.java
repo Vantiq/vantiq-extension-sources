@@ -9,7 +9,6 @@
 package io.vantiq.extsrc.camelconn.discover;
 
 import lombok.extern.slf4j.Slf4j;
-import org.apache.camel.Category;
 import org.apache.camel.Consumer;
 import org.apache.camel.Processor;
 import org.apache.camel.Producer;
@@ -47,5 +46,3 @@ public class PlaceholderEndpoint extends DefaultEndpoint {
         return new PlaceholderConsumer(this, processor);
     }
 }
-
-

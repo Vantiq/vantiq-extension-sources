@@ -1,18 +1,32 @@
-package io.vantiq.extsrc.camelconn.discover;
+/*
+ * Copyright (c) 2023 Vantiq, Inc.
+ *
+ * All rights reserved.
+ *
+ * SPDX: MIT
+ */
 
-import static io.vantiq.extsrc.camelconn.discover.EnumeratingComponentResolver.CORE_COMPONENTS_SCHEMES;
+package io.vantiq.extsrc.camelconn.discover;
 
 import lombok.extern.slf4j.Slf4j;
 import org.apache.camel.CamelContext;
-import org.apache.camel.spi.ComponentResolver;
 import org.apache.camel.spi.DataFormat;
 import org.apache.camel.spi.DataFormatResolver;
 
-import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+/**
+ * This class is used to determine the set of dataformats used to a collection of routes.  It replaces the Camel
+ * context's dataformat resolver.  The context, when adding routes, will call createDataFormat() with the scheme/name
+ * of the dataformat and the context, with the result expected to be a resolved (class loaded, etc.) dataformat.
+ *
+ * To accomplish this, this resolver notes the dataformat in use.  It then loads a placeholder dataformat which has
+ * enough capability to act as if it has started.  This allows the context to believe that the routes successfully
+ * loaded.  The result of this is that this dataformat resolver has the set of dataformats that need to be made
+ * available (added to the class path) to allow a "real" dataformat resolver to operate.
+ */
 @Slf4j
 public class EnumeratingDataFormatResolver implements DataFormatResolver {
     

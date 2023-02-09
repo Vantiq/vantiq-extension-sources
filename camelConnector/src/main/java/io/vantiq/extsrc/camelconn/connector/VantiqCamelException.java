@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 Vantiq, Inc.
+ * Copyright (c) 2023 Vantiq, Inc.
  *
  * All rights reserved.
  *
@@ -25,4 +25,3 @@ public class VantiqCamelException extends Exception {
         super(message, cause);
     }
 }
-

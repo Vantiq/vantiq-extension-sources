@@ -292,6 +292,9 @@ public class VantiqComponentDiscoveryTest extends CamelTestSupport {
         });
     }
     
+    /**
+     * Used to make our tests more easily managed.
+     */
     interface TestExpectations {
         List<String> getExpectedComponentsToLoad();
         List<String> getExpectedSystemComponents();
@@ -303,6 +306,7 @@ public class VantiqComponentDiscoveryTest extends CamelTestSupport {
             return List.of();
         }
     }
+    
     private class TwoSimpleRoutes extends RouteBuilder implements TestExpectations {
 
         @Override

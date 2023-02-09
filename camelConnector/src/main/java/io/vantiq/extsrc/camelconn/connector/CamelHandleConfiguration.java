@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018 Vantiq, Inc.
+ * Copyright (c) 2023 Vantiq, Inc.
  *
  * All rights reserved.
  * 
@@ -240,7 +240,6 @@ public class CamelHandleConfiguration extends Handler<ExtensionServiceMessage> {
                 }
                 currentCamelRunner = null;
             }
-
     
             // Note:  Cannot use try-with-resource block here.  Since we don't await the run thread, we need to leave
             // the runner open (no auto-close), so make certain that we don't shut things down before we let things run.
@@ -311,24 +310,6 @@ public class CamelHandleConfiguration extends Handler<ExtensionServiceMessage> {
             vantiq = null;
         }
         return null;
-    }
-
-    /**
-     * Method called by the query handler to process the request
-     * @param client    The ExtensionWebSocketClient used to send a query response error if necessary
-     * @param message   The message sent to the Extension Source
-     */
-    private void handleQueryRequest(ExtensionWebSocketClient client, ExtensionServiceMessage message) {
-        // Should never happen, but just in case something changes in the backend
-        if ( !(message.getObject() instanceof Map) ) {
-            String replyAddress = ExtensionServiceMessage.extractReplyAddress(message);
-            client.sendQueryError(replyAddress,
-                                  "io.vantiq.extsrc." + this.getClass().getSimpleName() + ".invalidQueryRequest",
-                    "Request (query msg.getObject()) must be a map", null);
-        }
-
-        // Process query and send the results
-        source.executeQuery(message);
     }
 
     /**

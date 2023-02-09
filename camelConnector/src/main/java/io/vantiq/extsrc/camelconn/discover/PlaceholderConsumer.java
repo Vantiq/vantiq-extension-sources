@@ -8,8 +8,6 @@
 
 package io.vantiq.extsrc.camelconn.discover;
 
-import io.vantiq.extjsdk.ExtensionServiceMessage;
-import io.vantiq.extjsdk.Handler;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.camel.Processor;
 import org.apache.camel.support.DefaultConsumer;

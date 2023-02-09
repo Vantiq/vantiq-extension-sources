@@ -159,7 +159,6 @@ public class CamelDiscovery {
      * @throws DiscoveryException If there are issues loading the artifact
      */
     @SuppressWarnings({"unchecked"})
-
     static synchronized void loadArtifactMap() throws DiscoveryException {
         try (InputStream in =
                      CamelDiscovery.class.getResourceAsStream("/artifactMap.json")) {

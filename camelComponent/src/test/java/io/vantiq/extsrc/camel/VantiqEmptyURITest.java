@@ -20,7 +20,6 @@ import org.junit.Test;
 import java.util.Collection;
 
 public class VantiqEmptyURITest extends VantiqUriTestBase {
-    
     private final String routeStartUri = "direct:start";
     private final String routeEndUri = "mock:direct:result";
     
@@ -66,6 +65,7 @@ public class VantiqEmptyURITest extends VantiqUriTestBase {
             context.stop();
         }
     }
+    
     @Test
     public void testEndpointsFromServerConfig() throws Exception {
     
@@ -111,7 +111,6 @@ public class VantiqEmptyURITest extends VantiqUriTestBase {
             }
         };
     }
-    
     
     protected RouteBuilder nullEndpointRouteBuilder() throws Exception {
         return new RouteBuilder() {

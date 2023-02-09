@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018 Vantiq, Inc.
+ * Copyright (c) 2023 Vantiq, Inc.
  *
  * All rights reserved.
  * 
@@ -100,7 +100,7 @@ public class CamelMain {
     
         // Obtain potentially multiple sources from a comma delimited string of sources
         String[] sourceNames = sourceStr.split(",");
-        // FIXME: Don't know that we really care here -- though I don't know how many Camels fit in a JVM.  So may be
+        // TODO: Don't know that we really care here -- though I don't know how many Camels fit in a JVM.  So may be
         //  better to stick to a single one.  We can extend this later if we needed.
         if (sourceNames.length != 1) {
             log.error("The Camel connector supports operation as only a single source.");

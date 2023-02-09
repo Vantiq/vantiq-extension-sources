@@ -1,6 +1,5 @@
 package io.vantiq.extsrc.camelconn.connector;
 
-
 import static io.vantiq.extjsdk.ExtensionServiceMessage.OP_CONFIGURE_EXTENSION;
 import static io.vantiq.extsrc.camelconn.connector.CamelHandleConfiguration.APP_NAME;
 import static io.vantiq.extsrc.camelconn.connector.CamelHandleConfiguration.CAMEL_APP;

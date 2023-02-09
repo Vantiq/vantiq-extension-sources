@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018 Vantiq, Inc.
+ * Copyright (c) 2023 Vantiq, Inc.
  *
  * All rights reserved.
  * 
@@ -14,16 +14,9 @@ import io.vantiq.extjsdk.Handler;
 import io.vantiq.extsrc.camel.utils.ClientRegistry;
 import io.vantiq.extsrc.camelconn.discover.CamelRunner;
 import lombok.extern.slf4j.Slf4j;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
-import java.util.Arrays;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
 import java.util.Timer;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
@@ -150,20 +143,6 @@ public class CamelCore {
             }
         }
         return true;
-    }
-    
-    /**
-     * Executes the query that is provided as a String in the options specified by the "query" key, as part of the
-     * object of the Query message. Calls sendDataFromQuery() if the query is executed successfully, otherwise sends
-     * a query error using sendQueryError()
-     * @param message   The Query message.
-     */
-    @SuppressWarnings({"PMD.CognitiveComplexity"})
-    public void executeQuery(ExtensionServiceMessage message) {
-        // FIXME: What should a query do?  Not clear it has a place here, at least not that this level.
-        // TODO: Could be used in a round trip type case where a message comes into Vantiq then does something &
-        //  returns the value.  Publish & notify are fire & forget, so it makes sense to support it.  However, it'd
-        //  be nice to see if we can figure that out by looking at the route(s).
     }
     
     /**
