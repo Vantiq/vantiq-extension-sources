@@ -145,7 +145,7 @@ tasks.register('generateComponentList', ) {
     }
     doLast {
         def camRootSpec = rootProject.getProperty('camelRoot')
-        logger.error('CamelRootSpec: {}', camRootSpec)
+        logger.info('CamelRootSpec: {}', camRootSpec)
         def camelRoot = file(camRootSpec)
         logger.info('Camel root is {}', camelRoot.absolutePath)
         def components = file("${camelRoot.absolutePath}/components")
@@ -238,7 +238,6 @@ tasks.register('generateComponentList', ) {
                 logger.debug("            (skipping {} since it's a build artifact duplicate)", df.path)
             }
         }
-
 
         if (foundErrors) {
             throw new GradleException("Found errors gathering scheme to artifact mapping.")
