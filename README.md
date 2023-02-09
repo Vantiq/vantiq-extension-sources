@@ -373,6 +373,9 @@ The `settings.gradle` file determines the scope of the build.
 Connectors requiring a driver are included in the overall build *only if* the associated driver location environment variable is present.
 Otherwise, the connector is ignored for the build.
 
+Building the connectors require a Java compiler.  To build everything, you'll need at least Java 11.
+Most connectors are at the Java 8 level, but the Camel Component & Connectors require Java 11.
+
 ## Building Docker Images
 
 The connectors in this repository contain `gradle` tasks that can be used to build Docker Images for each connector and 
