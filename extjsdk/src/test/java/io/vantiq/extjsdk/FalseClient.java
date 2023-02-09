@@ -17,7 +17,6 @@ import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import lombok.Setter;
 
 /**
  * Provides a Client that will fake its WebSocket connection and can retrieve the data it sent via the fake connection.
@@ -27,8 +26,6 @@ import lombok.Setter;
  */
 public class FalseClient extends ExtensionWebSocketClient {
     
-    @Setter
-    private boolean defeatAutoAck = false;
     public FalseClient(String sourceName) {
         super(sourceName);
         listener = new TestListener(this);
@@ -36,22 +33,6 @@ public class FalseClient extends ExtensionWebSocketClient {
     
     ObjectMapper mapper = new ObjectMapper();
     
-    /**
-     * Acknowledge the send.
-     *
-     * In the "real" client, this happens when the response message is received.  Here, since we don't have a response
-     * message (since we have no real message), we'll do the ack automatically when someone reads the message.  Since
-     * these messages are meant to be visited immediately, this is sufficient.
-     *
-     * We allow this behavior to be defeated if desired (using this.setDefeatAutoAck(true);).  Yes, it's backwards,
-     * but it is unusual to do this.
-     */
-    @Override
-    void acknowledgeNotification() {
-        if (!defeatAutoAck) {
-            super.acknowledgeNotification();
-        }
-    }
     @Override
     public CompletableFuture<Boolean> initiateWebsocketConnection(String url, boolean sendPings) {
         webSocketFuture = new CompletableFuture<Boolean>();
