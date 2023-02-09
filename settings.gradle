@@ -18,5 +18,3 @@ if (System.env.JDBC_DRIVER_LOC) {
 if (System.env.JMS_DRIVER_LOC) {
     include 'jmsSource'
 }
-include 'camelConnector'
-
