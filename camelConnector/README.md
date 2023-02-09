@@ -8,6 +8,7 @@ The Apache Camel Connector constructs the environment necessary to run an Apache
 It uses the [Vantiq Camel Component](../camelComponent/README.md) (if necessary). The building of an Apache Camel
 application usually involves building the application, including the dependencies, using the Maven system
 (constructing POM.xml files, etc.).
+
 The Vantiq Apache Camel Connector is configured with the Camel application desired, and, using that definition,
 discovers, downloads, provisions the connector, running the application using the appropriate Apache Camel
 Components as specified in the routes included in the configuration.  Within the Vantiq system, the connection point will be a Vantiq Source.
@@ -15,6 +16,32 @@ Components as specified in the routes included in the configuration.  Within the
 In order to incorporate this Extension Source, you will need to create the
 Source in the VANTIQ Modelo IDE. The documentation 
 has been split into two parts, [Setting Up Your Machine](#machine) and [Setting Up Your VANTIQ Modelo IDE](#vantiq).
+
+## Details
+
+When using the the Camel connector, the connector makes a discovery pass to find the components required.  Then, it
+downloads them and constructs a class loader including the components needed. Thus, when using the connector,
+you need only supply the routes (and any specific connection properties you may need),
+and the connector finds & resolves the Apache Components & Dataformats required,
+and then runs your application.  We generally expect this will involve Vantiq, but it need not.
+
+Discovery, at a high level, operates more or less as follows. An Apache Camel system operates 
+with what is called a CamelContext. This provides the directory of directories to what's going on.
+Within the context, one can replace the component resolver and data format resolver -- there are a
+number of special purpose resolvers within the Camel system.
+Generally, the default ones know how to load the components required via the metadata in the jar files.
+
+In the camel connector, discovery operates by providing its own so-called `Enumerating`
+component & data format resolvers. These operate by saving the information about what is required, 
+and providing a `PlaceHolder` parts to allow Apache Camel to think it is operating. Once Camel
+thinks it has successfully started, the connector stops it, using the information from
+the `Enumerating`*`Resolver`s to get the list of components and data formats required.
+
+From that list, we construct the set of libraries required and download those libraries and their 
+dependencies. This is done using Apache Ivy. Once downloaded, we construct a `URLClassLoader`
+that we set up as Camel's application class loader, 
+construct a new CamelContext (with that class loader but no special resolvers), 
+and let Camel operate the Camel application in its normal manner.
 
 # Prerequisites <a name="pre" id="pre"></a>
 
