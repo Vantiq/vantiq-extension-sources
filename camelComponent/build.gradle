@@ -4,7 +4,6 @@
 
 plugins {
     id 'java'
-    id 'maven-publish'
 }
 
 repositories {
@@ -47,22 +46,6 @@ version = '1.0-SNAPSHOT'
 description = 'Camel Vantiq Component'
 java.sourceCompatibility = 1.11
 java.targetCompatibility = JavaVersion.VERSION_11
-
-publishing {
-    publications {
-        maven(MavenPublication) {
-            from(components.java)
-            pom {
-                licenses {
-                    license {
-                        name = 'The MIT License'
-                        url = 'https://opensource.org/licenses/MIT'
-                    }
-                }
-            }
-        }
-    }
-}
 
 tasks.withType(JavaCompile) {
     options.encoding = 'UTF-8'

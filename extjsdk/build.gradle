@@ -4,7 +4,6 @@ buildscript {
 
 plugins {
     id 'java'
-    id 'maven-publish'
 }
 
 group 'io.vantiq'
@@ -101,15 +100,4 @@ task fatJar(type: Jar) {
     from configurations.runtimeClasspath.
                 findAll( { it.name.endsWith('jar') && !it.name.startsWith('groovy')}).
                 collect( { zipTree(it) })
-}
-
-publishing {
-    publications {
-        maven(MavenPublication) {
-            from components.java
-            groupId = 'io.vantiq'
-            artifactId = 'extjsdk'
-            version = '1.0'
-        }
-    }
 }
