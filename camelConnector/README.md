@@ -1,14 +1,15 @@
 # Overview
 
-The following documentation outlines how to incorporate an Apache Camel Connector Source as part of your project.
+The following documentation outlines how to incorporate an Apache Camel Connector Source into part of your project.
 This allows a user to 
 construct Apache Camel applications that interact with Vantiq.
 
-The Apache Camel Connector constructs the enviroment necessary to run Apache Camel Application.
+The Apache Camel Connector constructs the environment necessary to run an Apache Camel Application.
 It uses the [Vantiq Camel Component](../camelComponent/README.md) (if necessary). The building of an Apache Camel
-application usually involves building the application, including the dependencies, using the Maven system.
+application usually involves building the application, including the dependencies, using the Maven system
+(constructing POM.xml files, etc.).
 The Vantiq Apache Camel Connector is configured with the Camel application desired, and, using that definition,
-discovers, downloads, provisions the connector, and runs the application using the appropriate Apache Camel
+discovers, downloads, provisions the connector, running the application using the appropriate Apache Camel
 Components as specified in the routes included in the configuration.  Within the Vantiq system, the connection point will be a Vantiq Source.
 
 In order to incorporate this Extension Source, you will need to create the
@@ -52,6 +53,17 @@ application configured as part of the source.
     the same files, so choose whichever you prefer.
 4.  Uncompress the file in the location that you would like to install the program.
 5.  Run `<install location>/camelConnector/bin/camelConnector` with a local server.config file or specifying the [server config file](#serverConfig) as the first argument. Note that the `server.config` file can be placed in the `<install location>/camelConnector/serverConfig/server.config` or `<install location>/camelConnector/server.config` locations.
+
+### Changing Camel Versions
+
+The camelConnector has been tested with the version of Apache Camel defined in the `build.gradle` file.
+If you wish to change this, you will need to perform the following actions:
+
+1. Change the `camelVersion` property in the `build.gradle` file.
+2. Update the `artifactMap.json` found in `src/main/resources`. This file is the list of components and data formats provided by the Camel version in question.  To update this map, you will perform the following actions.
+   1. Clone the [Apache Camel source repository](https://github.com/apache/camel)
+   2. Set the `camelRoot` gradle property to the the root directory of the cloned repo above.
+   3. Run the `./gradlew camelConnector:generateComponentList` command.  This will take a little while as it examines the source code in question to determine the set of compoenents and data formats provided. This list is used when determining the set of libraries required to provision the connector for your Apache Camel application.
 
 ## Logging
 To change the logging settings, edit the logging config file
@@ -156,24 +168,23 @@ configuration property.
 
 ## Messages to the Source
 
-Messages are sent to the source as Notifications, and are delivered as _events_ to the associated source.
-The data arrives as a VAIL object, where the properties in the event correspond to those sent from the Camel application.
-being the column name and the values being the column value. If multiple rows of data are returned by the pollQuery, each row
-will be sent as a unique Notification.
+Messages are sent to the source as _notifications_, and are delivered as _events_ to the associated source.
+Messages sent to Vantiq from the component/connector will
+arrive as Vail objects, where the property names correspond to the Map keys.
 The Vantiq Component expects messages in an exchange to arrive in the form of a Java Map.  However, messages arriving
 in Json format will be accepted as well.
+When constructing your Camel Application, you must keep this in mind.
 
 ## Messages from the Source
 
 Messages that are sent to the component will arrive in a Camel Exchange as a Java Map, where the keys in the map
-correspond to the property names in the object sent from Vantiq.  Messages sent to Vantiq from the component will
-arrive as Vail objects, where the property names correspond to the Map keys.
+correspond to the property names in the object sent from Vantiq.  
 
 ## Select Statements
 
 In order to interact with the Apache application, one option is to use VAIL to select from the source. To do this, you will need 
 to specify query message using the WITH clause on the VAIL SELECT statement. The data will be returned to 
-VANTIQ as a set of _rows_, where each _row_ contains containsa a set of properties..
+VANTIQ as a set of _rows_, where each _row_ contains contains a set of properties..
 
 The following example uses a Vail Select Statement to **query** an application:
 ```js
@@ -194,6 +205,8 @@ try {
     exception(error.code, error.message)
 }
 ```
+
+In this example, we expect only one row to be returned.
 
 ## Publish Statements <a name="publish" id="publish"></a>
 
@@ -218,6 +231,7 @@ In order to properly run the tests, you must add properties to your _gradle.prop
 directory. These properties include the Target VANTIQ Server URL, as well as an Access Token for that server. 
 The Target VANTIQ Server and Auth Token will be used to create a temporary VANTIQ Source, VANTIQ Type, 
 VANTIQ Topic, VANTIQ Procedure and VANTIQ Rule.
+Some tests may require other gradle properties as well.
 
 * **NOTE:** We strongly encourage users to create a unique VANTIQ Namespace in order to ensure that tests
 accidentally override any existing Sources or Types.
