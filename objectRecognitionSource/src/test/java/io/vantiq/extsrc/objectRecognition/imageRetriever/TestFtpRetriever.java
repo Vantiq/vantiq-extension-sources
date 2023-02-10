@@ -236,6 +236,7 @@ public class TestFtpRetriever extends ObjRecTestBase {
         }
     }
     
+    @Ignore("FTP host seems to be very sporadic.  Looking for a new solution.")
     @Test
     public void testQueryServer() {
         Map<String, Object> config = new LinkedHashMap<>();
