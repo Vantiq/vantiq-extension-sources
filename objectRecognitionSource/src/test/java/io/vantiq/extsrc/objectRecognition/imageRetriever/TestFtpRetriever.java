@@ -8,6 +8,7 @@ import java.util.Map;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import io.vantiq.extsrc.objectRecognition.NoSendORCore;
@@ -37,6 +38,7 @@ public class TestFtpRetriever extends ObjRecTestBase {
         source.close();
     }
     
+    @Ignore("FTP host seems to be very sporadic.  Looking for a new solution.")
     @Test
     public void testSetup() {
         Map<String, String> config = workingFtpConfig();
@@ -86,6 +88,7 @@ public class TestFtpRetriever extends ObjRecTestBase {
         }
     }
     
+    @Ignore("FTP host seems to be very sporadic.  Looking for a new solution.")
     @Test
     public void testFtpDownload() {
         Map<String, String> config = workingFtpConfig();
@@ -117,6 +120,7 @@ public class TestFtpRetriever extends ObjRecTestBase {
         }
     }
     
+    @Ignore("FTP host seems to be very sporadic.  Looking for a new solution.")
     @Test
     public void testExplicitFtpsDownload() {
         Map<String, Object> config = workingExplicitFtpsConfig();
@@ -148,6 +152,7 @@ public class TestFtpRetriever extends ObjRecTestBase {
         }
     }
     
+    @Ignore("FTP host seems to be very sporadic.  Looking for a new solution.")
     @Test
     public void testImplicitFtpsDownload() {
         Map<String, Object> config = workingImplicitFtpsConfig();
@@ -210,6 +215,7 @@ public class TestFtpRetriever extends ObjRecTestBase {
         }
     }
     
+    @Ignore("FTP host seems to be very sporadic.  Looking for a new solution.")
     @Test
     public void testNonImageFile() {
         Map<String, String> config = workingFtpConfig();
@@ -253,6 +259,7 @@ public class TestFtpRetriever extends ObjRecTestBase {
         }
     }
     
+    @Ignore("FTP host seems to be very sporadic.  Looking for a new solution.")
     @Test
     public void testIncompleteQuery() {
         Map<String, Object> config = new LinkedHashMap<>();
@@ -360,6 +367,7 @@ public class TestFtpRetriever extends ObjRecTestBase {
         }
     }
     
+    @Ignore("FTP host seems to be very sporadic.  Looking for a new solution.")
     @Test
     public void testReuseOldConnectionOnSameSettings() {
         Map<String, Object> config = workingImplicitFtpsConfig();
