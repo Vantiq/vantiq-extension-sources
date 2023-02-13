@@ -225,7 +225,7 @@ try {
      
     // We expect a result with a property named "answer"...
     
-    var ourAnswer = resul.answer
+    var ourAnswer = result.answer
     
 } catch (error) {
     // Catching any errors and throwing the exception.
