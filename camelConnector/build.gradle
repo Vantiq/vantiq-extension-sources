@@ -9,7 +9,7 @@ plugins {
     id 'application'
 }
 
-mainClassName = 'io.vantiq.extsrc.camelconn.CamelMain'
+mainClassName = 'io.vantiq.extsrc.camelconn.connector.CamelMain'
 
 startScripts{
     doLast{
