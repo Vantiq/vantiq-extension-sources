@@ -345,14 +345,6 @@ public class VantiqComponentTest extends CamelTestSupport {
                 for (String name: context.getComponentNames()) {
                     log.info("Component name: {}", name);
                 }
-//                // interceptors
-//                interceptSendToEndpoint("vantiq:*")
-//                        .marshal()
-//                        .json();
-//
-//                interceptFrom("vantiq:*")
-//                        .unmarshal()
-//                        .json();
     
                 onException(InvalidPayloadException.class)
                         .log(LoggingLevel.ERROR, "Got InvalidPayloadException")
