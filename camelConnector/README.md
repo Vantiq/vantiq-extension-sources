@@ -59,7 +59,7 @@ located in the *src/test/resources* directory.
 
 ## Repository Contents
 
-The _connector_ directory ('src/main/java/io/vantiq/extsrc/camelconn/connector`) contains the following files:
+The _connector_ directory (`src/main/java/io/vantiq/extsrc/camelconn/connector`) contains the following files:
 
 *   **CamelMain** -- The main function for the program. Connects to sources as specified in a
     configuration file.
@@ -68,7 +68,7 @@ The _connector_ directory ('src/main/java/io/vantiq/extsrc/camelconn/connector`)
 *   **CamelHandleConfiguration** -- Sets up the Apache Camel routes based on the source's configuration document, and
     initializes the queryHandler and publishHandler.
 
-The _discovery_ directory ('src/main/java/io/vantiq/extsrc/camelconnec/discover`) contains a variety of classes
+The _discovery_ directory (`src/main/java/io/vantiq/extsrc/camelconn/discover`) contains a variety of classes
 implementing the discovery, resolution, and provisioning of the components necessary to run the Apache Camel
 application configured as part of the source.
 
@@ -90,7 +90,7 @@ If you wish to change this, you will need to perform the following actions:
 2. Update the `artifactMap.json` found in `src/main/resources`. This file is the list of components and data formats provided by the Camel version in question.  To update this map, you will perform the following actions.
    1. Clone the [Apache Camel source repository](https://github.com/apache/camel)
    2. Set the `camelRoot` gradle property to the the root directory of the cloned repo above.
-   3. Run the `./gradlew camelConnector:generateComponentList` command.  This will take a little while as it examines the source code in question to determine the set of compoenents and data formats provided. This list is used when determining the set of libraries required to provision the connector for your Apache Camel application.
+   3. Run the `./gradlew camelConnector:generateComponentList` command.  This will take a little while as it examines the source code in question to determine the set of components and data formats provided. This list is used when determining the set of libraries required to provision the connector for your Apache Camel application.
 
 ## Logging
 To change the logging settings, edit the logging config file
@@ -159,7 +159,7 @@ and these endpoints will refer to the Vantiq server specified in the `server.con
 Rather than re-specifying this information, the Vantiq Camel Connector provides a mechanism
 whereby routes including Vantiq endpoints can refer to the Vantiq specified in the `server.config` file. 
 This is done by specifying a Vantiq endpoint
-that uses `server.config` as the host name.  That is, specify a route something like the following route
+that uses `server.config` as the host name.  That is, specify a route like the following route
 that accepts message from the Vantiq server specified in the connector's `server.config` file and logs the result.
 
 ```xml

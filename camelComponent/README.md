@@ -84,17 +84,17 @@ arrive as Vail objects, where the property names correspond to the Map keys.
 The Vantiq Component expects messages in an exchange to arrive in the form of a Java Map.  However, messages arriving
 in Json format will be accepted as well.
 
-## Adding a Vantiq Component tp an Apache Camel Applications
+## Adding a Vantiq Component to an Apache Camel Applications
 
 ### URI Format
 
 The URI for the Vantiq connection takes the following form:
 
 ```
-    vantiq://host[:port]?sourceName=<source name>&accessToken=<access token>[&sendPings=<boolean>][&faileMessageQueueSize=<int>]
+    vantiq://host[:port]?sourceName=<source name>&accessToken=<access token>[&sendPings=<boolean>][&failedMessageQueueSize=<int>]
 ```
 
-### Component?Endpoint Options
+### Component Endpoint Options
 
 The endpoint options apply to producer and consumer endpoints.  The following are supported.
 

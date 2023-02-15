@@ -227,7 +227,7 @@ public class VantiqEndpoint extends DefaultEndpoint {
                             " (" + correctedVantiqUrl + "), source: " + sourceName;
                     // Something didn't work.  Let's try & get a better diagnosis of what went awry.
                     if (!vantiqClient.isOpen()) {
-                        // Then we failed to connected.
+                        // Then we failed to connect.
                         errMsg = "Failed to connect to Vantiq server: " + vtq +
                                 " (" + correctedVantiqUrl + ").";
                     } else if (!vantiqClient.isAuthed()) {

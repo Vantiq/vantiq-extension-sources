@@ -90,7 +90,7 @@ public class ClientRegistryTest {
     }
     
     public void buildAndVerify(String srcName, String target, boolean shouldBeCreated) {
-        // Lambda's can only reference "effectively final" values, wo we'll wrap in an AtomicReference
+        // Lambda's can only reference "effectively final" values, so we'll wrap in an AtomicReference
         AtomicReference<ExtensionWebSocketClient> client = new AtomicReference<>();
         ClientRegistry.registerClient(srcName, target, (src, url) -> {
             client.set(new ExtensionWebSocketClient(srcName, 15, null));

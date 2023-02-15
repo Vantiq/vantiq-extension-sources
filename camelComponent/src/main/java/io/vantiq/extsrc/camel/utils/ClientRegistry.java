@@ -27,7 +27,7 @@ import java.util.function.BiFunction;
  *
  * Although this is (at least, originally) used by Camel connector, it is co-located with the Camel components so
  * that they can call it.  This allows Apache Camel applications that make use of the Vantiq component to be
- * constructed withou the inclusion of the Camel connector.
+ * constructed without the inclusion of the Camel connector.
  */
 public class ClientRegistry {
     
