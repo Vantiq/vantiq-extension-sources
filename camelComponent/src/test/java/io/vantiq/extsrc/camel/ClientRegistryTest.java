@@ -18,6 +18,8 @@ public class ClientRegistryTest {
     private final static String SERVER_URL = "https://testjunk.vantiq.com";
     private final static String SERVER_URL_2 = "https://teststuff.vantiq.com";
     
+    private final static String SERVER_URL_W_SPACES = "   " + SERVER_URL + "/  ";
+    
     
     @After
     public void removeDetritus() {
@@ -26,6 +28,7 @@ public class ClientRegistryTest {
         removeClient(SOURCE_NAME, SERVER_URL_2);
         removeClient(SOURCE_NAME_2, SERVER_URL_2);
     }
+    
     @Test
     public void testNotThere() {
         ExtensionWebSocketClient client =
@@ -87,6 +90,14 @@ public class ClientRegistryTest {
         buildAndVerify(SOURCE_NAME, SERVER_URL, false);
         
         assertEquals("Known client count after duplicate creates", 4, ClientRegistry.getKnownClientCount());
+    }
+    
+    @Test
+    public void testServerUrlWSpaces() {
+        buildAndVerify(SOURCE_NAME, SERVER_URL, true);
+        buildAndVerify(SOURCE_NAME, SERVER_URL_W_SPACES, false);
+        
+        assertEquals("Known client count", 1, ClientRegistry.getKnownClientCount());
     }
     
     public void buildAndVerify(String srcName, String target, boolean shouldBeCreated) {

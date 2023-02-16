@@ -16,9 +16,14 @@ and [Setting Up Your Vantiq](#vantiq).
 
 Apache Camel, briefly, is organized into a set of _components_ that are used to produce _endpoints_. 
 In turn, the _endpoints_ can be used in the context of a _consumer_ or _producer_.
+A Camel consumer sits at the start of a Camel route and converts a message from Vantiq
+(_e.g._, received from a publish connector operation/publish to a Vantiq source)
+into a Camel Exchange that can travel down the route. 
+A Camel producer converts the Camel Exchange into a specific message 
+that can be sent to Vantiq (_e.g._,
+through a notification connector operation or query response).
 These are from the Apache Camel point of view, so a _producer_ produces messages 
-(Connector publications or queries) for the application, and the _consumer_ takes them in,
-sending them to Vantiq (Publish or query response).
+from the Camel application, and the _consumer_ takes them in _for_ the Camel application.
 
 *   **VantiqComponent** -- The base definition of the Vantiq Apache Camel Component.
 *   **VantiqConsumer** -- The part of the component that receives messages from Vantiq.

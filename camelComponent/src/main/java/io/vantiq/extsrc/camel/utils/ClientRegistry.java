@@ -110,7 +110,6 @@ public class ClientRegistry {
      *
      * @return int representing the number of currently registered clients.
      **/
-    //
     public static int getKnownClientCount() {
         return knownClients.size();
     }
@@ -124,28 +123,10 @@ public class ClientRegistry {
      */
     public static String constructClientKey(String sourceName, String serverUrl) {
         // Normalize URL just in case...
+        serverUrl = serverUrl.trim();
         if (!serverUrl.endsWith("/")) {
             serverUrl = serverUrl + "/";
         }
         return serverUrl + SOURCE_NAME_PARAM + sourceName;
-    }
-    
-    /**
-     * Parse the key to its component parts.
-     *
-     * @param key String as constructed by {@link ClientRegistry#constructClientKey(String, String)
-     * constructClientKey()}
-     * @return Map with two members, sourceName ({@link ClientRegistry#SOURCE_NAME_KEY}) and serverUrl
-     *                  ({@link ClientRegistry#SERVER_URL_KEY}).
-     * @throws URISyntaxException when the URI represented by the key is malformed.
-     */
-    public static Map<String, String> parseKey(String key) throws URISyntaxException {
-        URI uri = new URI(key);
-        Map<String, String> res = new HashMap<>();
-        String qry = uri.getQuery();
-        String src = qry.split("=")[1];
-        res.put(SOURCE_NAME_KEY, src);
-        res.put(SERVER_URL_KEY, key.substring(0, key.lastIndexOf(SOURCE_NAME_PARAM)));
-        return res;
     }
 }

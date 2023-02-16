@@ -20,7 +20,6 @@ import okhttp3.WebSocket;
 import okio.ByteString;
 import org.apache.camel.Exchange;
 import org.apache.camel.ExchangePattern;
-import org.apache.camel.Expression;
 import org.apache.camel.InvalidPayloadException;
 import org.apache.camel.LoggingLevel;
 import org.apache.camel.builder.RouteBuilder;
@@ -182,9 +181,6 @@ public class VantiqComponentTest extends CamelTestSupport {
         // First, grab our test environment.
         FauxVantiqComponent vc = (FauxVantiqComponent) context.getComponent("vantiq");
         assert vc != null;
-        // Note that we need to fetch the endpoints by URI since there are more than one of them.
-        FauxVantiqEndpoint ep = (FauxVantiqEndpoint) context.getEndpoint(vantiqEndpointUri);
-        FalseClient fc = ep.myClient;
         
         ArrayList<Integer> msgs = new ArrayList<>();
         

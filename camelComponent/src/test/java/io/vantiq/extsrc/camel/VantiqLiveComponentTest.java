@@ -299,7 +299,7 @@ public class VantiqLiveComponentTest extends CamelTestSupport {
     public static void deleteType() {
         Map<String, Object> where = new LinkedHashMap<>();
         where.put("name", testTypeName);
-        VantiqResponse response = vantiq.delete("system.types", where);
+        vantiq.delete("system.types", where);
     }
     
     public static void setupPublishProcedure() {

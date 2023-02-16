@@ -27,6 +27,7 @@ public class FauxVantiqEndpoint extends VantiqEndpoint {
     FauxVantiqEndpoint(String uri, VantiqComponent component) throws Exception {
         super(uri, component);
     }
+    
     /**
      * Constructs & returns an ExtensionWebSocketClient.
      *

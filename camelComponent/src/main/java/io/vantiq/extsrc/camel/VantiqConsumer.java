@@ -102,6 +102,7 @@ public class VantiqConsumer extends DefaultConsumer {
             exchange.getIn().setBody(msgBody);
             if (pattern == InOut) {
                 // In this case, we need to save the reply address in the exchange so that we can reply appropriately
+                // This is the case when we are processing a Vantiq query.
                 Map<String, Object> hdrs = message.getMessageHeaders();
                 Object ra = hdrs.get(ExtensionServiceMessage.ORIGIN_ADDRESS_HEADER);
                 if (ra instanceof String) {

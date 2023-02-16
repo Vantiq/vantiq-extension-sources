@@ -56,7 +56,7 @@ public class VantiqEmptyURITest extends VantiqUriTestBase {
                 }
             }
     
-            // In the constructed case, these our bean-simulation endpoints get registered manually.  Since they have the
+            // In the constructed case, these bean-simulation endpoints get registered manually.  Since they have the
             // same endpointUri, they are, in the registry, the same endpoint (same key)..  So verify that that's
             // true.
             assertEquals("Number of Vantiq endpoints", 1, vantiqEndpoints);

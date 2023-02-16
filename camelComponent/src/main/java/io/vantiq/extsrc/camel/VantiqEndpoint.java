@@ -81,6 +81,7 @@ public class VantiqEndpoint extends DefaultEndpoint {
     
     private String correctedVantiqUrl = null;
     private boolean started = false;
+    private String startStopLock = "startStopLock";
     private boolean runningInConnector = false;
     
     @Getter
@@ -99,10 +100,10 @@ public class VantiqEndpoint extends DefaultEndpoint {
      * configurations), we'll let that through.  In such cases, our superclass will call our overridden method
      * createEndpointUri().  This will construct the URI from the information in the containing connector's
      * server.config file (if any). As noted, this is sometimes hard to do given programmatic route construction. So,
-     * the alternative is to allow for a URI of "vantiq://server.config".  If see a "host" name of "server.config",
+     * the alternative is to allow for a URI of "vantiq://server.config".  If we see a "host" name of "server.config",
      * we will call the superclass constructor with a uri of null, and the processing described above will take over.
      * This capability is primarily of use in the case of the Camel connector, allowing the user to avoid repeatedly
-     * haveing to specify the connection information.
+     * having to specify the connection information.
      *
      * @param uri String the URI to which to connect
      * @param component VantiqComponent the Camel component from which to get the endpoint.
@@ -124,7 +125,7 @@ public class VantiqEndpoint extends DefaultEndpoint {
         String vantiqInstName = baseUri.replace("vantiq://", "");
         vantiqInstName = vantiqInstName.replace("/", "");
         endpointName = "vantiq--" + vantiqInstName + "::" + sourceName;
-        log.debug("Endpoint name {} assigned for for {}", endpointName, getEndpointBaseUri());
+        log.debug("Endpoint name {} assigned for {}", endpointName, getEndpointBaseUri());
     }
 
     public Producer createProducer() throws Exception {
@@ -169,14 +170,7 @@ public class VantiqEndpoint extends DefaultEndpoint {
     }
     
     protected ExtensionWebSocketClient buildVantiqClientFromTarget(String source, String targetServer) {
-        return new ExtensionWebSocketClient(sourceName, failedMessageQueueSize,
-                                                                              utils);
-    }
-    
-    protected ExtensionWebSocketClient findVantiqClient(String source) {
-        return ClientRegistry.registerClient(source,
-                                             utils.obtainServerConfig().getProperty(TARGET_SERVER_PROPERTY_NAME),
-                                      this::buildVantiqClientFromTarget);
+        return new ExtensionWebSocketClient(sourceName, failedMessageQueueSize, utils);
     }
     
     protected void completeFuturesForFauxInstances() {
@@ -185,72 +179,78 @@ public class VantiqEndpoint extends DefaultEndpoint {
     
     public void startup() throws CamelException {
     
-        if (started) {
-            return;
-        }
-        CamelException failure = null;
-        try {
-            log.debug("Attempting to connect to URL: {} from {}", getEndpointBaseUri(), getEndpointUri());
-            String vtq = getEndpointBaseUri();
-            String protocol = "https";
-            if (noSsl) {
-                // This is primarily for use in development.  But supported...
-               protocol = "http";
-            }
-            correctedVantiqUrl = vtq.replace("vantiq", protocol);
-            log.trace("Fixed-up Vantiq URL: {}", correctedVantiqUrl);
-            utils.provideServerConfig(correctedVantiqUrl, accessToken, sourceName, sendPings, null);
-            buildEndpointName();
-    
-            // If we are running inside a Vantiq Camel connector, the connector runtime may have already created a
-            // client. If that's the case, use, that client,  Otherwise, we'll create our own, knowing that the
-            // connector runtime is not managing our client.
-            
-            vantiqClient = ClientRegistry.fetchClient(sourceName, correctedVantiqUrl);
-            if (vantiqClient != null) {
-                runningInConnector = true;
-                started = true;
+        synchronized (startStopLock) {
+            if (started) {
                 return;
-            } else {
-                // Reconfig's are handled here by auto-reconnect.
-
-                vantiqClient = buildVantiqClient(sourceName, failedMessageQueueSize);
-                CompletableFuture<Boolean> fut = vantiqClient.initiateFullConnection(correctedVantiqUrl, accessToken, sendPings);
-    
-                completeFuturesForFauxInstances();
-                if (fut.get()) {
-                    started = true; // Mark that we've successfully started up.
-                    vantiqClient.setAutoReconnect(true);
+            }
+            CamelException failure = null;
+            try {
+                log.debug("Attempting to connect to URL: {} from {}", getEndpointBaseUri(), getEndpointUri());
+                String vtq = getEndpointBaseUri();
+                String protocol = "https";
+                if (noSsl) {
+                    // This is primarily for use in development.  But supported...
+                    protocol = "http";
+                }
+                correctedVantiqUrl = vtq.replace("vantiq", protocol);
+                log.trace("Fixed-up Vantiq URL: {}", correctedVantiqUrl);
+                utils.provideServerConfig(correctedVantiqUrl, accessToken, sourceName, sendPings, null);
+                buildEndpointName();
+        
+                // If we are running inside a Vantiq Camel connector, the connector runtime may have already created a
+                // client. If that's the case, use, that client,  Otherwise, we'll create our own, knowing that the
+                // connector runtime is not managing our client.
+        
+                vantiqClient = ClientRegistry.fetchClient(sourceName, correctedVantiqUrl);
+                if (vantiqClient != null) {
+                    runningInConnector = true;
+                    started = true;
                     return;
                 } else {
-                    String errMsg = "Failed to initiate connection to Vantiq server: " + vtq +
-                            " (" + correctedVantiqUrl + "), source: " + sourceName;
-                    // Something didn't work.  Let's try & get a better diagnosis of what went awry.
-                    if (!vantiqClient.isOpen()) {
-                        // Then we failed to connect.
-                        errMsg = "Failed to connect to Vantiq server: " + vtq +
-                                " (" + correctedVantiqUrl + ").";
-                    } else if (!vantiqClient.isAuthed()) {
-                        errMsg = "Authentication failure connecting to " + vtq +
-                                " (" + correctedVantiqUrl + ").";
-                    } else if (!vantiqClient.isConnected()) {
-                        errMsg = "Failed to connect to Vantiq source " + sourceName + " at server: " + vtq +
-                                " (" + correctedVantiqUrl + ").";
+                    // Reconfig's are handled here by auto-reconnect.
+            
+                    vantiqClient = buildVantiqClient(sourceName, failedMessageQueueSize);
+                    CompletableFuture<Boolean> fut =
+                            vantiqClient.initiateFullConnection(correctedVantiqUrl, accessToken, sendPings);
+            
+                    completeFuturesForFauxInstances();
+                    if (fut.get()) {
+                        runningInConnector = false;
+                        started = true; // Mark that we've successfully started up.
+                        vantiqClient.setAutoReconnect(true);
+                        return;
+                    } else {
+                        String errMsg = "Failed to initiate connection to Vantiq server: " + vtq +
+                                " (" + correctedVantiqUrl + "), source: " + sourceName;
+                        // Something didn't work.  Let's try & get a better diagnosis of what went awry.
+                        if (!vantiqClient.isOpen()) {
+                            // Then we failed to connect.
+                            errMsg = "Failed to connect to Vantiq server: " + vtq +
+                                    " (" + correctedVantiqUrl + ").";
+                        } else if (!vantiqClient.isAuthed()) {
+                            errMsg = "Authentication failure connecting to " + vtq +
+                                    " (" + correctedVantiqUrl + ").";
+                        } else if (!vantiqClient.isConnected()) {
+                            errMsg = "Failed to connect to Vantiq source " + sourceName + " at server: " + vtq +
+                                    " (" + correctedVantiqUrl + ").";
+                        }
+                        log.error(errMsg);
+                        failure = new CamelException(errMsg);
                     }
-                    log.error(errMsg);
-                    failure = new CamelException(errMsg);
                 }
+            } catch (InterruptedException | ExecutionException e) {
+                log.error("Failed to initiate connection to Vantiq server: {}, source: {}",
+                          correctedVantiqUrl, sourceName, e);
+                throw new CamelException(e);
             }
-        } catch (InterruptedException | ExecutionException e) {
-            log.error("Failed to initiate connection to Vantiq server: {}, source: {}",
-                    correctedVantiqUrl, sourceName, e);
-            throw new CamelException(e);
+            throw failure;
         }
-        throw failure;
     }
     
     public boolean isConnected() {
-        return started;
+        synchronized (startStopLock) {
+            return started;
+        }
     }
     
     /**
@@ -273,7 +273,7 @@ public class VantiqEndpoint extends DefaultEndpoint {
         String sourceName = scProps.getProperty(SOURCES_PROPERTY_NAME);
         String sendPings = scProps.getProperty(SEND_PING_PROPERTY_NAME);
         if (StringUtils.isEmpty(baseUri) || StringUtils.isEmpty(accessToken)) {
-            throw new IllegalArgumentException("source.config file is missing or does not contain sufficent " +
+            throw new IllegalArgumentException("source.config file is missing or does not contain sufficient " +
                                                        "information from which to construct an endpoint URI.");
         }
         if (StringUtils.isEmpty(sourceName) || sourceName.contains(",")) {
@@ -310,12 +310,15 @@ public class VantiqEndpoint extends DefaultEndpoint {
     
     @Override
     public void doStop() {
-        if (vantiqClient != null) {
-            if (!runningInConnector) {
-                // Only close if we are the one that opened things
-                vantiqClient.close();
+        synchronized (startStopLock) {
+            if (vantiqClient != null) {
+                if (!runningInConnector) {
+                    // Only close if we are the one that opened things
+                    vantiqClient.close();
+                }
+                vantiqClient = null;
             }
-            vantiqClient = null;
+            started = false;
         }
     }
 
