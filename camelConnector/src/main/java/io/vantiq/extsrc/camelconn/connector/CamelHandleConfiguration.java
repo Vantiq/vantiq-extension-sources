@@ -14,7 +14,6 @@ import com.google.gson.JsonObject;
 import io.vantiq.client.Vantiq;
 import io.vantiq.client.VantiqResponse;
 import io.vantiq.extjsdk.ExtensionServiceMessage;
-import io.vantiq.extjsdk.ExtensionWebSocketClient;
 import io.vantiq.extjsdk.Handler;
 import io.vantiq.extsrc.camelconn.discover.CamelRunner;
 import lombok.extern.slf4j.Slf4j;
@@ -263,7 +262,7 @@ public class CamelHandleConfiguration extends Handler<ExtensionServiceMessage> {
         return true;
     }
     
-    Map<String, String> fetchDocument(String docName) {
+    private Map<String, String> fetchDocument(String docName) {
         String token = source.authToken;
         String url = source.targetVantiqServer;
         Vantiq vantiq = new Vantiq(url, 1);

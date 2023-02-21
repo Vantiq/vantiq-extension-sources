@@ -19,7 +19,7 @@ has been split into two parts, [Setting Up Your Machine](#machine) and [Setting 
 
 ## Details
 
-When using the the Camel connector, the connector makes a discovery pass to find the components required.  Then, it
+When using the Camel connector, the connector makes a discovery pass to find the components required.  Then, it
 downloads them and constructs a class loader including the components needed. Thus, when using the connector,
 you need only supply the routes (and any specific connection properties you may need),
 and the connector finds & resolves the Apache Components & Dataformats required,
@@ -89,13 +89,13 @@ If you wish to change this, you will need to perform the following actions:
 1. Change the `camelVersion` property in the `build.gradle` file.
 2. Update the `artifactMap.json` found in `src/main/resources`. This file is the list of components and data formats provided by the Camel version in question.  To update this map, you will perform the following actions.
    1. Clone the [Apache Camel source repository](https://github.com/apache/camel)
-   2. Set the `camelRoot` gradle property to the the root directory of the cloned repo above.
+   2. Set the `camelRoot` gradle property to the  root directory of the cloned repo above.
    3. Run the `./gradlew camelConnector:generateComponentList` command.  This will take a little while as it examines the source code in question to determine the set of components and data formats provided. This list is used when determining the set of libraries required to provision the connector for your Apache Camel application.
 
 ## Logging
 To change the logging settings, edit the logging config file
 `<install location>/camelConnector/src/main/resources/log4j2.xml`,
-which is an [Apache Log4j configuration file.](https://logging.apache.org/log4j/2.x/manual/configuration.html). The logger 
+which is an [Apache Log4j configuration file](https://logging.apache.org/log4j/2.x/manual/configuration.html). The logger 
 name for each class is the class's fully qualified class name, *e.g.* "io.vantiq.extjsdk.ExtensionWebSocketClient".  
 
 ## Server Config File
@@ -111,8 +111,8 @@ name for each class is the class's fully qualified class name, *e.g.* "io.vantiq
 
 ## Source Configuration
 
-To set up the Source in the VANTIQ Modelo IDE, you will need to add a Source to your project. Please check the [Prerequisites]
-(#pre) to make sure you have properly added a Source Definition to VANTIQ Modelo. Once this is complete,
+To set up the Source in the VANTIQ Modelo IDE, you will need to add a Source to your project. Please check the [Prerequisites](#pre) 
+to make sure you have properly added a Source Definition to VANTIQ Modelo. Once this is complete,
 you can select CAMEL_CONNECTOR
 (or whatever you named your Source Definition) as the Source Type. You will then need to provide the
 Source Configuration Document.
@@ -177,10 +177,10 @@ Upon startup (or when the Vantiq Source configuration changes), the Camel Connec
 to determine the route(s) to run. To configure itself, the connector will perform the following actions:
 
 * Read the configuration and determine the route(s) to be used.
-* Start the Camel routes in an internal _discovery_ mode where the componenets required to run the routes are
+* Start the Camel routes in an internal _discovery_ mode where the components required to run the routes are
 discovered.
 * Based on the discovered components, download the required libraries and their dependencies.
-    * If the **additionalLibraries** property is provied as part of the configuration, the libraries listed
+    * If the **additionalLibraries** property is provided as part of the configuration, the libraries listed
 therein are downloaded as well.
     * The downloads happen based on the Maven Central repository, unless the **repoList** property is specified
 in the configuration.  If that is present, that list is used _instead_ of the Maven Central repository. Thus, if
@@ -197,7 +197,7 @@ configuration property.
 
 Messages are sent to the source as _notifications_, and are delivered as _events_ to the associated source.
 Messages sent to Vantiq from the component/connector will
-arrive as Vail objects, where the property names correspond to the Map keys.
+arrive as VAIL objects, where the property names correspond to the Map keys.
 The Vantiq Component expects messages in an exchange to arrive in the form of a Java Map.  However, messages arriving
 in Json format will be accepted as well.
 When constructing your Camel Application, you must keep this in mind.
@@ -211,9 +211,9 @@ correspond to the property names in the object sent from Vantiq.
 
 In order to interact with the Apache application, one option is to use VAIL to select from the source. To do this, you will need 
 to specify query message using the WITH clause on the VAIL SELECT statement. The data will be returned to 
-VANTIQ as a set of _rows_, where each _row_ contains contains a set of properties..
+VANTIQ as a set of _rows_, where each _row_ contains a set of properties.
 
-The following example uses a Vail Select Statement to **query** an application:
+The following example uses a VAIL Select Statement to **query** an application:
 ```js
 PROCEDURE queryCamel()
 
@@ -260,7 +260,7 @@ The Target VANTIQ Server and Auth Token will be used to create a temporary VANTI
 VANTIQ Topic, VANTIQ Procedure and VANTIQ Rule.
 Some tests may require other gradle properties as well.
 
-* **NOTE:** We strongly encourage users to create a unique VANTIQ Namespace in order to ensure that tests
+* **NOTE:** We strongly encourage users to create a unique VANTIQ Namespace in order to ensure that tests do not
 accidentally override any existing Sources or Types.
 
 ## Licensing

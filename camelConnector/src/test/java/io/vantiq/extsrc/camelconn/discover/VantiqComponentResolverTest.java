@@ -49,8 +49,8 @@ import java.util.Map;
  */
 
 // Method order used to check caching for SimpleCamelResolution
+// Not using Slf4J due to use in static context
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
-// @Slf4j
 public class VantiqComponentResolverTest extends CamelTestSupport {
     public final static String MISSING_VALUE = "<missing>";
     

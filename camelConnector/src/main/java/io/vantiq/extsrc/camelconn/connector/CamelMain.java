@@ -37,7 +37,7 @@ import java.util.Properties;
 @Slf4j
 public class CamelMain {
 
-    static       List<CamelCore> sources;
+    static List<CamelCore> sources;
         
     static String accessToken;
     static String targetVantiqServer;

@@ -15,7 +15,6 @@ import io.vantiq.extsrc.camel.utils.ClientRegistry;
 import io.vantiq.extsrc.camelconn.discover.CamelRunner;
 import lombok.extern.slf4j.Slf4j;
 
-import java.util.Timer;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -33,8 +32,6 @@ public class CamelCore {
     String targetVantiqServer;    
     
     CamelHandleConfiguration camelConfigHandler;
-    
-    Timer                       pollTimer = null;
     ExtensionWebSocketClient    client  = null;
     final static int RECONNECT_INTERVAL = 5000;
     private static final String SYNCH_LOCK = "synchLock";
@@ -71,13 +68,6 @@ public class CamelCore {
         @Override
         public void handleMessage(ExtensionWebSocketClient message) {
             log.trace("WebSocket closed unexpectedly. Attempting to reconnect");
-            
-            // FIXME:  Should these shut down the camelRunner?
-            // camelConfigurationHandler.getCurrentCamelRunner().close()??
-            if (pollTimer != null) {
-                pollTimer.cancel();
-                pollTimer = null;
-            }
    
             camelConfigHandler.configComplete = false;
             
@@ -149,10 +139,7 @@ public class CamelCore {
      * Closes all resources held by this program except for the {@link ExtensionWebSocketClient}. 
      */
     public void close() {
-        if (pollTimer != null) {
-            pollTimer.cancel();
-            pollTimer = null;
-        }
+        
         if (camelConfigHandler != null) {
             CamelRunner runner = camelConfigHandler.getCurrentCamelRunner();
             if (runner != null) {
