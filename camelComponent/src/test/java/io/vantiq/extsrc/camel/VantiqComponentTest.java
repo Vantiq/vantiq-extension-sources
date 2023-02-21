@@ -334,7 +334,6 @@ public class VantiqComponentTest extends CamelTestSupport {
     protected RouteBuilder createRouteBuilder() throws Exception {
         return new RouteBuilder() {
             public void configure() {
-    
                 
                 // Override the component type to be used...
                 context.addComponent("vantiq", new FauxVantiqComponent());
