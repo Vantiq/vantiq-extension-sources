@@ -39,7 +39,7 @@ class EnumeratingComponentResolver implements ComponentResolver {
                     "direct-vm", "file", "language", "log", "mock", "properties", "ref", "rest", "rest-api",
                     "saga", "scheduler", "seda", "stub", "test", "timer", "validator", "vm", "xslt"));
     
-    // These don't load and hare handled specially internally
+    // These don't load and are handled specially internally
     public static final Set<String> NONLOADABLE_CORE_COMPONENT_SCHEMES =  new HashSet<>(
             Arrays.asList("binding", "properties", "test"));
     

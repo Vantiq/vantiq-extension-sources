@@ -27,7 +27,7 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- * Perforn unit tests for component discovery
+ * Perform unit tests for component discovery
  */
 public class VantiqComponentDiscoveryTest extends CamelTestSupport {
     

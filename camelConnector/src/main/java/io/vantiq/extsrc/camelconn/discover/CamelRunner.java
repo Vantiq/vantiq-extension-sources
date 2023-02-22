@@ -160,23 +160,18 @@ public class CamelRunner extends MainSupport implements Closeable {
         // repositories, so we'll use a LinkedHashSet<>.  That acts as a set but retains the order in which elements
         // were inserted.
         Set<File> jarList = new LinkedHashSet<>();
-        if (repositories != null && repositories.size() > 0) {
-            // If providing a list of repos, we require the user to include maven-central (if they want to use it).
-            // This allows test cases, etc., not to over-resolve.
-            Set<File> aReposWorth = resolveFromRepo(repositories,
-                                                    discResults.get(CamelDiscovery.COMPONENTS_TO_LOAD),
-                                                    discResults.get(CamelDiscovery.DATAFORMATS_TO_LOAD),
-                                                    this.additionalLibraries,
-                                                    discoverer);
-           jarList.addAll(aReposWorth);
-        } else {
-            Set<File> aReposWorth = resolveFromRepo(Collections.emptyList(),
-                                                    discResults.get(CamelDiscovery.COMPONENTS_TO_LOAD),
-                                                    discResults.get(CamelDiscovery.DATAFORMATS_TO_LOAD),
-                                                    this.additionalLibraries,
-                                                    discoverer);
-            jarList.addAll(aReposWorth);
+        List<URI> repsToUse = repositories;
+        if (repsToUse == null) {
+            repsToUse = Collections.emptyList();
         }
+        // If providing a list of repos, we require the user to include maven-central (if they want to use it).
+        // This allows test cases, etc., not to over-resolve.
+        Set<File> aReposWorth = resolveFromRepo(repsToUse,
+                                                discResults.get(CamelDiscovery.COMPONENTS_TO_LOAD),
+                                                discResults.get(CamelDiscovery.DATAFORMATS_TO_LOAD),
+                                                this.additionalLibraries,
+                                                discoverer);
+       jarList.addAll(aReposWorth);
     
         // Now, construct a classloader that includes all these loaded files
     
@@ -208,7 +203,7 @@ public class CamelRunner extends MainSupport implements Closeable {
      * here.
      * @param componentsToResolve Set<String> the components to load
      * @param dataformatsToResolve Set<String> the data formats to load
-     * @param additionalLibraries List<String> Extra libraries to load (overcome missing from discovery=
+     * @param additionalLibraries List<String> Extra libraries to load (overcome missing from discovery
      * @param discoverer CamelDiscovery to use.
      * @return Set<File> The set of (jar) files downloaded.
      * @throws Exception when things go awry
@@ -308,7 +303,12 @@ public class CamelRunner extends MainSupport implements Closeable {
             log.error("Exception from runtime", e);
         } finally {
             if (waitForThread || startupFailed != null) {
-               close();
+                try {
+                    close();
+                } catch (Exception e) {
+                    // Log but ignore -- this is going away anyway
+                    log.error("Error closing CamelRunner when the routes complete:", e);
+                }
             }
         }
     }
@@ -468,7 +468,7 @@ public class CamelRunner extends MainSupport implements Closeable {
     /**
      * Load a route from a textual description of the route.
      *
-     * Here, we'll use the camel runtime to construct a RouteBuilder from the text specification and specificaiton
+     * Here, we'll use the camel runtime to construct a RouteBuilder from the text specification and specification
      * type we are given.  We let the underlying Camel system find the route loaders so that this code extends to
      * support new specification types.  Changes to the set of libraries loaded in this image may be required to load
      * the new DSL interpreters of the new specification types.
@@ -502,7 +502,7 @@ public class CamelRunner extends MainSupport implements Closeable {
         // Save our failure reason
         startupFailed = e;
         // In the event of failure, cancel outstanding operations & let the system discover that by marking that
-        // things havew started.  Otherwise, we hang awaiting the startup monitor.
+        // things have started.  Otherwise, we hang awaiting the startup monitor.
         log.error("Camel startup has failed due to: ", e);
         notifyStarted();
         super.doFail(e);

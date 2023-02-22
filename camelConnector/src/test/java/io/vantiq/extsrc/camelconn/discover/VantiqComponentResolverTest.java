@@ -130,7 +130,8 @@ public class VantiqComponentResolverTest extends CamelTestSupport {
                 log.debug("Classloader has package: {}", p.getName());
             }
         } catch (Exception e) {
-            assert e == null;
+            // Putting assert here so we get information about the unexpected exception
+            assertNull("Unexpected Exception", e);
         }
     }
     
@@ -383,7 +384,7 @@ public class VantiqComponentResolverTest extends CamelTestSupport {
             + "</routes>";
     
     // Note: Unlike the example on the site, the following will fail to start (claiming > 1 consumer for
-    // direct:start) if th top-level "- route" line is missing.d
+    // direct:start) if the top-level "- route" line is missing.d
     public static final String YAML_ROUTE =  "\n"
             + "- route:\n"
             + "    id: \"Dig from yaml-route\"\n"
@@ -546,9 +547,8 @@ public class VantiqComponentResolverTest extends CamelTestSupport {
     public void performLoadAndRunTest(RouteBuilder rb, boolean shouldStart,
                                       List<Map<String, Object>> componentToInit) throws Exception {
         // To do this test, we'll create a callable that the test method will call. In this case, the callable "sends"
-        // message to the route which, in turn, makes the dig call to lookup a monke & aardvark.  We verify that the
-        // expected
-        // results is presented.
+        // message to the route which, in turn, makes the dig call to lookup a monkey & aardvark.  We verify that the
+        // expected results are presented.
         //
         // In this case, our MakeDigCall route uses the (dynamically loaded) dns component to make a dig call.
         TriFunction<CamelContext, String, Object, Boolean> verifyOperation = defineVerifyOperation();
@@ -597,6 +597,7 @@ public class VantiqComponentResolverTest extends CamelTestSupport {
             }
         }
     
+        assertNotNull("runnerThread is null", runnerThread);
         assertTrue("ShouldStart: " + shouldStart + ", runnerThread: " + runnerThread +
                            ", ...isAlive: " + runnerThread.isAlive(),
                    !shouldStart || runnerThread != null && !runnerThread.isAlive());
@@ -619,8 +620,8 @@ public class VantiqComponentResolverTest extends CamelTestSupport {
             // is that all the classes are loaded so that camel & its associated components are operating.
             
             // Since 1) we don't really care, and 2) Jenkins runs may not allow us to pick a "normal" port,
-            // we'll specify port 0 here.  Using port 0 tell Jetty to pick an unused port (well, actually, this tells
-            // the lower-level socket constructor, I think.  In either case, this allows this code to work in
+            // we'll specify port 0 here.  Using port 0 tells Jetty to pick an unused port (well, actually, this tells
+            // the lower-level socket constructor).  In either case, this allows this code to work in
             // environments more constrained than one's own machine.
             
             from("jetty:http://0.0.0.0:0/myapp/myservice/?sessionSupport=true")
@@ -638,8 +639,8 @@ public class VantiqComponentResolverTest extends CamelTestSupport {
             // is that all the classes are loaded so that camel & its associated components are operating.
             
             // Since 1) we don't really care, and 2) Jenkins runs may not allow us to pick a "normal" port,
-            // we'll specify port 0 here.  Using port 0 tell Jetty to pick an unused port (well, actually, this tells
-            // the lower-level socket constructor, I think.  In either case, this allows this code to work in
+            // we'll specify port 0 here.  Using port 0 tells Jetty to pick an unused port (well, actually, this tells
+            // the lower-level socket constructor).  In either case, this allows this code to work in
             // environments more constrained than one's own machine.
             
             from("jetty:http://0.0.0.0:0/myapp/myservice/?sessionSupport=true")

@@ -108,7 +108,7 @@ public class CamelDiscovery {
      *
      * Using the generated artifactsMap (see {@link build.gradle#generateComponentList}), lookup the schema
      * name and return the component name found.  It (will be) assumed that these are all in org.apache.camel, and
-     * that they all share the save camel version as that which we are running.  This is the Apache Camel way.
+     * that they all share the same camel version as that which we are running.  This is the Apache Camel way.
      *
      * @param scheme String name of component scheme used to define endpoints, etc.
      * @return String identifying the name of the loadable artifact that contains the code to run the component.  Can
