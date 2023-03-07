@@ -9,8 +9,6 @@ plugins {
 group 'io.vantiq'
 version 'unspecified'
 
-sourceCompatibility = 1.8
-
 ext {
     // Open the Git repository in the current directory and get commit id of HEAD.
 //    git = org.ajoberstar.grgit.Grgit.open(file('.'))

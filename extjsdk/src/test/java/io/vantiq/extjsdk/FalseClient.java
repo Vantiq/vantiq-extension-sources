@@ -25,17 +25,24 @@ import com.fasterxml.jackson.databind.ObjectMapper;
  *
  */
 public class FalseClient extends ExtensionWebSocketClient {
+    
     public FalseClient(String sourceName) {
         super(sourceName);
+        listener = new TestListener(this);
     }
     
     ObjectMapper mapper = new ObjectMapper();
-
+    
     @Override
-    public CompletableFuture<Boolean> initiateWebsocketConnection(String url) {
+    public CompletableFuture<Boolean> initiateWebsocketConnection(String url, boolean sendPings) {
         webSocketFuture = new CompletableFuture<Boolean>();
         webSocket = new FalseWebSocket();
         return webSocketFuture;
+    }
+    
+    @Override
+    public CompletableFuture<Boolean> initiateWebsocketConnection(String url) {
+        return initiateWebsocketConnection(url, false);
     }
     
     /**
@@ -100,6 +107,7 @@ public class FalseClient extends ExtensionWebSocketClient {
      *          message has been sent.
      */
     public byte[] getLastMessageAsBytes() {
+        acknowledgeNotification();
         return ((FalseWebSocket) webSocket).getMessage();
     }
     
@@ -110,6 +118,7 @@ public class FalseClient extends ExtensionWebSocketClient {
      * @return  The last message sent by the client as a Map, or null if no message has been sent yet.
      */
     public Map getLastMessageAsMap() {
+        acknowledgeNotification();
         try {
             return mapper.readValue(((FalseWebSocket) webSocket).getMessage(), Map.class);
         } catch(IOException e) {
@@ -125,7 +134,9 @@ public class FalseClient extends ExtensionWebSocketClient {
      * @throws  IOException if the message could not be interpreted as a Response. This is most likely to occur if
      *          the last message was not a Response.
      */
-    public Response getLastMessageAsResponse() throws IOException{
+    public Response getLastMessageAsResponse() throws IOException {
+        acknowledgeNotification();
+    
         byte[] bytes = ((FalseWebSocket) webSocket).getMessage();
         if (bytes == null) {
             return null;
@@ -142,7 +153,8 @@ public class FalseClient extends ExtensionWebSocketClient {
      * @throws  IOException if the message could not be interpreted as a ExtensionServiceMessage. This is most
      *          likely to occur if the last message was not a ExtensionServiceMessage.
      */
-    public ExtensionServiceMessage getLastMessageAsExtSvcMsg() throws IOException{
+    public ExtensionServiceMessage getLastMessageAsExtSvcMsg() throws IOException {
+        acknowledgeNotification();
         byte[] bytes = ((FalseWebSocket) webSocket).getMessage();
         if (bytes == null) {
             return null;
