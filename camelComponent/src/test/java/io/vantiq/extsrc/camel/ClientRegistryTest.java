@@ -1,11 +1,13 @@
 package io.vantiq.extsrc.camel;
 
+import static org.assertj.core.api.Fail.fail;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 
 import io.vantiq.extjsdk.ExtensionWebSocketClient;
 import io.vantiq.extsrc.camel.utils.ClientRegistry;
+import org.apache.camel.CamelException;
 import org.junit.After;
 import org.junit.Test;
 
@@ -98,6 +100,44 @@ public class ClientRegistryTest {
         buildAndVerify(SOURCE_NAME, SERVER_URL_W_SPACES, false);
         
         assertEquals("Known client count", 1, ClientRegistry.getKnownClientCount());
+    }
+    
+    @Test
+    public void testUriAdjustment() {
+        String newUrl = null;
+        try {
+            newUrl = VantiqEndpoint.adjustVantiqTarget("vantiq://somewhere", false);
+            assert newUrl.equals("https://somewhere");
+    
+            newUrl = VantiqEndpoint.adjustVantiqTarget("vantiq://somewhere", false);
+            assert newUrl.equals("https://somewhere");
+    
+            newUrl = VantiqEndpoint.adjustVantiqTarget("https://internal.vantiq.com", false);
+            assert newUrl.equals("https://internal.vantiq.com");
+    
+            newUrl = VantiqEndpoint.adjustVantiqTarget("https://internal.vantiq.com", true);
+            assert newUrl.equals("https://internal.vantiq.com");
+    
+            newUrl = VantiqEndpoint.adjustVantiqTarget("vantiq://internal.vantiq.com", false);
+            assert newUrl.equals("https://internal.vantiq.com");
+    
+            newUrl = VantiqEndpoint.adjustVantiqTarget("vantiq://internal.vantiq.com", true);
+            assert newUrl.equals("http://internal.vantiq.com");
+    
+            newUrl = VantiqEndpoint.adjustVantiqTarget("https://vantiqnode:8080", false);
+            assert newUrl.equals("https://vantiqnode:8080");
+    
+            newUrl = VantiqEndpoint.adjustVantiqTarget("https://vantiqnode:8080", true);
+            assert newUrl.equals("https://vantiqnode:8080");
+    
+            newUrl = VantiqEndpoint.adjustVantiqTarget("vantiq://vantiqnode:8080", false);
+            assert newUrl.equals("https://vantiqnode:8080");
+    
+            newUrl = VantiqEndpoint.adjustVantiqTarget("vantiq://vantiqnode:8080", true);
+            assert newUrl.equals("http://vantiqnode:8080");
+        } catch (CamelException ce) {
+            fail("Could not complete adjustment for URI: " + newUrl, ce);
+        }
     }
     
     public void buildAndVerify(String srcName, String target, boolean shouldBeCreated) {

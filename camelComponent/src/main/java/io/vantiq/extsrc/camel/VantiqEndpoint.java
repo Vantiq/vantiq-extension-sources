@@ -81,7 +81,7 @@ public class VantiqEndpoint extends DefaultEndpoint {
     
     private String correctedVantiqUrl = null;
     private boolean started = false;
-    private String startStopLock = "startStopLock";
+    private final String startStopLock = "startStopLock";
     private boolean runningInConnector = false;
     
     @Getter
@@ -187,13 +187,8 @@ public class VantiqEndpoint extends DefaultEndpoint {
             try {
                 log.debug("Attempting to connect to URL: {} from {}", getEndpointBaseUri(), getEndpointUri());
                 String vtq = getEndpointBaseUri();
-                String protocol = "https";
-                if (noSsl) {
-                    // This is primarily for use in development.  But supported...
-                    protocol = "http";
-                }
-                correctedVantiqUrl = vtq.replace("vantiq", protocol);
-                log.trace("Fixed-up Vantiq URL: {}", correctedVantiqUrl);
+               
+                correctedVantiqUrl = adjustVantiqTarget(vtq, noSsl);
                 utils.provideServerConfig(correctedVantiqUrl, accessToken, sourceName, sendPings, null);
                 buildEndpointName();
         
@@ -306,6 +301,41 @@ public class VantiqEndpoint extends DefaultEndpoint {
             throw new IllegalArgumentException(TARGET_SERVER_PROPERTY_NAME + " from server config file is invalid",
                                                mue);
         }
+    }
+    
+    /**
+     * Adjust Vantiq URL.
+     *
+     * If using a standard vantiq:// connection, set the adjusted URL to a more reasonable protocol.  If the URL does
+     * not have a scheme of "vantiq", then leave it alone.
+     *
+     * @param baseUrl String the baseURL to adjusted
+     * @param noSsl boolean indicating whether we've been told to skip the SSL handling
+     *                          (i.e.. use http rather than https)
+     * @return
+     */
+    public static String adjustVantiqTarget(String baseUrl, boolean noSsl) throws CamelException {
+        String correctedUrl = null;
+        String protocol = "https";
+        if (noSsl) {
+            // This is used in development or edge servers.
+            protocol = "http";
+        }
+        try {
+            URI vtqUri = new URI(baseUrl);
+            if (vtqUri.getScheme().equalsIgnoreCase("vantiq")) {
+                vtqUri = new URI(protocol, null, vtqUri.getHost(), vtqUri.getPort(), vtqUri.getPath(), null,
+                                 null);
+                correctedUrl = vtqUri.toASCIIString();
+            } else {
+                correctedUrl = baseUrl;
+            }
+            log.trace("Adjusted Vantiq URL: {} (from {})", correctedUrl, baseUrl);
+        } catch (URISyntaxException uriSE) {
+            throw new CamelException("Unable to connect to provided URI: " + baseUrl +
+                                             " (adjusted: " + correctedUrl + ")", uriSE);
+        }
+        return correctedUrl;
     }
     
     @Override

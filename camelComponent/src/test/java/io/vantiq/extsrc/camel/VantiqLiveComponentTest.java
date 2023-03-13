@@ -434,7 +434,6 @@ public class VantiqLiveComponentTest extends CamelTestSupport {
         sourceDef.put("name", testSourceName);
         sourceDef.put("type", SRC_IMPL_TYPE);
         sourceDef.put("active", "true");
-        sourceDef.put("direction", "BOTH");
         sourceDef.put("config", new LinkedHashMap<String, Object>());
     
         VantiqResponse insertResponse = vantiq.insert("system.sources", sourceDef);
@@ -454,7 +453,6 @@ public class VantiqLiveComponentTest extends CamelTestSupport {
         sourceDef.put("name", testQuerySourceName);
         sourceDef.put("type", SRC_IMPL_TYPE);
         sourceDef.put("active", "true");
-        sourceDef.put("direction", "BOTH");
         sourceDef.put("config", new LinkedHashMap<String, Object>());
         
         VantiqResponse insertResponse = vantiq.insert("system.sources", sourceDef);
