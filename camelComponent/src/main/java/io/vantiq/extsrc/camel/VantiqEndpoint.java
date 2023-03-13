@@ -307,12 +307,12 @@ public class VantiqEndpoint extends DefaultEndpoint {
      * Adjust Vantiq URL.
      *
      * If using a standard vantiq:// connection, set the adjusted URL to a more reasonable protocol.  If the URL does
-     * not have a scheme of "vantiq", then leave it alone.
+     * not have a scheme of "vantiq", then leave it alone. No adjustment is necessary
      *
-     * @param baseUrl String the baseURL to adjusted
+     * @param baseUrl String the baseURL to be adjusted
      * @param noSsl boolean indicating whether we've been told to skip the SSL handling
-     *                          (i.e.. use http rather than https)
-     * @return
+     *                          (i.e.,  use http rather than https).  Only applies if we're adjusting the URL
+     * @return String adjusted (if appropriate) URL
      */
     public static String adjustVantiqTarget(String baseUrl, boolean noSsl) throws CamelException {
         String correctedUrl = null;
