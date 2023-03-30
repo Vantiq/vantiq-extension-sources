@@ -396,6 +396,35 @@ public class VantiqComponentResolverTest extends CamelTestSupport {
             + "        - to:\n"
             + "            uri: \"mock:result\"\n";
     
+    public static final String ROUTE_WITH_BEAN = "\n"
+            + "- route: \n"
+            + "    id: \"EventHub Sink\" \n"
+            + "    from: \n"
+            + "        uri: \"direct:start\" \n"
+            + "        steps: \n"
+            + "        - choice: \n"
+            + "            when: \n"
+            + "            - simple: \"${header[partition-id]}\" \n"
+            + "              steps: \n"
+            + "              - set-header: \n"
+            + "                  name: CamelAzureEventHubsPartitionId \n"
+            + "                  simple: \"${header[partition-id]}\" \n"
+            + "            - simple: \"${header[ce-partition-id]}\" \n"
+            + "              steps: \n"
+            + "              - set-header: \n"
+            + "                  name: CamelAzureEventHubsPartitionId \n"
+            + "                  simple: \"${header[ce-partition-id]}\" \n"
+            + "        - setBody: \n"
+            + "            simple: \"${body.message}\" \n"
+            + "        - marshal: \n"
+            + "            json: \n"
+            + "              library: jackson \n"
+            + "        - to: \n"
+            + "             uri: \"azure-eventhubs://vantiq-test/vantiqNotReallyThere\" \n"
+            + "             parameters: \n"
+            + "                 sharedAccessName: \"someRandomKey\" \n"
+            + "                 sharedAccessKey: \"RAW(MY TOKEN)\" \n";
+    
     @Test
     public void testStartRunLoadedComponentsFromXmlText() throws Exception {
         FileUtil.forceDelete(cache);    // Clear the cache
@@ -411,6 +440,14 @@ public class VantiqComponentResolverTest extends CamelTestSupport {
         setUseRouteBuilder(false);
     
         performLoadAndRunTest(YAML_ROUTE, "yaml", null);
+    }
+    
+    @Test
+    public void testDiscoverBeanRoute() throws Exception {
+        FileUtil.forceDelete(cache);
+        setUseRouteBuilder(false);
+        
+        performLoadAndRunTest(ROUTE_WITH_BEAN, "yaml", null, true);
     }
     
     /**
@@ -506,6 +543,11 @@ public class VantiqComponentResolverTest extends CamelTestSupport {
     
     public void performLoadAndRunTest(String content, String contentType,
                                       List<Map<String, Object>> compToInit) throws Exception {
+        performLoadAndRunTest(content, contentType, compToInit, false);
+    }
+    
+    public void performLoadAndRunTest(String content, String contentType,
+                                      List<Map<String, Object>> compToInit, boolean defeatVerify) throws Exception {
         // To do this test, we'll create a callable that the test method will call. In this case, the callable "sends"
         // message to the route which, in turn, makes the dig call to lookup a monkey.  We verify that the expected
         // results is presented.
@@ -529,8 +571,10 @@ public class VantiqComponentResolverTest extends CamelTestSupport {
     
             // At this point, the route is running -- let's verify that it works.
     
-            assert verifyOperation.apply(runnerContext, QUERY_MONKEY, RESPONSE_MONKEY);
-            assert verifyOperation.apply(runnerContext, QUERY_AARDVARK, RESPONSE_AARDVARK);
+            if (!defeatVerify) {
+                assert verifyOperation.apply(runnerContext, QUERY_MONKEY, RESPONSE_MONKEY);
+                assert verifyOperation.apply(runnerContext, QUERY_AARDVARK, RESPONSE_AARDVARK);
+            }
         }
         
         while (!openedRunner.isStopped()) {

@@ -553,9 +553,9 @@ public class VantiqComponentDiscoveryTest extends CamelTestSupport {
             + "            json: \n"
             + "              library: jackson \n"
             + "        - to: \n"
-            + "             uri: \"azure-eventhubs://mmunro-test/mmunrohub\" \n"
+            + "             uri: \"azure-eventhubs://vantiq-test/vantiqNotReallyThere\" \n"
             + "             parameters: \n"
-            + "                 sharedAccessName: \"mmunroHubSAS\" \n"
+            + "                 sharedAccessName: \"someRandomKey\" \n"
             + "                 sharedAccessKey: \"RAW(MY TOKEN)\" \n";
     
             // YAML support needs a camel context.  So provide oe during setup...
