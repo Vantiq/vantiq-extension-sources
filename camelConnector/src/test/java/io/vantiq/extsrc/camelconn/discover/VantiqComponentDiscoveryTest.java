@@ -8,8 +8,10 @@
 
 package io.vantiq.extsrc.camelconn.discover;
 
+import org.apache.camel.CamelContext;
 import org.apache.camel.ExtendedCamelContext;
 import org.apache.camel.builder.RouteBuilder;
+import org.apache.camel.dsl.yaml.YamlRoutesBuilderLoader;
 import org.apache.camel.impl.engine.DefaultComponentResolver;
 import org.apache.camel.spi.ComponentResolver;
 import org.apache.camel.spi.Resource;
@@ -199,10 +201,17 @@ public class VantiqComponentDiscoveryTest extends CamelTestSupport {
         performDiscoveryTest(rb);
     }
     
+    @Test
+    public void testBeansInRouteDiscovery() throws Exception {
+        RouteBuilder rb = new BeanIncludingRoutes(context);
+        performDiscoveryTest(rb);
+    }
+    
     void performDiscoveryTest(RouteBuilder rb) throws Exception {
         assert rb instanceof TestExpectations;
         setUseRouteBuilder(false);
         CamelDiscovery discoverer = new CamelDiscovery();
+        
         Map<String, Set<String>> discResults = discoverer.performComponentDiscovery(rb);
         
         List<String> expectedCTL = ((TestExpectations) rb).getExpectedComponentsToLoad();
@@ -416,6 +425,25 @@ public class VantiqComponentDiscoveryTest extends CamelTestSupport {
             return builder;
         }
     }
+    
+    private static class YamlRouteBuilder {
+        
+        RouteBuilder builder;
+        
+        YamlRouteBuilder(CamelContext ctx, String content) throws Exception {
+            
+            Resource resource = ResourceHelper.fromString("in-memory.yml", content);
+            try (YamlRoutesBuilderLoader ymlr = new YamlRoutesBuilderLoader()) {
+                ymlr.setCamelContext(ctx);
+                builder = (RouteBuilder) ymlr.loadRoutesBuilder(resource);
+            }
+        }
+    
+        public RouteBuilder getRouteBuilder() {
+            return builder;
+        }
+    
+    }
     private static class SimpleXmlRoutes extends RouteBuilder implements TestExpectations {
     
         @Override
@@ -472,6 +500,66 @@ public class VantiqComponentDiscoveryTest extends CamelTestSupport {
                     + "        </route>"
                     + "    </routes>";
             RouteBuilder rb = new XmlRouteBuilder(content).getRouteBuilder();
+            rb.configure();
+            this.setRouteCollection(rb.getRouteCollection());
+        }
+    }
+    
+    private static class BeanIncludingRoutes extends RouteBuilder implements TestExpectations {
+    
+        CamelContext ctx;
+        BeanIncludingRoutes(CamelContext ctx) {
+            this.ctx = ctx;
+        }
+        @Override
+        public List<String> getExpectedComponentsToLoad() {
+            return List.of("azure-eventhubs");
+        }
+    
+        @Override
+        public List<String> getExpectedSystemComponents() {
+            return List.of("bean");
+        }
+    
+        @Override
+        public List<String> getExpectedDataFormatsToLoad() {
+            return List.of("jackson");
+        }
+    
+    
+        @Override
+        public void configure() throws Exception {
+            String content = ""
+            + "- route: \n"
+            + "    id: \"EventHub Sink\" \n"
+            + "    from: \n"
+            + "        uri: \"vantiq://server.config\" \n"
+            + "        steps: \n"
+            + "        - choice: \n"
+            + "            when: \n"
+            + "            - simple: \"${header[partition-id]}\" \n"
+            + "              steps: \n"
+            + "              - set-header: \n"
+            + "                  name: CamelAzureEventHubsPartitionId \n"
+            + "                  simple: \"${header[partition-id]}\" \n"
+            + "            - simple: \"${header[ce-partition-id]}\" \n"
+            + "              steps: \n"
+            + "              - set-header: \n"
+            + "                  name: CamelAzureEventHubsPartitionId \n"
+            + "                  simple: \"${header[ce-partition-id]}\" \n"
+            + "        - setBody: \n"
+            + "            simple: \"${body.message}\" \n"
+            + "        - marshal: \n"
+            + "            json: \n"
+            + "              library: jackson \n"
+            + "        - to: \n"
+            + "             uri: \"azure-eventhubs://mmunro-test/mmunrohub\" \n"
+            + "             parameters: \n"
+            + "                 sharedAccessName: \"mmunroHubSAS\" \n"
+            + "                 sharedAccessKey: \"RAW(MY TOKEN)\" \n";
+    
+            // YAML support needs a camel context.  So provide oe during setup...
+            RouteBuilder rb = new YamlRouteBuilder(ctx, content).getRouteBuilder();
             rb.configure();
             this.setRouteCollection(rb.getRouteCollection());
         }
