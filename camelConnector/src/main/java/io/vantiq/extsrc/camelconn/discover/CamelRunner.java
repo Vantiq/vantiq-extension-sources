@@ -479,7 +479,12 @@ public class CamelRunner extends MainSupport implements Closeable {
      * @throws Exception for errors in loading the routes.
      */
     protected RouteBuilder loadRouteFromText(String specification, String specificationType) throws Exception {
-        log.debug("Loading route (specificationType {}): {}", specificationType, specification);
+        log.debug("Loading route from {} specificationType", specificationType);
+        if (log.isTraceEnabled()) {
+            // Dump route spec out here only under trace.  Camel may have substituted key values and we don't want
+            // these in the log files
+            log.trace("Loading route (specificationType {}): {}", specificationType, specification);
+        }
         ExtendedCamelContext extendedCamelContext = camelContext.adapt(ExtendedCamelContext.class);
         RoutesLoader loader = extendedCamelContext.getRoutesLoader();
         Resource resource = ResourceHelper.fromString("in-memory." + specificationType, specification);
