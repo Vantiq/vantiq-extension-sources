@@ -20,6 +20,7 @@ import io.vantiq.extsrc.camel.utils.ClientRegistry;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.camel.CamelContext;
 import org.apache.camel.CamelException;
 import org.apache.camel.Category;
 import org.apache.camel.Consumer;
@@ -84,6 +85,8 @@ public class VantiqEndpoint extends DefaultEndpoint {
     private final String startStopLock = "startStopLock";
     private boolean runningInConnector = false;
     
+    private boolean consumerCreated = false;
+    
     @Getter
     private String endpointName;
     
@@ -138,7 +141,14 @@ public class VantiqEndpoint extends DefaultEndpoint {
     public Consumer createConsumer(Processor processor) throws Exception {
         log.info("VantiqEndpoint creating consumer for uri: {} with sourceName: {}, accessToken: {}",
                 getEndpointBaseUri(), sourceName, accessTokenForLog());
+        if (consumerCreated) {
+            log.error("More than one consumer created for this endpoint. Check that this endpoint's consumer is" +
+                              " not used in multiple places. That said, sometimes this error result from defining " +
+                              "routes without ids.  Please add ids to any routes in use and retry.");
+        }
+        CamelContext ctx = getCamelContext();
         Consumer consumer = new VantiqConsumer(this, processor);
+        consumerCreated = true;
         configureConsumer(consumer);
         return consumer;
     }
