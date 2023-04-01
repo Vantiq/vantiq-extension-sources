@@ -20,7 +20,6 @@ import io.vantiq.extsrc.camel.utils.ClientRegistry;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.camel.CamelContext;
 import org.apache.camel.CamelException;
 import org.apache.camel.Category;
 import org.apache.camel.Consumer;
@@ -146,7 +145,6 @@ public class VantiqEndpoint extends DefaultEndpoint {
                               " not used in multiple places. That said, sometimes this error result from defining " +
                               "routes without ids.  Please add ids to any routes in use and retry.");
         }
-        CamelContext ctx = getCamelContext();
         Consumer consumer = new VantiqConsumer(this, processor);
         consumerCreated = true;
         configureConsumer(consumer);
