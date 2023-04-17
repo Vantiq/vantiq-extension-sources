@@ -12,6 +12,8 @@ plugins {
 mainClassName = 'io.vantiq.extsrc.camelconn.connector.CamelMain'
 
 startScripts{
+    // Don't neeed all the class path stuff here since we've injected it into th main jar's manifest
+    classpath = jar.outputs.files
     doLast{
         def windowsScriptFile = file getWindowsScript()
         def unixScriptFile = file getUnixScript()
@@ -76,6 +78,19 @@ dependencies {
     testImplementation "dnsjava:dnsjava:${dnsJavaVersion}"
     testImplementation("junit:junit:${junitVersion}")
     testRuntimeOnly("org.junit.vintage:junit-vintage-engine:${junitVintageEngineVersion}")
+}
+
+jar {
+    doFirst {
+        // Add all the jar files to this manifest here.  This allows us to avoid having to set a gigantic classpath,
+        // which is known to fail on windows due to command line length limits.
+        manifest {
+            attributes (
+                "Main-Class": "${mainClassName}",
+                "Class-Path": configurations.runtimeClasspath.files.collect { it.name }.join(" ")
+            )
+        }
+    }
 }
 
 group = 'io.vantiq.extsrc.camelconnector'
