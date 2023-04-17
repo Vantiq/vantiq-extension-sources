@@ -11,6 +11,7 @@ import java.util.Map;
 import io.vantiq.extsrc.objectRecognition.ObjRecTestBase;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import io.vantiq.extsrc.objectRecognition.NoSendORCore;
@@ -62,6 +63,7 @@ public class TestNetworkStreamRetriever extends ObjRecTestBase {
     }
 
     @Test
+    @Ignore("Test camera seems to have disappeared.  Need a more reliable strategy for these things")
     public void testRtspCamera() {
         // Don't fail if camera's offline...
         assumeTrue("Could not open requested url", isIpAccessible(IP_CAMERA_URL));
