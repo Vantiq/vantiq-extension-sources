@@ -12,7 +12,7 @@ plugins {
 mainClassName = 'io.vantiq.extsrc.camelconn.connector.CamelMain'
 
 startScripts{
-    // Don't neeed all the class path stuff here since we've injected it into th main jar's manifest
+    // Use shorter classpath here. We've injected the complete list into the main jar file's manifest.
     classpath = jar.outputs.files
     doLast{
         def windowsScriptFile = file getWindowsScript()
@@ -82,8 +82,10 @@ dependencies {
 
 jar {
     doFirst {
-        // Add all the jar files to this manifest here.  This allows us to avoid having to set a gigantic classpath,
-        // which is known to fail on windows due to command line length limits.
+        // Add all the jar files to the manifest here.  This allows us to avoid having to set a huge classpath,
+        // which is known to fail on windows due to command line length limits. The failure depends upon the
+        // installation location (since the "app path" is included, but by setting it here, we avoid that issue
+        // completely.
         manifest {
             attributes (
                 "Main-Class": "${mainClassName}",
