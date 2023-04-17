@@ -84,7 +84,7 @@ jar {
     doFirst {
         // Add all the jar files to the manifest here.  This allows us to avoid having to set a huge classpath,
         // which is known to fail on windows due to command line length limits. The failure depends upon the
-        // installation location (since the "app path" is included, but by setting it here, we avoid that issue
+        // installation location (since the "app path" is included), but by setting it here, we avoid that issue
         // completely.
         manifest {
             attributes (
