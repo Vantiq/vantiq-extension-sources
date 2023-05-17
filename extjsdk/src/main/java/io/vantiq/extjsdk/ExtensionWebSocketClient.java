@@ -778,6 +778,10 @@ public class ExtensionWebSocketClient {
                             continue;
                         } else {
                             log.error("Failed to connect within 10 seconds");
+                            // We could not reconnect to the source - close the connection which also triggers
+                            // the extension source close handler so it can decide what to do next (e.g., forever
+                            // retry connection, exit extension source)
+                            this.close();
                         }
                     } else {
                         isReconnected = true;
