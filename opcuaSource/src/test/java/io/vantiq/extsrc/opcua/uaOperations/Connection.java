@@ -46,7 +46,8 @@ public class Connection extends OpcUaTestBase {
     public static final List<String> serverHosedStatus =
             Arrays.asList(
                     "Bad_ConnectionClosed",
-                    "Bad_ServiceUnsupported"
+                    "Bad_ServiceUnsupported",
+                    "Bad_TooManySessions"
             );
 
     @Test
@@ -794,7 +795,12 @@ public class Connection extends OpcUaTestBase {
                 log.info("Making socket connection to {}:{}", host, port);
 
                 // We don't use the result so we won't save it.  We just care that it completes w/o error
-                new Socket(host, port);
+                // We'll use a try-with-resources block here to ensure that the socket is closed...
+                //noinspection EmptyTryBlock
+                try (Socket s = new Socket(host, port)) {
+                    // Ignore
+                }
+                log.trace("Socket connection to {}:{} succeeded", host, port);
                 // If we get this far, the server has accepted the connection so there's something out there.
                 // We'll assume it's our OPC server & let the test proceed
             } catch (UnknownHostException | URISyntaxException badURL) {
@@ -811,26 +817,29 @@ public class Connection extends OpcUaTestBase {
             workingServers += 1;
             opcConfig.put(OpcConstants.CONFIG_DISCOVERY_ENDPOINT, discEP);
 
-            if (useServerAddress && Utils.OPC_PUBLIC_SERVER_1.equals(discEP)) {
+            if (useServerAddress) {
                 opcConfig.put(OpcConstants.CONFIG_SERVER_ENDPOINT, discEP);
             }
 
             try {
+                log.trace("Attempting connection to {}", discEP);
                 performConnection(config, runAsync, startProcessOnly);
                 successfulConnections += 1;
+                log.debug("Connection to {} OK", discEP);
             } catch (ExecutionException e) {
                 if (e.getCause() instanceof UaException) {
                     UaException uae = (UaException) e.getCause();
-
 
                     log.error("Got error: {}", uae.getStatusCode().toString());
                     // Unfortunately, not all errors are reported reasonably.  So we'll look for our "acceptable errors"
                     // in the returned strings...
 
                     boolean okError = false;
+                    String foundError = uae.getStatusCode().toString();
                     for (String err: serverHosedStatus) {
-                        okError = uae.getStatusCode().toString().contains(err);
+                        okError = foundError.contains(err);
                         if (okError) {
+                            log.debug("Found acceptable error ({}) connecting to {}", foundError, discEP);
                             break;
                         }
                     }

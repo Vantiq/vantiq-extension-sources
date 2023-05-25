@@ -34,24 +34,36 @@ public class Utils {
     // This list is gathered from the somewhat maintained Wiki page:
     // https://github.com/node-opcua/node-opcua/wiki/publicly-available-OPC-UA-Servers-and-Clients
     //
+    // We test against a number of servers because the different servers, configurations, and software used
+    // have shown themselves to have various idiosyncrasies around which we have to work.
+    //
     // At present, we'll check the "write value" stuff only on our internal server.
 
-    public static final String OPC_PUBLIC_SERVER_1  = "opc.tcp://opcua.rocks:4840";    // Different vendors servers...
-    public static final String OPC_PUBLIC_SERVER_2  = "opc.tcp://opcuaserver.com:48484";    // Different vendors servers...
+    // Leaving some things defined but not using them.  They are still listed in the "publicly available"
+    // page show above, but are not responding.  Leaving so we can reinstate them easily should we so desire.
+    public static final String OPC_PUBLIC_SERVER_1  = "opc.tcp://opcua.rocks:4840";
+    public static final String OPC_PUBLIC_SERVER_2  = "opc.tcp://opcuaserver.com:48484";
     public static final String OPC_PUBLIC_SERVER_3  = "opc.tcp://opcua-demo.factry.io:51210";
     public static final String OPC_PUBLIC_SERVER_4  = "opc.tcp://commsvr.com:51234/UA/CAS_UA_Server";
     public static final String OPC_PUBLIC_SERVER_5  = "opc.tcp://milo.digitalpetri.com:62541/milo";
     public static final String OPC_PUBLIC_SERVER_6  = "opc.tcp://opcua.123mc.com:4840/";
     public static final String OPC_PUBLIC_SERVER_7  = "opc.tcp://mfactorengineering.com:4840";
-
+    public static final String OPC_PUBLIC_SERVER_8 = "opc.tcp://opcua.machinetool.app:4840";
+    public static final String OPC_PUBLIC_SERVER_9 = "opc.tcp://opcua.umati.app:4840";
+    public static final String OPC_PUBLIC_SERVER_10 = "opc.tcp://opc.mtconnect.org:4840";
+    
+    
     public static final List<String> OPC_PUBLIC_SERVERS = Arrays.asList(
-            OPC_PUBLIC_SERVER_1,
-            OPC_PUBLIC_SERVER_2,
+//            OPC_PUBLIC_SERVER_1,
+//            OPC_PUBLIC_SERVER_2,
             OPC_PUBLIC_SERVER_3,
-            OPC_PUBLIC_SERVER_4,  // not responding
+//            OPC_PUBLIC_SERVER_4,  // not responding
             OPC_PUBLIC_SERVER_5,  // returns that the service is unsupported.
             OPC_PUBLIC_SERVER_6,
-            OPC_PUBLIC_SERVER_7     // Flaky support -- sometimes times out after discovery, sometimes before
+            OPC_PUBLIC_SERVER_7, // Flaky support -- sometimes times out after discovery, sometimes before
+            OPC_PUBLIC_SERVER_8,
+            OPC_PUBLIC_SERVER_9,
+            OPC_PUBLIC_SERVER_10
     );
 
     public static final String OPC_INPROCESS_SERVER = "opc.tcp://localhost:12686/milo";
