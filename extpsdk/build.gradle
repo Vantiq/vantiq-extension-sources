@@ -1,7 +1,7 @@
 import org.gradle.internal.os.OperatingSystem
 
 plugins {
-    id 'ru.vyarus.use-python' version '2.3.0'
+    id 'ru.vyarus.use-python' version '3.0.0'
 }
 
 ext {
@@ -11,7 +11,7 @@ ext {
         pypi_repo = 'testpypi'
     }
     if (!project.rootProject.hasProperty('vantiqConnectorSdkVersion')) {
-        vantiqConnectorSdkVersion = '1.1.12'
+        vantiqConnectorSdkVersion = '1.1.13'
     }
 }
 
@@ -20,6 +20,9 @@ python {
     pythonBinary
     // path to python binary (global by default)
     pythonPath
+    // Let pip parse the requirements to txt file
+    // use-python plugin has issues with more complex requirements.txt specifications
+    requirements.strict = false
     // additional environment variables, visible for all python commands
     // Note: We specify the directory paths to search in the pytest.ini file
     environment = [:]
@@ -55,23 +58,22 @@ python {
     // copy virtualenv instead of symlink (when created)
     envCopy = false
 
-    pip 'pip:22.0.4'
+    pip 'pip:23.1.2'
 
-    // Product use
-    pip 'websockets:10.2'
+    // For product runtime
+    pip 'websockets:11.0.3'
     pip 'jprops:2.0.2'
 
     // For testing
-    pip 'pytest:6.2.5'
-    pip 'pytest-asyncio:0.18.3'
-    pip 'pytest-pythonpath:0.7.4'
+    pip 'pytest:7.3.1'
+    pip 'pytest-asyncio:0.21.0'
     pip 'pytest-timeout:2.1.0'
-    pip 'pytest-html:3.1.1'   // To generate html reports from pytest cases
+    pip 'pytest-html:3.2.0'   // To generate html reports from pytest cases
 
     // For build generation
-    pip 'build:0.7.0'  // For building the distribution
+    pip 'build:0.10.0'  // For building the distribution
     // For publication
-    pip 'twine:4.0.0'
+    pip 'twine:4.0.2'
 }
 
 task pytest(type: PythonTask) {
