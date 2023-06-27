@@ -347,7 +347,7 @@ public class VantiqComponentTest extends CamelTestSupport {
                 uniqueMsgs.add(((String) ((Map) msg).get(TEST_MSG_KEY)));
             } else if (msg instanceof String) {
                 assertEquals((String) msg, extraTestMsgs.get(0));
-            } else if (msg instanceof List) {
+            } else {
                 assertEquals((List) msg, extraTestMsgs.get(1));
             }
         });
