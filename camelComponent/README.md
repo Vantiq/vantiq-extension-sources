@@ -81,7 +81,11 @@ your Source Implementation) as the Source Type. No configuration information is 
 ## Messages from the Source
 
 Messages that are sent to the component will arrive in a Camel Exchange as a Java Map, where the keys in the map
-correspond to the property names in the object sent from Vantiq.  Messages sent to Vantiq from the component will
+correspond to the property names in the object sent from Vantiq. If desired, you change this behavior
+by adding the `consumerOutputJson` component endpoint option (see below) with a value of `true`.
+When so specified, messages sent to a Vantiq consumer will arrive in a Camel Exchange as a JSON string.
+
+Messages sent to Vantiq from the component will
 arrive as Vail objects, where the property names correspond to the Map keys.
 
 ## Exchanges to Vantiq
@@ -96,7 +100,7 @@ in Json format will be accepted as well.
 The URI for the Vantiq connection takes the following form:
 
 ```
-    vantiq://host[:port]?sourceName=<source name>&accessToken=<access token>[&sendPings=<boolean>][&failedMessageQueueSize=<int>]
+    vantiq://host[:port]?sourceName=<source name>&accessToken=<access token>[&sendPings=<boolean>][&failedMessageQueueSize=<int>][&consumerOutputJson=<boolean>]
 ```
 
 ### Component Endpoint Options
@@ -109,6 +113,7 @@ The endpoint options apply to producer and consumer endpoints.  The following ar
 * **accessToken** is the access token used for the connection
 * **sendPings** [optional] a boolean value indicating whether to periodically ping the Vantiq server (default is false)
 * **failedMessageQueueSize** [optional] an integer value indicating how many messages to hold for sending when the connection to the Vantiq server fails.
+* **consumerOutputJson** [optional] a boolean value indicating whether messages sent from Vantiq to the Vantiq component (_i.e._, a Vantiq Consumer) should be put into an Apache Camel Exchange as a JSON message.  If false, messages are put into an exchange as a Java Map.
 
 For example, to create an Apache Camel application that receives messages from a Vantiq system at `vantiq.example.com`
 from source `exampleSource` and access token `FD10s0x...`, we would use something like the following:
