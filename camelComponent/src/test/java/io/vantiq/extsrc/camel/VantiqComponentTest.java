@@ -280,21 +280,28 @@ public class VantiqComponentTest extends CamelTestSupport {
         assert endp.myClient.getListener() instanceof TestListener;
         TestListener tl = (TestListener) endp.myClient.getListener();
         
-        int expectedMsgCount = 10;
+        int mapMsgCount = 10;
+        List<Object> extraTestMsgs = List.of("I am a test string", List.of(Map.of("test", "message", "another", "test" +
+                " message")));
+    
         MockEndpoint mocked = getMockEndpoint(routeEndUri);
-        mocked.expectedMinimumMessageCount(expectedMsgCount);
+        mocked.expectedMinimumMessageCount(mapMsgCount + extraTestMsgs.size());
         VantiqEndpoint ve = getMandatoryEndpoint(vantiqEndpointUri, VantiqEndpoint.class);
         assert ve != null;
         ObjectMapper mapper = new ObjectMapper();
         WebSocket ws = new FalseWebSocket();
-        for (int i = 0; i < expectedMsgCount; i++) {
+        for (int i = 0; i < mapMsgCount + extraTestMsgs.size(); i++) {
             ExtensionServiceMessage ep = new ExtensionServiceMessage(vantiqEndpointUri);
             ep.op = ExtensionServiceMessage.OP_PUBLISH;
             ep.resourceName = "SOURCES";
             ep.resourceId = testSourceName;
-            HashMap<String, Object> msg = new HashMap<>();
-            msg.put(TEST_MSG_KEY, TEST_MSG_PREAMBLE + i);
-            ep.object = msg;
+            if (i < mapMsgCount) {
+                HashMap<String, Object> msg = new HashMap<>();
+                msg.put(TEST_MSG_KEY, TEST_MSG_PREAMBLE + i);
+                ep.object = msg;
+            } else {
+                ep.object = extraTestMsgs.get(i - mapMsgCount);
+            }
             
             byte[] msgBytes = mapper.writeValueAsBytes(ep);
             
@@ -305,28 +312,47 @@ public class VantiqComponentTest extends CamelTestSupport {
         // Consumers run in BG threads, so wait a bit for those to finish.
         mocked.await(5L, TimeUnit.SECONDS);
         
-        assertEquals("Mocked service expected vs. actual", expectedMsgCount, mocked.getReceivedCounter());
+        assertEquals("Mocked service expected vs. actual", mapMsgCount + extraTestMsgs.size(),
+                     mocked.getReceivedCounter());
         List<Exchange> exchanges = mocked.getReceivedExchanges();
         Set<String> uniqueMsgs = new HashSet<String>();
+        AtomicInteger msgsReceived = new AtomicInteger();
         exchanges.forEach(exchange -> {
             Object exchangeBody = exchange.getIn().getBody();
             assertNotNull("Null exchange body",  exchangeBody);
             // Verify that we got JSON -- which will manifest here as a String, but we'll verify that we can convert it.
             assertTrue("Vantiq Consumer Output wrong type: " + exchangeBody.getClass().getName(),
                 exchangeBody instanceof String);
-            Map msg = null;
+            msgsReceived.addAndGet(1);
+            Object msg = null;
             try {
                 msg = mapper.readValue((String) exchangeBody, Map.class);
             } catch (JsonProcessingException e) {
-                throw new RuntimeException(e);
+                // Maybe we asked for the wrong type
+                try {
+                    msg = mapper.readValue((String) exchangeBody, String.class);
+                } catch (JsonProcessingException ex) {
+                    try {
+                        msg = mapper.readValue((String) exchangeBody, List.class);
+                    } catch (JsonProcessingException exc) {
+                        throw new RuntimeException(exc);
+                    }
+                }
             }
             assertNotNull("Deserialized msg is null", msg);
-            assert msg.containsKey(TEST_MSG_KEY);
-            assert msg.get(TEST_MSG_KEY) instanceof String;
-            assert ((String) msg.get(TEST_MSG_KEY)).startsWith(TEST_MSG_PREAMBLE);
-            uniqueMsgs.add(((String) msg.get(TEST_MSG_KEY)));
+            if (msg instanceof Map) {
+                assert ((Map) msg).containsKey(TEST_MSG_KEY);
+                assert ((Map) msg).get(TEST_MSG_KEY) instanceof String;
+                assert ((String) ((Map) msg).get(TEST_MSG_KEY)).startsWith(TEST_MSG_PREAMBLE);
+                uniqueMsgs.add(((String) ((Map) msg).get(TEST_MSG_KEY)));
+            } else if (msg instanceof String) {
+                assertEquals((String) msg, extraTestMsgs.get(0));
+            } else if (msg instanceof List) {
+                assertEquals((List) msg, extraTestMsgs.get(1));
+            }
         });
-        assert uniqueMsgs.size() == expectedMsgCount;
+        assert uniqueMsgs.size() == mapMsgCount;
+        assert msgsReceived.get() == mapMsgCount + extraTestMsgs.size();
     }
     
     @Test
