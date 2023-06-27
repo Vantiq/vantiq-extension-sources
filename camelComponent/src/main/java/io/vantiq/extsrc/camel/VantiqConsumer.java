@@ -11,6 +11,8 @@ package io.vantiq.extsrc.camel;
 import static org.apache.camel.ExchangePattern.InOnly;
 import static org.apache.camel.ExchangePattern.InOut;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.vantiq.extjsdk.ExtensionServiceMessage;
 import io.vantiq.extjsdk.ExtensionWebSocketClient;
 import io.vantiq.extjsdk.Handler;
@@ -29,6 +31,8 @@ public class VantiqConsumer extends DefaultConsumer {
     private ExtensionWebSocketClient vantiqClient;
 
     private ExecutorService executorService;
+    
+    ObjectMapper mapper = new ObjectMapper();
     
     public VantiqConsumer(VantiqEndpoint endpoint, Processor processor) {
         super(endpoint, processor);
@@ -92,6 +96,12 @@ public class VantiqConsumer extends DefaultConsumer {
         } else {
             ExtensionServiceMessage message = (ExtensionServiceMessage) msg;
             Object msgBody = message.getObject();
+
+            if (endpoint.isConsumerOutputJson()) {
+                // Convert to JSON output
+               JsonNode jnode =  mapper.convertValue(msgBody, JsonNode.class);
+               msgBody = jnode.toPrettyString();
+            }
     
             // Create an exchange to move our message along.  In the publish case,
             // we have no interest in the result, so we'll allow it to be released when

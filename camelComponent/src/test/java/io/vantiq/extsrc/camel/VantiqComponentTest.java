@@ -16,6 +16,15 @@ import io.vantiq.extjsdk.FalseClient;
 import io.vantiq.extjsdk.FalseWebSocket;
 import io.vantiq.extjsdk.Response;
 import io.vantiq.extjsdk.TestListener;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import okhttp3.WebSocket;
 import okio.ByteString;
 import org.apache.camel.Exchange;
@@ -26,16 +35,6 @@ import org.apache.camel.builder.RouteBuilder;
 import org.apache.camel.component.mock.MockEndpoint;
 import org.apache.camel.test.junit4.CamelTestSupport;
 import org.junit.Test;
-
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.UUID;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
 
 public class VantiqComponentTest extends CamelTestSupport {
     
@@ -59,6 +58,16 @@ public class VantiqComponentTest extends CamelTestSupport {
     private final String vantiqQuerySenderUri = "vantiq://querierdoesntmatter/" +
             "?sourceName=" + testSourceName +
             "&accessToken=" + accessToken;
+    
+    private final String vantiqJsonSenderUri = "vantiq://jsonsenderdoesntmatter/" +
+            "?sourceName=" + testSourceName +
+            "&accessToken=" + accessToken +
+            "&consumerOutputJson=true";
+    
+    private final String vantiqJsonQuerierUri = "vantiq://jsonquerierdoesntmatter/" +
+            "?sourceName=" + testSourceName +
+            "&accessToken=" + accessToken +
+            "&consumerOutputJson=true";
     
     @Test
     public void testVantiqSetup() throws Exception {
@@ -108,6 +117,7 @@ public class VantiqComponentTest extends CamelTestSupport {
             assert testSourceName.equals(lastMsg.get("sourceName"));
             assert lastMsg.containsKey("object");
             assert lastMsg.get("object") instanceof Map;
+            //noinspection unchecked
             Map<String, Object> msg = (Map<String, Object>) lastMsg.get("object");
             assert msg.containsKey("hi");
             assert ((String) msg.get("hi")).contains("mom");
@@ -131,6 +141,7 @@ public class VantiqComponentTest extends CamelTestSupport {
             assert testSourceName.equals(lastMsg.get("sourceName"));
             assert lastMsg.containsKey("object");
             assert lastMsg.get("object") instanceof Map;
+            //noinspection unchecked
             Map<String, Object> msg = (Map<String, Object>) lastMsg.get("object");
             assert msg.containsKey("hi");
             assert ((String) msg.get("hi")).contains("dad");
@@ -152,6 +163,7 @@ public class VantiqComponentTest extends CamelTestSupport {
                 assert testSourceName.equals(lastMsg.get("sourceName"));
                 assert lastMsg.containsKey("object");
                 assert lastMsg.get("object") instanceof Map;
+                //noinspection unchecked
                 Map<String, Object> testMsg = (Map<String, Object>) lastMsg.get("object");
                 assert testMsg.containsKey("hi");
                 assert ((String) testMsg.get("hi")).contains("aki");
@@ -170,6 +182,7 @@ public class VantiqComponentTest extends CamelTestSupport {
         assert testSourceName.equals(lastMsg.get("sourceName"));
         assert lastMsg.containsKey("object");
         assert lastMsg.get("object") instanceof Map;
+        //noinspection unchecked
         Map<String, Object> msg = (Map<String, Object>) lastMsg.get("object");
         assert msg.containsKey("bye");
         assert "mom".equals(msg.get("bye"));
@@ -256,6 +269,67 @@ public class VantiqComponentTest extends CamelTestSupport {
     }
     
     @Test
+    public void testVantiqConsumerOutputJson() throws Exception {
+        
+        // First, grab our test environment.
+        FauxVantiqComponent vc = (FauxVantiqComponent) context.getComponent("vantiq");
+        assert vc != null;
+        // Note that we need to fetch the endpoints by URI since there are more than one of them.
+        FauxVantiqEndpoint endp = (FauxVantiqEndpoint) context.getEndpoint(vantiqJsonSenderUri);
+        
+        assert endp.myClient.getListener() instanceof TestListener;
+        TestListener tl = (TestListener) endp.myClient.getListener();
+        
+        int expectedMsgCount = 10;
+        MockEndpoint mocked = getMockEndpoint(routeEndUri);
+        mocked.expectedMinimumMessageCount(expectedMsgCount);
+        VantiqEndpoint ve = getMandatoryEndpoint(vantiqEndpointUri, VantiqEndpoint.class);
+        assert ve != null;
+        ObjectMapper mapper = new ObjectMapper();
+        WebSocket ws = new FalseWebSocket();
+        for (int i = 0; i < expectedMsgCount; i++) {
+            ExtensionServiceMessage ep = new ExtensionServiceMessage(vantiqEndpointUri);
+            ep.op = ExtensionServiceMessage.OP_PUBLISH;
+            ep.resourceName = "SOURCES";
+            ep.resourceId = testSourceName;
+            HashMap<String, Object> msg = new HashMap<>();
+            msg.put(TEST_MSG_KEY, TEST_MSG_PREAMBLE + i);
+            ep.object = msg;
+            
+            byte[] msgBytes = mapper.writeValueAsBytes(ep);
+            
+            // Given the message bytes, simulate delivery of our WebSocket message
+            tl.onMessage(ws, new ByteString(msgBytes));
+        }
+        
+        // Consumers run in BG threads, so wait a bit for those to finish.
+        mocked.await(5L, TimeUnit.SECONDS);
+        
+        assertEquals("Mocked service expected vs. actual", expectedMsgCount, mocked.getReceivedCounter());
+        List<Exchange> exchanges = mocked.getReceivedExchanges();
+        Set<String> uniqueMsgs = new HashSet<String>();
+        exchanges.forEach(exchange -> {
+            Object exchangeBody = exchange.getIn().getBody();
+            assertNotNull("Null exchange body",  exchangeBody);
+            // Verify that we got JSON -- which will manifest here as a String, but we'll verify that we can convert it.
+            assertTrue("Vantiq Consumer Output wrong type: " + exchangeBody.getClass().getName(),
+                exchangeBody instanceof String);
+            Map msg = null;
+            try {
+                msg = mapper.readValue((String) exchangeBody, Map.class);
+            } catch (JsonProcessingException e) {
+                throw new RuntimeException(e);
+            }
+            assertNotNull("Deserialized msg is null", msg);
+            assert msg.containsKey(TEST_MSG_KEY);
+            assert msg.get(TEST_MSG_KEY) instanceof String;
+            assert ((String) msg.get(TEST_MSG_KEY)).startsWith(TEST_MSG_PREAMBLE);
+            uniqueMsgs.add(((String) msg.get(TEST_MSG_KEY)));
+        });
+        assert uniqueMsgs.size() == expectedMsgCount;
+    }
+    
+    @Test
     public void testVantiqConsumerQuery() throws Exception {
         
         // First, grab our test environment.
@@ -329,6 +403,93 @@ public class VantiqComponentTest extends CamelTestSupport {
         String ra = rsp.getHeader(ExtensionServiceMessage.RESPONSE_ADDRESS_HEADER);
         assert responseAddresses.contains(ra);
     }
+    
+    @Test
+    public void testVantiqConsumerOutputJsonQuery() throws Exception {
+        
+        // First, grab our test environment.
+        FauxVantiqComponent vc = (FauxVantiqComponent) context.getComponent("vantiq");
+        assert vc != null;
+        // Note that we need to fetch the endpoints by URI since there are more than one of them.
+        FauxVantiqEndpoint endp = (FauxVantiqEndpoint) context.getEndpoint(vantiqJsonQuerierUri);
+    
+        assertNotNull("Endpoint's client is null", endp.myClient.getListener());
+        assertTrue("Endpoint's client is not a TestListener: " +
+                              endp.myClient.getListener().getClass().getName(),
+                      endp.myClient.getListener() instanceof TestListener);
+        TestListener tl = (TestListener) endp.myClient.getListener();
+        
+        int expectedMsgCount = 10;
+        MockEndpoint mocked = getMockEndpoint(routeEndUri);
+        mocked.expectedMinimumMessageCount(expectedMsgCount);
+        VantiqEndpoint ve = getMandatoryEndpoint(vantiqEndpointUri, VantiqEndpoint.class);
+        assert ve != null;
+        ObjectMapper mapper = new ObjectMapper();
+        WebSocket ws = new FalseWebSocket();
+        Set<String> responseAddresses = new HashSet<>();
+        for (int i = 0; i < expectedMsgCount; i++) {
+            ExtensionServiceMessage ep = new ExtensionServiceMessage(vantiqEndpointUri);
+            ep.op = ExtensionServiceMessage.OP_QUERY;
+            ep.resourceName = "SOURCES";
+            ep.resourceId = testSourceName;
+            Map<String, Object> hdrs = new HashMap<>();
+            String respAddr = UUID.randomUUID().toString();
+            hdrs.put(ExtensionServiceMessage.ORIGIN_ADDRESS_HEADER, respAddr);
+            responseAddresses.add(respAddr);
+            ep.messageHeaders = hdrs;
+            HashMap<String, Object> msg = new HashMap<>();
+            msg.put(TEST_MSG_KEY, TEST_MSG_PREAMBLE + i);
+            ep.object = msg;
+            
+            byte[] msgBytes = mapper.writeValueAsBytes(ep);
+            
+            // Given the message bytes, simulate delivery of our WebSocket message
+            tl.onMessage(ws, new ByteString(msgBytes));
+        }
+        
+        // Consumers run in BG threads, so wait a bit for those to finish.
+        mocked.await(5L, TimeUnit.SECONDS);
+        
+        assertEquals("Mocked service expected vs. actual", expectedMsgCount, mocked.getReceivedCounter());
+        List<Exchange> exchanges = mocked.getReceivedExchanges();
+        Set<String> uniqueMsgs = new HashSet<String>();
+        exchanges.forEach(exchange -> {
+            Object exchBody = exchange.getIn().getBody();
+            assertNotNull("Exchange boddy is null", exchBody);
+            assertTrue("Exchange body wrong type: " + exchBody.getClass().getName(),
+                       exchange.getIn().getBody() instanceof String);
+            Map msg = null;
+            try {
+                msg = mapper.readValue((String) exchBody, Map.class);
+            } catch (JsonProcessingException e) {
+                throw new RuntimeException(e);
+            }
+            assertNotNull("Deserialized JSON message is null", msg);
+            assert msg.containsKey(TEST_MSG_KEY);
+            assert msg.get(TEST_MSG_KEY) instanceof String;
+            assert ((String) msg.get(TEST_MSG_KEY)).startsWith(TEST_MSG_PREAMBLE);
+            uniqueMsgs.add(((String) msg.get(TEST_MSG_KEY)));
+            
+            Map<String, Object> props = exchange.getProperties();
+            assert props.containsKey(ExtensionServiceMessage.RESPONSE_ADDRESS_HEADER);
+        });
+        assert uniqueMsgs.size() == expectedMsgCount;
+        
+        // Note that we need to fetch the endpoints by URI since there are more than one of them.
+        FauxVantiqEndpoint ep = (FauxVantiqEndpoint) context.getEndpoint(vantiqJsonQuerierUri);
+        FalseClient fc = ep.myClient;
+        Response rsp = fc.getLastMessageAsResponse();
+        assert rsp != null;
+        assert rsp.getBody() != null;
+        assert rsp.getStatus() == 200;
+        Object o = rsp.getBody();
+        assert o instanceof Map;
+        Map<String, Object> response = (Map) o;
+        log.debug("Found final response message: {}", response);
+        assert response.containsKey("Response");
+        String ra = rsp.getHeader(ExtensionServiceMessage.RESPONSE_ADDRESS_HEADER);
+        assert responseAddresses.contains(ra);
+    }
 
     @Override
     protected RouteBuilder createRouteBuilder() throws Exception {
@@ -351,11 +512,20 @@ public class VantiqComponentTest extends CamelTestSupport {
                 from(vantiqSenderUri)
                         .to(routeEndUri);
     
+                from(vantiqJsonSenderUri)
+                        .to(routeEndUri);
+                
                 from(vantiqQuerySenderUri)
                         .setExchangePattern(ExchangePattern.InOut)
                         .to(routeEndUri)
                             .setBody(constant("{ \"Response\": \"Message\"}"))
                         .to(vantiqQuerySenderUri);
+    
+                from(vantiqJsonQuerierUri)
+                        .setExchangePattern(ExchangePattern.InOut)
+                        .to(routeEndUri)
+                        .setBody(constant("{ \"Response\": \"Message\"}"))
+                        .to(vantiqJsonQuerierUri);
             }
         };
     }
