@@ -71,6 +71,11 @@ public class VantiqEndpoint extends DefaultEndpoint {
     @Setter
     private boolean noSsl;
     
+    @UriParam(defaultValue = "false")
+    @Getter
+    @Setter
+    private boolean consumerOutputJson;
+    
     @UriParam(defaultValue = "25")
     @Setter
     private int failedMessageQueueSize;
