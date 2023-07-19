@@ -257,8 +257,11 @@ public class CamelHandleConfiguration extends Handler<ExtensionServiceMessage> {
             //noinspection unchecked
             Map<String, String> input = (Map<String, String>) camelConfig.get(PROPERTY_VALUES);
             // Camel wants these as a Java Properties object, so perform the conversion as required.
-            Properties propVals = new Properties(input.size());
-            input.forEach(propVals::setProperty);
+            Properties propVals = null;
+            if (input != null) {
+                propVals = new Properties(input.size());
+                input.forEach(propVals::setProperty);
+            }
     
             // If we get this far, then we're ready to run start from the new configuration.  If we have an old
             // configuration running, we'll need to shut it down first.
