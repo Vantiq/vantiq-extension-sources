@@ -27,6 +27,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Properties;
 
 
 /**
@@ -59,6 +60,7 @@ public class CamelHandleConfiguration extends Handler<ExtensionServiceMessage> {
     public static final String ROUTES_LIST = "routesList";
     public static final String ROUTES_FORMAT = "routesFormat";
     public static final String COMPONENT_PROPERTIES = "componentProperties";
+    public static final String PROPERTY_VALUES = "propertyValues";
     
     public static final String VANTIQ = "vantiq";
     
@@ -130,6 +132,36 @@ public class CamelHandleConfiguration extends Handler<ExtensionServiceMessage> {
         if (gotList && !(target instanceof String)) {
             log.error("Camel connector with the {} property requires the {} property as well.",
                       ROUTES_LIST, ROUTES_FORMAT);
+        }
+        
+        target = camelConfig.get(PROPERTY_VALUES);
+        if (target != null) {
+            if (!(target instanceof Map)) {
+                log.error("Camel connector property {} should be a simple JSON object (found {}).",
+                          PROPERTY_VALUES, target.getClass().getName());
+                failConfig();
+                return;
+            } else {
+                // It's coming from JSON, so the key must be a string...
+                Map<String, Object> input = (Map<String, Object>) target;
+                Properties propVals = new Properties(input.size());
+                input.forEach( (k, v) -> {
+                    if (!(k != null && v instanceof String)) {
+                        String kclass = "null";
+                        String vclass = "null";
+                        if (k != null) {
+                            kclass = k.getClass().getName();
+                        }
+                        if (v != null && v.getClass() != null) {
+                            vclass = v.getClass().getName();
+                        }
+                        log.error("Camel connector {} value must have a String key ({}: {})  and value ({}: {}).",
+                                  PROPERTY_VALUES, k, kclass, v, vclass);
+                        failConfig();
+                    }
+                });
+                
+            }
         }
         
         target = camelConfig.get(COMPONENT_PROPERTIES);
@@ -221,6 +253,13 @@ public class CamelHandleConfiguration extends Handler<ExtensionServiceMessage> {
             List<Map<String, Object>> componentProperties =
                     (List<Map<String, Object>>) camelConfig.get(COMPONENT_PROPERTIES);
     
+            // This is checked in the caller
+            //noinspection unchecked
+            Map<String, String> input = (Map<String, String>) camelConfig.get(PROPERTY_VALUES);
+            // Camel wants these as a Java Properties object, so perform the conversion as required.
+            Properties propVals = new Properties(input.size());
+            input.forEach(propVals::setProperty);
+    
             // If we get this far, then we're ready to run start from the new configuration.  If we have an old
             // configuration running, we'll need to shut it down first.
     
@@ -247,7 +286,7 @@ public class CamelHandleConfiguration extends Handler<ExtensionServiceMessage> {
             CamelRunner runner =
                          new CamelRunner(appName, Objects.requireNonNull(routeSpec).get(ROUTES_LIST),
                                          routeSpec.get(ROUTES_FORMAT), repoList,
-                                         componentCache, componentLib, componentProperties);
+                                         componentCache, componentLib, componentProperties, propVals);
             if (additionalLibraries != null) {
                 runner.setAdditionalLibraries(additionalLibraries);
             }

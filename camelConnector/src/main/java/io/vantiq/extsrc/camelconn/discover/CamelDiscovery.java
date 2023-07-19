@@ -19,6 +19,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Properties;
 import java.util.Set;
 import java.util.StringTokenizer;
 
@@ -34,10 +35,7 @@ public class CamelDiscovery {
     public static final String COMPONENTS_TO_LOAD = "componentsToLoad";
     public static final String SYSTEM_DATAFORMATS = "systemDataFormats";
     public static final String DATAFORMATS_TO_LOAD = "dataFormatsToLoad";
-    
-    
     public static final String VANTIQ_COMPONENT_SCHEME = "vantiq";
-    
     private static final String COMPONENTS_KEY_NAME = "components";
     private static final String DATAFORMATS_KEY_NAME = "dataformats";
     private static final String CAMEL_VERSION_KEY_NAME = "camelVersion";
@@ -49,7 +47,8 @@ public class CamelDiscovery {
     /**
      * Determine the set of components used in the routes in a route builder.
      *
-     ** @param rb RouteBuilder containing the set of routes from which to discover components
+     * @param rb RouteBuilder containing the set of routes from which to discover components
+     * @param placeholderValues Properties set of properties, keyed by name, to provide for the route
      *
      * @return Map<String, Set<String>> containing two Set entries:
      *          systemComponents -- (informational) and
@@ -57,7 +56,8 @@ public class CamelDiscovery {
      *
      * @throws DiscoveryException when exceptions encountered during processing.
      */
-    Map<String, Set<String>> performComponentDiscovery(RouteBuilder rb) throws DiscoveryException {
+    Map<String, Set<String>> performComponentDiscovery(RouteBuilder rb, Properties placeholderValues)
+            throws DiscoveryException {
         
         try (DefaultCamelContext ctx = new DefaultCamelContext()) {
             ExtendedCamelContext ectx = ctx.adapt(ExtendedCamelContext.class);
@@ -67,9 +67,15 @@ public class CamelDiscovery {
             ectx.setDataFormatResolver(edfr);
             EnumeratingConfigurerResolver epcr = new EnumeratingConfigurerResolver();
             ectx.setConfigurerResolver(epcr);
+            
+            // If our current context has local properties, we'll need to provide them to the context we create for
+            // discovery, since things like the URLs could be defined in properties, and that's used for discovery.
+            // We define a new context for use here since we're overriding all the resolvers with those specially
+            // designed for discovery.
+            ectx.getPropertiesComponent().setLocalProperties(placeholderValues);
+
             log.debug("Discovering Camel (version {}) components using context: {}", ectx.getVersion(), ectx.getName());
     
-            assert ectx.getComponentResolver() instanceof EnumeratingComponentResolver;
             try {
                 ectx.addRoutes(rb);
                 ectx.start();
@@ -97,6 +103,7 @@ public class CamelDiscovery {
             retVal.put(SYSTEM_DATAFORMATS, edfr.getSystemDataFormatsUsed());
             retVal.put(DATAFORMATS_TO_LOAD, edfr.getDataFormatsToLoad());
             return retVal;
+            // Note that ectx will be closed via the try-with-resources construct
         } catch (Exception e) {
             log.error("Trapped exception preparing or completing component discovery", e);
             throw new DiscoveryException("Exception preparing or completing component discovery processing", e);

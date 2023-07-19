@@ -26,6 +26,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Properties;
 import java.util.Set;
 
 /**
@@ -202,17 +203,26 @@ public class VantiqComponentDiscoveryTest extends CamelTestSupport {
     }
     
     @Test
+    public void testParameterizedXmlRouteDiscovery() throws Exception {
+        ParameterizedXmlRoutes rb = new ParameterizedXmlRoutes();
+        performDiscoveryTest(rb, rb.getRequiredProperties());
+    }
+    
+    @Test
     public void testBeansInRouteDiscovery() throws Exception {
         RouteBuilder rb = new BeanIncludingRoutes(context);
         performDiscoveryTest(rb);
     }
     
     void performDiscoveryTest(RouteBuilder rb) throws Exception {
+        performDiscoveryTest(rb, null);
+    }
+    void performDiscoveryTest(RouteBuilder rb, Properties placeholderValues) throws Exception {
         assert rb instanceof TestExpectations;
         setUseRouteBuilder(false);
         CamelDiscovery discoverer = new CamelDiscovery();
         
-        Map<String, Set<String>> discResults = discoverer.performComponentDiscovery(rb);
+        Map<String, Set<String>> discResults = discoverer.performComponentDiscovery(rb, placeholderValues);
         
         List<String> expectedCTL = ((TestExpectations) rb).getExpectedComponentsToLoad();
         List<String> expectedSysComp = ((TestExpectations) rb).getExpectedSystemComponents();
@@ -505,6 +515,44 @@ public class VantiqComponentDiscoveryTest extends CamelTestSupport {
         }
     }
     
+    private static class ParameterizedXmlRoutes extends RouteBuilder implements TestExpectations {
+        
+        @Override
+        public List<String> getExpectedComponentsToLoad() {
+            return List.of("salesforce");
+        }
+        
+        @Override
+        public List<String> getExpectedSystemComponents() {
+            return List.of("direct-vm");
+        }
+        
+        @Override
+        public void configure() throws Exception {
+            String content = ""
+                    + "    <routes>"
+                    + "        <route id=\"salesforce1\">"
+                    + "            <from uri=\"salesforce:CamelTestTopic?notifyForFields=ALL"
+                    + "&amp;notifyForOperations=ALL&amp;sObjectName=Merchandise__c&amp;updateTopic=true"
+                    + "&amp;sObjectQuery={{query}}\"/>"
+                    + "            <to uri=\"salesforce:createSObject?sObjectName={{outputObjectName}}\"/>"
+                    + "            <to uri=\"{{directNotifier}}\"/>"
+                    + "        </route>"
+                    + "    </routes>";
+            RouteBuilder rb = new XmlRouteBuilder(content).getRouteBuilder();
+            rb.configure();
+            this.setRouteCollection(rb.getRouteCollection());
+        }
+        
+        public Properties getRequiredProperties() {
+            Properties props = new Properties();
+            props.setProperty("query", "SELECT Id, Name FROM Merchandise__c");
+            props.setProperty("outputObjectName", "TestEvent__e");
+            props.setProperty("directNotifier", "direct-vm:salesforce-notifier");
+            return props;
+        }
+    }
+    
     private static class BeanIncludingRoutes extends RouteBuilder implements TestExpectations {
     
         CamelContext ctx;
@@ -558,7 +606,7 @@ public class VantiqComponentDiscoveryTest extends CamelTestSupport {
             + "                 sharedAccessName: \"someRandomKey\" \n"
             + "                 sharedAccessKey: \"RAW(MY TOKEN)\" \n";
     
-            // YAML support needs a camel context.  So provide oe during setup...
+            // YAML support needs a camel context.  So provide one during setup...
             RouteBuilder rb = new YamlRouteBuilder(ctx, content).getRouteBuilder();
             rb.configure();
             this.setRouteCollection(rb.getRouteCollection());
