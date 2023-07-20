@@ -669,10 +669,17 @@ public class VantiqComponentResolverTest extends CamelTestSupport {
         }
     
         assertNotNull("runnerThread is null", runnerThread);
+        assert runnerContext != null && runnerContext.isStopped();
+        int deathWaitCount = 30;
+        // Wait for thread to die off.  Otherwise, spurious errors occasionally.
+        while (runnerThread.isAlive() && deathWaitCount > 0) {
+            Thread.sleep(500);
+            deathWaitCount -= 1;
+        }
+        // Ensure that the running thread has completed.  Issue of test resource starvation, not product
         assertTrue("ShouldStart: " + shouldStart + ", runnerThread: " + runnerThread +
                            ", ...isAlive: " + runnerThread.isAlive(),
                    !shouldStart || !runnerThread.isAlive());
-        assert runnerContext != null && runnerContext.isStopped();
     }
     
     private static abstract class RouteBuilderWithProps extends RouteBuilder {
