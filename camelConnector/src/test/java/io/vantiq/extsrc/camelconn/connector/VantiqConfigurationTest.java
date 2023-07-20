@@ -56,7 +56,7 @@ public class VantiqConfigurationTest {
     }
     
     void performConfigTest(String appName, String route, String routeFormat,
-                           List<Map<String, Object>> compInitProps, Properties placeholderValues, Verifier vfy) {
+                           List<Map<String, Object>> compInitProps, Properties propertyValues, Verifier vfy) {
         assumeTrue(!sfLoginUrl.equals(MISSING_VALUE) && !sfClientId.equals(MISSING_VALUE) &&
                            !sfClientSecret.equals(MISSING_VALUE) && !sfRefreshToken.equals(MISSING_VALUE));
         Map<String, Object> simpleConfig = new HashMap<>();
@@ -76,8 +76,8 @@ public class VantiqConfigurationTest {
         if (compInitProps != null) {
             camelAppConfig.put(COMPONENT_PROPERTIES, compInitProps);
         }
-        if (placeholderValues != null) {
-            camelAppConfig.put(PROPERTY_VALUES, placeholderValues);
+        if (propertyValues != null) {
+            camelAppConfig.put(PROPERTY_VALUES, propertyValues);
         }
         
         String fauxVantiqUrl = "http://someVantiqServer";
@@ -136,7 +136,7 @@ public class VantiqConfigurationTest {
     }
     
     @Test
-    public void testComponentInitConfigurationWithPlaceholderValues() {
+    public void testComponentInitConfigurationWithPropertyValues() {
         Properties props = new Properties(pValues.size());
         // Though officially frowned upon, Properties.putAll here from a Map<String, String> is safe as it cannot put
         // non-String keys or values into the Properties base map.

@@ -217,12 +217,12 @@ public class VantiqComponentDiscoveryTest extends CamelTestSupport {
     void performDiscoveryTest(RouteBuilder rb) throws Exception {
         performDiscoveryTest(rb, null);
     }
-    void performDiscoveryTest(RouteBuilder rb, Properties placeholderValues) throws Exception {
+    void performDiscoveryTest(RouteBuilder rb, Properties propertyValues) throws Exception {
         assert rb instanceof TestExpectations;
         setUseRouteBuilder(false);
         CamelDiscovery discoverer = new CamelDiscovery();
         
-        Map<String, Set<String>> discResults = discoverer.performComponentDiscovery(rb, placeholderValues);
+        Map<String, Set<String>> discResults = discoverer.performComponentDiscovery(rb, propertyValues);
         
         List<String> expectedCTL = ((TestExpectations) rb).getExpectedComponentsToLoad();
         List<String> expectedSysComp = ((TestExpectations) rb).getExpectedSystemComponents();

@@ -459,13 +459,13 @@ public class VantiqComponentResolverTest extends CamelTestSupport {
         FileUtil.forceDelete(cache);    // Clear the cache
         setUseRouteBuilder(false);
         
-        Properties placeholderValues = new Properties(3);
-        placeholderValues.setProperty("directStart", "direct:start");
-        placeholderValues.setProperty("dnsDig", "dns:dig");
-        placeholderValues.setProperty("mockResult", "mock:result");
+        Properties propertyValues = new Properties(3);
+        propertyValues.setProperty("directStart", "direct:start");
+        propertyValues.setProperty("dnsDig", "dns:dig");
+        propertyValues.setProperty("mockResult", "mock:result");
         
         performLoadAndRunTest(YAML_ROUTE_PARAMETERIZED, "yaml", null, false,
-                              placeholderValues);
+                              propertyValues);
     }
     
     @Test
@@ -574,7 +574,7 @@ public class VantiqComponentResolverTest extends CamelTestSupport {
     
     public void performLoadAndRunTest(String content, String contentType,
                                       List<Map<String, Object>> compToInit, boolean defeatVerify,
-                                      Properties placeholderValues) throws Exception {
+                                      Properties propertyValues) throws Exception {
         // To do this test, we'll create a callable that the test method will call. In this case, the callable "sends"
         // message to the route which, in turn, makes the dig call to lookup a monkey.  We verify that the expected
         // results is presented.
@@ -589,7 +589,7 @@ public class VantiqComponentResolverTest extends CamelTestSupport {
         
         try (CamelRunner runner =
                      new CamelRunner(this.getTestMethodName(), content, contentType, null,
-                                     IVY_CACHE_PATH, DEST_PATH, compToInit, placeholderValues)) {
+                                     IVY_CACHE_PATH, DEST_PATH, compToInit, propertyValues)) {
             openedRunner = runner;
             runner.runRoutes(false);
             runnerContext = runner.getCamelContext();
@@ -616,7 +616,8 @@ public class VantiqComponentResolverTest extends CamelTestSupport {
         performLoadAndRunTest(rb, true, compToInit, null);
     }
     public void performLoadAndRunTest(RouteBuilder rb, boolean shouldStart,
-                                      List<Map<String, Object>> componentToInit, Properties placeholderValues) throws Exception {
+                                      List<Map<String, Object>> componentToInit,
+                                      Properties propertyValues) throws Exception {
         // To do this test, we'll create a callable that the test method will call. In this case, the callable "sends"
         // message to the route which, in turn, makes the dig call to lookup a monkey & aardvark.  We verify that the
         // expected results are presented.
@@ -630,7 +631,7 @@ public class VantiqComponentResolverTest extends CamelTestSupport {
         
         try (CamelRunner runner =
                      new CamelRunner(this.getTestMethodName(), rb, null, IVY_CACHE_PATH, DEST_PATH,
-                                     componentToInit, placeholderValues)) {
+                                     componentToInit, propertyValues)) {
             openedRunner = runner;
             runner.runRoutes(false);
             runnerContext = runner.getCamelContext();

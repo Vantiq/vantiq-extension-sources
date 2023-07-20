@@ -48,7 +48,7 @@ public class CamelDiscovery {
      * Determine the set of components used in the routes in a route builder.
      *
      * @param rb RouteBuilder containing the set of routes from which to discover components
-     * @param placeholderValues Properties set of properties, keyed by name, to provide for the route
+     * @param propertyValues Properties set of properties, keyed by name, to provide for the route
      *
      * @return Map<String, Set<String>> containing two Set entries:
      *          systemComponents -- (informational) and
@@ -56,7 +56,7 @@ public class CamelDiscovery {
      *
      * @throws DiscoveryException when exceptions encountered during processing.
      */
-    Map<String, Set<String>> performComponentDiscovery(RouteBuilder rb, Properties placeholderValues)
+    Map<String, Set<String>> performComponentDiscovery(RouteBuilder rb, Properties propertyValues)
             throws DiscoveryException {
         
         try (DefaultCamelContext ctx = new DefaultCamelContext()) {
@@ -72,7 +72,7 @@ public class CamelDiscovery {
             // discovery, since things like the URLs could be defined in properties, and that's used for discovery.
             // We define a new context for use here since we're overriding all the resolvers with those specially
             // designed for discovery.
-            ectx.getPropertiesComponent().setLocalProperties(placeholderValues);
+            ectx.getPropertiesComponent().setLocalProperties(propertyValues);
 
             log.debug("Discovering Camel (version {}) components using context: {}", ectx.getVersion(), ectx.getName());
     
