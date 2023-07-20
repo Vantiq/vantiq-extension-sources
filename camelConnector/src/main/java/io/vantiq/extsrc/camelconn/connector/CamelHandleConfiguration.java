@@ -132,6 +132,8 @@ public class CamelHandleConfiguration extends Handler<ExtensionServiceMessage> {
         if (gotList && !(target instanceof String)) {
             log.error("Camel connector with the {} property requires the {} property as well.",
                       ROUTES_LIST, ROUTES_FORMAT);
+            failConfig();
+            return;
         }
         
         target = camelConfig.get(PROPERTY_VALUES);

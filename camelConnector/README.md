@@ -133,9 +133,9 @@ The Configuration document may look similar to the following example:
 ### Options Available for camelRuntime
 
 * **appName**: Optional -- name of the app.  If not provided, default to _camelConnectorApp_.
-* **routesDocument** or **routesList** and **routesFormat**: Required. This is list of Camel routes to run.
-* **routesDocument** -- the name of a Vantiq Document containing the XML or YAML definition of the routes to run. The format of the document (XML or YAML) will be determined from the file name (_e.g._, `routes.xml`)
-* **routesList** and **routesFormat** -- the XML or YAML specification of the Camel routes to run.  The **routesList** property should contain the appropriate text, and the **routesFormat** should contain either `xml` or `yml` indicating the style used to specify the routes.
+* **routesDocument** or **routesList** and **routesFormat**: Required. This is the list of Camel routes to run.
+    * **routesDocument** -- the name of a Vantiq Document containing the XML or YAML definition of the routes to run. The format of the document (XML or YAML) will be determined from the file name (_e.g._, `routes.xml`)
+    * **routesList** and **routesFormat** -- the XML or YAML specification of the Camel routes to run.  The **routesList** property should contain the appropriate text, and the **routesFormat** should contain either `xml` or `yml` indicating the style used to specify the routes.
       * *Note*: You must specify either the **routesDocument** or **routesList** _AND_ **routesFormat** properties, but not both.
 * **componentProperties** -- a list of JSON objects which contain the component name & associated properties. These are used by some components for their configuration and/or operation. Values here may include security information (clientId or tokens).
     * The format of this values is a list of JSON objects, where each JSON object contains a **componentName** property containing the name of the component for which these properties are to be applied, and **componentProperties** containing a Json object consisting of property names and values.
