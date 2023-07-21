@@ -43,6 +43,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Properties;
 
 /**
  * Perform unit tests for component resolution
@@ -240,7 +241,7 @@ public class VantiqComponentResolverTest extends CamelTestSupport {
         setUseRouteBuilder(false);
         try (CamelRunner runner = new CamelRunner(this.getTestMethodName(), rb, null,
                                                   IVY_CACHE_PATH, DEST_PATH,
-                                                  rb.getComponentsToInit())) {
+                                                  rb.getComponentsToInit(), null)) {
             runner.runRoutes(false);
         }
     }
@@ -253,7 +254,7 @@ public class VantiqComponentResolverTest extends CamelTestSupport {
         setUseRouteBuilder(false);
         try (CamelRunner runner = new CamelRunner(this.getTestMethodName(), rb, null,
                                                   IVY_CACHE_PATH, DEST_PATH,
-                                                  rb.getComponentsToInit())) {
+                                                  rb.getComponentsToInit(), null)) {
             runner.runRoutes(false);
         }
     }
@@ -269,7 +270,7 @@ public class VantiqComponentResolverTest extends CamelTestSupport {
         repoList.add(new URI("https://vantiqmaven.s3.amazonaws.com/"));
         repoList.add(new URI("https://repo.maven.apache.org/maven2/"));
         try (CamelRunner runner = new CamelRunner(this.getTestMethodName(),rb, repoList,
-                                                  IVY_CACHE_PATH, DEST_PATH, rb.getComponentsToInit())) {
+                                                  IVY_CACHE_PATH, DEST_PATH, rb.getComponentsToInit(), null)) {
             runner.runRoutes(false);
         }
     }
@@ -319,7 +320,7 @@ public class VantiqComponentResolverTest extends CamelTestSupport {
         RouteBuilderWithProps rb = new MakeDigCallMarshaledAvroFailure();
         assertNotNull("No routebuilder", rb);
         
-        performLoadAndRunTest(rb, false, rb.getComponentsToInit());
+        performLoadAndRunTest(rb, false, rb.getComponentsToInit(), null);
     }
     
     @Test
@@ -396,6 +397,17 @@ public class VantiqComponentResolverTest extends CamelTestSupport {
             + "        - to:\n"
             + "            uri: \"mock:result\"\n";
     
+    public static final String YAML_ROUTE_PARAMETERIZED =  "\n"
+            + "- route:\n"
+            + "    id: \"Dig from yaml-route\"\n"
+            + "    from:\n"
+            + "      uri: \"{{directStart}}\"\n"
+            + "      steps:\n"
+            + "        - to:\n"
+            + "            uri: \"{{dnsDig}}\"\n"
+            + "        - to:\n"
+            + "            uri: \"{{mockResult}}\"\n";
+    
     public static final String ROUTE_WITH_BEAN = "\n"
             + "- route: \n"
             + "    id: \"EventHub Sink\" \n"
@@ -443,11 +455,25 @@ public class VantiqComponentResolverTest extends CamelTestSupport {
     }
     
     @Test
+    public void testStartRunLoadedComponentsFromYamlTextParameterized() throws Exception {
+        FileUtil.forceDelete(cache);    // Clear the cache
+        setUseRouteBuilder(false);
+        
+        Properties propertyValues = new Properties(3);
+        propertyValues.setProperty("directStart", "direct:start");
+        propertyValues.setProperty("dnsDig", "dns:dig");
+        propertyValues.setProperty("mockResult", "mock:result");
+        
+        performLoadAndRunTest(YAML_ROUTE_PARAMETERIZED, "yaml", null, false,
+                              propertyValues);
+    }
+    
+    @Test
     public void testDiscoverBeanRoute() throws Exception {
         FileUtil.forceDelete(cache);
         setUseRouteBuilder(false);
         
-        performLoadAndRunTest(ROUTE_WITH_BEAN, "yaml", null, true);
+        performLoadAndRunTest(ROUTE_WITH_BEAN, "yaml", null, true, null);
     }
     
     /**
@@ -543,11 +569,12 @@ public class VantiqComponentResolverTest extends CamelTestSupport {
     
     public void performLoadAndRunTest(String content, String contentType,
                                       List<Map<String, Object>> compToInit) throws Exception {
-        performLoadAndRunTest(content, contentType, compToInit, false);
+        performLoadAndRunTest(content, contentType, compToInit, false, null);
     }
     
     public void performLoadAndRunTest(String content, String contentType,
-                                      List<Map<String, Object>> compToInit, boolean defeatVerify) throws Exception {
+                                      List<Map<String, Object>> compToInit, boolean defeatVerify,
+                                      Properties propertyValues) throws Exception {
         // To do this test, we'll create a callable that the test method will call. In this case, the callable "sends"
         // message to the route which, in turn, makes the dig call to lookup a monkey.  We verify that the expected
         // results is presented.
@@ -562,7 +589,7 @@ public class VantiqComponentResolverTest extends CamelTestSupport {
         
         try (CamelRunner runner =
                      new CamelRunner(this.getTestMethodName(), content, contentType, null,
-                                     IVY_CACHE_PATH, DEST_PATH, compToInit)) {
+                                     IVY_CACHE_PATH, DEST_PATH, compToInit, propertyValues)) {
             openedRunner = runner;
             runner.runRoutes(false);
             runnerContext = runner.getCamelContext();
@@ -586,10 +613,11 @@ public class VantiqComponentResolverTest extends CamelTestSupport {
     }
     
     public void performLoadAndRunTest(RouteBuilder rb, List<Map<String, Object>> compToInit) throws Exception {
-        performLoadAndRunTest(rb, true, compToInit);
+        performLoadAndRunTest(rb, true, compToInit, null);
     }
     public void performLoadAndRunTest(RouteBuilder rb, boolean shouldStart,
-                                      List<Map<String, Object>> componentToInit) throws Exception {
+                                      List<Map<String, Object>> componentToInit,
+                                      Properties propertyValues) throws Exception {
         // To do this test, we'll create a callable that the test method will call. In this case, the callable "sends"
         // message to the route which, in turn, makes the dig call to lookup a monkey & aardvark.  We verify that the
         // expected results are presented.
@@ -603,7 +631,7 @@ public class VantiqComponentResolverTest extends CamelTestSupport {
         
         try (CamelRunner runner =
                      new CamelRunner(this.getTestMethodName(), rb, null, IVY_CACHE_PATH, DEST_PATH,
-                                     componentToInit)) {
+                                     componentToInit, propertyValues)) {
             openedRunner = runner;
             runner.runRoutes(false);
             runnerContext = runner.getCamelContext();
@@ -642,10 +670,17 @@ public class VantiqComponentResolverTest extends CamelTestSupport {
         }
     
         assertNotNull("runnerThread is null", runnerThread);
+        assert runnerContext != null && runnerContext.isStopped();
+        int deathWaitCount = 30;
+        // Wait for thread to die off.  Otherwise, spurious errors occasionally.
+        while (runnerThread.isAlive() && deathWaitCount > 0) {
+            Thread.sleep(500);
+            deathWaitCount -= 1;
+        }
+        // Ensure that the running thread has completed.  Issue of test resource starvation, not product
         assertTrue("ShouldStart: " + shouldStart + ", runnerThread: " + runnerThread +
                            ", ...isAlive: " + runnerThread.isAlive(),
-                   !shouldStart || runnerThread != null && !runnerThread.isAlive());
-        assert runnerContext != null && runnerContext.isStopped();
+                   !shouldStart || !runnerThread.isAlive());
     }
     
     private static abstract class RouteBuilderWithProps extends RouteBuilder {

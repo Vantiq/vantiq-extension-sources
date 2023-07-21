@@ -35,6 +35,7 @@ import java.util.Collections;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Properties;
 import java.util.Set;
 
 @Slf4j
@@ -47,6 +48,7 @@ public class CamelRunner extends MainSupport implements Closeable {
     
     private final List<Map<String, Object>> initComponents;
     
+    private final Properties camelProperties;
     private final File ivyCache;
     private final File loadedLibraries;
     
@@ -70,16 +72,19 @@ public class CamelRunner extends MainSupport implements Closeable {
      *
      * @param appName String Name for this instance
      * @param routeSpecification String specification for the route(s) to run.  Syntax must match
-     *                                  routeSpecificationType
+     *         routeSpecificationType
      * @param routeSpecificationType String the type of specification provided
      * @param repos List<URI> The list of repos to search for libraries needed by the route(s)
      * @param cacheDirectory String Directory path to use to cache downloaded libraries
      * @param loadedLibDir String Directory path into which to put the libraries needed at run time.
-     * @param initComponents List<Map<String, Object>> List of component names that need
-     *                          initialization using the properties included herein
+     * @param initComponents List<Map<String, Object>> List of component names that need initialization using
+     *         the properties included herein
+     * @param camelProperties Properties set of general property values that Camel can use for property
+     *         resolution
      */
     public CamelRunner(String appName, String routeSpecification, String routeSpecificationType, List<URI> repos,
-                       String cacheDirectory, String loadedLibDir, List<Map<String, Object>> initComponents) {
+                       String cacheDirectory, String loadedLibDir, List<Map<String, Object>> initComponents,
+                       Properties camelProperties) {
         super();
         this.registry = new MainRegistry();
         this.appName = appName;
@@ -92,6 +97,7 @@ public class CamelRunner extends MainSupport implements Closeable {
         this.routeSpecType = routeSpecificationType.equals("yml") ? "yaml" : routeSpecificationType;
         this.additionalLibraries = null;
         this.initComponents = initComponents;
+        this.camelProperties = camelProperties;
         mainConfigurationProperties.setRoutesCollectorEnabled(false);
     }
     
@@ -105,9 +111,11 @@ public class CamelRunner extends MainSupport implements Closeable {
      * @param loadedLibDir String Directory path into which to put the libraries needed at run time.
      * @param initComponents List<Map<String, Object>> List of component names that need
      *                          initialization using the properties included herein
+     * @param camelProperties Properties set of general property values that Camel can use for property resolution
      */
     CamelRunner(String appName, RouteBuilder routeBuilder, List<URI> repos,
-                String cacheDirectory, String loadedLibDir, List<Map<String, Object>> initComponents) {
+                String cacheDirectory, String loadedLibDir, List<Map<String, Object>> initComponents,
+                Properties camelProperties) {
         super();
         this.registry = new MainRegistry();
         this.appName = appName;
@@ -119,6 +127,7 @@ public class CamelRunner extends MainSupport implements Closeable {
         this.routeSpec = null;
         this.additionalLibraries = null;
         this.initComponents = initComponents;
+        this.camelProperties = camelProperties;
     
         mainConfigurationProperties.setRoutesBuilders(List.of(routeBuilder));
         mainConfigurationProperties.setRoutesCollectorEnabled(false);
@@ -153,7 +162,7 @@ public class CamelRunner extends MainSupport implements Closeable {
             throw new IllegalStateException("Camel context does not exist.");
         }
         CamelDiscovery discoverer = new CamelDiscovery();
-        Map<String, Set<String>> discResults = discoverer.performComponentDiscovery(routeBuilder);
+        Map<String, Set<String>> discResults = discoverer.performComponentDiscovery(routeBuilder, camelProperties);
         
         // Now, generate the component list to load...
         // We use a set to avoid duplicates, but we want things resolved in the order they are found in the
@@ -355,6 +364,13 @@ public class CamelRunner extends MainSupport implements Closeable {
      */
     @Override
     protected void beforeStart() throws Exception {
+    
+        // Set any property values provided in the configuration.  These will be used in lieu of others in the classpath
+        // This method is tolerant being passed a null value, and will do the right thing. This needs to be done
+        // before the class loader is constructed since some properties may be used as things like the URL which may
+        // be used at class-load time.
+        camelContext.getPropertiesComponent().setLocalProperties(this.camelProperties);
+    
         if (routeBuilder == null) {
             if (StringUtils.isEmpty(routeSpec) || StringUtils.isEmpty(routeSpecType)) {
                 log.error("No routes have been specified to run.  Either {} or {} and {} are " +
@@ -379,6 +395,7 @@ public class CamelRunner extends MainSupport implements Closeable {
                 }
             }
         }
+        
         // Some routes may have components (e.g., Salesforce) that need specific configuration.
         // If that's the case, do that now before we start our route(s).
         if (initComponents != null && initComponents.size() > 0) {

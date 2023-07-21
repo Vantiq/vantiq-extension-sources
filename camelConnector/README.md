@@ -132,11 +132,48 @@ The Configuration document may look similar to the following example:
 
 ### Options Available for camelRuntime
 
-*   **appName**: Optional -- name of the app.  If not provided, default to _camelConnectorApp_.
-*   **routesDocument** or **routesList** and **routesFormat**: Required. This is list of Camel routes to run.
+* **appName**: Optional -- name of the app.  If not provided, default to _camelConnectorApp_.
+* **routesDocument** or **routesList** and **routesFormat**: Required. This is the list of Camel routes to run.
     * **routesDocument** -- the name of a Vantiq Document containing the XML or YAML definition of the routes to run. The format of the document (XML or YAML) will be determined from the file name (_e.g._, `routes.xml`)
     * **routesList** and **routesFormat** -- the XML or YAML specification of the Camel routes to run.  The **routesList** property should contain the appropriate text, and the **routesFormat** should contain either `xml` or `yml` indicating the style used to specify the routes.
-    * *Note*: You must specify either the **routesDocument** or **routesList** _AND_ **routesFormat** properties, but not both.
+      * *Note*: You must specify either the **routesDocument** or **routesList** _AND_ **routesFormat** properties, but not both.
+* **componentProperties** -- a list of JSON objects which contain the component name & associated properties. These are used by some components for their configuration and/or operation. Values here may include security information (clientId or tokens).
+    * The format of this values is a list of JSON objects, where each JSON object contains a **componentName** property containing the name of the component for which these properties are to be applied, and **componentProperties** containing a Json object consisting of property names and values.
+    * For example, if we needed to define the `clientId` and `securityToken` properties for the `example` component, we would add the following to the `camelRuntime` section of the source configuration.
+  
+        ```json
+        {
+            "camelRuntime": {
+            ...
+            "componentProperties": [
+                {
+                    "componentName": "example",
+                    "componentProperties": {
+                        "clientId": "me@example.com",
+                        "securityToken": "someExampleToken..."
+                    }
+                }
+           ],
+           ...
+           }    
+        }
+        ```
+
+* **propertyValues** -- a JSON object where each property specifies the name and value to be provided for the Apache Camel property placeholder. [Property placeholders](https://camel.apache.org/manual/using-propertyplaceholder.html) can be used in Camel routes to supply values at the route configuration time. 
+    * For example, to provide values for the properties `name` and `company`, you would add the following the the `camelRuntime` section.
+  
+    ```json
+    {
+        "camelRuntime": {
+            ...
+            "propertyValues": {
+                "name": "fred",
+                "company": "vantiq"
+            }
+            ...
+        }
+   }
+   ```
 
 ### Options available for general
 
@@ -199,7 +236,7 @@ Messages are sent to the source as _notifications_, and are delivered as _events
 Messages sent to Vantiq from the component/connector will
 arrive as VAIL objects, where the property names correspond to the Map keys.
 The Vantiq Component expects messages in an exchange to arrive in the form of a Java Map.  However, messages arriving
-in Json format will be accepted as well.
+in JSON format will be accepted as well.
 When constructing your Camel Application, you must keep this in mind.
 
 ## Messages from the Source

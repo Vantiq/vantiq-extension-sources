@@ -8,6 +8,7 @@ import static io.vantiq.extsrc.camelconn.connector.CamelHandleConfiguration.COMP
 import static io.vantiq.extsrc.camelconn.connector.CamelHandleConfiguration.COMPONENT_LIB;
 import static io.vantiq.extsrc.camelconn.connector.CamelHandleConfiguration.COMPONENT_PROPERTIES;
 import static io.vantiq.extsrc.camelconn.connector.CamelHandleConfiguration.GENERAL;
+import static io.vantiq.extsrc.camelconn.connector.CamelHandleConfiguration.PROPERTY_VALUES;
 import static io.vantiq.extsrc.camelconn.connector.CamelHandleConfiguration.ROUTES_FORMAT;
 import static io.vantiq.extsrc.camelconn.connector.CamelHandleConfiguration.ROUTES_LIST;
 import static io.vantiq.extsrc.camelconn.discover.VantiqComponentResolverTest.MISSING_VALUE;
@@ -26,15 +27,22 @@ import io.vantiq.extjsdk.ExtensionServiceMessage;
 import io.vantiq.extsrc.camelconn.discover.CamelRunner;
 import org.apache.camel.CamelContext;
 import org.apache.commons.lang3.function.TriFunction;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.TestName;
 
 import java.io.File;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Properties;
 import java.util.concurrent.TimeUnit;
 
 public class VantiqConfigurationTest {
+    
+    
+    @Rule
+    public TestName name = new TestName();
     
     private final String BUILD_DIR = System.getProperty("BUILD_DIR", "build");
     private final String CAMEL_CONN_BASE_DIR = "camelConnBase";
@@ -42,56 +50,13 @@ public class VantiqConfigurationTest {
     private final String CACHE_DIR = CAMEL_BASE_PATH + "cacheDir";
     private final String LOADED_LIBRARIES = CAMEL_BASE_PATH + "loadedLib";
     
-    @Test
-    public void testSimpleConfiguration() {
-        Map<String, Object> simpleConfig = new HashMap<>();
-        Map<String, Object> camelConfig = new HashMap<>();
-        simpleConfig.put(CAMEL_CONFIG, camelConfig);
-        Map<String, String> camelAppConfig = new HashMap<>();
-        camelConfig.put(CAMEL_APP, camelAppConfig);
-        Map<String, String> generalConfig = new HashMap<>();
-        camelConfig.put(GENERAL, generalConfig);
-        
-        generalConfig.put(COMPONENT_CACHE, CACHE_DIR);
-        generalConfig.put(COMPONENT_LIB, LOADED_LIBRARIES);
-        
-        camelAppConfig.put(ROUTES_LIST, XML_ROUTE);
-        camelAppConfig.put(ROUTES_FORMAT, "xml");
-        camelAppConfig.put(APP_NAME, "testSimpleConfiguration");
-    
-        String fauxVantiqUrl = "http://someVantiqServer";
-        ExtensionServiceMessage esm = new ExtensionServiceMessage(fauxVantiqUrl);
-        esm.op = OP_CONFIGURE_EXTENSION;
-        esm.object = simpleConfig;
-        
-        CamelCore core = new CamelCore("testSimpleConfiguration", "someAccessToken", fauxVantiqUrl);
-        CamelHandleConfiguration handler = new CamelHandleConfiguration(core);
-        
-        handler.handleMessage(esm);
-        assertTrue("handler completed", handler.isComplete());
-        assertNotNull("Camel Runner", handler.getCurrentCamelRunner());
-        assertTrue("Runner started", handler.getCurrentCamelRunner().isStarted());
-        assertNotNull("Runner's Camel Context", handler.getCurrentCamelRunner().getCamelContext());
-        assertNotNull("Runner's thread", handler.getCurrentCamelRunner().getCamelThread());
-        
-        // Assuming things worked, now we have a camel app running.  We'll run our test against it & verify
-    
-        TriFunction<CamelContext, String, Object, Boolean> verifyOperation = defineVerifyOperation();
-        CamelContext runnerContext = handler.getCurrentCamelRunner().getCamelContext();
-        assertTrue("Context Running", runnerContext.isStarted());
-        assert verifyOperation.apply(runnerContext, QUERY_MONKEY, RESPONSE_MONKEY);
-        assert verifyOperation.apply(runnerContext, QUERY_AARDVARK, RESPONSE_AARDVARK);
-    
-        handler.getCurrentCamelRunner().close();
-        try {
-            handler.getCurrentCamelRunner().getCamelThread().join(TimeUnit.SECONDS.toMillis(10));
-        } catch (InterruptedException ie) {
-            fail("Trapped Interrupted Exception");
-        }
+    // Interface to use in declaration.  We'll pass lambda's in to do the actual verification work
+    interface Verifier {
+        void doVerify(CamelContext runnerContext);
     }
     
-    @Test
-    public void testComponentInitConfiguration() {
+    void performConfigTest(String appName, String route, String routeFormat,
+                           List<Map<String, Object>> compInitProps, Properties propertyValues, Verifier vfy) {
         assumeTrue(!sfLoginUrl.equals(MISSING_VALUE) && !sfClientId.equals(MISSING_VALUE) &&
                            !sfClientSecret.equals(MISSING_VALUE) && !sfRefreshToken.equals(MISSING_VALUE));
         Map<String, Object> simpleConfig = new HashMap<>();
@@ -105,17 +70,23 @@ public class VantiqConfigurationTest {
         generalConfig.put(COMPONENT_CACHE, CACHE_DIR);
         generalConfig.put(COMPONENT_LIB, LOADED_LIBRARIES);
         
-        camelAppConfig.put(ROUTES_LIST, SALESFORCETASKS_YAML);
-        camelAppConfig.put(ROUTES_FORMAT, "yaml");
-        camelAppConfig.put(APP_NAME, "testComponentInitConfiguration");
-        camelAppConfig.put(COMPONENT_PROPERTIES, getComponentsToInit());
+        camelAppConfig.put(ROUTES_LIST, route);
+        camelAppConfig.put(ROUTES_FORMAT, routeFormat);
+        camelAppConfig.put(APP_NAME, appName);
+        if (compInitProps != null) {
+            camelAppConfig.put(COMPONENT_PROPERTIES, compInitProps);
+        }
+        if (propertyValues != null) {
+            camelAppConfig.put(PROPERTY_VALUES, propertyValues);
+        }
         
         String fauxVantiqUrl = "http://someVantiqServer";
         ExtensionServiceMessage esm = new ExtensionServiceMessage(fauxVantiqUrl);
         esm.op = OP_CONFIGURE_EXTENSION;
         esm.object = simpleConfig;
         
-        CamelCore core = new CamelCore("testComponentInitConfiguration", "someAccessToken", fauxVantiqUrl);
+        CamelCore core = new CamelCore("testComponentInitConfiguration",
+                                       "someAccessToken", fauxVantiqUrl);
         CamelHandleConfiguration handler = new CamelHandleConfiguration(core);
         
         handler.handleMessage(esm);
@@ -127,12 +98,11 @@ public class VantiqConfigurationTest {
         
         // Assuming things worked, now we have a camel app running.  We'll run our test against it & verify
         
-        TriFunction<CamelContext, String, Object, Boolean> verifyOperation = defineVerifyOperation();
         CamelContext runnerContext = handler.getCurrentCamelRunner().getCamelContext();
         assertTrue("Context Running", runnerContext.isStarted());
-        assert verifyOperation.apply(runnerContext, "not used", Map.of( "done", true));
-        assert verifyOperation.apply(runnerContext, "not used", Map.of( "done", true));
         
+        vfy.doVerify(runnerContext);
+    
         handler.getCurrentCamelRunner().close();
         try {
             handler.getCurrentCamelRunner().getCamelThread().join(TimeUnit.SECONDS.toMillis(10));
@@ -141,6 +111,45 @@ public class VantiqConfigurationTest {
         }
     }
     
+    @Test
+    public void testSimpleConfiguration() {
+        performConfigTest(name.getMethodName(), XML_ROUTE, "xml",
+                          null, null,
+                          (CamelContext runnerContext) -> {
+                              TriFunction<CamelContext, String, Object, Boolean> verifyOperation =
+                                      defineVerifyOperation();
+                              assert verifyOperation.apply(runnerContext, QUERY_MONKEY, RESPONSE_MONKEY);
+                              assert verifyOperation.apply(runnerContext, QUERY_AARDVARK, RESPONSE_AARDVARK);
+                          });
+    }
+    
+    @Test
+    public void testComponentInitConfiguration() {
+        performConfigTest(name.getMethodName(), SALESFORCETASKS_YAML, "yaml",
+                          getComponentsToInit(), null,
+                          (CamelContext runnerContext) -> {
+                              TriFunction<CamelContext, String, Object, Boolean> verifyOperation =
+                                      defineVerifyOperation();
+                            assert verifyOperation.apply(runnerContext, "not used", Map.of("done", true));
+                            assert verifyOperation.apply(runnerContext, "not used", Map.of("done", true));
+                        });
+    }
+    
+    @Test
+    public void testComponentInitConfigurationWithPropertyValues() {
+        Properties props = new Properties(pValues.size());
+        // Though officially frowned upon, Properties.putAll here from a Map<String, String> is safe as it cannot put
+        // non-String keys or values into the Properties base map.
+        props.putAll(pValues);
+        performConfigTest(name.getMethodName(), PARAMETERIZED_SALESFORCE_ROUTE, "yaml",
+                          getComponentsToInit(), props,
+                          (CamelContext runnerContext) -> {
+                              TriFunction<CamelContext, String, Object, Boolean> verifyOperation =
+                                      defineVerifyOperation();
+                              assert verifyOperation.apply(runnerContext, "not used", Map.of("done", true));
+                              assert verifyOperation.apply(runnerContext, "not used", Map.of("done", true));
+                          });
+    }
     
     public static final String sfLoginUrl = System.getProperty("camel-salesforce-loginUrl", MISSING_VALUE);
     public static final String sfClientId = System.getProperty("camel-salesforce-clientId", MISSING_VALUE);
@@ -176,4 +185,21 @@ public class VantiqConfigurationTest {
         );
     }
     
+    public static final String PARAMETERIZED_SALESFORCE_ROUTE  = "\n"
+            + "- route:\n"
+            + "    id: \"Salesforce from yaml-route\"\n"
+            + "    from:\n"
+            + "      uri: \"{{directStart}}\"\n"
+            + "      steps:\n"
+//        + "        - set-exchange-pattern: \"inOut\"\n" // Leaving as a reminder re: how to do in/out YAML routes
+            + "        - to:\n"
+            + "            uri: \"salesforce:query?rawPayload=true&SObjectQuery={{query}}\"\n"
+            + "        - unmarshal:\n"
+            + "            json: {}\n"
+            + "        - to:\n"
+            + "            uri: \"{{mockResult}}\"\n";
+    
+    public static final Map<String, String> pValues = Map.of("directStart", "direct:start",
+                                                             "query", "SELECT Id, Subject, OwnerId from Task",
+                                                             "mockResult", "mock:result");
 }
