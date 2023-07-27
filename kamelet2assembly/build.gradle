@@ -1,0 +1,45 @@
+import io.vantiq.extsrc.assy.tasks.AssemblyGen
+
+plugins {
+//    id 'pl.allegro.tech.build.axion-release' version '1.6.0'
+    id 'com.chrisgahlert.gradle-dcompose-plugin' apply false //version '0.17.1' apply false
+    id 'java'
+    id 'maven-publish'
+    id 'io.franzbecker.gradle-lombok'// version '5.0.0'
+}
+
+repositories {
+    mavenCentral()
+}
+
+ext {
+    apacheCommonsLangVersion = '3.12.0'
+    camelVersion='3.18.3'
+    gsonVersion = '2.9.1'
+    ivyVersion = '2.5.1'
+    jacksonVersion = '2.14.2'
+    junitVersion = '4.13.2'
+    junitVintageEngineVersion = '5.8.2'
+    junitVersion = '4.13.2'
+    log4JVersion='2.17.2'
+    lombokVersion = '1.18.24'
+    slf4jApiVersion = '1.7.25'
+    vantiqSDKVersion = '1.1.1'
+}
+
+dependencies {
+    implementation "org.projectlombok:lombok:${lombokVersion}"
+    implementation "org.apache.camel.kamelets:camel-kamelets:3.20.2"
+}
+
+tasks.withType(JavaCompile) {
+    options.encoding = 'UTF-8'
+}
+
+test {
+    useJUnitPlatform()
+}
+
+tasks.register('generateAssemblies', AssemblyGen)
+
+assemble.finalizedBy('generateAssemblies')
