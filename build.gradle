@@ -87,7 +87,7 @@ subprojects {
     apply plugin: 'groovy'
     apply plugin: 'idea'
     apply plugin: 'eclipse'
-    if (!['extpdk', 'pythonExecSource'].contains(it.name)) {
+    if (!['extpdk', 'pythonExecSource', 'kamelet2assembly'].contains(it.name)) {
         apply plugin: 'java'
     }
     apply plugin: 'com.chrisgahlert.gradle-dcompose-plugin'

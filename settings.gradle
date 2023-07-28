@@ -9,6 +9,7 @@ include 'udpSource'
 include 'CSVSource'
 include 'testConnector'
 include 'objectRecognitionSource'
+include 'kamelet2assembly'
 if (System.env.EASY_MODBUS_LOC) {
     include 'EasyModbusSource' 
 }
