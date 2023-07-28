@@ -54,6 +54,9 @@ public class AssemblyGen extends DefaultTask {
     public static final String SINK_KAMELET_YAML_SUFFIX = SINK_KAMELET_PREFIX + YAML_FILE_TYPE;
     public static final String SINK_KAMELET_YML_SUFFIX = SINK_KAMELET_PREFIX + YML_FILE_TYPE;
     
+    public static final String KAMELET_SOURCE = "kamelet:source";
+    public static final String KAMELET_SINK = "kamelet:sink";
+    
     public final Project project;
     
     @Inject
@@ -171,7 +174,7 @@ public class AssemblyGen extends DefaultTask {
                         Dump dumper = new Dump(dumpSettings);
                         
                         // Now, extract the route template.  This will become our route document after we change
-                        // kamelet://source or kamelet::sink to vantiq server URLs
+                        // kamelet:source or kamelet:sink to vantiq server URLs
                         
                         //noinspection unchecked
                         Map<String, Object> template = (Map<String, Object>) ((Map<String, Object>)
@@ -192,7 +195,7 @@ public class AssemblyGen extends DefaultTask {
                         props.forEach((name, val) -> {
                             //noinspection unchecked
                             log.info("    Name: {} :: [title: {}, type: {}, desc: {}]", name,
-                                     ((Map<String, String>) val).get("t!itle"),
+                                     ((Map<String, String>) val).get("title"),
                                      ((Map<String, String>) val).get("type"),
                                      ((Map<String, String>) val).get("description"));
                         });
@@ -254,7 +257,7 @@ public class AssemblyGen extends DefaultTask {
             log.debug("Found template key: {}, value: {}", k, v);
             if (k.equals("from") && stepDef != null) {
                 if (stepDef.containsKey("uri") && stepDef.get("uri") instanceof String &&
-                        ((String) stepDef.get("uri")).equals("kamelet:source")) {
+                        ((String) stepDef.get("uri")).equals(KAMELET_SOURCE)) {
                     stepDef.put("uri", VANTIQ_SERVER_CONFIG_JSON);
                     log.debug("Replaced {} with{}", stepDef.get("uri"), VANTIQ_SERVER_CONFIG_JSON);
                 }
@@ -275,11 +278,11 @@ public class AssemblyGen extends DefaultTask {
                         }
                     }
                 }
-            } else if (k.equals("to") && "kamelet:sink".equals(v)) {
+            } else if (k.equals("to") && KAMELET_SINK.equals(v)) {
                 log.debug("Replacing value of key {}:{} with \"vantiq://server.config\"", k, v);
                 ent.setValue("vantiq://server.config");
             } else if (k.equals("to") && stepDef != null && stepDef.containsKey("uri")
-                    && "kamelet:sink".equals(stepDef.get("uri"))) {
+                    && KAMELET_SINK.equals(stepDef.get("uri"))) {
                 stepDef.put("uri", "vantiq://server.config");
     
             }
