@@ -251,6 +251,7 @@ class AssemblyGen extends DefaultTask {
      * Will generate a camelConnector source defined for this kamelet using the properties and routes
      * defined.
      *
+     * @param vantiqProjectDir Path location of the base location for the project artifacts
      * @param packageName String name of the package to which this source will belong
      * @param kamName String name of the kamelet which will be used to construct the source name
      * @param routeDoc String name of the document containing the route
@@ -283,8 +284,9 @@ class AssemblyGen extends DefaultTask {
     }
 
 
-    /** For the routeDocumentString provided, write it out as a Vantiq document as part of the kamelets project.
-     * *
+    /**
+     * For the routeDocumentString provided, write it out as a Vantiq document as part of the kamelets project.
+     *
      * @param kamName String name of the kamelet on which we're working
      * @param thisKameletDirectory Path the directory used for this kamelet assembly
      * @param packageName String package name we'll use for this assembly
