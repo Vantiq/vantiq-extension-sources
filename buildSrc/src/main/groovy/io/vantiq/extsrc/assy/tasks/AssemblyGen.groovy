@@ -1,7 +1,5 @@
 package io.vantiq.extsrc.assy.tasks
 
-import com.fasterxml.jackson.core.JsonProcessingException
-import com.fasterxml.jackson.databind.ObjectMapper
 import groovy.json.JsonOutput
 import groovy.util.logging.Slf4j
 import org.apache.commons.lang3.ArrayUtils
@@ -217,7 +215,7 @@ class AssemblyGen extends DefaultTask {
                             Path propFile = Paths.get(thisKameletDirectory.toAbsolutePath().toString(),
                                 'props.json')
                             // FIXME: Convert this to a project file defining the assembly
-                            Files.writeString(propFile, convertMapToJson(props))
+                            Files.writeString(propFile, JsonOutput.prettyPrint(JsonOutput.toJson(props)))
 
                             Path routeDocPath = writeRouteDocument(kamName, thisKameletDirectory, packageName,
                                                          routeDocumentString)
@@ -377,17 +375,6 @@ class AssemblyGen extends DefaultTask {
         for (Map<String, Object> step: steps) {
             processStep(step)
         }
-    }
-
-    static String convertMapToJson(Map<String, Object> source) {
-        ObjectMapper objectMapper = new ObjectMapper()
-        
-        try {
-            return objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(source)
-        } catch (JsonProcessingException e) {
-            e.printStackTrace()
-        }
-        return null
     }
     
     /**
