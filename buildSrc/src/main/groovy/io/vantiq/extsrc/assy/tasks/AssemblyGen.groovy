@@ -1,8 +1,10 @@
 package io.vantiq.extsrc.assy.tasks
 
 import groovy.json.JsonOutput
+import groovy.text.SimpleTemplateEngine
 import groovy.util.logging.Slf4j
 import org.apache.commons.lang3.ArrayUtils
+import org.apache.commons.lang3.StringUtils
 import org.gradle.api.DefaultTask
 import org.gradle.api.GradleException
 import org.gradle.api.artifacts.Configuration
@@ -50,16 +52,20 @@ class AssemblyGen extends DefaultTask {
     public static final String PACKAGE_SEPARATOR = '.'
     
     // Vantiq directory names for project contents
-    public static final String VANTIQ_DOCUMENTS_DIR = 'documents'
-    public static final String VANTIQ_PROJECTS_DIR = 'projects'
-    public static final String VANTIQ_SOURCES_DIR = 'sources'
-    public static final String VANTIQ_TYPES_DIR = 'types'
+    public final static String VANTIQ_SYSTEM_PREFIX = 'system.'
+    public static final String VANTIQ_DOCUMENTS = 'documents'
+    public static final String VANTIQ_PROJECTS = 'projects'
+    public static final String VANTIQ_RULES = 'rules'
+    public static final String VANTIQ_SERVICES = 'services'
+    public static final String VANTIQ_SOURCES = 'sources'
+    public static final String VANTIQ_TYPES = 'types'
 
     public static final String CAMEL_CONNECTOR_SOURCE_TYPE = 'CAMEL_SOURCE'
     public static final String PROPERTY_PLACEHOLDER_SUFFIX = '_placeholder'
     public static final String CONFIG_CAMEL_RUNTIME = 'camelRuntime'
     public static final String CONFIG_CAMEL_GENERAL = 'general'
     public static final String CAMEL_RUNTIME_APPNAME = 'appName'
+    public static final String CAMEL_RUNTIME_PROPERTY_VALUES = 'propertyValues'
     public static final String CAMEL_RUNTIME_ROUTE_DOCUMENT = 'routeDocument'
     public static final String YAML_ROUTE_SUFFIX = '.routes.yaml'
 
@@ -155,7 +161,7 @@ class AssemblyGen extends DefaultTask {
                             String title =
                                 (String) ((Map<String, Object>) ((Map<String, Object>) yamlMap.get('spec'))
                                     .get('definition')).get('title')
-                            log.debug('Found spec for {}', title)
+                            log.info('Found spec for {}', title)
 
                             // Read any defined properties.  These will become properties for our assembly.
                             //noinspection unchecked
@@ -192,10 +198,10 @@ class AssemblyGen extends DefaultTask {
                             template = constructRouteText(template)
 
                             // Now, generate & populate results
-                            Path thisKameletDirectory = Paths.get(generateBase.toAbsolutePath().toString(), kamName)
-                            if (!Files.exists(thisKameletDirectory)) {
-                                log.info('Creating kamelet-specific project directory: {}', thisKameletDirectory)
-                                thisKameletDirectory = Files.createDirectories(thisKameletDirectory)
+                            Path assemblyRoot = Paths.get(generateBase.toAbsolutePath().toString(), kamName)
+                            if (!Files.exists(assemblyRoot)) {
+                                log.info('Creating kamelet-specific project directory: {}', assemblyRoot)
+                                assemblyRoot = Files.createDirectories(assemblyRoot)
                             }
                             log.info('\nResults for Kamelet: {}', kamName)
                             log.info('\n>>>   Properties:')
@@ -210,17 +216,36 @@ class AssemblyGen extends DefaultTask {
                             String routeDocumentString = dumper.dumpToString(template)
 
                             log.info('\n>>>   Converted Template as Yaml:\n{}', routeDocumentString)
-                            log.info('\nWriting project to: {}', thisKameletDirectory)
+                            log.info('\nWriting project to: {}', assemblyRoot)
 
-                            Path propFile = Paths.get(thisKameletDirectory.toAbsolutePath().toString(),
-                                'props.json')
                             // FIXME: Convert this to a project file defining the assembly
+                            Path propFile = Paths.get(assemblyRoot.toAbsolutePath().toString(),
+                                'props.json')
                             Files.writeString(propFile, JsonOutput.prettyPrint(JsonOutput.toJson(props)))
 
-                            Path routeDocPath = writeRouteDocument(kamName, thisKameletDirectory, packageName,
-                                                         routeDocumentString)
-                            addSourceDefinition(thisKameletDirectory, packageName, kamName,
-                                routeDocPath.fileName.toString(), props)
+                            Map routeDoc = writeRouteDocument(assemblyRoot, packageName, kamName, routeDocumentString)
+                            Map sourceDef = addSourceDefinition(assemblyRoot, packageName, kamName,
+                                                                    routeDoc.path.fileName.toString(), props)
+                            log.info('Created sourceDef: {}', sourceDef)
+                            Map serviceDef = [vailName: 'foobar', reference: 'system.services/foobar']
+                            //addService(assemblyRoot, packageName, serviceName)
+                            log.info('Created serviceDef: {}', sourceDef)
+
+                            Map ruleDef = addRoutingRule(assemblyRoot, packageName, kamName,
+                                serviceDef.vailName as String,
+                                sourceDef.vailName as String, isSink)
+                            log.info('Created rule def: {}', ruleDef)
+                            List<String> componentList = [routeDoc.reference as String,
+                                                          sourceDef.reference as String,
+                                                          serviceDef.reference as String]
+                            if (ruleDef) {
+                                componentList << (ruleDef.reference as String)
+                            }
+                            log.info("Launching project def: addProjDef({}, {}, {}, {}, {}, {}",
+                                assemblyRoot, packageName, kamName, title, props, componentList)
+                            Map projectDef = addProjectDefinition(assemblyRoot, packageName, kamName,
+                                                    title, props, componentList)
+
                         }
                     } else {
                         discards = ArrayUtils.add(discards, x.getName())
@@ -257,7 +282,7 @@ class AssemblyGen extends DefaultTask {
      * @param routeDoc String name of the document containing the route
      * @param props Map<String, Object> The Camel properties associated with this kamelet.
      */
-    static Path addSourceDefinition(Path vantiqProjectDir, String packageName, String kamName,
+    static Map<String, Object> addSourceDefinition(Path vantiqProjectDir, String packageName, String kamName,
                                     String routeDoc, Map<String, Object> props) {
         log.info('Creating source for kamelet: {} in package {} using route: {}, ')
         def sourceDef = [:]
@@ -266,7 +291,7 @@ class AssemblyGen extends DefaultTask {
         sourceDef.messageType = null // FIXME: Is there a schema we know about this?  Should there be?
         sourceDef.activationConstraint = ''
         sourceDef.type = CAMEL_CONNECTOR_SOURCE_TYPE
-        def camelAppConfig = [(CAMEL_RUNTIME_APPNAME)       : kamName,
+        def camelAppConfig = [(CAMEL_RUNTIME_APPNAME): kamName,
                               (CAMEL_RUNTIME_ROUTE_DOCUMENT): routeDoc]
         def propValStubs = [:]
         props.each { aProp ->
@@ -279,26 +304,156 @@ class AssemblyGen extends DefaultTask {
         sourceDef.config = [ (CONFIG_CAMEL_RUNTIME): camelAppConfig, (CONFIG_CAMEL_GENERAL): generalConfig]
         String srcDefJson = JsonOutput.prettyPrint(JsonOutput.toJson(sourceDef))
         log.info('Creating source {}:\n{}', sourceDef.name, srcDefJson)
-        writeVantiqEntity(VANTIQ_SOURCES_DIR, vantiqProjectDir, packageName, sourceDef.name as String,
+        Map<String, Object> retVal = [:]
+        retVal.path = writeVantiqEntity(VANTIQ_SOURCES, vantiqProjectDir, packageName, sourceDef.name as String,
             srcDefJson, true)
+        retVal.reference = buildResourceRef(VANTIQ_SOURCES, sourceDef.name as String)
+        retVal.vailName = sourceDef.name
+        return retVal
     }
 
+    /**
+     * Construct basic project definition for kamelet.
+     *
+     * FIXME -- fill in
+     * @oarams
+     * @returns Map<String, Object> containing Path written & resourceReference
+     */
 
+    Map<String, Object> addProjectDefinition(Path vantiqProjectDir, String packageName, String projectName,
+                                             String description, Map<String, Object> props,
+                                             List<String> components) {
+        def project = [:]
+        project.name = packageName
+        project.type = 'dev'
+        project.ars_relationships = []
+        project.links = []
+        project.tools = []
+        project.views = []
+        project.partitions = []
+        project.isAssembly = true
+        log.info('Creating visible resources')
+        project.visibleResources = components.findAll {
+            it.startsWith(VANTIQ_SYSTEM_PREFIX + VANTIQ_SERVICES)
+        }
+        log.info('finding source...')
+        def sourceName = components.find {
+            it.startsWith(VANTIQ_SYSTEM_PREFIX + VANTIQ_SOURCES)
+        }
+        log.info('Found projects source reference: {}', sourceName)
+        sourceName = sourceName.substring(sourceName.lastIndexOf('/') + 1)
+        log.info('Found projects source name {}', sourceName)
+
+        project.options = [
+            description: description,
+            filterBitArray: 'ffffffffffffffffffffffffffffffff',
+            type: 'dev',
+            v: 5,
+            isModeloProject: true,
+        ]
+
+        List<Map<String, Object>> resources = []
+        components.each {comp ->
+            resources << ([resourceReference: comp] as Map<String, Object>)
+        }
+        project.resources = resources
+
+        Map<String, Map<String, Object>> cfgProps = [:]
+        Map<String, Map<String, Object>> cfgMappings = [:]
+        props.each { pName, o ->
+            log.info("\t processing property {}: {}", pName, o)
+            Map pDesc
+            if (o instanceof Map) {
+                pDesc = o as Map
+            } else {
+                throw new GradleException("prop desc not map: " + o.class.name)
+            }
+            log.info("\t processing property {}: {}", pName, pDesc)
+
+            Map<String, Object> propDesc = [ required: true ] // FIXME -- maybe not
+            if (pDesc.default) {
+                propDesc.default = pDesc.default
+            } else {
+                propDesc.default = ''
+            }
+            if (pDesc.description) {
+                propDesc.description = pDesc.description
+            } else {
+                propDesc.description = pDesc.title
+            }
+            if (pDesc.type) {
+                propDesc.type = StringUtils.capitalize(pDesc.type as String)
+            } else {
+                propDesc.type = 'String'    // FIXME -- Better Default?
+            }
+            if (pDesc.format == 'password') {
+                // FIXME -- we should probably generate a secret here or see if assemblies will do this for us
+            }
+            if (pDesc.enum) {
+                propDesc.enum = pDesc.enum
+            }
+            log.info('PropDesc for {} : {}', pName, propDesc)
+            cfgProps[pName] = propDesc
+            // FIXME -- handle secrets if appropriate
+            cfgMappings[pName] = [resource: VANTIQ_SOURCES, resourceId: sourceName,
+                                  property:
+                                      "config.${CONFIG_CAMEL_RUNTIME}.${CAMEL_RUNTIME_PROPERTY_VALUES}.${pName}"] as
+                                            Map<String, Object>
+        }
+        project.configurationMappings = cfgMappings
+        project.configurationProperties = cfgProps
+        log.info('Built project: {}', project)
+        Map<String, Object> retVal = [:]
+
+        retVal.path = writeVantiqEntity(VANTIQ_PROJECTS, vantiqProjectDir, packageName, projectName,
+                            JsonOutput.prettyPrint(JsonOutput.toJson(project)), false)
+        retVal.reference = buildResourceRef(VANTIQ_PROJECTS, packageName, projectName)
+        retVal.vailName = packageName
+        return retVal
+    }
     /**
      * For the routeDocumentString provided, write it out as a Vantiq document as part of the kamelets project.
      *
-     * @param kamName String name of the kamelet on which we're working
      * @param thisKameletDirectory Path the directory used for this kamelet assembly
      * @param packageName String package name we'll use for this assembly
+     * @param kamName String name of the kamelet on which we're working
      * @param routeDocumentString String the actual route document as extracted from the Kamelet
-     * @return Path of document written
+     * @return Map<String, Object> containing Path of document written & resourceReference to it when imported
      */
-    static Path writeRouteDocument(String kamName, Path thisKameletDirectory,
-                                           String packageName, String routeDocumentString) {
+    static Map<String, Object> writeRouteDocument(Path thisKameletDirectory,
+                                           String packageName, String kamName, String routeDocumentString) {
         String docName = kamName + YAML_ROUTE_SUFFIX
-        writeVantiqEntity(VANTIQ_DOCUMENTS_DIR, thisKameletDirectory, packageName,
+        Map<String, Object> retVal = [:]
+        retVal.path = writeVantiqEntity(VANTIQ_DOCUMENTS, thisKameletDirectory, packageName,
             docName, routeDocumentString, false)
+        retVal.reference = buildResourceRef(VANTIQ_DOCUMENTS, docName)
+        return retVal
     }
+
+    static Map<String, Object> addRoutingRule(Path vantiqProjectDirectory, String packageName, String kamName,
+                                              String sourceName, String serviceName, Boolean isSink) {
+        Map<String, Object> retVal = [:]
+        String ruleName = kamName + (isSink ? '-toEvent' : '-fromEvent')
+
+        String ruleText = null
+        def engine = new SimpleTemplateEngine()
+        if (isSink) {
+            ruleText = engine.createTemplate(SINK_RULE_TEMPLATE).make([packageName: packageName,
+                                                                       ruleName: ruleName,
+                                                                       serviceName: serviceName,
+                                                                       sourceName: sourceName]).toString()
+        }
+
+        if (ruleText) {
+            retVal.path = writeVantiqEntity(VANTIQ_RULES, vantiqProjectDirectory, packageName,
+                ruleName, ruleText, false)
+            retVal.reference = buildResourceRef(VANTIQ_RULES, packageName, ruleName)
+            return retVal
+        } else {
+            return null
+        }
+    }
+
 
     static Path writeVantiqEntity(String entType, Path vantiqProjectDirectory, String packageName,
                                   String entName, String content, Boolean packageIsDirectory) {
@@ -307,7 +462,10 @@ class AssemblyGen extends DefaultTask {
         if (packageIsDirectory) {
              entDirectoryList += packageName.split(Pattern.quote(PACKAGE_SEPARATOR)).toList()
         }
-        Path entDir = Paths.get(*(entDirectoryList))
+
+        // IntelliJ doesn't handle spread operator well here.
+        //noinspection GroovyAssignabilityCheck
+        Path entDir = Paths.get(*entDirectoryList)
         if (!Files.exists(entDir)) {
             Files.createDirectories(entDir)
         }
@@ -316,7 +474,7 @@ class AssemblyGen extends DefaultTask {
             entName = packageName + PACKAGE_SEPARATOR + entName
         }
         Path entFilePath = Paths.get(entDir.toAbsolutePath().toString(), entName)
-        log.info('Should be building {}} as path: {}', entType, entFilePath.toString())
+        log.info('Creating {} definition at path: {}', entType, entFilePath.toString())
         return Files.writeString(entFilePath, content)
     }
 
@@ -408,4 +566,29 @@ class AssemblyGen extends DefaultTask {
         }
         return parsed
     }
+
+    static String buildResourceRef(String resourceType, String packageName, String resourceId) {
+        if (packageName) {
+            return VANTIQ_SYSTEM_PREFIX + "${resourceType}/${packageName} + ${PACKAGE_SEPARATOR} + ${resourceId}"
+        } else {
+            return buildResourceRef(resourceType, resourceId)
+        }
+    }
+
+    static String buildResourceRef(String resourceType, String resourceId) {
+        return VANTIQ_SYSTEM_PREFIX + "${resourceType}/${resourceId}"
+    }
+
+    // def ourRule = SINK_RULE_TEMPLATE.toString(packageName: pkgName, ruleName: value, serviceName: value2,
+    // sourceName: value3)
+    public static final String SINK_RULE_TEMPLATE = '''
+package ${packageName}
+RULE ${ruleName}
+WHEN EVENT OCCURS ON "/services/${serviceName} AS svcMsg
+
+var srcName = "${sourceName}"
+
+// FIXME -- need tp figure out how to get message format if applicable -- may require some manual step?
+PUBLISH {message: svcMsg.value} TO SOURCE @srcName
+'''
 }
