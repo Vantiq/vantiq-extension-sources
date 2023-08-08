@@ -1,0 +1,37 @@
+import io.vantiq.extsrc.assy.tasks.AssemblyGen
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    implementation "org.apache.camel.kamelets:camel-kamelets:3.20.2"
+}
+
+tasks.withType(JavaCompile) {
+    options.encoding = 'UTF-8'
+}
+
+test {
+    useJUnitPlatform()
+}
+
+task zipAssemblies
+
+File vtqResources = new File(project.buildDir, 'vantiqGeneratedResources')
+File vtqAssemblies = new File(project.buildDir, 'vantiqAssemblies')
+vtqResources.eachDir { resourceDir ->
+    def taskName = "zip${resourceDir.name.capitalize()}"
+    task "${taskName}"(type: Zip) {
+        dependsOn('generateAssemblies')
+        from resourceDir
+        destinationDir vtqAssemblies
+        baseName resourceDir.name
+    }
+    zipAssemblies.dependsOn taskName
+}
+
+tasks.register('generateAssemblies', AssemblyGen)
+
+assemble.finalizedBy('generateAssemblies')
+generateAssemblies.finalizedBy('zipAssemblies')
