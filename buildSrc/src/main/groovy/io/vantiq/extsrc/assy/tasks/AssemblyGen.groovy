@@ -63,6 +63,9 @@ class AssemblyGen extends DefaultTask {
     public static final String VANTIQ_SERVICES = 'services'
     public static final String VANTIQ_SOURCES = 'sources'
     public static final String VANTIQ_TYPES = 'types'
+    public static final String RULE_SINK_NAME_SUFFIX = '_svcToSrc'
+    public static final String RULE_SOURCE_NAME_SUFFIX = '_srcToSvc'
+    public static final String SERVICE_NAME_SUFFIX = '_service'
 
     public static final String CAMEL_CONNECTOR_SOURCE_TYPE = 'CAMEL_SOURCE'
     public static final String PROPERTY_PLACEHOLDER_SUFFIX = '_placeholder'
@@ -72,6 +75,9 @@ class AssemblyGen extends DefaultTask {
     public static final String CAMEL_RUNTIME_PROPERTY_VALUES = 'propertyValues'
     public static final String CAMEL_RUNTIME_ROUTE_DOCUMENT = 'routeDocument'
     public static final String YAML_ROUTE_SUFFIX = '.routes.yaml'
+    public static final String JSON_SUFFIX = '.json'
+    public static final String VAIL_SUFFIX = '.vail'
+    public static final String CAMEL_MESSAGE_SCHEMA = 'io.vantiq.extsrc.camelcomp.schema.base'
 
     public final Project project
     
@@ -199,6 +205,7 @@ class AssemblyGen extends DefaultTask {
      * @param classLoader URLClassLoader loader to use to fetch the Kamelet definition
      * @param outputRoot Path location into which to save the Assembly definition
      */
+//    @SuppressWarnings('GroovyUnusedAssignment')
     void createAssemblyFromKamelet(String kameletDefinition, Boolean isSink, Load yamlLoader, URLClassLoader classLoader,
                                    Path outputRoot) {
         // If it's a source or sink kamelet, we'll turn it into an assembly containing a source to
@@ -229,6 +236,7 @@ class AssemblyGen extends DefaultTask {
                 ((Map<String, String>) v).get('description'))
         })
         String kamName = kameletDefinition.substring(0, kameletDefinition.indexOf('.kamelet.yaml'))
+        kamName = kamName.replace('-', '_')
         String packageName = String.join(PACKAGE_SEPARATOR, ASSEMBLY_PACKAGE_BASE, kamName)
 
         DumpSettings dumpSettings = DumpSettings.builder()
@@ -271,16 +279,11 @@ class AssemblyGen extends DefaultTask {
         log.info('\n>>>   Converted Template as Yaml:\n{}', routeDocumentString)
         log.info('\nWriting project to: {}', assemblyRoot)
 
-        Path propFile = Paths.get(assemblyRoot.toAbsolutePath().toString(),
-            'props.json')
-        Files.writeString(propFile, JsonOutput.prettyPrint(JsonOutput.toJson(props)))
-
         Map routeDoc = writeRouteDocument(assemblyRoot, packageName, kamName, routeDocumentString)
         Map sourceDef = addSourceDefinition(assemblyRoot, packageName, kamName,
             routeDoc.path.fileName.toString(), props)
         log.info('Created sourceDef: {}', sourceDef)
-        Map serviceDef = [vailName: 'foobar', reference: 'system.services/foobar']
-        //addService(assemblyRoot, packageName, serviceName)
+        Map serviceDef = addServiceDefinition(assemblyRoot, packageName, kamName, isSink)
         log.info('Created serviceDef: {}', sourceDef)
 
         Map ruleDef = addRoutingRule(assemblyRoot, packageName, kamName,
@@ -295,8 +298,65 @@ class AssemblyGen extends DefaultTask {
         }
         log.info("Launching project def: addProjDef({}, {}, {}, {}, {}, {}",
             assemblyRoot, packageName, kamName, title, props, componentList)
+        //noinspection GroovyUnusedAssignment       // Useful for debugging...
         Map projectDef = addProjectDefinition(assemblyRoot, packageName, kamName,
             title, props, componentList)
+    }
+
+    /**
+     * Add service definition
+     *
+     * @param kameletAssemblyDir Path location of the base location for the project artifacts
+     * @param packageName String name of the package to which this service will belong
+     * @param kamName String name of the kamelet which will be used to construct the service name
+     * @param isSink Boolean representing whether this service is for a sink or source kamelet/assembly
+     * @returns Map<String, Object> containing Path written & resourceReference
+     */
+    static Map<String, Object> addServiceDefinition(Path kameletAssemblyDir, String packageName, String kamName,
+                                                    Boolean isSink) {
+        def name = packageName + PACKAGE_SEPARATOR + kamName + SERVICE_NAME_SUFFIX
+        def service = [
+            active: true,
+            ars_relationships: [],
+            description: 'Service connecting source ' + packageName + PACKAGE_SEPARATOR + kamName +
+                ' to Vantiq service events',
+            globalType: null,
+            interface: [],
+            internalEventHandlers: [],
+            name: name,
+            partitionType: null,
+            replicationFactor: 1,
+            scheduledProcedures: [:]
+        ]
+        def eventName = name + 'Event'
+        def eventType = [
+            (eventName): [
+                direction: (isSink ? 'INBOUND' : 'OUTBOUND'),
+                eventSchema: buildResourceRef(VANTIQ_TYPES, CAMEL_MESSAGE_SCHEMA),  // FIXME: Extend if we offer
+                // options
+                    // here.
+                isReliable: false
+            ]
+        ]
+
+        def associatedRule = "/rules/${name + (isSink ? RULE_SINK_NAME_SUFFIX : RULE_SOURCE_NAME_SUFFIX)}"
+        if (isSink) {
+            eventType[eventName].implementingResource = associatedRule
+        } else {
+            service.internalEventHandlers += associatedRule
+        }
+        service.eventTypes = eventType
+
+        String svcDefJson = JsonOutput.prettyPrint(JsonOutput.toJson(service))
+        log.info('Creating service {}:\n{}', service.name, svcDefJson)
+        Map<String, Object> retVal = [:]
+        retVal.path = writeVantiqEntity(VANTIQ_SERVICES, kameletAssemblyDir, packageName,
+            kamName + JSON_SUFFIX, svcDefJson, true)
+        retVal.reference = buildResourceRef(VANTIQ_SERVICES, service.name as String)
+        retVal.vailName = service.name
+        return retVal
+
+
     }
 
     /**
@@ -310,6 +370,7 @@ class AssemblyGen extends DefaultTask {
      * @param kamName String name of the kamelet which will be used to construct the source name
      * @param routeDoc String name of the document containing the route
      * @param props Map<String, Object> The Camel properties associated with this kamelet.
+     * @returns Map<String, Object> containing Path written & resourceReference
      */
     static Map<String, Object> addSourceDefinition(Path kameletAssemblyDir, String packageName, String kamName,
                                                    String routeDoc, Map<String, Object> props) {
@@ -334,8 +395,8 @@ class AssemblyGen extends DefaultTask {
         String srcDefJson = JsonOutput.prettyPrint(JsonOutput.toJson(sourceDef))
         log.info('Creating source {}:\n{}', sourceDef.name, srcDefJson)
         Map<String, Object> retVal = [:]
-        retVal.path = writeVantiqEntity(VANTIQ_SOURCES, kameletAssemblyDir, packageName, sourceDef.name as String,
-            srcDefJson, true)
+        retVal.path = writeVantiqEntity(VANTIQ_SOURCES, kameletAssemblyDir, packageName,
+            kamName + JSON_SUFFIX, srcDefJson, true)
         retVal.reference = buildResourceRef(VANTIQ_SOURCES, sourceDef.name as String)
         retVal.vailName = sourceDef.name
         return retVal
@@ -452,7 +513,7 @@ class AssemblyGen extends DefaultTask {
         log.info('Built project {}:\n {}', project.name, projectJson)
         Map<String, Object> retVal = [:]
 
-        retVal.path = writeVantiqEntity(VANTIQ_PROJECTS, kameletAssemblyDir, packageName, projectName,
+        retVal.path = writeVantiqEntity(VANTIQ_PROJECTS, kameletAssemblyDir, packageName, projectName + JSON_SUFFIX,
             projectJson, false)
         retVal.reference = buildResourceRef(VANTIQ_PROJECTS, packageName, projectName)
         retVal.vailName = packageName
@@ -492,7 +553,7 @@ class AssemblyGen extends DefaultTask {
     static Map<String, Object> addRoutingRule(Path kameletAssemblyDir, String packageName, String kamName,
                                               String sourceName, String serviceName, Boolean isSink) {
         Map<String, Object> retVal = [:]
-        String ruleName = kamName + (isSink ? '-toEvent' : '-fromEvent')
+        String ruleName = kamName + (isSink ? RULE_SINK_NAME_SUFFIX : RULE_SOURCE_NAME_SUFFIX)\
 
         String ruleText
         def engine = new SimpleTemplateEngine()
@@ -511,7 +572,7 @@ class AssemblyGen extends DefaultTask {
 
         if (ruleText) {
             retVal.path = writeVantiqEntity(VANTIQ_RULES, kameletAssemblyDir, packageName,
-                ruleName, ruleText, false)
+                ruleName + VAIL_SUFFIX, ruleText, true)
             retVal.reference = buildResourceRef(VANTIQ_RULES, packageName, ruleName)
             return retVal
         } else {
@@ -520,7 +581,7 @@ class AssemblyGen extends DefaultTask {
     }
 
     static Path writeVantiqEntity(String entType, Path kameletAssemblyDir, String packageName,
-                                  String entName, String content, Boolean packageIsDirectory) {
+                                  String fileName, String content, Boolean packageIsDirectory) {
 
         List<String> entDirectoryList = [kameletAssemblyDir.toAbsolutePath().toString(), entType]
         if (packageIsDirectory) {
@@ -535,9 +596,9 @@ class AssemblyGen extends DefaultTask {
         }
 
         if (!packageIsDirectory) {
-            entName = packageName + PACKAGE_SEPARATOR + entName
+            fileName = packageName + PACKAGE_SEPARATOR + fileName
         }
-        Path entFilePath = Paths.get(entDir.toAbsolutePath().toString(), entName)
+        Path entFilePath = Paths.get(entDir.toAbsolutePath().toString(), fileName)
         log.info('Creating {} definition at path: {}', entType, entFilePath.toString())
         return Files.writeString(entFilePath, content)
     }
@@ -665,7 +726,7 @@ class AssemblyGen extends DefaultTask {
     public static final String SINK_RULE_TEMPLATE = '''
 package ${packageName}
 RULE ${ruleName}
-WHEN EVENT OCCURS ON "/services/${serviceName} AS svcMsg
+WHEN EVENT OCCURS ON "/services/${packageName + '.' + serviceName}" AS svcMsg
 
 var srcName = "${sourceName}"
 
@@ -679,6 +740,7 @@ package ${packageName}
 RULE ${ruleName}
 WHEN EVENT OCCURS ON "/sources/${sourceName}" as svcMsg
 
-PUBLISH { header: svcMsg.value.header, message: svcMsg.value.message } TO SERVICE EVENT "${serviceEvent}"
+PUBLISH { header: svcMsg.value.header, message: svcMsg.value.message } 
+    TO SERVICE EVENT "${packageName + '.' + serviceName}/${serviceName + 'Event'}"
 '''
 }
