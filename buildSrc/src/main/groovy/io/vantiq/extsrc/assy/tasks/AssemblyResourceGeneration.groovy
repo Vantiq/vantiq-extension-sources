@@ -101,7 +101,7 @@ class AssemblyResourceGeneration extends DefaultTask {
         if (this.assemblyResourceBase == null) {
             throw new GradleException('AssemblyGen requires a non-null project extension property.')
         }
-        log.lifecycle('Creating assembly resources under {}', this.assemblyResourceBase)
+        log.info('Creating assembly resources under {}', this.assemblyResourceBase)
     }
     
     /**
@@ -187,7 +187,7 @@ class AssemblyResourceGeneration extends DefaultTask {
                 }
                 project.getLogger().lifecycle('{} kamelets found & parsed.',
                     kameletCount)
-                project.getLogger().lifecycle('    {} kamelets discarded\n      (neither source nor sink as ' +
+                project.getLogger().lifecycle('    {} kamelets ignored\n      (neither source nor sink as ' +
                     'determined by naming conventions).', discards.length)
             } catch (Exception e) {
                 throw new GradleException('Error opening jar file: ' + kameletJarFile + ' :: ' +
