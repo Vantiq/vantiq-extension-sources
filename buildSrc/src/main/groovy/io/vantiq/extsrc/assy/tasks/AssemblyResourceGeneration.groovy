@@ -8,8 +8,6 @@ import org.apache.commons.lang3.StringUtils
 import org.gradle.api.DefaultTask
 import org.gradle.api.GradleException
 import org.gradle.api.artifacts.Configuration
-import org.gradle.api.tasks.InputDirectory
-import org.gradle.api.tasks.Internal
 import org.gradle.api.tasks.OutputDirectory
 import org.gradle.api.tasks.TaskAction
 import org.snakeyaml.engine.v2.api.DumpSettings
@@ -67,6 +65,7 @@ class AssemblyResourceGeneration extends DefaultTask {
     public static final String RULE_SINK_NAME_SUFFIX = '_svcToSrc'
     public static final String RULE_SOURCE_NAME_SUFFIX = '_srcToSvc'
     public static final String SERVICE_NAME_SUFFIX = '_service'
+    public static final String SOURCE_NAME_SUFFIX = '_source'
 
     public static final String CAMEL_CONNECTOR_SOURCE_TYPE = 'CAMEL_SOURCE'
     public static final String PROPERTY_PLACEHOLDER_SUFFIX = '_placeholder'
@@ -84,9 +83,11 @@ class AssemblyResourceGeneration extends DefaultTask {
 
     public static final String ASSEMBLY_RESOURCE_BASE_PROPERTY = 'generatedResourceBase'
 
+    // Note that the following annotation 1) allows gradle to figure out what's up, and 2) will have gradle
+    // create the directory (path)
     @OutputDirectory
-    final String assemblyResourceBase =
-        project.getExtensions()?.getExtraProperties()?.getAt(ASSEMBLY_RESOURCE_BASE_PROPERTY)
+    final File assemblyResourceBase = new File(project.buildDir,
+        project.getExtensions()?.getExtraProperties()?.getAt(ASSEMBLY_RESOURCE_BASE_PROPERTY) as String)
     
     @Inject
     AssemblyResourceGeneration(Project project) {
@@ -113,13 +114,9 @@ class AssemblyResourceGeneration extends DefaultTask {
         Path buildDir = project.getBuildDir()?.toPath()
         assert buildDir != null
         if (!(Files.exists(buildDir) && Files.isDirectory(buildDir))) {
-            throw new GradleException('Internal Error: BuildDir not present or not directory: ' + buildDir)
+            throw new GradleException('Internal Error: buildDir not present or not directory: ' + buildDir)
         }
-        Path generateBase = Paths.get(buildDir.toAbsolutePath().toString(), assemblyResourceBase)
-        if (!Files.exists(generateBase)) {
-            log.info('Creating base dir: {}', generateBase)
-            generateBase = Files.createDirectories(generateBase)
-        }
+        Path generateBase = assemblyResourceBase.toPath()
         LoadSettings settings = LoadSettings.builder().build()
         Load load = new Load(settings)
     
@@ -208,7 +205,6 @@ class AssemblyResourceGeneration extends DefaultTask {
      * @param classLoader URLClassLoader loader to use to fetch the Kamelet definition
      * @param outputRoot Path location into which to save the Assembly definition
      */
-//    @SuppressWarnings('GroovyUnusedAssignment')
     void createAssemblyFromKamelet(String kameletDefinition, Boolean isSink, Load yamlLoader, URLClassLoader classLoader,
                                    Path outputRoot) {
         // If it's a source or sink kamelet, we'll turn it into an assembly containing a source to
@@ -317,7 +313,8 @@ class AssemblyResourceGeneration extends DefaultTask {
      */
     static Map<String, Object> addServiceDefinition(Path kameletAssemblyDir, String packageName, String kamName,
                                                     Boolean isSink) {
-        def name = packageName + PACKAGE_SEPARATOR + kamName + SERVICE_NAME_SUFFIX
+        def plainName = kamName + SERVICE_NAME_SUFFIX
+        def name = packageName + PACKAGE_SEPARATOR + plainName
         def service = [
             active: true,
             ars_relationships: [],
@@ -354,7 +351,7 @@ class AssemblyResourceGeneration extends DefaultTask {
         log.info('Creating service {}:\n{}', service.name, svcDefJson)
         Map<String, Object> retVal = [:]
         retVal.path = writeVantiqEntity(VANTIQ_SERVICES, kameletAssemblyDir, packageName,
-            kamName + JSON_SUFFIX, svcDefJson, true)
+            plainName + JSON_SUFFIX, svcDefJson, true)
         retVal.reference = buildResourceRef(VANTIQ_SERVICES, service.name as String)
         retVal.vailName = service.name
         return retVal
@@ -379,8 +376,9 @@ class AssemblyResourceGeneration extends DefaultTask {
                                                    String routeDoc, Map<String, Object> props) {
         log.info('Creating source for kamelet: {} in package {} using route: {}, ')
         def sourceDef = [:]
+        def plainName = kamName + SOURCE_NAME_SUFFIX
         sourceDef.active = true
-        sourceDef.name = packageName + PACKAGE_SEPARATOR + kamName
+        sourceDef.name = packageName + PACKAGE_SEPARATOR + plainName
         sourceDef.messageType = null // FIXME: Is there a schema we know about this?  Should there be?
         sourceDef.activationConstraint = ''
         sourceDef.type = CAMEL_CONNECTOR_SOURCE_TYPE
@@ -399,7 +397,7 @@ class AssemblyResourceGeneration extends DefaultTask {
         log.info('Creating source {}:\n{}', sourceDef.name, srcDefJson)
         Map<String, Object> retVal = [:]
         retVal.path = writeVantiqEntity(VANTIQ_SOURCES, kameletAssemblyDir, packageName,
-            kamName + JSON_SUFFIX, srcDefJson, true)
+            plainName + JSON_SUFFIX, srcDefJson, true)
         retVal.reference = buildResourceRef(VANTIQ_SOURCES, sourceDef.name as String)
         retVal.vailName = sourceDef.name
         return retVal
