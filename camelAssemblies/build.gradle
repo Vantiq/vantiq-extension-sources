@@ -1,4 +1,4 @@
-import io.vantiq.extsrc.assy.tasks.AssemblyGen
+import io.vantiq.extsrc.assy.tasks.AssemblyResourceGeneration
 
 repositories {
     mavenCentral()
@@ -6,6 +6,11 @@ repositories {
 
 dependencies {
     implementation "org.apache.camel.kamelets:camel-kamelets:3.20.2"
+}
+
+ext {
+    generatedResourceBase = 'vantiqGeneratedResources'
+    zippedAssemblies = 'vantiqAssemblies'
 }
 
 tasks.withType(JavaCompile) {
@@ -18,12 +23,12 @@ test {
 
 task zipAssemblies
 
-File vtqResources = new File(project.buildDir, 'vantiqGeneratedResources')
-File vtqAssemblies = new File(project.buildDir, 'vantiqAssemblies')
+File vtqResources = new File(project.buildDir, "${generatedResourceBase}")
+File vtqAssemblies = new File(project.buildDir, "${zippedAssemblies}")
 vtqResources.eachDir { resourceDir ->
     def taskName = "zip${resourceDir.name.capitalize()}"
     task "${taskName}"(type: Zip) {
-        dependsOn('generateAssemblies')
+        it.inputs.dir(vtqResources)
         from resourceDir
         destinationDir vtqAssemblies
         baseName resourceDir.name
@@ -31,7 +36,7 @@ vtqResources.eachDir { resourceDir ->
     zipAssemblies.dependsOn taskName
 }
 
-tasks.register('generateAssemblies', AssemblyGen)
+tasks.register('generateAssemblyResources', AssemblyResourceGeneration)
 
-assemble.finalizedBy('generateAssemblies')
-generateAssemblies.finalizedBy('zipAssemblies')
+assemble.finalizedBy('generateAssemblyResources')
+generateAssemblyResources.finalizedBy('zipAssemblies')

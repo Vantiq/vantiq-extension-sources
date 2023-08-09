@@ -8,6 +8,8 @@ import org.apache.commons.lang3.StringUtils
 import org.gradle.api.DefaultTask
 import org.gradle.api.GradleException
 import org.gradle.api.artifacts.Configuration
+import org.gradle.api.tasks.InputDirectory
+import org.gradle.api.tasks.Internal
 import org.gradle.api.tasks.OutputDirectory
 import org.gradle.api.tasks.TaskAction
 import org.snakeyaml.engine.v2.api.DumpSettings
@@ -29,8 +31,7 @@ import java.util.regex.Pattern
  */
 
 @Slf4j
-class AssemblyGen extends DefaultTask {
-    public static final String KAMELET_GEN_BASE = 'vantiqGeneratedResources'
+class AssemblyResourceGeneration extends DefaultTask {
     public static final String VANTIQ_SERVER_CONFIG = 'vantiq://server.config'
     public static final String VANTIQ_SERVER_CONFIG_JSON = VANTIQ_SERVER_CONFIG + '?consumerOutputJson=true'
     
@@ -80,24 +81,26 @@ class AssemblyGen extends DefaultTask {
     public static final String CAMEL_MESSAGE_SCHEMA = 'io.vantiq.extsrc.camelcomp.schema.base'
 
     public final Project project
+
+    public static final String ASSEMBLY_RESOURCE_BASE_PROPERTY = 'generatedResourceBase'
+
+    @OutputDirectory
+    final String assemblyResourceBase =
+        project.getExtensions()?.getExtraProperties()?.getAt(ASSEMBLY_RESOURCE_BASE_PROPERTY)
     
     @Inject
-    AssemblyGen(Project project) {
+    AssemblyResourceGeneration(Project project) {
         this.project = project
         if (project == null) {
             throw new GradleException('AssemblyGen requires a non-null project.')
         }
-    }
-    
-    @OutputDirectory
-    File getOutputDirectory() {
-        if (!(project.getBuildDir() instanceof File)) {
-            throw new GradleException('Internal Error: buildDir not a file: ' + project.getBuildDir())
+        // Since we depend only on dependencies (& this code), we'll just always re-run
+        this.outputs.upToDateWhen { false }
+
+        if (this.assemblyResourceBase == null) {
+            throw new GradleException('AssemblyGen requires a non-null project extension property.')
         }
-    
-        Path buildDir = project.getBuildDir().toPath()
-        assert buildDir != null
-        return Path.of(buildDir.toAbsolutePath().toString(), KAMELET_GEN_BASE).toFile()
+        log.lifecycle('Creating assembly resources under {}', this.assemblyResourceBase)
     }
     
     /**
@@ -112,7 +115,7 @@ class AssemblyGen extends DefaultTask {
         if (!(Files.exists(buildDir) && Files.isDirectory(buildDir))) {
             throw new GradleException('Internal Error: BuildDir not present or not directory: ' + buildDir)
         }
-        Path generateBase = Paths.get(buildDir.toAbsolutePath().toString(), KAMELET_GEN_BASE)
+        Path generateBase = Paths.get(buildDir.toAbsolutePath().toString(), assemblyResourceBase)
         if (!Files.exists(generateBase)) {
             log.info('Creating base dir: {}', generateBase)
             generateBase = Files.createDirectories(generateBase)
