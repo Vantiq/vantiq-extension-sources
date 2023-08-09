@@ -355,8 +355,6 @@ class AssemblyResourceGeneration extends DefaultTask {
         retVal.reference = buildResourceRef(VANTIQ_SERVICES, service.name as String)
         retVal.vailName = service.name
         return retVal
-
-
     }
 
     /**
