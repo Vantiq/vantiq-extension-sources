@@ -1,0 +1,47 @@
+import io.vantiq.extsrc.assy.tasks.AssemblyResourceGeneration
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    implementation "org.apache.camel.kamelets:camel-kamelets:3.20.2"
+}
+
+ext {
+    generatedResourceBase = 'vantiqGeneratedResources'
+    zippedAssemblies = 'vantiqAssemblies'
+}
+
+tasks.withType(JavaCompile) {
+    options.encoding = 'UTF-8'
+}
+
+test {
+    useJUnitPlatform()
+}
+
+tasks.register('zipAssemblies') {
+    outputs.upToDateWhen { false }
+    def assyCount = 0
+    doLast {
+        File vtqResources = new File(project.buildDir, "${generatedResourceBase}")
+        def assemblies = new File(project.buildDir, "${zippedAssemblies}")
+        mkdir(assemblies)
+        vtqResources.eachDir { resourceDir ->
+            def projName = resourceDir.name
+            logger.info('Processing {}', projName)
+            project.ant.zip(destfile: new File(assemblies, projName + '.zip')) {
+                fileSet(dir: resourceDir)
+            }
+            assyCount += 1
+        }
+        logger.lifecycle('Created {} assemblies.', assyCount)
+    }
+}
+
+tasks.register('generateAssemblyResources', AssemblyResourceGeneration)
+
+assemble.finalizedBy('generateAssemblyResources')
+assemble.finalizedBy('zipAssemblies')
+zipAssemblies.mustRunAfter( 'generateAssemblyResources' )
