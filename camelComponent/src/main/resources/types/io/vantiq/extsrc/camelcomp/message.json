@@ -2,7 +2,7 @@
   "ars_relationships" : [ ],
   "name" : "io.vantiq.extsrc.camelcomp.message",
   "properties" : {
-    "header" : {
+    "headers" : {
       "encrypted" : false,
       "multi" : false,
       "required" : false,
