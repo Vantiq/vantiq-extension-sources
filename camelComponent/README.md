@@ -92,7 +92,7 @@ arrive as Vail objects, where the property names correspond to the Map keys.
 
 By adding the `structuredMessageHeader` component endpoint option with a value of `true` (see below), you can set or access the Camel message headers.  When this option is set to `true`, messages sent to or received from the Camel Component will have two properties: `headers` and `message`, both containing Vail objects. The `message` property will contain a Vail object where each property corresponds to same-named property in the underlying message.  The `headers` property will contain a Vail object where each property contains the value of the named message header.
 
-A schema type definition for this message structure is available in `src/main/resources/types/io/vantq/extsrc/camelcomp/message.json`.
+A schema type definition for this message structure is available in `src/main/resources/types/io/vantiq/extsrc/camelcomp/message.json`.
 
 ## Exchanges to Vantiq
 
@@ -120,7 +120,7 @@ The endpoint options apply to producer and consumer endpoints.  The following ar
 * **sendPings** [optional] a boolean value indicating whether to periodically ping the Vantiq server (default is false)
 * **failedMessageQueueSize** [optional] an integer value indicating how many messages to hold for sending when the connection to the Vantiq server fails.
 * **consumerOutputJson** [optional] a boolean value indicating whether messages sent from Vantiq to the Vantiq component (_i.e._, a Vantiq Consumer) should be put into an Apache Camel Exchange as a JSON message.  If false, messages are put into an exchange as a Java Map.
-* **structuredMessageHeader** [optional] a boolean value indicated whether messages sent to and from the Vantiq component (Vantiq Consumers and Producers) should be structured as
+* **structuredMessageHeader** [optional] a boolean value indicating whether messages sent to and from the Vantiq component (Vantiq Consumers and Producers) should be structured as
 
     ```json
     {
