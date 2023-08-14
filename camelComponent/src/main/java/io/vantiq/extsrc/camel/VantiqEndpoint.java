@@ -53,32 +53,48 @@ import java.util.concurrent.ExecutorService;
 @UriParams
 @Slf4j
 public class VantiqEndpoint extends DefaultEndpoint {
+    
+    public static final String STRUCTURED_MESSAGE_MESSAGE_PROPERTY = "message";
+    public static final String STRUCTURED_MESSAGE_HEADERS_PROPERTY = "headers";
+    
+    public static final String SOURCE_NAME_PARAM = "sourceName";
     @UriParam @Metadata(required = true)
     @Setter
     private String sourceName;
     
+    public static final String ACCESS_TOKEN_PARAM = "accessToken";
     @UriParam(label="security", secret = true) @Metadata(required = true)
     @Setter
     private String accessToken;
     
+    public static final String SEND_PINGS_PARAM = "sendPings";
     @UriParam(defaultValue = "false")
     @Getter
     @Setter
     private boolean sendPings;
     
+    public static final String NO_SSL_PARAM = "noSsl";
     @UriParam(defaultValue = "false")
     @Getter
     @Setter
     private boolean noSsl;
     
+    public static final String CONSUMER_OUTPUT_JSON_PARAM = "consumerOutputJson";
     @UriParam(defaultValue = "false")
     @Getter
     @Setter
     private boolean consumerOutputJson;
     
+    public static final String FAILED_MESSAGE_QUEUE_SIZE_PARAM = "failedMessageQueueSize";
     @UriParam(defaultValue = "25")
     @Setter
     private int failedMessageQueueSize;
+    
+    public static final String STRUCTURED_MESSAGE_HEADER_PARAM = "structuredMessageHeader";
+    @UriParam(defaultValue = "false")
+    @Getter
+    @Setter
+    private boolean structuredMessageHeader;
     
     @Setter
     @Getter
@@ -94,7 +110,7 @@ public class VantiqEndpoint extends DefaultEndpoint {
     @Getter
     private String endpointName;
     
-    InstanceConfigUtils utils = null;
+    InstanceConfigUtils utils;
 
     public VantiqEndpoint() {
         utils = new InstanceConfigUtils();
@@ -294,7 +310,7 @@ public class VantiqEndpoint extends DefaultEndpoint {
             this.setEndpointUri(baseUri);
             String origScheme = vantiqURI.getScheme();
             
-            StringBuffer epString = new StringBuffer(vantiqURI.toString());
+            StringBuilder epString = new StringBuilder(vantiqURI.toString());
             epString.append("?sourceName=").append(sourceName);
             this.sourceName = sourceName;
             epString.append("&accessToken=").append(accessToken);

@@ -1,0 +1,21 @@
+{
+  "ars_relationships" : [ ],
+  "name" : "io.vantiq.extsrc.camelcomp.message",
+  "properties" : {
+    "headers" : {
+      "encrypted" : false,
+      "multi" : false,
+      "required" : false,
+      "type" : "Object",
+      "unique" : false
+    },
+    "message" : {
+      "encrypted" : false,
+      "multi" : false,
+      "required" : false,
+      "type" : "Object",
+      "unique" : false
+    }
+  },
+  "role" : "schema"
+}
