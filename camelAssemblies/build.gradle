@@ -43,5 +43,5 @@ tasks.register('zipAssemblies') {
 tasks.register('generateAssemblyResources', AssemblyResourceGeneration)
 
 assemble.finalizedBy('generateAssemblyResources')
-assemble.finalizedBy('zipAssemblies')
+generateAssemblyResources.finalizedBy('zipAssemblies')
 zipAssemblies.mustRunAfter( 'generateAssemblyResources' )
