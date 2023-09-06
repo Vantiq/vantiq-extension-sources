@@ -51,7 +51,7 @@ class AssemblyResourceGeneration extends DefaultTask {
     public static final String KAMELET_SOURCE = 'kamelet:source'
     public static final String KAMELET_SINK = 'kamelet:sink'
     
-    public static final String ASSEMBLY_PACKAGE_BASE = 'io.vantiq.extsrc.camel.kamelets'
+    public static final String ASSEMBLY_PACKAGE_BASE = 'com.vantiq.extsrc.camel.kamelets'
     public static final String PACKAGE_SEPARATOR = '.'
     
     // Vantiq directory names for project contents
@@ -67,7 +67,7 @@ class AssemblyResourceGeneration extends DefaultTask {
     public static final String SERVICE_NAME_SUFFIX = '_service'
     public static final String SOURCE_NAME_SUFFIX = '_source'
 
-    public static final String CAMEL_CONNECTOR_SOURCE_TYPE = 'CAMEL_SOURCE'
+    public static final String CAMEL_CONNECTOR_SOURCE_TYPE = 'CAMEL_CONNECTOR'
     public static final String PROPERTY_PLACEHOLDER_SUFFIX = '_placeholder'
     public static final String CONFIG_CAMEL_RUNTIME = 'camelRuntime'
     public static final String CONFIG_CAMEL_GENERAL = 'general'
@@ -77,7 +77,7 @@ class AssemblyResourceGeneration extends DefaultTask {
     public static final String YAML_ROUTE_SUFFIX = '.routes.yaml'
     public static final String JSON_SUFFIX = '.json'
     public static final String VAIL_SUFFIX = '.vail'
-    public static final String CAMEL_MESSAGE_SCHEMA = 'io.vantiq.extsrc.camelcomp.schema.base'
+    public static final String CAMEL_MESSAGE_SCHEMA = 'com.vantiq.extsrc.camelcomp.message'
 
     public final Project project
 
@@ -187,8 +187,8 @@ class AssemblyResourceGeneration extends DefaultTask {
                 }
                 project.getLogger().lifecycle('{} kamelets found & parsed.',
                     kameletCount)
-                project.getLogger().lifecycle('    {} kamelets ignored\n      (neither source nor sink as ' +
-                    'determined by naming conventions).', discards.length)
+                project.getLogger().lifecycle('    {} kamelets ignored -- (neither source nor sink as ' +
+                    'per naming conventions).', discards.length)
             } catch (Exception e) {
                 throw new GradleException('Error opening jar file: ' + kameletJarFile + ' :: ' +
                     e.getClass().getName() + ' -- ' + e.getMessage())
@@ -332,9 +332,7 @@ class AssemblyResourceGeneration extends DefaultTask {
         def eventType = [
             (eventName): [
                 direction: (isSink ? 'INBOUND' : 'OUTBOUND'),
-                eventSchema: buildResourceRef(VANTIQ_TYPES, CAMEL_MESSAGE_SCHEMA),  // FIXME: Extend if we offer
-                // options
-                    // here.
+                eventSchema: buildResourceRef(VANTIQ_TYPES, CAMEL_MESSAGE_SCHEMA),
                 isReliable: false
             ]
         ]
@@ -377,7 +375,7 @@ class AssemblyResourceGeneration extends DefaultTask {
         def plainName = kamName + SOURCE_NAME_SUFFIX
         sourceDef.active = true
         sourceDef.name = packageName + PACKAGE_SEPARATOR + plainName
-        sourceDef.messageType = null // FIXME: Is there a schema we know about this?  Should there be?
+        sourceDef.messageType = CAMEL_MESSAGE_SCHEMA
         sourceDef.activationConstraint = ''
         sourceDef.type = CAMEL_CONNECTOR_SOURCE_TYPE
         def camelAppConfig = [(CAMEL_RUNTIME_APPNAME): kamName,
@@ -432,32 +430,8 @@ class AssemblyResourceGeneration extends DefaultTask {
         project.views = []
         project.partitions = []
         project.isAssembly = true
-        log.info('Creating visible resources')
-        project.visibleResources = components.findAll {
-            it.startsWith(VANTIQ_SYSTEM_PREFIX + VANTIQ_SERVICES)
-        }
-        log.info('finding source...')
-        def sourceName = components.find {
-            it.startsWith(VANTIQ_SYSTEM_PREFIX + VANTIQ_SOURCES)
-        }
-        log.info('Found projects source reference: {}', sourceName)
-        sourceName = sourceName.substring(sourceName.lastIndexOf('/') + 1)
-        log.info('Found projects source name {}', sourceName)
 
-        project.options = [
-            description: description,
-            filterBitArray: 'ffffffffffffffffffffffffffffffff',
-            type: 'dev',
-            v: 5,
-            isModeloProject: true,
-        ]
-
-        List<Map<String, Object>> resources = []
-        components.each {comp ->
-            resources << ([resourceReference: comp] as Map<String, Object>)
-        }
-        project.resources = resources
-
+        // Insert the config properties & mappings first so they'll be known if/when encountered
         Map<String, Map<String, Object>> cfgProps = [:]
         Map<String, Map<String, Object>> cfgMappings = [:]
         props.each { pName, o ->
@@ -487,10 +461,10 @@ class AssemblyResourceGeneration extends DefaultTask {
             if (pDesc.type != null) {
                 propDesc.type = StringUtils.capitalize(pDesc.type as String)
             } else {
-                propDesc.type = 'String'    // FIXME -- Better Default?
+                propDesc.type = 'String'
             }
             if (PASSWORD_LIKE.contains(pDesc.format?.toLowerCase()) ||
-                    ((String) pDesc[PROPERTY_X_DESCRIPTORS])?.contains(DISPLAY_HIDE_VALUE)) {
+                ((String) pDesc[PROPERTY_X_DESCRIPTORS])?.contains(DISPLAY_HIDE_VALUE)) {
                 // for things that are passwords or are marked to be masked in display, we will require a secret.
                 propDesc.type = 'Secret'
                 propDesc.description += ' (Please provide the name of the Vantiq Secret containing ' + 'this value.)'
@@ -501,13 +475,42 @@ class AssemblyResourceGeneration extends DefaultTask {
             log.info('PropDesc for {} : {}', pName, propDesc)
             cfgProps[pName] = propDesc
             // FIXME -- handle secrets if appropriate
+            log.info('finding source...')
+            def sourceName = components.find {
+                it.startsWith(VANTIQ_SYSTEM_PREFIX + VANTIQ_SOURCES)
+            }
+            log.info('Found projects source reference: {}', sourceName)
+            sourceName = sourceName.substring(sourceName.lastIndexOf('/') + 1)
+            log.info('Found projects source name {}', sourceName)
+
             cfgMappings[pName] = [resource: VANTIQ_SOURCES, resourceId: sourceName,
                                   property:
-                                      "config.${CONFIG_CAMEL_RUNTIME}.${CAMEL_RUNTIME_PROPERTY_VALUES}.${pName}"] as
-                                            Map<String, Object>
+                                      "config.${CONFIG_CAMEL_RUNTIME}." +
+                                          "${CAMEL_RUNTIME_PROPERTY_VALUES}.${pName}"] as Map<String, Object>
         }
         project.configurationMappings = cfgMappings
         project.configurationProperties = cfgProps
+
+        project.options = [
+            description: description,
+            filterBitArray: 'ffffffffffffffffffffffffffffffff',
+            type: 'dev',
+            v: 5,
+            isModeloProject: true,
+        ]
+
+        List<Map<String, Object>> resources = []
+        components.each {comp ->
+            resources << ([resourceReference: comp] as Map<String, Object>)
+        }
+        project.resources = resources
+
+        //Things seem to work more consistently when visibleResources are after resources.
+        log.info('Creating visible resources')
+        project.visibleResources = components.findAll {
+            it.startsWith(VANTIQ_SYSTEM_PREFIX + VANTIQ_SERVICES)
+        }
+
         def projectJson =  JsonOutput.prettyPrint(JsonOutput.toJson(project))
         log.info('Built project {}:\n {}', project.name, projectJson)
         Map<String, Object> retVal = [:]
@@ -565,8 +568,7 @@ class AssemblyResourceGeneration extends DefaultTask {
             ruleText = engine.createTemplate(SOURCE_RULE_TEMPLATE).make([packageName: packageName,
                                                                          ruleName: ruleName,
                                                                          serviceName: serviceName,
-                                                                         sourceName: sourceName,
-                                                                         serviceEvent: 'FIXMEEventName'])
+                                                                         sourceName: sourceName])
         }
 
         if (ruleText) {
@@ -729,7 +731,6 @@ WHEN EVENT OCCURS ON "/services/${packageName + '.' + serviceName}" AS svcMsg
 
 var srcName = "${sourceName}"
 
-// FIXME -- need tp figure out how to get message format if applicable -- may require some manual step?
 PUBLISH { header: svcMsg.value.header, message: svcMsg.value.message } TO SOURCE @srcName
 '''
 
