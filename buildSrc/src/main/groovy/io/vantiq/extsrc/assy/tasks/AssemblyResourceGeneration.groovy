@@ -415,7 +415,7 @@ class AssemblyResourceGeneration extends DefaultTask {
         // However, if we did that, on installation, the user would have to provide an object with the various lower
         // level items & their values.  And any descriptive information provided by the kamelet definition would be
         // lost.  Consequently, it seems preferable for each source to define the set it needs and let the assembly
-        // installation and configuration mechanism take it's course.
+        // installation and configuration mechanism take its course.
         props.each { aProp ->
             log.debug('Creating prop value stub for {}', aProp)
             propValStubs[aProp.key] = aProp.key + PROPERTY_PLACEHOLDER_SUFFIX
