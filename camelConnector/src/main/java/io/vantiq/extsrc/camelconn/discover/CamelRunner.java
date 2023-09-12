@@ -365,94 +365,101 @@ public class CamelRunner extends MainSupport implements Closeable {
     @Override
     protected void beforeStart() throws Exception {
     
-        // Set any property values provided in the configuration.  These will be used in lieu of others in the classpath
-        // This method is tolerant being passed a null value, and will do the right thing. This needs to be done
-        // before the class loader is constructed since some properties may be used as things like the URL which may
-        // be used at class-load time.
-        camelContext.getPropertiesComponent().setLocalProperties(this.camelProperties);
+        try {
+            // Set any property values provided in the configuration.  These will be used in lieu of others in the classpath
+            // This method is tolerant being passed a null value, and will do the right thing. This needs to be done
+            // before the class loader is constructed since some properties may be used as things like the URL which may
+            // be used at class-load time.
+            camelContext.getPropertiesComponent().setLocalProperties(this.camelProperties);
     
-        if (routeBuilder == null) {
-            if (StringUtils.isEmpty(routeSpec) || StringUtils.isEmpty(routeSpecType)) {
-                log.error("No routes have been specified to run.  Either {} or {} and {} are " +
-                        "required.", "routeBuilder", "routeSpec", "routeSpecType");
-                throw new IllegalStateException("No routes have been specified to run.");
+            if (routeBuilder == null) {
+                if (StringUtils.isEmpty(routeSpec) || StringUtils.isEmpty(routeSpecType)) {
+                    log.error("No routes have been specified to run.  Either {} or {} and {} are " +
+                                      "required.", "routeBuilder", "routeSpec", "routeSpecType");
+                    throw new IllegalStateException("No routes have been specified to run.");
+                }
+                routeBuilder = loadRouteFromText(this.routeSpec, this.routeSpecType);
             }
-            routeBuilder = loadRouteFromText(this.routeSpec, this.routeSpecType);
-        }
-        if (routeBasedCL == null) {
-            if (routeBuilder != null) {
-                try {
-                    routeBasedCL = constructClassLoader();
-                } catch (Exception e) {
-                    throw new RuntimeException("Unable to create route-based class loader", e);
-                }
-                originalClassLoader = camelContext.getApplicationContextClassLoader();
-                camelContext.setApplicationContextClassLoader(routeBasedCL);
-                try {
-                    camelContext.addRoutes(routeBuilder);
-                } catch (Exception e) {
-                    throw new RuntimeException("Adding routes to camel context failed", e);
+            if (routeBasedCL == null) {
+                // FIXME -- need to detect when there are no routes.  Do we need to supply properties here?
+                if (routeBuilder != null) {
+                    try {
+                        routeBasedCL = constructClassLoader();
+                    } catch (Exception e) {
+                        throw new RuntimeException("Unable to create route-based class loader", e);
+                    }
+                    originalClassLoader = camelContext.getApplicationContextClassLoader();
+                    camelContext.setApplicationContextClassLoader(routeBasedCL);
+                    try {
+                        camelContext.addRoutes(routeBuilder);
+                    } catch (Exception e) {
+                        throw new RuntimeException("Adding routes to camel context failed", e);
+                    }
                 }
             }
-        }
-        
-        // Some routes may have components (e.g., Salesforce) that need specific configuration.
-        // If that's the case, do that now before we start our route(s).
-        if (initComponents != null && initComponents.size() > 0) {
-            for (Map<String, Object> compToInit: initComponents) {
-                Object propsObj = compToInit.get(COMPONENT_PROPERTIES);
-                Map<String, ?> props;
-                if (propsObj instanceof Map) {
-                    //noinspection unchecked
-                    props = (Map<String, ?>) propsObj;
-                } else {
-                    throw new IllegalArgumentException("Component initialization type is incorrect.");
-                }
-                if (!props.isEmpty()) {
-                    // Don't bother to go further if there are no properties to set
     
-                    Object comp = camelContext.getComponent(compToInit.get(COMPONENT_NAME).toString());
-                    if (comp != null) {
-                        Class<?> toBeInit = comp.getClass();
-                        for (Map.Entry<String, ?> compProp : props.entrySet()) {
-                            // For each property to be initialized, we'll look for the setter method
-                            // (i.e., set${propertyName}(value) where the parameter's class matches the class of
-                            // the property value passed in).  If that exists, we'll call it.  Otherwise, log a
-                            // warning and ignore it. Things are likely to fail, but there's not much we can do about
-                            // improper specifications.
-                            String methName = "set" + compProp.getKey().substring(0, 1).toUpperCase() +
-                                            compProp.getKey().substring(1);
-                            Class<?>[] paramSpec = { compProp.getValue().getClass() };
-                            try {
-                                Method meth = toBeInit.getMethod(methName, paramSpec );
-                                log.debug("Initializing component class {}.{}{}) (from property {})",
-                                          comp.getClass().getSimpleName(),
-                                          meth.getName(), compProp.getValue().getClass().getName(), compProp.getKey());
-                                meth.invoke(comp, compProp.getValue());
-                            } catch (NoSuchMethodException nsme) {
-                                log.warn("No setter found for component class: {}.{}({}) :: " +
-                                                 "required by property name: {}",
-                                         toBeInit.getName(), methName,
-                                         compProp.getValue().getClass().getName(),
-                                         compProp.getKey());
-                            } catch (Exception e) {
-                                // This is generally a fatal condition, so we'll toss the error up the chain
-                                log.error("Cannot invoke {}.{}({}) due to Exception.", toBeInit.getName(),
-                                          methName, compProp.getValue().getClass().getName(), e);
-                                throw e;
+            // Some routes may have components (e.g., Salesforce) that need specific configuration.
+            // If that's the case, do that now before we start our route(s).
+            if (initComponents != null && initComponents.size() > 0) {
+                for (Map<String, Object> compToInit : initComponents) {
+                    Object propsObj = compToInit.get(COMPONENT_PROPERTIES);
+                    Map<String, ?> props;
+                    if (propsObj instanceof Map) {
+                        //noinspection unchecked
+                        props = (Map<String, ?>) propsObj;
+                    } else {
+                        throw new IllegalArgumentException("Component initialization type is incorrect.");
+                    }
+                    if (!props.isEmpty()) {
+                        // Don't bother to go further if there are no properties to set
+                
+                        Object comp = camelContext.getComponent(compToInit.get(COMPONENT_NAME).toString());
+                        if (comp != null) {
+                            Class<?> toBeInit = comp.getClass();
+                            for (Map.Entry<String, ?> compProp : props.entrySet()) {
+                                // For each property to be initialized, we'll look for the setter method
+                                // (i.e., set${propertyName}(value) where the parameter's class matches the class of
+                                // the property value passed in).  If that exists, we'll call it.  Otherwise, log a
+                                // warning and ignore it. Things are likely to fail, but there's not much we can do about
+                                // improper specifications.
+                                String methName = "set" + compProp.getKey().substring(0, 1).toUpperCase() +
+                                        compProp.getKey().substring(1);
+                                Class<?>[] paramSpec = {compProp.getValue().getClass()};
+                                try {
+                                    Method meth = toBeInit.getMethod(methName, paramSpec);
+                                    log.debug("Initializing component class {}.{}{}) (from property {})",
+                                              comp.getClass().getSimpleName(),
+                                              meth.getName(), compProp.getValue().getClass().getName(),
+                                              compProp.getKey());
+                                    meth.invoke(comp, compProp.getValue());
+                                } catch (NoSuchMethodException nsme) {
+                                    log.warn("No setter found for component class: {}.{}({}) :: " +
+                                                     "required by property name: {}",
+                                             toBeInit.getName(), methName,
+                                             compProp.getValue().getClass().getName(),
+                                             compProp.getKey());
+                                } catch (Exception e) {
+                                    // This is generally a fatal condition, so we'll toss the error up the chain
+                                    log.error("Cannot invoke {}.{}({}) due to Exception.", toBeInit.getName(),
+                                              methName, compProp.getValue().getClass().getName(), e);
+                                    throw e;
+                                }
                             }
+                        } else {
+                            log.warn("No instance of component {} to initialize.",
+                                     compToInit.get(COMPONENT_NAME).toString());
                         }
                     } else {
-                        log.warn("No instance of component {} to initialize.",
-                                 compToInit.get(COMPONENT_NAME).toString());
+                        log.warn("Component {} was specified for initialization, but no properties were provided. " +
+                                         "No initialization was performed.", compToInit.get(COMPONENT_NAME));
                     }
-                } else {
-                    log.warn("Component {} was specified for initialization, but no properties were provided. " +
-                                "No initialization was performed.", compToInit.get(COMPONENT_NAME));
                 }
             }
+            super.beforeStart();
+        } catch (Exception e) {
+            log.error("Failed in beforeStart(): ", e);
+            throw e;
         }
-        super.beforeStart();
     }
     
     @Override
@@ -497,10 +504,10 @@ public class CamelRunner extends MainSupport implements Closeable {
      */
     protected RouteBuilder loadRouteFromText(String specification, String specificationType) throws Exception {
         log.debug("Loading route from {} specificationType", specificationType);
-        if (log.isTraceEnabled()) {
+        if (log.isDebugEnabled()) {
             // Dump route spec out here only under trace.  Camel may have substituted key values and we don't want
             // these in the log files
-            log.trace("Loading route (specificationType {}): {}", specificationType, specification);
+            log.debug("Loading route (specificationType {}):\n{}", specificationType, specification);
         }
         ExtendedCamelContext extendedCamelContext = camelContext.adapt(ExtendedCamelContext.class);
         RoutesLoader loader = extendedCamelContext.getRoutesLoader();
@@ -508,7 +515,7 @@ public class CamelRunner extends MainSupport implements Closeable {
         loader.loadRoutes(resource);
         RoutesBuilderLoader rbl = loader.getRoutesLoader(specificationType);
         RoutesBuilder rb = rbl.loadRoutesBuilder(resource);
-        log.trace("Route builder: {}", rb.toString());
+        log.debug("Route builder: {}", rb.toString());
         
         return (RouteBuilder) rb;
     }
