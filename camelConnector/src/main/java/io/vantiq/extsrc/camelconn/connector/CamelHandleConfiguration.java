@@ -94,6 +94,7 @@ public class CamelHandleConfiguration extends Handler<ExtensionServiceMessage> {
         Map<String, Object> camelConfig;
         Map<String, Object> general;
         
+        log.debug("Connector got configuration: {}", configObject);
         // Obtain entire config from the message object
         if ( !(configObject.get(CAMEL_CONFIG) instanceof Map)) {
             log.error("Configuration failed. No configuration suitable for Camel Source.");
@@ -146,9 +147,8 @@ public class CamelHandleConfiguration extends Handler<ExtensionServiceMessage> {
             } else {
                 // It's coming from JSON, so the key must be a string...
                 Map<String, Object> input = (Map<String, Object>) target;
-                Properties propVals = new Properties(input.size());
                 input.forEach( (k, v) -> {
-                    if (!(k != null && v instanceof String)) {
+                    if (v == null) {
                         String kclass = "null";
                         String vclass = "null";
                         if (k != null) {
@@ -257,13 +257,16 @@ public class CamelHandleConfiguration extends Handler<ExtensionServiceMessage> {
     
             // This is checked in the caller
             //noinspection unchecked
-            Map<String, String> input = (Map<String, String>) camelConfig.get(PROPERTY_VALUES);
+            Map<String, Object> input = (Map<String, Object>) camelConfig.get(PROPERTY_VALUES);
             // Camel wants these as a Java Properties object, so perform the conversion as required.
             Properties propVals = null;
             if (input != null) {
                 propVals = new Properties(input.size());
-                input.forEach(propVals::setProperty);
+                for (Map.Entry<String, Object> p : input.entrySet()) {
+                    propVals.setProperty(p.getKey(), p.getValue().toString());
+                }
             }
+            log.debug("Properties provided: {}", propVals);
     
             // If we get this far, then we're ready to run start from the new configuration.  If we have an old
             // configuration running, we'll need to shut it down first.
