@@ -359,7 +359,7 @@ public class VantiqEndpoint extends DefaultEndpoint {
             } else {
                 correctedUrl = baseUrl;
             }
-            log.trace("Adjusted Vantiq URL: {} (from {})", correctedUrl, baseUrl);
+            log.debug("Adjusted Vantiq URL: {} (from {})", correctedUrl, baseUrl);
         } catch (URISyntaxException uriSE) {
             throw new CamelException("Unable to connect to provided URI: " + baseUrl +
                                              " (adjusted: " + correctedUrl + ")", uriSE);
