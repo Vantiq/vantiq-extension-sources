@@ -14,7 +14,6 @@ repositories {
 }
 
 ext {
-    camelVersion='3.18.1'
     log4JVersion='2.17.2'
     extjsdkVersion='1.0'
     jacksonVersion = '2.14.2'

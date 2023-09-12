@@ -35,7 +35,6 @@ repositories {
 
 ext {
     apacheCommonsLangVersion = '3.12.0'
-    camelVersion='3.18.3'
     dnsJavaVersion = '3.4.2'
     extjsdkVersion='1.0'
     gsonVersion = '2.9.1'
