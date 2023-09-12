@@ -10,7 +10,7 @@ dependencies {
 
 ext {
     generatedResourceBase = 'vantiqGeneratedResources'
-    zippedAssemblies = 'vantiqAssemblies'
+    distributionsDir = 'distributions'
 }
 
 tasks.withType(JavaCompile) {
@@ -26,13 +26,15 @@ tasks.register('zipAssemblies') {
     def assyCount = 0
     doLast {
         File vtqResources = new File(project.buildDir, "${generatedResourceBase}")
-        def assemblies = new File(project.buildDir, "${zippedAssemblies}")
-        mkdir(assemblies)
+        def distributions = new File(project.buildDir, "${distributionsDir}")
+        mkdir(distributions)
         vtqResources.eachDir { resourceDir ->
             def projName = resourceDir.name
             logger.info('Processing {}', projName)
-            project.ant.zip(destfile: new File(assemblies, projName + '.zip')) {
-                fileSet(dir: resourceDir)
+            project.ant.zip(destfile: new File(distributions, projName + '.zip')) {
+                // Here, we use the project name (projName) as the base directory within the zip file
+                // This is the required format for projects
+                zipfileset(dir: resourceDir, prefix: projName)
             }
             assyCount += 1
         }

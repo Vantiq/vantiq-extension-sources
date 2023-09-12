@@ -1,4 +1,14 @@
+/*
+ * Copyright (c) 2023 Vantiq, Inc.
+ *
+ * All rights reserved.
+ *
+ * SPDX: MIT
+ */
+
 package io.vantiq.extsrc.assy.tasks
+
+import static org.snakeyaml.engine.v2.common.FlowStyle.BLOCK
 
 import groovy.json.JsonOutput
 import groovy.text.SimpleTemplateEngine
@@ -7,6 +17,7 @@ import org.apache.commons.lang3.ArrayUtils
 import org.apache.commons.lang3.StringUtils
 import org.gradle.api.DefaultTask
 import org.gradle.api.GradleException
+import org.gradle.api.Project
 import org.gradle.api.artifacts.Configuration
 import org.gradle.api.tasks.OutputDirectory
 import org.gradle.api.tasks.TaskAction
@@ -14,8 +25,6 @@ import org.snakeyaml.engine.v2.api.DumpSettings
 import org.snakeyaml.engine.v2.api.Load
 import org.snakeyaml.engine.v2.api.LoadSettings
 import org.snakeyaml.engine.v2.api.Dump
-import org.snakeyaml.engine.v2.common.FlowStyle
-import org.gradle.api.Project
 
 import javax.inject.Inject
 import java.nio.file.Files
@@ -53,8 +62,16 @@ class AssemblyResourceGeneration extends DefaultTask {
     
     public static final String ASSEMBLY_PACKAGE_BASE = 'com.vantiq.extsrc.camel.kamelets'
     public static final String PACKAGE_SEPARATOR = '.'
-    
-    // Vantiq directory names for project contents
+
+    public static final String FROM_ROUTE_TAG = 'from'
+    public static final String ID_ROUTE_TAG = 'id'
+    public static final String ROUTE_ROUTE_TAG = 'route'
+    public static final String TO_ROUTE_TAG = 'to'
+    public static final String URI_ROUTE_TAG = 'uri'
+
+    // Vantiq specific names for various things
+    public static final String PROPERTY_BAG_PROPERTY = 'ars_properties'
+    public static final String ADDITIONAL_CONFIG_PROPERTIES = 'additionalConfigProps'
     public final static String VANTIQ_SYSTEM_PREFIX = 'system.'
     public static final String VANTIQ_DOCUMENTS = 'documents'
     public static final String VANTIQ_PROJECTS = 'projects'
@@ -67,19 +84,20 @@ class AssemblyResourceGeneration extends DefaultTask {
     public static final String SERVICE_NAME_SUFFIX = '_service'
     public static final String SOURCE_NAME_SUFFIX = '_source'
 
-    public static final String CAMEL_CONNECTOR_SOURCE_TYPE = 'CAMEL_CONNECTOR'
+    public static final String CAMEL_SOURCE_TYPE = 'CAMEL'
     public static final String PROPERTY_PLACEHOLDER_SUFFIX = '_placeholder'
     public static final String CONFIG_CAMEL_RUNTIME = 'camelRuntime'
     public static final String CONFIG_CAMEL_GENERAL = 'general'
     public static final String CAMEL_RUNTIME_APPNAME = 'appName'
     public static final String CAMEL_RUNTIME_PROPERTY_VALUES = 'propertyValues'
-    public static final String CAMEL_RUNTIME_ROUTE_DOCUMENT = 'routeDocument'
+    public static final String CAMEL_RUNTIME_ROUTE_DOCUMENT = 'routesDocument'
     public static final String YAML_ROUTE_SUFFIX = '.routes.yaml'
     public static final String JSON_SUFFIX = '.json'
     public static final String VAIL_SUFFIX = '.vail'
     public static final String CAMEL_MESSAGE_SCHEMA = 'com.vantiq.extsrc.camelcomp.message'
 
     public final Project project
+    public static String camelVersion
 
     public static final String ASSEMBLY_RESOURCE_BASE_PROPERTY = 'generatedResourceBase'
 
@@ -114,7 +132,7 @@ class AssemblyResourceGeneration extends DefaultTask {
         Path buildDir = project.getBuildDir()?.toPath()
         assert buildDir != null
         if (!(Files.exists(buildDir) && Files.isDirectory(buildDir))) {
-            throw new GradleException('Internal Error: buildDir not present or not directory: ' + buildDir)
+            throw new GradleException('Internal Error: buildDir is not present or is not a directory: ' + buildDir)
         }
         Path generateBase = assemblyResourceBase.toPath()
         LoadSettings settings = LoadSettings.builder().build()
@@ -143,6 +161,11 @@ class AssemblyResourceGeneration extends DefaultTask {
         String kameletJarFilename = klUrl.toString()
         kameletJarFilename = kameletJarFilename.substring(0, kameletJarFilename.indexOf('!/'))
         kameletJarFilename = kameletJarFilename.substring(KAMELETS_RESOURCE_PATH.length())
+
+        def kjVersion = kameletJarFilename.substring(kameletJarFilename.lastIndexOf('/') + 1) - '.jar'
+        camelVersion = kjVersion - 'camel-kamelets-'
+        camelVersion = 'v' + camelVersion.replaceAll('\\.', '_')
+        log.lifecycle('Using Kamelets from Camel version {}.', camelVersion)
 
         processKameletsFromJar(kameletJarFilename, load, classloader, generateBase)
     }
@@ -227,24 +250,26 @@ class AssemblyResourceGeneration extends DefaultTask {
         Map<String, Object> props =
             (Map<String, Object>) ((Map<String, Object>) ((Map<String, Object>) yamlMap.get('spec'))
                 .get('definition')).get('properties')
-        log.debug('    containing {} properties:', props.size())
-        props.forEach((k, v) -> {
-            //noinspection unchecked
-            log.debug('        name: {}, [type: {}, desc: {}]', k,
-                ((Map<String, String>) v).get('type'),
-                ((Map<String, String>) v).get('description'))
-        })
+        if (log.isDebugEnabled()) {
+            log.debug('    containing {} properties:', props.size())
+            props.forEach((k, v) -> {
+                //noinspection unchecked
+                log.debug('        name: {}, [type: {}, desc: {}]', k,
+                    ((Map<String, String>) v).get('type'),
+                    ((Map<String, String>) v).get('description'))
+            })
+        }
         String kamName = kameletDefinition.substring(0, kameletDefinition.indexOf('.kamelet.yaml'))
         kamName = kamName.replace('-', '_')
-        String packageName = String.join(PACKAGE_SEPARATOR, ASSEMBLY_PACKAGE_BASE, kamName)
+        String packageName = String.join(PACKAGE_SEPARATOR, ASSEMBLY_PACKAGE_BASE, camelVersion, kamName)
 
-        DumpSettings dumpSettings = DumpSettings.builder()
+        DumpSettings yamlDumpSettings = DumpSettings.builder()
             .setIndent(4)
-        // FLOW (default)serializes any embedded maps.
-        // This will recurse.
-            .setDefaultFlowStyle(FlowStyle.BLOCK)
+                // FLOW (default)serializes any embedded maps.
+                // This will recurse.
+            .setDefaultFlowStyle(BLOCK)
             .build()
-        Dump dumper = new Dump(dumpSettings)
+        Dump yamlDumper = new Dump(yamlDumpSettings)
 
         // Now, extract the route template.  This will become our route document after we change
         // kamelet:source or kamelet:sink to vantiq server URLs
@@ -252,54 +277,56 @@ class AssemblyResourceGeneration extends DefaultTask {
         //noinspection unchecked
         Map<String, Object> template = (Map<String, Object>) ((Map<String, Object>) yamlMap
             .get('spec')).get('template')
-        String originalTemplateString = dumper.dumpToString(template)
-        log.info('\n>>>   Original Template as Yaml:\n{}', originalTemplateString)
+        String originalTemplateString = yamlDumper.dumpToString(template)
+        log.debug('\n>>>   Original Template as Yaml:\n{}', originalTemplateString)
 
-        template = constructRouteText(template)
+        List<Map<String, Object>> routeSpec = constructRouteText(kamName, template)
+        log.info('YAML document Map: {}', routeSpec)
 
         // Now, generate & populate results
-        Path assemblyRoot = Paths.get(outputRoot.toAbsolutePath().toString(), kamName)
+        Path assemblyRoot = Paths.get(outputRoot.toAbsolutePath().toString(), kamName + "_${camelVersion}")
         if (!Files.exists(assemblyRoot)) {
             log.info('Creating kamelet-specific project directory: {}', assemblyRoot)
             assemblyRoot = Files.createDirectories(assemblyRoot)
         }
-        log.info('\nResults for Kamelet: {}', kamName)
-        log.info('\n>>>   Properties:')
-        props.forEach((name, val) -> {
-            //noinspection unchecked
-            log.info('    Name: {} :: [title: {}, type: {}, desc: {}]', name,
-                ((Map<String, String>) val).get('title'),
-                ((Map<String, String>) val).get('type'),
-                ((Map<String, String>) val).get('description'))
-        })
+        String routesDocumentString = yamlDumper.dumpToString(routeSpec)
 
-        String routeDocumentString = dumper.dumpToString(template)
-
-        log.info('\n>>>   Converted Template as Yaml:\n{}', routeDocumentString)
+        if (log.isDebugEnabled()) {
+            log.debug('\nResults for Kamelet: {}', kamName)
+            log.debug('\n>>>   Properties:')
+            props.forEach((name, val) -> {
+                //noinspection unchecked
+                log.info('    Name: {} :: [title: {}, type: {}, desc: {}]', name,
+                    ((Map<String, String>) val).get('title'),
+                    ((Map<String, String>) val).get('type'),
+                    ((Map<String, String>) val).get('description'))
+            })
+            log.debug('\n>>>   Converted Template as Yaml:\n{}', routesDocumentString)
+        }
         log.info('\nWriting project to: {}', assemblyRoot)
 
-        Map routeDoc = writeRouteDocument(assemblyRoot, packageName, kamName, routeDocumentString)
+        Map routeDoc = writeRoutesDocument(assemblyRoot, packageName, kamName, routesDocumentString)
         Map sourceDef = addSourceDefinition(assemblyRoot, packageName, kamName,
             routeDoc.path.fileName.toString(), props)
-        log.info('Created sourceDef: {}', sourceDef)
+        log.debug('Created sourceDef: {}', sourceDef)
         Map serviceDef = addServiceDefinition(assemblyRoot, packageName, kamName, isSink)
-        log.info('Created serviceDef: {}', sourceDef)
+        log.debug('Created serviceDef: {}', serviceDef)
 
         Map ruleDef = addRoutingRule(assemblyRoot, packageName, kamName,
-            serviceDef.vailName as String,
-            sourceDef.vailName as String, isSink)
-        log.info('Created rule def: {}', ruleDef)
+            sourceDef.vailName as String, (serviceDef.vailName as String) - (packageName + PACKAGE_SEPARATOR), isSink)
+        log.debug('Created rule def: {}', ruleDef)
         List<String> componentList = [routeDoc.reference as String,
                                       sourceDef.reference as String,
                                       serviceDef.reference as String]
         if (ruleDef) {
             componentList << (ruleDef.reference as String)
         }
-        log.info("Launching project def: addProjDef({}, {}, {}, {}, {}, {}",
+        log.debug("Adding project def: addProjDef({}, {}, {}, {}, {}, {}",
             assemblyRoot, packageName, kamName, title, props, componentList)
         //noinspection GroovyUnusedAssignment       // Useful for debugging...
         Map projectDef = addProjectDefinition(assemblyRoot, packageName, kamName,
-            title, props, componentList)
+            title, props, componentList, serviceDef.service as Map)
+        log.debug('Created projectDef: {}', projectDef)
     }
 
     /**
@@ -328,11 +355,11 @@ class AssemblyResourceGeneration extends DefaultTask {
             replicationFactor: 1,
             scheduledProcedures: [:]
         ]
-        def eventName = name + 'Event'
+        def eventName = plainName + 'Event'
         def eventType = [
             (eventName): [
                 direction: (isSink ? 'INBOUND' : 'OUTBOUND'),
-                eventSchema: buildResourceRef(VANTIQ_TYPES, CAMEL_MESSAGE_SCHEMA),
+                eventSchema: CAMEL_MESSAGE_SCHEMA,
                 isReliable: false
             ]
         ]
@@ -352,6 +379,7 @@ class AssemblyResourceGeneration extends DefaultTask {
             plainName + JSON_SUFFIX, svcDefJson, true)
         retVal.reference = buildResourceRef(VANTIQ_SERVICES, service.name as String)
         retVal.vailName = service.name
+        retVal.service = service
         return retVal
     }
 
@@ -377,20 +405,35 @@ class AssemblyResourceGeneration extends DefaultTask {
         sourceDef.name = packageName + PACKAGE_SEPARATOR + plainName
         sourceDef.messageType = CAMEL_MESSAGE_SCHEMA
         sourceDef.activationConstraint = ''
-        sourceDef.type = CAMEL_CONNECTOR_SOURCE_TYPE
-        def camelAppConfig = [(CAMEL_RUNTIME_APPNAME): kamName,
+        sourceDef.type = CAMEL_SOURCE_TYPE
+        Map<String, Object> camelAppConfig = [(CAMEL_RUNTIME_APPNAME): kamName,
                               (CAMEL_RUNTIME_ROUTE_DOCUMENT): routeDoc]
-        def propValStubs = [:]
+        Map<String, String> propValStubs = [:]
+        List<String> propNameList = []
+
+        // Note: Here, we could have the CAMEL source type define camelRuntime,propertyValues as configurable.
+        // However, if we did that, on installation, the user would have to provide an object with the various lower
+        // level items & their values.  And any descriptive information provided by the kamelet definition would be
+        // lost.  Consequently, it seems preferable for each source to define the set it needs and let the assembly
+        // installation and configuration mechanism take it's course.
         props.each { aProp ->
-            log.info('Creating prop value stub for {}', aProp)
+            log.debug('Creating prop value stub for {}', aProp)
             propValStubs[aProp.key] = aProp.key + PROPERTY_PLACEHOLDER_SUFFIX
+            propNameList << new String().join('.', ['config',
+                                                    CONFIG_CAMEL_RUNTIME,
+                                                    CAMEL_RUNTIME_PROPERTY_VALUES,
+                                                    aProp.key])
         }
-        log.info('propValStubs: {}', propValStubs)
-        camelAppConfig.propertyValues = propValStubs
+        log.debug('propValStubs: {}', propValStubs)
+        if (propNameList) {
+            sourceDef[PROPERTY_BAG_PROPERTY] = [:]
+            sourceDef[PROPERTY_BAG_PROPERTY][ADDITIONAL_CONFIG_PROPERTIES] = propNameList
+            camelAppConfig[CAMEL_RUNTIME_PROPERTY_VALUES] = propValStubs
+        }
         def generalConfig = [:]
         sourceDef.config = [ (CONFIG_CAMEL_RUNTIME): camelAppConfig, (CONFIG_CAMEL_GENERAL): generalConfig]
         String srcDefJson = JsonOutput.prettyPrint(JsonOutput.toJson(sourceDef))
-        log.info('Creating source {}:\n{}', sourceDef.name, srcDefJson)
+        log.debug('Creating source {}:\n{}', sourceDef.name, srcDefJson)
         Map<String, Object> retVal = [:]
         retVal.path = writeVantiqEntity(VANTIQ_SOURCES, kameletAssemblyDir, packageName,
             plainName + JSON_SUFFIX, srcDefJson, true)
@@ -416,11 +459,12 @@ class AssemblyResourceGeneration extends DefaultTask {
      * @param description String Description of the project
      * @param props Map<String, Object> Kamelet properties extracted from the definition
      * @param components List<String> List of resources references that comprise this assembly project.
+     * @param serviceDef Map<String, Object> Definition of the service used here.
      * @returns Map<String, Object> containing Path written & resourceReference
      */
     static Map<String, Object> addProjectDefinition(Path kameletAssemblyDir, String packageName, String projectName,
                                                     String description, Map<String, Object> props,
-                                                    List<String> components) {
+                                                    List<String> components, Map<String, Object> serviceDef) {
         def project = [:]
         project.name = packageName
         project.type = 'dev'
@@ -431,18 +475,30 @@ class AssemblyResourceGeneration extends DefaultTask {
         project.partitions = []
         project.isAssembly = true
 
+        project.options = [
+            description: description,
+            filterBitArray: 'ffffffffffffffffffffffffffffffff',
+            type: 'dev',
+            v: 5,
+            isModeloProject: true,
+            exclusionList: [ "type/${CAMEL_MESSAGE_SCHEMA}",
+                             "sourceimpl/${CAMEL_SOURCE_TYPE}",
+            ],
+        ]
+
         // Insert the config properties & mappings first so they'll be known if/when encountered
         Map<String, Map<String, Object>> cfgProps = [:]
-        Map<String, Map<String, Object>> cfgMappings = [:]
+        Map<String, List<Map<String, Object>>> cfgMappings = [:]
+        def sourceName
         props.each { pName, o ->
-            log.info("\t processing property {}: {}", pName, o)
+            log.debug("\t processing property {}: {}", pName, o)
             Map pDesc
             if (o instanceof Map) {
                 pDesc = o as Map
             } else {
                 throw new GradleException("prop desc not map: " + o.class.name)
             }
-            log.info("\t processing property {}: {}", pName, pDesc)
+            log.debug("\t processing property {}: {}", pName, pDesc)
 
             // Properties are required if there is no default...
             Map<String, Object> propDesc = [ required: pDesc.default == null ]
@@ -472,32 +528,29 @@ class AssemblyResourceGeneration extends DefaultTask {
             if (pDesc.enum != null) {
                 propDesc.enum = pDesc.enum
             }
-            log.info('PropDesc for {} : {}', pName, propDesc)
+            log.debug('PropDesc for {} : {}', pName, propDesc)
             cfgProps[pName] = propDesc
             // FIXME -- handle secrets if appropriate
-            log.info('finding source...')
-            def sourceName = components.find {
-                it.startsWith(VANTIQ_SYSTEM_PREFIX + VANTIQ_SOURCES)
+            log.debug('finding source...')
+            sourceName = components.find {
+                it.startsWith('/' + VANTIQ_SYSTEM_PREFIX + VANTIQ_SOURCES)
             }
-            log.info('Found projects source reference: {}', sourceName)
+            log.debug('Found projects source reference: {}', sourceName)
             sourceName = sourceName.substring(sourceName.lastIndexOf('/') + 1)
-            log.info('Found projects source name {}', sourceName)
+            log.debug('Found projects source name {}', sourceName)
 
-            cfgMappings[pName] = [resource: VANTIQ_SOURCES, resourceId: sourceName,
-                                  property:
-                                      "config.${CONFIG_CAMEL_RUNTIME}." +
-                                          "${CAMEL_RUNTIME_PROPERTY_VALUES}.${pName}"] as Map<String, Object>
+            Map<String, Object> newMapping = [resource: VANTIQ_SOURCES, resourceId: sourceName,
+                              property:
+                                  "config.${CONFIG_CAMEL_RUNTIME}." +
+                                      "${CAMEL_RUNTIME_PROPERTY_VALUES}.${pName}"]
+            if (cfgMappings[pName]) {
+                cfgMappings[pName] << newMapping
+            } else {
+                cfgMappings[pName] = [newMapping]
+            }
         }
-        project.configurationMappings = cfgMappings
         project.configurationProperties = cfgProps
-
-        project.options = [
-            description: description,
-            filterBitArray: 'ffffffffffffffffffffffffffffffff',
-            type: 'dev',
-            v: 5,
-            isModeloProject: true,
-        ]
+        project.configurationMappings = cfgMappings
 
         List<Map<String, Object>> resources = []
         components.each {comp ->
@@ -505,14 +558,20 @@ class AssemblyResourceGeneration extends DefaultTask {
         }
         project.resources = resources
 
-        //Things seem to work more consistently when visibleResources are after resources.
+        // Things seem to work more consistently when visibleResources are after resources.
         log.info('Creating visible resources')
+        log.debug('ServiceDef for {}: {}', project.name, serviceDef)
         project.visibleResources = components.findAll {
-            it.startsWith(VANTIQ_SYSTEM_PREFIX + VANTIQ_SERVICES)
+            it.startsWith('/' + VANTIQ_SYSTEM_PREFIX + VANTIQ_SERVICES)
+        }.collect { comp ->
+            [ resourceReference: comp,
+              description: "Assembly ${project.name}'s service bridging source ${sourceName} " +
+                  "and event ${ -> serviceDef.eventTypes ? ((Map) serviceDef.eventTypes).keySet()[0] : ''}."
+            ]
         }
 
         def projectJson =  JsonOutput.prettyPrint(JsonOutput.toJson(project))
-        log.info('Built project {}:\n {}', project.name, projectJson)
+        log.debug('Built project {}:\n {}', project.name, projectJson)
         Map<String, Object> retVal = [:]
 
         retVal.path = writeVantiqEntity(VANTIQ_PROJECTS, kameletAssemblyDir, packageName, projectName + JSON_SUFFIX,
@@ -523,21 +582,21 @@ class AssemblyResourceGeneration extends DefaultTask {
     }
 
     /**
-     * For the routeDocumentString provided, write it out as a Vantiq document as part of the kamelets project.
+     * For the routesDocumentString provided, write it out as a Vantiq document as part of the kamelets project.
      *
      * @param kameletAssemblyDir Path the directory used for this kamelet assembly
      * @param packageName String package name we'll use for this assembly
      * @param kamName String name of the kamelet on which we're working
-     * @param routeDocumentString String the actual route document as extracted from the Kamelet
+     * @param routesDocumentString String the actual route document as extracted from the Kamelet
      * @return Map<String, Object> containing Path of document written & resourceReference to it when imported
      */
-    static Map<String, Object> writeRouteDocument(Path kameletAssemblyDir,
-                                                  String packageName, String kamName, String routeDocumentString) {
+    static Map<String, Object> writeRoutesDocument(Path kameletAssemblyDir,
+                                                   String packageName, String kamName, String routesDocumentString) {
         String docName = kamName + YAML_ROUTE_SUFFIX
         Map<String, Object> retVal = [:]
         retVal.path = writeVantiqEntity(VANTIQ_DOCUMENTS, kameletAssemblyDir, packageName,
-            docName, routeDocumentString, false)
-        retVal.reference = buildResourceRef(VANTIQ_DOCUMENTS, docName)
+            docName, routesDocumentString, false)
+        retVal.reference = buildResourceRef(VANTIQ_DOCUMENTS, packageName + PACKAGE_SEPARATOR + docName)
         return retVal
     }
 
@@ -555,7 +614,7 @@ class AssemblyResourceGeneration extends DefaultTask {
     static Map<String, Object> addRoutingRule(Path kameletAssemblyDir, String packageName, String kamName,
                                               String sourceName, String serviceName, Boolean isSink) {
         Map<String, Object> retVal = [:]
-        String ruleName = kamName + (isSink ? RULE_SINK_NAME_SUFFIX : RULE_SOURCE_NAME_SUFFIX)\
+        String ruleName = serviceName + (isSink ? RULE_SINK_NAME_SUFFIX : RULE_SOURCE_NAME_SUFFIX)\
 
         String ruleText
         def engine = new SimpleTemplateEngine()
@@ -588,18 +647,19 @@ class AssemblyResourceGeneration extends DefaultTask {
         if (packageIsDirectory) {
              entDirectoryList += packageName.split(Pattern.quote(PACKAGE_SEPARATOR)).toList()
         }
+        log.debug('Creating def for packageIsDirectory: {}, package: {}, fileName: {}',
+            packageIsDirectory, packageName, fileName)
 
-        // IntelliJ doesn't handle spread operator well here.
         //noinspection GroovyAssignabilityCheck
         Path entDir = Paths.get(*entDirectoryList)
         if (!Files.exists(entDir)) {
             Files.createDirectories(entDir)
         }
-
+        def completeFileName = fileName
         if (!packageIsDirectory) {
-            fileName = packageName + PACKAGE_SEPARATOR + fileName
+            completeFileName = packageName + PACKAGE_SEPARATOR + fileName
         }
-        Path entFilePath = Paths.get(entDir.toAbsolutePath().toString(), fileName)
+        Path entFilePath = Paths.get(entDir.toAbsolutePath().toString(), completeFileName)
         log.info('Creating {} definition at path: {}', entType, entFilePath.toString())
         return Files.writeString(entFilePath, content)
     }
@@ -607,12 +667,22 @@ class AssemblyResourceGeneration extends DefaultTask {
     /**
      * Convert the route template into a reified route using the vantiq://server.config style endpoints
      *
+     * The route is returned as a list of routes as that's the CAMEL DSL requirement.
+     *
+     * @param kamName String name of kamelet from which this/these routes originate
      * @param template Map<String, Object> route template from Kamelet YAML file
-     * @returns Map<String, Object> Reified route with kamelet sources & sinks replaced with Vantiq references
+     * @returns List<Map<String, Object>> Reified route with kamelet sources & sinks replaced with Vantiq references
      */
-    Map<String, Object> constructRouteText(Map<String, Object> template) {
+    List<Map<String, Object>> constructRouteText(String kamName, Map<String, Object> template) {
         processStep(template)
-        return template
+        Map<String, Object> retVal = [:]
+        // Must GString --> String lest the yaml dumper get confused.  Easier to just convert to string as opposed to
+        // writing a representer
+        retVal[ROUTE_ROUTE_TAG] = [(ID_ROUTE_TAG): "Routes for ${kamName}:${camelVersion}".toString()]
+        retVal[ROUTE_ROUTE_TAG][FROM_ROUTE_TAG] = template[FROM_ROUTE_TAG]
+        // Camel wants a list (even though with kamelets, there's really only one route.  The Camel Yaml route parser
+        // actually has special handling to recognized that it's reading a route. But to get along, we'll return a list.
+        return [retVal]
     }
 
     /**
@@ -636,10 +706,10 @@ class AssemblyResourceGeneration extends DefaultTask {
                 stepDef = (Map<String, Object>) v
             }
             log.debug('Found template key: {}, value: {}', k, v)
-            if (k == 'from' && stepDef != null) {
-                if (stepDef.containsKey('uri') && stepDef.get('uri') instanceof String &&
-                    ((String) stepDef.get('uri')) == KAMELET_SOURCE) {
-                    stepDef.put('uri', VANTIQ_SERVER_CONFIG_JSON)
+            if (k == FROM_ROUTE_TAG && stepDef != null) {
+                if (stepDef.containsKey(URI_ROUTE_TAG) && stepDef.get(URI_ROUTE_TAG) instanceof String &&
+                    ((String) stepDef.get(URI_ROUTE_TAG)) == KAMELET_SOURCE) {
+                    stepDef.put(URI_ROUTE_TAG, VANTIQ_SERVER_CONFIG_JSON)
                     log.debug('Replaced {} with{}', stepDef.get('uri'), VANTIQ_SERVER_CONFIG_JSON)
                 }
                 
@@ -659,13 +729,12 @@ class AssemblyResourceGeneration extends DefaultTask {
                         }
                     }
                 }
-            } else if (k == 'to' && KAMELET_SINK == v) {
+            } else if (k == TO_ROUTE_TAG && KAMELET_SINK == v) {
                 log.debug('Replacing value of key {}:{} with \'vantiq://server.config\'', k, v)
                 ent.setValue('vantiq://server.config')
-            } else if (k == 'to' && stepDef != null && stepDef.containsKey('uri')
-                    && KAMELET_SINK == stepDef.get('uri')) {
-                stepDef.put('uri', 'vantiq://server.config')
-    
+            } else if (k == TO_ROUTE_TAG && stepDef != null && stepDef.containsKey(URI_ROUTE_TAG)
+                    && KAMELET_SINK == stepDef.get(URI_ROUTE_TAG)) {
+                stepDef.put(URI_ROUTE_TAG, 'vantiq://server.config')
             }
         }
     }
@@ -711,25 +780,28 @@ class AssemblyResourceGeneration extends DefaultTask {
         return parsed
     }
 
+    // Resource references in projects require the leading /
     static String buildResourceRef(String resourceType, String packageName, String resourceId) {
         if (packageName) {
-            return VANTIQ_SYSTEM_PREFIX + "${resourceType}/${packageName} + ${PACKAGE_SEPARATOR} + ${resourceId}"
+            return '/' + VANTIQ_SYSTEM_PREFIX + "${resourceType}/${packageName}" + PACKAGE_SEPARATOR + "${resourceId}"
         } else {
             return buildResourceRef(resourceType, resourceId)
         }
     }
 
     static String buildResourceRef(String resourceType, String resourceId) {
-        return VANTIQ_SYSTEM_PREFIX + "${resourceType}/${resourceId}"
+        return '/' + VANTIQ_SYSTEM_PREFIX + "${resourceType}/${resourceId}"
     }
 
     // Basic rule to route message sent to a service to the source implementing the kamelet route
     public static final String SINK_RULE_TEMPLATE = '''
 package ${packageName}
 RULE ${ruleName}
-WHEN EVENT OCCURS ON "/services/${packageName + '.' + serviceName}" AS svcMsg
+WHEN EVENT OCCURS ON "/services/${packageName + '.' + serviceName}/${serviceName + 'Event'}" AS svcMsg
 
 var srcName = "${sourceName}"
+log.error("Service rule got message {} to forward to source {}", [ svcMsg, srcName ] )
+
 
 PUBLISH { header: svcMsg.value.header, message: svcMsg.value.message } TO SOURCE @srcName
 '''
@@ -739,6 +811,9 @@ PUBLISH { header: svcMsg.value.header, message: svcMsg.value.message } TO SOURCE
 package ${packageName}
 RULE ${ruleName}
 WHEN EVENT OCCURS ON "/sources/${sourceName}" as svcMsg
+
+log.error("Source ${sourceName} rule got message {} to forward to service  {}", [ svcMsg, 
+    "${packageName + '.' + serviceName}/${serviceName + 'Event'} ])
 
 PUBLISH { header: svcMsg.value.header, message: svcMsg.value.message } 
     TO SERVICE EVENT "${packageName + '.' + serviceName}/${serviceName + 'Event'}"
