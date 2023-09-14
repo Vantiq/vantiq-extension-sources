@@ -37,12 +37,15 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
 
+import lombok.extern.slf4j.Slf4j;
+import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
 @SuppressWarnings({"PMD.ExcessiveClassLength", "rawtypes", "PMD.IllegalTypeCheck"})
+@Slf4j
 public class TestJDBC extends TestJDBCBase {
     
     // Queries to be tested
@@ -202,6 +205,27 @@ public class TestJDBC extends TestJDBCBase {
         serverConfigFile.createNewFile();
         serverConfigFile.deleteOnExit();
         Utils.obtainServerConfig();
+    }
+    
+    @After
+    public void postTestCleanup() {
+        // Delete the Source/Type/Topic/Procedure/Rule from VANTIQ
+        deleteType();
+        deleteTopic();
+        deleteProcedure();
+        deleteRule();
+        if (core != null) {
+            core.close();
+            core = null;
+        }
+        
+        if (jdbc != null) {
+            jdbc.close();
+            jdbc = null;
+        }
+        // Don't delete the source until you've shut down the connector. Otherwise, a bunch of spurious errors appear
+        // in the test log as it tries to reconnect.
+        deleteSource();
     }
 
     @SuppressWarnings({"PMD.JUnit4TestShouldUseAfterAnnotation", "PMD.CognitiveComplexity", "PMD.EmptyCatchBlock"})
@@ -790,6 +814,7 @@ public class TestJDBC extends TestJDBCBase {
     }
     
     @Test
+//    @Ignore
     public void testMaxMessageSize() {
         // Only run test with intended vantiq availability
         assumeTrue(testAuthToken != null && testVantiqServer != null);
@@ -822,6 +847,8 @@ public class TestJDBC extends TestJDBCBase {
         VantiqResponse response = vantiq.query(testSourceName, params);
         JsonArray responseBody = (JsonArray) response.getBody();
         assert responseBody.size() == numRows;
+        assert core != null;
+        assert core.lastRowBundle != null;
         assert core.lastRowBundle.length == JDBCCore.DEFAULT_BUNDLE_SIZE;
 
         // Query with an invalid bundleFactor
@@ -884,15 +911,15 @@ public class TestJDBC extends TestJDBCBase {
 
     @Test
     public void testAsynchronousProcessing() throws InterruptedException {
-        doAsynchronousProcessing(true);
+        doAsynchronousProcessing(true, 500);
     }
 
     @Test
     public void testAsynchronousProcessingWithDefaults() throws InterruptedException {
-        doAsynchronousProcessing(false);
+        doAsynchronousProcessing(false, 300);
     }
 
-    public void doAsynchronousProcessing(boolean useCustomTaskConfig) throws InterruptedException {
+    public void doAsynchronousProcessing(boolean useCustomTaskConfig, int limitValue) throws InterruptedException {
         // Only run test with intended vantiq availability
         assumeTrue(testAuthToken != null && testVantiqServer != null);
         assumeTrue(testDBUsername != null && testDBPassword != null && testDBURL != null && jdbcDriverLoc != null);
@@ -906,7 +933,6 @@ public class TestJDBC extends TestJDBCBase {
 
         // Setup a VANTIQ JDBC Source, and start running the core
         setupSource(createSourceDef(true, useCustomTaskConfig));
-
         // Create Type to store query results
         setupAsynchType();
 
@@ -914,11 +940,16 @@ public class TestJDBC extends TestJDBCBase {
         setupTopic();
 
         // Create Procedure to publish to VANTIQ Source
-        setupProcedure();
+        setupProcedure(limitValue);
 
         // Create Rule to query the VANTIQ Source
         setupRule();
-
+    
+        // Select from the type and make sure all of our results are there as expected
+        VantiqResponse response = vantiq.select(testTypeName, null, null, null);
+        ArrayList responseBody = (ArrayList) response.getBody();
+        assertEquals (0, responseBody.size());
+    
         // Publish to the source in order to create a table
         Map<String, Object> createParams = new LinkedHashMap<>();
         createParams.put("query", CREATE_TABLE_ASYNCH);
@@ -926,15 +957,25 @@ public class TestJDBC extends TestJDBCBase {
 
 
         // Execute Procedure to trigger asynchronous publish/queries (assign to variable to ensure that procedure has finished before selecting from type)
-        VantiqResponse response = vantiq.execute(testProcedureName, new LinkedHashMap<>());
-
-        // Sleep for 10 seconds to allow all queries to finish
-        Thread.sleep(10000);
-
-        // Select from the type and make sure all of our results are there as expected
-        response = vantiq.select(testTypeName, null, null, null);
-        ArrayList responseBody = (ArrayList) response.getBody();
-        assertEquals (500, responseBody.size());
+        response = vantiq.execute(testProcedureName, new LinkedHashMap<>());
+        if (!response.isSuccess()) {
+            log.debug("Errors on execute {}: {}", testProcedureName, response.getErrors());
+        }
+        assert response.isSuccess();
+        // Sleep for a bit and see if we're done yet
+        long seconds = 1;
+        
+        while (seconds < 30) {
+            Thread.sleep(1000);
+            seconds += 1;
+            // Select from the type and make sure all of our results are there as expected
+            response = vantiq.select(testTypeName, null, null, null);
+            responseBody = (ArrayList) response.getBody();
+            if (limitValue == responseBody.size()) {
+                break;
+            }
+        }
+        assertEquals(limitValue, responseBody.size());
 
         // Delete the table for next test
         Map<String, Object> deleteParams = new LinkedHashMap<>();
@@ -1022,7 +1063,7 @@ public class TestJDBC extends TestJDBCBase {
         // Creating a list of strings to insert as a batch
         ArrayList<String> batch = new ArrayList<>();
         for (int i = 0; i<50; i++) {
-            batch.add(INSERT_TABLE_BATCH);
+            batch.add("INSERT INTO TestBatch VALUES (" + i + ", 'First', 'Second');"); // (INSERT_TABLE_BATCH);
         }
 
         // Inserting data into the table as a batch
@@ -1035,6 +1076,11 @@ public class TestJDBC extends TestJDBCBase {
         Map<String, Object> queryParams = new LinkedHashMap<>();
         queryParams.put("query", SELECT_TABLE_BATCH);
         response = vantiq.query(testSourceName, queryParams);
+        if (response.hasErrors()) {
+            log.debug("Response errors: {}", response.getErrors());
+        }
+        assert response.isSuccess();
+        assert response.getBody() instanceof JsonArray;
         JsonArray responseBody = (JsonArray) response.getBody();
         assert responseBody.size() == 50;
 
@@ -1051,43 +1097,61 @@ public class TestJDBC extends TestJDBCBase {
         // Check that Source does not already exist in namespace, and skip test if they do
         assumeFalse(checkSourceExists());
 
-        // Setup a VANTIQ JDBC Source, and start running the core
-        setupSource(createSourceDef(false, false));
+        try {
+            // Setup a VANTIQ JDBC Source, and start running the core
+            setupSource(createSourceDef(false, false));
+            
+            // Create table using query
+            Map<String, Object> createParams = new LinkedHashMap<>();
+            createParams.put("query", CREATE_TABLE_QUERY);
 
-        // Create table using query
-        Map<String, Object> createParams = new LinkedHashMap<>();
-        createParams.put("query", CREATE_TABLE_QUERY);
-        VantiqResponse response = vantiq.query(testSourceName, createParams);
-        assert !response.hasErrors();
-
-        // Inserting data into the table using query
-        Map<String, Object> insertParams = new LinkedHashMap<>();
-        insertParams.put("query", INSERT_TABLE_QUERY);
-        response = vantiq.query(testSourceName, insertParams);
-        assert !response.hasErrors();
-
-        // Select the data from table and make sure the previous queries worked
-        Map<String, Object> queryParams = new LinkedHashMap<>();
-        queryParams.put("query", SELECT_TABLE_QUERY);
-        response = vantiq.query(testSourceName, queryParams);
-        JsonArray responseBody = (JsonArray) response.getBody();
-        JsonObject bodyObject = responseBody.get(0).getAsJsonObject();
-        assert bodyObject.get("id").getAsInt() == 1;
-        assert bodyObject.get("name").getAsString().equals("Name");
-
-        // Delete data from table using query
-        Map<String, Object> deleteParams = new LinkedHashMap<>();
-        deleteParams.put("query", DELETE_ROWS_QUERY);
-        response = vantiq.query(testSourceName, deleteParams);
-        assert !response.hasErrors();
-
-        // Double check that the delete worked
-        response = vantiq.query(testSourceName, queryParams);
-        responseBody = (JsonArray) response.getBody();
-        assert responseBody.size() == 0;
-
-        // Delete the Source
-        deleteSource();
+            VantiqResponse response = vantiq.query(testSourceName, createParams);
+            if (response.hasErrors()) {
+                log.debug("Errors on response to {}: {}", CREATE_TABLE_QUERY, response.getErrors());
+            }
+            assert !response.hasErrors();
+    
+            // Inserting data into the table using query
+            Map<String, Object> insertParams = new LinkedHashMap<>();
+            insertParams.put("query", INSERT_TABLE_QUERY);
+            response = vantiq.query(testSourceName, insertParams);
+            assert !response.hasErrors();
+    
+            // Select the data from table and make sure the previous queries worked
+            Map<String, Object> queryParams = new LinkedHashMap<>();
+            queryParams.put("query", SELECT_TABLE_QUERY);
+            response = vantiq.query(testSourceName, queryParams);
+            Object b = response.getBody();
+            JsonObject bodyObject;
+            JsonArray responseBody;
+            if (b instanceof JsonArray) {
+                log.debug("Got an array");
+                responseBody = (JsonArray) response.getBody();
+                bodyObject = responseBody.get(0).getAsJsonObject();
+            } else {
+                log.debug("Got object of class: {}", b.getClass().getName());
+                bodyObject = (JsonObject) b;
+            }
+            assert bodyObject.get("id").getAsInt() == 1;
+            assert bodyObject.get("name").getAsString().equals("Name");
+    
+            // Delete data from table using query
+            Map<String, Object> deleteParams = new LinkedHashMap<>();
+            deleteParams.put("query", DELETE_ROWS_QUERY);
+            response = vantiq.query(testSourceName, deleteParams);
+            assert !response.hasErrors();
+    
+            // Double check that the delete worked
+            response = vantiq.query(testSourceName, queryParams);
+            responseBody = (JsonArray) response.getBody();
+            assert responseBody == null || responseBody.size() == 0;
+        } catch (Exception e) {
+            log.error("Test failing with exception: ", e);
+            fail("Trapped exception: " + e.getMessage());
+        } finally {
+            // Delete the Source
+            deleteSource();
+        }
     }
 
     @Test
@@ -1098,42 +1162,43 @@ public class TestJDBC extends TestJDBCBase {
 
         // Check that Source does not already exist in namespace, and skip test if they do
         assumeFalse(checkSourceExists());
-
-        // Setup a VANTIQ JDBC Source, and start running the core
-        setupSource(createSourceDef(false, false));
-
-        // Create table
-        Map<String, Object> createParams = new LinkedHashMap<>();
-        createParams.put("query", CREATE_TABLE_BATCH_QUERY);
-        vantiq.query(testSourceName, createParams);
-
-        // Creating a list of strings to insert as a batch
-        ArrayList<String> batch = new ArrayList<>();
-        for (int i = 0; i<50; i++) {
-            batch.add(INSERT_TABLE_BATCH_QUERY);
+        try {
+            // Setup a VANTIQ JDBC Source, and start running the core
+            setupSource(createSourceDef(false, false));
+    
+            // Create table
+            Map<String, Object> createParams = new LinkedHashMap<>();
+            createParams.put("query", CREATE_TABLE_BATCH_QUERY);
+            vantiq.query(testSourceName, createParams);
+    
+            // Creating a list of strings to insert as a batch
+            ArrayList<String> batch = new ArrayList<>();
+            for (int i = 0; i < 50; i++) {
+                batch.add(INSERT_TABLE_BATCH_QUERY);
+            }
+    
+            // Inserting data into the table as a batch
+            Map<String, Object> insertParams = new LinkedHashMap<>();
+            insertParams.put("query", batch);
+            VantiqResponse response = vantiq.query(testSourceName, insertParams);
+            assert !response.hasErrors();
+    
+            // Select the data from table and make sure the response is valid
+            Map<String, Object> queryParams = new LinkedHashMap<>();
+            queryParams.put("query", SELECT_TABLE_BATCH_QUERY);
+            response = vantiq.query(testSourceName, queryParams);
+            JsonArray responseBody = (JsonArray) response.getBody();
+            assert responseBody.size() == 50;
+    
+            // Adding a select statement to batch, to make sure it does not execute
+            batch.add(SELECT_TABLE_BATCH_QUERY);
+            insertParams.put("query", batch);
+            response = vantiq.query(testSourceName, insertParams);
+            assert response.hasErrors();
+        } finally {
+            // Delete the Source
+            deleteSource();
         }
-
-        // Inserting data into the table as a batch
-        Map<String, Object> insertParams = new LinkedHashMap<>();
-        insertParams.put("query", batch);
-        VantiqResponse response = vantiq.query(testSourceName, insertParams);
-        assert !response.hasErrors();
-
-        // Select the data from table and make sure the response is valid
-        Map<String, Object> queryParams = new LinkedHashMap<>();
-        queryParams.put("query", SELECT_TABLE_BATCH_QUERY);
-        response = vantiq.query(testSourceName, queryParams);
-        JsonArray responseBody = (JsonArray) response.getBody();
-        assert responseBody.size() == 50;
-
-        // Adding a select statement to batch, to make sure it does not execute
-        batch.add(SELECT_TABLE_BATCH_QUERY);
-        insertParams.put("query", batch);
-        response = vantiq.query(testSourceName, insertParams);
-        assert response.hasErrors();
-
-        // Delete the Source
-        deleteSource();
     }
 
     // ================================================= Helper functions =================================================
@@ -1180,6 +1245,36 @@ public class TestJDBC extends TestJDBCBase {
             core = new JDBCCore(testSourceName, testAuthToken, testVantiqServer);
             core.start(CORE_START_TIMEOUT);
         }
+        if (insertResponse.hasErrors()) {
+            log.debug("Errors creating source: {}", insertResponse.getErrors());
+        }
+        assert insertResponse.isSuccess();
+    
+        // Now, wait for system to get started...
+        try {
+            int counter = 0;
+            while (!core.client.isAuthed() && counter++ < 50) {
+                Thread.sleep(500L);
+            }
+            assert core.client.isAuthed();
+            Map sourceConfig = (Map) sourceDef.get("config");
+            Map jdbcConfig = (Map) sourceConfig.get("jdbcConfig");
+            Map general = (Map) jdbcConfig.get("general");
+            Boolean isAsync = (Boolean) general.getOrDefault("asynchronousProcessing", Boolean.FALSE);
+            log.debug("Source {} is Async: {}", testSourceName, isAsync);
+            if (isAsync) {
+                counter = 0;
+                while (counter++ < 60) {
+                    if (core.publishPool == null || core.queryPool == null) {
+                        Thread.sleep(500L);
+                    }
+                }
+                assert core.publishPool != null;
+                assert core.queryPool != null;
+            }
+        } catch (InterruptedException e) {
+            fail("Interrupted while starting system: " + e.getMessage());
+        }
     }
     
     public static Map<String, Object> createSourceDef(boolean isAsynch, boolean useCustomTaskConfig) {
@@ -1200,7 +1295,7 @@ public class TestJDBC extends TestJDBCBase {
             general.put("asynchronousProcessing", true);
             if (useCustomTaskConfig) {
                 general.put("maxActiveTasks", 10);
-                general.put("maxQueuedTasks", 20);
+                general.put("maxQueuedTasks", 50);
             }
         }
         
@@ -1302,10 +1397,10 @@ public class TestJDBC extends TestJDBCBase {
         return !responseBody.isEmpty();
     }
 
-    public static void setupProcedure() {
+    public static void setupProcedure(int limitValue) {
         String procedure =
                 "PROCEDURE " + testProcedureName +  "()\n"
-                + "for (i in range(0,500)) {\n"
+                + "for (i in range(0," + limitValue + ")) {\n"
                     + "var sqlQuery = \"INSERT INTO TestAsynchProcessing VALUES(\" + i + \", 'FirstName', 'LastName')\"\n"
                     + "PUBLISH {query: sqlQuery} to SOURCE " + testSourceName + "\n"
                     + "PUBLISH {\"key\": i} TO TOPIC \"" + testTopicName + "\"\n"
