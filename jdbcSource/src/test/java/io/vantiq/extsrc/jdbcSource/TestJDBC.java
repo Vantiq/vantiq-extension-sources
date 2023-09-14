@@ -1063,7 +1063,7 @@ public class TestJDBC extends TestJDBCBase {
         // Creating a list of strings to insert as a batch
         ArrayList<String> batch = new ArrayList<>();
         for (int i = 0; i<50; i++) {
-            batch.add("INSERT INTO TestBatch VALUES (" + i + ", 'First', 'Second');"); // (INSERT_TABLE_BATCH);
+            batch.add("INSERT INTO TestBatch VALUES (" + i + ", 'First', 'Second');");
         }
 
         // Inserting data into the table as a batch
