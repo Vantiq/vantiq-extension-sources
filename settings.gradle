@@ -9,12 +9,8 @@ include 'udpSource'
 include 'CSVSource'
 include 'testConnector'
 include 'objectRecognitionSource'
+include 'jdbcSource'
+include 'jmsSource'
 if (System.env.EASY_MODBUS_LOC) {
     include 'EasyModbusSource' 
-}
-if (System.env.JDBC_DRIVER_LOC) {
-    include 'jdbcSource'
-}
-if (System.env.JMS_DRIVER_LOC) {
-    include 'jmsSource'
 }
