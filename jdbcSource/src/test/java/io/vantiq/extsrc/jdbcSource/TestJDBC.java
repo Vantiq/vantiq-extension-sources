@@ -188,13 +188,15 @@ public class TestJDBC extends TestJDBCBase {
     
     @Before
     public void setup() {
-        jdbc = new JDBC();
-        vantiq = new io.vantiq.client.Vantiq(testVantiqServer);
-        vantiq.setAccessToken(testAuthToken);
-        try {
-            createSourceImpl(vantiq);
-        } catch (Exception e) {
-            fail("Could not create sourceImpl: " + e.getMessage());
+        if (testDBUsername != null && testDBPassword != null && testDBURL != null && jdbcDriverLoc != null) {
+            jdbc = new JDBC();
+            vantiq = new io.vantiq.client.Vantiq(testVantiqServer);
+            vantiq.setAccessToken(testAuthToken);
+            try {
+                createSourceImpl(vantiq);
+            } catch (Exception e) {
+                fail("Could not create sourceImpl: " + e.getMessage());
+            }
         }
     }
 
@@ -209,23 +211,25 @@ public class TestJDBC extends TestJDBCBase {
     
     @After
     public void postTestCleanup() {
-        // Delete the Source/Type/Topic/Procedure/Rule from VANTIQ
-        deleteType();
-        deleteTopic();
-        deleteProcedure();
-        deleteRule();
-        if (core != null) {
-            core.close();
-            core = null;
+        if (testDBUsername != null && testDBPassword != null && testDBURL != null && jdbcDriverLoc != null) {
+            // Delete the Source/Type/Topic/Procedure/Rule from VANTIQ
+            deleteType();
+            deleteTopic();
+            deleteProcedure();
+            deleteRule();
+            if (core != null) {
+                core.close();
+                core = null;
+            }
+    
+            if (jdbc != null) {
+                jdbc.close();
+                jdbc = null;
+            }
+            // Don't delete the source until you've shut down the connector. Otherwise, a bunch of spurious errors appear
+            // in the test log as it tries to reconnect.
+            deleteSource();
         }
-        
-        if (jdbc != null) {
-            jdbc.close();
-            jdbc = null;
-        }
-        // Don't delete the source until you've shut down the connector. Otherwise, a bunch of spurious errors appear
-        // in the test log as it tries to reconnect.
-        deleteSource();
     }
 
     @SuppressWarnings({"PMD.JUnit4TestShouldUseAfterAnnotation", "PMD.CognitiveComplexity", "PMD.EmptyCatchBlock"})

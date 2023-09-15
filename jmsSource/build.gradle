@@ -55,8 +55,11 @@ dependencies {
     // Used for for standard JMS utility
     implementation group: 'javax.jms', name: 'javax.jms-api', version: '2.0.1'
 
-    // Compiling relevant JMS Driver .jar file
-    implementation files("${System.env.JMS_DRIVER_LOC}")
+    if (System.env.JMS_DRIVER_LOC != null) {
+
+        // Compiling relevant JMS Driver .jar file
+        runtimeOnly files("${System.env.JMS_DRIVER_LOC}")
+    }
 
     // Used for testing extension source in VANTIQ
     testImplementation "io.vantiq:vantiq-sdk:${vantiqSDKVersion}"

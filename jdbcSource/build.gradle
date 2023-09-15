@@ -72,7 +72,9 @@ dependencies {
     testImplementation "org.apache.logging.log4j:log4j-slf4j-impl:${log4jVersion}"
 
     //  Compiling relevant JDBC Driver .jar file
-    runtimeOnly files("${System.env.JDBC_DRIVER_LOC}")
+    if (System.env.JDBC_DRIVER_LOC != null) {
+        runtimeOnly files("${System.env.JDBC_DRIVER_LOC}")
+    }
     
     // Used in tests that check VANTIQ date format behavior
     testImplementation "io.vantiq:vantiq-sdk:${vantiqSDKVersion}"

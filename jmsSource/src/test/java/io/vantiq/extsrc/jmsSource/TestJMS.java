@@ -56,23 +56,33 @@ public class TestJMS extends TestJMSBase {
     
     @Before
     public void setup() {
-        vantiq = new Vantiq(testVantiqServer);
-        vantiq.setAccessToken(testAuthToken);
-        
-        // Create a subscription to source in order to check if message was received as a notification
-        vantiq.subscribe("sources", testSourceName, null, sourceNotificationCallback);
+        // Only do this setup where feasible.
+        if (jmsDriverLoc != null &&
+                testJMSURL != null &&
+                testJMSConnectionFactory != null &&
+                testJMSInitialContext != null) {
+            vantiq = new Vantiq(testVantiqServer);
+            vantiq.setAccessToken(testAuthToken);
+    
+            // Create a subscription to source in order to check if message was received as a notification
+            vantiq.subscribe("sources", testSourceName, null, sourceNotificationCallback);
+        }
     }
     
     @After
     public void unsubscribe() {
-        vantiq.unsubscribeAll();
+        if (jmsDriverLoc != null &&
+                testJMSURL != null &&
+                testJMSConnectionFactory != null &&
+                testJMSInitialContext != null) {
+    
+            vantiq.unsubscribeAll();
+        }
     }
 
     @SuppressWarnings("PMD.JUnit4TestShouldUseAfterAnnotation")
     @AfterClass
     public static void tearDown() {
-        // Delete source from VANTIQ
-        deleteSource();
         
         // Close JMSCore if still open
         if (core != null) {
@@ -84,6 +94,9 @@ public class TestJMS extends TestJMSBase {
             jms.close();
             jms = null;
         }
+        // Delete source from VANTIQ
+        deleteSource();
+    
     }
     
     @Test
@@ -705,9 +718,11 @@ public class TestJMS extends TestJMSBase {
     }
     
     public static void deleteSource() {
-        Map<String,Object> where = new LinkedHashMap<String,Object>();
-        where.put("name", testSourceName);
-        vantiq.delete("system.sources", where);
+        if (vantiq != null && vantiq.isAuthenticated()) {
+            Map<String, Object> where = new LinkedHashMap<String, Object>();
+            where.put("name", testSourceName);
+            vantiq.delete("system.sources", where);
+        }
     }
     
     public class StandardOutputCallback implements SubscriptionCallback {
