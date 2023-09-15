@@ -71,14 +71,18 @@ public class TestJMS extends TestJMSBase {
     
     @After
     public void unsubscribe() {
-        vantiq.unsubscribeAll();
+        if (jmsDriverLoc != null &&
+                testJMSURL != null &&
+                testJMSConnectionFactory != null &&
+                testJMSInitialContext != null) {
+    
+            vantiq.unsubscribeAll();
+        }
     }
 
     @SuppressWarnings("PMD.JUnit4TestShouldUseAfterAnnotation")
     @AfterClass
     public static void tearDown() {
-        // Delete source from VANTIQ
-        deleteSource();
         
         // Close JMSCore if still open
         if (core != null) {
@@ -90,6 +94,9 @@ public class TestJMS extends TestJMSBase {
             jms.close();
             jms = null;
         }
+        // Delete source from VANTIQ
+        deleteSource();
+    
     }
     
     @Test
@@ -711,9 +718,11 @@ public class TestJMS extends TestJMSBase {
     }
     
     public static void deleteSource() {
-        Map<String,Object> where = new LinkedHashMap<String,Object>();
-        where.put("name", testSourceName);
-        vantiq.delete("system.sources", where);
+        if (vantiq != null && vantiq.isAuthenticated()) {
+            Map<String, Object> where = new LinkedHashMap<String, Object>();
+            where.put("name", testSourceName);
+            vantiq.delete("system.sources", where);
+        }
     }
     
     public class StandardOutputCallback implements SubscriptionCallback {
