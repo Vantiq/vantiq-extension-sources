@@ -188,13 +188,16 @@ public class TestJDBC extends TestJDBCBase {
     
     @Before
     public void setup() {
-        jdbc = new JDBC();
-        vantiq = new io.vantiq.client.Vantiq(testVantiqServer);
-        vantiq.setAccessToken(testAuthToken);
-        try {
-            createSourceImpl(vantiq);
-        } catch (Exception e) {
-            fail("Could not create sourceImpl: " + e.getMessage());
+        if (testDBUsername != null && testDBPassword != null && testDBURL != null && jdbcDriverLoc != null) {
+    
+            jdbc = new JDBC();
+            vantiq = new io.vantiq.client.Vantiq(testVantiqServer);
+            vantiq.setAccessToken(testAuthToken);
+            try {
+                createSourceImpl(vantiq);
+            } catch (Exception e) {
+                fail("Could not create sourceImpl: " + e.getMessage());
+            }
         }
     }
 

@@ -56,11 +56,17 @@ public class TestJMS extends TestJMSBase {
     
     @Before
     public void setup() {
-        vantiq = new Vantiq(testVantiqServer);
-        vantiq.setAccessToken(testAuthToken);
-        
-        // Create a subscription to source in order to check if message was received as a notification
-        vantiq.subscribe("sources", testSourceName, null, sourceNotificationCallback);
+        // Only do this setup where feasible.
+        if (jmsDriverLoc != null &&
+                testJMSURL != null &&
+                testJMSConnectionFactory != null &&
+                testJMSInitialContext != null) {
+            vantiq = new Vantiq(testVantiqServer);
+            vantiq.setAccessToken(testAuthToken);
+    
+            // Create a subscription to source in order to check if message was received as a notification
+            vantiq.subscribe("sources", testSourceName, null, sourceNotificationCallback);
+        }
     }
     
     @After
