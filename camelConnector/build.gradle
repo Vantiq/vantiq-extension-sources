@@ -35,6 +35,7 @@ repositories {
 
 ext {
     apacheCommonsLangVersion = '3.12.0'
+    camelVersion='3.18.3'
     dnsJavaVersion = '3.4.2'
     extjsdkVersion='1.0'
     gsonVersion = '2.9.1'
@@ -99,6 +100,31 @@ version = 'unspecified'
 description = 'Vantiq Camel Connector'
 java.sourceCompatibility = 1.11
 java.targetCompatibility = JavaVersion.VERSION_11
+
+/**
+ * The following task builds an assembly project zip file to make the CAMEL_CONNECTOR source implementation type
+ * known to the Vantiq system.  It also provides a schema type for the structured message & header for use
+ * with the Vantiq component when the appropriate endpoint flag is specified.
+ */
+
+task zipAssembly(type: Zip) {
+    def inFiles =  project.fileTree('src/main/resources/assembly/camelconnector')
+    logger.debug('Infiles: {}', inFiles)
+
+    project(':camelComponent').fileTree('src/main/resources/types').each { f ->
+        it.inputs.file( f )
+    }
+    from(inFiles) {
+        include '**/*'
+    }
+    from (project(':camelComponent').fileTree('src/main/resources')) {
+        include 'types/**/*'
+    }
+    into "${project.name}"
+    archiveName "${project.name}-assembly.zip"
+}
+
+jar.finalizedBy zipAssembly
 
 publishing {
     publications {

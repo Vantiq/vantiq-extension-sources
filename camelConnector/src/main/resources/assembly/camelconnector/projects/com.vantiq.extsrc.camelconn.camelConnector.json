@@ -1,0 +1,52 @@
+{
+    "name": "com.vantiq.extsrc.camelconn.camelConnector",
+    "type": "dev",
+    "ars_relationships": [
+        
+    ],
+    "links": [
+        
+    ],
+    "tools": [
+        
+    ],
+    "views": [
+        
+    ],
+    "partitions": [
+        
+    ],
+    "isAssembly": true,
+    "options": {
+        "description": "Camel Connector Definition",
+        "filterBitArray": "ffffffffffffffffffffffffffffffff",
+        "type": "dev",
+        "v": 5,
+        "isModeloProject": true
+    },
+    "resources": [
+      {
+        "label": "CAMEL",
+        "name" : "CAMEL",
+        "resourceReference": "/sourceimpls/CAMEL",
+        "type" : 69
+      },
+      {
+        "label" : "com.vantiq.extsrc.camelcomp.message",
+        "name" : "com.vantiq.extsrc.camelcomp.message",
+        "resourceReference": "/types/com.vantiq.extsrc.camelcomp.message",
+        "type": 1
+      }
+    ],
+    "visibleResources": [
+      {
+        "resourceReference": "/types/com.vantiq.extsrc.camelcomp.message"
+      }
+    ],
+    "configurationMappings": {
+
+    },
+    "configurationProperties": {
+
+    }
+}
