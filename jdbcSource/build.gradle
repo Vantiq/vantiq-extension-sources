@@ -3,6 +3,8 @@ version 'unspecified'
 
 apply plugin: 'java'
 apply plugin: 'application'
+apply plugin: 'io.franzbecker.gradle-lombok'
+
 
 sourceCompatibility = 1.8
 
@@ -57,6 +59,9 @@ tasks.withType(Test) {
 }
 
 dependencies {
+    annotationProcessor "org.projectlombok:lombok:${lombokVersion}"
+    implementation "org.projectlombok:lombok:${lombokVersion}"
+
     // This dependency is used internally, and not exposed to consumers on their own compile classpath.
     implementation 'com.google.guava:guava:23.0'
 
@@ -64,9 +69,12 @@ dependencies {
 
     implementation "org.slf4j:slf4j-api:1.7.25"
     implementation "org.apache.logging.log4j:log4j-slf4j-impl:${log4jVersion}"
-    
+    testImplementation "org.apache.logging.log4j:log4j-slf4j-impl:${log4jVersion}"
+
     //  Compiling relevant JDBC Driver .jar file
-    runtimeOnly files("${System.env.JDBC_DRIVER_LOC}")
+    if (System.env.JDBC_DRIVER_LOC != null) {
+        runtimeOnly files("${System.env.JDBC_DRIVER_LOC}")
+    }
     
     // Used in tests that check VANTIQ date format behavior
     testImplementation "io.vantiq:vantiq-sdk:${vantiqSDKVersion}"

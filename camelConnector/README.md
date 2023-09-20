@@ -1,6 +1,6 @@
 # Overview
 
-The following documentation outlines how to incorporate an Apache Camel Connector Source into part of your project.
+The following documentation outlines how to incorporate an Apache Camel Connector and associated Vantiq SOURCE into part of your project.
 This allows a user to 
 construct Apache Camel applications that interact with Vantiq.
 
@@ -113,7 +113,7 @@ name for each class is the class's fully qualified class name, *e.g.* "io.vantiq
 
 To set up the Source in the VANTIQ Modelo IDE, you will need to add a Source to your project. Please check the [Prerequisites](#pre) 
 to make sure you have properly added a Source Definition to VANTIQ Modelo. Once this is complete,
-you can select CAMEL_CONNECTOR
+you can select CAMEL
 (or whatever you named your Source Definition) as the Source Type. You will then need to provide the
 Source Configuration Document.
 
@@ -287,7 +287,6 @@ PROCEDURE publishToCamel(valueToSend Integer)
 
 Query errors originating from the source will include the code and error message.
 They may also include the cause (the underlying exception).
-
 
 ## Testing <a name="testing" id="testing"></a>
 
