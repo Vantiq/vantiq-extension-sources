@@ -96,8 +96,14 @@ class AssemblyResourceGeneration extends DefaultTask {
     public static final String VAIL_SUFFIX = '.vail'
     public static final String CAMEL_MESSAGE_SCHEMA = 'com.vantiq.extsrc.camelcomp.message'
 
+    public static final String OVERVIEW_SUFFIX = '.overview.md'
+    public static final String OVERVIEW_SOURCE_DISCLAIMER =
+        '\n\n> _This description has been provided by the Kamelet from which this assembly was generated. ' +
+        'Consider that context when using the information contained herein._\n\n'
+
     public final Project project
-    public static String camelVersion
+    public static String packageSafeCamelVersion
+    public static String rawCamelVersion
 
     public static final String ASSEMBLY_RESOURCE_BASE_PROPERTY = 'generatedResourceBase'
 
@@ -163,9 +169,9 @@ class AssemblyResourceGeneration extends DefaultTask {
         kameletJarFilename = kameletJarFilename.substring(KAMELETS_RESOURCE_PATH.length())
 
         def kjVersion = kameletJarFilename.substring(kameletJarFilename.lastIndexOf('/') + 1) - '.jar'
-        camelVersion = kjVersion - 'camel-kamelets-'
-        camelVersion = 'v' + camelVersion.replaceAll('\\.', '_')
-        log.lifecycle('Using Kamelets from Camel version {}.', camelVersion)
+        rawCamelVersion = kjVersion - 'camel-kamelets-'
+        packageSafeCamelVersion = 'v' + rawCamelVersion.replaceAll('\\.', '_')
+        log.lifecycle('Using Kamelets from Camel version {}.', rawCamelVersion)
 
         processKameletsFromJar(kameletJarFilename, load, classloader, generateBase)
     }
@@ -244,6 +250,8 @@ class AssemblyResourceGeneration extends DefaultTask {
             (String) ((Map<String, Object>) ((Map<String, Object>) yamlMap.get('spec'))
                 .get('definition')).get('title')
         log.info('Found spec for {}', title)
+        String overview = (String) ((Map<String, Object>) ((Map<String, Object>) yamlMap.get('spec'))
+            .get('definition')).get('description')
 
         // Read any defined properties.  These will become properties for our assembly.
         //noinspection unchecked
@@ -261,7 +269,7 @@ class AssemblyResourceGeneration extends DefaultTask {
         }
         String kamName = kameletDefinition.substring(0, kameletDefinition.indexOf('.kamelet.yaml'))
         kamName = kamName.replace('-', '_')
-        String packageName = String.join(PACKAGE_SEPARATOR, ASSEMBLY_PACKAGE_BASE, camelVersion, kamName)
+        String packageName = String.join(PACKAGE_SEPARATOR, ASSEMBLY_PACKAGE_BASE, packageSafeCamelVersion, kamName)
 
         DumpSettings yamlDumpSettings = DumpSettings.builder()
             .setIndent(4)
@@ -284,7 +292,7 @@ class AssemblyResourceGeneration extends DefaultTask {
         log.info('YAML document Map: {}', routeSpec)
 
         // Now, generate & populate results
-        Path assemblyRoot = Paths.get(outputRoot.toAbsolutePath().toString(), kamName + "_${camelVersion}")
+        Path assemblyRoot = Paths.get(outputRoot.toAbsolutePath().toString(), kamName + "_${packageSafeCamelVersion}")
         if (!Files.exists(assemblyRoot)) {
             log.info('Creating kamelet-specific project directory: {}', assemblyRoot)
             assemblyRoot = Files.createDirectories(assemblyRoot)
@@ -296,7 +304,7 @@ class AssemblyResourceGeneration extends DefaultTask {
             log.debug('\n>>>   Properties:')
             props.forEach((name, val) -> {
                 //noinspection unchecked
-                log.info('    Name: {} :: [title: {}, type: {}, desc: {}]', name,
+                log.debug('    Name: {} :: [title: {}, type: {}, desc: {}]', name,
                     ((Map<String, String>) val).get('title'),
                     ((Map<String, String>) val).get('type'),
                     ((Map<String, String>) val).get('description'))
@@ -306,6 +314,7 @@ class AssemblyResourceGeneration extends DefaultTask {
         log.info('\nWriting project to: {}', assemblyRoot)
 
         Map routeDoc = writeRoutesDocument(assemblyRoot, packageName, kamName, routesDocumentString)
+        Map overviewDoc = (overview ? writeOverviewDocument(assemblyRoot, packageName, kamName, overview) : null)
         Map sourceDef = addSourceDefinition(assemblyRoot, packageName, kamName,
             routeDoc.path.fileName.toString(), props)
         log.debug('Created sourceDef: {}', sourceDef)
@@ -315,9 +324,14 @@ class AssemblyResourceGeneration extends DefaultTask {
         Map ruleDef = addRoutingRule(assemblyRoot, packageName, kamName,
             sourceDef.vailName as String, (serviceDef.vailName as String) - (packageName + PACKAGE_SEPARATOR), isSink)
         log.debug('Created rule def: {}', ruleDef)
-        List<String> componentList = [routeDoc.reference as String,
-                                      sourceDef.reference as String,
-                                      serviceDef.reference as String]
+        List<String> componentList = [
+            routeDoc.reference as String,
+            sourceDef.reference as String,
+            serviceDef.reference as String,
+        ]
+        if (overview != null) {
+            componentList << (overviewDoc.reference as String)
+        }
         if (ruleDef) {
             componentList << (ruleDef.reference as String)
         }
@@ -476,7 +490,7 @@ class AssemblyResourceGeneration extends DefaultTask {
         project.isAssembly = true
 
         project.options = [
-            description: description,
+            description: description + " from Camel version ${rawCamelVersion}",
             filterBitArray: 'ffffffffffffffffffffffffffffffff',
             type: 'dev',
             v: 5,
@@ -501,7 +515,16 @@ class AssemblyResourceGeneration extends DefaultTask {
             log.debug("\t processing property {}: {}", pName, pDesc)
 
             // Properties are required if there is no default...
-            Map<String, Object> propDesc = [ required: pDesc.default == null ]
+            Map<String, Object> propDesc = [:]
+            if (pDesc.required instanceof Boolean) {
+                propDesc.required = pDesc.required
+            } else if (pDesc.required instanceof String) {
+                propDesc.required = ((String) pDesc.required).toBoolean()
+            } else if (pDesc.required != null) {
+                throw new GradleException('Unexpected value/type for property ' + propDesc.pName + ': type: ' +
+                        propDesc.required?.class?.name + ', value: ' + propDesc.required)
+            } // Else, it's null so ignore it.
+
             // Here, we need to be wary of Groovy Truth. Check for non-null since default values of '', false, etc.
             // are "false" in Groovy Truth land.
             if (pDesc.default != null) {
@@ -523,14 +546,18 @@ class AssemblyResourceGeneration extends DefaultTask {
                 ((String) pDesc[PROPERTY_X_DESCRIPTORS])?.contains(DISPLAY_HIDE_VALUE)) {
                 // for things that are passwords or are marked to be masked in display, we will require a secret.
                 propDesc.type = 'Secret'
-                propDesc.description += ' (Please provide the name of the Vantiq Secret containing ' + 'this value.)'
+                propDesc.description += ' (Please provide the name of the Vantiq Secret containing this value.)'
             }
             if (pDesc.enum != null) {
-                propDesc.enum = pDesc.enum
+                // Convert style to that used by Activity Pattern definitions. This doesn't appear to quite work, but
+                // it's likely close to what will, so this is a better default.
+                // FIXME -- remove this if not supported, unless we know "how" it's likely to arrive. In that case,
+                //  leave it since it may start to work accidentally when that work is completed.
+                propDesc.enumValues = pDesc.enum
+                propDesc.type = 'Enum'  // UI seems to treat this as an alias for String, which is fine for us.
             }
             log.debug('PropDesc for {} : {}', pName, propDesc)
             cfgProps[pName] = propDesc
-            // FIXME -- handle secrets if appropriate
             log.debug('finding source...')
             sourceName = components.find {
                 it.startsWith('/' + VANTIQ_SYSTEM_PREFIX + VANTIQ_SOURCES)
@@ -596,6 +623,27 @@ class AssemblyResourceGeneration extends DefaultTask {
         Map<String, Object> retVal = [:]
         retVal.path = writeVantiqEntity(VANTIQ_DOCUMENTS, kameletAssemblyDir, packageName,
             docName, routesDocumentString, false)
+        retVal.reference = buildResourceRef(VANTIQ_DOCUMENTS, packageName + PACKAGE_SEPARATOR + docName)
+        return retVal
+    }
+
+    /**
+     * For the Overview provided, write it out as a Vantiq document as part of the kamelets project.
+     *
+     * @param kameletAssemblyDir Path the directory used for this kamelet assembly
+     * @param packageName String package name we'll use for this assembly
+     * @param kamName String name of the kamelet on which we're working
+     * @param overview String the (usually) longer descriptive text as extracted from the Kamelet
+     * @return Map<String, Object> containing Path of document written & resourceReference to it when imported
+     */
+    static Map<String, Object> writeOverviewDocument(Path kameletAssemblyDir,
+                                                   String packageName, String kamName, String overview) {
+        String docName = kamName + OVERVIEW_SUFFIX
+        Map<String, Object> retVal = [:]
+        String titledOverview =
+            "# Description of ${kamName} from Camel ${rawCamelVersion}" + OVERVIEW_SOURCE_DISCLAIMER + overview
+        retVal.path = writeVantiqEntity(VANTIQ_DOCUMENTS, kameletAssemblyDir, packageName,
+            docName, titledOverview, false)
         retVal.reference = buildResourceRef(VANTIQ_DOCUMENTS, packageName + PACKAGE_SEPARATOR + docName)
         return retVal
     }
@@ -678,7 +726,7 @@ class AssemblyResourceGeneration extends DefaultTask {
         Map<String, Object> retVal = [:]
         // Must GString --> String lest the yaml dumper get confused.  Easier to just convert to string as opposed to
         // writing a representer
-        retVal[ROUTE_ROUTE_TAG] = [(ID_ROUTE_TAG): "Routes for ${kamName}:${camelVersion}".toString()]
+        retVal[ROUTE_ROUTE_TAG] = [(ID_ROUTE_TAG): "Routes for ${kamName}:${packageSafeCamelVersion}".toString()]
         retVal[ROUTE_ROUTE_TAG][FROM_ROUTE_TAG] = template[FROM_ROUTE_TAG]
         // Camel wants a list (even though with kamelets, there's really only one route.  The Camel Yaml route parser
         // actually has special handling to recognized that it's reading a route. But to get along, we'll return a list.

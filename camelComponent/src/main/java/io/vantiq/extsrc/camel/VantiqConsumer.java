@@ -32,7 +32,6 @@ import org.apache.camel.support.DefaultConsumer;
 @Slf4j
 public class VantiqConsumer extends DefaultConsumer {
     private final VantiqEndpoint endpoint;
-    private ExtensionWebSocketClient vantiqClient;
 
     private ExecutorService executorService;
     
@@ -47,7 +46,7 @@ public class VantiqConsumer extends DefaultConsumer {
     protected void doStart() throws Exception {
         super.doStart();
         endpoint.startup();
-        vantiqClient = endpoint.getVantiqClient();
+        ExtensionWebSocketClient vantiqClient = endpoint.getVantiqClient();
         vantiqClient.setPublishHandler(publishHandler);
         vantiqClient.setQueryHandler(queryHandler);
 
@@ -64,9 +63,6 @@ public class VantiqConsumer extends DefaultConsumer {
 
         // shutdown the thread pool gracefully
         getEndpoint().getCamelContext().getExecutorServiceManager().shutdownGraceful(executorService);
-        if (vantiqClient != null) {
-            vantiqClient.close();
-        }
     }
     
     /**
