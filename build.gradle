@@ -39,7 +39,7 @@ ext {
     eclipseMiloVersion = '0.2.1'
     vantiqSDKVersion = '1.1.1'
     log4jVersion = '2.17.0'
-    lombokVersion = '1.18.24'
+    lombokVersion = '1.18.26'
     camelVersion = '3.21.0'
 }
 
