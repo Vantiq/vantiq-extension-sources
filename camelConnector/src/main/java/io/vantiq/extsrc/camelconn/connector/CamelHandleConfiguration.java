@@ -61,9 +61,11 @@ public class CamelHandleConfiguration extends Handler<ExtensionServiceMessage> {
     public static final String ROUTES_FORMAT = "routesFormat";
     public static final String COMPONENT_PROPERTIES = "componentProperties";
     public static final String PROPERTY_VALUES = "propertyValues";
+    public static final String RAW_REQUIRED = "rawValuesRequired";
+    public static final String DISCOVERED_RAW = "discovered";
+    public static final String CONFIGGURED_RAW = "configured";
     
     public static final String VANTIQ = "vantiq";
-    
     public static final String GENERAL = "general";
     public static final String COMPONENT_CACHE = "componentCacheDirectory";
     public static final String COMPONENT_CACHE_DEFAULT = "componentCache";
@@ -144,25 +146,15 @@ public class CamelHandleConfiguration extends Handler<ExtensionServiceMessage> {
                           PROPERTY_VALUES, target.getClass().getName());
                 failConfig();
                 return;
-            } else {
-                // It's coming from JSON, so the key must be a string...
-                Map<String, Object> input = (Map<String, Object>) target;
-                input.forEach( (k, v) -> {
-                    if (v == null) {
-                        String kclass = "null";
-                        String vclass = "null";
-                        if (k != null) {
-                            kclass = k.getClass().getName();
-                        }
-                        if (v != null && v.getClass() != null) {
-                            vclass = v.getClass().getName();
-                        }
-                        log.error("Camel connector {} value must have a String key ({}: {})  and value ({}: {}).",
-                                  PROPERTY_VALUES, k, kclass, v, vclass);
-                        failConfig();
-                    }
-                });
-                
+            }
+        }
+        
+        target = camelConfig.get(RAW_REQUIRED);
+        if (target != null) {
+            if (!(target instanceof Map)) {
+                log.error("Camel connector property {} should be a single JSON object (found {}).",
+                          RAW_REQUIRED, target);
+                failConfig();
             }
         }
         
@@ -258,12 +250,43 @@ public class CamelHandleConfiguration extends Handler<ExtensionServiceMessage> {
             // This is checked in the caller
             //noinspection unchecked
             Map<String, Object> input = (Map<String, Object>) camelConfig.get(PROPERTY_VALUES);
+            //noinspection unchecked
+            Map<String, List<String>> raw = (Map<String, List<String>>) camelConfig.get(RAW_REQUIRED);
+            List<String> rawRequired = new ArrayList<>();
+            // Create a list from the various categories that may be in this set...
+            raw.forEach( (k, v) -> {
+                rawRequired.addAll(v);
+            });
             // Camel wants these as a Java Properties object, so perform the conversion as required.
             Properties propVals = null;
             if (input != null) {
                 propVals = new Properties(input.size());
                 for (Map.Entry<String, Object> p : input.entrySet()) {
-                    propVals.setProperty(p.getKey(), p.getValue().toString());
+                    if (p.getValue() != null) {
+                        // Assembly mechanism may send nulls for empty values.  Ignore them here.
+                        if (rawRequired.contains(p.getKey()) && p.getValue() instanceof String) {
+                            String val = (String) p.getValue();
+                            // If the caller has already wrapped our values with RAW()/RAW{}, we needn't bother.
+                            boolean suppress = (val.startsWith("RAW(") && val.endsWith(")")) ||
+                                    (val.startsWith("RAW{") && val.endsWith("}"));
+                            if (!suppress || !(val.contains(")") && val.contains("}"))) {
+                                String startRaw = "RAW(";
+                                String endRaw = ")";
+                                if (val.contains(")")) {
+                                    if (!val.contains("}")) {
+                                        startRaw = "RAW{";
+                                        endRaw = "}";
+                                    }
+                                }
+                                propVals.setProperty(p.getKey(), startRaw + val + endRaw);
+                            } else {
+                                // If we're suppressing or we havwe a value with both ) & }, leave things alone
+                                propVals.setProperty(p.getKey(), p.getValue().toString());
+                            }
+                        } else {
+                            propVals.setProperty(p.getKey(), p.getValue().toString());
+                        }
+                    }
                 }
             }
             log.debug("Properties provided: {}", propVals);
