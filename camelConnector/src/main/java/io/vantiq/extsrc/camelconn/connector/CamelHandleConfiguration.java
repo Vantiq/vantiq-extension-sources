@@ -63,7 +63,7 @@ public class CamelHandleConfiguration extends Handler<ExtensionServiceMessage> {
     public static final String PROPERTY_VALUES = "propertyValues";
     public static final String RAW_REQUIRED = "rawValuesRequired";
     public static final String DISCOVERED_RAW = "discovered";
-    public static final String CONFIGGURED_RAW = "configured";
+    public static final String CONFIGURED_RAW = "configured";
     
     public static final String VANTIQ = "vantiq";
     public static final String GENERAL = "general";
@@ -280,7 +280,7 @@ public class CamelHandleConfiguration extends Handler<ExtensionServiceMessage> {
                                 }
                                 propVals.setProperty(p.getKey(), startRaw + val + endRaw);
                             } else {
-                                // If we're suppressing or we havwe a value with both ) & }, leave things alone
+                                // If we're suppressing or we have a value with both ) & }, leave things alone
                                 propVals.setProperty(p.getKey(), p.getValue().toString());
                             }
                         } else {
