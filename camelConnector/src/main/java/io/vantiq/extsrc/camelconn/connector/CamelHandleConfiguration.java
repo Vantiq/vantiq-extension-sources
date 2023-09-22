@@ -254,9 +254,11 @@ public class CamelHandleConfiguration extends Handler<ExtensionServiceMessage> {
             Map<String, List<String>> raw = (Map<String, List<String>>) camelConfig.get(RAW_REQUIRED);
             List<String> rawRequired = new ArrayList<>();
             // Create a list from the various categories that may be in this set...
-            raw.forEach( (k, v) -> {
-                rawRequired.addAll(v);
-            });
+            if (raw != null) {
+                raw.forEach((k, v) -> {
+                    rawRequired.addAll(v);
+                });
+            }
             // Camel wants these as a Java Properties object, so perform the conversion as required.
             Properties propVals = null;
             if (input != null) {
