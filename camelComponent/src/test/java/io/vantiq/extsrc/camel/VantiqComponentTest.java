@@ -17,7 +17,10 @@ import static io.vantiq.extsrc.camel.VantiqEndpoint.STRUCTURED_MESSAGE_MESSAGE_P
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.BaseJsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.fasterxml.jackson.databind.node.TextNode;
 import io.vantiq.extjsdk.ExtensionServiceMessage;
 import io.vantiq.extjsdk.FalseClient;
 import io.vantiq.extjsdk.FalseWebSocket;
@@ -414,20 +417,22 @@ public class VantiqComponentTest extends CamelTestSupport {
             assertNotNull("Null exchange body",  exchangeBody);
             // Verify that we got JSON -- which will manifest here as a String, but we'll verify that we can convert it.
             assertTrue("Vantiq Consumer Output wrong type: " + exchangeBody.getClass().getName(),
-                exchangeBody instanceof String);
+                exchangeBody instanceof BaseJsonNode);
             msgsReceived.addAndGet(1);
             Object msg;
             try {
-                msg = mapper.readValue((String) exchangeBody, Map.class);
-            } catch (JsonProcessingException e) {
-                // Maybe we asked for the wrong type
+                msg = mapper.convertValue(exchangeBody, Map.class); // readValue((ObjectNode) exchangeBody, Map.class);
+            } catch (Exception trySomethingNew) {
                 try {
-                    msg = mapper.readValue((String) exchangeBody, String.class);
-                } catch (JsonProcessingException ex) {
+                    msg = mapper.convertValue(exchangeBody, String.class);
+                } catch (Exception tryAgain) {
                     try {
-                        msg = mapper.readValue((String) exchangeBody, List.class);
-                    } catch (JsonProcessingException exc) {
-                        throw new RuntimeException(exc);
+                        msg = mapper.convertValue(exchangeBody, List.class);
+                    } catch (Exception e) {
+                        log.error("Trapped exception: ", e);
+                        msg = e;
+                        assertNull("Trapped exception: " + e.getMessage(), e);
+                        // about it
                     }
                 }
             }
@@ -515,19 +520,20 @@ public class VantiqComponentTest extends CamelTestSupport {
             assertNotNull("Null exchange body",  exchangeBody);
             // Verify that we got JSON -- which will manifest here as a String, but we'll verify that we can convert it.
             assertTrue("Vantiq Consumer Output wrong type: " + exchangeBody.getClass().getName(),
-                       exchangeBody instanceof String);
+                       exchangeBody instanceof BaseJsonNode);
             msgsReceived.addAndGet(1);
             Object msg;
             try {
-                msg = mapper.readValue((String) exchangeBody, Map.class);
-            } catch (JsonProcessingException e) {
+                msg = mapper.convertValue(exchangeBody, Map.class); //readValue((String) exchangeBody, Map.class);
+            } catch (Exception e) {
                 // Maybe we asked for the wrong type
                 try {
-                    msg = mapper.readValue((String) exchangeBody, String.class);
-                } catch (JsonProcessingException ex) {
+                    msg = mapper.convertValue(exchangeBody, String.class);
+                } catch (Exception ex) {
                     try {
-                        msg = mapper.readValue((String) exchangeBody, List.class);
-                    } catch (JsonProcessingException exc) {
+                        msg = mapper.convertValue(exchangeBody, List.class);
+                        // readValue((String) exchangeBody,List.class);
+                    } catch (Exception exc) {
                         throw new RuntimeException(exc);
                     }
                 }
@@ -690,11 +696,11 @@ public class VantiqComponentTest extends CamelTestSupport {
             Object exchBody = exchange.getIn().getBody();
             assertNotNull("Exchange boddy is null", exchBody);
             assertTrue("Exchange body wrong type: " + exchBody.getClass().getName(),
-                       exchange.getIn().getBody() instanceof String);
+                       exchange.getIn().getBody() instanceof ObjectNode);
             Map<?,?> msg;
             try {
-                msg = mapper.readValue((String) exchBody, Map.class);
-            } catch (JsonProcessingException e) {
+                msg = mapper.convertValue(exchBody, Map.class);
+            } catch (Exception e) {
                 throw new RuntimeException(e);
             }
             assertNotNull("Deserialized JSON message is null", msg);
