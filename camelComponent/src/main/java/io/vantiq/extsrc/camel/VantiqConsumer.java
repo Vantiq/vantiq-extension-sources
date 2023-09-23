@@ -114,10 +114,15 @@ public class VantiqConsumer extends DefaultConsumer {
                 msgBody = camelBody;
                 log.debug("Structured message -- hdrs: {}, message: {}", camelHdrs, camelBody);
             }
+            Object output = msgBody;
             if (endpoint.isConsumerOutputJson()) {
                 // Convert to JSON output
-               JsonNode jnode =  mapper.convertValue(msgBody, JsonNode.class);
-               msgBody = jnode.toPrettyString();
+                JsonNode jnode =  mapper.convertValue(msgBody, JsonNode.class);
+                output = jnode;
+                if (log.isDebugEnabled()) {
+                    Object resValueDbg = jnode.isTextual() ? jnode.asText() : jnode;
+                    log.debug("ConsumerOutputJson: msgBody out: {}", resValueDbg);
+                }
             }
     
             // Create an exchange to move our message along.  In the publish case,
@@ -126,7 +131,7 @@ public class VantiqConsumer extends DefaultConsumer {
             // result, so we'll deal with those separately.
             final Exchange exchange = createExchange(false);
             exchange.setPattern(pattern);
-            exchange.getIn().setBody(msgBody);
+            exchange.getIn().setBody(output);
             if (camelHdrs != null) {
                 exchange.getIn().setHeaders(camelHdrs);
             }
