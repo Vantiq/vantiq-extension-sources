@@ -65,6 +65,12 @@ public class CamelHandleConfiguration extends Handler<ExtensionServiceMessage> {
     public static final String DISCOVERED_RAW = "discovered";
     public static final String CONFIGURED_RAW = "configured";
     
+    public static final String NO_RAW_REQUEST = "!NORAW!";
+    public static final String RAW_START = "RAW(";
+    public static final String RAW_END = ")";
+    public static final String RAW_START_ALT = "RAW{";
+    public static final String RAW_END_ALT = "}";
+    
     public static final String VANTIQ = "vantiq";
     public static final String GENERAL = "general";
     public static final String COMPONENT_CACHE = "componentCacheDirectory";
@@ -265,28 +271,66 @@ public class CamelHandleConfiguration extends Handler<ExtensionServiceMessage> {
                 propVals = new Properties(input.size());
                 for (Map.Entry<String, Object> p : input.entrySet()) {
                     if (p.getValue() != null) {
-                        // Assembly mechanism may send nulls for empty values.  Ignore them here.
-                        if (rawRequired.contains(p.getKey()) && p.getValue() instanceof String) {
-                            String val = (String) p.getValue();
-                            // If the caller has already wrapped our values with RAW()/RAW{}, we needn't bother.
-                            boolean suppress = (val.startsWith("RAW(") && val.endsWith(")")) ||
-                                    (val.startsWith("RAW{") && val.endsWith("}"));
-                            if (!suppress || !(val.contains(")") && val.contains("}"))) {
-                                String startRaw = "RAW(";
-                                String endRaw = ")";
-                                if (val.contains(")")) {
-                                    if (!val.contains("}")) {
-                                        startRaw = "RAW{";
-                                        endRaw = "}";
+                        // Don't set property values to null.
+                        
+                        Object val = p.getValue();
+                        boolean passThru = true; // By default, pass things thru
+                        String startRaw = RAW_START;
+                        String endRaw = RAW_END;
+    
+                        // Some properties (typically, but not necessarily, credentials of some sort) may need to be
+                        // passed as Camel RAW-wrapped values.  This affects how the Camel system will pass these
+                        // values to the property consumers involved. If the source configuration says that this
+                        // property should be RAW wrapped, adjust as required.
+                        if (rawRequired.contains(p.getKey())) {
+                            boolean isString = val instanceof String;
+                            if (isString) {
+                                String valStr = (String) val;
+                                boolean suppressed = valStr.startsWith(NO_RAW_REQUEST);
+                                if (suppressed) {
+                                    valStr = valStr.substring(NO_RAW_REQUEST.length());
+                                } else {
+                                    // If the caller has already wrapped the value (RAW() or RAW{}), then pass it
+                                    // thru unchanged.  Similarly, if the value contains both end characters, we pass
+                                    // it thru.  After seeing the start string, Camel will scan for the corresponding
+                                    // end character. However, if both end characters are present, either start
+                                    // sequence will terminate prematurely. As a consequence, attempting to wrap
+                                    // things as RAW strings will not work correctly, so we pass the string thru
+                                    // unchanged.
+                                    //
+                                    // Our other choice here would be to signal an error. As a layer atop the Camel
+                                    // system, any decision to fail in this situation is not ours to make. The code
+                                    // that's using this property value may have handling present -- we don't know.
+                                    // Moreover, the request to RAW-wrap these property values may is provided by the
+                                    // source configuration which may be part of some assembly, so that configuration
+                                    // should not prevent the callers request from being passed along.
+                                    // It is better to choose the route of less interference, letting the
+                                    // underlying systems do their work. This will succeed or fail as would happen
+                                    // without our automatic wrapping here, so we'll let the underlying systems
+                                    // report things as they will, and let the caller work things out, should that
+                                    // working out be necessary.
+                                    
+                                    // passThru set to true if both end characters or if the value is already wrapped.
+                                    passThru = (valStr.contains(RAW_END) && valStr.contains(RAW_END_ALT)) ||
+                                            (valStr.startsWith(RAW_START) && valStr.endsWith(RAW_END)) ||
+                                            (valStr.startsWith(RAW_START_ALT) && valStr.endsWith(RAW_END_ALT));
+                                    if (!passThru) {
+                                        // If we're wrapping, do we need to use the alternate wrapping
+                                        if (valStr.contains(RAW_END)) {
+                                            startRaw = RAW_START_ALT;
+                                            endRaw = RAW_END_ALT;
+                                        }
                                     }
                                 }
-                                propVals.setProperty(p.getKey(), startRaw + val + endRaw);
-                            } else {
-                                // If we're suppressing or we have a value with both ) & }, leave things alone
-                                propVals.setProperty(p.getKey(), p.getValue().toString());
+                                // our string may have been altered, so set the value to send
+                                val = valStr;
                             }
+                        }
+                        if (passThru) {
+                            // If we're suppressing or we have a value with both ) & }, leave things alone
+                            propVals.setProperty(p.getKey(), val.toString());
                         } else {
-                            propVals.setProperty(p.getKey(), p.getValue().toString());
+                            propVals.setProperty(p.getKey(), startRaw + val + endRaw);
                         }
                     }
                 }
