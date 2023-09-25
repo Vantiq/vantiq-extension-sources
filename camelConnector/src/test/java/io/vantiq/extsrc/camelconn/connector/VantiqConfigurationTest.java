@@ -167,6 +167,37 @@ public class VantiqConfigurationTest {
     }
     
     @Test
+    public void testRawAlready() {
+        Map<String, Object> propValues = Map.of("prop1", "prop1Value",
+                                                "prop2", "RAW{prop2Value}",
+                                                "prop3", "RAW(prop3Value)",
+                                                "prop4", "RAW{prop4}value",
+                                                "prop5", "RAW{prop5value)");
+        Properties props = new Properties(propValues.size());
+        // Though officially frowned upon, Properties.putAll here from a Map<String, String> is safe as it cannot put
+        // non-String keys or values into the Properties base map.
+        props.putAll(propValues);
+        List<String> raws = List.of("prop1", "prop2", "prop3", "prop4");
+        List<String> unchanged = List.of("prop2", "prop3", "prop5");
+    
+        performConfigTest(name.getMethodName(), ROUTE_NOT_USED, "yaml",
+                          null, props,
+                          (CamelContext runnerContext, Properties lclProps) -> {
+                              assert lclProps != null;
+                              assert propValues.size() == lclProps.size();
+                              propValues.forEach( (name, val) -> {
+                                  assert lclProps.containsKey(name);
+                                  if (unchanged.contains(name)) {
+                                      assert lclProps.getProperty(name).equals(val);
+                                  } else {
+                                      assert lclProps.getProperty(name).equals(CamelHandleConfiguration.RAW_START +
+                                                              val + CamelHandleConfiguration.RAW_END);
+                                  }
+                              });
+                          }, raws);
+    }
+    
+    @Test
     public void testRawRequired() {
         Map<String, Object> propValues = Map.of("prop1", "prop1Value",
                                                 "prop2", "prop2Value",
