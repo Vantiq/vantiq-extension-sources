@@ -143,6 +143,10 @@ public class CamelRunner extends MainSupport implements Closeable {
         createCamelContext();
     }
     
+    public Properties getCamelProperties() {
+        return camelProperties;
+    }
+    
     /**
      * Build the application classloader we will use.
      *
@@ -397,7 +401,7 @@ public class CamelRunner extends MainSupport implements Closeable {
                     }
                 }
             }
-    
+
             // Some routes may have components (e.g., Salesforce) that need specific configuration.
             // If that's the case, do that now before we start our route(s).
             if (initComponents != null && initComponents.size() > 0) {
