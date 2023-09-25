@@ -41,7 +41,9 @@ import java.util.regex.Pattern
 class AssemblyResourceGeneration extends DefaultTask {
     public static final String VANTIQ_SERVER_CONFIG = 'vantiq://server.config'
     public static final String VANTIQ_SERVER_CONFIG_JSON = VANTIQ_SERVER_CONFIG + '?consumerOutputJson=true'
-    
+    public static final String VANTIQ_SERVER_CONFIG_STRUCTURED = VANTIQ_SERVER_CONFIG + '?consumerOutputJson=true' +
+        '&structuredMessageHeader=true'
+
     public static final String KAMELETS_RESOURCE_FOLDER = 'kamelets'
     public static final String KAMELETS_RESOURCE_PATH = KAMELETS_RESOURCE_FOLDER + '/'
     public static final String YAML_FILE_TYPE = '.yaml'
@@ -53,7 +55,10 @@ class AssemblyResourceGeneration extends DefaultTask {
     public static final String SINK_KAMELET_YAML_SUFFIX = SINK_KAMELET_PREFIX + YAML_FILE_TYPE
     public static final String SINK_KAMELET_YML_SUFFIX = SINK_KAMELET_PREFIX + YML_FILE_TYPE
     public static final String PROPERTY_X_DESCRIPTORS = 'x-descriptors'
-    public static final String DISPLAY_HIDE_VALUE = 'urn:alm:descriptor:com.tectonic.ui:password'
+    public static final String DISPLAY_HIDE_VALUES = [
+        'urn:alm:descriptor:com.tectonic.ui:password',
+        'urn:camel:group:credentials'
+        ]
     // The following is used in an all-lower-case comparison, so it should be entirely lower case words
     public static final List<String> PASSWORD_LIKE = ['password']
 
@@ -85,11 +90,13 @@ class AssemblyResourceGeneration extends DefaultTask {
     public static final String SOURCE_NAME_SUFFIX = '_source'
 
     public static final String CAMEL_SOURCE_TYPE = 'CAMEL'
-    public static final String PROPERTY_PLACEHOLDER_SUFFIX = '_placeholder'
     public static final String CONFIG_CAMEL_RUNTIME = 'camelRuntime'
     public static final String CONFIG_CAMEL_GENERAL = 'general'
     public static final String CAMEL_RUNTIME_APPNAME = 'appName'
     public static final String CAMEL_RUNTIME_PROPERTY_VALUES = 'propertyValues'
+    public static final String CAMEL_RAW_HANDLING = 'rawValuesRequired'
+    // TODO: Add ability to add some overrides here where we want Camel RAW handling to be performed
+    public static final String CAMEL_DISCOVERED_RAW = 'discovered'
     public static final String CAMEL_RUNTIME_ROUTE_DOCUMENT = 'routesDocument'
     public static final String YAML_ROUTE_SUFFIX = '.routes.yaml'
     public static final String JSON_SUFFIX = '.json'
@@ -252,6 +259,9 @@ class AssemblyResourceGeneration extends DefaultTask {
         log.info('Found spec for {}', title)
         String overview = (String) ((Map<String, Object>) ((Map<String, Object>) yamlMap.get('spec'))
             .get('definition')).get('description')
+        List<String> requiredProps = (List<String>) ((Map<String, Object>)((Map<String, Object>) yamlMap.get('spec'))
+            .get('definition')).get('required')
+        log.debug('Required Props from kamelet defininition: {}', requiredProps ?: '<<empty>>')
 
         // Read any defined properties.  These will become properties for our assembly.
         //noinspection unchecked
@@ -339,7 +349,7 @@ class AssemblyResourceGeneration extends DefaultTask {
             assemblyRoot, packageName, kamName, title, props, componentList)
         //noinspection GroovyUnusedAssignment       // Useful for debugging...
         Map projectDef = addProjectDefinition(assemblyRoot, packageName, kamName,
-            title, props, componentList, serviceDef.service as Map)
+            title, props, requiredProps, componentList, serviceDef.service as Map)
         log.debug('Created projectDef: {}', projectDef)
     }
 
@@ -422,8 +432,8 @@ class AssemblyResourceGeneration extends DefaultTask {
         sourceDef.type = CAMEL_SOURCE_TYPE
         Map<String, Object> camelAppConfig = [(CAMEL_RUNTIME_APPNAME): kamName,
                               (CAMEL_RUNTIME_ROUTE_DOCUMENT): routeDoc]
-        Map<String, String> propValStubs = [:]
         List<String> propNameList = []
+        List<String> rawHandlingRequired = []
 
         // Note: Here, we could have the CAMEL source type define camelRuntime,propertyValues as configurable.
         // However, if we did that, on installation, the user would have to provide an object with the various lower
@@ -431,18 +441,42 @@ class AssemblyResourceGeneration extends DefaultTask {
         // lost.  Consequently, it seems preferable for each source to define the set it needs and let the assembly
         // installation and configuration mechanism take its course.
         props.each { aProp ->
-            log.debug('Creating prop value stub for {}', aProp)
-            propValStubs[aProp.key] = aProp.key + PROPERTY_PLACEHOLDER_SUFFIX
+            // Placeholder values for each property here are not required. But we need to generate the list of
+            // configurable properties to keep the assembly substitution mechanism happy.
+            //
+            // Note that adding all the placeholders was problematic when not all the properties are provided.  When
+            // an assembly installer configured their assembly & did not provide a value for some (optional)
+            // property, the placeholder value is replaced, but replaced with null.  So, we got properties sent down
+            // with the value null.  We work around that (indeed, the CamelConnector config handler just ignores
+            // these as good practice), but avoidance at the higher level seems preferable.
             propNameList << new String().join('.', ['config',
                                                     CONFIG_CAMEL_RUNTIME,
                                                     CAMEL_RUNTIME_PROPERTY_VALUES,
                                                     aProp.key])
+            if (aProp.value instanceof Map) {
+                Map pDesc = aProp.value as Map
+                if (PASSWORD_LIKE.contains(pDesc.format?.toLowerCase()) ||
+                    (pDesc[PROPERTY_X_DESCRIPTORS] != null &&
+                        DISPLAY_HIDE_VALUES.contains(((String) pDesc[PROPERTY_X_DESCRIPTORS])))) {
+                    // for things that are passwords or are marked to be masked in display, tell connector to instruct
+                    // Camel to use RAW handling
+                    rawHandlingRequired << aProp.key
+                }
+            } else {
+                throw new GradleException('Unexpected type for property description: ' + aProp.value?.class?.name)
+            }
         }
-        log.debug('propValStubs: {}', propValStubs)
+        log.debug('Configurable properties: {}', propNameList)
+        log.debug('Configuration properties that required raw handling: {}', rawHandlingRequired)
         if (propNameList) {
             sourceDef[PROPERTY_BAG_PROPERTY] = [:]
             sourceDef[PROPERTY_BAG_PROPERTY][ADDITIONAL_CONFIG_PROPERTIES] = propNameList
-            camelAppConfig[CAMEL_RUNTIME_PROPERTY_VALUES] = propValStubs
+            // As noted above, we don't need all the placeholders inserted. But we do need their container...
+            camelAppConfig[CAMEL_RUNTIME_PROPERTY_VALUES] = [:]
+            if (rawHandlingRequired) {
+                camelAppConfig[CAMEL_RAW_HANDLING] = [:]
+                camelAppConfig[CAMEL_RAW_HANDLING][CAMEL_DISCOVERED_RAW] = rawHandlingRequired
+            }
         }
         def generalConfig = [:]
         sourceDef.config = [ (CONFIG_CAMEL_RUNTIME): camelAppConfig, (CONFIG_CAMEL_GENERAL): generalConfig]
@@ -462,23 +496,20 @@ class AssemblyResourceGeneration extends DefaultTask {
      * Builds project definition corresponding to the kamelet.  Kamelet defined properties become configuration
      * properties & mappings, and the components used are added as resources.
      *
-     * Kamelet properties are considered 'required' unless there is a default.  Any properties that are marked with
-     * format 'password' (or equivalent should such things appear) OR marked with x-descriptor of indicating that the
-     * input should be hidden (currently, 'urn:alm:descriptor:com.tectonic.ui:password') are converted to be of type
-     * Secret, and require the entry of a Vantiq Secret.
-     *
      * @param kameletAssemblyDir Path the directory used for this kamelet-based assembly
      * @param packageName String package name we'll use for this assembly
      * @param projectName String name of the kamelet on which we're working
      * @param description String Description of the project
      * @param props Map<String, Object> Kamelet properties extracted from the definition
+     * @param reqProps List<String> Kamelet properties listed as required
      * @param components List<String> List of resources references that comprise this assembly project.
      * @param serviceDef Map<String, Object> Definition of the service used here.
      * @returns Map<String, Object> containing Path written & resourceReference
      */
     static Map<String, Object> addProjectDefinition(Path kameletAssemblyDir, String packageName, String projectName,
                                                     String description, Map<String, Object> props,
-                                                    List<String> components, Map<String, Object> serviceDef) {
+                                                    List<String> reqProps, List<String> components,
+                                                    Map<String, Object> serviceDef) {
         def project = [:]
         project.name = packageName
         project.type = 'dev'
@@ -516,6 +547,12 @@ class AssemblyResourceGeneration extends DefaultTask {
 
             // Properties are required if there is no default...
             Map<String, Object> propDesc = [:]
+            if (pDesc.required == null && reqProps && reqProps.contains(pName)) {
+                // If property itself has no "required" entry but the outer level does, set it on the property for
+                // our processing.  This allows us to streamline this handling.
+                pDesc.required = true
+            }
+            log.trace('Pdesc.required for {}: {}', pName, pDesc.required)
             if (pDesc.required instanceof Boolean) {
                 propDesc.required = pDesc.required
             } else if (pDesc.required instanceof String) {
@@ -542,17 +579,25 @@ class AssemblyResourceGeneration extends DefaultTask {
             } else {
                 propDesc.type = 'String'
             }
+            // TODO: Secret type parameters re delivered to the source as resource refs to the secret.  The secret
+            //  expansion doesn't handle this.  Make server-side changes to improve this situation, then re-enable
+            //  this enforcement of secret values.
+//            if (PASSWORD_LIKE.contains(pDesc.format?.toLowerCase()) ||
+//                (pDesc[PROPERTY_X_DESCRIPTORS] != null &&
+//                    DISPLAY_HIDE_VALUES.contains(((String) pDesc[PROPERTY_X_DESCRIPTORS])))) {
+//                // for things that are passwords or are marked to be masked in display, we will require a secret.
+//                propDesc.type = 'Secret'
+//                propDesc.description += ' (Please provide the name of the Vantiq Secret containing this value.)'
+//            }
             if (PASSWORD_LIKE.contains(pDesc.format?.toLowerCase()) ||
-                ((String) pDesc[PROPERTY_X_DESCRIPTORS])?.contains(DISPLAY_HIDE_VALUE)) {
-                // for things that are passwords or are marked to be masked in display, we will require a secret.
-                propDesc.type = 'Secret'
-                propDesc.description += ' (Please provide the name of the Vantiq Secret containing this value.)'
+                (pDesc[PROPERTY_X_DESCRIPTORS] != null &&
+                    DISPLAY_HIDE_VALUES.contains(((String) pDesc[PROPERTY_X_DESCRIPTORS])))) {
+                // for things that are passwords or are marked to be masked in display, tell camel to use RAW handling
+                propDesc.description += ' (We suggest that you store this value in a Vantiq Secret and use ' +
+                    '"@secrets(<<secret name>>)" for the value of this property.)'
             }
             if (pDesc.enum != null) {
-                // Convert style to that used by Activity Pattern definitions. This doesn't appear to quite work, but
-                // it's likely close to what will, so this is a better default.
-                // FIXME -- remove this if not supported, unless we know "how" it's likely to arrive. In that case,
-                //  leave it since it may start to work accidentally when that work is completed.
+                // Present the enumeration as a drop down list. Adapt structure to that used by the assembly mechanism.
                 propDesc.enumValues = pDesc.enum
                 propDesc.type = 'Enum'  // UI seems to treat this as an alias for String, which is fine for us.
             }
@@ -756,9 +801,9 @@ class AssemblyResourceGeneration extends DefaultTask {
             log.debug('Found template key: {}, value: {}', k, v)
             if (k == FROM_ROUTE_TAG && stepDef != null) {
                 if (stepDef.containsKey(URI_ROUTE_TAG) && stepDef.get(URI_ROUTE_TAG) instanceof String &&
-                    ((String) stepDef.get(URI_ROUTE_TAG)) == KAMELET_SOURCE) {
-                    stepDef.put(URI_ROUTE_TAG, VANTIQ_SERVER_CONFIG_JSON)
-                    log.debug('Replaced {} with{}', stepDef.get('uri'), VANTIQ_SERVER_CONFIG_JSON)
+                        ((String) stepDef.get(URI_ROUTE_TAG)) == KAMELET_SOURCE) {
+                    stepDef.put(URI_ROUTE_TAG, VANTIQ_SERVER_CONFIG_STRUCTURED)
+                    log.debug('Replaced {} with{}', stepDef.get('uri'), VANTIQ_SERVER_CONFIG_STRUCTURED)
                 }
                 
                 for (Map.Entry<String, Object> oneEntry: stepDef.entrySet()) {
@@ -766,8 +811,8 @@ class AssemblyResourceGeneration extends DefaultTask {
                     Object stepVal = oneEntry.getValue()
                 
                     if (stepKey.equalsIgnoreCase('steps')
-                                    || stepKey.equalsIgnoreCase('choice')
-                                    || stepKey.equalsIgnoreCase('when')) {
+                            || stepKey.equalsIgnoreCase('choice')
+                            || stepKey.equalsIgnoreCase('when')) {
                         if (stepVal instanceof Map) {
                             //noinspection unchecked
                             processStep((Map<String, Object>) stepVal)
@@ -848,10 +893,10 @@ RULE ${ruleName}
 WHEN EVENT OCCURS ON "/services/${packageName + '.' + serviceName}/${serviceName + 'Event'}" AS svcMsg
 
 var srcName = "${sourceName}"
-log.error("Service rule got message {} to forward to source {}", [ svcMsg, srcName ] )
 
+log.debug("Service rule got message {} to forward to source {}", [ svcMsg, srcName ] )
 
-PUBLISH { header: svcMsg.value.header, message: svcMsg.value.message } TO SOURCE @srcName
+PUBLISH { headers: svcMsg.value.headers, message: svcMsg.value.message } TO SOURCE @srcName
 '''
 
     // Basic rule to route message sent from a source to the service representing the kamelet route
@@ -860,10 +905,10 @@ package ${packageName}
 RULE ${ruleName}
 WHEN EVENT OCCURS ON "/sources/${sourceName}" as svcMsg
 
-log.error("Source ${sourceName} rule got message {} to forward to service  {}", [ svcMsg, 
+log.debug("Source ${sourceName} rule got message {} to forward to service  {}", [ svcMsg, 
     "${packageName + '.' + serviceName}/${serviceName + 'Event'} ])
 
-PUBLISH { header: svcMsg.value.header, message: svcMsg.value.message } 
+PUBLISH { headers: svcMsg.value.headers, message: svcMsg.value.message } 
     TO SERVICE EVENT "${packageName + '.' + serviceName}/${serviceName + 'Event'}"
 '''
 }
