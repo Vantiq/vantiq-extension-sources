@@ -35,6 +35,7 @@ repositories {
 
 ext {
     apacheCommonsLangVersion = '3.12.0'
+    apacheCommonsDbcp2Version = '2.10.0'
     dnsJavaVersion = '3.4.2'
     extjsdkVersion='1.0'
     gsonVersion = '2.9.1'
@@ -54,11 +55,21 @@ dependencies {
     implementation "org.apache.camel:camel-main:${camelVersion}"
     implementation "org.apache.camel:camel-support:${camelVersion}"
     implementation "org.apache.camel:camel-jackson:${camelVersion}"
+
+    // FIXME: Temporary
+    // The following are included to allow for resolution of beans involved in kamelets.  They will not always be
+    // needed, and we would prefer to remove the need to fully resolve them.  But, for now, this gets things going.
+    implementation "org.apache.camel.kamelets:camel-kamelets-utils:${camelVersion}"
+    implementation "org.apache.commons:commons-dbcp2:${apacheCommonsDbcp2Version}"
+    // TODO: May need mongodb component, too, though that's worse since it's a component & should be (only)
+    //  dynamically discovered.
+
     implementation "org.apache.commons:commons-lang3:${apacheCommonsLangVersion}"
     implementation "org.apache.ivy:ivy:${ivyVersion}"
     implementation project(":extjsdk")
     implementation project(":camelComponent")    // The Vantiq Camel Component is automatically included
     implementation "com.fasterxml.jackson.core:jackson-databind:${jacksonVersion}"
+    implementation "com.fasterxml.jackson.datatype:jackson-datatype-jsr310:{jacksonVersion}"
     implementation "com.google.code.gson:gson:${gsonVersion}"
     // Used for downloading route documents
     implementation "io.vantiq:vantiq-sdk:${vantiqSDKVersion}"

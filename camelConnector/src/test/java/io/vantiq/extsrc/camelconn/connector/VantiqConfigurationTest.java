@@ -34,6 +34,7 @@ import static org.junit.Assume.assumeTrue;
 import io.vantiq.extjsdk.ExtensionServiceMessage;
 import io.vantiq.extsrc.camelconn.discover.CamelRunner;
 import org.apache.camel.CamelContext;
+import org.apache.camel.spi.PropertiesComponent;
 import org.apache.commons.lang3.function.TriFunction;
 import org.junit.Rule;
 import org.junit.Test;
@@ -43,6 +44,7 @@ import java.io.File;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Properties;
 import java.util.concurrent.TimeUnit;
 
@@ -60,7 +62,7 @@ public class VantiqConfigurationTest {
     
     // Interface to use in declaration.  We'll pass lambda's in to do the actual verification work
     interface Verifier {
-        void doVerify(CamelContext runnerContext, Properties props);
+        void doVerify(CamelContext runnerContext);
     }
     
     void performConfigTest(String appName, String route, String routeFormat,
@@ -70,9 +72,6 @@ public class VantiqConfigurationTest {
     void performConfigTest(String appName, String route, String routeFormat,
                            List<Map<String, Object>> compInitProps, Properties propertyValues, Verifier vfy,
                            List<String> rawReq) {
-        assumeTrue(!sfLoginUrl.equals(MISSING_VALUE) && !sfClientId.equals(MISSING_VALUE) &&
-                           !sfClientSecret.equals(MISSING_VALUE) && !sfRefreshToken.equals(MISSING_VALUE));
-        
         Map<String, Object> simpleConfig = new HashMap<>();
         Map<String, Object> camelConfig = new HashMap<>();
         simpleConfig.put(CAMEL_CONFIG, camelConfig);
@@ -122,7 +121,7 @@ public class VantiqConfigurationTest {
         assertTrue("Context Running", runnerContext.isStarted());
 
         try {
-            vfy.doVerify(runnerContext, handler.getCurrentCamelRunner().getCamelProperties());
+            vfy.doVerify(runnerContext);
         } finally {
             handler.getCurrentCamelRunner().close();
         }
@@ -156,12 +155,13 @@ public class VantiqConfigurationTest {
     
         performConfigTest(name.getMethodName(), ROUTE_NOT_USED, "yaml",
                           null, props,
-                          (CamelContext runnerContext, Properties lclProps) -> {
-                                assert lclProps != null;
-                                assert propValues.size() == lclProps.size();
-                                propValues.forEach( (name, val) -> {
-                                    assert lclProps.containsKey(name);
-                                    assert lclProps.getProperty(name).equals(val);
+                          (CamelContext runnerContext) -> {
+                              PropertiesComponent pc = runnerContext.getPropertiesComponent();
+                              propValues.forEach( (name, val) -> {
+                                  Optional<String> os = pc.resolveProperty("{{" + name + "}}");
+                                  assert os.isPresent();
+                                  String s = os.get();
+                                  assert s.equals(val);
                               });
                           });
     }
@@ -182,16 +182,16 @@ public class VantiqConfigurationTest {
     
         performConfigTest(name.getMethodName(), ROUTE_NOT_USED, "yaml",
                           null, props,
-                          (CamelContext runnerContext, Properties lclProps) -> {
-                              assert lclProps != null;
-                              assert propValues.size() == lclProps.size();
+                          (CamelContext runnerContext) -> {
+                              PropertiesComponent pc = runnerContext.getPropertiesComponent();
                               propValues.forEach( (name, val) -> {
-                                  assert lclProps.containsKey(name);
+                                  Optional<String> os = pc.resolveProperty("{{" + name + "}}");
+                                  assert os.isPresent();
+                                  String s = os.get();
                                   if (unchanged.contains(name)) {
-                                      assert lclProps.getProperty(name).equals(val);
+                                      assert s.equals(val);
                                   } else {
-                                      assert lclProps.getProperty(name).equals(CamelHandleConfiguration.RAW_START +
-                                                              val + CamelHandleConfiguration.RAW_END);
+                                      assert s.equals(RAW_START + val + RAW_END);
                                   }
                               });
                           }, raws);
@@ -210,19 +210,20 @@ public class VantiqConfigurationTest {
     
         performConfigTest(name.getMethodName(), ROUTE_NOT_USED, "yaml",
                           null, props,
-                          (CamelContext runnerContext, Properties lclProps) -> {
-                              assert lclProps != null;
-                              assert propValues.size() == lclProps.size();
+                          (CamelContext runnerContext) -> {
+                              PropertiesComponent pc = runnerContext.getPropertiesComponent();
                               propValues.forEach( (name, val) -> {
-                                  assert lclProps.containsKey(name);
+                                  Optional<String> os = pc.resolveProperty("{{" + name + "}}");
+                                  assert os.isPresent();
+                                  String s = os.get();
                                   if (raws.contains(name)) {
-                                      assert lclProps.getProperty(name).equals(CamelHandleConfiguration.RAW_START +
-                                              val + CamelHandleConfiguration.RAW_END);
+                                      assert s.equals(
+                                          CamelHandleConfiguration.RAW_START + val + CamelHandleConfiguration.RAW_END);
                                   } else {
-                                      assert lclProps.getProperty(name).equals(val);
+                                      assert s.equals(val);
                                   }
                               });
-                          }, raws);
+                         }, raws);
     }
     
     @Test
@@ -238,19 +239,18 @@ public class VantiqConfigurationTest {
         
         performConfigTest(name.getMethodName(), ROUTE_NOT_USED, "yaml",
                           null, props,
-                          (CamelContext runnerContext, Properties lclProps) -> {
-                              assert lclProps != null;
-                              assert propValues.size() == lclProps.size();
+                          (CamelContext runnerContext) -> {
+                              PropertiesComponent pc = runnerContext.getPropertiesComponent();
                               propValues.forEach( (name, val) -> {
-                                  assert lclProps.containsKey(name);
+                                  Optional<String> os = pc.resolveProperty("{{" + name + "}}");
+                                  assert os.isPresent();
+                                  String s = os.get();
                                   if (name.equals("prop1")) {
-                                      assert lclProps.getProperty(name).equals(CamelHandleConfiguration.RAW_START_ALT +
-                                                                                       val + CamelHandleConfiguration.RAW_END_ALT);
+                                      assert s.equals(RAW_START_ALT + val + RAW_END_ALT);
                                   } else if (name.equals("prop3")) {
-                                      assert lclProps.getProperty(name).equals(CamelHandleConfiguration.RAW_START +
-                                                                                       val + CamelHandleConfiguration.RAW_END);
+                                      assert s.equals(RAW_START + val + RAW_END);
                                   } else {
-                                      assert lclProps.getProperty(name).equals(val);
+                                      assert s.equals(val);
                                   }
                               });
                           }, raws);
@@ -268,15 +268,18 @@ public class VantiqConfigurationTest {
     
         performConfigTest(name.getMethodName(), ROUTE_NOT_USED, "yaml",
                           null, props,
-                          (CamelContext runnerContext, Properties lclProps) -> {
-                              assert lclProps != null;
-                              assert propValues.size() == lclProps.size();
+                          (CamelContext runnerContext) -> {
+                              PropertiesComponent pc = runnerContext.getPropertiesComponent();
                               propValues.forEach( (name, val) -> {
-                                  assert lclProps.containsKey(name);
+                                  Optional<String> os = pc.resolveProperty("{{" + name + "}}");
+                                  assert os.isPresent();
+                                  String s = os.get();
                                   if (raws.contains(name)) {
                                       String newVal = ((String) propValues.get(name))
                                               .substring(NO_RAW_REQUEST.length());
-                                      assert lclProps.getProperty(name).equals(newVal);
+                                      assert newVal.equals(s);
+                                  } else {
+                                      assert s.equals(val);
                                   }
                               });
                           }, raws);
@@ -295,15 +298,16 @@ public class VantiqConfigurationTest {
     
         performConfigTest(name.getMethodName(), ROUTE_NOT_USED, "yaml",
                           null, props,
-                          (CamelContext runnerContext, Properties lclProps) -> {
-                              assert lclProps != null;
-                              assert propValues.size() == lclProps.size();
+                          (CamelContext runnerContext) -> {
+                              PropertiesComponent pc = runnerContext.getPropertiesComponent();
                               propValues.forEach( (name, val) -> {
-                                  assert lclProps.containsKey(name);
+                                  Optional<String> os = pc.resolveProperty("{{" + name + "}}");
+                                  assert os.isPresent();
+                                  String s = os.get();
                                   if (name.equals("prop1")) {
-                                      assert lclProps.getProperty(name).equals(RAW_START + val + RAW_END);
+                                      assert s.equals(RAW_START + val + RAW_END);
                                   } else {
-                                      assert lclProps.getProperty(name).equals(val);
+                                      assert s.equals(val);
                                   }
                               });
                           }, raws);
@@ -313,7 +317,7 @@ public class VantiqConfigurationTest {
     public void testSimpleConfiguration() {
         performConfigTest(name.getMethodName(), XML_ROUTE, "xml",
                           null, null,
-                          (CamelContext runnerContext, Properties props) -> {
+                          (CamelContext runnerContext) -> {
                               TriFunction<CamelContext, String, Object, Boolean> verifyOperation =
                                       defineVerifyOperation();
                               assert verifyOperation.apply(runnerContext, QUERY_MONKEY, RESPONSE_MONKEY);
@@ -323,9 +327,11 @@ public class VantiqConfigurationTest {
     
     @Test
     public void testComponentInitConfiguration() {
+        assumeTrue(!sfLoginUrl.equals(MISSING_VALUE) && !sfClientId.equals(MISSING_VALUE) &&
+                           !sfClientSecret.equals(MISSING_VALUE) && !sfRefreshToken.equals(MISSING_VALUE));
         performConfigTest(name.getMethodName(), SALESFORCETASKS_YAML, "yaml",
                           getComponentsToInit(), null,
-                          (CamelContext runnerContext, Properties props) -> {
+                          (CamelContext runnerContext) -> {
                               TriFunction<CamelContext, String, Object, Boolean> verifyOperation =
                                       defineVerifyOperation();
                             assert verifyOperation.apply(runnerContext, "not used", Map.of("done", true));
@@ -335,13 +341,16 @@ public class VantiqConfigurationTest {
     
     @Test
     public void testComponentInitConfigurationWithPropertyValues() {
+        assumeTrue(!sfLoginUrl.equals(MISSING_VALUE) && !sfClientId.equals(MISSING_VALUE) &&
+                           !sfClientSecret.equals(MISSING_VALUE) && !sfRefreshToken.equals(MISSING_VALUE));
+    
         Properties props = new Properties(pValues.size());
         // Though officially frowned upon, Properties.putAll here from a Map<String, String> is safe as it cannot put
         // non-String keys or values into the Properties base map.
         props.putAll(pValues);
         performConfigTest(name.getMethodName(), PARAMETERIZED_SALESFORCE_ROUTE, "yaml",
                           getComponentsToInit(), props,
-                          (CamelContext runnerContext, Properties pros) -> {
+                          (CamelContext runnerContext) -> {
                               TriFunction<CamelContext, String, Object, Boolean> verifyOperation =
                                       defineVerifyOperation();
                               assert verifyOperation.apply(runnerContext, "not used", Map.of("done", true));

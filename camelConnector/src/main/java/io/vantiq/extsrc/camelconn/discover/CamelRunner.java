@@ -13,10 +13,16 @@ import org.apache.camel.CamelContext;
 import org.apache.camel.ExtendedCamelContext;
 import org.apache.camel.ProducerTemplate;
 import org.apache.camel.RoutesBuilder;
+import org.apache.camel.builder.TemplatedRouteBuilder;
 import org.apache.camel.impl.DefaultCamelContext;
 import org.apache.camel.main.MainRegistry;
 import org.apache.camel.main.MainSupport;
 import org.apache.camel.builder.RouteBuilder;
+import org.apache.camel.model.ModelCamelContext;
+import org.apache.camel.model.RouteDefinition;
+import org.apache.camel.model.RouteTemplateDefinition;
+import org.apache.camel.model.RoutesDefinition;
+
 import org.apache.camel.spi.Resource;
 import org.apache.camel.spi.RoutesBuilderLoader;
 import org.apache.camel.spi.RoutesLoader;
@@ -246,7 +252,7 @@ public class CamelRunner extends MainSupport implements Closeable {
                                                    "Component Resolution");
             jarSet.addAll(resolved);
         }
-    
+        
         for (String df : dataformatsToResolve) {
             String lib = discoverer.findDataFormatForName(df);
             if (lib == null) {
@@ -374,8 +380,7 @@ public class CamelRunner extends MainSupport implements Closeable {
             // This method is tolerant being passed a null value, and will do the right thing. This needs to be done
             // before the class loader is constructed since some properties may be used as things like the URL which may
             // be used at class-load time.
-            camelContext.getPropertiesComponent().setLocalProperties(this.camelProperties);
-    
+            camelContext.getPropertiesComponent().setInitialProperties(this.camelProperties);
             if (routeBuilder == null) {
                 if (StringUtils.isEmpty(routeSpec) || StringUtils.isEmpty(routeSpecType)) {
                     log.error("No routes have been specified to run.  Either {} or {} and {} are " +
@@ -513,15 +518,55 @@ public class CamelRunner extends MainSupport implements Closeable {
             // these in the log files
             log.debug("Loading route (specificationType {}):\n{}", specificationType, specification);
         }
-        ExtendedCamelContext extendedCamelContext = camelContext.adapt(ExtendedCamelContext.class);
+    
+        ModelCamelContext mcc = (ModelCamelContext) camelContext;
+        ExtendedCamelContext extendedCamelContext = mcc.adapt(ExtendedCamelContext.class);
         RoutesLoader loader = extendedCamelContext.getRoutesLoader();
         Resource resource = ResourceHelper.fromString("in-memory." + specificationType, specification);
         loader.loadRoutes(resource);
+        log.debug("loadRoutesFromText(): routes: {}, routeTemplates: {}", mcc.getRoutes(),
+                  mcc.getRouteTemplateDefinitions());
+        // Based on what was loaded, we cana now construct our RouteBuilder.
+        // For cases where we have a route, we are done.
         RoutesBuilderLoader rbl = loader.getRoutesLoader(specificationType);
-        RoutesBuilder rb = rbl.loadRoutesBuilder(resource);
-        log.debug("Route builder: {}", rb.toString());
-        
-        return (RouteBuilder) rb;
+        RoutesBuilder rsb = rbl.loadRoutesBuilder(resource);
+        RouteBuilder rb;
+        if (rsb instanceof RouteBuilder) {
+            rb = (RouteBuilder) rsb;
+        } else {
+            String className = rsb == null ? "null" : rsb.getClass().getName();
+            throw new RuntimeException("loadRoutesFromText(): Expected RouteBuilder by got " + className);
+        }
+        if (mcc.getRouteTemplateDefinitions().size() > 0) {
+            // However, if we have a RouteTemplate rather than a route, we need to construct a route from the template.
+            // We don't (currently) support parameters on templates, we'll simply fetch any templates present and
+            // build the routes from them (property placeholder substitution will work as expected).
+            RoutesDefinition rsd = new RoutesDefinition();
+            List<String> beansInvolved = new ArrayList<>();
+            mcc.getRouteTemplateDefinitions().forEach( (RouteTemplateDefinition rtd) -> {
+                log.debug("loadRoutesFromText(): Found route Def id: {} :: {}", rtd.getId(), rtd.getRoute());
+                String templateId = rtd.getId();
+                TemplatedRouteBuilder builder = TemplatedRouteBuilder.builder(mcc, templateId).routeId(templateId);
+                // FIXME: want to figure out how to fake out the beans for loading the routes for discovery when
+                //  we don't really need them.  But at load time (here), we need them. We aren't doing discovery
+                //  yet -- just getting the routes in place so we can discover what's going on.  Unfortunately,
+                //  Camel wants to load the beans here.  And that's a problem since we don't have the kamelet
+                //  runtime(s) loaded.
+                String routeId;
+                try {
+                    routeId = builder.add();
+                } catch (Exception e) {
+                    throw new RuntimeException("Error adding route template to context", e);
+                }
+                log.debug("loadRoutesFromText(): Added route (id {}) from template (id {}): {}", routeId, templateId,
+                          rtd.getRoute());
+                RouteDefinition rd = mcc.getRouteDefinition(routeId);
+                rsd.route(rd);
+            });
+            rb.setRouteCollection(rsd);
+        } // Else, all the work was done by loading the route.  Only templates have the extra steps above
+        log.debug("loadRoutesFromText(): Returning RouteBuilder: {}", rb);
+        return rb;
     }
     
     @Override
