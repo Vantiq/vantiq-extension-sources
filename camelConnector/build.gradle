@@ -59,7 +59,7 @@ dependencies {
     // FIXME: Temporary
     // The following are included to allow for resolution of beans involved in kamelets.  They will not always be
     // needed, and we would prefer to remove the need to fully resolve them.  But, for now, this gets things going.
-    implementation "org.apache.camel.kamelets:camel-kamelets-utils:${camelVersion}"
+    implementation "org.apache.camel.kamelets:camel-kamelets-utils:3.21.0" // ${camelVersion}"
     implementation "org.apache.commons:commons-dbcp2:${apacheCommonsDbcp2Version}"
     // TODO: May need mongodb component, too, though that's worse since it's a component & should be (only)
     //  dynamically discovered.

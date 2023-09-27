@@ -10,11 +10,19 @@ package io.vantiq.extsrc.camelconn.discover;
 
 import org.apache.camel.CamelContext;
 import org.apache.camel.ExtendedCamelContext;
+import org.apache.camel.RoutesBuilder;
 import org.apache.camel.builder.RouteBuilder;
+import org.apache.camel.builder.TemplatedRouteBuilder;
 import org.apache.camel.dsl.yaml.YamlRoutesBuilderLoader;
 import org.apache.camel.impl.engine.DefaultComponentResolver;
+import org.apache.camel.model.ModelCamelContext;
+import org.apache.camel.model.RouteDefinition;
+import org.apache.camel.model.RouteTemplateDefinition;
+import org.apache.camel.model.RoutesDefinition;
 import org.apache.camel.spi.ComponentResolver;
 import org.apache.camel.spi.Resource;
+import org.apache.camel.spi.RoutesBuilderLoader;
+import org.apache.camel.spi.RoutesLoader;
 import org.apache.camel.support.ResourceHelper;
 import org.apache.camel.test.junit4.CamelTestSupport;
 import org.apache.camel.dsl.xml.io.XmlRoutesBuilderLoader;
@@ -214,6 +222,12 @@ public class VantiqComponentDiscoveryTest extends CamelTestSupport {
         performDiscoveryTest(rb);
     }
     
+    @Test
+    public void testRouteTemplate() throws Exception {
+        RouteBuilder rb = new BeanIncludingRouteTemplate(context);
+        performDiscoveryTest(rb);
+    }
+    
     void performDiscoveryTest(RouteBuilder rb) throws Exception {
         performDiscoveryTest(rb, null);
     }
@@ -316,8 +330,8 @@ public class VantiqComponentDiscoveryTest extends CamelTestSupport {
      */
     interface TestExpectations {
         List<String> getExpectedComponentsToLoad();
-        List<String> getExpectedSystemComponents();
         
+        default List<String> getExpectedSystemComponents() { return List.of(); }
         default List<String> getExpectedDataFormatsToLoad() {
             return List.of();
         }
@@ -610,6 +624,89 @@ public class VantiqComponentDiscoveryTest extends CamelTestSupport {
             RouteBuilder rb = new YamlRouteBuilder(ctx, content).getRouteBuilder();
             rb.configure();
             this.setRouteCollection(rb.getRouteCollection());
+        }
+    }
+    
+    private static class BeanIncludingRouteTemplate extends RouteBuilder implements TestExpectations {
+        
+        CamelContext ctx;
+        BeanIncludingRouteTemplate(CamelContext ctx) {
+            this.ctx = ctx;
+        }
+        @Override
+        public List<String> getExpectedComponentsToLoad() {
+            return List.of("aws2-s3");
+        }
+        
+        @Override
+        public void configure() throws Exception {
+            String content = ""
+                    + "-   route-template:\n"
+                    + "        id: Route templates from aws_s3_source:v3_21_0\n"
+                    + "        beans:\n"
+                    + "        -   name: renameHeaders\n"
+                    + "            type: '#class:org.apache.camel.kamelets.utils.headers.DuplicateNamingHeaders'\n"
+                    + "            property:\n"
+                    + "            -   key: prefix\n"
+                    + "                value: CamelAwsS3\n"
+                    + "            -   key: renamingPrefix\n"
+                    + "                value: aws.s3.\n"
+                    + "            -   key: mode\n"
+                    + "                value: filtering\n"
+                    + "            -   key: selectedHeaders\n"
+                    + "                value: CamelAwsS3Key,CamelAwsS3BucketName\n"
+                    + "        from:\n"
+                    + "            uri: aws2-s3:someSillyBucket \n"
+                    + "            parameters:\n"
+                    + "                autoCreateBucket: 'false'\n"
+                    + "                secretKey: 'dont tell'\n"
+                    + "                accessKey: 'let me in'\n"
+                    + "                region: 'us-west-2'\n"
+                    + "                ignoreBody: 'false'\n"
+                    + "                deleteAfterRead: 'false'\n"
+                    + "                prefix: 'null'\n"
+                    + "                useDefaultCredentialsProvider: 'true'\n"
+                    + "                uriEndpointOverride: ''\n"
+                    + "                overrideEndpoint: 'false'\n"
+                    + "                delay: '500'\n"
+                    + "            steps:\n"
+                    + "            -   process:\n"
+                    + "                    ref: '{{renameHeaders}}'\n"
+                    + "            -   to: vantiq://server.config?structuredMessageHeader=true\n";
+    
+            ctx.stop(); // so we don't try & load the component.  Templates are a little different.
+    
+            // YAML support needs a camel context.  So provide one during setup...
+            ExtendedCamelContext extendedCamelContext = ctx.adapt(ExtendedCamelContext.class);
+            RoutesLoader loader = extendedCamelContext.getRoutesLoader();
+            Resource resource = ResourceHelper.fromString("in-memory.yaml", content);
+            loader.loadRoutes(resource);
+            ModelCamelContext mcc = ctx.adapt(ModelCamelContext.class);
+            log.debug("Context is started: {}", ctx.isStarted());
+            RoutesDefinition rsd = new RoutesDefinition();
+            RoutesBuilderLoader rbl = loader.getRoutesLoader("yaml");
+    
+            RoutesBuilder rsb = rbl.loadRoutesBuilder(resource);
+            RouteBuilder rb;
+            if (rsb instanceof RouteBuilder) {
+                rb = (RouteBuilder) rsb;
+                mcc.getRouteTemplateDefinitions().forEach((RouteTemplateDefinition rtd) -> {
+                    String templateId = rtd.getId();
+                    TemplatedRouteBuilder builder = TemplatedRouteBuilder.builder(mcc, templateId).routeId(templateId);
+                    String routeId;
+                    try {
+                        routeId = builder.add();
+                    } catch (Exception e) {
+                        throw new RuntimeException("Error adding route template to context", e);
+                    }
+                    RouteDefinition rd = mcc.getRouteDefinition(routeId);
+                    assert rd != null;
+                    rsd.route(rd);
+                });
+                rb.setRouteCollection(rsd);
+                rb.configure();
+                this.setRouteCollection(rb.getRouteCollection());
+            }
         }
     }
 }
