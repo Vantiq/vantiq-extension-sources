@@ -28,6 +28,7 @@ import io.vantiq.extjsdk.Response;
 import io.vantiq.extjsdk.TestListener;
 
 import java.nio.charset.StandardCharsets;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -181,6 +182,14 @@ public class VantiqComponentTest extends CamelTestSupport {
         sendBody(routeStartUri, testBytes);
         lastMsg = fc.getLastMessageAsMap();
         validateExtensionMsg(lastMsg, false, null, new String[] { "stringVal"}, testMsg);
+    
+        Instant rightNow = Instant.now();
+        Map timeMsg = Map.of("time", rightNow);
+        sendBody(routeStartUri, timeMsg);
+    
+        //noinspection rawtypes
+        lastMsg = fc.getLastMessageAsMap();
+        validateExtensionMsg(lastMsg, false, null, new String[] {"time"}, rightNow.toString());
     }
     
     @Test
