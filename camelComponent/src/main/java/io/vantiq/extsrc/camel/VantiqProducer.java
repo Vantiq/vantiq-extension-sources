@@ -14,6 +14,8 @@ import static io.vantiq.extsrc.camel.VantiqEndpoint.STRUCTURED_MESSAGE_MESSAGE_P
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import io.vantiq.extjsdk.ExtensionServiceMessage;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.camel.Exchange;
@@ -24,17 +26,28 @@ import org.apache.camel.InvalidPayloadException;
 import org.apache.camel.support.DefaultProducer;
 
 import java.net.HttpURLConnection;
+import java.nio.ByteBuffer;
+import java.nio.charset.CharacterCodingException;
+import java.nio.charset.CharsetDecoder;
+import java.nio.charset.StandardCharsets;
+
 import java.util.HashMap;
 import java.util.Map;
 
 @Slf4j
 public class VantiqProducer extends DefaultProducer {
     private final VantiqEndpoint endpoint;
-    ObjectMapper mapper = new ObjectMapper();
+    ObjectMapper mapper;
     
     public VantiqProducer(VantiqEndpoint endpoint) {
         super(endpoint);
         this.endpoint = endpoint;
+        // The mapper in the java SDK is not configured to serialize dates to strings. We will configure ourselves to
+        // do so and perform the conversion before sending.
+        JavaTimeModule mod = new JavaTimeModule();
+        mapper =
+                new ObjectMapper().registerModule(mod)
+                                  .configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false);;
     }
     
     @SuppressWarnings("unchecked")
@@ -57,6 +70,21 @@ public class VantiqProducer extends DefaultProducer {
                     // Then we must be fetching a JSON string.
                     String strMsg = (String) msg;
                     vMsg = mapper.readValue(strMsg, new TypeReference<>() {});
+                } else  if (msg instanceof byte[]) {
+                    byte[] ba = (byte[]) msg;
+                    // Then we must be fetching a JSON string.
+                    if (checkUTF8(ba)) {
+                        String strMsg = (String) new String((byte[]) msg, StandardCharsets.UTF_8);
+                        try {
+                            vMsg = mapper.readValue(strMsg, new TypeReference<>() {});
+                        } catch (Exception e) {
+                            String strVal = mapper.writeValueAsString(strMsg);
+                            vMsg = Map.of("stringVal", strVal);
+                        }
+                    } else {
+                        String strVal = mapper.writeValueAsString(ba);
+                        vMsg = Map.of("byteVal", strVal);
+                    }
                 } else if (msg instanceof Map) {
                     vMsg = (Map<String, Object>) msg;
                 } else if (msg instanceof JsonNode) {
@@ -105,10 +133,16 @@ public class VantiqProducer extends DefaultProducer {
             Map<String, Object> fmtMsg = new HashMap<>();
             // the headers are usually implemented as a CaseInsensitiveMap, so we'll have Java walk the list.
             // We walk the list so that we get the original case to send on...
-            Map<String, Object> hdrs = new HashMap<>(exchange.getMessage().getHeaders());
+            Map<String, Object> hdrs =
+                    mapper.convertValue(exchange.getMessage().getHeaders(), new TypeReference<>() {});
             fmtMsg.put(STRUCTURED_MESSAGE_HEADERS_PROPERTY, hdrs);
-            fmtMsg.put(STRUCTURED_MESSAGE_MESSAGE_PROPERTY, vMsg);
+            Map<String, Object> m = mapper.convertValue(vMsg, new TypeReference<>() {});
+            fmtMsg.put(STRUCTURED_MESSAGE_MESSAGE_PROPERTY, m);
             vMsg = fmtMsg;
+        } else {
+            // run the map thru the converted to serialize any embedded dates.
+            Map<String, Object> m = mapper.convertValue(vMsg, new TypeReference<>() {});
+            vMsg = m;
         }
         if (exchange.getPattern() == ExchangePattern.InOut) {
             if (exchange.getException() != null) {
@@ -124,6 +158,19 @@ public class VantiqProducer extends DefaultProducer {
         } else {
             endpoint.sendMessage(vMsg);
         }
+    }
+    
+    protected boolean checkUTF8(byte[] bytes) {
+        
+        CharsetDecoder decoder = StandardCharsets.UTF_8.newDecoder();
+        ByteBuffer buf = ByteBuffer.wrap(bytes);
+        try {
+            decoder.decode(buf);
+        } catch(CharacterCodingException e){
+            return false;
+        }
+        
+        return true;
     }
     
     @Override
