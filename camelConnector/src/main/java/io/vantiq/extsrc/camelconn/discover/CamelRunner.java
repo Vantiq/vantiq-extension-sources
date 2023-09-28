@@ -205,8 +205,10 @@ public class CamelRunner extends MainSupport implements Closeable {
             URL url = jar.toURI().toURL();
             urlList.add(url);
         }
-        log.trace("URLList: {}", urlList);
-    
+        if (log.isTraceEnabled()) {
+            // This list is long, so if we're ignore it, no reason to prepare to Stringify it.
+            log.trace("URLList: {}", urlList);
+        }
         // Now, we'll set up a classLoader based on that list of jar files and use that to run our routes.
     
         ClassLoader parent = getCamelContext() != null ? getCamelContext().getApplicationContextClassLoader() : null;
@@ -529,10 +531,10 @@ public class CamelRunner extends MainSupport implements Closeable {
      */
     protected RouteBuilder loadRouteFromText(String specification, String specificationType) throws Exception {
         log.debug("Loading route from {} specificationType", specificationType);
-        if (log.isDebugEnabled()) {
+        if (log.isTraceEnabled()) {
             // Dump route spec out here only under trace.  Camel may have substituted key values and we don't want
             // these in the log files
-            log.debug("Loading route (specificationType {}):\n{}", specificationType, specification);
+            log.trace("Loading route (specificationType {}):\n{}", specificationType, specification);
         }
         // First, construct a simple classloader.  This is based on the dependencies defined in the Kamelet. Later,
         // these will be augmented via discovery since these declarations need not be complete. These are used to
