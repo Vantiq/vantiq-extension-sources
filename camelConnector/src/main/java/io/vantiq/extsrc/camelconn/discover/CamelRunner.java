@@ -575,13 +575,6 @@ public class CamelRunner extends MainSupport implements Closeable {
                     log.debug("loadRoutesFromText(): Found route Def id: {} :: {}", rtd.getId(), rtd.getRoute());
                     String templateId = rtd.getId();
                     TemplatedRouteBuilder builder = TemplatedRouteBuilder.builder(mcc, templateId).routeId(templateId);
-                    // FIXME: want to figure out how to fake out the beans for loading the routes for discovery when
-                    //  we don't really need them.  But at load time (here), we need them. We aren't doing discovery
-                    //  yet -- just getting the routes in place so we can discover what's going on.  Unfortunately,
-                    //  Camel wants to load the beans here.  And that's a problem since we don't have the kamelet
-                    //  runtime(s) loaded.
-                    //  Resolution: Create classloader from (only) dependencies defined in the kamelet. Set that in
-                    //  place for this phase.
                     String routeId;
                     try {
                         routeId = builder.add();
