@@ -41,7 +41,8 @@ import java.util.regex.Pattern
 class AssemblyResourceGeneration extends DefaultTask {
     public static final String VANTIQ_SERVER_CONFIG = 'vantiq://server.config'
     public static final String VANTIQ_SERVER_CONFIG_JSON = VANTIQ_SERVER_CONFIG + '?consumerOutputJson=true'
-    public static final String VANTIQ_SERVER_CONFIG_STRUCTURED = VANTIQ_SERVER_CONFIG + '?consumerOutputJson=true' +
+    public static final String VANTIQ_SERVER_CONFIG_STRUCTURED = VANTIQ_SERVER_CONFIG + '?structuredMessageHeader=true'
+    public static final String VANTIQ_SERVER_CONFIG_JSON_STRUCTURED = VANTIQ_SERVER_CONFIG_JSON +
         '&structuredMessageHeader=true'
 
     public static final String KAMELETS_RESOURCE_FOLDER = 'kamelets'
@@ -70,7 +71,7 @@ class AssemblyResourceGeneration extends DefaultTask {
 
     public static final String FROM_ROUTE_TAG = 'from'
     public static final String ID_ROUTE_TAG = 'id'
-    public static final String ROUTE_ROUTE_TAG = 'route'
+    public static final String ROUTE_TEMPLATE_TAG = 'route-template'
     public static final String TO_ROUTE_TAG = 'to'
     public static final String URI_ROUTE_TAG = 'uri'
 
@@ -94,6 +95,7 @@ class AssemblyResourceGeneration extends DefaultTask {
     public static final String CONFIG_CAMEL_GENERAL = 'general'
     public static final String CAMEL_RUNTIME_APPNAME = 'appName'
     public static final String CAMEL_RUNTIME_PROPERTY_VALUES = 'propertyValues'
+    public static final String GENERAL_ADDITIONAL_LIBRARIES = 'additionalLibraries'
     public static final String CAMEL_RAW_HANDLING = 'rawValuesRequired'
     // TODO: Add ability to add some overrides here where we want Camel RAW handling to be performed
     public static final String CAMEL_DISCOVERED_RAW = 'discovered'
@@ -251,6 +253,13 @@ class AssemblyResourceGeneration extends DefaultTask {
         Map<String, Object> yamlMap = getYamlEnt(yamlLoader, classLoader, kameletDefinition)
         log.debug('    \n<<<Result: parsed.size(): {}, parsed: {}>>>\n', yamlMap.size(),
             yamlMap.get('spec'))
+        String typeLabel = (String) ((Map<String, String>) ((Map<String, Object>) yamlMap
+            .get('metadata')).get('labels')) .get('camel.apache.org/kamelet.type')
+        if (typeLabel != 'sink' && typeLabel != 'source')  {
+            throw new GradleException('Unexpected camel.apache.org/kamelet.type label: ' + typeLabel)
+        } else if (isSink != (typeLabel == 'sink')) {
+            throw new GradleException('Name vs. camel.apache.org/kamelet.type label mismatch: ' + typeLabel)
+        }
 
         //noinspection unchecked
         String title =
@@ -261,7 +270,21 @@ class AssemblyResourceGeneration extends DefaultTask {
             .get('definition')).get('description')
         List<String> requiredProps = (List<String>) ((Map<String, Object>)((Map<String, Object>) yamlMap.get('spec'))
             .get('definition')).get('required')
-        log.debug('Required Props from kamelet defininition: {}', requiredProps ?: '<<empty>>')
+        log.debug('Required Props from kamelet definition: {}', requiredProps ?: '<<empty>>')
+        List<String> dependencies = (List<String>) ((Map<String, Object>) yamlMap.get('spec')).get('dependencies')
+        // Dependencies can also be declared at the type level, so grab those as well.
+        Map<String, Object> types = (Map<String, Object>) ((Map<String, Object>) yamlMap.get('spec'))
+            .get('types')
+        if (types != null) {
+            types.forEach (( k, v ) -> {
+                if (v.containsKey('dependencies')) {
+                    List<String> tDeps = (List<String>) v.get('dependencies')
+                    dependencies.putAll(tDeps)
+                    log.debug('For type {}, found dependencies: {}', k, tDeps)
+                }
+            })
+        }
+        log.debug('Kamelet-defined dependencies: {}', dependencies)
 
         // Read any defined properties.  These will become properties for our assembly.
         //noinspection unchecked
@@ -326,7 +349,7 @@ class AssemblyResourceGeneration extends DefaultTask {
         Map routeDoc = writeRoutesDocument(assemblyRoot, packageName, kamName, routesDocumentString)
         Map overviewDoc = (overview ? writeOverviewDocument(assemblyRoot, packageName, kamName, overview) : null)
         Map sourceDef = addSourceDefinition(assemblyRoot, packageName, kamName,
-            routeDoc.path.fileName.toString(), props)
+            routeDoc.path.fileName.toString(), props, dependencies)
         log.debug('Created sourceDef: {}', sourceDef)
         Map serviceDef = addServiceDefinition(assemblyRoot, packageName, kamName, isSink)
         log.debug('Created serviceDef: {}', serviceDef)
@@ -418,10 +441,12 @@ class AssemblyResourceGeneration extends DefaultTask {
      * @param kamName String name of the kamelet which will be used to construct the source name
      * @param routeDoc String name of the document containing the route
      * @param props Map<String, Object> The Camel properties associated with this kamelet.
+     * @param declaredDepdencies List<String> dependencies found in the kamelet file
      * @returns Map<String, Object> containing Path written & resourceReference
      */
     static Map<String, Object> addSourceDefinition(Path kameletAssemblyDir, String packageName, String kamName,
-                                                   String routeDoc, Map<String, Object> props) {
+                                                   String routeDoc, Map<String, Object> props,
+                                                   List<String> declaredDependencies) {
         log.info('Creating source for kamelet: {} in package {} using route: {}, ')
         def sourceDef = [:]
         def plainName = kamName + SOURCE_NAME_SUFFIX
@@ -455,13 +480,18 @@ class AssemblyResourceGeneration extends DefaultTask {
                                                     aProp.key])
             if (aProp.value instanceof Map) {
                 Map pDesc = aProp.value as Map
-                if (PASSWORD_LIKE.contains(pDesc.format?.toLowerCase()) ||
-                    (pDesc[PROPERTY_X_DESCRIPTORS] != null &&
-                        DISPLAY_HIDE_VALUES.contains(((String) pDesc[PROPERTY_X_DESCRIPTORS])))) {
-                    // for things that are passwords or are marked to be masked in display, tell connector to instruct
-                    // Camel to use RAW handling
-                    rawHandlingRequired << aProp.key
-                }
+                // FIXME: With more full dependency handling, this no longer seems necessary, at least for aws things.  Not
+                //  sure why that would make a difference, but the templates we get have the RAW encoding of the properties
+                //  when defining the endpoint
+                // TODO: Remove or otherwise make this section conditional...
+
+//                if (PASSWORD_LIKE.contains(pDesc.format?.toLowerCase()) ||
+//                    (pDesc[PROPERTY_X_DESCRIPTORS] != null &&
+//                        DISPLAY_HIDE_VALUES.contains(((String) pDesc[PROPERTY_X_DESCRIPTORS])))) {
+//                    // for things that are passwords or are marked to be masked in display, tell connector to instruct
+//                    // Camel to use RAW handling
+//                    rawHandlingRequired << aProp.key
+//                }
             } else {
                 throw new GradleException('Unexpected type for property description: ' + aProp.value?.class?.name)
             }
@@ -479,6 +509,17 @@ class AssemblyResourceGeneration extends DefaultTask {
             }
         }
         def generalConfig = [:]
+        if (declaredDependencies && declaredDependencies.size() > 0) {
+            List<String> additionalLibraries = new ArrayList<>(declaredDependencies.size());
+            declaredDependencies.forEach( ( dep ) -> {
+                if (dep.startsWith('camel:')) {
+                    additionalLibraries.add('org.apache.camel:camel-' + dep.substring('camel:'.length()));
+                } else if (dep.startsWith('mvn:')) {
+                    additionalLibraries.add(dep.substring('mvn:'.length()))
+                } // Ignore github things...
+            })
+            generalConfig[GENERAL_ADDITIONAL_LIBRARIES] = additionalLibraries;
+        }
         sourceDef.config = [ (CONFIG_CAMEL_RUNTIME): camelAppConfig, (CONFIG_CAMEL_GENERAL): generalConfig]
         String srcDefJson = JsonOutput.prettyPrint(JsonOutput.toJson(sourceDef))
         log.debug('Creating source {}:\n{}', sourceDef.name, srcDefJson)
@@ -764,17 +805,21 @@ class AssemblyResourceGeneration extends DefaultTask {
      *
      * @param kamName String name of kamelet from which this/these routes originate
      * @param template Map<String, Object> route template from Kamelet YAML file
-     * @returns List<Map<String, Object>> Reified route with kamelet sources & sinks replaced with Vantiq references
+     * @returns List<Map<String, Object>> Rewritten route template with kamelet sources & sinks replaced with Vantiq
+     *                          server references
      */
     List<Map<String, Object>> constructRouteText(String kamName, Map<String, Object> template) {
         processStep(template)
         Map<String, Object> retVal = [:]
         // Must GString --> String lest the yaml dumper get confused.  Easier to just convert to string as opposed to
         // writing a representer
-        retVal[ROUTE_ROUTE_TAG] = [(ID_ROUTE_TAG): "Routes for ${kamName}:${packageSafeCamelVersion}".toString()]
-        retVal[ROUTE_ROUTE_TAG][FROM_ROUTE_TAG] = template[FROM_ROUTE_TAG]
-        // Camel wants a list (even though with kamelets, there's really only one route.  The Camel Yaml route parser
-        // actually has special handling to recognized that it's reading a route. But to get along, we'll return a list.
+        // Kamelets come generated as templates, so let's preserve that encoding
+        retVal[ROUTE_TEMPLATE_TAG] =
+            [(ID_ROUTE_TAG): "Route templates from ${kamName}:${packageSafeCamelVersion}".toString()]
+        retVal[ROUTE_TEMPLATE_TAG] << template
+        // Camel wants a list (even though with kamelets, there's really only one route. The Camel Yaml route parser
+        // actually has special handling to recognized that it's reading from a kamelet. But to get along, we'll
+        // return a list.
         return [retVal]
     }
 
@@ -802,8 +847,8 @@ class AssemblyResourceGeneration extends DefaultTask {
             if (k == FROM_ROUTE_TAG && stepDef != null) {
                 if (stepDef.containsKey(URI_ROUTE_TAG) && stepDef.get(URI_ROUTE_TAG) instanceof String &&
                         ((String) stepDef.get(URI_ROUTE_TAG)) == KAMELET_SOURCE) {
-                    stepDef.put(URI_ROUTE_TAG, VANTIQ_SERVER_CONFIG_STRUCTURED)
-                    log.debug('Replaced {} with{}', stepDef.get('uri'), VANTIQ_SERVER_CONFIG_STRUCTURED)
+                    stepDef.put(URI_ROUTE_TAG, VANTIQ_SERVER_CONFIG_JSON_STRUCTURED)
+                    log.debug('Replaced {} with{}', stepDef.get('uri'), VANTIQ_SERVER_CONFIG_JSON_STRUCTURED)
                 }
                 
                 for (Map.Entry<String, Object> oneEntry: stepDef.entrySet()) {
@@ -824,10 +869,10 @@ class AssemblyResourceGeneration extends DefaultTask {
                 }
             } else if (k == TO_ROUTE_TAG && KAMELET_SINK == v) {
                 log.debug('Replacing value of key {}:{} with \'vantiq://server.config\'', k, v)
-                ent.setValue('vantiq://server.config')
+                ent.setValue(VANTIQ_SERVER_CONFIG_STRUCTURED)
             } else if (k == TO_ROUTE_TAG && stepDef != null && stepDef.containsKey(URI_ROUTE_TAG)
                     && KAMELET_SINK == stepDef.get(URI_ROUTE_TAG)) {
-                stepDef.put(URI_ROUTE_TAG, 'vantiq://server.config')
+                stepDef.put(URI_ROUTE_TAG, VANTIQ_SERVER_CONFIG_STRUCTURED)
             }
         }
     }
@@ -906,7 +951,7 @@ RULE ${ruleName}
 WHEN EVENT OCCURS ON "/sources/${sourceName}" as svcMsg
 
 log.debug("Source ${sourceName} rule got message {} to forward to service  {}", [ svcMsg, 
-    "${packageName + '.' + serviceName}/${serviceName + 'Event'} ])
+    "${packageName + '.' + serviceName}/${serviceName + 'Event'}" ])
 
 PUBLISH { headers: svcMsg.value.headers, message: svcMsg.value.message } 
     TO SERVICE EVENT "${packageName + '.' + serviceName}/${serviceName + 'Event'}"
