@@ -316,8 +316,8 @@ public class VantiqComponentDiscoveryTest extends CamelTestSupport {
      */
     interface TestExpectations {
         List<String> getExpectedComponentsToLoad();
-        List<String> getExpectedSystemComponents();
         
+        default List<String> getExpectedSystemComponents() { return List.of(); }
         default List<String> getExpectedDataFormatsToLoad() {
             return List.of();
         }
@@ -556,9 +556,11 @@ public class VantiqComponentDiscoveryTest extends CamelTestSupport {
     private static class BeanIncludingRoutes extends RouteBuilder implements TestExpectations {
     
         CamelContext ctx;
+    
         BeanIncludingRoutes(CamelContext ctx) {
             this.ctx = ctx;
         }
+    
         @Override
         public List<String> getExpectedComponentsToLoad() {
             return List.of("azure-eventhubs");
@@ -578,33 +580,33 @@ public class VantiqComponentDiscoveryTest extends CamelTestSupport {
         @Override
         public void configure() throws Exception {
             String content = ""
-            + "- route: \n"
-            + "    id: \"EventHub Sink\" \n"
-            + "    from: \n"
-            + "        uri: \"vantiq://server.config\" \n"
-            + "        steps: \n"
-            + "        - choice: \n"
-            + "            when: \n"
-            + "            - simple: \"${header[partition-id]}\" \n"
-            + "              steps: \n"
-            + "              - set-header: \n"
-            + "                  name: CamelAzureEventHubsPartitionId \n"
-            + "                  simple: \"${header[partition-id]}\" \n"
-            + "            - simple: \"${header[ce-partition-id]}\" \n"
-            + "              steps: \n"
-            + "              - set-header: \n"
-            + "                  name: CamelAzureEventHubsPartitionId \n"
-            + "                  simple: \"${header[ce-partition-id]}\" \n"
-            + "        - setBody: \n"
-            + "            simple: \"${body.message}\" \n"
-            + "        - marshal: \n"
-            + "            json: \n"
-            + "              library: jackson \n"
-            + "        - to: \n"
-            + "             uri: \"azure-eventhubs://vantiq-test/vantiqNotReallyThere\" \n"
-            + "             parameters: \n"
-            + "                 sharedAccessName: \"someRandomKey\" \n"
-            + "                 sharedAccessKey: \"RAW(MY TOKEN)\" \n";
+                    + "- route: \n"
+                    + "    id: \"EventHub Sink\" \n"
+                    + "    from: \n"
+                    + "        uri: \"vantiq://server.config\" \n"
+                    + "        steps: \n"
+                    + "        - choice: \n"
+                    + "            when: \n"
+                    + "            - simple: \"${header[partition-id]}\" \n"
+                    + "              steps: \n"
+                    + "              - set-header: \n"
+                    + "                  name: CamelAzureEventHubsPartitionId \n"
+                    + "                  simple: \"${header[partition-id]}\" \n"
+                    + "            - simple: \"${header[ce-partition-id]}\" \n"
+                    + "              steps: \n"
+                    + "              - set-header: \n"
+                    + "                  name: CamelAzureEventHubsPartitionId \n"
+                    + "                  simple: \"${header[ce-partition-id]}\" \n"
+                    + "        - setBody: \n"
+                    + "            simple: \"${body.message}\" \n"
+                    + "        - marshal: \n"
+                    + "            json: \n"
+                    + "              library: jackson \n"
+                    + "        - to: \n"
+                    + "             uri: \"azure-eventhubs://vantiq-test/vantiqNotReallyThere\" \n"
+                    + "             parameters: \n"
+                    + "                 sharedAccessName: \"someRandomKey\" \n"
+                    + "                 sharedAccessKey: \"RAW(MY TOKEN)\" \n";
     
             // YAML support needs a camel context.  So provide one during setup...
             RouteBuilder rb = new YamlRouteBuilder(ctx, content).getRouteBuilder();

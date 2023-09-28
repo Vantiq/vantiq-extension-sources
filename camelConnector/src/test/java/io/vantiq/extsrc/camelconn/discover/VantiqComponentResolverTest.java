@@ -15,7 +15,6 @@ import org.apache.camel.Exchange;
 import org.apache.camel.Predicate;
 import org.apache.camel.ProducerTemplate;
 import org.apache.camel.builder.RouteBuilder;
-
 import org.apache.camel.component.mock.MockEndpoint;
 import org.apache.camel.model.dataformat.AvroLibrary;
 import org.apache.camel.model.dataformat.JsonLibrary;
@@ -259,7 +258,6 @@ public class VantiqComponentResolverTest extends CamelTestSupport {
         }
     }
     
-    
     @Test
     public void testStartRouteLoadedComponentsMultiRepo() throws Exception {
         FileUtil.forceDelete(cache);    // Clear the cache
@@ -272,6 +270,31 @@ public class VantiqComponentResolverTest extends CamelTestSupport {
         try (CamelRunner runner = new CamelRunner(this.getTestMethodName(),rb, repoList,
                                                   IVY_CACHE_PATH, DEST_PATH, rb.getComponentsToInit(), null)) {
             runner.runRoutes(false);
+        }
+    }
+    
+    @Test
+    public void testRouteTemplate() throws Exception {
+        BeanIncludingRouteTemplate rb = new BeanIncludingRouteTemplate(context);
+        assertNotNull("No routebuilder", rb);
+        setUseRouteBuilder(false);
+        // This is the set of discovered dependencies listed in the kamelet from which the route in question is taken.
+        List<String> discoveredDependencies = List.of (
+                "org.apache.camel:camel-core",
+                "org.apache.camel:camel-aws2-s3",
+                "org.apache.camel.kamelets:camel-kamelets-utils:3.21.0",
+                "org.apache.camel:camel-kamelet"
+        );
+        try (CamelRunner runner = new CamelRunner(this.getTestMethodName(),rb, List.of(),
+                                                  IVY_CACHE_PATH, DEST_PATH, rb.getComponentsToInit(),
+                                                   null)) {
+            runner.setAdditionalLibraries(discoveredDependencies);
+            runner.createCamelContext();
+            runner.loadRouteFromText(rb.content, "yaml");
+            // We only need to test loading the route -- we needn't run this route (no context, etc.)
+        } catch (Exception e) {
+            fail("Trapped exception during test: " + e.getMessage() +
+                         (e.getCause() != null ? e.getCause().getMessage() : ""));
         }
     }
     
@@ -811,6 +834,52 @@ public class VantiqComponentResolverTest extends CamelTestSupport {
                     .unmarshal().json()
                     .to("log:info")
                     .to("mock:result");
+        }
+    }
+    
+    private static class BeanIncludingRouteTemplate extends RouteBuilderWithProps {
+        CamelContext ctx;
+    
+        public String content = ""
+                + "-   route-template:\n"
+                + "        id: Route templates from aws_s3_source:v3_21_0\n"
+                + "        beans:\n"
+                + "        -   name: renameHeaders\n"
+                + "            type: '#class:org.apache.camel.kamelets.utils.headers.DuplicateNamingHeaders'\n"
+                + "            property:\n"
+                + "            -   key: prefix\n"
+                + "                value: CamelAwsS3\n"
+                + "            -   key: renamingPrefix\n"
+                + "                value: aws.s3.\n"
+                + "            -   key: mode\n"
+                + "                value: filtering\n"
+                + "            -   key: selectedHeaders\n"
+                + "                value: CamelAwsS3Key,CamelAwsS3BucketName\n"
+                + "        from:\n"
+                + "            uri: aws2-s3:someSillyBucket \n"
+                + "            parameters:\n"
+                + "                autoCreateBucket: 'false'\n"
+                + "                secretKey: 'dont tell'\n"
+                + "                accessKey: 'let me in'\n"
+                + "                region: 'us-west-2'\n"
+                + "                ignoreBody: 'false'\n"
+                + "                deleteAfterRead: 'false'\n"
+                + "                prefix: 'null'\n"
+                + "                useDefaultCredentialsProvider: 'true'\n"
+                + "                uriEndpointOverride: ''\n"
+                + "                overrideEndpoint: 'false'\n"
+                + "                delay: '500'\n"
+                + "            steps:\n"
+                + "            -   process:\n"
+                + "                    ref: '{{renameHeaders}}'\n"
+                + "            -   to: vantiq://server.config?structuredMessageHeader=true\n";
+    
+        BeanIncludingRouteTemplate(CamelContext ctx) {
+            this.ctx = ctx;
+        }
+        @Override
+        public void configure() throws Exception {
+ 
         }
     }
 }

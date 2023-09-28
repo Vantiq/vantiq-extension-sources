@@ -54,11 +54,13 @@ dependencies {
     implementation "org.apache.camel:camel-main:${camelVersion}"
     implementation "org.apache.camel:camel-support:${camelVersion}"
     implementation "org.apache.camel:camel-jackson:${camelVersion}"
+
     implementation "org.apache.commons:commons-lang3:${apacheCommonsLangVersion}"
     implementation "org.apache.ivy:ivy:${ivyVersion}"
     implementation project(":extjsdk")
     implementation project(":camelComponent")    // The Vantiq Camel Component is automatically included
     implementation "com.fasterxml.jackson.core:jackson-databind:${jacksonVersion}"
+    implementation "com.fasterxml.jackson.datatype:jackson-datatype-jsr310:{jacksonVersion}"
     implementation "com.google.code.gson:gson:${gsonVersion}"
     // Used for downloading route documents
     implementation "io.vantiq:vantiq-sdk:${vantiqSDKVersion}"
