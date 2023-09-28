@@ -26,6 +26,9 @@ import io.vantiq.extjsdk.FalseClient;
 import io.vantiq.extjsdk.FalseWebSocket;
 import io.vantiq.extjsdk.Response;
 import io.vantiq.extjsdk.TestListener;
+
+import java.nio.charset.StandardCharsets;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -173,6 +176,20 @@ public class VantiqComponentTest extends CamelTestSupport {
         //noinspection rawtypes
         Map lastMsg = fc.getLastMessageAsMap();
         validateExtensionMsg(lastMsg, false, null, new String[] {"bye"}, "mom");
+        
+        String testMsg = "I am a test message";
+        byte[] testBytes = testMsg.getBytes(StandardCharsets.UTF_8);
+        sendBody(routeStartUri, testBytes);
+        lastMsg = fc.getLastMessageAsMap();
+        validateExtensionMsg(lastMsg, false, null, new String[] { "stringVal"}, testMsg);
+    
+        Instant rightNow = Instant.now();
+        Map timeMsg = Map.of("time", rightNow);
+        sendBody(routeStartUri, timeMsg);
+    
+        //noinspection rawtypes
+        lastMsg = fc.getLastMessageAsMap();
+        validateExtensionMsg(lastMsg, false, null, new String[] {"time"}, rightNow.toString());
     }
     
     @Test
@@ -278,7 +295,7 @@ public class VantiqComponentTest extends CamelTestSupport {
         }
         for (String key: msgKeys) {
             assert msg.containsKey(key);
-            assert ((String) msg.get(key)).contains(msgPreamble);
+            assert msgPreamble == null || ((String) msg.get(key)).contains(msgPreamble);
         }
     }
     
