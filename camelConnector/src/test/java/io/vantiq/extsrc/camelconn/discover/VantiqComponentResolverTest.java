@@ -882,5 +882,4 @@ public class VantiqComponentResolverTest extends CamelTestSupport {
  
         }
     }
-    
 }
