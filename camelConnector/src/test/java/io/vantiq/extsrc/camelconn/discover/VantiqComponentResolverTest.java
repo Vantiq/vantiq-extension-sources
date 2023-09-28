@@ -278,7 +278,7 @@ public class VantiqComponentResolverTest extends CamelTestSupport {
         BeanIncludingRouteTemplate rb = new BeanIncludingRouteTemplate(context);
         assertNotNull("No routebuilder", rb);
         setUseRouteBuilder(false);
-        // This is the set of discovered dependencies listed in the kamelet from which tht route in question is taken.
+        // This is the set of discovered dependencies listed in the kamelet from which the route in question is taken.
         List<String> discoveredDependencies = List.of (
                 "org.apache.camel:camel-core",
                 "org.apache.camel:camel-aws2-s3",

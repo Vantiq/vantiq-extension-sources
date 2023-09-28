@@ -553,7 +553,7 @@ public class CamelRunner extends MainSupport implements Closeable {
             loader.loadRoutes(resource);
             log.debug("loadRoutesFromText(): routes: {}, routeTemplates: {}", mcc.getRoutes(),
                       mcc.getRouteTemplateDefinitions());
-            // Based on what was loaded, we cana now construct our RouteBuilder.
+            // Based on what was loaded, we can now construct our RouteBuilder.
             // For cases where we have a route, we are done.
             RoutesBuilderLoader rbl = loader.getRoutesLoader(specificationType);
             RoutesBuilder rsb = rbl.loadRoutesBuilder(resource);
