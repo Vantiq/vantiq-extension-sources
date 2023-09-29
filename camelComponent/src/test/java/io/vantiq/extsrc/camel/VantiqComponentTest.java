@@ -285,6 +285,11 @@ public class VantiqComponentTest extends CamelTestSupport {
                 assert expHdrs.size() == hdrs.size();
                 expHdrs.forEach( (key, value) -> {
                     assert hdrs.containsKey(key);
+                    assert hdrs.get(key) != null;
+                    assert expHdrs.get(key) != null;
+                    log.debug("For key {}, comparing value {} ){} with expected {} ({}).",
+                              key, hdrs.get(key), hdrs.get(key).getClass().getName(),
+                              expHdrs.get(key), expHdrs.get(key).getClass().getName());
                     assert hdrs.get(key).equals(expHdrs.get(key));
                 });
             }
