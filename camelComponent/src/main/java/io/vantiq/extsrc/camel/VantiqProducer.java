@@ -133,8 +133,13 @@ public class VantiqProducer extends DefaultProducer {
             Map<String, Object> fmtMsg = new HashMap<>();
             // the headers are usually implemented as a CaseInsensitiveMap, so we'll have Java walk the list.
             // We walk the list so that we get the original case to send on...
-            Map<String, Object> hdrs =
-                    mapper.convertValue(exchange.getMessage().getHeaders(), new TypeReference<>() {});
+            // Note that we cannot use the Jackson objectMapper here because headers sometimes use Java types it
+            // doesn't understand (e.g., things from google come with Protobuf timestamps or soemthing like that.
+            // Simple .toString() handles it, so we'll copy the map ourselves.
+            Map<String, Object> hdrs = new HashMap<>();
+            exchange.getMessage().getHeaders().forEach( (k, v) -> {
+                hdrs.put(k, v.toString());
+            });
             fmtMsg.put(STRUCTURED_MESSAGE_HEADERS_PROPERTY, hdrs);
             Map<String, Object> m = mapper.convertValue(vMsg, new TypeReference<>() {});
             fmtMsg.put(STRUCTURED_MESSAGE_MESSAGE_PROPERTY, m);
