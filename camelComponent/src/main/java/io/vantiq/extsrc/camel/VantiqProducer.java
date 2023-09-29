@@ -138,7 +138,11 @@ public class VantiqProducer extends DefaultProducer {
             // Simple .toString() handles it, so we'll copy the map ourselves.
             Map<String, Object> hdrs = new HashMap<>();
             exchange.getMessage().getHeaders().forEach( (k, v) -> {
-                hdrs.put(k, v.toString());
+                if (v instanceof Integer || v instanceof Map) {
+                    hdrs.put(k, v);
+                } else {
+                    hdrs.put(k, v.toString());
+                }
             });
             fmtMsg.put(STRUCTURED_MESSAGE_HEADERS_PROPERTY, hdrs);
             Map<String, Object> m = mapper.convertValue(vMsg, new TypeReference<>() {});
