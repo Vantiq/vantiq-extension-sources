@@ -47,7 +47,7 @@ public class VantiqProducer extends DefaultProducer {
         JavaTimeModule mod = new JavaTimeModule();
         mapper =
                 new ObjectMapper().registerModule(mod)
-                                  .configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false);;
+                                  .configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false);
     }
     
     @SuppressWarnings("unchecked")
@@ -74,7 +74,7 @@ public class VantiqProducer extends DefaultProducer {
                     byte[] ba = (byte[]) msg;
                     // Then we must be fetching a JSON string.
                     if (checkUTF8(ba)) {
-                        String strMsg = (String) new String((byte[]) msg, StandardCharsets.UTF_8);
+                        String strMsg = new String((byte[]) msg, StandardCharsets.UTF_8);
                         try {
                             vMsg = mapper.readValue(strMsg, new TypeReference<>() {});
                         } catch (Exception e) {
@@ -133,25 +133,31 @@ public class VantiqProducer extends DefaultProducer {
             Map<String, Object> fmtMsg = new HashMap<>();
             // the headers are usually implemented as a CaseInsensitiveMap, so we'll have Java walk the list.
             // We walk the list so that we get the original case to send on...
-            // Note that we cannot use the Jackson objectMapper here because headers sometimes use Java types it
+            // Note that we can't always use the Jackson objectMapper here because headers sometimes use Java types it
             // doesn't understand (e.g., things from google come with Protobuf timestamps or soemthing like that.
             // Simple .toString() handles it, so we'll copy the map ourselves.
-            Map<String, Object> hdrs = new HashMap<>();
-            exchange.getMessage().getHeaders().forEach( (k, v) -> {
-                if (v instanceof Integer || v instanceof Map) {
-                    hdrs.put(k, v);
-                } else {
-                    hdrs.put(k, v.toString());
-                }
-            });
+            Map<String, Object> hdrs;
+            try {
+                hdrs = mapper.convertValue(exchange.getMessage().getHeaders(),
+                                           new TypeReference<>() {});
+            } catch (Exception e) {
+                Map<String, Object> h = new HashMap<>();
+                exchange.getMessage().getHeaders().forEach((k, v) -> {
+                    if (v instanceof Integer || v instanceof Map) {
+                        h.put(k, v);
+                    } else {
+                        h.put(k, v.toString());
+                    }
+                });
+                hdrs = h;
+            }
             fmtMsg.put(STRUCTURED_MESSAGE_HEADERS_PROPERTY, hdrs);
             Map<String, Object> m = mapper.convertValue(vMsg, new TypeReference<>() {});
             fmtMsg.put(STRUCTURED_MESSAGE_MESSAGE_PROPERTY, m);
             vMsg = fmtMsg;
         } else {
             // run the map thru the converted to serialize any embedded dates.
-            Map<String, Object> m = mapper.convertValue(vMsg, new TypeReference<>() {});
-            vMsg = m;
+            vMsg = mapper.convertValue(vMsg, new TypeReference<>() {});
         }
         if (exchange.getPattern() == ExchangePattern.InOut) {
             if (exchange.getException() != null) {
