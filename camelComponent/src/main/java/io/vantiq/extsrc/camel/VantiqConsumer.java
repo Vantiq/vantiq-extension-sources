@@ -98,7 +98,7 @@ public class VantiqConsumer extends DefaultConsumer {
             Map<String, Object> camelHdrs = null;
             Object camelBody = null;
             if (endpoint.isStructuredMessageHeader() && msgBody instanceof Map) {
-                camelHdrs = new HashMap<>();
+                camelHdrs = null;
                 Map<?,?> msgAsMap = (Map<?,?>) msgBody;
                 if (msgAsMap.get(STRUCTURED_MESSAGE_HEADERS_PROPERTY) instanceof Map) {
                     Map<?,?> hdrMap = (Map<?,?>) msgAsMap.get(VantiqEndpoint.STRUCTURED_MESSAGE_HEADERS_PROPERTY);
