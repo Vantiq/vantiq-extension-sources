@@ -61,8 +61,6 @@ public class VantiqProducer extends DefaultProducer {
         }
         
         Object msg = exchange.getIn().getBody();
-        Map<String, Object> msgHdrs = exchange.getIn().getHeaders();
-        Object attsRaw = msgHdrs.get("CamelGooglePubSubAttributes");
         Map<String, Object> vMsg;
         if (!(msg instanceof StreamCache)) {
             vMsg = exchange.getIn().getBody(HashMap.class);
