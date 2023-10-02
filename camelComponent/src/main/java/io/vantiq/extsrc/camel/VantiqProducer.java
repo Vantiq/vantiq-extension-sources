@@ -11,7 +11,9 @@ package io.vantiq.extsrc.camel;
 import static io.vantiq.extsrc.camel.VantiqEndpoint.STRUCTURED_MESSAGE_HEADERS_PROPERTY;
 import static io.vantiq.extsrc.camel.VantiqEndpoint.STRUCTURED_MESSAGE_MESSAGE_PROPERTY;
 
+import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.DatabindException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
@@ -25,6 +27,8 @@ import org.apache.camel.converter.stream.InputStreamCache;
 import org.apache.camel.InvalidPayloadException;
 import org.apache.camel.support.DefaultProducer;
 
+import java.io.ByteArrayInputStream;
+import java.io.ObjectInputStream;
 import java.net.HttpURLConnection;
 import java.nio.ByteBuffer;
 import java.nio.charset.CharacterCodingException;
@@ -57,6 +61,8 @@ public class VantiqProducer extends DefaultProducer {
         }
         
         Object msg = exchange.getIn().getBody();
+        Map<String, Object> msgHdrs = exchange.getIn().getHeaders();
+        Object attsRaw = msgHdrs.get("CamelGooglePubSubAttributes");
         Map<String, Object> vMsg;
         if (!(msg instanceof StreamCache)) {
             vMsg = exchange.getIn().getBody(HashMap.class);
@@ -64,28 +70,58 @@ public class VantiqProducer extends DefaultProducer {
             if (log.isDebugEnabled()) {
                 log.debug("Camel converted body is {}, msg type: {}, msg: {}", vMsg, msg.getClass().getName(), msg);
             }
+     
             if (vMsg == null) {
                 // Then Camel couldn't convert on its own.  Let's see if we can help things along...
                 if (msg instanceof String) {
                     // Then we must be fetching a JSON string.
                     String strMsg = (String) msg;
-                    vMsg = mapper.readValue(strMsg, new TypeReference<>() {});
-                } else  if (msg instanceof byte[]) {
+                    vMsg = mapper.readValue(strMsg, new TypeReference<>() {
+                    });
+                } else if (msg instanceof byte[]) {
+                    // See if we can get Jackson to do the deserialization for us.
                     byte[] ba = (byte[]) msg;
-                    // Then we must be fetching a JSON string.
-                    if (checkUTF8(ba)) {
-                        String strMsg = new String((byte[]) msg, StandardCharsets.UTF_8);
+    
+                    try {
+                        msg = mapper.readValue(ba, new TypeReference<>() {});
+                        log.trace("Tried readValue() -- got a {}", msg.getClass().getName());
+                    } catch (JsonParseException | DatabindException dbe) {
+                        // This couldn't do the conversion.
+                        log.trace("Exception converting/readValue() input message:", dbe);
+                        // Let's see if this is a serialization of something else. Google pubsub sometimes does this
                         try {
-                            vMsg = mapper.readValue(strMsg, new TypeReference<>() {});
+                            ByteArrayInputStream baStream = new ByteArrayInputStream(
+                                    (byte[]) exchange.getIn().getBody());
+                            ObjectInputStream objFromByte = new ObjectInputStream(baStream);
+    
+                            msg = objFromByte.readObject();
                         } catch (Exception e) {
-                            String strVal = mapper.writeValueAsString(strMsg);
-                            vMsg = Map.of("stringVal", strVal);
+                            // Guess not...
+                            log.trace("Trapped after Java deserialization", e);
                         }
-                    } else {
-                        String strVal = mapper.writeValueAsString(ba);
-                        vMsg = Map.of("byteVal", strVal);
                     }
-                } else if (msg instanceof Map) {
+                    // If these both fail, msg will still be a byte array. Guess that's what there is...
+                    if (msg instanceof byte[]) {
+                        // Then we might be fetching a JSON string.
+                        if (checkUTF8(ba)) {
+                            String strMsg = new String((byte[]) msg, StandardCharsets.UTF_8);
+                            try {
+                                vMsg = mapper.readValue(strMsg, new TypeReference<>() {});
+                            } catch (Exception e) {
+                                String strVal = mapper.writeValueAsString(strMsg);
+                                vMsg = Map.of("stringVal", strVal);
+                            }
+                        } else {
+                            // But, maybe it's just a byte array...
+                            String strVal = mapper.writeValueAsString(ba);
+                            vMsg = Map.of("byteVal", strVal);
+                        }
+                    }
+                }
+            }
+            // If we still haven't found anything good, try the already converted
+            if (vMsg == null) {
+                if (msg instanceof Map) {
                     vMsg = (Map<String, Object>) msg;
                 } else if (msg instanceof JsonNode) {
                     vMsg = mapper.convertValue(msg, new TypeReference<>() {});
