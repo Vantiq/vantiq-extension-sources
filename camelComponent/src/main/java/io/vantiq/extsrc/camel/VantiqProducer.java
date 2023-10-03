@@ -17,6 +17,11 @@ import com.fasterxml.jackson.databind.DatabindException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.databind.exc.MismatchedInputException;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.BinaryNode;
+import com.fasterxml.jackson.databind.node.BooleanNode;
+import com.fasterxml.jackson.databind.node.TextNode;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import io.vantiq.extjsdk.ExtensionServiceMessage;
 import lombok.extern.slf4j.Slf4j;
@@ -35,7 +40,10 @@ import java.nio.charset.CharacterCodingException;
 import java.nio.charset.CharsetDecoder;
 import java.nio.charset.StandardCharsets;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 
 @Slf4j
@@ -74,8 +82,7 @@ public class VantiqProducer extends DefaultProducer {
                 if (msg instanceof String) {
                     // Then we must be fetching a JSON string.
                     String strMsg = (String) msg;
-                    vMsg = mapper.readValue(strMsg, new TypeReference<>() {
-                    });
+                    vMsg = mapper.readValue(strMsg, new TypeReference<>() {});
                 } else if (msg instanceof byte[]) {
                     // See if we can get Jackson to do the deserialization for us.
                     byte[] ba = (byte[]) msg;
@@ -122,7 +129,8 @@ public class VantiqProducer extends DefaultProducer {
                 if (msg instanceof Map) {
                     vMsg = (Map<String, Object>) msg;
                 } else if (msg instanceof JsonNode) {
-                    vMsg = mapper.convertValue(msg, new TypeReference<>() {});
+                    // Let's check for more specific value nodes -- possible if someone, say, sent a String
+                    vMsg = fromJsonNode((JsonNode) msg);
                 } else {
                     log.error("Unexpected type: {}.  Unable to convert to Map to send to Vantiq.",
                               msg.getClass().getName());
@@ -207,6 +215,32 @@ public class VantiqProducer extends DefaultProducer {
         } else {
             endpoint.sendMessage(vMsg);
         }
+    }
+    
+    private Map<String, Object> fromJsonNode(JsonNode msg) {
+        Map<String, Object> retVal = null;
+        if (msg instanceof TextNode) {
+            retVal = Map.of("stringVal", msg.asText());
+        } else if (msg instanceof BinaryNode) {
+            retVal = Map.of("byteVal", msg.asText());
+        } else if (msg instanceof BooleanNode) {
+            retVal = Map.of("booleanVal", msg.asText());
+        } else if (msg instanceof ArrayNode) {
+            List<Map<String, Object>> list = new ArrayList<>(msg.size());
+            for (Iterator<JsonNode> it = msg.elements(); it.hasNext(); ) {
+                JsonNode n = it.next();
+                list.add(fromJsonNode(n));
+            }
+            retVal = Map.of("listVal", list);
+        } else {
+            try {
+                retVal = mapper.convertValue(msg, new TypeReference<>() {});
+            } catch (IllegalArgumentException iae) {
+                // If we get this, there's not much we can do except return the text
+                retVal = Map.of("unknownDatatype", msg.asText());
+            }
+        }
+        return retVal;
     }
     
     protected boolean checkUTF8(byte[] bytes) {
