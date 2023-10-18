@@ -178,22 +178,32 @@ public class VantiqProducer extends DefaultProducer {
             // Note that we can't always use the Jackson objectMapper here because headers sometimes use Java types it
             // doesn't understand (e.g., things from google come with Protobuf timestamps or soemthing like that.
             // Simple .toString() handles it, so we'll copy the map ourselves.
-            Map<String, Object> hdrs;
-            try {
-                hdrs = mapper.convertValue(exchange.getMessage().getHeaders(),
-                                           new TypeReference<>() {});
-            } catch (Exception e) {
-                Map<String, Object> h = new HashMap<>();
-                exchange.getMessage().getHeaders().forEach((k, v) -> {
-                    if (v instanceof Integer || v instanceof Map) {
-                        h.put(k, v);
-                    } else {
-                        h.put(k, v.toString());
-                    }
-                });
-                hdrs = h;
+            Map<String, Object> hdrs = null;
+            if (exchange.getMessage().hasHeaders()) {
+                try {
+                    hdrs = mapper.convertValue(exchange.getMessage().getHeaders(),
+                                               new TypeReference<>() {
+                                               });
+                } catch (Exception e) {
+                    Map<String, Object> h = new HashMap<>();
+                    exchange.getMessage().getHeaders().forEach((k, v) -> {
+                        if (v instanceof Integer || v instanceof Map) {
+                            h.put(k, v);
+                        } else if (v != null) {
+                            h.put(k, v.toString());
+                        } else {
+                            // If they just pass a null value, we'll send it along and let the message consumer deal
+                            // with it.  This seems like an improper thing to do, but it's really up to the message
+                            // consumers here to deal with the vagaries of how various camel connectors operate.
+                            h.put(k, v);
+                        }
+                    });
+                    hdrs = h;
+                }
             }
-            fmtMsg.put(STRUCTURED_MESSAGE_HEADERS_PROPERTY, hdrs);
+            if (hdrs != null) {
+                fmtMsg.put(STRUCTURED_MESSAGE_HEADERS_PROPERTY, hdrs);
+            }
             Map<String, Object> m = mapper.convertValue(vMsg, new TypeReference<>() {});
             fmtMsg.put(STRUCTURED_MESSAGE_MESSAGE_PROPERTY, m);
             vMsg = fmtMsg;
