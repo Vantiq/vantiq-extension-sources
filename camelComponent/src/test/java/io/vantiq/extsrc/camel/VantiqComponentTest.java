@@ -232,6 +232,7 @@ public class VantiqComponentTest extends CamelTestSupport {
             Map<String, Object> hdrs = new HashMap<>();
             hdrs.put("theMessage", msg);
             hdrs.put("counter", hdrCounter.getAndIncrement());
+            hdrs.put("shouldBeNull", null);
             sendBody(routeStartStructuredUri, msg, hdrs);
     
             //noinspection rawtypes
@@ -278,23 +279,28 @@ public class VantiqComponentTest extends CamelTestSupport {
         Map<String, Object> msg = (Map<String, Object>) lastMsg.get("object");
         if (isStructured) {
             if (expHdrs != null) {
+                assert msg.containsKey(STRUCTURED_MESSAGE_HEADERS_PROPERTY);
                 //noinspection unchecked
                 Map<String, Object> hdrs =
                         (Map<String, Object>) msg.get(STRUCTURED_MESSAGE_HEADERS_PROPERTY);
                 assert hdrs != null;
-                assert expHdrs.size() == hdrs.size();
                 expHdrs.forEach( (key, value) -> {
                     assert hdrs.containsKey(key);
-                    assert hdrs.get(key) != null;
-                    assert expHdrs.get(key) != null;
                     log.debug("For key {}, comparing value {} ){} with expected {} ({}).",
-                              key, hdrs.get(key), hdrs.get(key).getClass().getName(),
-                              expHdrs.get(key), expHdrs.get(key).getClass().getName());
-                    assert hdrs.get(key).equals(expHdrs.get(key));
+                              key, hdrs.get(key),
+                              hdrs.get(key) != null ? hdrs.get(key).getClass().getName() : hdrs.get(key),
+                              expHdrs.get(key),
+                              expHdrs.get(key) != null ? expHdrs.get(key).getClass().getName() : expHdrs.get(key));
+                    if (hdrs.get(key) != null) {
+                        assert hdrs.get(key).equals(expHdrs.get(key));
+                    } else {
+                        assert expHdrs.get(key) == null;
+                        // Also, verify that the header is present -- get(key) will return null if key isn't present.
+                        assert hdrs.containsKey(key);
+                    }
                 });
             }
             assert msg.containsKey(STRUCTURED_MESSAGE_MESSAGE_PROPERTY);
-            assert msg.containsKey(STRUCTURED_MESSAGE_HEADERS_PROPERTY);
             //noinspection unchecked
             msg = (Map<String, Object>) msg.get(STRUCTURED_MESSAGE_MESSAGE_PROPERTY);
         }
