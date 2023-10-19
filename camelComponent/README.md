@@ -90,7 +90,7 @@ arrive as Vail objects, where the property names correspond to the Map keys.
 
 ### Structured Headers and Messages
 
-By adding the `structuredMessageHeader` component endpoint option with a value of `true` (see below), you can set or access the Camel message headers.  When this option is set to `true`, messages sent to or received from the Camel Component will have two properties: `headers` and `message`, both containing Vail objects. The `message` property will contain a Vail object where each property corresponds to same-named property in the underlying message.  The `headers` property will contain a Vail object where each property contains the value of the named message header.
+By adding the `structuredMessageHeader` component endpoint option with a value of `true` (see below), you can set or access the Camel message headers.  When this option is set to `true`, messages sent to or received from the Camel Component will have two properties: `headers` and `message`, both containing Vail objects. The `message` property will contain a Vail object where each property corresponds to same-named property in the underlying message.  The `headers` property will contain a Vail object where each property contains the value of the named message header. If no headers are present in the underlying Camel message, no `headers` property will be present.
 
 A schema type definition for this message structure is available in `src/main/resources/types/com/vantiq/extsrc/camelcomp/message.json`.
 
