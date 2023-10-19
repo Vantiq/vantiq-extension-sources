@@ -109,10 +109,13 @@ class AssemblyResourceGeneration extends DefaultTask {
     public static final String OVERVIEW_SOURCE_DISCLAIMER =
         '\n\n> _This description has been provided by the Kamelet from which this assembly was generated. ' +
         'Consider that context when using the information contained herein._\n\n'
+    public static final String VANTIQ_NOTES_SUFFIX = '.vantiqNotes.md'
 
     public final Project project
     public static String packageSafeCamelVersion
     public static String rawCamelVersion
+    public static final String RESOURCE_BASE_DIRECTORY = 'src/main/resources'
+    public static final String VANTIQ_NOTES_DIRECTORY = 'vantiqNotes'
 
     public static final String ASSEMBLY_RESOURCE_BASE_PROPERTY = 'generatedResourceBase'
 
@@ -348,6 +351,7 @@ class AssemblyResourceGeneration extends DefaultTask {
 
         Map routeDoc = writeRoutesDocument(assemblyRoot, packageName, kamName, routesDocumentString)
         Map overviewDoc = (overview ? writeOverviewDocument(assemblyRoot, packageName, kamName, overview) : null)
+        Map notesDoc = writeVantiqNotesDocument(assemblyRoot, packageName, kamName)
         Map sourceDef = addSourceDefinition(assemblyRoot, packageName, kamName,
             routeDoc.path.fileName.toString(), props, dependencies)
         log.debug('Created sourceDef: {}', sourceDef)
@@ -364,6 +368,9 @@ class AssemblyResourceGeneration extends DefaultTask {
         ]
         if (overview != null) {
             componentList << (overviewDoc.reference as String)
+        }
+        if (notesDoc != null) {
+            componentList << (notesDoc.reference as String)
         }
         if (ruleDef) {
             componentList << (ruleDef.reference as String)
@@ -730,6 +737,41 @@ class AssemblyResourceGeneration extends DefaultTask {
             "# Description of ${kamName} from Camel ${rawCamelVersion}" + OVERVIEW_SOURCE_DISCLAIMER + overview
         retVal.path = writeVantiqEntity(VANTIQ_DOCUMENTS, kameletAssemblyDir, packageName,
             docName, titledOverview, false)
+        retVal.reference = buildResourceRef(VANTIQ_DOCUMENTS, packageName + PACKAGE_SEPARATOR + docName)
+        return retVal
+    }
+
+    /**
+     * If a VantiqNotes file is present in the resource directory, place it in the assembly to be included as a
+     * document provided.
+     *
+     * @param kameletAssemblyDir Path the directory used for this kamelet assembly
+     * @param packageName String package name we'll use for this assembly
+     * @param kamName String name of the kamelet on which we're working
+     * @return Map<String, Object> containing Path of document written & resourceReference to it when imported
+     */
+    Map<String, Object> writeVantiqNotesDocument(Path kameletAssemblyDir,
+                                                     String packageName, String kamName) {
+        File notesFile = project.file(RESOURCE_BASE_DIRECTORY + File.separator + VANTIQ_NOTES_DIRECTORY
+            + File.separator + kamName + '.md')
+        if (!notesFile || !notesFile.exists()) {
+            log.trace('No Vaatiq Notes document found for {}', notesFile.absolutePath)
+            return null
+        }
+        log.debug('Found VantiqNotes doc for assembly {}: {}', kamName, notesFile.getAbsolutePath())
+
+        String docName = kamName + VANTIQ_NOTES_SUFFIX
+        Map<String, Object> retVal = [:]
+        // Escape _'s in kamName to avoid strange italics in .md files
+        def kamNameForTitle = kamName.replace('_', '\\_')
+        String notesTitle =
+            "# Using the ${kamNameForTitle} Assembly (Version ${rawCamelVersion})"
+        String notesDoc = notesTitle + '\n\n'
+        notesFile.readLines().each { aLine ->
+            notesDoc += aLine + '\n'
+        }
+        retVal.path = writeVantiqEntity(VANTIQ_DOCUMENTS, kameletAssemblyDir, packageName,
+            docName, notesDoc, false)
         retVal.reference = buildResourceRef(VANTIQ_DOCUMENTS, packageName + PACKAGE_SEPARATOR + docName)
         return retVal
     }
