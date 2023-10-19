@@ -286,7 +286,7 @@ public class VantiqComponentTest extends CamelTestSupport {
                 assert hdrs != null;
                 expHdrs.forEach( (key, value) -> {
                     assert hdrs.containsKey(key);
-                    log.debug("For key {}, comparing value {} ){} with expected {} ({}).",
+                    log.debug("For key {}, comparing value {} ({}) with expected {} ({}).",
                               key, hdrs.get(key),
                               hdrs.get(key) != null ? hdrs.get(key).getClass().getName() : hdrs.get(key),
                               expHdrs.get(key),
