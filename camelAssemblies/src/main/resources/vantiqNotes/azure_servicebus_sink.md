@@ -51,7 +51,7 @@ If you were to send the same message, but it had two properties:
 }
 ```
 
-two (2) messages would be placed sent across the Azure Service Bus:  both would have the `headers` as specfied, one 
+two (2) messages would be placed sent across the Azure Service Bus:  both would have the `headers` as specified, one 
 with the message value _I am a property value_, and the second with the message value _A different property value_.
 
 # Legal
