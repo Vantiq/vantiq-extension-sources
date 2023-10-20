@@ -236,14 +236,14 @@ public class VantiqEndpoint extends DefaultEndpoint {
                         !headerDuplicationBeanName.isEmpty() && !headerDuplicationBeanName.isBlank()) {
                     // If we have header equivalents specified, fetch them and populate our local store for our consumers &
                     // producers
-                    HeaderDuplicationBean heBean = getCamelContext().getRegistry().lookupByNameAndType(
+                    HeaderDuplicationBean hdBean = getCamelContext().getRegistry().lookupByNameAndType(
                             headerDuplicationBeanName,
                             HeaderDuplicationBean.class);
-                    if (heBean == null) {
-                        throw new IllegalArgumentException("No headerEquivalenceBean named " + headerDuplicationBeanName +
-                                                                   " was found.");
+                    if (hdBean == null) {
+                        throw new IllegalArgumentException("No HeaderDuplicationBean named " + headerDuplicationBeanName +
+                                                                   " was found in the Camel Registry.");
                     } else {
-                        headerDuplicationMap = heBean.getHeaderDuplicationMap();
+                        headerDuplicationMap = hdBean.getHeaderDuplicationMap();
                     }
                 }
                 log.debug("Attempting to connect to URL: {} from {}", getEndpointBaseUri(), getEndpointUri());

@@ -992,15 +992,15 @@ public class VantiqComponentTest extends CamelTestSupport {
             public void configure() {
                 // since everything starts here, we need to instantiate this bean before startup so here as things
                 // are defined.
-                HeaderDuplicationBean heBean = new HeaderDuplicationBean();
+                HeaderDuplicationBean hdBean = new HeaderDuplicationBean();
                 Map<String, String> heMap = Map.of("header1", "dupHeader1",
                                                    "header2", "dupHeader2");
-                heBean.setHeaderDuplicationMap(heMap);
-                context.getRegistry().bind(TEST_HEADER_BEAN_NAME, heBean);
-                HeaderDuplicationBean testHeBean = context.getRegistry().lookupByNameAndType(TEST_HEADER_BEAN_NAME,
-                                                                                             HeaderDuplicationBean.class);
-                assertNotNull(testHeBean);
-                Map<String, String> testHeMap = testHeBean.getHeaderDuplicationMap();
+                hdBean.setHeaderDuplicationMap(heMap);
+                context.getRegistry().bind(TEST_HEADER_BEAN_NAME, hdBean);
+                HeaderDuplicationBean testHdBean =
+                        context.getRegistry().lookupByNameAndType(TEST_HEADER_BEAN_NAME, HeaderDuplicationBean.class);
+                assertNotNull(testHdBean);
+                Map<String, String> testHeMap = testHdBean.getHeaderDuplicationMap();
                 assertNotNull(testHeMap);
                 assertEquals(heMap.size(), testHeMap.size());
     
