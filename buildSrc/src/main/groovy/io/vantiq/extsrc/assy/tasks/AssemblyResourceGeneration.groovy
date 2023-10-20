@@ -755,7 +755,7 @@ class AssemblyResourceGeneration extends DefaultTask {
         File notesFile = project.file(RESOURCE_BASE_DIRECTORY + File.separator + VANTIQ_NOTES_DIRECTORY
             + File.separator + kamName + '.md')
         if (!notesFile || !notesFile.exists()) {
-            log.trace('No Vaatiq Notes document found for {}', notesFile.absolutePath)
+            log.trace('No Vantiq Notes document found for {}', notesFile.absolutePath)
             return null
         }
         log.debug('Found VantiqNotes doc for assembly {}: {}', kamName, notesFile.getAbsolutePath())

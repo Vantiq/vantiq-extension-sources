@@ -34,7 +34,7 @@ ignored.  For example, if you send a message such as the following:
 }
 ```
 
-the message send across the Azure Service Bus will contain the `headers` as specfied, but the message body will be 
+the message send across the Azure Service Bus will contain the `headers` as specified, but the message body will be 
 the string _I am a property value_. The property name `someProp` will not be present.
 
 If you were to send the same message, but it had two properties:

@@ -24,7 +24,7 @@ value delivered in the Camel Exchange message body.
 
 
 The result of this is that each property in the `message` is sent as a separate String, and the property name is
-ignored.  For example, if a Camel Exchange containing the header `myHeader: "my header value" and the body `I am a 
+ignored.  For example, if a Camel Exchange containing the header `myHeader: "my header value"` and the body `I am a 
 property value` is received, the resulting Vantiq message will be the following:
 
 ```js
