@@ -1,3 +1,11 @@
+/*
+ * Copyright (c) 2023 Vantiq, Inc.
+ *
+ * All rights reserved.
+ *
+ * SPDX: MIT
+ */
+
 package io.vantiq.extsrc.camel;
 
 import org.slf4j.Logger;
