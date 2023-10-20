@@ -37,6 +37,8 @@ public class VantiqConsumer extends DefaultConsumer {
     
     ObjectMapper mapper = new ObjectMapper();
     
+    Map<String, String> hdrDupMap = null;
+    
     public VantiqConsumer(VantiqEndpoint endpoint, Processor processor) {
         super(endpoint, processor);
         this.endpoint = endpoint;
@@ -46,6 +48,7 @@ public class VantiqConsumer extends DefaultConsumer {
     protected void doStart() throws Exception {
         super.doStart();
         endpoint.startup();
+        hdrDupMap = endpoint.getHeaderEquivalenceMap();
         ExtensionWebSocketClient vantiqClient = endpoint.getVantiqClient();
         vantiqClient.setPublishHandler(publishHandler);
         vantiqClient.setQueryHandler(queryHandler);
@@ -106,7 +109,25 @@ public class VantiqConsumer extends DefaultConsumer {
                                 .stream()
                                 .filter(e -> e.getKey() instanceof String)
                                 .collect(Collectors.toMap(e -> (String) e.getKey(), Map.Entry::getValue));
-
+                    // If endpoint says to copy header values, do that here now that we have the values.
+                    if (camelHdrs.size() > 0) {
+                        if (hdrDupMap != null && hdrDupMap.size() > 0) {
+                            Map<String, Object> dupedHdrs = new HashMap<>();
+                            Map<String, Object> finalHdrs = camelHdrs;
+                            hdrDupMap.forEach((k, v) -> {
+                                if (finalHdrs.get(k) != null) {
+                                    // If we have a value for a header we're expecting to duplicate, then we duplicate that
+                                    // value into the duplicated header's name.
+                                    // TODO: Should we complain if the duped header will overwrite something already there?
+                                    //  Or just define the problem away as "results when ... are unpredictable"
+                                    dupedHdrs.put(v, finalHdrs.get(k));
+                                }
+                            });
+                            if (dupedHdrs.size() > 0) {
+                                camelHdrs.putAll(dupedHdrs);
+                            }
+                        }
+                    }
                 }
                 if (msgAsMap.get(STRUCTURED_MESSAGE_MESSAGE_PROPERTY) != null) {
                     camelBody = msgAsMap.get(STRUCTURED_MESSAGE_MESSAGE_PROPERTY);
