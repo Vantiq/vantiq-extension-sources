@@ -111,22 +111,7 @@ public class VantiqConsumer extends DefaultConsumer {
                                 .collect(Collectors.toMap(e -> (String) e.getKey(), Map.Entry::getValue));
                     // If endpoint says to copy header values, do that here now that we have the values.
                     if (camelHdrs.size() > 0) {
-                        if (hdrDupMap != null && hdrDupMap.size() > 0) {
-                            Map<String, Object> dupedHdrs = new HashMap<>();
-                            Map<String, Object> finalHdrs = camelHdrs;
-                            hdrDupMap.forEach((k, v) -> {
-                                if (finalHdrs.get(k) != null) {
-                                    // If we have a value for a header we're expecting to duplicate, then we duplicate that
-                                    // value into the duplicated header's name.
-                                    // TODO: Should we complain if the duped header will overwrite something already there?
-                                    //  Or just define the problem away as "results when ... are unpredictable"
-                                    dupedHdrs.put(v, finalHdrs.get(k));
-                                }
-                            });
-                            if (dupedHdrs.size() > 0) {
-                                camelHdrs.putAll(dupedHdrs);
-                            }
-                        }
+                        camelHdrs.putAll(endpoint.duplicateHeaders(camelHdrs));
                     }
                 }
                 if (msgAsMap.get(STRUCTURED_MESSAGE_MESSAGE_PROPERTY) != null) {

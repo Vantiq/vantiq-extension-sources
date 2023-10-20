@@ -204,22 +204,7 @@ public class VantiqProducer extends DefaultProducer {
                 }
             }
             if (hdrs != null) {
-                if (hdrDupMap != null && hdrDupMap.size() > 0) {
-                    Map<String, Object> dupedHdrs = new HashMap<>();
-                    Map<String, Object> finalHdrs = hdrs;
-                    hdrDupMap.forEach((k, v) -> {
-                        if (finalHdrs.get(k) != null) {
-                            // If we have a value for a header we're expecting to duplicate, then we duplicate that
-                            // value into the duplicated header's name.
-                            // TODO: Should we complain if the duped header will overwrite something already there?
-                            //  Or just define the problem away as "results when ... are unpredictable"
-                            dupedHdrs.put(v, finalHdrs.get(k));
-                        }
-                    });
-                    if (dupedHdrs.size() > 0) {
-                        hdrs.putAll(dupedHdrs);
-                    }
-                }
+                hdrs.putAll(endpoint.duplicateHeaders(hdrs));
                 fmtMsg.put(STRUCTURED_MESSAGE_HEADERS_PROPERTY, hdrs);
             }
             Map<String, Object> m = mapper.convertValue(vMsg, new TypeReference<>() {});

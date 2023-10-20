@@ -34,6 +34,7 @@ import org.apache.commons.lang3.StringUtils;
 
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.CompletableFuture;
@@ -398,6 +399,34 @@ public class VantiqEndpoint extends DefaultEndpoint {
         return correctedUrl;
     }
     
+    /**
+     * Return map of headers duplicated as specified by the HEADER_EQUIVALENCE_BEAN_NAME parameter.
+     * <p>
+     * If no duplication is specified or nothing found to duplicate, return an empty map.
+     * <p>
+     * Note that if multiple headers are specified to duplicate to a single duplicate (e.g., both header foo & bar
+     * are both supposed to be duplicated to the header bax), the results are unpredictable.  Something will happen,
+     * but the results depend upon the order on which the headers are processed, and may vary from instance to
+     * instance.  Callers should take care to avoid these situations.  There may be cases where components have
+     * alternatives that are used, both of which are desired to duplicate to the same header, so we allow such a
+     * definition.
+     *
+     * @param headers Map<String, Object> specifying the headers supplied by Camel
+     * @return Map<String, Object> specifying the duplicated headers.  Returns an empty map of nothing to duplicated
+     */
+    public Map<String, Object> duplicateHeaders(Map<String, Object> headers) {
+        Map<String, Object> dupedHdrs = new HashMap<>();
+        if (headerEquivalenceMap != null && headerEquivalenceMap.size() > 0) {
+            headerEquivalenceMap.forEach((k, v) -> {
+                if (headers.get(k) != null) {
+                    // If we have a value for a header we're expecting to duplicate, then we duplicate that
+                    // value into the duplicated header's name.
+                    dupedHdrs.put(v, headers.get(k));
+                }
+            });
+        }
+        return dupedHdrs;
+    }
     @Override
     public void doStop() {
         synchronized (startStopLock) {
