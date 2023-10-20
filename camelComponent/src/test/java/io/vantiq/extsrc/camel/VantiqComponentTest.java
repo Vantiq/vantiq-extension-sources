@@ -93,7 +93,7 @@ public class VantiqComponentTest extends CamelTestSupport {
             "&" + ACCESS_TOKEN_PARAM + "=" + accessToken +
             "&" + CONSUMER_OUTPUT_JSON_PARAM + "=true";
     
-     public final String vantiqStructuredJsonSenderUri = "vantiq://structuredsenderdoesntmatter/" +
+    public final String vantiqStructuredJsonSenderUri = "vantiq://structuredsenderdoesntmatter/" +
             "?" + SOURCE_NAME_PARAM + "=" + testSourceName +
             "&" + ACCESS_TOKEN_PARAM + "=" + accessToken +
             "&" + CONSUMER_OUTPUT_JSON_PARAM + "=true" +

@@ -102,17 +102,17 @@ name>ContentType` (_e.g._, `CamelAzureServiceBusContentType` to name but one).
 
 If the Vantiq application wants to deal with these, it does not want to know all possible variations here -- that is,
 after all, the purpose of an integration system: to manage these discrepancies.  To ease the handling of these 
-situation, the Vantiq Camel Component can duplicate (NOT replace) these header values into alternative names. When 
+situations, the Vantiq Camel Component can duplicate (NOT replace) these header values into alternative names. When 
 this is requested, the original set of headers will be sent or received, but the duplicates with values will be sent 
 or received as well.
 
 To do this, the Camel system must be configured with a Bean of type `io.vantiq.extsrc.camel.HeaderDuplicationBean`, 
 containing a Map<String, String> where the keys of the map represent the header names to be duplicated, and the 
 values are the new header names into which the header value will be duplicated. (Note: we do this via a configured 
-bean since the number of headers could be large, and having URI of great length is sometimes problemnatic.)
+bean since the number of headers could be large, and having URI of great length is sometimes problematic.)
 
 To use this, add the `headerDuplicationBeanName` component/endpoint option with the value being the name of the bean 
-containing the map described above. Note that this header duplication is performed only when the 
+containing the map described above. Note that this header duplication is performed only when the URI parameter 
 `structuredMessageHeader` is present with the value `true`. In other cases, it is silently ignored.
 
 For example, using a Java example, if you want to duplicate the `CamelComponentContentType` header into the 
@@ -122,7 +122,7 @@ header `VantiqContentType`, we would configure things as follows:
     ...
     HeaderDuplicationBean hdBean = new HeaderDuplicationBean();
     Map<String, String> hdMap = Map.of("CamelComponentContentType", "VantiqContentType");
-    hdBean.setHeaderDuplicationMap(heMap);
+    hdBean.setHeaderDuplicationMap(hdMap);
     context.getRegistry().bind("someBeanName", hdBean);
     
     // Now, a route endpoint could be defined such as

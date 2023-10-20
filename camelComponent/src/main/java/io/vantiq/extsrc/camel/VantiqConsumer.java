@@ -36,8 +36,6 @@ public class VantiqConsumer extends DefaultConsumer {
     
     ObjectMapper mapper = new ObjectMapper();
     
-    Map<String, String> hdrDupMap = null;
-    
     public VantiqConsumer(VantiqEndpoint endpoint, Processor processor) {
         super(endpoint, processor);
         this.endpoint = endpoint;
@@ -47,7 +45,6 @@ public class VantiqConsumer extends DefaultConsumer {
     protected void doStart() throws Exception {
         super.doStart();
         endpoint.startup();
-        hdrDupMap = endpoint.getHeaderDuplicationMap();
         ExtensionWebSocketClient vantiqClient = endpoint.getVantiqClient();
         vantiqClient.setPublishHandler(publishHandler);
         vantiqClient.setQueryHandler(queryHandler);

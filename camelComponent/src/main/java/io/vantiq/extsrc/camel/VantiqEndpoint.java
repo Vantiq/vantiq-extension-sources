@@ -104,8 +104,8 @@ public class VantiqEndpoint extends DefaultEndpoint {
     public static final String HEADER_DUPLICATION_BEAN_NAME = "headerDuplicationBeanName";
     
     @UriParam(name = HEADER_DUPLICATION_BEAN_NAME, description = "A bean name where the bean contains a " +
-            "headerDuplicationMap value mapping header names to an equivalent into which the value should be " +
-            "duplicated.")
+            "headerDuplicationMap value mapping header names to a duplicate header into which the value should be " +
+            "copied.")
     @Metadata(required = false)
     @Getter
     @Setter

@@ -50,9 +50,6 @@ public class VantiqProducer extends DefaultProducer {
     private final VantiqEndpoint endpoint;
     ObjectMapper mapper;
     
-    Map<String, String> hdrDupMap = null;
-    
-    
     public VantiqProducer(VantiqEndpoint endpoint) {
         super(endpoint);
         this.endpoint = endpoint;
@@ -273,7 +270,6 @@ public class VantiqProducer extends DefaultProducer {
     protected void doStart() throws Exception {
         super.doStart();
         endpoint.startup();
-        hdrDupMap = endpoint.getHeaderDuplicationMap();
     }
     
     @Override
