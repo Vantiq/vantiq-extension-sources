@@ -17,7 +17,6 @@ import com.fasterxml.jackson.databind.DatabindException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
-import com.fasterxml.jackson.databind.exc.MismatchedInputException;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.BinaryNode;
 import com.fasterxml.jackson.databind.node.BooleanNode;
@@ -50,6 +49,9 @@ import java.util.Map;
 public class VantiqProducer extends DefaultProducer {
     private final VantiqEndpoint endpoint;
     ObjectMapper mapper;
+    
+    Map<String, String> hdrDupMap = null;
+    
     
     public VantiqProducer(VantiqEndpoint endpoint) {
         super(endpoint);
@@ -202,6 +204,22 @@ public class VantiqProducer extends DefaultProducer {
                 }
             }
             if (hdrs != null) {
+                if (hdrDupMap != null && hdrDupMap.size() > 0) {
+                    Map<String, Object> dupedHdrs = new HashMap<>();
+                    Map<String, Object> finalHdrs = hdrs;
+                    hdrDupMap.forEach((k, v) -> {
+                        if (finalHdrs.get(k) != null) {
+                            // If we have a value for a header we're expecting to duplicate, then we duplicate that
+                            // value into the duplicated header's name.
+                            // TODO: Should we complain if the duped header will overwrite something already there?
+                            //  Or just define the problem away as "results when ... are unpredictable"
+                            dupedHdrs.put(v, finalHdrs.get(k));
+                        }
+                    });
+                    if (dupedHdrs.size() > 0) {
+                        hdrs.putAll(dupedHdrs);
+                    }
+                }
                 fmtMsg.put(STRUCTURED_MESSAGE_HEADERS_PROPERTY, hdrs);
             }
             Map<String, Object> m = mapper.convertValue(vMsg, new TypeReference<>() {});
@@ -270,6 +288,8 @@ public class VantiqProducer extends DefaultProducer {
     protected void doStart() throws Exception {
         super.doStart();
         endpoint.startup();
+        hdrDupMap = endpoint.getHeaderEquivalenceMap();
+    
     }
     
     @Override
