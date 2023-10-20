@@ -10,7 +10,7 @@ package io.vantiq.extsrc.camel;
 
 import static io.vantiq.extsrc.camel.VantiqEndpoint.ACCESS_TOKEN_PARAM;
 import static io.vantiq.extsrc.camel.VantiqEndpoint.CONSUMER_OUTPUT_JSON_PARAM;
-import static io.vantiq.extsrc.camel.VantiqEndpoint.HEADER_EQUIVALENCE_BEAN_NAME;
+import static io.vantiq.extsrc.camel.VantiqEndpoint.HEADER_DUPLICATION_BEAN_NAME;
 import static io.vantiq.extsrc.camel.VantiqEndpoint.SOURCE_NAME_PARAM;
 import static io.vantiq.extsrc.camel.VantiqEndpoint.STRUCTURED_MESSAGE_HEADER_PARAM;
 import static io.vantiq.extsrc.camel.VantiqEndpoint.STRUCTURED_MESSAGE_HEADERS_PROPERTY;
@@ -78,7 +78,7 @@ public class VantiqComponentTest extends CamelTestSupport {
             "?" + SOURCE_NAME_PARAM + "=" + testSourceName +
             "&" + ACCESS_TOKEN_PARAM + "=" + accessToken +
             "&" + STRUCTURED_MESSAGE_HEADER_PARAM + "=true" +
-            "&" + HEADER_EQUIVALENCE_BEAN_NAME + "=" + TEST_HEADER_BEAN_NAME;
+            "&" + HEADER_DUPLICATION_BEAN_NAME + "=" + TEST_HEADER_BEAN_NAME;
     
     private final String vantiqSenderUri = "vantiq://senderdoesntmatter/" +
             "?" + SOURCE_NAME_PARAM + "=" + testSourceName +
@@ -104,7 +104,7 @@ public class VantiqComponentTest extends CamelTestSupport {
             "&" + ACCESS_TOKEN_PARAM + "=" + accessToken +
             "&" + CONSUMER_OUTPUT_JSON_PARAM + "=true" +
             "&" + STRUCTURED_MESSAGE_HEADER_PARAM + "=true" +
-            "&" + HEADER_EQUIVALENCE_BEAN_NAME + "=" + TEST_HEADER_BEAN_NAME;
+            "&" + HEADER_DUPLICATION_BEAN_NAME + "=" + TEST_HEADER_BEAN_NAME;
     
     private final String vantiqJsonQuerierUri = "vantiq://jsonquerierdoesntmatter/" +
             "?" + SOURCE_NAME_PARAM + "=" + testSourceName +
@@ -992,15 +992,15 @@ public class VantiqComponentTest extends CamelTestSupport {
             public void configure() {
                 // since everything starts here, we need to instantiate this bean before startup so here as things
                 // are defined.
-                HeaderEquivalenceBean heBean = new HeaderEquivalenceBean();
+                HeaderDuplicationBean heBean = new HeaderDuplicationBean();
                 Map<String, String> heMap = Map.of("header1", "dupHeader1",
                                                    "header2", "dupHeader2");
-                heBean.setEquivalenceMap(heMap);
+                heBean.setHeaderDuplicationMap(heMap);
                 context.getRegistry().bind(TEST_HEADER_BEAN_NAME, heBean);
-                HeaderEquivalenceBean testHeBean = context.getRegistry().lookupByNameAndType(TEST_HEADER_BEAN_NAME,
-                                                                                             HeaderEquivalenceBean.class);
+                HeaderDuplicationBean testHeBean = context.getRegistry().lookupByNameAndType(TEST_HEADER_BEAN_NAME,
+                                                                                             HeaderDuplicationBean.class);
                 assertNotNull(testHeBean);
-                Map<String, String> testHeMap = testHeBean.getEquivalenceMap();
+                Map<String, String> testHeMap = testHeBean.getHeaderDuplicationMap();
                 assertNotNull(testHeMap);
                 assertEquals(heMap.size(), testHeMap.size());
     

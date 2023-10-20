@@ -273,7 +273,7 @@ public class VantiqProducer extends DefaultProducer {
     protected void doStart() throws Exception {
         super.doStart();
         endpoint.startup();
-        hdrDupMap = endpoint.getHeaderEquivalenceMap();
+        hdrDupMap = endpoint.getHeaderDuplicationMap();
     }
     
     @Override

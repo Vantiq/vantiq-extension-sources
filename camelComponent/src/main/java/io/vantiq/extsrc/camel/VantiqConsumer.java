@@ -19,7 +19,6 @@ import io.vantiq.extjsdk.ExtensionServiceMessage;
 import io.vantiq.extjsdk.ExtensionWebSocketClient;
 import io.vantiq.extjsdk.Handler;
 
-import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.stream.Collectors;
@@ -48,7 +47,7 @@ public class VantiqConsumer extends DefaultConsumer {
     protected void doStart() throws Exception {
         super.doStart();
         endpoint.startup();
-        hdrDupMap = endpoint.getHeaderEquivalenceMap();
+        hdrDupMap = endpoint.getHeaderDuplicationMap();
         ExtensionWebSocketClient vantiqClient = endpoint.getVantiqClient();
         vantiqClient.setPublishHandler(publishHandler);
         vantiqClient.setQueryHandler(queryHandler);
