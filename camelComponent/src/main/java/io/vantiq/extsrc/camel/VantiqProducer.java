@@ -289,7 +289,6 @@ public class VantiqProducer extends DefaultProducer {
         super.doStart();
         endpoint.startup();
         hdrDupMap = endpoint.getHeaderEquivalenceMap();
-    
     }
     
     @Override
