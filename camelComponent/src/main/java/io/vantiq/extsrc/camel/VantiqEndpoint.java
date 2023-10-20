@@ -96,6 +96,20 @@ public class VantiqEndpoint extends DefaultEndpoint {
     @Setter
     private boolean structuredMessageHeader;
     
+    // Note doing this as a constructed bean rather than a multivalue parameter because the number of headers might
+    // be large, and a large set thereof may violate URI length requirements. Also, it's primarily intended for use
+    // in the Camel Connector, so constructing such a things there based on source parameters is not hard.  Should a
+    // need arise, we can offer another option(s).
+    public static final String HEADER_EQUIVALENCE_BEAN_NAME = "headerEquivalenceBeanName";
+    
+    @UriParam(name = HEADER_EQUIVALENCE_BEAN_NAME, description = "A bean name where the bean contains a " +
+            "headerEquivalenceMap value mapping header names to an equivalent into which the value should be " +
+            "duplicated.")
+    @Metadata(required = false)
+    @Getter
+    @Setter
+    private String headerEquivalenceBeanName;
+    
     @Setter
     @Getter
     private ExtensionWebSocketClient vantiqClient;
@@ -109,6 +123,9 @@ public class VantiqEndpoint extends DefaultEndpoint {
     
     @Getter
     private String endpointName;
+    
+    @Getter
+    private Map<String, String> headerEquivalenceMap;
     
     InstanceConfigUtils utils;
 
@@ -214,6 +231,20 @@ public class VantiqEndpoint extends DefaultEndpoint {
             }
             CamelException failure = null;
             try {
+                if (headerEquivalenceBeanName != null &&
+                        !headerEquivalenceBeanName.isEmpty() && !headerEquivalenceBeanName.isBlank()) {
+                    // If we have header equivalents specified, fetch them and populate our local store for our consumers &
+                    // producers
+                    HeaderEquivalenceBean heBean = getCamelContext().getRegistry().lookupByNameAndType(
+                            headerEquivalenceBeanName,
+                            HeaderEquivalenceBean.class);
+                    if (heBean == null) {
+                        throw new IllegalArgumentException("No headerEquivalenceBean named " + headerEquivalenceBeanName +
+                                                                   " was found.");
+                    } else {
+                        headerEquivalenceMap = heBean.getEquivalenceMap();
+                    }
+                }
                 log.debug("Attempting to connect to URL: {} from {}", getEndpointBaseUri(), getEndpointUri());
                 String vtq = getEndpointBaseUri();
                
