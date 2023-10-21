@@ -10,6 +10,7 @@ package io.vantiq.extsrc.camel;
 
 import static io.vantiq.extsrc.camel.VantiqEndpoint.ACCESS_TOKEN_PARAM;
 import static io.vantiq.extsrc.camel.VantiqEndpoint.CONSUMER_OUTPUT_JSON_PARAM;
+import static io.vantiq.extsrc.camel.VantiqEndpoint.HEADER_DUPLICATION_BEAN_NAME;
 import static io.vantiq.extsrc.camel.VantiqEndpoint.SOURCE_NAME_PARAM;
 import static io.vantiq.extsrc.camel.VantiqEndpoint.STRUCTURED_MESSAGE_HEADER_PARAM;
 import static io.vantiq.extsrc.camel.VantiqEndpoint.STRUCTURED_MESSAGE_HEADERS_PROPERTY;
@@ -17,10 +18,8 @@ import static io.vantiq.extsrc.camel.VantiqEndpoint.STRUCTURED_MESSAGE_MESSAGE_P
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.BaseJsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import com.fasterxml.jackson.databind.node.TextNode;
 import io.vantiq.extjsdk.ExtensionServiceMessage;
 import io.vantiq.extjsdk.FalseClient;
 import io.vantiq.extjsdk.FalseWebSocket;
@@ -55,10 +54,14 @@ public class VantiqComponentTest extends CamelTestSupport {
     private static final String accessToken = "someAccessToken";
     private static final String TEST_MSG_PREAMBLE = "published message from FauxVantiq #";
     private static final String TEST_MSG_KEY = "someRandomKey";
+    private static final String TEST_HEADER_BEAN_NAME = "TestHEBean";
     
     private final String routeStartUri = "direct:start";
     
     private final String routeStartStructuredUri = "direct:structuredstart";
+    
+    private final String routeStartStructuredHeaderMapUri = "direct:structuredMappedstart";
+    
     private final String routeEndUri = "mock:direct:result";
     
     private final String exceptionEndpoint = "mock:direct:error";
@@ -70,6 +73,12 @@ public class VantiqComponentTest extends CamelTestSupport {
             "?" + SOURCE_NAME_PARAM + "=" + testSourceName +
             "&" + ACCESS_TOKEN_PARAM + "=" + accessToken +
             "&" + STRUCTURED_MESSAGE_HEADER_PARAM + "=true";
+    
+    private final String vantiqEndpointStructuredHeaderMapUri = "vantiq://doesntmatter/" +
+            "?" + SOURCE_NAME_PARAM + "=" + testSourceName +
+            "&" + ACCESS_TOKEN_PARAM + "=" + accessToken +
+            "&" + STRUCTURED_MESSAGE_HEADER_PARAM + "=true" +
+            "&" + HEADER_DUPLICATION_BEAN_NAME + "=" + TEST_HEADER_BEAN_NAME;
     
     private final String vantiqSenderUri = "vantiq://senderdoesntmatter/" +
             "?" + SOURCE_NAME_PARAM + "=" + testSourceName +
@@ -89,6 +98,13 @@ public class VantiqComponentTest extends CamelTestSupport {
             "&" + ACCESS_TOKEN_PARAM + "=" + accessToken +
             "&" + CONSUMER_OUTPUT_JSON_PARAM + "=true" +
             "&" + STRUCTURED_MESSAGE_HEADER_PARAM + "=true";
+    
+    public final String vantiqStructuredJsonSenderMappedUri = "vantiq://structuredsenderdoesntmatter/" +
+            "?" + SOURCE_NAME_PARAM + "=" + testSourceName +
+            "&" + ACCESS_TOKEN_PARAM + "=" + accessToken +
+            "&" + CONSUMER_OUTPUT_JSON_PARAM + "=true" +
+            "&" + STRUCTURED_MESSAGE_HEADER_PARAM + "=true" +
+            "&" + HEADER_DUPLICATION_BEAN_NAME + "=" + TEST_HEADER_BEAN_NAME;
     
     private final String vantiqJsonQuerierUri = "vantiq://jsonquerierdoesntmatter/" +
             "?" + SOURCE_NAME_PARAM + "=" + testSourceName +
@@ -267,6 +283,87 @@ public class VantiqComponentTest extends CamelTestSupport {
         validateExtensionMsg(lastMsg, true, null, new String[] {"bye"}, "mom");
     }
     
+    @Test
+    public void testVantiqProducerHeaderMapping() {
+        // First, grab our test environment.
+        FauxVantiqComponent vc = (FauxVantiqComponent) context.getComponent("vantiq");
+        assert vc != null;
+        // Note that we need to fetch the endpoints by URI since there are more than one of them.
+        FauxVantiqEndpoint ep = (FauxVantiqEndpoint) context.getEndpoint(vantiqEndpointStructuredHeaderMapUri);
+        FalseClient fc = ep.myClient;
+        
+        ArrayList<String> msgs =new ArrayList<>();
+        int itemCount = 10;
+        for (int i = 0; i < itemCount; i++) {
+            msgs.add("{\"hi\": \"mom " + i + "\"}");
+        }
+        
+        for (Object item: msgs) {
+            log.info("Sending msg: " + item);
+            
+            assert item != null;
+            sendBody(routeStartStructuredHeaderMapUri, item);
+            
+            //noinspection rawtypes
+            Map lastMsg = fc.getLastMessageAsMap();
+            validateExtensionMsg(lastMsg, true, null, new String[] {"hi"}, "mom");
+        }
+        
+        // Now, try a similar test sending maps
+        ArrayList<Map<String, String>> mapList = new ArrayList<>();
+        for (int i = 0; i < itemCount; i++) {
+            Map<String, String> mp = Map.of("hi", "dad " + i);
+            mapList.add(mp);
+        }
+        
+        AtomicInteger hdrCounter = new AtomicInteger(0);
+        
+        mapList.forEach( msg -> {
+            Map<String, Object> hdrs = new HashMap<>();
+            hdrs.put("theMessage", msg);
+            hdrs.put("counter", hdrCounter.getAndIncrement());
+            hdrs.put("shouldBeNull", null);
+            hdrs.put("header1", "value1");
+            hdrs.put("header2", "value2");
+    
+            Map<String, Object> expHdrs = new HashMap<>(hdrs);
+            expHdrs.put("dupHeader1", hdrs.get("header1"));
+            expHdrs.put("dupHeader2", hdrs.get("header2"));
+            sendBody(routeStartStructuredHeaderMapUri, msg, hdrs);
+            
+            //noinspection rawtypes
+            Map lastMsg = fc.getLastMessageAsMap();
+            validateExtensionMsg(lastMsg, true, expHdrs, new String[] {"hi"}, "dad");
+        });
+        
+        ObjectMapper mapper = new ObjectMapper();
+        AtomicInteger counter = new AtomicInteger(0);
+        msgs.forEach( msg -> {
+            try {
+                ObjectNode node = mapper.readValue(msg, ObjectNode.class);
+                node.put("hi", "aki " + counter.getAndIncrement());
+                Map<String, Object> hdrs = new HashMap<>();
+                hdrs.put("theMessage", msg);
+                hdrs.put("counter", hdrCounter.getAndIncrement());
+                
+                sendBody(routeStartStructuredHeaderMapUri, node, hdrs);
+                
+                //noinspection rawtypes
+                Map lastMsg = fc.getLastMessageAsMap();
+                validateExtensionMsg(lastMsg, true, hdrs, new String[] {"hi"}, "aki");
+            } catch (JsonProcessingException e) {
+                throw new RuntimeException(e);
+            }
+        });
+        
+        sendBody(routeStartStructuredHeaderMapUri, "{\"bye\": \"mom\"}");
+        
+        //noinspection rawtypes
+        Map lastMsg = fc.getLastMessageAsMap();
+        validateExtensionMsg(lastMsg, true, null, new String[] {"bye"}, "mom");
+    }
+    
+    
     void validateExtensionMsg(Map<?,?> lastMsg, Boolean isStructured, Map<String, Object> expHdrs,
                               String[] msgKeys, String msgPreamble) {
         assert lastMsg.containsKey("op");
@@ -285,7 +382,7 @@ public class VantiqComponentTest extends CamelTestSupport {
                         (Map<String, Object>) msg.get(STRUCTURED_MESSAGE_HEADERS_PROPERTY);
                 assert hdrs != null;
                 expHdrs.forEach( (key, value) -> {
-                    assert hdrs.containsKey(key);
+                    assertTrue("Missing header " + key, hdrs.containsKey(key));
                     log.debug("For key {}, comparing value {} ({}) with expected {} ({}).",
                               key, hdrs.get(key),
                               hdrs.get(key) != null ? hdrs.get(key).getClass().getName() : hdrs.get(key),
@@ -596,6 +693,136 @@ public class VantiqComponentTest extends CamelTestSupport {
     }
     
     @Test
+    public void testVantiqConsumerHeaderMapping() throws Exception {
+        
+        // First, grab our test environment.
+        FauxVantiqComponent vc = (FauxVantiqComponent) context.getComponent("vantiq");
+        assert vc != null;
+        // Note that we need to fetch the endpoints by URI since there are more than one of them.
+        FauxVantiqEndpoint endp = (FauxVantiqEndpoint) context.getEndpoint(vantiqStructuredJsonSenderMappedUri);
+        
+        assert endp.myClient.getListener() instanceof TestListener;
+        TestListener tl = (TestListener) endp.myClient.getListener();
+        
+        int mapMsgCount = 10;
+        List<Object> extraTestMsgs = List.of("I am a test string", List.of(Map.of("test", "message", "another", "test" +
+                " message")));
+        
+        MockEndpoint mocked = getMockEndpoint(routeEndUri);
+        mocked.expectedMinimumMessageCount(mapMsgCount + extraTestMsgs.size());
+        VantiqEndpoint ve = getMandatoryEndpoint(vantiqEndpointUri, VantiqEndpoint.class);
+        assert ve != null;
+        ObjectMapper mapper = new ObjectMapper();
+        WebSocket ws = new FalseWebSocket();
+        for (int i = 0; i < mapMsgCount + extraTestMsgs.size(); i++) {
+            ExtensionServiceMessage ep = new ExtensionServiceMessage(vantiqEndpointUri);
+            ep.op = ExtensionServiceMessage.OP_PUBLISH;
+            ep.resourceName = "SOURCES";
+            ep.resourceId = testSourceName;
+            if (i < mapMsgCount) {
+                HashMap<String, Object> msg = new HashMap<>();
+                msg.put(TEST_MSG_KEY, TEST_MSG_PREAMBLE + i);
+                HashMap<String, Object> smsg = new HashMap<>();
+                smsg.put(STRUCTURED_MESSAGE_MESSAGE_PROPERTY, msg);
+                HashMap<String, Object> hdrs = new HashMap<>();
+                hdrs.put("theMessage", msg);
+                hdrs.put("counter", i);
+                smsg.put(STRUCTURED_MESSAGE_HEADERS_PROPERTY, hdrs);
+                ep.object = smsg;
+            } else {
+                HashMap<String, Object> smsg = new HashMap<>();
+                HashMap<String, Object> hdrs = new HashMap<>();
+                hdrs.put("theMessage", extraTestMsgs.get(i - mapMsgCount));
+                hdrs.put("counter", i);
+                hdrs.put("isExtra", true);
+                hdrs.put("header1", "header1Value");
+                hdrs.put("header2", "header2Value");
+                smsg.put(STRUCTURED_MESSAGE_HEADERS_PROPERTY, hdrs);
+                smsg.put(STRUCTURED_MESSAGE_MESSAGE_PROPERTY, extraTestMsgs.get(i - mapMsgCount));
+                ep.object = smsg;
+            }
+            
+            byte[] msgBytes = mapper.writeValueAsBytes(ep);
+            
+            // Given the message bytes, simulate delivery of our WebSocket message
+            tl.onMessage(ws, new ByteString(msgBytes));
+        }
+        
+        // Consumers run in BG threads, so wait a bit for those to finish.
+        mocked.await(5L, TimeUnit.SECONDS);
+        
+        assertEquals("Mocked service expected vs. actual", mapMsgCount + extraTestMsgs.size(),
+                     mocked.getReceivedCounter());
+        List<Exchange> exchanges = mocked.getReceivedExchanges();
+        Set<String> uniqueMsgs = new HashSet<>();
+        AtomicInteger msgsReceived = new AtomicInteger();
+        exchanges.forEach(exchange -> {
+            Object exchangeBody = exchange.getIn().getBody();
+            Map<String, Object> exchangeHdrs = exchange.getIn().getHeaders();
+            assertNotNull("Null exchange body",  exchangeBody);
+            // Verify that we got JSON -- which will manifest here as a String, but we'll verify that we can convert it.
+            assertTrue("Vantiq Consumer Output wrong type: " + exchangeBody.getClass().getName(),
+                       exchangeBody instanceof BaseJsonNode);
+            msgsReceived.addAndGet(1);
+            Object msg;
+            try {
+                msg = mapper.convertValue(exchangeBody, Map.class); //readValue((String) exchangeBody, Map.class);
+            } catch (Exception e) {
+                // Maybe we asked for the wrong type
+                try {
+                    msg = mapper.convertValue(exchangeBody, String.class);
+                } catch (Exception ex) {
+                    try {
+                        msg = mapper.convertValue(exchangeBody, List.class);
+                        // readValue((String) exchangeBody,List.class);
+                    } catch (Exception exc) {
+                        throw new RuntimeException(exc);
+                    }
+                }
+            }
+            assertNotNull("Deserialized msg is null", msg);
+            if (msg instanceof Map) {
+                assert ((Map<?,?>) msg).containsKey(TEST_MSG_KEY);
+                assert ((Map<?,?>) msg).get(TEST_MSG_KEY) instanceof String;
+                assert ((String) ((Map<?,?>) msg).get(TEST_MSG_KEY)).startsWith(TEST_MSG_PREAMBLE);
+                assert exchangeHdrs.get("theMessage") instanceof Map;
+                assert (((Map<?,?>) msg).get(TEST_MSG_KEY)).equals(
+                        ((Map<?,?>) exchangeHdrs.get("theMessage")).get(TEST_MSG_KEY));
+                assert exchangeHdrs.get("counter") instanceof Number;
+                uniqueMsgs.add(((String) ((Map<?,?>) msg).get(TEST_MSG_KEY)));
+            } else if (msg instanceof String) {
+                assertEquals(msg, extraTestMsgs.get(0));
+                assert exchangeHdrs.get("theMessage") instanceof String;
+                assert msg.equals(exchangeHdrs.get("theMessage"));
+                assert exchangeHdrs.get("counter") instanceof Number;
+                assert exchangeHdrs.get("isExtra") instanceof Boolean;
+                assert (Boolean) exchangeHdrs.get("isExtra");
+                assert exchangeHdrs.get("header1") instanceof String;
+                assert exchangeHdrs.get("dupHeader1") instanceof String;
+                assert exchangeHdrs.get("header1").equals(exchangeHdrs.get("dupHeader1"));
+                assert exchangeHdrs.get("header2") instanceof String;
+                assert exchangeHdrs.get("dupHeader2") instanceof String;
+                assert exchangeHdrs.get("header2").equals(exchangeHdrs.get("dupHeader2"));
+            } else {
+                assert msg.equals(exchangeHdrs.get("theMessage"));
+                assert exchangeHdrs.get("theMessage").getClass().equals(msg.getClass());
+                assert exchangeHdrs.get("counter") instanceof Number;
+                assert exchangeHdrs.get("isExtra") instanceof Boolean;
+                assert (Boolean) exchangeHdrs.get("isExtra");
+                assert exchangeHdrs.get("header1") instanceof String;
+                assert exchangeHdrs.get("dupHeader1") instanceof String;
+                assert exchangeHdrs.get("header1").equals(exchangeHdrs.get("dupHeader1"));
+                assert exchangeHdrs.get("header2") instanceof String;
+                assert exchangeHdrs.get("dupHeader2") instanceof String;
+                assert exchangeHdrs.get("header2").equals(exchangeHdrs.get("dupHeader2"));
+    
+            }
+        });
+        assert uniqueMsgs.size() == mapMsgCount;
+        assert msgsReceived.get() == mapMsgCount + extraTestMsgs.size();
+    }
+    
+    @Test
     public void testVantiqConsumerQuery() throws Exception {
         
         // First, grab our test environment.
@@ -763,7 +990,23 @@ public class VantiqComponentTest extends CamelTestSupport {
     protected RouteBuilder createRouteBuilder() {
         return new RouteBuilder() {
             public void configure() {
-                
+                // since everything starts here, we need to instantiate this bean before startup so here as things
+                // are defined.
+                HeaderDuplicationBean hdBean = new HeaderDuplicationBean();
+                Map<String, String> heMap = Map.of("header1", "dupHeader1",
+                                                   "header2", "dupHeader2");
+                hdBean.setHeaderDuplicationMap(heMap);
+                context.getRegistry().bind(TEST_HEADER_BEAN_NAME, hdBean);
+                HeaderDuplicationBean testHdBean =
+                        context.getRegistry().lookupByNameAndType(TEST_HEADER_BEAN_NAME, HeaderDuplicationBean.class);
+                assertNotNull(testHdBean);
+                Map<String, String> testHeMap = testHdBean.getHeaderDuplicationMap();
+                assertNotNull(testHeMap);
+                assertEquals(heMap.size(), testHeMap.size());
+    
+                heMap.forEach( (k, v) -> {
+                    assertEquals(heMap.get(k), testHeMap.get(k));
+                });
                 // Override the component type to be used...
                 context.addComponent("vantiq", new FauxVantiqComponent());
                 for (String name: context.getComponentNames()) {
@@ -776,25 +1019,31 @@ public class VantiqComponentTest extends CamelTestSupport {
                 
                 from(routeStartUri)
                   .to(vantiqEndpointUri);
-                
+
                 from(routeStartStructuredUri)
                         .to(vantiqEndpointStructuredUri);
-                
+
                 from(vantiqSenderUri)
                         .to(routeEndUri);
-    
+
                 from(vantiqJsonSenderUri)
                         .to(routeEndUri);
-    
+
                 from(vantiqStructuredJsonSenderUri)
                         .to(routeEndUri);
     
+                from(vantiqStructuredJsonSenderMappedUri)
+                        .to(routeEndUri);
+                
+                from(routeStartStructuredHeaderMapUri)
+                        .to(vantiqEndpointStructuredHeaderMapUri);
+                
                 from(vantiqQuerySenderUri)
                         .setExchangePattern(ExchangePattern.InOut)
                         .to(routeEndUri)
                             .setBody(constant("{ \"Response\": \"Message\"}"))
                         .to(vantiqQuerySenderUri);
-    
+
                 from(vantiqJsonQuerierUri)
                         .setExchangePattern(ExchangePattern.InOut)
                         .to(routeEndUri)

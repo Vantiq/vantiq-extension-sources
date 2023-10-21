@@ -17,7 +17,6 @@ import com.fasterxml.jackson.databind.DatabindException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
-import com.fasterxml.jackson.databind.exc.MismatchedInputException;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.BinaryNode;
 import com.fasterxml.jackson.databind.node.BooleanNode;
@@ -202,6 +201,7 @@ public class VantiqProducer extends DefaultProducer {
                 }
             }
             if (hdrs != null) {
+                hdrs.putAll(endpoint.duplicateHeaders(hdrs));
                 fmtMsg.put(STRUCTURED_MESSAGE_HEADERS_PROPERTY, hdrs);
             }
             Map<String, Object> m = mapper.convertValue(vMsg, new TypeReference<>() {});

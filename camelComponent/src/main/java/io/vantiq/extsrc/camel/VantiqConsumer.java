@@ -19,7 +19,6 @@ import io.vantiq.extjsdk.ExtensionServiceMessage;
 import io.vantiq.extjsdk.ExtensionWebSocketClient;
 import io.vantiq.extjsdk.Handler;
 
-import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.stream.Collectors;
@@ -106,7 +105,10 @@ public class VantiqConsumer extends DefaultConsumer {
                                 .stream()
                                 .filter(e -> e.getKey() instanceof String)
                                 .collect(Collectors.toMap(e -> (String) e.getKey(), Map.Entry::getValue));
-
+                    // If endpoint says to copy header values, do that here now that we have the values.
+                    if (camelHdrs.size() > 0) {
+                        camelHdrs.putAll(endpoint.duplicateHeaders(camelHdrs));
+                    }
                 }
                 if (msgAsMap.get(STRUCTURED_MESSAGE_MESSAGE_PROPERTY) != null) {
                     camelBody = msgAsMap.get(STRUCTURED_MESSAGE_MESSAGE_PROPERTY);

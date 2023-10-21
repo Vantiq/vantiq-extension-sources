@@ -34,6 +34,7 @@ import org.apache.commons.lang3.StringUtils;
 
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.CompletableFuture;
@@ -96,6 +97,20 @@ public class VantiqEndpoint extends DefaultEndpoint {
     @Setter
     private boolean structuredMessageHeader;
     
+    // Note doing this as a constructed bean rather than a multivalue parameter because the number of headers might
+    // be large, and a large set thereof may violate URI length requirements. Also, it's primarily intended for use
+    // in the Camel Connector, so constructing such a things there based on source parameters is not hard.  Should a
+    // need arise, we can offer another option(s).
+    public static final String HEADER_DUPLICATION_BEAN_NAME = "headerDuplicationBeanName";
+    
+    @UriParam(name = HEADER_DUPLICATION_BEAN_NAME, description = "A bean name where the bean contains a " +
+            "headerDuplicationMap value mapping header names to a duplicate header into which the value should be " +
+            "copied.")
+    @Metadata(required = false)
+    @Getter
+    @Setter
+    private String headerDuplicationBeanName;
+    
     @Setter
     @Getter
     private ExtensionWebSocketClient vantiqClient;
@@ -109,6 +124,9 @@ public class VantiqEndpoint extends DefaultEndpoint {
     
     @Getter
     private String endpointName;
+    
+    @Getter
+    private Map<String, String> headerDuplicationMap;
     
     InstanceConfigUtils utils;
 
@@ -214,6 +232,20 @@ public class VantiqEndpoint extends DefaultEndpoint {
             }
             CamelException failure = null;
             try {
+                if (headerDuplicationBeanName != null &&
+                        !headerDuplicationBeanName.isEmpty() && !headerDuplicationBeanName.isBlank()) {
+                    // If we have header equivalents specified, fetch them and populate our local store for our consumers &
+                    // producers
+                    HeaderDuplicationBean hdBean = getCamelContext().getRegistry().lookupByNameAndType(
+                            headerDuplicationBeanName,
+                            HeaderDuplicationBean.class);
+                    if (hdBean == null) {
+                        throw new IllegalArgumentException("No HeaderDuplicationBean named " + headerDuplicationBeanName +
+                                                                   " was found in the Camel Registry.");
+                    } else {
+                        headerDuplicationMap = hdBean.getHeaderDuplicationMap();
+                    }
+                }
                 log.debug("Attempting to connect to URL: {} from {}", getEndpointBaseUri(), getEndpointUri());
                 String vtq = getEndpointBaseUri();
                
@@ -367,6 +399,34 @@ public class VantiqEndpoint extends DefaultEndpoint {
         return correctedUrl;
     }
     
+    /**
+     * Return map of headers duplicated as specified by the HEADER_EQUIVALENCE_BEAN_NAME parameter.
+     * <p>
+     * If no duplication is specified or nothing found to duplicate, return an empty map.
+     * <p>
+     * Note that if multiple headers are specified to duplicate to a single duplicate (e.g., both header foo & bar
+     * are both supposed to be duplicated to the header baz), the results are unpredictable.  Something will happen,
+     * but the results depend upon the order on which the headers are processed, and may vary from instance to
+     * instance.  Callers should take care to avoid these situations.  There may be cases where components have
+     * alternatives that are used, both of which are desired to duplicate to the same header, so we allow such a
+     * definition.
+     *
+     * @param headers Map<String, Object> specifying the headers supplied by Camel
+     * @return Map<String, Object> specifying the duplicated headers.  Returns an empty map of nothing to duplicated
+     */
+    public Map<String, Object> duplicateHeaders(Map<String, Object> headers) {
+        Map<String, Object> dupedHdrs = new HashMap<>();
+        if (headerDuplicationMap != null && headerDuplicationMap.size() > 0) {
+            headerDuplicationMap.forEach((k, v) -> {
+                if (headers.get(k) != null) {
+                    // If we have a value for a header we're expecting to duplicate, then we duplicate that
+                    // value into the duplicated header's name.
+                    dupedHdrs.put(v, headers.get(k));
+                }
+            });
+        }
+        return dupedHdrs;
+    }
     @Override
     public void doStop() {
         synchronized (startStopLock) {
