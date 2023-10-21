@@ -4,7 +4,7 @@ The Azure Service Bus operates using messages consisting of headers (standard Ap
 content. This String content can take the form of a single String or a list of Strings.  In the latter case,
 each String in the list is sent as a separate service bus message.
 
-Moreover, of the service bus sees a messages that is not a String, it will try and interpret it as a list of Strings,
+Moreover, if the service bus sees a messages that is not a String, it will try and interpret it as a list of Strings,
 each of which is sent as a separate service bus message.
 
 The Vantiq system, and specifically these assemblies, exchanges messages with the underlying source using Vail Objects.

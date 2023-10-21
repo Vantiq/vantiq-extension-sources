@@ -4,7 +4,7 @@ The Azure Service Bus operates using messages consisting of headers (standard Ap
 content. This String content can take the form of a single String or a list of Strings.  In the latter case,
 each String in the list is sent as a separate Service Bus message.
 
-Moreover, of the Service Bus sees a messages that is not a String, it will try and interpret it as a list of Strings,
+Moreover, if the Service Bus sees a messages that is not a String, it will try and interpret it as a list of Strings,
 each of which is sent as a separate Service Bus message.
 
 The Vantiq system, and specifically these assemblies, exchanges messages with the underlying source using Vail Objects.
@@ -34,7 +34,7 @@ ignored.  For example, if you send a message such as the following:
 }
 ```
 
-the message send across the Azure Service Bus will contain the `headers` as specified, but the message body will be 
+the message sent across the Azure Service Bus will contain the `headers` as specified, but the message body will be 
 the string _I am a property value_. The property name `someProp` will not be present.
 
 If you were to send the same message, but it had two properties:
@@ -51,7 +51,7 @@ If you were to send the same message, but it had two properties:
 }
 ```
 
-two (2) messages would be placed sent across the Azure Service Bus:  both would have the `headers` as specified, one 
+two (2) messages would be sent across the Azure Service Bus:  both would have the `headers` as specified, one 
 with the message value _I am a property value_, and the second with the message value _A different property value_.
 
 # Legal
