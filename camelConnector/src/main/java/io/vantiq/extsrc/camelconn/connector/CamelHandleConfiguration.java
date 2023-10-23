@@ -60,6 +60,8 @@ public class CamelHandleConfiguration extends Handler<ExtensionServiceMessage> {
     public static final String ROUTES_LIST = "routesList";
     public static final String ROUTES_FORMAT = "routesFormat";
     public static final String COMPONENT_PROPERTIES = "componentProperties";
+    public static final String HEADER_DUPLICATION = "headerDuplication";
+    public static final String HEADER_BEAN_NAME = "headerBeanName";
     public static final String PROPERTY_VALUES = "propertyValues";
     public static final String RAW_REQUIRED = "rawValuesRequired";
     public static final String DISCOVERED_RAW = "discovered";
@@ -188,6 +190,32 @@ public class CamelHandleConfiguration extends Handler<ExtensionServiceMessage> {
                 }
             }
         }
+        
+        target = camelConfig.get(HEADER_DUPLICATION);
+        if (target != null) {
+            if (!(target instanceof Map)) {
+                log.error("Camel connector property {} should be a Map (found {}).",
+                          HEADER_DUPLICATION, target.getClass().getName());
+                failConfig();
+                return;
+            } else {
+                boolean failed = false;
+                for (Map.Entry<?,?> ent: ((Map<?, ?>) target).entrySet()) {
+                    if (!(ent.getKey() instanceof String && ent.getValue() instanceof String)) {
+                        log.error("Both keys and values of the Camel connector property {} should be strings.  Found " +
+                                          "{} & {}, respectively.", HEADER_DUPLICATION,
+                                  ent.getKey() != null ? ent.getKey().getClass().getName() : null,
+                                  ent.getValue() != null ? ent.getValue().getClass().getName() : null);
+                        failed = true;
+                        break;
+                    }
+                }
+                if (failed) {
+                    failConfig();
+                    return;
+                }
+            }
+        }
         boolean success;
         try {
             success = runCamelApp(camelConfig, general);
@@ -247,7 +275,13 @@ public class CamelHandleConfiguration extends Handler<ExtensionServiceMessage> {
                     return false;
                 }
             }
-            
+    
+            // This is checked in the caller
+            String headerBeanName = (String) camelConfig.get(HEADER_BEAN_NAME);
+            // This is checked in the caller
+            //noinspection unchecked
+            Map<String, String> headerDuplications = (Map<String, String>) camelConfig.get(HEADER_DUPLICATION);
+    
             // This is checked in the caller
             //noinspection unchecked
             List<Map<String, Object>> componentProperties =
@@ -363,7 +397,8 @@ public class CamelHandleConfiguration extends Handler<ExtensionServiceMessage> {
             CamelRunner runner =
                          new CamelRunner(appName, Objects.requireNonNull(routeSpec).get(ROUTES_LIST),
                                          routeSpec.get(ROUTES_FORMAT), repoList,
-                                         componentCache, componentLib, componentProperties, propVals);
+                                         componentCache, componentLib, componentProperties, propVals,
+                                         headerBeanName, headerDuplications);
             if (additionalLibraries != null) {
                 runner.setAdditionalLibraries(additionalLibraries);
             }
