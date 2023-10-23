@@ -142,7 +142,12 @@ public class VantiqComponentResolverTest extends CamelTestSupport {
     @Test
     public void testResolutionSimpleCamelCached() throws Exception {
         // Here, we leave the cache alone
-        CamelResolver cr = new CamelResolver(this.getTestMethodName(), (URI) null,
+        
+        // Use same app name to avoid spurious Ivy errors about unknown resolvers.  Necessary since we didn't clear
+        // the cache, and Ivy keeps resolver names in the cache records.
+        String nameOfPreviousTest = this.getTestMethodName().substring(0, this.getTestMethodName().lastIndexOf(
+                "Cached"));
+        CamelResolver cr = new CamelResolver(nameOfPreviousTest, (URI) null,
                                              cache, dest);
         Collection<File> resolved = cr.resolve("org.apache.camel", "camel" + "-salesforce",
                                                context.getVersion(), testName.getMethodName());
