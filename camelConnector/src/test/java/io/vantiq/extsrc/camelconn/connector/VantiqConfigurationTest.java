@@ -1,5 +1,7 @@
 package io.vantiq.extsrc.camelconn.connector;
 
+import static io.vantiq.extsrc.camelconn.connector.CamelHandleConfiguration.HEADER_BEAN_NAME;
+import static io.vantiq.extsrc.camelconn.connector.CamelHandleConfiguration.HEADER_DUPLICATION;
 import static io.vantiq.extsrc.camelconn.connector.CamelHandleConfiguration.NO_RAW_REQUEST;
 import static io.vantiq.extsrc.camelconn.connector.CamelHandleConfiguration.RAW_END;
 import static io.vantiq.extsrc.camelconn.connector.CamelHandleConfiguration.RAW_END_ALT;
@@ -49,8 +51,6 @@ import java.util.Properties;
 import java.util.concurrent.TimeUnit;
 
 public class VantiqConfigurationTest {
-    
-    
     @Rule
     public TestName name = new TestName();
     
@@ -67,11 +67,11 @@ public class VantiqConfigurationTest {
     
     void performConfigTest(String appName, String route, String routeFormat,
                            List<Map<String, Object>> compInitProps, Properties propertyValues, Verifier vfy) {
-        performConfigTest(appName, route, routeFormat, compInitProps, propertyValues, vfy, null);
+        performConfigTest(appName, route, routeFormat, compInitProps, propertyValues, vfy, null, null, null);
     }
     void performConfigTest(String appName, String route, String routeFormat,
                            List<Map<String, Object>> compInitProps, Properties propertyValues, Verifier vfy,
-                           List<String> rawReq) {
+                           List<String> rawReq, String headerBeanName, Map<String, String> headerDuplications) {
         Map<String, Object> simpleConfig = new HashMap<>();
         Map<String, Object> camelConfig = new HashMap<>();
         simpleConfig.put(CAMEL_CONFIG, camelConfig);
@@ -97,6 +97,11 @@ public class VantiqConfigurationTest {
             
             rawReqMap.put(DISCOVERED_RAW, rawReq);
             camelAppConfig.put(RAW_REQUIRED, rawReqMap);
+        }
+        
+        if (headerBeanName != null) {
+            camelAppConfig.put(HEADER_BEAN_NAME, headerBeanName);
+            camelAppConfig.put(HEADER_DUPLICATION, headerDuplications);
         }
 
         String fauxVantiqUrl = "http://someVantiqServer";
@@ -194,7 +199,7 @@ public class VantiqConfigurationTest {
                                       assert s.equals(RAW_START + val + RAW_END);
                                   }
                               });
-                          }, raws);
+                          }, raws, null, null);
     }
     
     @Test
@@ -223,7 +228,7 @@ public class VantiqConfigurationTest {
                                       assert s.equals(val);
                                   }
                               });
-                         }, raws);
+                         }, raws, null, null);
     }
     
     @Test
@@ -253,7 +258,7 @@ public class VantiqConfigurationTest {
                                       assert s.equals(val);
                                   }
                               });
-                          }, raws);
+                          }, raws, null, null);
     }
     @Test
     public void testRawSuppressed() {
@@ -282,7 +287,7 @@ public class VantiqConfigurationTest {
                                       assert s.equals(val);
                                   }
                               });
-                          }, raws);
+                          }, raws, null, null);
     }
     
     @Test
@@ -310,7 +315,7 @@ public class VantiqConfigurationTest {
                                       assert s.equals(val);
                                   }
                               });
-                          }, raws);
+                          }, raws, null, null);
     
     }
     @Test
