@@ -11,6 +11,7 @@ package io.vantiq.extsrc.camelconn.discover;
 import io.vantiq.extsrc.camel.HeaderDuplicationBean;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.camel.CamelContext;
+import org.apache.camel.Component;
 import org.apache.camel.ExtendedCamelContext;
 import org.apache.camel.ProducerTemplate;
 import org.apache.camel.RoutesBuilder;
@@ -66,6 +67,8 @@ public class CamelRunner extends MainSupport implements Closeable {
     private final String routeSpec;
     private final String routeSpecType;
     private ClassLoader routeBasedCL;
+    
+    private Map<String, Component> componentOverrides = null; // Used in testing only
     private ClassLoader originalClassLoader;
     
     protected final MainRegistry registry;
@@ -152,6 +155,9 @@ public class CamelRunner extends MainSupport implements Closeable {
         mainConfigurationProperties.setRoutesCollectorEnabled(false);
     }
     
+    protected void setComponentOverrides(Map<String, Component> compOverrides) {
+        this.componentOverrides = compOverrides;
+    }
     public void setAdditionalLibraries(List<String> libs) {
         this.additionalLibraries = libs;
     }
@@ -160,6 +166,9 @@ public class CamelRunner extends MainSupport implements Closeable {
     protected void doInit() throws Exception {
         super.doInit();
         CamelContext ctx = createCamelContext();
+        if (componentOverrides != null && !componentOverrides.isEmpty()) {
+            componentOverrides.forEach(ctx::addComponent);
+        }
         if (headerBeanName != null) {
             HeaderDuplicationBean hdBean = new HeaderDuplicationBean();
             hdBean.setHeaderDuplicationMap(headerDuplications);
@@ -328,7 +337,6 @@ public class CamelRunner extends MainSupport implements Closeable {
      * Run the routes specified in this CamelRunner
      *
      * @param waitForThread boolean indicating whether to await the completion of the thread started by this method
-     * @throws Exception if camel thread throws an exception.
      */
     public void runRoutes(boolean waitForThread) {
         try {
