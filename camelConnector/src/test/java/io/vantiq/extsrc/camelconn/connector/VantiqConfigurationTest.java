@@ -1,14 +1,20 @@
+/*
+ * Copyright (c) 2022 Vantiq, Inc.
+ *
+ * All rights reserved.
+ *
+ * SPDX: MIT
+ */
+
 package io.vantiq.extsrc.camelconn.connector;
 
-import static io.vantiq.extsrc.camelconn.connector.CamelHandleConfiguration.HEADER_BEAN_NAME;
-import static io.vantiq.extsrc.camelconn.connector.CamelHandleConfiguration.HEADER_DUPLICATION;
-import static io.vantiq.extsrc.camelconn.connector.CamelHandleConfiguration.NO_RAW_REQUEST;
-import static io.vantiq.extsrc.camelconn.connector.CamelHandleConfiguration.RAW_END;
-import static io.vantiq.extsrc.camelconn.connector.CamelHandleConfiguration.RAW_END_ALT;
-import static io.vantiq.extsrc.camelconn.connector.CamelHandleConfiguration.RAW_START;
-import static io.vantiq.extsrc.camelconn.connector.CamelHandleConfiguration.RAW_START_ALT;
-
 import static io.vantiq.extjsdk.ExtensionServiceMessage.OP_CONFIGURE_EXTENSION;
+import static io.vantiq.extsrc.camel.VantiqEndpoint.ACCESS_TOKEN_PARAM;
+import static io.vantiq.extsrc.camel.VantiqEndpoint.HEADER_DUPLICATION_BEAN_NAME;
+import static io.vantiq.extsrc.camel.VantiqEndpoint.SOURCE_NAME_PARAM;
+import static io.vantiq.extsrc.camel.VantiqEndpoint.STRUCTURED_MESSAGE_HEADERS_PROPERTY;
+import static io.vantiq.extsrc.camel.VantiqEndpoint.STRUCTURED_MESSAGE_HEADER_PARAM;
+import static io.vantiq.extsrc.camel.VantiqEndpoint.STRUCTURED_MESSAGE_MESSAGE_PROPERTY;
 import static io.vantiq.extsrc.camelconn.connector.CamelHandleConfiguration.APP_NAME;
 import static io.vantiq.extsrc.camelconn.connector.CamelHandleConfiguration.CAMEL_APP;
 import static io.vantiq.extsrc.camelconn.connector.CamelHandleConfiguration.CAMEL_CONFIG;
@@ -17,8 +23,15 @@ import static io.vantiq.extsrc.camelconn.connector.CamelHandleConfiguration.COMP
 import static io.vantiq.extsrc.camelconn.connector.CamelHandleConfiguration.COMPONENT_PROPERTIES;
 import static io.vantiq.extsrc.camelconn.connector.CamelHandleConfiguration.DISCOVERED_RAW;
 import static io.vantiq.extsrc.camelconn.connector.CamelHandleConfiguration.GENERAL;
+import static io.vantiq.extsrc.camelconn.connector.CamelHandleConfiguration.HEADER_BEAN_NAME;
+import static io.vantiq.extsrc.camelconn.connector.CamelHandleConfiguration.HEADER_DUPLICATION;
+import static io.vantiq.extsrc.camelconn.connector.CamelHandleConfiguration.NO_RAW_REQUEST;
 import static io.vantiq.extsrc.camelconn.connector.CamelHandleConfiguration.PROPERTY_VALUES;
+import static io.vantiq.extsrc.camelconn.connector.CamelHandleConfiguration.RAW_END;
+import static io.vantiq.extsrc.camelconn.connector.CamelHandleConfiguration.RAW_END_ALT;
 import static io.vantiq.extsrc.camelconn.connector.CamelHandleConfiguration.RAW_REQUIRED;
+import static io.vantiq.extsrc.camelconn.connector.CamelHandleConfiguration.RAW_START;
+import static io.vantiq.extsrc.camelconn.connector.CamelHandleConfiguration.RAW_START_ALT;
 import static io.vantiq.extsrc.camelconn.connector.CamelHandleConfiguration.ROUTES_FORMAT;
 import static io.vantiq.extsrc.camelconn.connector.CamelHandleConfiguration.ROUTES_LIST;
 import static io.vantiq.extsrc.camelconn.discover.VantiqComponentResolverTest.MISSING_VALUE;
@@ -26,23 +39,30 @@ import static io.vantiq.extsrc.camelconn.discover.VantiqComponentResolverTest.QU
 import static io.vantiq.extsrc.camelconn.discover.VantiqComponentResolverTest.QUERY_MONKEY;
 import static io.vantiq.extsrc.camelconn.discover.VantiqComponentResolverTest.RESPONSE_AARDVARK;
 import static io.vantiq.extsrc.camelconn.discover.VantiqComponentResolverTest.RESPONSE_MONKEY;
-import static io.vantiq.extsrc.camelconn.discover.VantiqComponentResolverTest.defineVerifyOperation;
 import static io.vantiq.extsrc.camelconn.discover.VantiqComponentResolverTest.XML_ROUTE;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static io.vantiq.extsrc.camelconn.discover.VantiqComponentResolverTest.defineVerifyOperation;
 import static org.junit.Assume.assumeTrue;
 
 import io.vantiq.extjsdk.ExtensionServiceMessage;
+import io.vantiq.extjsdk.FalseClient;
+import io.vantiq.extsrc.camel.FauxVantiqComponent;
+import io.vantiq.extsrc.camel.FauxVantiqEndpoint;
 import io.vantiq.extsrc.camelconn.discover.CamelRunner;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.camel.CamelContext;
+import org.apache.camel.Component;
+import org.apache.camel.Endpoint;
+
+import org.apache.camel.ProducerTemplate;
 import org.apache.camel.spi.PropertiesComponent;
+import org.apache.camel.test.junit4.CamelTestSupport;
 import org.apache.commons.lang3.function.TriFunction;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestName;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -50,7 +70,8 @@ import java.util.Optional;
 import java.util.Properties;
 import java.util.concurrent.TimeUnit;
 
-public class VantiqConfigurationTest {
+@Slf4j
+public class VantiqConfigurationTest extends CamelTestSupport {
     @Rule
     public TestName name = new TestName();
     
@@ -60,6 +81,8 @@ public class VantiqConfigurationTest {
     private final String CACHE_DIR = CAMEL_BASE_PATH + "cacheDir";
     private final String LOADED_LIBRARIES = CAMEL_BASE_PATH + "loadedLib";
     
+    String testBeanName = null;
+    
     // Interface to use in declaration.  We'll pass lambda's in to do the actual verification work
     interface Verifier {
         void doVerify(CamelContext runnerContext);
@@ -67,11 +90,21 @@ public class VantiqConfigurationTest {
     
     void performConfigTest(String appName, String route, String routeFormat,
                            List<Map<String, Object>> compInitProps, Properties propertyValues, Verifier vfy) {
-        performConfigTest(appName, route, routeFormat, compInitProps, propertyValues, vfy, null, null, null);
+        performConfigTest(appName, route, routeFormat, compInitProps, propertyValues, vfy, null,
+                          null, null, null);
     }
+    
     void performConfigTest(String appName, String route, String routeFormat,
                            List<Map<String, Object>> compInitProps, Properties propertyValues, Verifier vfy,
-                           List<String> rawReq, String headerBeanName, Map<String, String> headerDuplications) {
+                           List<String> rawReq) {
+        performConfigTest(appName, route, routeFormat, compInitProps, propertyValues, vfy, rawReq,
+                          null, null, null);
+    }
+    
+    void performConfigTest(String appName, String route, String routeFormat,
+                           List<Map<String, Object>> compInitProps, Properties propertyValues, Verifier vfy,
+                           List<String> rawReq, String headerBeanName, Map<String, String> headerDuplications,
+                           Map<String, Component> overrideComponents) {
         Map<String, Object> simpleConfig = new HashMap<>();
         Map<String, Object> camelConfig = new HashMap<>();
         simpleConfig.put(CAMEL_CONFIG, camelConfig);
@@ -111,7 +144,13 @@ public class VantiqConfigurationTest {
 
         CamelCore core = new CamelCore("testComponentInitConfiguration",
                                        "someAccessToken", fauxVantiqUrl);
-        CamelHandleConfiguration handler = new CamelHandleConfiguration(core);
+        CamelHandleConfiguration handler;
+        
+        if (overrideComponents == null) {
+            handler = new CamelHandleConfiguration(core);
+        } else {
+            handler = new HandleConfigurationWithOverrides(core, overrideComponents);
+        }
 
         handler.handleMessage(esm);
         assertTrue("handler completed", handler.isComplete());
@@ -199,7 +238,7 @@ public class VantiqConfigurationTest {
                                       assert s.equals(RAW_START + val + RAW_END);
                                   }
                               });
-                          }, raws, null, null);
+                          }, raws);
     }
     
     @Test
@@ -228,7 +267,7 @@ public class VantiqConfigurationTest {
                                       assert s.equals(val);
                                   }
                               });
-                         }, raws, null, null);
+                         }, raws);
     }
     
     @Test
@@ -258,7 +297,7 @@ public class VantiqConfigurationTest {
                                       assert s.equals(val);
                                   }
                               });
-                          }, raws, null, null);
+                          }, raws);
     }
     @Test
     public void testRawSuppressed() {
@@ -287,7 +326,7 @@ public class VantiqConfigurationTest {
                                       assert s.equals(val);
                                   }
                               });
-                          }, raws, null, null);
+                          }, raws);
     }
     
     @Test
@@ -315,7 +354,7 @@ public class VantiqConfigurationTest {
                                       assert s.equals(val);
                                   }
                               });
-                          }, raws, null, null);
+                          }, raws);
     
     }
     @Test
@@ -363,6 +402,123 @@ public class VantiqConfigurationTest {
                           });
     }
     
+    @Test
+    public void testHdrDupConfiguration() {
+        String dupBeanName = name.getMethodName() + System.currentTimeMillis();
+        Map<String, String> hdrDups = Map.of("hdr1", "otherHdr1",
+                                             "hdr2", "otherHdr2",
+                                             "hdr3", "otherHdr3");
+        // Here, we want these tests to run sans a running Vantiq server, so we'll use the fake Vantiq component of
+        // our component (and, thus, endpoint).  This will allow us to see the results without real network
+        // interactions.
+        Map<String, Component> oRides = Map.of("vantiq", new FauxVantiqComponent());
+        String vantiqEpUri = constructVantiqUri("notReal", dupBeanName);
+        String vantiqRoute = constructVantiqRoute(vantiqEpUri);
+        performConfigTest(name.getMethodName(), vantiqRoute, "yaml",
+                          null, null,
+                          (CamelContext runnerContext) -> {
+                              TriFunction<CamelContext, Map<String, Object>, Map<String, Object>, Boolean> verifyOperation =
+                                      defineVerifyHeaders(1, "direct:vantiqStart",
+                                                          vantiqEpUri);
+                              for (int i = 0; i < 10; i++) {
+                                  String h1Val = "h1Value-" + i;
+                                  String h2Val = "h2Value-" + i;
+                                  String h3Val = "h3Value-" + i;
+                                  assert verifyOperation.apply(runnerContext,
+                                                               Map.of("headers", Map.of("hdr1", h1Val,
+                                                                                        "hdr2", h2Val,
+                                                                                        "hdr3", h3Val),
+                                                                      "message", Map.of("bodyPart", "arm")),
+                                                               Map.of("hdr1", h1Val,
+                                                                      "hdr2", h2Val,
+                                                                      "hdr3", h3Val,
+                                                                      "otherHdr1", h1Val,
+                                                                      "otherHdr2", h2Val,
+                                                                      "otherHdr3", h3Val));
+                              }
+                          }, null, dupBeanName, hdrDups, oRides);
+    }
+    
+    /**
+     * Create a callable that the test method will call.
+     *
+     * In this case, the callable "sends"
+     * message to the route which, in turn, makes a call to return some data.  We verify that the expected
+     * results are presented.
+     *
+     * In this case, our route uses the dynamically loaded component to make a call.
+     * @return TriFunction<CamelContext, String, Object, Boolean>
+     */
+    public TriFunction<CamelContext, Map<String, Object>, Map<String, Object>, Boolean> defineVerifyHeaders(int msgCount, String startEp,
+                                                                                    String endEp) {
+        TriFunction<CamelContext, Map<String, Object>, Map<String, Object>, Boolean> verifyOperation =
+                (context, query, answerMap) -> {
+            boolean worked = true;
+            String routeId = context.getRoutes().get(0).getId();
+            ProducerTemplate template = null;
+            try {
+                if (context.isStopped()) {
+                    log.error("At test start, context {} is stopped", context.getName());
+                }
+                template = context.createProducerTemplate();
+    
+                Endpoint res = context.getEndpoint(endEp);
+                assert res instanceof FauxVantiqEndpoint;
+                FauxVantiqEndpoint resultEndpoint = (FauxVantiqEndpoint) res;
+                FalseClient fc = resultEndpoint.myClient;
+    
+                //noinspection unchecked
+                Map<String, Object> hdrsToSend = (Map<String, Object>) query.get(STRUCTURED_MESSAGE_HEADERS_PROPERTY);
+                assert hdrsToSend != null;
+                log.debug("Sending message to {}", startEp);
+                template.sendBodyAndHeaders(startEp, query.get(STRUCTURED_MESSAGE_MESSAGE_PROPERTY), hdrsToSend);
+                Map lastMsg = fc.getLastMessageAsMap();
+                assert lastMsg.containsKey("op");
+                assert "notification".equals(lastMsg.get("op"));
+                assert lastMsg.containsKey("sourceName");
+                assert "someSource".equals(lastMsg.get("sourceName"));
+                assert lastMsg.containsKey("object");
+                assert lastMsg.get("object") instanceof Map;
+                //noinspection unchecked
+                Map<String, Object> msg = (Map<String, Object>) lastMsg.get("object");
+                assert msg.containsKey(STRUCTURED_MESSAGE_HEADERS_PROPERTY);
+                //noinspection unchecked
+                Map<String, Object> hdrs =
+                        (Map<String, Object>) msg.get(STRUCTURED_MESSAGE_HEADERS_PROPERTY);
+                assert hdrs != null;
+                answerMap.forEach( (key, value) -> {
+                    assertTrue("Missing header " + key, hdrs.containsKey(key));
+                    log.debug("For key {}, comparing value {} ({}) with expected {} ({}).",
+                              key, hdrs.get(key),
+                              hdrs.get(key) != null ? hdrs.get(key).getClass().getName() : hdrs.get(key),
+                              value,
+                              value != null ? value.getClass().getName() : value);
+                    if (hdrs.get(key) != null) {
+                        assert hdrs.get(key).equals(value);
+                    } else {
+                        assert value == null;
+                        // Also, verify that the header is present -- get(key) will return null if key isn't present.
+                        assert hdrs.containsKey(key);
+                    }
+                });
+            } catch (Exception e) {
+                log.error("Route " + routeId + ": Trapped exception", e);
+                worked = false;
+            } finally {
+                if (template != null) {
+                    try {
+                        template.stop();
+                        template.close();
+                        template.cleanUp();
+                    } catch (IOException e) {
+                       log.error("Trapped Exception closing template", e);
+                    }
+                }}
+            return worked;
+        };
+        return verifyOperation;
+    }
+
     public static final String sfLoginUrl = System.getProperty("camel-salesforce-loginUrl", MISSING_VALUE);
     public static final String sfClientId = System.getProperty("camel-salesforce-clientId", MISSING_VALUE);
     public static final String sfClientSecret = System.getProperty("camel-salesforce-clientSecret", MISSING_VALUE);
@@ -414,4 +570,26 @@ public class VantiqConfigurationTest {
     public static final Map<String, String> pValues = Map.of("directStart", "direct:start",
                                                              "query", "SELECT Id, Subject, OwnerId from Task",
                                                              "mockResult", "mock:result");
+    
+    
+    public String constructVantiqUri(String vantiqSvr, String beanName) {
+        return "vantiq://" + vantiqSvr + "/" +
+                "?" + SOURCE_NAME_PARAM + "=someSource" +
+                "&" + ACCESS_TOKEN_PARAM + "=someAccessToken" +
+                "&" + STRUCTURED_MESSAGE_HEADER_PARAM + "=true" +
+                "&" + HEADER_DUPLICATION_BEAN_NAME + "=" + beanName;
+    }
+    public String constructVantiqRoute(String vantiqEndpointStructuredHeaderMapUri) {
+        return "\n"
+                + "- route:\n"
+                + "    id: \"Vantiq Route with Header Duplication\"\n"
+                + "    from:\n"
+                + "      uri: \"direct:vantiqStart\"\n"
+                + "      steps:\n"
+                + "        - to:\n"
+                + "            uri: log:VantiqConfigurationTest?" +
+                                                "level=info&showHeaders=true&showAllProperties=true\n"
+                + "        - to:\n"
+                + "            uri: " + vantiqEndpointStructuredHeaderMapUri + "\n";
+    }
 }

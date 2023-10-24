@@ -8,13 +8,13 @@
 
 package io.vantiq.extsrc.camelconn.discover;
 
+import static org.junit.Assume.assumeTrue;
+
 import com.fasterxml.jackson.databind.JsonNode;
 import io.vantiq.extsrc.camel.HeaderDuplicationBean;
 import io.vantiq.extsrc.camel.VantiqEndpoint;
 import org.apache.camel.CamelContext;
 import org.apache.camel.Endpoint;
-import org.apache.camel.Exchange;
-import org.apache.camel.Predicate;
 import org.apache.camel.ProducerTemplate;
 import org.apache.camel.builder.RouteBuilder;
 import org.apache.camel.component.mock.MockEndpoint;
@@ -23,7 +23,6 @@ import org.apache.camel.model.dataformat.JsonLibrary;
 import org.apache.camel.test.junit4.CamelTestSupport;
 import org.apache.commons.lang3.function.TriFunction;
 import org.apache.ivy.util.FileUtil;
-import org.junit.Assume;
 import org.junit.Before;
 import org.junit.FixMethodOrder;
 import org.junit.Rule;
@@ -164,7 +163,7 @@ public class VantiqComponentResolverTest extends CamelTestSupport {
     }
     
     @Test
-    public void testResolutionFailure() throws Exception {
+    public void testResolutionFailure() {
         FileUtil.forceDelete(cache);    // Clear the cache
         CamelResolver cr = new CamelResolver(this.getTestMethodName(), (URI) null, null, dest);
         log.debug(cr.identity());
@@ -172,7 +171,7 @@ public class VantiqComponentResolverTest extends CamelTestSupport {
         assertTrue("Identity check:", cr.identity().contains(dest.getAbsolutePath()));
     
         try {
-            Collection<File> resolved = cr.resolve("org.apache.camel",
+            cr.resolve("org.apache.camel",
                                                          "camel" + "-horse-designed-by-committee",
                                                          context.getVersion(),
                                                          testName.getMethodName());
@@ -184,7 +183,7 @@ public class VantiqComponentResolverTest extends CamelTestSupport {
         }
         
         try {
-            CamelResolver nope = new CamelResolver("wontexist",(URI) null, null, null);
+            new CamelResolver("wontexist",(URI) null, null, null);
             fail("Cannot create CamelResolver with a null destination");
         } catch (IllegalArgumentException iae) {
             assert iae.getMessage().contains("The destination parameter cannot be null");
@@ -243,7 +242,7 @@ public class VantiqComponentResolverTest extends CamelTestSupport {
     }
     
     @Test
-    public void testStartRouteLoadedComponents() throws Exception {
+    public void testStartRouteLoadedComponents() {
         FileUtil.forceDelete(cache);    // Clear the cache
         RouteBuilderWithProps rb = new SimpleExternalRoute();
         assertNotNull("No routebuilder", rb);
@@ -256,7 +255,7 @@ public class VantiqComponentResolverTest extends CamelTestSupport {
     }
     
     @Test
-    public void testStartRouteLoadedComponentsAndMarshaling() throws Exception {
+    public void testStartRouteLoadedComponentsAndMarshaling() {
         FileUtil.forceDelete(cache);    // Clear the cache
         RouteBuilderWithProps rb = new MarshaledExternalRoute();
         assertNotNull("No routebuilder", rb);
@@ -285,7 +284,7 @@ public class VantiqComponentResolverTest extends CamelTestSupport {
     }
     
     @Test
-    public void testRouteTemplate() throws Exception {
+    public void testRouteTemplate() {
         FileUtil.forceDelete(cache);    // Clear the cache
         BeanIncludingRouteTemplate rb = new BeanIncludingRouteTemplate();
         assertNotNull("No routebuilder", rb);
@@ -311,7 +310,7 @@ public class VantiqComponentResolverTest extends CamelTestSupport {
     }
     
     @Test
-    public void testHdrDupSetup() throws Exception {
+    public void testHdrDupSetup() {
         FileUtil.forceDelete(cache);    // Clear the cache
         String headerBeanName = "MyHeaderBean" + System.currentTimeMillis();
         HdrRouteTemplate rb = new HdrRouteTemplate(headerBeanName);
@@ -352,7 +351,7 @@ public class VantiqComponentResolverTest extends CamelTestSupport {
             });
             String vantiqEpUri = "vantiq://localhost:8080?structuredMessageHeader=true"
                     + "&" + VantiqEndpoint.HEADER_DUPLICATION_BEAN_NAME + "=" + headerBeanName;
-            // I think that starting here fails due to trying to setup the bean name property.  The URL reported in
+            // I think that starting here fails due to trying to set up the bean name property.  The URL reported in
             // the error looks correct (and the bean with that name is present).  But Camel claims it cannot resolve
             // the endpoint as part of starting it up.  Still don't know why.  That's the $64K question.
             VantiqEndpoint ep = ctx.getEndpoint(vantiqEpUri, VantiqEndpoint.class);
@@ -435,7 +434,7 @@ public class VantiqComponentResolverTest extends CamelTestSupport {
     
     @Test
     public void testStartRunLoadedComponentsSalesforceRefreshToken() throws Exception {
-        Assume.assumeTrue(sfLoginUrl != null &&
+        assumeTrue(sfLoginUrl != null &&
                                   sfClientId != null &&
                                   sfClientSecret != null &&
                                   sfRefreshToken != null);
@@ -577,11 +576,11 @@ public class VantiqComponentResolverTest extends CamelTestSupport {
     
     /**
      * Create a callable that the test method will call.
-     *
+     * <p>
      * In this case, the callable "sends"
      * message to the route which, in turn, makes a call to return some data.  We verify that the expected
      * results are presented.
-     *
+     * <p>
      * In this case, our route uses the dynamically loaded component to make a call.
      * @return TriFunction<CamelContext, String, Object, Boolean>
      */
@@ -616,31 +615,29 @@ public class VantiqComponentResolverTest extends CamelTestSupport {
                 log.debug("Test code using context: {}, route id: {}", context.getName(), routeId);
                 
                 resultEndpoint.expectedMessageCount(2);
-                resultEndpoint.expectedMessagesMatches(new Predicate() {
-                    public boolean matches(Exchange exchange) {
-                        Object msg = exchange.getIn().getBody();
-                        if (msg instanceof Message) {
-                            String str =
-                                    ((Message) exchange.getIn().getBody()).getSection(Section.ANSWER).get(0)
-                                                                          .rdataToString();
-                            log.debug("Matches: Route {} got {}", routeId, str);
-                            assertNotNull(answerStr);
-                            return answerStr.contains(str);
-                        } else if (msg instanceof Map) {
-                            //noinspection unchecked
-                            Map<String, ?> msgMap = (Map<String, ?>) msg;
-                            assertNotNull(answerMap);
-                            boolean result = true;
-                            for (Map.Entry<String, ?> ansEnt: answerMap.entrySet()) {
-                                result &= msgMap.containsKey(ansEnt.getKey());
-                                if (!ansEnt.getValue().equals(MISSING_VALUE)) {
-                                    result &= msgMap.get(ansEnt.getKey()).equals(ansEnt.getValue());
-                                }
+                resultEndpoint.expectedMessagesMatches(exchange -> {
+                    Object msg = exchange.getIn().getBody();
+                    if (msg instanceof Message) {
+                        String str =
+                                ((Message) exchange.getIn().getBody()).getSection(Section.ANSWER).get(0)
+                                                                      .rdataToString();
+                        log.debug("Matches: Route {} got {}", routeId, str);
+                        assertNotNull(answerStr);
+                        return answerStr.contains(str);
+                    } else if (msg instanceof Map) {
+                        //noinspection unchecked
+                        Map<String, ?> msgMap = (Map<String, ?>) msg;
+                        assertNotNull(answerMap);
+                        boolean result = true;
+                        for (Map.Entry<String, ?> ansEnt: answerMap.entrySet()) {
+                            result &= msgMap.containsKey(ansEnt.getKey());
+                            if (!ansEnt.getValue().equals(MISSING_VALUE)) {
+                                result &= msgMap.get(ansEnt.getKey()).equals(ansEnt.getValue());
                             }
-                            return result;
                         }
-                        return false;
+                        return result;
                     }
+                    return false;
                 });
     
                 Map<String, Object> headers = new HashMap<>();
@@ -675,16 +672,16 @@ public class VantiqComponentResolverTest extends CamelTestSupport {
                                       List<Map<String, Object>> compToInit, boolean defeatVerify,
                                       Properties propertyValues) throws Exception {
         // To do this test, we'll create a callable that the test method will call. In this case, the callable "sends"
-        // message to the route which, in turn, makes the dig call to lookup a monkey.  We verify that the expected
+        // message to the route which, in turn, makes the dig call to look up a monkey.  We verify that the expected
         // results is presented.
         //
         // In this case, our MakeDigCall route uses the (dynamically loaded) dns component to make a dig call.
     
         TriFunction<CamelContext, String, Object, Boolean> verifyOperation = defineVerifyOperation();
         
-        CamelContext runnerContext = null;
-        Thread runnerThread = null;
-        CamelRunner openedRunner = null;
+        CamelContext runnerContext;
+        Thread runnerThread;
+        CamelRunner openedRunner;
         
         try (CamelRunner runner =
                      new CamelRunner(this.getTestMethodName(), content, contentType, null,
@@ -719,14 +716,14 @@ public class VantiqComponentResolverTest extends CamelTestSupport {
                                       Properties propertyValues, String headerBeanName,
                                       Map<String, String> headerDuplications) throws Exception {
         // To do this test, we'll create a callable that the test method will call. In this case, the callable "sends"
-        // message to the route which, in turn, makes the dig call to lookup a monkey & aardvark.  We verify that the
+        // message to the route which, in turn, makes the dig call to look up a monkey & aardvark.  We verify that the
         // expected results are presented.
         //
         // In this case, our MakeDigCall route uses the (dynamically loaded) dns component to make a dig call.
         TriFunction<CamelContext, String, Object, Boolean> verifyOperation = defineVerifyOperation();
     
-        CamelContext runnerContext = null;
-        Thread runnerThread = null;
+        CamelContext runnerContext;
+        Thread runnerThread;
         CamelRunner openedRunner = null;
         
         try (CamelRunner runner =
@@ -950,7 +947,7 @@ public class VantiqComponentResolverTest extends CamelTestSupport {
                 + "            -   to: vantiq://server.config?structuredMessageHeader=true";
 
         @Override
-        public void configure() throws Exception {
+        public void configure() {
  
         }
     }
@@ -995,7 +992,7 @@ public class VantiqComponentResolverTest extends CamelTestSupport {
         HdrRouteTemplate(String headerDupBeanName) {
             this.headerDupBeanName = headerDupBeanName;
             if (headerDupBeanName != null) {
-                content = content.concat (
+                content = content.concat(
                         "&" + VantiqEndpoint.HEADER_DUPLICATION_BEAN_NAME + "=" + headerDupBeanName
                 );
             }
@@ -1003,7 +1000,7 @@ public class VantiqComponentResolverTest extends CamelTestSupport {
         }
         
         @Override
-        public void configure() throws Exception {
+        public void configure() {
         
         }
     }
