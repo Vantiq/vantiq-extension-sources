@@ -21,6 +21,10 @@ ext {
     commonsLang3Version = '3.12.0'
 }
 
+configurations {
+    testArtifacts
+}
+
 dependencies {
     annotationProcessor "org.projectlombok:lombok:${lombokVersion}"
 
@@ -60,5 +64,15 @@ tasks.withType(Test) {
     }
     // Use the build dir as a base to get our various test artifacts.
     systemProperty "buildDir", "${buildDir}"
+}
+
+
+task testJar (type: Jar) {
+    baseName = "${project.name}-test"
+    from sourceSets.test.output
+}
+
+artifacts {
+    testArtifacts testJar
 }
 
