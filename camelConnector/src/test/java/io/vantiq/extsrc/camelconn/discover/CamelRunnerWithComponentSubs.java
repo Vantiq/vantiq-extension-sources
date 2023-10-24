@@ -59,9 +59,4 @@ public class CamelRunnerWithComponentSubs extends CamelRunner {
               camelProperties, headerBeanName, headerDuplications);
         this.setComponentOverrides(componentOverrides);
     }
-    
-    public void overrideComponents(Map<String, Component> compOverrides) {
-        this.setComponentOverrides(compOverrides);
-    }
-    
 }

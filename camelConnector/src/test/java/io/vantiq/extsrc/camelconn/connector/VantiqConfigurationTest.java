@@ -81,8 +81,6 @@ public class VantiqConfigurationTest extends CamelTestSupport {
     private final String CACHE_DIR = CAMEL_BASE_PATH + "cacheDir";
     private final String LOADED_LIBRARIES = CAMEL_BASE_PATH + "loadedLib";
     
-    String testBeanName = null;
-    
     // Interface to use in declaration.  We'll pass lambda's in to do the actual verification work
     interface Verifier {
         void doVerify(CamelContext runnerContext);
