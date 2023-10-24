@@ -72,6 +72,7 @@ dependencies {
     implementation "org.apache.camel:camel-yaml-dsl:${camelVersion}"
     // End of DSL-specific inclusions.
 
+    testImplementation project(path: ":camelComponent", configuration: "testArtifacts")
     testImplementation "org.apache.logging.log4j:log4j-slf4j-impl:${log4JVersion}"
     testImplementation "org.apache.camel:camel-test:${camelVersion}"
     testImplementation "io.vantiq:vantiq-sdk:${vantiqSDKVersion}"
