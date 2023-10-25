@@ -86,7 +86,11 @@ by adding the `consumerOutputJson` component endpoint option (see below) with a 
 When so specified, messages sent to a Vantiq consumer will arrive in a Camel Exchange as a JSON string.
 
 Messages sent to Vantiq from the component will
-arrive as Vail objects, where the property names correspond to the Map keys.
+arrive as Vail objects, where the property names correspond to the Map keys. For cases where the message to be sent 
+to Vantiq is not structured as a Vail Object (or Java Map), the component will use the property name `stringVal` for 
+data that can be naturally encoded as a string, and `byteVal` for binary data. In the case of 
+binary data, the actual data will be a Base64 encoded string.
+The underlying communication is JSON, so binary data must be Base64 encoded.
 
 ### Structured Headers and Messages
 
@@ -168,6 +172,8 @@ The endpoint options apply to producer and consumer endpoints.  The following ar
 * **sendPings** [optional] a boolean value indicating whether to periodically ping the Vantiq server (default is false)
 * **failedMessageQueueSize** [optional] an integer value indicating how many messages to hold for sending when the connection to the Vantiq server fails.
 * **consumerOutputJson** [optional] a boolean value indicating whether messages sent from Vantiq to the Vantiq component (_i.e._, a Vantiq Consumer) should be put into an Apache Camel Exchange as a JSON message.  If false, messages are put into an exchange as a Java Map.
+* **headerDuplicationBeanName** [optional] the name of the bean containing the header duplication specification. See 
+  _Header Duplication_ section for more details.
 * **structuredMessageHeader** [optional] a boolean value indicating whether messages sent to and from the Vantiq component (Vantiq Consumers and Producers) should be structured as
 
     ```json
