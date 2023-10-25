@@ -56,7 +56,6 @@ import java.util.stream.Collectors;
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
 public class VantiqComponentResolverTest extends CamelTestSupport {
     public final static String MISSING_VALUE = "<missing>";
-    
     @Rule
     public TestName testName = new TestName();
     
@@ -171,10 +170,8 @@ public class VantiqComponentResolverTest extends CamelTestSupport {
         assertTrue("Identity check:", cr.identity().contains(dest.getAbsolutePath()));
     
         try {
-            cr.resolve("org.apache.camel",
-                                                         "camel" + "-horse-designed-by-committee",
-                                                         context.getVersion(),
-                                                         testName.getMethodName());
+            cr.resolve("org.apache.camel", "camel" + "-horse-designed-by-committee",
+                       context.getVersion(), testName.getMethodName());
         } catch (ResolutionException re) {
             assert re.getMessage().contains("Error(s) encountered during resolution: ");
             assert re.getMessage().contains("org.apache.camel#camel-horse-designed-by-committee;");
@@ -201,8 +198,7 @@ public class VantiqComponentResolverTest extends CamelTestSupport {
         }
     
         try {
-            cr.resolve("somegroup", null,
-                             "someVersion", testName.getMethodName());
+            cr.resolve("somegroup", null, "someVersion", testName.getMethodName());
             fail("Null name should not work");
         } catch (IllegalArgumentException iae) {
             assert iae.getMessage().contains("The parameters organization, name, and revision must be non-null");
@@ -235,7 +231,7 @@ public class VantiqComponentResolverTest extends CamelTestSupport {
         URI s3Repo = new URI("https://vantiqmaven.s3.amazonaws.com/");
         CamelResolver cr = new CamelResolver(this.getTestMethodName(), s3Repo, cache, dest);
         Collection<File> resolved = cr.resolve("vantiq.models", "coco", "1.1", "meta",
-                                                       testName.getMethodName());
+                                               testName.getMethodName());
         assertEquals("Resolved file count: " + resolved.size(), 1, resolved.size());
         File[] files = resolved.toArray(new File[0]);
         assertEquals("File name match", "coco-1.1.meta", files[0].getName());
@@ -364,7 +360,7 @@ public class VantiqComponentResolverTest extends CamelTestSupport {
             VantiqEndpoint ve = (VantiqEndpoint) ves.get(0);
             assert Objects.equals(ve.getHeaderDuplicationBeanName(), headerBeanName);
             // Component tests verify that the map makes it thru, assuming the bean was created correctly.  Since we
-            // aren't guaranteed to have enough context here to make the real connection, this is far as we can
+            // aren't guaranteed to have enough context here to make the real connection, this is as far as we can
             // effectively test.
         } catch (Exception e) {
             fail("Trapped exception during test: " + e.getMessage() +

@@ -52,11 +52,12 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.camel.CamelContext;
 import org.apache.camel.Component;
 import org.apache.camel.Endpoint;
-
 import org.apache.camel.ProducerTemplate;
 import org.apache.camel.spi.PropertiesComponent;
 import org.apache.camel.test.junit4.CamelTestSupport;
 import org.apache.commons.lang3.function.TriFunction;
+import org.apache.ivy.util.FileUtil;
+import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestName;
@@ -74,18 +75,26 @@ import java.util.concurrent.TimeUnit;
 public class VantiqConfigurationTest extends CamelTestSupport {
     @Rule
     public TestName name = new TestName();
+    public String testName = this.getClass().getSimpleName();
     
-    private final String BUILD_DIR = System.getProperty("BUILD_DIR", "build");
-    private final String CAMEL_CONN_BASE_DIR = "camelConnBase";
-    private final String CAMEL_BASE_PATH = BUILD_DIR + File.separator + CAMEL_CONN_BASE_DIR + File.separator;
-    private final String CACHE_DIR = CAMEL_BASE_PATH + "cacheDir";
-    private final String LOADED_LIBRARIES = CAMEL_BASE_PATH + "loadedLib";
+    private static final String BUILD_DIR = System.getProperty("BUILD_DIR", "build");
+    private static final String CAMEL_CONN_BASE_DIR = "camelConnBase";
+    private static final String CAMEL_BASE_PATH = BUILD_DIR + File.separator + CAMEL_CONN_BASE_DIR + File.separator;
+    private static final String CACHE_DIR = CAMEL_BASE_PATH + "cacheDir";
+    private static final String LOADED_LIBRARIES = CAMEL_BASE_PATH + "loadedLib";
+    public static final File cache = new File(CACHE_DIR);
     
     // Interface to use in declaration.  We'll pass lambda's in to do the actual verification work
     interface Verifier {
         void doVerify(CamelContext runnerContext);
     }
     
+    @BeforeClass
+    public static void setup() {
+        // Clean out cache to avoid spurious warnings about unknown resolvers.  These come about because our app name
+        // (after which we name our resolvers) vary test by test or test class by test class.
+        FileUtil.forceDelete(cache);    // Clear the cache
+    }
     void performConfigTest(String appName, String route, String routeFormat,
                            List<Map<String, Object>> compInitProps, Properties propertyValues, Verifier vfy) {
         performConfigTest(appName, route, routeFormat, compInitProps, propertyValues, vfy, null,
@@ -195,7 +204,7 @@ public class VantiqConfigurationTest extends CamelTestSupport {
         // non-String keys or values into the Properties base map.
         props.putAll(propValues);
     
-        performConfigTest(name.getMethodName(), ROUTE_NOT_USED, "yaml",
+        performConfigTest(testName, ROUTE_NOT_USED, "yaml",
                           null, props,
                           (CamelContext runnerContext) -> {
                               PropertiesComponent pc = runnerContext.getPropertiesComponent();
@@ -222,7 +231,7 @@ public class VantiqConfigurationTest extends CamelTestSupport {
         List<String> raws = List.of("prop1", "prop2", "prop3", "prop4");
         List<String> unchanged = List.of("prop2", "prop3", "prop5");
     
-        performConfigTest(name.getMethodName(), ROUTE_NOT_USED, "yaml",
+        performConfigTest(testName, ROUTE_NOT_USED, "yaml",
                           null, props,
                           (CamelContext runnerContext) -> {
                               PropertiesComponent pc = runnerContext.getPropertiesComponent();
@@ -250,7 +259,7 @@ public class VantiqConfigurationTest extends CamelTestSupport {
         props.putAll(propValues);
         List<String> raws = List.of("prop1", "prop3");
     
-        performConfigTest(name.getMethodName(), ROUTE_NOT_USED, "yaml",
+        performConfigTest(testName, ROUTE_NOT_USED, "yaml",
                           null, props,
                           (CamelContext runnerContext) -> {
                               PropertiesComponent pc = runnerContext.getPropertiesComponent();
@@ -279,7 +288,7 @@ public class VantiqConfigurationTest extends CamelTestSupport {
         props.putAll(propValues);
         List<String> raws = List.of("prop1", "prop3");
         
-        performConfigTest(name.getMethodName(), ROUTE_NOT_USED, "yaml",
+        performConfigTest(testName, ROUTE_NOT_USED, "yaml",
                           null, props,
                           (CamelContext runnerContext) -> {
                               PropertiesComponent pc = runnerContext.getPropertiesComponent();
@@ -308,7 +317,7 @@ public class VantiqConfigurationTest extends CamelTestSupport {
         props.putAll(propValues);
         List<String> raws = List.of("prop2");
     
-        performConfigTest(name.getMethodName(), ROUTE_NOT_USED, "yaml",
+        performConfigTest(testName, ROUTE_NOT_USED, "yaml",
                           null, props,
                           (CamelContext runnerContext) -> {
                               PropertiesComponent pc = runnerContext.getPropertiesComponent();
@@ -338,7 +347,7 @@ public class VantiqConfigurationTest extends CamelTestSupport {
         props.putAll(propValues);
         List<String> raws = List.of("prop1", "prop3");
     
-        performConfigTest(name.getMethodName(), ROUTE_NOT_USED, "yaml",
+        performConfigTest(testName, ROUTE_NOT_USED, "yaml",
                           null, props,
                           (CamelContext runnerContext) -> {
                               PropertiesComponent pc = runnerContext.getPropertiesComponent();
@@ -357,7 +366,7 @@ public class VantiqConfigurationTest extends CamelTestSupport {
     }
     @Test
     public void testSimpleConfiguration() {
-        performConfigTest(name.getMethodName(), XML_ROUTE, "xml",
+        performConfigTest(testName, XML_ROUTE, "xml",
                           null, null,
                           (CamelContext runnerContext) -> {
                               TriFunction<CamelContext, String, Object, Boolean> verifyOperation =
@@ -371,7 +380,7 @@ public class VantiqConfigurationTest extends CamelTestSupport {
     public void testComponentInitConfiguration() {
         assumeTrue(!sfLoginUrl.equals(MISSING_VALUE) && !sfClientId.equals(MISSING_VALUE) &&
                            !sfClientSecret.equals(MISSING_VALUE) && !sfRefreshToken.equals(MISSING_VALUE));
-        performConfigTest(name.getMethodName(), SALESFORCETASKS_YAML, "yaml",
+        performConfigTest(testName, SALESFORCETASKS_YAML, "yaml",
                           getComponentsToInit(), null,
                           (CamelContext runnerContext) -> {
                               TriFunction<CamelContext, String, Object, Boolean> verifyOperation =
@@ -390,7 +399,7 @@ public class VantiqConfigurationTest extends CamelTestSupport {
         // Though officially frowned upon, Properties.putAll here from a Map<String, String> is safe as it cannot put
         // non-String keys or values into the Properties base map.
         props.putAll(pValues);
-        performConfigTest(name.getMethodName(), PARAMETERIZED_SALESFORCE_ROUTE, "yaml",
+        performConfigTest(testName, PARAMETERIZED_SALESFORCE_ROUTE, "yaml",
                           getComponentsToInit(), props,
                           (CamelContext runnerContext) -> {
                               TriFunction<CamelContext, String, Object, Boolean> verifyOperation =
@@ -402,7 +411,7 @@ public class VantiqConfigurationTest extends CamelTestSupport {
     
     @Test
     public void testHdrDupConfiguration() {
-        String dupBeanName = name.getMethodName() + System.currentTimeMillis();
+        String dupBeanName = testName + System.currentTimeMillis();
         Map<String, String> hdrDups = Map.of("hdr1", "otherHdr1",
                                              "hdr2", "otherHdr2",
                                              "hdr3", "otherHdr3");
@@ -412,7 +421,7 @@ public class VantiqConfigurationTest extends CamelTestSupport {
         Map<String, Component> oRides = Map.of("vantiq", new FauxVantiqComponent());
         String vantiqEpUri = constructVantiqUri("notReal", dupBeanName);
         String vantiqRoute = constructVantiqRoute(vantiqEpUri);
-        performConfigTest(name.getMethodName(), vantiqRoute, "yaml",
+        performConfigTest(testName, vantiqRoute, "yaml",
                           null, null,
                           (CamelContext runnerContext) -> {
                               TriFunction<CamelContext, Map<String, Object>, Map<String, Object>, Boolean> verifyOperation =
@@ -445,7 +454,7 @@ public class VantiqConfigurationTest extends CamelTestSupport {
      * results are presented.
      *
      * In this case, our route uses the dynamically loaded component to make a call.
-     * @return TriFunction<CamelContext, String, Object, Boolean>
+     * @return TriFunction<CamelContext, Map<String, Object>, Map<String, Object>, Boolean>
      */
     public TriFunction<CamelContext, Map<String, Object>, Map<String, Object>, Boolean> defineVerifyHeaders(int msgCount, String startEp,
                                                                                     String endEp) {
@@ -455,9 +464,8 @@ public class VantiqConfigurationTest extends CamelTestSupport {
             String routeId = context.getRoutes().get(0).getId();
             ProducerTemplate template = null;
             try {
-                if (context.isStopped()) {
-                    log.error("At test start, context {} is stopped", context.getName());
-                }
+                assertFalse("At test start, context " + context.getName() + " is stopped", context.isStopped());
+    
                 template = context.createProducerTemplate();
     
                 Endpoint res = context.getEndpoint(endEp);
