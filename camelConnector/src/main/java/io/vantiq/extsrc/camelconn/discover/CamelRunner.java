@@ -8,8 +8,10 @@
 
 package io.vantiq.extsrc.camelconn.discover;
 
+import io.vantiq.extsrc.camel.HeaderDuplicationBean;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.camel.CamelContext;
+import org.apache.camel.Component;
 import org.apache.camel.ExtendedCamelContext;
 import org.apache.camel.ProducerTemplate;
 import org.apache.camel.RoutesBuilder;
@@ -55,6 +57,8 @@ public class CamelRunner extends MainSupport implements Closeable {
     private final List<Map<String, Object>> initComponents;
     
     private final Properties camelProperties;
+    String headerBeanName;
+    Map<String, String> headerDuplications;
     private final File ivyCache;
     private final File loadedLibraries;
     
@@ -63,6 +67,8 @@ public class CamelRunner extends MainSupport implements Closeable {
     private final String routeSpec;
     private final String routeSpecType;
     private ClassLoader routeBasedCL;
+    
+    private Map<String, Component> componentOverrides = null; // Used in testing only
     private ClassLoader originalClassLoader;
     
     protected final MainRegistry registry;
@@ -87,10 +93,13 @@ public class CamelRunner extends MainSupport implements Closeable {
      *         the properties included herein
      * @param camelProperties Properties set of general property values that Camel can use for property
      *         resolution
+     * @param headerBeanName String Name of bean to use generate.  Should match what's in route & be unique to this
+     *         camel instance
+     * @param headerDuplications Map<String, String> directed set of header names to duplicate
      */
     public CamelRunner(String appName, String routeSpecification, String routeSpecificationType, List<URI> repos,
                        String cacheDirectory, String loadedLibDir, List<Map<String, Object>> initComponents,
-                       Properties camelProperties) {
+                       Properties camelProperties, String headerBeanName, Map<String, String> headerDuplications) {
         super();
         this.registry = new MainRegistry();
         this.appName = appName;
@@ -104,6 +113,8 @@ public class CamelRunner extends MainSupport implements Closeable {
         this.additionalLibraries = null;
         this.initComponents = initComponents;
         this.camelProperties = camelProperties;
+        this.headerDuplications = headerDuplications != null ? headerDuplications : new HashMap<>();
+        this.headerBeanName = headerBeanName;
         mainConfigurationProperties.setRoutesCollectorEnabled(false);
     }
     
@@ -118,10 +129,13 @@ public class CamelRunner extends MainSupport implements Closeable {
      * @param initComponents List<Map<String, Object>> List of component names that need
      *                          initialization using the properties included herein
      * @param camelProperties Properties set of general property values that Camel can use for property resolution
+     * @param headerBeanName String Name of bean to use generate.  Should match what's in route & be unique to this
+     *                          camel instance
+     * @param headerDuplications Map<String, String> directed set of header names to duplicate
      */
     CamelRunner(String appName, RouteBuilder routeBuilder, List<URI> repos,
                 String cacheDirectory, String loadedLibDir, List<Map<String, Object>> initComponents,
-                Properties camelProperties) {
+                Properties camelProperties, String headerBeanName, Map<String, String> headerDuplications) {
         super();
         this.registry = new MainRegistry();
         this.appName = appName;
@@ -134,11 +148,16 @@ public class CamelRunner extends MainSupport implements Closeable {
         this.additionalLibraries = null;
         this.initComponents = initComponents;
         this.camelProperties = camelProperties;
+        this.headerDuplications = headerDuplications != null ? headerDuplications : new HashMap<>();
+        this.headerBeanName = headerBeanName;
     
         mainConfigurationProperties.setRoutesBuilders(List.of(routeBuilder));
         mainConfigurationProperties.setRoutesCollectorEnabled(false);
     }
     
+    protected void setComponentOverrides(Map<String, Component> compOverrides) {
+        this.componentOverrides = compOverrides;
+    }
     public void setAdditionalLibraries(List<String> libs) {
         this.additionalLibraries = libs;
     }
@@ -146,7 +165,15 @@ public class CamelRunner extends MainSupport implements Closeable {
     @Override
     protected void doInit() throws Exception {
         super.doInit();
-        createCamelContext();
+        CamelContext ctx = createCamelContext();
+        if (componentOverrides != null && !componentOverrides.isEmpty()) {
+            componentOverrides.forEach(ctx::addComponent);
+        }
+        if (headerBeanName != null) {
+            HeaderDuplicationBean hdBean = new HeaderDuplicationBean();
+            hdBean.setHeaderDuplicationMap(headerDuplications);
+            ctx.getRegistry().bind(headerBeanName, hdBean);
+        }
     }
     
     public Properties getCamelProperties() {
@@ -205,7 +232,7 @@ public class CamelRunner extends MainSupport implements Closeable {
             urlList.add(url);
         }
         if (log.isTraceEnabled()) {
-            // This list is long, so if we're ignore it, no reason to prepare to Stringify it.
+            // This list is long, so if we're ignoring it, no reason to prepare to Stringify it.
             log.trace("URLList: {}", urlList);
         }
         // Now, we'll set up a classLoader based on that list of jar files and use that to run our routes.
@@ -310,7 +337,6 @@ public class CamelRunner extends MainSupport implements Closeable {
      * Run the routes specified in this CamelRunner
      *
      * @param waitForThread boolean indicating whether to await the completion of the thread started by this method
-     * @throws Exception if camel thread throws an exception.
      */
     public void runRoutes(boolean waitForThread) {
         try {
@@ -531,7 +557,7 @@ public class CamelRunner extends MainSupport implements Closeable {
     protected RouteBuilder loadRouteFromText(String specification, String specificationType) throws Exception {
         log.debug("Loading route from {} specificationType", specificationType);
         if (log.isTraceEnabled()) {
-            // Dump route spec out here only under trace.  Camel may have substituted key values and we don't want
+            // Dump route spec out here only under trace.  Camel may have substituted key values, and we don't want
             // these in the log files
             log.trace("Loading route (specificationType {}):\n{}", specificationType, specification);
         }
