@@ -86,7 +86,11 @@ by adding the `consumerOutputJson` component endpoint option (see below) with a 
 When so specified, messages sent to a Vantiq consumer will arrive in a Camel Exchange as a JSON string.
 
 Messages sent to Vantiq from the component will
-arrive as Vail objects, where the property names correspond to the Map keys.
+arrive as Vail objects, where the property names correspond to the Map keys. For cases where the message to be sent
+to Vantiq is not structured as a Vail Object (or Java Map), the component will use the property name `stringVal` for
+data that can be naturally encoded as a string, and `byteVal` for binary data. In the case of
+binary data, the actual data will be a Base64 encoded string.
+The underlying communication is JSON, so binary data must be Base64 encoded.
 
 ### Structured Headers and Messages
 
