@@ -29,6 +29,8 @@ import io.vantiq.extjsdk.TestListener;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Base64;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -206,6 +208,11 @@ public class VantiqComponentTest extends CamelTestSupport {
         //noinspection rawtypes
         lastMsg = fc.getLastMessageAsMap();
         validateExtensionMsg(lastMsg, false, null, new String[] {"time"}, rightNow.toString());
+    
+        testBytes = new byte[] { (byte) 0xf8, (byte) 0xfa, (byte) 0xfb, (byte) 0xff };
+        sendBody(routeStartUri, testBytes);
+        lastMsg = fc.getLastMessageAsMap();
+        validateExtensionMsg(lastMsg, false, null, new String[] { "byteVal"}, testBytes);
     }
     
     @Test
@@ -365,7 +372,7 @@ public class VantiqComponentTest extends CamelTestSupport {
     
     
     void validateExtensionMsg(Map<?,?> lastMsg, Boolean isStructured, Map<String, Object> expHdrs,
-                              String[] msgKeys, String msgPreamble) {
+                              String[] msgKeys, Object msgPreamble) {
         assert lastMsg.containsKey("op");
         assert "notification".equals(lastMsg.get("op"));
         assert lastMsg.containsKey("sourceName");
@@ -403,7 +410,30 @@ public class VantiqComponentTest extends CamelTestSupport {
         }
         for (String key: msgKeys) {
             assert msg.containsKey(key);
-            assert msgPreamble == null || ((String) msg.get(key)).contains(msgPreamble);
+            if (msgPreamble != null) {
+                if (msgPreamble instanceof String) {
+                    assert ((String) msg.get(key)).contains((String) msgPreamble);
+                } else if (msgPreamble instanceof byte[]) {
+                    Object o = msg.get(key);
+                    assert o != null;
+                    log.debug("{} value is a {}", key, o.getClass().getName());
+                    // Message goes as JSON, so any byte array is Base64 encoded.  Also, it may be quoted (as per
+                    // JSON), so we may have to deal with that.
+                    if (o instanceof String) {
+                        log.debug("{} value is {}", key, o);
+                        String s = (String) o;
+                        if (((String) o).startsWith("\"")) {
+                            s = ((String) o).substring(1, ((String) o).length() - 1);
+                        }
+                        o = Base64.getDecoder().decode(s);
+                        log.debug("{} decoded value is {}", key, s);
+                    }
+                    assert o instanceof byte[];
+                    assert Arrays.equals((byte[]) o, (byte[]) msgPreamble);
+                } else {
+                    fail("msgPreamble was of unexpected type: " + msgPreamble.getClass().getName());
+                }
+            }
         }
     }
     
