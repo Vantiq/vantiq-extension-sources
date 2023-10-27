@@ -13,20 +13,27 @@ import static io.vantiq.extsrc.camel.VantiqEndpoint.STRUCTURED_MESSAGE_MESSAGE_P
 import static org.apache.camel.ExchangePattern.InOnly;
 import static org.apache.camel.ExchangePattern.InOut;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.vantiq.extjsdk.ExtensionServiceMessage;
 import io.vantiq.extjsdk.ExtensionWebSocketClient;
 import io.vantiq.extjsdk.Handler;
 
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.ExecutorService;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.camel.Exchange;
 import org.apache.camel.ExchangePattern;
 import org.apache.camel.Processor;
+import org.apache.camel.converter.stream.InputStreamCache;
+import org.apache.camel.spi.Tracer;
 import org.apache.camel.support.DefaultConsumer;
+import org.apache.camel.support.builder.OutputStreamBuilder;
 
 @Slf4j
 public class VantiqConsumer extends DefaultConsumer {
@@ -92,12 +99,12 @@ public class VantiqConsumer extends DefaultConsumer {
             log.error("Message processor for {} ignoring an unknown message type: {}.",
                     endpoint.getEndpointName(), msg.getClass().getName());
         } else {
+            boolean convertToStream = false;
             ExtensionServiceMessage message = (ExtensionServiceMessage) msg;
             Object msgBody = message.getObject();
             Map<String, Object> camelHdrs = null;
             Object camelBody = null;
             if (endpoint.isStructuredMessageHeader() && msgBody instanceof Map) {
-                camelHdrs = null;
                 Map<?,?> msgAsMap = (Map<?,?>) msgBody;
                 if (msgAsMap.get(STRUCTURED_MESSAGE_HEADERS_PROPERTY) instanceof Map) {
                     Map<?,?> hdrMap = (Map<?,?>) msgAsMap.get(VantiqEndpoint.STRUCTURED_MESSAGE_HEADERS_PROPERTY);
@@ -119,12 +126,19 @@ public class VantiqConsumer extends DefaultConsumer {
             Object output = msgBody;
             if (endpoint.isConsumerOutputJson()) {
                 // Convert to JSON output
-                JsonNode jnode =  mapper.convertValue(msgBody, JsonNode.class);
-                output = jnode;
+                // Things coming from Vantiq will be Strings or a Vail objects/Maps.  This should be
+                // sufficient for those conversions.
+                JsonNode jnode  = mapper.valueToTree(msgBody);
+
+                output = Objects.requireNonNullElse(jnode, "");
                 if (log.isDebugEnabled()) {
-                    Object resValueDbg = jnode.isTextual() ? jnode.asText() : jnode;
+                    Object resValueDbg = jnode != null ? (jnode.isTextual() ? jnode.asText() : jnode) : null;
                     log.debug("ConsumerOutputJson: msgBody out: {}", resValueDbg);
                 }
+                // FIXME -- we need to see if we need to have this as a separate setup property.
+                //  It's a semantic change, but it's not clear that anyone's using it (or that it really works as
+                //  intended), so converting things to a output stream may very well be better anyway.
+                convertToStream = true;
             }
     
             // Create an exchange to move our message along.  In the publish case,
@@ -132,7 +146,18 @@ public class VantiqConsumer extends DefaultConsumer {
             // camel operations are complete.  If/when we support queries, we will care about the
             // result, so we'll deal with those separately.
             final Exchange exchange = createExchange(false);
+            log.debug("Process(): using camel context {}", exchange.getContext().getName());
             exchange.setPattern(pattern);
+            if (convertToStream) {
+                OutputStreamBuilder osb = OutputStreamBuilder.withExchange(createExchange(false));
+                try {
+                    osb.write(output.toString().getBytes(StandardCharsets.UTF_8));
+                    output = osb.build();
+                } catch (IOException e) {
+                    log.error("process() unable to write JSON output stream", e);
+                    throw new RuntimeException(e);
+                }
+            }
             exchange.getIn().setBody(output);
             if (camelHdrs != null) {
                 exchange.getIn().setHeaders(camelHdrs);

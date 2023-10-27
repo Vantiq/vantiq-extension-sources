@@ -12,6 +12,7 @@ import static io.vantiq.extsrc.camel.VantiqEndpoint.STRUCTURED_MESSAGE_HEADERS_P
 import static io.vantiq.extsrc.camel.VantiqEndpoint.STRUCTURED_MESSAGE_MESSAGE_PROPERTY;
 
 import com.fasterxml.jackson.core.JsonParseException;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.DatabindException;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -27,6 +28,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.camel.Exchange;
 import org.apache.camel.ExchangePattern;
 import org.apache.camel.StreamCache;
+import org.apache.camel.converter.stream.ByteArrayInputStreamCache;
 import org.apache.camel.converter.stream.InputStreamCache;
 import org.apache.camel.InvalidPayloadException;
 import org.apache.camel.support.DefaultProducer;
@@ -151,6 +153,26 @@ public class VantiqProducer extends DefaultProducer {
                 }
                 
                 vMsg = mapper.readValue(isc.readAllBytes(), new TypeReference<>() {});
+            } else if (msg instanceof ByteArrayInputStreamCache) {
+                // Here, we have an input stream cache to attempt to process
+                ByteArrayInputStreamCache basc = (ByteArrayInputStreamCache) msg;
+                basc.reset();
+                String str = new String(basc.readAllBytes());
+                if (str.charAt(0) == '"') {
+                    // Then strip leading & trailing quotes
+                    str = str.substring(1, str.length() - 1);
+                }
+                if (log.isTraceEnabled()) {
+                    log.trace("JSON String as input is: {}", str);
+                }
+    
+                try {
+                    vMsg = mapper.readValue(str, new TypeReference<>() {});
+                } catch (JsonProcessingException jpe) {
+                    log.trace("Trapped normal/ignored JsonProcessingException handling string:  {}", str, jpe);
+                    // Then this string wasn't a json msg.  We'll just turn it into a stringVal map
+                    vMsg = Map.of("stringVal", str);
+                }
             } else {
                 log.error("Unexpected type: {}.  Unable to convert to Map to send to Vantiq.",
                           msg.getClass().getName());
@@ -223,6 +245,7 @@ public class VantiqProducer extends DefaultProducer {
                 endpoint.sendResponse(HttpURLConnection.HTTP_OK, responseAddr, vMsg);
             }
         } else {
+            log.debug("Producing message: {}", vMsg);
             endpoint.sendMessage(vMsg);
         }
     }
