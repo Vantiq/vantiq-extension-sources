@@ -10,6 +10,7 @@ package io.vantiq.extsrc.camel;
 
 import static io.vantiq.extsrc.camel.VantiqEndpoint.ACCESS_TOKEN_PARAM;
 import static io.vantiq.extsrc.camel.VantiqEndpoint.CONSUMER_OUTPUT_JSON_PARAM;
+import static io.vantiq.extsrc.camel.VantiqEndpoint.CONSUMER_OUTPUT_JSON_STREAM_PARAM;
 import static io.vantiq.extsrc.camel.VantiqEndpoint.HEADER_DUPLICATION_BEAN_NAME;
 import static io.vantiq.extsrc.camel.VantiqEndpoint.SOURCE_NAME_PARAM;
 import static io.vantiq.extsrc.camel.VantiqEndpoint.STRUCTURED_MESSAGE_HEADER_PARAM;
@@ -101,10 +102,21 @@ public class VantiqComponentTest extends CamelTestSupport {
             "&" + ACCESS_TOKEN_PARAM + "=" + accessToken +
             "&" + CONSUMER_OUTPUT_JSON_PARAM + "=true";
     
+    private final String vantiqJsonSenderStreamUri = "vantiq://jsonsenderstreamdoesntmatter/" +
+            "?" + SOURCE_NAME_PARAM + "=" + testSourceName +
+            "&" + ACCESS_TOKEN_PARAM + "=" + accessToken +
+            "&" + CONSUMER_OUTPUT_JSON_STREAM_PARAM + "=true";
+    
     public final String vantiqStructuredJsonSenderUri = "vantiq://structuredsenderdoesntmatter/" +
             "?" + SOURCE_NAME_PARAM + "=" + testSourceName +
             "&" + ACCESS_TOKEN_PARAM + "=" + accessToken +
             "&" + CONSUMER_OUTPUT_JSON_PARAM + "=true" +
+            "&" + STRUCTURED_MESSAGE_HEADER_PARAM + "=true";
+    
+    public final String vantiqStructuredJsonSenderStreamUri = "vantiq://structuredsenderstreamdoesntmatter/" +
+            "?" + SOURCE_NAME_PARAM + "=" + testSourceName +
+            "&" + ACCESS_TOKEN_PARAM + "=" + accessToken +
+            "&" + CONSUMER_OUTPUT_JSON_STREAM_PARAM + "=true" +
             "&" + STRUCTURED_MESSAGE_HEADER_PARAM + "=true";
     
     public final String vantiqStructuredJsonSenderMappedUri = "vantiq://structuredsenderdoesntmatter/" +
@@ -114,10 +126,22 @@ public class VantiqComponentTest extends CamelTestSupport {
             "&" + STRUCTURED_MESSAGE_HEADER_PARAM + "=true" +
             "&" + HEADER_DUPLICATION_BEAN_NAME + "=" + TEST_HEADER_BEAN_NAME;
     
+    public final String vantiqStructuredJsonSenderMappedStreamUri = "vantiq://structuredsenderstreamdoesntmatter/" +
+            "?" + SOURCE_NAME_PARAM + "=" + testSourceName +
+            "&" + ACCESS_TOKEN_PARAM + "=" + accessToken +
+            "&" + CONSUMER_OUTPUT_JSON_STREAM_PARAM + "=true" +
+            "&" + STRUCTURED_MESSAGE_HEADER_PARAM + "=true" +
+            "&" + HEADER_DUPLICATION_BEAN_NAME + "=" + TEST_HEADER_BEAN_NAME;
+    
     private final String vantiqJsonQuerierUri = "vantiq://jsonquerierdoesntmatter/" +
             "?" + SOURCE_NAME_PARAM + "=" + testSourceName +
             "&" + ACCESS_TOKEN_PARAM + "=" + accessToken +
             "&" + CONSUMER_OUTPUT_JSON_PARAM + "=true";
+    
+    private final String vantiqJsonQuerierStreamUri = "vantiq://jsonquerierstreamdoesntmatter/" +
+            "?" + SOURCE_NAME_PARAM + "=" + testSourceName +
+            "&" + ACCESS_TOKEN_PARAM + "=" + accessToken +
+            "&" + CONSUMER_OUTPUT_JSON_STREAM_PARAM + "=true";
     
     @Test
     public void testVantiqSetup() {
@@ -526,12 +550,21 @@ public class VantiqComponentTest extends CamelTestSupport {
     
     @Test
     public void testVantiqConsumerOutputJson() throws Exception {
+        performConsumerOutputJsonTest(vantiqJsonSenderUri,false);
+    }
+    
+    @Test
+    public void testVantiqConsumerOutputJsonStreamed() throws Exception {
+        performConsumerOutputJsonTest(vantiqJsonSenderStreamUri,true);
+    }
+    
+    void performConsumerOutputJsonTest(String consumerEndpoint, boolean streamRequired) throws Exception {
         
         // First, grab our test environment.
         FauxVantiqComponent vc = (FauxVantiqComponent) context.getComponent("vantiq");
         assert vc != null;
         // Note that we need to fetch the endpoints by URI since there are more than one of them.
-        FauxVantiqEndpoint endp = (FauxVantiqEndpoint) context.getEndpoint(vantiqJsonSenderUri);
+        FauxVantiqEndpoint endp = (FauxVantiqEndpoint) context.getEndpoint(consumerEndpoint);
         
         assert endp.myClient.getListener() instanceof TestListener;
         TestListener tl = (TestListener) endp.myClient.getListener();
@@ -575,7 +608,7 @@ public class VantiqComponentTest extends CamelTestSupport {
         AtomicInteger msgsReceived = new AtomicInteger();
         exchanges.forEach(exchange -> {
             Object exchangeBody = exchange.getIn().getBody();
-            Object msg = deserializeJsonBody(exchangeBody, mapper);
+            Object msg = deserializeJsonBody(exchangeBody, mapper, streamRequired);
 
             msgsReceived.addAndGet(1);
              assertNotNull("Deserialized msg is null", msg);
@@ -596,12 +629,21 @@ public class VantiqComponentTest extends CamelTestSupport {
     
     @Test
     public void testVantiqConsumerOutputJsonStructured() throws Exception {
+        performConsumerOutputJsonStructuredTest(vantiqStructuredJsonSenderUri, false);
+    }
+    
+    @Test
+    public void testVantiqConsumerOutputJsonStructuredStreamed() throws Exception {
+        performConsumerOutputJsonStructuredTest(vantiqStructuredJsonSenderStreamUri, true);
+    }
+    
+    void performConsumerOutputJsonStructuredTest(String consumerEndpoint, boolean streamRequired) throws Exception {
         
         // First, grab our test environment.
         FauxVantiqComponent vc = (FauxVantiqComponent) context.getComponent("vantiq");
         assert vc != null;
         // Note that we need to fetch the endpoints by URI since there are more than one of them.
-        FauxVantiqEndpoint endp = (FauxVantiqEndpoint) context.getEndpoint(vantiqStructuredJsonSenderUri);
+        FauxVantiqEndpoint endp = (FauxVantiqEndpoint) context.getEndpoint(consumerEndpoint);
         
         assert endp.myClient.getListener() instanceof TestListener;
         TestListener tl = (TestListener) endp.myClient.getListener();
@@ -659,7 +701,7 @@ public class VantiqComponentTest extends CamelTestSupport {
         exchanges.forEach(exchange -> {
             Object exchangeBody = exchange.getIn().getBody();
             Map<String, Object> exchangeHdrs = exchange.getIn().getHeaders();
-            Object msg = deserializeJsonBody(exchangeBody, mapper);
+            Object msg = deserializeJsonBody(exchangeBody, mapper, streamRequired);
             msgsReceived.addAndGet(1);
             
             if (msg instanceof Map) {
@@ -692,12 +734,20 @@ public class VantiqComponentTest extends CamelTestSupport {
     
     @Test
     public void testVantiqConsumerHeaderMapping() throws Exception {
+        performConsumerOutputJsonStructuredHeaderTest(vantiqStructuredJsonSenderMappedUri,false);
+    }
+    
+    @Test
+    public void testVantiqConsumerHeaderMappingStreamed() throws Exception {
+        performConsumerOutputJsonStructuredHeaderTest(vantiqStructuredJsonSenderMappedStreamUri,true);
+    }
+    void performConsumerOutputJsonStructuredHeaderTest(String consumerEndpoint, boolean streamRequired) throws Exception {
         
         // First, grab our test environment.
         FauxVantiqComponent vc = (FauxVantiqComponent) context.getComponent("vantiq");
         assert vc != null;
         // Note that we need to fetch the endpoints by URI since there are more than one of them.
-        FauxVantiqEndpoint endp = (FauxVantiqEndpoint) context.getEndpoint(vantiqStructuredJsonSenderMappedUri);
+        FauxVantiqEndpoint endp = (FauxVantiqEndpoint) context.getEndpoint(consumerEndpoint);
         
         assert endp.myClient.getListener() instanceof TestListener;
         TestListener tl = (TestListener) endp.myClient.getListener();
@@ -756,7 +806,7 @@ public class VantiqComponentTest extends CamelTestSupport {
         AtomicInteger msgsReceived = new AtomicInteger();
         exchanges.forEach(exchange -> {
             Object exchangeBody = exchange.getIn().getBody();
-            Object msg = deserializeJsonBody(exchangeBody, mapper);
+            Object msg = deserializeJsonBody(exchangeBody, mapper, streamRequired);
             Map<String, Object> exchangeHdrs = exchange.getIn().getHeaders();
             msgsReceived.addAndGet(1);
             assertNotNull("Deserialized msg is null", msg);
@@ -879,12 +929,20 @@ public class VantiqComponentTest extends CamelTestSupport {
     
     @Test
     public void testVantiqConsumerOutputJsonQuery() throws Exception {
+        performConsumerOutputJsonQueryTest(vantiqJsonQuerierUri,false);
+    }
+    
+    @Test
+    public void testVantiqConsumerOutputJsonQueryStreamed() throws Exception {
+        performConsumerOutputJsonQueryTest(vantiqJsonQuerierStreamUri,true);
+    }
+    void performConsumerOutputJsonQueryTest(String consumerEndpoint, boolean streamRequired) throws Exception {
         
         // First, grab our test environment.
         FauxVantiqComponent vc = (FauxVantiqComponent) context.getComponent("vantiq");
         assert vc != null;
         // Note that we need to fetch the endpoints by URI since there are more than one of them.
-        FauxVantiqEndpoint endp = (FauxVantiqEndpoint) context.getEndpoint(vantiqJsonQuerierUri);
+        FauxVantiqEndpoint endp = (FauxVantiqEndpoint) context.getEndpoint(consumerEndpoint);
     
         assertNotNull("Endpoint's client is null", endp.myClient.getListener());
         assertTrue("Endpoint's client is not a TestListener: " +
@@ -928,7 +986,7 @@ public class VantiqComponentTest extends CamelTestSupport {
         Set<String> uniqueMsgs = new HashSet<>();
         exchanges.forEach(exchange -> {
             Object exchBody = exchange.getIn().getBody();
-            Object mo = deserializeJsonBody(exchBody, mapper);
+            Object mo = deserializeJsonBody(exchBody, mapper, streamRequired);
             assert mo instanceof Map;
             Map<?,?> msg = (Map<?, ?>) mo;
             assertNotNull("Deserialized JSON message is null", msg);
@@ -959,12 +1017,13 @@ public class VantiqComponentTest extends CamelTestSupport {
         assert responseAddresses.contains(ra);
     }
     
-    protected Object deserializeJsonBody(Object exchangeBody, ObjectMapper mapper) {
+    protected Object deserializeJsonBody(Object exchangeBody, ObjectMapper mapper, boolean streamExpected) {
         assertNotNull("Null exchange body",  exchangeBody);
         // Verify that we got JSON -- which will manifest here as a String, but we'll verify that we can convert it.
         assertTrue("Vantiq Consumer Output wrong type: " + exchangeBody.getClass().getName(),
                    exchangeBody instanceof BaseJsonNode || exchangeBody instanceof StreamCache);
         if (exchangeBody instanceof StreamCache) {
+            assert streamExpected;
             ((StreamCache) exchangeBody).reset();
             byte[] ba = null;
             if (exchangeBody instanceof InputStreamCache) {
@@ -985,6 +1044,8 @@ public class VantiqComponentTest extends CamelTestSupport {
             } catch (IllegalArgumentException nope) {
                 // Guess it's not encoded
             }
+        } else {
+            assert !streamExpected;
         }
         Object msg = null;
         if (exchangeBody instanceof byte[]) {
@@ -1062,13 +1123,24 @@ public class VantiqComponentTest extends CamelTestSupport {
 
                 from(vantiqJsonSenderUri)
                         .to(routeEndUri);
-
+    
+                from(vantiqJsonSenderStreamUri)
+                        .to(routeEndUri);
+    
+    
                 from(vantiqStructuredJsonSenderUri)
+                        .to(routeEndUri);
+    
+                from(vantiqStructuredJsonSenderStreamUri)
                         .to(routeEndUri);
     
                 from(vantiqStructuredJsonSenderMappedUri)
                         .to(routeEndUri);
-                
+    
+                from(vantiqStructuredJsonSenderMappedStreamUri)
+                        .to(routeEndUri);
+    
+    
                 from(routeStartStructuredHeaderMapUri)
                         .to(vantiqEndpointStructuredHeaderMapUri);
                 
@@ -1079,6 +1151,12 @@ public class VantiqComponentTest extends CamelTestSupport {
                         .to(vantiqQuerySenderUri);
 
                 from(vantiqJsonQuerierUri)
+                        .setExchangePattern(ExchangePattern.InOut)
+                        .to(routeEndUri)
+                        .setBody(constant("{ \"Response\": \"Message\"}"))
+                        .to(vantiqJsonQuerierUri);
+    
+                from(vantiqJsonQuerierStreamUri)
                         .setExchangePattern(ExchangePattern.InOut)
                         .to(routeEndUri)
                         .setBody(constant("{ \"Response\": \"Message\"}"))

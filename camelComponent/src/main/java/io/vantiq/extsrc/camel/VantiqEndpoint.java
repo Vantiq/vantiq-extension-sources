@@ -81,10 +81,18 @@ public class VantiqEndpoint extends DefaultEndpoint {
     private boolean noSsl;
     
     public static final String CONSUMER_OUTPUT_JSON_PARAM = "consumerOutputJson";
-    @UriParam(defaultValue = "false")
+    @Deprecated
+    @UriParam(defaultValue = "false") @Metadata(deprecationNote = "Use (replaced by) consumerOutputJsonStream which " +
+            "emulates a marshal step more closely.")
     @Getter
     @Setter
     private boolean consumerOutputJson;
+    
+    public static final String CONSUMER_OUTPUT_JSON_STREAM_PARAM = "consumerOutputJsonStream";
+    @UriParam(defaultValue = "false")
+    @Getter
+    @Setter
+    private boolean consumerOutputJsonStream;
     
     public static final String FAILED_MESSAGE_QUEUE_SIZE_PARAM = "failedMessageQueueSize";
     @UriParam(defaultValue = "25")

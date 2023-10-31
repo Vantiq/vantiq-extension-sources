@@ -13,7 +13,6 @@ import static io.vantiq.extsrc.camel.VantiqEndpoint.STRUCTURED_MESSAGE_MESSAGE_P
 import static org.apache.camel.ExchangePattern.InOnly;
 import static org.apache.camel.ExchangePattern.InOut;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.vantiq.extjsdk.ExtensionServiceMessage;
@@ -30,8 +29,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.camel.Exchange;
 import org.apache.camel.ExchangePattern;
 import org.apache.camel.Processor;
-import org.apache.camel.converter.stream.InputStreamCache;
-import org.apache.camel.spi.Tracer;
 import org.apache.camel.support.DefaultConsumer;
 import org.apache.camel.support.builder.OutputStreamBuilder;
 
@@ -124,7 +121,7 @@ public class VantiqConsumer extends DefaultConsumer {
                 log.debug("Structured message -- hdrs: {}, message: {}", camelHdrs, camelBody);
             }
             Object output = msgBody;
-            if (endpoint.isConsumerOutputJson()) {
+            if (endpoint.isConsumerOutputJson() || endpoint.isConsumerOutputJsonStream()) {
                 // Convert to JSON output
                 // Things coming from Vantiq will be Strings or a Vail objects/Maps.  This should be
                 // sufficient for those conversions.
@@ -135,10 +132,7 @@ public class VantiqConsumer extends DefaultConsumer {
                     Object resValueDbg = jnode != null ? (jnode.isTextual() ? jnode.asText() : jnode) : null;
                     log.debug("ConsumerOutputJson: msgBody out: {}", resValueDbg);
                 }
-                // FIXME -- we need to see if we need to have this as a separate setup property.
-                //  It's a semantic change, but it's not clear that anyone's using it (or that it really works as
-                //  intended), so converting things to a output stream may very well be better anyway.
-                convertToStream = true;
+                convertToStream =  endpoint.isConsumerOutputJsonStream();
             }
     
             // Create an exchange to move our message along.  In the publish case,
