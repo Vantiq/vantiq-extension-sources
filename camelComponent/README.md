@@ -1,7 +1,8 @@
 # Overview
 
-This document outlines how to incorporate a Vantiq Camel Component Source into your project. The Camel Component source allows a user to construct Apache Camel applications that interoperate with the Vantiq system. The Camel Component uses the Apache Camel
-mechanism to specify the Vantiq connection details.
+This document outlines how to incorporate a Vantiq Camel Component Source into your project. The Camel Component 
+source allows a user to construct Apache Camel applications that interoperate with the Vantiq system. The Camel
+Component uses the Apache Camel mechanism to specify the Vantiq connection details.
 
 The documentation has been split into two parts, [Setting Up Your Machine](#machine)
 and [Setting Up Your Vantiq](#vantiq).
@@ -45,13 +46,16 @@ The Vantiq Camel Connector simplifies the configuration and construction of an A
 See the [Vantiq Camel Connector documentation](../camelConnector/README.md) for information.
 
 ## Logging
-To change the logging settings, edit the logging config file `<install location>/camelComponent/src/main/resources/log4j2.xml`,
-which is an [Apache Log4j configuration file.](https://logging.apache.org/log4j/2.x/manual/configuration.html). The logger 
-name for each class is the class's fully qualified class name, *e.g.* "io.vantiq.extjsdk.ExtensionWebSocketClient".  
+To change the logging settings, edit the logging config file 
+`<install location>/camelComponent/src/main/resources/log4j2.xml`,
+which is an [Apache Log4j configuration file.](https://logging.apache.org/log4j/2.x/manual/configuration.html). The 
+logger name for each class is the class's fully qualified class name, *e.g.* "io.vantiq.extjsdk.
+ExtensionWebSocketClient".  
 
 # Setting Up Vantiq <a name="vantiq" id="vantiq"></a>
 
-An understanding of the Vantiq Extension Source SDK is assumed. Please read the [Extension Source README.md](../README.md) for more information.
+An understanding of the Vantiq Extension Source SDK is assumed. Please read the 
+[Extension Source README.md](../README.md) for more information.
 
 In order to incorporate this Extension Source, you will need to create the Source Implementation in the Vantiq system.
 
@@ -82,7 +86,7 @@ your Source Implementation) as the Source Type. No configuration information is 
 
 Messages that are sent to the component will arrive in a Camel Exchange as a Java Map, where the keys in the map
 correspond to the property names in the object sent from Vantiq. If desired, you change this behavior
-by adding the `consumerOutputJson` component endpoint option (see below) with a value of `true`.
+by adding the `consumerOutputJsonStream` component endpoint option (see below) with a value of `true`.
 When so specified, messages sent to a Vantiq consumer will arrive in a Camel Exchange as a JSON string.
 
 Messages sent to Vantiq from the component will
@@ -94,9 +98,15 @@ The underlying communication is JSON, so binary data must be Base64 encoded.
 
 ### Structured Headers and Messages
 
-By adding the `structuredMessageHeader` component endpoint option with a value of `true` (see below), you can set or access the Camel message headers.  When this option is set to `true`, messages sent to or received from the Camel Component will have two properties: `headers` and `message`, both containing Vail objects. The `message` property will contain a Vail object where each property corresponds to same-named property in the underlying message.  The `headers` property will contain a Vail object where each property contains the value of the named message header. If no headers are present in the underlying Camel message, no `headers` property will be present.
+By adding the `structuredMessageHeader` component endpoint option with a value of `true` (see below), you can set or 
+access the Camel message headers.  When this option is set to `true`, messages sent to or received from the
+Camel Component will have two properties: `headers` and `message`, both containing Vail objects. The `message`
+property will contain a Vail object where each property corresponds to same-named property in the underlying message.
+The `headers` property will contain a Vail object where each property contains the value of the named message header.
+If no headers are present in the underlying Camel message, no `headers` property will be present.
 
-A schema type definition for this message structure is available in `src/main/resources/types/com/vantiq/extsrc/camelcomp/message.json`.
+A schema type definition for this message structure is available in
+`src/main/resources/types/com/vantiq/extsrc/camelcomp/message.json`.
 
 #### Header Duplication
 
@@ -158,7 +168,8 @@ in Json format will be accepted as well.
 The URI for the Vantiq connection takes the following form:
 
 ```
-    vantiq://host[:port]?sourceName=<source name>&accessToken=<access token>[&sendPings=<boolean>][&failedMessageQueueSize=<int>][&consumerOutputJson=<boolean>][&structuredMessageHeader=<boolean>]
+    vantiq://host[:port]?sourceName=<source name>&accessToken=<access token>[&sendPings=<boolean>] \
+    [&failedMessageQueueSize=<int>][&consumerOutputJsonStream=<boolean>][&structuredMessageHeader=<boolean>]
 ```
 
 ### Component Endpoint Options
@@ -170,9 +181,17 @@ The endpoint options apply to producer and consumer endpoints.  The following ar
 * **sourceName** is the name of the Camel component source to which to connect
 * **accessToken** is the access token used for the connection
 * **sendPings** [optional] a boolean value indicating whether to periodically ping the Vantiq server (default is false)
-* **failedMessageQueueSize** [optional] an integer value indicating how many messages to hold for sending when the connection to the Vantiq server fails.
-* **consumerOutputJson** [optional] a boolean value indicating whether messages sent from Vantiq to the Vantiq component (_i.e._, a Vantiq Consumer) should be put into an Apache Camel Exchange as a JSON message.  If false, messages are put into an exchange as a Java Map.
-* **structuredMessageHeader** [optional] a boolean value indicating whether messages sent to and from the Vantiq component (Vantiq Consumers and Producers) should be structured as
+* **failedMessageQueueSize** [optional] an integer value indicating how many messages to hold for sending when the 
+  connection to the Vantiq server fails.
+* **consumerOutputJsonStream** [optional] a boolean value indicating whether messages sent from Vantiq to the Vantiq 
+  component (_i.e._, a Vantiq Consumer) should be put into an Apache Camel Exchange as a JSON message.  If 
+  false, messages are put into an exchange as a Java Map. Note that these Json messages are wrapped in a Camel 
+  _StreamCache_. This matches what adding a _marshal_ step to the route would do, which tends to improve the 
+  interoperability with other Camel components.
+* **consumerOutputJson** [DEPRECATED, optional] same as **componentOutputJsonStream** but does not wrap the output 
+  in a Camel _StreamCache_. Use is strongly discouraged. Instances where this is necessary should be reported.
+* **structuredMessageHeader** [optional] a boolean value indicating whether messages sent to and from the Vantiq 
+  component (Vantiq Consumers and Producers) should be structured as
 
     ```json
     {
