@@ -40,7 +40,7 @@ import java.util.regex.Pattern
 @Slf4j
 class AssemblyResourceGeneration extends DefaultTask {
     public static final String VANTIQ_SERVER_CONFIG = 'vantiq://server.config'
-    public static final String VANTIQ_SERVER_CONFIG_JSON = VANTIQ_SERVER_CONFIG + '?consumerOutputJson=true'
+    public static final String VANTIQ_SERVER_CONFIG_JSON = VANTIQ_SERVER_CONFIG + '?consumerOutputJsonStream=true'
     public static final String VANTIQ_SERVER_CONFIG_STRUCTURED = VANTIQ_SERVER_CONFIG + '?structuredMessageHeader=true'
     public static final String VANTIQ_SERVER_CONFIG_JSON_STRUCTURED = VANTIQ_SERVER_CONFIG_JSON +
         '&structuredMessageHeader=true'
