@@ -12,9 +12,9 @@ ext {
     }
 
     if (!project.rootProject.hasProperty('pyExecSrcVersion')) {
-        pyExecSrcVersion = '1.1.11'
+        pyExecSrcVersion = '1.1.12'
     }
-    vantiqSdkVersion = '1.1.3'
+    vantiqSdkVersion = '1.1.4'
     vantiqConnectorSdkVersion = '1.1.13'
 }
 
@@ -33,7 +33,7 @@ python {
     environment = [:]
 
     // minimal required python version (m.m.m)
-    minPythonVersion = '3.8'
+    minPythonVersion = '3.10'
     // minimal required pip version (m.m.m)
     minPipVersion = '9'
 
@@ -66,15 +66,15 @@ python {
     pip 'pip:23.1.2'
 
     // For product runtime
-    pip 'websockets:11.0.3'
+    pip 'websockets:12.0'
     pip 'codetiming:1.4.0'
 
     // For testing
-    pip 'aioresponses:0.7.4'
-    pip 'pytest:7.3.1'
-    pip 'pytest-asyncio:0.21.0'
-    pip 'pytest-timeout:2.1.0'
-    pip 'pytest-html:3.2.0'   // To generate html reports from pytest cases
+    pip 'aioresponses:0.7.6'
+    pip 'pytest:7.4.3'
+    pip 'pytest-asyncio:0.22.0'
+    pip 'pytest-timeout:2.2.0'
+    pip 'pytest-html:4.1.1'   // To generate html reports from pytest cases
 
     // Note:  Placing these last even though they have to do with the product
     // There appears to be an issue with the pytest-asyncio that's present in the test.pypi,org
