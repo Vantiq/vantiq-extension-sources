@@ -125,7 +125,6 @@ task generateSetupCfg(type: Copy) {
     rename ~/(.*)\.tmpl/, '$1'
 }
 
-
 tasks.register('generateRequirements', PythonTask) {
     inputs.files('requirements-build.in', 'requirements-conn.in')
     outputs.file('requirements.txt')
