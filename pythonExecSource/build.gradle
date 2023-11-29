@@ -23,9 +23,6 @@ python {
     pythonBinary
     // path to python binary (global by default)
     pythonPath
-    // Let pip parse the requirements to txt file
-    // use-python plugin has issues with more complex requirements.txt specifications.
-    requirements.use = false
     // additional environment variables, visible for all python commands
     // Note: We specify the directory paths to search in the pytest.ini file
     environment = [:]
@@ -62,6 +59,7 @@ python {
     envCopy = false
 
     pip 'pip:23.3.1'
+    pip 'pip-tools:7.3.0'
 
     // Note:  Placing these last even though they have to do with the product
     // There appears to be an issue with the pytest-asyncio that's present in the test.pypi,org
@@ -75,11 +73,6 @@ python {
     // (also for product use)
     pip "vantiqconnectorsdk:${vantiqConnectorSdkVersion}"
     pip "vantiqsdk:${vantiqSdkVersion}"
-
-     // For build generation
-    pip 'build:0.10.0'  // For building the distribution
-    // For publication
-    pip 'twine:4.0.2'
 }
 
 tasks.withType(PythonTask) {
