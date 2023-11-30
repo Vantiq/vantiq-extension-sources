@@ -11,7 +11,7 @@ ext {
         pypi_repo = 'testpypi'
     }
     if (!project.rootProject.hasProperty('vantiqConnectorSdkVersion')) {
-        vantiqConnectorSdkVersion = '1.1.13'
+        vantiqConnectorSdkVersion = '1.2.0'
     }
 }
 
@@ -20,15 +20,12 @@ python {
     pythonBinary
     // path to python binary (global by default)
     pythonPath
-    // Let pip parse the requirements to txt file
-    // use-python plugin has issues with more complex requirements.txt specifications
-    requirements.strict = false
     // additional environment variables, visible for all python commands
     // Note: We specify the directory paths to search in the pytest.ini file
     environment = [:]
 
     // minimal required python version (m.m.m)
-    minPythonVersion = '3.8'
+    minPythonVersion = '3.10'
     // minimal required pip version (m.m.m)
     minPipVersion = '9'
 
@@ -58,22 +55,8 @@ python {
     // copy virtualenv instead of symlink (when created)
     envCopy = false
 
-    pip 'pip:23.1.2'
-
-    // For product runtime
-    pip 'websockets:11.0.3'
-    pip 'jprops:2.0.2'
-
-    // For testing
-    pip 'pytest:7.3.1'
-    pip 'pytest-asyncio:0.21.0'
-    pip 'pytest-timeout:2.1.0'
-    pip 'pytest-html:3.2.0'   // To generate html reports from pytest cases
-
-    // For build generation
-    pip 'build:0.10.0'  // For building the distribution
-    // For publication
-    pip 'twine:4.0.2'
+    pip 'pip:23.3.1'
+    pip 'pip-tools:7.3.0' // Bootstrap issue -- need this installed for the build
 }
 
 task pytest(type: PythonTask) {
@@ -90,6 +73,14 @@ task generateSetupCfg(type: Copy) {
     rename ~/(.*)\.tmpl/, '$1'
 }
 
+tasks.register('generateRequirements', PythonTask) {
+    inputs.files('requirements-build.in', 'requirements-sdk.in')
+    outputs.file('requirements.txt')
+    module = 'piptools'
+    command = 'compile requirements-build.in requirements-sdk.in --resolver=backtracking --unsafe-package py ' +
+            '--unsafe-package pywin32 -o requirements.txt'
+}
+
 // Always regenerate these files since we can't tell when the versions on which they depend have changed.
 generateSetupCfg.outputs.upToDateWhen { false }
 
@@ -100,14 +91,13 @@ task build_distribution(type: PythonTask) {
 
     if (!OperatingSystem.current().isLinux()) {
         // Consider Linux.
-
         module = 'build'
     } else {
         command = "-c print('Warning: build_distribution not supported on this platform')"
     }
 }
 
-build_distribution.dependsOn generateSetupCfg
+build_distribution.dependsOn generateSetupCfg, generateRequirements
 
 task publish(type: PythonTask) {
     command = "upload --verbose -r ${pypi_repo} dist/*"
@@ -115,7 +105,7 @@ task publish(type: PythonTask) {
 }
 
 publish.mustRunAfter build_distribution
-publish.dependsOn generateSetupCfg
+publish.dependsOn generateSetupCfg, generateRequirements
 
 // Note: pytest must run AFTER the 'test' task.  That task prepares (i.e. deletes) the directory
 // into which the results are to be placed.  Because of that, if pytest runs later, its results
