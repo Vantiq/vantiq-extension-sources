@@ -14,6 +14,7 @@ ext {
     if (!project.rootProject.hasProperty('pyExecSrcVersion')) {
         pyExecSrcVersion = '1.1.12'
     }
+    // If these change, update requirements-conn.in as well -- as that's used to generate the requirements.txt file
     vantiqSdkVersion = '1.1.4'
     vantiqConnectorSdkVersion = '1.1.13'
 }
@@ -60,19 +61,6 @@ python {
 
     pip 'pip:23.3.1'
     pip 'pip-tools:7.3.0'
-
-    // Note:  Placing these last even though they have to do with the product
-    // There appears to be an issue with the pytest-asyncio that's present in the test.pypi,org
-    // site such that if we try & install from scratch (on my mac), the tests fail with some import
-    // problem with pytest-asyncio.  When installed without the test.pypi repo, things work correctly.
-    // However, early in the game, we haven't published the SDK's to the public pypi repo (awaiting local
-    // review & validation).  By putting these last, we can set up the environment from the general repo.
-    // Things fail, but then we can go back and re-enable the test.pypi repo and, without clearing the environment and
-    // cache from gradle, things will work as expected.
-
-    // (also for product use)
-    pip "vantiqconnectorsdk:${vantiqConnectorSdkVersion}"
-    pip "vantiqsdk:${vantiqSdkVersion}"
 }
 
 tasks.withType(PythonTask) {
