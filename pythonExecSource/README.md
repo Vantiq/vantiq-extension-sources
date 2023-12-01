@@ -1,11 +1,12 @@
 
 # Vantiq Python Execution Connector
 
-The [Vantiq](http://www.vantiq.com) Python SDK is a Python package that provides the ability to execute Python code as directed by a Vantiq server
+The [Vantiq](http://www.vantiq.com) Python Execution Connector is a Python package that provides the ability 
+to execute Python code as directed by a Vantiq server
 
 ## Installation
 
-The SDK is installed from the PyPI repo.  To install this into your system,
+The connector is installed from the PyPI repo.  To install this into your system,
 use
 ```commandline
     pip install vantiqPythonExecConnector
@@ -15,7 +16,7 @@ Note: depending on your local environment, you may need to use `pip3`
 instead of `pip`, or whatever is appropriate to install into your
 virtual environment.
 
-The Vantiq Python Execution Connector requires Python version 3.8 or better.
+The Vantiq Python Execution Connector requires Python version 3.10 or better.
 
 ## Quick Start
 
