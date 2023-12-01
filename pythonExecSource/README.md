@@ -1,7 +1,7 @@
 
 # Vantiq Python Execution Connector
 
-The [Vantiq](http://www.vantiq.com) Python Python Execution Connector is a Python package that provides the ability 
+The [Vantiq](http://www.vantiq.com) Python Execution Connector is a Python package that provides the ability 
 to execute Python code as directed by a Vantiq server
 
 ## Installation
