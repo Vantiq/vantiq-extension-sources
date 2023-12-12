@@ -12,10 +12,11 @@ ext {
     }
 
     if (!project.rootProject.hasProperty('pyExecSrcVersion')) {
-        pyExecSrcVersion = '1.1.11'
+        pyExecSrcVersion = '1.2.0'
     }
-    vantiqSdkVersion = '1.1.3'
-    vantiqConnectorSdkVersion = '1.1.13'
+    // If these change, update requirements-conn.in as well -- as that's used to generate the requirements.txt file
+    vantiqSdkVersion = '1.2.1'
+    vantiqConnectorSdkVersion = '1.2.0'
 }
 
 python {
@@ -23,17 +24,12 @@ python {
     pythonBinary
     // path to python binary (global by default)
     pythonPath
-    // Let pip parse the requirements to txt file
-    // use-python plugin has issues with more complex requirements.txt specifications.
-    // Moreover, this module has no requirements.txt file.  The generated one ends up containing
-    // some development parts apparently included in pytest, so we don't want to require those.
-    requirements.use = false
     // additional environment variables, visible for all python commands
     // Note: We specify the directory paths to search in the pytest.ini file
     environment = [:]
 
     // minimal required python version (m.m.m)
-    minPythonVersion = '3.8'
+    minPythonVersion = '3.10'
     // minimal required pip version (m.m.m)
     minPipVersion = '9'
 
@@ -63,36 +59,8 @@ python {
     // copy virtualenv instead of symlink (when created)
     envCopy = false
 
-    pip 'pip:23.1.2'
-
-    // For product runtime
-    pip 'websockets:11.0.3'
-    pip 'codetiming:1.4.0'
-
-    // For testing
-    pip 'aioresponses:0.7.4'
-    pip 'pytest:7.3.1'
-    pip 'pytest-asyncio:0.21.0'
-    pip 'pytest-timeout:2.1.0'
-    pip 'pytest-html:3.2.0'   // To generate html reports from pytest cases
-
-    // Note:  Placing these last even though they have to do with the product
-    // There appears to be an issue with the pytest-asyncio that's present in the test.pypi,org
-    // site such that if we try & install from scratch (on my mac), the tests fail with some import
-    // problem with pytest-asyncio.  When installed without the test.pypi repo, things work correctly.
-    // However, early in the game, we haven't published the SDK's to the public pypi repo (awaiting local
-    // review & validation).  By putting these last, we can set up the environment from the general repo.
-    // Things fail, but then we can go back and re-enable the test.pypi repo and, without clearing the environment and
-    // cache from gradle, things will work as expected.
-
-    // (also for product use)
-    pip "vantiqconnectorsdk:${vantiqConnectorSdkVersion}"
-    pip "vantiqsdk:${vantiqSdkVersion}"
-
-     // For build generation
-    pip 'build:0.10.0'  // For building the distribution
-    // For publication
-    pip 'twine:4.0.2'
+    pip 'pip:23.3.1'
+    pip 'pip-tools:7.3.0'
 }
 
 tasks.withType(PythonTask) {
@@ -138,20 +106,16 @@ task generateSetupCfg(type: Copy) {
     rename ~/(.*)\.tmpl/, '$1'
 }
 
-task generateRequirementsTxt(type: Copy) {
-    into project.projectDir
-    from 'src/main/templates'
-    include '**/requirements.txt.tmpl'
-    expand(
-            vantiqConnectorSdkVersion: vantiqConnectorSdkVersion,
-            vantiqSdkVersion: vantiqSdkVersion,
-            pyExecSrcVersion  : pyExecSrcVersion)
-    rename ~/(.*)\.tmpl/, '$1'
+tasks.register('generateRequirements', PythonTask) {
+    inputs.files('requirements-build.in', 'requirements-conn.in')
+    outputs.file('requirements.txt')
+    module = 'piptools'
+    command = 'compile requirements-build.in requirements-conn.in --resolver=backtracking --unsafe-package py ' +
+            '--unsafe-package pywin32 -o requirements.txt'
 }
 
 // Always regenerate these files since we can't tell when the versions on which they depend have changed.
 generateSetupCfg.outputs.upToDateWhen { false }
-generateRequirementsTxt.outputs.upToDateWhen { false }
 generateDockerFile.outputs.upToDateWhen { false }
 
 task build_distribution(type: PythonTask) {
@@ -168,7 +132,7 @@ task build_distribution(type: PythonTask) {
     }
 }
 
-build_distribution.dependsOn generateSetupCfg, generateRequirementsTxt
+build_distribution.dependsOn generateSetupCfg, generateRequirements
 
 task verifyRequirements() {
     doLast {
@@ -187,7 +151,7 @@ task verifyRequirements() {
 if (project.tasks.findByName('buildConnectorImage')) {
     // When all the docker* properties are not present, we may skip constructing this task.
     // In such cases, no dependency is necessary
-    buildConnectorImage.dependsOn generateRequirementsTxt, generateSetupCfg, generateDockerFile, verifyRequirements
+    buildConnectorImage.dependsOn generateRequirements, generateSetupCfg, generateDockerFile, verifyRequirements
 }
 
 task publish(type: PythonTask) {
@@ -196,7 +160,7 @@ task publish(type: PythonTask) {
 }
 
 publish.mustRunAfter build_distribution
-publish.dependsOn generateSetupCfg, generateRequirementsTxt, generateDockerFile
+publish.dependsOn generateSetupCfg, generateRequirements, generateDockerFile
 
 // Note: pytest must run AFTER the 'test' task.  That task prepares (i.e. deletes) the directory
 // into which the results are to be placed.  Because of that, if pytest runs later, its results
@@ -207,7 +171,6 @@ assemble.finalizedBy build_distribution
 task pyclean(type: Delete) {
     delete "${project.projectDir}/dist"
     // The following files are generated from templates so we should remove them on 'clean' action
-    delete "${project.projectDir}/requirements.txt"
     delete "${project.projectDir}/setup.cfg"
     delete "${project.projectDir}/src/main/docker/Dockerfile"
 }
@@ -220,9 +183,8 @@ clean.dependsOn pyclean
 tasks.matching { !it.name.startsWith('generate')
                     && it.name != 'pyclean'
                     && it.name != 'clean' }.all { Task task ->
-    task.mustRunAfter generateDockerFile, generateSetupCfg, generateRequirementsTxt
+    task.mustRunAfter generateDockerFile, generateSetupCfg
 }
 
 // Faux dependencies to keep gradle happy
-generateSetupCfg.mustRunAfter generateRequirementsTxt
 generateDockerFile.mustRunAfter generateSetupCfg
