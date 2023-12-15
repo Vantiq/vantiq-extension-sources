@@ -104,7 +104,13 @@ public class VantiqProducer extends DefaultProducer {
             if (msg instanceof String) {
                 // Then we must be fetching a JSON string.
                 String strMsg = (String) msg;
-                vMsg = mapper.readValue(strMsg, new TypeReference<>() {});
+                try {
+                    vMsg = mapper.readValue(strMsg, new TypeReference<>() {});
+                } catch (Exception e) {
+                    // Not valid JSON here, so we'll assume it's just a plain old string
+                    String strVal = mapper.writeValueAsString(strMsg);
+                    vMsg = Map.of("stringVal", strVal);
+                }
             } else if (msg instanceof byte[]) {
                 // See if we can get Jackson to do the deserialization for us.
                 byte[] ba = (byte[]) msg;
