@@ -246,6 +246,36 @@ public class VantiqComponentTest extends CamelTestSupport {
     }
     
     @Test
+    public void testVantiqProducerFromString() {
+        
+        // First, grab our test environment.
+        FauxVantiqComponent vc = (FauxVantiqComponent) context.getComponent("vantiq");
+        assert vc != null;
+        // Note that we need to fetch the endpoints by URI since there are more than one of them.
+        FauxVantiqEndpoint ep = (FauxVantiqEndpoint) context.getEndpoint(vantiqEndpointUri);
+        FalseClient fc = ep.myClient;
+        
+        ArrayList<String> msgs =new ArrayList<>();
+        int itemCount = 10;
+        for (int i = 0; i < itemCount; i++) {
+            msgs.add("hi mom " + i);
+        }
+        
+        // Verify that when then producer gets a pure string message, that it turns it a Vail object (aka Map) with
+        // a single key "stringVal" and the test string as the value.
+        for (Object item: msgs) {
+            log.info("Sending msg: " + item);
+            
+            assert item != null;
+            sendBody(routeStartUri, item);
+            //noinspection rawtypes
+            Map lastMsg = fc.getLastMessageAsMap();
+            validateExtensionMsg(lastMsg, false, null, new String[] {"stringVal"}, "hi mom");
+        }
+    }
+    
+    
+    @Test
     public void testVantiqProducerStructuredJson() {
         
         // First, grab our test environment.
