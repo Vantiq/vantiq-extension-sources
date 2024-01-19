@@ -127,6 +127,7 @@ public class NeuralNetTestBase extends ObjRecTestBase {
                     done = false;
                     Thread.sleep(50);
                 } else {
+                    done = true;
                     List<VantiqError> errors = vantiqResponse.getErrors();
                     for (int i = 0; i < errors.size(); i++) {
                         if (errors.get(i).getCode().equals(NOT_FOUND_CODE)) {
