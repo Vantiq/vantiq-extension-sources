@@ -34,13 +34,13 @@ import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
 
 import lombok.extern.slf4j.Slf4j;
 import org.junit.After;
 import org.junit.AfterClass;
-import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -186,8 +186,8 @@ public class TestJDBC extends TestJDBCBase {
     static JDBC jdbc;
     static Vantiq vantiq;
     
-    @Before
-    public void setup() {
+    @BeforeClass
+    public static void setup() {
         if (testDBUsername != null && testDBPassword != null && testDBURL != null && jdbcDriverLoc != null) {
             jdbc = new JDBC();
             vantiq = new io.vantiq.client.Vantiq(testVantiqServer);
@@ -197,6 +197,12 @@ public class TestJDBC extends TestJDBCBase {
             } catch (Exception e) {
                 fail("Could not create sourceImpl: " + e.getMessage());
             }
+            try {
+                setupSource(createSourceDef(false, false));
+            } catch (Exception e) {
+                fail("Could not create source: " + e.getMessage());
+            }
+    
         }
     }
 
@@ -217,18 +223,11 @@ public class TestJDBC extends TestJDBCBase {
             deleteTopic();
             deleteProcedure();
             deleteRule();
-            if (core != null) {
-                core.close();
-                core = null;
-            }
     
             if (jdbc != null) {
                 jdbc.close();
                 jdbc = null;
             }
-            // Don't delete the source until you've shut down the connector. Otherwise, a bunch of spurious errors appear
-            // in the test log as it tries to reconnect.
-            deleteSource();
         }
     }
 
@@ -328,7 +327,7 @@ public class TestJDBC extends TestJDBCBase {
             dropTablesJDBC.close();
 
             // Delete all VANTIQ Resources in case they are still there
-            deleteSource();
+            deleteSources();
             deleteType();
             deleteTopic();
             deleteProcedure();
@@ -353,130 +352,148 @@ public class TestJDBC extends TestJDBCBase {
     @Test
     public void testProcessPublish() throws VantiqSQLException {
         assumeTrue(testDBUsername != null && testDBPassword != null && testDBURL != null && jdbcDriverLoc != null);
-        jdbc.setupJDBC(testDBURL, testDBUsername, testDBPassword, false, 0);
-        
-        int queryResult;
-        
-        // Try processPublish with a nonsense query
         try {
-            jdbc.processPublish("jibberish");
-            fail("Should have thrown an exception");
-        } catch (VantiqSQLException e) {
-            // Expected behavior
+            jdbc = new JDBC();
+            jdbc.setupJDBC(testDBURL, testDBUsername, testDBPassword, false, 0);
+    
+            int queryResult;
+    
+            // Try processPublish with a nonsense query
+            try {
+                jdbc.processPublish("jibberish");
+                fail("Should have thrown an exception");
+            } catch (VantiqSQLException e) {
+                // Expected behavior
+            }
+    
+            // Create table that will be used for testing
+            try {
+                queryResult = jdbc.processPublish(CREATE_TABLE);
+                assert queryResult == 0;
+            } catch (VantiqSQLException e) {
+                fail("Should not throw an exception: " + e.getMessage());
+            }
+    
+            // Insert a row of data into the table
+            try {
+                queryResult = jdbc.processPublish(PUBLISH_QUERY);
+                assert queryResult > 0;
+            } catch (VantiqSQLException e) {
+                fail("Should not throw an exception: " + e.getMessage());
+            }
+        } finally {
+            if (jdbc != null) {
+                jdbc.close();
+            }
         }
-        
-        // Create table that will be used for testing
-        try {
-            queryResult = jdbc.processPublish(CREATE_TABLE);
-            assert queryResult == 0;
-        } catch (VantiqSQLException e) {
-            fail("Should not throw an exception: " + e.getMessage());
-        }
-        
-        // Insert a row of data into the table
-        try {
-            queryResult = jdbc.processPublish(PUBLISH_QUERY);
-            assert queryResult > 0;
-        } catch (VantiqSQLException e) {
-            fail("Should not throw an exception: " + e.getMessage());
-        }
-        
-        jdbc.close();
     }
     
     @Test
     public void testProcessQuery() throws VantiqSQLException {
         assumeTrue(testDBUsername != null && testDBPassword != null && testDBURL != null && jdbcDriverLoc != null);
-        jdbc.setupJDBC(testDBURL, testDBUsername, testDBPassword, false, 0);
-        
-        Map[] queryResult;
-        int deleteResult;
-        
-        // Try processQuery with a nonsense query
         try {
-            jdbc.processQuery("jibberish");
-            fail("Should have thrown exception.");
-        } catch (VantiqSQLException e) {
-            // Expected behavior
+            jdbc = new JDBC();
+            jdbc.setupJDBC(testDBURL, testDBUsername, testDBPassword, false, 0);
+            
+            Map[] queryResult;
+            int deleteResult;
+            
+            // Try processQuery with a nonsense query
+            try {
+                jdbc.processQuery("jibberish");
+                fail("Should have thrown exception.");
+            } catch (VantiqSQLException e) {
+                // Expected behavior
+            }
+            
+            // Select the row that we previously inserted
+            try {
+                queryResult = jdbc.processQuery(SELECT_QUERY);
+                assert (Integer) queryResult[0].get("id") == 1;
+                assert (Integer) queryResult[0].get("age") == 25;
+                assert queryResult[0].get("first").equals("Santa");
+                assert queryResult[0].get("last").equals("Claus");
+            } catch (VantiqSQLException e) {
+                fail("Should not throw an exception: " + e.getMessage());
+            }
+            
+            // Delete row from the table
+            try {
+                deleteResult = jdbc.processPublish(DELETE_ROW);
+                assert deleteResult > 0;
+            } catch (VantiqSQLException e) {
+                fail("Should not throw an exception: " + e.getMessage());
+            }
+            
+            // Try selecting again, should return empty HashMap Array since row was deleted
+            try {
+                queryResult = jdbc.processQuery(SELECT_QUERY);
+                assert queryResult.length == 0;
+            } catch (VantiqSQLException e) {
+                fail("Should not throw an exception: " + e.getMessage());
+            }
+        } finally {
+            if (jdbc != null) {
+                jdbc.close();
+            }
         }
-        
-        // Select the row that we previously inserted
-        try {
-            queryResult = jdbc.processQuery(SELECT_QUERY);
-            assert (Integer) queryResult[0].get("id") == 1;
-            assert (Integer) queryResult[0].get("age") == 25;
-            assert queryResult[0].get("first").equals("Santa");
-            assert queryResult[0].get("last").equals("Claus");
-        } catch (VantiqSQLException e) {
-            fail("Should not throw an exception: " + e.getMessage());
-        }
-        
-        // Delete row from the table
-        try {
-            deleteResult = jdbc.processPublish(DELETE_ROW);
-            assert deleteResult > 0;
-        } catch (VantiqSQLException e) {
-            fail("Should not throw an exception: " + e.getMessage());
-        }
-        
-        // Try selecting again, should return empty HashMap Array since row was deleted
-        try {
-            queryResult = jdbc.processQuery(SELECT_QUERY);
-            assert queryResult.length == 0;
-        } catch (VantiqSQLException e) {
-            fail("Should not throw an exception: " + e.getMessage());
-        }
-        
-        jdbc.close();
     }
     
     @Test
     public void testExtendedTypes() throws VantiqSQLException {
         assumeTrue(testDBUsername != null && testDBPassword != null && testDBURL != null && jdbcDriverLoc != null);
-        jdbc.setupJDBC(testDBURL, testDBUsername, testDBPassword, false, 0);
-        Map[] queryResult;
-        int publishResult;
         
-        // Create table with odd types including timestamps, dates, times, and decimals
         try {
-            publishResult = jdbc.processPublish(CREATE_TABLE_EXTENDED_TYPES);
-            assert publishResult == 0;
-        } catch (VantiqSQLException e) {
-            fail("Should not have thrown exception.");
-        }
-        
-        // Insert values into the newly created table
-        try {
-            publishResult = jdbc.processPublish(PUBLISH_QUERY_EXTENDED_TYPES);
-            assert publishResult > 0;
-        } catch (VantiqSQLException e) {
-            fail("Should not have thrown exception.");
-        }
-        
-        // Select the values from the table and make sure the data is retrieved correctly
-        try {
-            queryResult = jdbc.processQuery(SELECT_QUERY_EXTENDED_TYPES);
-            String timestampTest = (String) queryResult[0].get("ts");
-            assert timestampTest.matches(timestampPattern);
-            assertEquals("Expected " + FORMATTED_TIMESTAMP + ", but got " + timestampTest,
-                    FORMATTED_TIMESTAMP, timestampTest);
-            String dateTest = (String) queryResult[0].get("testDate");
-            assert dateTest.matches(datePattern);
-            assert dateTest.equals(DATE);
-            String timeTest = (String) queryResult[0].get("testTime");
-            assert timeTest.matches(timePattern);
-            assert timeTest.equals(FORMATTED_TIME);
-            assert ((BigDecimal) queryResult[0].get("testDec")).compareTo(new BigDecimal("145.86")) == 0;
-        } catch (VantiqSQLException e) {
-            fail("Should not have thrown exception.");
-        }
-        
-        // Delete the row of data
-        try {
-            publishResult = jdbc.processPublish(DELETE_ROW_EXTENDED_TYPES);
-            assert publishResult > 0;
-        } catch (VantiqSQLException e) {
-            fail("Should not have thrown exception.");
+            jdbc = new JDBC();
+            jdbc.setupJDBC(testDBURL, testDBUsername, testDBPassword, false, 0);
+            Map[] queryResult;
+            int publishResult;
+            
+            // Create table with odd types including timestamps, dates, times, and decimals
+            try {
+                publishResult = jdbc.processPublish(CREATE_TABLE_EXTENDED_TYPES);
+                assert publishResult == 0;
+            } catch (VantiqSQLException e) {
+                fail("Should not have thrown exception.");
+            }
+            
+            // Insert values into the newly created table
+            try {
+                publishResult = jdbc.processPublish(PUBLISH_QUERY_EXTENDED_TYPES);
+                assert publishResult > 0;
+            } catch (VantiqSQLException e) {
+                fail("Should not have thrown exception.");
+            }
+            
+            // Select the values from the table and make sure the data is retrieved correctly
+            try {
+                queryResult = jdbc.processQuery(SELECT_QUERY_EXTENDED_TYPES);
+                String timestampTest = (String) queryResult[0].get("ts");
+                assert timestampTest.matches(timestampPattern);
+                assertEquals("Expected " + FORMATTED_TIMESTAMP + ", but got " + timestampTest,
+                        FORMATTED_TIMESTAMP, timestampTest);
+                String dateTest = (String) queryResult[0].get("testDate");
+                assert dateTest.matches(datePattern);
+                assert dateTest.equals(DATE);
+                String timeTest = (String) queryResult[0].get("testTime");
+                assert timeTest.matches(timePattern);
+                assert timeTest.equals(FORMATTED_TIME);
+                assert ((BigDecimal) queryResult[0].get("testDec")).compareTo(new BigDecimal("145.86")) == 0;
+            } catch (VantiqSQLException e) {
+                fail("Should not have thrown exception.");
+            }
+            
+            // Delete the row of data
+            try {
+                publishResult = jdbc.processPublish(DELETE_ROW_EXTENDED_TYPES);
+                assert publishResult > 0;
+            } catch (VantiqSQLException e) {
+                fail("Should not have thrown exception.");
+            }
+        } finally {
+            if (jdbc != null) {
+                jdbc.close();
+            }
         }
     }
 
@@ -484,98 +501,105 @@ public class TestJDBC extends TestJDBCBase {
     @Test
     public void testParallelDates() throws VantiqSQLException {
         assumeTrue(testDBUsername != null && testDBPassword != null && testDBURL != null && jdbcDriverLoc != null);
-        jdbc.setupJDBC(testDBURL, testDBUsername, testDBPassword, false, 0);
-        int publishResult;
-
-
-        // Create table with odd types including timestamps, dates, times, and decimals
         try {
-            publishResult = jdbc.processPublish(CREATE_TABLE_MANY_DATES);
-            assert publishResult == 0;
-        } catch (VantiqSQLException e) {
-            e.printStackTrace();
-            fail("Should not have thrown exception." + e);
-        }
-
-        // Insert values into the newly created table
-        // Here, we will set up a bunch of sets of 25 rows, where each row has a bunch of dates in it.
-
-        ArrayList<Map<String, Object>> dataMap = new ArrayList<>();
-        try {
-            for (int i = 0; i < 25; i++) {
-                Map<String, Object> toPub = createManyDatesRows(i, PARALLEL_DATE_INSTANCE_COUNT);
-                dataMap.add(toPub);
-                for (String row : (String[]) toPub.get("batch")) {
-                    publishResult = jdbc.processPublish(row);
-                    assert publishResult > 0;
-                }
-            }
-        } catch (VantiqSQLException e) {
-            e.printStackTrace();
-            fail("Should not have thrown exception on insert: " + e);
-        }
-
-        // Now, to verify our parallel operations, we'll fire off a bunch of threads all doing the same
-        // query across this table full of dates.  We should get everything with correct results,
-        // but we had had the date results scrambled due to use of non-threadsafe methods.
-
-        AtomicReference<Exception> threadFailed = new AtomicReference<>();
-        Runnable querier = () -> {
-            // Select the values from the table and make sure the data is retrieved correctly
+            jdbc = new JDBC();
+            jdbc.setupJDBC(testDBURL, testDBUsername, testDBPassword, false, 0);
+            int publishResult;
+    
+    
+            // Create table with odd types including timestamps, dates, times, and decimals
             try {
-                Map[] qres = jdbc.processQuery(SELECT_QUERY_MANY_DATES);
-                for (Map row : qres) {
-                    int id = (int) row.get("id");
-                    for (int i = 1; i <= TS_COUNT; i++ ) {
-                        String timestampTest = (String) row.get("ts" + i);
-                        assertNotNull(timestampTest);
-                        assert timestampTest.matches(timestampPattern);
-                        Date found = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSZ").parse(timestampTest);
-                        assert dataMap.size() > id;
-                        Date expected = new SimpleDateFormat("yyyy-MM-dd' 'HH:mm:ss")
-                                .parse(dataMap.get(id).get("expected").toString());
-                        assertNotNull(found);
-                        assertNotNull(expected);
-                        assertEquals("Expected " + expected + ", but got " + found, expected, found);
-                        String dateTest = (String) row.get("testDate");
-                        assert dateTest.matches(datePattern);
-                        assert dateTest.equals(DATE);
-                        String timeTest = (String) row.get("testTime");
-                        assert timeTest.matches(timePattern);
-                        assert timeTest.equals(FORMATTED_TIME);
+                publishResult = jdbc.processPublish(CREATE_TABLE_MANY_DATES);
+                assert publishResult == 0;
+            } catch (VantiqSQLException e) {
+                e.printStackTrace();
+                fail("Should not have thrown exception." + e);
+            }
+    
+            // Insert values into the newly created table
+            // Here, we will set up a bunch of sets of 25 rows, where each row has a bunch of dates in it.
+    
+            ArrayList<Map<String, Object>> dataMap = new ArrayList<>();
+            try {
+                for (int i = 0; i < 25; i++) {
+                    Map<String, Object> toPub = createManyDatesRows(i, PARALLEL_DATE_INSTANCE_COUNT);
+                    dataMap.add(toPub);
+                    for (String row : (String[]) toPub.get("batch")) {
+                        publishResult = jdbc.processPublish(row);
+                        assert publishResult > 0;
                     }
                 }
-            } catch (Exception e) {
-                threadFailed.set(e);
+            } catch (VantiqSQLException e) {
+                e.printStackTrace();
+                fail("Should not have thrown exception on insert: " + e);
             }
-        };
-
-        ArrayList<Thread> threads = new ArrayList<>();
-        for (int i = 0; i < PARALLEL_DATE_THREAD_COUNT; i++) {
-            Thread t = new Thread(querier);
-            threads.add(t);
-            t.start();
-        }
-
-        // Now, wait for all the threads to complete, checking that they all ran exception free.
-        Exception trapped = null;
-        for (Thread t: threads) {
+    
+            // Now, to verify our parallel operations, we'll fire off a bunch of threads all doing the same
+            // query across this table full of dates.  We should get everything with correct results,
+            // but we had had the date results scrambled due to use of non-threadsafe methods.
+    
+            AtomicReference<Exception> threadFailed = new AtomicReference<>();
+            Runnable querier = () -> {
+                // Select the values from the table and make sure the data is retrieved correctly
+                try {
+                    Map[] qres = jdbc.processQuery(SELECT_QUERY_MANY_DATES);
+                    for (Map row : qres) {
+                        int id = (int) row.get("id");
+                        for (int i = 1; i <= TS_COUNT; i++ ) {
+                            String timestampTest = (String) row.get("ts" + i);
+                            assertNotNull(timestampTest);
+                            assert timestampTest.matches(timestampPattern);
+                            Date found = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSZ").parse(timestampTest);
+                            assert dataMap.size() > id;
+                            Date expected = new SimpleDateFormat("yyyy-MM-dd' 'HH:mm:ss")
+                                    .parse(dataMap.get(id).get("expected").toString());
+                            assertNotNull(found);
+                            assertNotNull(expected);
+                            assertEquals("Expected " + expected + ", but got " + found, expected, found);
+                            String dateTest = (String) row.get("testDate");
+                            assert dateTest.matches(datePattern);
+                            assert dateTest.equals(DATE);
+                            String timeTest = (String) row.get("testTime");
+                            assert timeTest.matches(timePattern);
+                            assert timeTest.equals(FORMATTED_TIME);
+                        }
+                    }
+                } catch (Exception e) {
+                    threadFailed.set(e);
+                }
+            };
+    
+            ArrayList<Thread> threads = new ArrayList<>();
+            for (int i = 0; i < PARALLEL_DATE_THREAD_COUNT; i++) {
+                Thread t = new Thread(querier);
+                threads.add(t);
+                t.start();
+            }
+    
+            // Now, wait for all the threads to complete, checking that they all ran exception free.
+            Exception trapped = null;
+            for (Thread t: threads) {
+                try {
+                    t.join();
+                } catch (Exception e) {
+                    trapped = e;
+                }
+            }
+    
+            assertNull(trapped);
+            assertNull("Trapped exception during thread processing: " + threadFailed.get(), threadFailed.get());
+    
+            // Delete the row of data
             try {
-                t.join();
-            } catch (Exception e) {
-                trapped = e;
+                publishResult = jdbc.processPublish(DELETE_ROW_MANY_DATES);
+                assert publishResult > 0;
+            } catch (VantiqSQLException e) {
+                fail("Should not have thrown exception on drop.");
             }
-        }
-
-        assertNull(trapped);
-        assertNull("Trapped exception during thread processing: " + threadFailed.get(), threadFailed.get());
-
-        // Delete the row of data
-        try {
-            publishResult = jdbc.processPublish(DELETE_ROW_MANY_DATES);
-            assert publishResult > 0;
-        } catch (VantiqSQLException e) {
-            fail("Should not have thrown exception on drop.");
+        } finally {
+            if (jdbc != null) {
+                jdbc.close();
+            }
         }
     }
     
@@ -585,154 +609,158 @@ public class TestJDBC extends TestJDBCBase {
         assumeTrue(testAuthToken != null && testVantiqServer != null);
         assumeTrue(testDBUsername != null && testDBPassword != null && testDBURL != null && jdbcDriverLoc != null);
         
-        // Check that Source and Type do not already exist in namespace, and skip test if they do
-        assumeFalse(checkSourceExists());
+        // Check that Type does not already exist in namespace, and skip test if they do
         assumeFalse(checkTypeExists());
-                
-        jdbc.setupJDBC(testDBURL, testDBUsername, testDBPassword, false, 0);
-        
-        // Setup a VANTIQ JDBC Source, and start running the core
-        setupSource(createSourceDef(false, false));
-        
-        // Publish to the source in order to create a table
-        Map<String, Object> createParams = new LinkedHashMap<>();
-        createParams.put("query", CREATE_TABLE_DATETIME);
-        vantiq.publish("sources", testSourceName, createParams);
-        
-        // Publish to the source in order to insert data into the table
-        Map<String, Object> insertParams = new LinkedHashMap<>();
-        insertParams.put("query", INSERT_VALUE_DATETIME);
-        vantiq.publish("sources", testSourceName, insertParams);
-        
-        // Query the Source, and get the returned date
-        Map<String, Object> params = new LinkedHashMap<>();
-        params.put("query", QUERY_TABLE_DATETIME);
-        VantiqResponse response = vantiq.query(testSourceName, params);
-        JsonArray responseBody = (JsonArray) response.getBody();
-        JsonObject responseMap = (JsonObject) responseBody.get(0);
-        String timestamp = responseMap.get("ts").getAsString();
-        assertEquals("Expected " + FORMATTED_TIMESTAMP + ", but got " + timestamp,
-                FORMATTED_TIMESTAMP, timestamp);
-
-        // Create a Type with DateTime property
-        setupType();
-        
-        // Insert timestamp into Type
-        Map<String, String> insertObj = new LinkedHashMap<>();
-        insertObj.put("timestamp", timestamp);
-        vantiq.insert(testTypeName, insertObj);
-        
-        // Check that value is as expected
-        response = vantiq.select(testTypeName, null, null, null);
-        ArrayList typeResponseBody = (ArrayList) response.getBody();
-        responseMap = (JsonObject) typeResponseBody.get(0);
-        String vantiqTimestamp = responseMap.get("timestamp").getAsString();
-        
-        // Check that the date was offset by adding 7 hours (since original date ends in 0700)
-        assertEquals("Formatted time stamp", VANTIQ_FORMATTED_TIMESTAMP, vantiqTimestamp);
-        
-        // Delete the Type from VANTIQ
-        deleteType();
-        
-        // Delete the Source from VANTIQ
-        deleteSource();
-    }
+        try {
+            jdbc = new JDBC();
+            jdbc.setupJDBC(testDBURL, testDBUsername, testDBPassword, false, 0);
+            
+            // Publish to the source in order to create a table
+            Map<String, Object> createParams = new LinkedHashMap<>();
+            createParams.put("query", CREATE_TABLE_DATETIME);
+            vantiq.publish("sources", testSourceName, createParams);
+            
+            // Publish to the source in order to insert data into the table
+            Map<String, Object> insertParams = new LinkedHashMap<>();
+            insertParams.put("query", INSERT_VALUE_DATETIME);
+            vantiq.publish("sources", testSourceName, insertParams);
+            
+            // Query the Source, and get the returned date
+            Map<String, Object> params = new LinkedHashMap<>();
+            params.put("query", QUERY_TABLE_DATETIME);
+            VantiqResponse response = vantiq.query(testSourceName, params);
+            JsonArray responseBody = (JsonArray) response.getBody();
+            JsonObject responseMap = (JsonObject) responseBody.get(0);
+            String timestamp = responseMap.get("ts").getAsString();
+            assertEquals("Expected " + FORMATTED_TIMESTAMP + ", but got " + timestamp,
+                    FORMATTED_TIMESTAMP, timestamp);
+    
+            // Create a Type with DateTime property
+            setupType();
+            
+            // Insert timestamp into Type
+            Map<String, String> insertObj = new LinkedHashMap<>();
+            insertObj.put("timestamp", timestamp);
+            vantiq.insert(testTypeName, insertObj);
+            
+            // Check that value is as expected
+            response = vantiq.select(testTypeName, null, null, null);
+            ArrayList typeResponseBody = (ArrayList) response.getBody();
+            responseMap = (JsonObject) typeResponseBody.get(0);
+            String vantiqTimestamp = responseMap.get("timestamp").getAsString();
+            
+            // Check that the date was offset by adding 7 hours (since original date ends in 0700)
+            assertEquals("Formatted time stamp", VANTIQ_FORMATTED_TIMESTAMP, vantiqTimestamp);
+            
+            // Delete the Type from VANTIQ
+            deleteType();
+        } finally {
+            if (jdbc != null) {
+                jdbc.close();
+            }
+        }
+     }
 
     @SuppressWarnings({"PMD.CognitiveComplexity"})
     @Test
     public void testNullValues() throws VantiqSQLException {
         assumeTrue(testDBUsername != null && testDBPassword != null && testDBURL != null && jdbcDriverLoc != null);
-        jdbc.setupJDBC(testDBURL, testDBUsername, testDBPassword, false, 0);
-        
-        int publishResult;
-        Map[] queryResult;
-        
-        // Create table with all supported data type values
         try {
-            publishResult = jdbc.processPublish(CREATE_TABLE_NULL_VALUES);
-            assert publishResult == 0;
-        } catch (VantiqSQLException e) {
-            fail("Should not throw an exception: " + e.getMessage());
-        }
-        
-        // Insert a row of data into the table containing all null values
-        try {
-            publishResult = jdbc.processPublish(INSERT_ALL_NULL_VALUES);
-            assert publishResult > 0;
-        } catch (VantiqSQLException e) {
-            fail("Should not throw an exception: " + e.getMessage());
-        }
-        
-        // Select all the values and make sure they are null, and that no error was thrown
-        try {
-            queryResult = jdbc.processQuery(QUERY_NULL_VALUES);
-            assert queryResult[0].get("ts") == null;
-            assert queryResult[0].get("testDate") == null;
-            assert queryResult[0].get("testTime") == null;
-            assert queryResult[0].get("testInt") == null;
-            assert queryResult[0].get("testString") == null;
-            assert queryResult[0].get("testDec") == null;
-        } catch (VantiqSQLException e) {
-            fail("Should not throw an exception: " + e.getMessage());
-        }
-        
-        // Alternate making one value null
-        for (int i = 0; i < 6; i++) {
-            // First delete the existing row in the table
+            jdbc = new JDBC();
+            jdbc.setupJDBC(testDBURL, testDBUsername, testDBPassword, false, 0);
+            
+            int publishResult;
+            Map[] queryResult;
+            
+            // Create table with all supported data type values
             try {
-                publishResult = jdbc.processPublish(DELETE_ROW_NULL_VALUES);
+                publishResult = jdbc.processPublish(CREATE_TABLE_NULL_VALUES);
+                assert publishResult == 0;
+            } catch (VantiqSQLException e) {
+                fail("Should not throw an exception: " + e.getMessage());
+            }
+            
+            // Insert a row of data into the table containing all null values
+            try {
+                publishResult = jdbc.processPublish(INSERT_ALL_NULL_VALUES);
                 assert publishResult > 0;
-            } catch (VantiqSQLException  e) {
-                fail("Should not fail when deleting the row: " + e.getMessage());
+            } catch (VantiqSQLException e) {
+                fail("Should not throw an exception: " + e.getMessage());
             }
             
-            // Create array of the values to be input
-            ArrayList<Object> nullValuesList = new ArrayList<>();
-            nullValuesList.add("'" + TIMESTAMP + "'");
-            nullValuesList.add("'" + DATE + "'");
-            nullValuesList.add("'" + TIME + "'");
-            nullValuesList.add(TEST_INT);
-            nullValuesList.add("'" + TEST_STRING + "'");
-            nullValuesList.add(TEST_DEC);
-            Object[] nullValues = nullValuesList.toArray(new Object[0]);
-            
-            // Make one value null
-            nullValues[i] = null;
-            
-            String queryString = "INSERT INTO TestNullValues VALUE (" + nullValues[0] + ", " + nullValues[1] + ", "
-                    + nullValues[2] + ", " + nullValues[3] + ", " + nullValues[4] + ", " + nullValues[5] + ")";
-            
-            // Insert data into database
-            try {
-                publishResult = jdbc.processPublish(queryString);
-                assertTrue("publish failed: " + publishResult, publishResult > 0);
-            } catch (Exception e) {
-                fail("No exception should be thrown when inserting null values: " + e.getMessage());
-            }
-            
-            // Make sure collected data is identical to input data, and fail if any type of exception is caught
+            // Select all the values and make sure they are null, and that no error was thrown
             try {
                 queryResult = jdbc.processQuery(QUERY_NULL_VALUES);
-                assert queryResult.length == 1;
-                assert queryResult[0].size() == 5;
-                assert i == 0 || queryResult[0].get("ts").equals(FORMATTED_TIMESTAMP);
-                if (i != 1) {
-                    assertEquals("Expected " + DATE + ", but got " + queryResult[0].get("testDate"),
-                            DATE, queryResult[0].get("testDate"));
+                assert queryResult[0].get("ts") == null;
+                assert queryResult[0].get("testDate") == null;
+                assert queryResult[0].get("testTime") == null;
+                assert queryResult[0].get("testInt") == null;
+                assert queryResult[0].get("testString") == null;
+                assert queryResult[0].get("testDec") == null;
+            } catch (VantiqSQLException e) {
+                fail("Should not throw an exception: " + e.getMessage());
+            }
+            
+            // Alternate making one value null
+            for (int i = 0; i < 6; i++) {
+                // First delete the existing row in the table
+                try {
+                    publishResult = jdbc.processPublish(DELETE_ROW_NULL_VALUES);
+                    assert publishResult > 0;
+                } catch (VantiqSQLException  e) {
+                    fail("Should not fail when deleting the row: " + e.getMessage());
                 }
-                if (i != 2) {
-                    assertEquals("Expected " + FORMATTED_TIME + ", but got " + queryResult[0].get("testTime"),
-                         FORMATTED_TIME, queryResult[0].get("testTime"));
+                
+                // Create array of the values to be input
+                ArrayList<Object> nullValuesList = new ArrayList<>();
+                nullValuesList.add("'" + TIMESTAMP + "'");
+                nullValuesList.add("'" + DATE + "'");
+                nullValuesList.add("'" + TIME + "'");
+                nullValuesList.add(TEST_INT);
+                nullValuesList.add("'" + TEST_STRING + "'");
+                nullValuesList.add(TEST_DEC);
+                Object[] nullValues = nullValuesList.toArray(new Object[0]);
+                
+                // Make one value null
+                nullValues[i] = null;
+                
+                String queryString = "INSERT INTO TestNullValues VALUE (" + nullValues[0] + ", " + nullValues[1] + ", "
+                        + nullValues[2] + ", " + nullValues[3] + ", " + nullValues[4] + ", " + nullValues[5] + ")";
+                
+                // Insert data into database
+                try {
+                    publishResult = jdbc.processPublish(queryString);
+                    assertTrue("publish failed: " + publishResult, publishResult > 0);
+                } catch (Exception e) {
+                    fail("No exception should be thrown when inserting null values: " + e.getMessage());
                 }
-                assert i == 3 || queryResult[0].get("testInt").toString().equals(TEST_INT);
-                assert i == 4 || queryResult[0].get("testString").equals(TEST_STRING);
-                assert i == 5 || queryResult[0].get("testDec").toString().equals(TEST_DEC);
-            } catch (Exception e) {
-                fail("No exception should be thrown when querying: " + e.getMessage());
+                
+                // Make sure collected data is identical to input data, and fail if any type of exception is caught
+                try {
+                    queryResult = jdbc.processQuery(QUERY_NULL_VALUES);
+                    assert queryResult.length == 1;
+                    assert queryResult[0].size() == 5;
+                    assert i == 0 || queryResult[0].get("ts").equals(FORMATTED_TIMESTAMP);
+                    if (i != 1) {
+                        assertEquals("Expected " + DATE + ", but got " + queryResult[0].get("testDate"),
+                                DATE, queryResult[0].get("testDate"));
+                    }
+                    if (i != 2) {
+                        assertEquals("Expected " + FORMATTED_TIME + ", but got " + queryResult[0].get("testTime"),
+                             FORMATTED_TIME, queryResult[0].get("testTime"));
+                    }
+                    assert i == 3 || queryResult[0].get("testInt").toString().equals(TEST_INT);
+                    assert i == 4 || queryResult[0].get("testString").equals(TEST_STRING);
+                    assert i == 5 || queryResult[0].get("testDec").toString().equals(TEST_DEC);
+                } catch (Exception e) {
+                    fail("No exception should be thrown when querying: " + e.getMessage());
+                }
+            }
+        } finally {
+            if (jdbc != null) {
+                jdbc.close();
             }
         }
-        
-        jdbc.close();
     }
 
     @SuppressWarnings({"PMD.CognitiveComplexity"})
@@ -740,177 +768,189 @@ public class TestJDBC extends TestJDBCBase {
     public void testCorrectErrors() throws VantiqSQLException {
         assumeTrue(testDBUsername != null && testDBPassword != null && testDBURL != null && jdbcDriverLoc != null);
         assumeTrue(testDBURL.contains("mysql"));
-        jdbc.setupJDBC(testDBURL, testDBUsername, testDBPassword, false, 0);
-
-        // Check error code for selecting from non-existent table
         try {
-            jdbc.processQuery(NO_TABLE);
-            fail("Should have thrown an exception.");
-        } catch (VantiqSQLException e) {
-            String message = e.getMessage();
-            assert message.contains("1146");
-        }
-        
-        // Check error code for selecting non-existent field
-        try {
-            jdbc.processQuery(NO_FIELD);
-            fail("Should have thrown an exception.");
-        } catch (VantiqSQLException e) {
-            String message = e.getMessage();
-            assert message.contains("1054");
-        }
-        
-        // Check error code for syntax error
-        try {
-            jdbc.processQuery(SYNTAX_ERROR);
-            fail("Should have thrown an exception.");
-        } catch (VantiqSQLException e) {
-            String message = e.getMessage();
-            assert message.contains("1064");
-        }
-        
-        // Check error code for using INSERT with executeQuery() method
-        try {
-            jdbc.processQuery(PUBLISH_QUERY);
-            fail("Should have thrown an exception.");
-        } catch (VantiqSQLException e) {
-            String message = e.getMessage();
-            assert message.contains("0");
-        }
-        
-        // Check error code for INSERT not matching columns
-        try {
-            jdbc.processPublish(INSERT_NO_FIELD);
-            fail("Should have thrown an exception.");
-        } catch (VantiqSQLException e) {
-            String message = e.getMessage();
-            assert message.contains("1136");
-        }
-        
-        // Check error code for inserting wrong types
-        try {
-            jdbc.processPublish(INSERT_WRONG_TYPE);
-            fail("Should have thrown an exception.");
-        } catch (VantiqSQLException e) {
-            String message = e.getMessage();
-            assert message.contains("1366");
+            jdbc = new JDBC();
+            jdbc.setupJDBC(testDBURL, testDBUsername, testDBPassword, false, 0);
+    
+            // Check error code for selecting from non-existent table
+            try {
+                jdbc.processQuery(NO_TABLE);
+                fail("Should have thrown an exception.");
+            } catch (VantiqSQLException e) {
+                String message = e.getMessage();
+                assert message.contains("1146");
+            }
+            
+            // Check error code for selecting non-existent field
+            try {
+                jdbc.processQuery(NO_FIELD);
+                fail("Should have thrown an exception.");
+            } catch (VantiqSQLException e) {
+                String message = e.getMessage();
+                assert message.contains("1054");
+            }
+            
+            // Check error code for syntax error
+            try {
+                jdbc.processQuery(SYNTAX_ERROR);
+                fail("Should have thrown an exception.");
+            } catch (VantiqSQLException e) {
+                String message = e.getMessage();
+                assert message.contains("1064");
+            }
+            
+            // Check error code for using INSERT with executeQuery() method
+            try {
+                jdbc.processQuery(PUBLISH_QUERY);
+                fail("Should have thrown an exception.");
+            } catch (VantiqSQLException e) {
+                String message = e.getMessage();
+                assert message.contains("0");
+            }
+            
+            // Check error code for INSERT not matching columns
+            try {
+                jdbc.processPublish(INSERT_NO_FIELD);
+                fail("Should have thrown an exception.");
+            } catch (VantiqSQLException e) {
+                String message = e.getMessage();
+                assert message.contains("1136");
+            }
+            
+            // Check error code for inserting wrong types
+            try {
+                jdbc.processPublish(INSERT_WRONG_TYPE);
+                fail("Should have thrown an exception.");
+            } catch (VantiqSQLException e) {
+                String message = e.getMessage();
+                assert message.contains("1366");
+            }
+        } finally {
+            if (jdbc != null) {
+                jdbc.close();
+            }
         }
     }
     
     @Test
     public void testDBReconnect() throws VantiqSQLException {
         assumeTrue(testDBUsername != null && testDBPassword != null && testDBURL != null && jdbcDriverLoc != null);
-        jdbc.setupJDBC(testDBURL, testDBUsername, testDBPassword, false, 0);
-        
-        // Close the connection, and then try to query
-        jdbc.close();
-        
-        // Query should still work, because reconnect will be triggered
-        int publishResult;
         try {
-            publishResult = jdbc.processPublish(CREATE_TABLE_AFTER_LOST_CONNECTION);
-            assert publishResult == 0;
-        } catch (VantiqSQLException e) {
-            fail("Should not throw an exception");
+            jdbc = new JDBC();
+            jdbc.setupJDBC(testDBURL, testDBUsername, testDBPassword, false, 0);
+            
+            // Close the connection, and then try to query
+            jdbc.close();
+            
+            // Query should still work, because reconnect will be triggered
+            int publishResult;
+            try {
+                publishResult = jdbc.processPublish(CREATE_TABLE_AFTER_LOST_CONNECTION);
+                assert publishResult == 0;
+            } catch (VantiqSQLException e) {
+                fail("Should not throw an exception");
+            }
+        } finally {
+            if (jdbc != null) {
+                jdbc.close();
+            }
         }
-        
-        jdbc.close();
     }
     
     @Test
 //    @Ignore
-    public void testMaxMessageSize() {
+    public void testMaxMessageSize() throws VantiqSQLException {
         // Only run test with intended vantiq availability
         assumeTrue(testAuthToken != null && testVantiqServer != null);
         assumeTrue(testDBUsername != null && testDBPassword != null && testDBURL != null && jdbcDriverLoc != null);
 
-        // Check that Source does not already exist in namespace, and skip test if it does
-        assumeFalse(checkSourceExists());
-
-        // Setup a VANTIQ JDBC Source, and start running the core
-        setupSource(createSourceDef(false, false));
-
-        // Number of rows to insert in table;
-        int numRows = 2000;
-
-        // Publish to the source in order to create a table
-        Map<String, Object> createParams = new LinkedHashMap<>();
-        createParams.put("query", CREATE_TABLE_MAX_MESSAGE_SIZE);
-        vantiq.publish("sources", testSourceName, createParams);
-
-        // Insert 2000 rows into the table
-        Map<String, Object> insertParams = new LinkedHashMap<>();
-        insertParams.put("query", INSERT_ROW_MAX_MESSAGE_SIZE);
-        for (int i = 0; i < numRows; i ++) {
-            vantiq.publish("sources", testSourceName, insertParams);
+        try {
+            jdbc = new JDBC();
+            jdbc.setupJDBC(testDBURL, testDBUsername, testDBPassword, false, 0);
+    
+            // Number of rows to insert in table;
+            int numRows = 2000;
+    
+            // Publish to the source in order to create a table
+            Map<String, Object> createParams = new LinkedHashMap<>();
+            createParams.put("query", CREATE_TABLE_MAX_MESSAGE_SIZE);
+            vantiq.publish("sources", testSourceName, createParams);
+    
+            // Insert 2000 rows into the table
+            Map<String, Object> insertParams = new LinkedHashMap<>();
+            insertParams.put("query", INSERT_ROW_MAX_MESSAGE_SIZE);
+            for (int i = 0; i < numRows; i ++) {
+                vantiq.publish("sources", testSourceName, insertParams);
+            }
+    
+            // Query the Source without bundleFactor and make sure there were no errors
+            Map<String, Object> params = new LinkedHashMap<>();
+            params.put("query", QUERY_TABLE_MAX_MESSAGE_SIZE);
+            VantiqResponse response = vantiq.query(testSourceName, params);
+            JsonArray responseBody = (JsonArray) response.getBody();
+            assert responseBody.size() == numRows;
+            assert core != null;
+            assert core.lastRowBundle != null;
+            assert core.lastRowBundle.length == JDBCCore.DEFAULT_BUNDLE_SIZE;
+    
+            // Query with an invalid bundleFactor
+            params.put("bundleFactor", "jibberish");
+            response = vantiq.query(testSourceName, params);
+            responseBody = (JsonArray) response.getBody();
+            assert responseBody.size() == numRows;
+            assert core.lastRowBundle.length == JDBCCore.DEFAULT_BUNDLE_SIZE;
+    
+            // Query with an invalid bundleFactor
+            params.put("bundleFactor", -1);
+            response = vantiq.query(testSourceName, params);
+            responseBody = (JsonArray) response.getBody();
+            assert responseBody.size() == numRows;
+            assert core.lastRowBundle.length == JDBCCore.DEFAULT_BUNDLE_SIZE;
+    
+            // Query with bundleFactor that divides evenly into 2000 rows
+            int bundleFactor = 200;
+            params.put("bundleFactor", bundleFactor);
+            response = vantiq.query(testSourceName, params);
+            responseBody = (JsonArray) response.getBody();
+            assert responseBody.size() == numRows;
+            assert core.lastRowBundle.length == bundleFactor;
+    
+            // Query with bundleFactor that doesn't divide evenly into 2000 rows
+            bundleFactor = 600;
+            params.put("bundleFactor", bundleFactor);
+            response = vantiq.query(testSourceName, params);
+            responseBody = (JsonArray) response.getBody();
+            assert responseBody.size() == numRows;
+            assert core.lastRowBundle.length == numRows % bundleFactor;
+    
+            // Drop table and then create it again
+            Map<String, Object> dropParams = new LinkedHashMap<>();
+            dropParams.put("query", DROP_TABLE_MAX_MESSAGE_SIZE);
+            vantiq.publish("sources", testSourceName, dropParams);
+            vantiq.publish("sources", testSourceName, createParams);
+    
+            // Check that lastRowBundle is null when the query returns no data
+            params.remove("bundleFactor");
+            response = vantiq.query(testSourceName, params);
+            responseBody = (JsonArray) response.getBody();
+            assert responseBody.size() == 0;
+            assert core.lastRowBundle == null;
+    
+            // Insert fewer rows, and make sure that using bundleFactor of 0 works
+            numRows = 100;
+            for (int i = 0; i < numRows; i ++) {
+                vantiq.publish("sources", testSourceName, insertParams);
+            }
+            params.put("bundleFactor", 0);
+            response = vantiq.query(testSourceName, params);
+            responseBody = (JsonArray) response.getBody();
+            assert responseBody.size() == numRows;
+            assert core.lastRowBundle.length == numRows;
+        } finally {
+            if (jdbc != null) {
+                jdbc.close();
+            }
         }
-
-        // Query the Source without bundleFactor and make sure there were no errors
-        Map<String, Object> params = new LinkedHashMap<>();
-        params.put("query", QUERY_TABLE_MAX_MESSAGE_SIZE);
-        VantiqResponse response = vantiq.query(testSourceName, params);
-        JsonArray responseBody = (JsonArray) response.getBody();
-        assert responseBody.size() == numRows;
-        assert core != null;
-        assert core.lastRowBundle != null;
-        assert core.lastRowBundle.length == JDBCCore.DEFAULT_BUNDLE_SIZE;
-
-        // Query with an invalid bundleFactor
-        params.put("bundleFactor", "jibberish");
-        response = vantiq.query(testSourceName, params);
-        responseBody = (JsonArray) response.getBody();
-        assert responseBody.size() == numRows;
-        assert core.lastRowBundle.length == JDBCCore.DEFAULT_BUNDLE_SIZE;
-
-        // Query with an invalid bundleFactor
-        params.put("bundleFactor", -1);
-        response = vantiq.query(testSourceName, params);
-        responseBody = (JsonArray) response.getBody();
-        assert responseBody.size() == numRows;
-        assert core.lastRowBundle.length == JDBCCore.DEFAULT_BUNDLE_SIZE;
-
-        // Query with bundleFactor that divides evenly into 2000 rows
-        int bundleFactor = 200;
-        params.put("bundleFactor", bundleFactor);
-        response = vantiq.query(testSourceName, params);
-        responseBody = (JsonArray) response.getBody();
-        assert responseBody.size() == numRows;
-        assert core.lastRowBundle.length == bundleFactor;
-
-        // Query with bundleFactor that doesn't divide evenly into 2000 rows
-        bundleFactor = 600;
-        params.put("bundleFactor", bundleFactor);
-        response = vantiq.query(testSourceName, params);
-        responseBody = (JsonArray) response.getBody();
-        assert responseBody.size() == numRows;
-        assert core.lastRowBundle.length == numRows % bundleFactor;
-
-        // Drop table and then create it again
-        Map<String, Object> dropParams = new LinkedHashMap<>();
-        dropParams.put("query", DROP_TABLE_MAX_MESSAGE_SIZE);
-        vantiq.publish("sources", testSourceName, dropParams);
-        vantiq.publish("sources", testSourceName, createParams);
-
-        // Check that lastRowBundle is null when the query returns no data
-        params.remove("bundleFactor");
-        response = vantiq.query(testSourceName, params);
-        responseBody = (JsonArray) response.getBody();
-        assert responseBody.size() == 0;
-        assert core.lastRowBundle == null;
-
-        // Insert fewer rows, and make sure that using bundleFactor of 0 works
-        numRows = 100;
-        for (int i = 0; i < numRows; i ++) {
-            vantiq.publish("sources", testSourceName, insertParams);
-        }
-        params.put("bundleFactor", 0);
-        response = vantiq.query(testSourceName, params);
-        responseBody = (JsonArray) response.getBody();
-        assert responseBody.size() == numRows;
-        assert core.lastRowBundle.length == numRows;
-
-        // Delete the Source from VANTIQ
-        deleteSource();
     }
 
     @Test
@@ -929,7 +969,15 @@ public class TestJDBC extends TestJDBCBase {
         assumeTrue(testDBUsername != null && testDBPassword != null && testDBURL != null && jdbcDriverLoc != null);
 
         // Check that Source, Type, Topic, Procedure and Rule do not already exist in namespace, and skip test if they do
-        assumeFalse(checkSourceExists());
+        Map<String, String> where = new LinkedHashMap<>();
+        where.put("name", testSourceNameAsynch);
+        VantiqResponse response = vantiq.select("system.sources", null, where, null);
+        ArrayList responseBody = (ArrayList) response.getBody();
+        if (!responseBody.isEmpty()) {
+            response = vantiq.delete("system.sources", where);
+            assert response.isSuccess();
+        }
+    
         assumeFalse(checkTypeExists());
         assumeFalse(checkTopicExists());
         assumeFalse(checkProcedureExists());
@@ -950,16 +998,15 @@ public class TestJDBC extends TestJDBCBase {
         setupRule();
     
         // Select from the type and make sure all of our results are there as expected
-        VantiqResponse response = vantiq.select(testTypeName, null, null, null);
-        ArrayList responseBody = (ArrayList) response.getBody();
+        response = vantiq.select(testTypeName, null, null, null);
+        responseBody = (ArrayList) response.getBody();
         assertEquals (0, responseBody.size());
     
         // Publish to the source in order to create a table
         Map<String, Object> createParams = new LinkedHashMap<>();
         createParams.put("query", CREATE_TABLE_ASYNCH);
         vantiq.publish("sources", testSourceName, createParams);
-
-
+        
         // Execute Procedure to trigger asynchronous publish/queries (assign to variable to ensure that procedure has finished before selecting from type)
         response = vantiq.execute(testProcedureName, new LinkedHashMap<>());
         if (!response.isSuccess()) {
@@ -987,7 +1034,9 @@ public class TestJDBC extends TestJDBCBase {
         vantiq.publish("sources", testSourceName, deleteParams);
 
         // Delete the Source/Type/Topic/Procedure/Rule from VANTIQ
-        deleteSource();
+        response = vantiq.delete("system.sources", where);
+        assert response.isSuccess();
+    
         deleteType();
         deleteTopic();
         deleteProcedure();
@@ -995,116 +1044,112 @@ public class TestJDBC extends TestJDBCBase {
     }
 
     @Test
-    public void testInvalidBatchProcessing() {
+    public void testInvalidBatchProcessing() throws VantiqSQLException {
         // Only run test with intended vantiq availability
         assumeTrue(testAuthToken != null && testVantiqServer != null);
         assumeTrue(testDBUsername != null && testDBPassword != null && testDBURL != null && jdbcDriverLoc != null);
-
-        // Check that Source does not already exist in namespace, and skip test if they do
-        assumeFalse(checkSourceExists());
-
-        // Setup a VANTIQ JDBC Source, and start running the core
-        setupSource(createSourceDef(false, false));
-
-        // Create table
-        Map<String, Object> createParams = new LinkedHashMap<>();
-        createParams.put("query", CREATE_TABLE_INVALID_BATCH);
-        vantiq.publish("sources", testSourceName, createParams);
-
-        // Creating a list of integers to insert as a batch
-        ArrayList<Object> invalidBatch = new ArrayList<>();
-        for (int i = 0; i<50; i++) {
-            invalidBatch.add(10);
-        }
-
-        // Attempt to insert data into the table, which should fail
-        Map<String, Object> insertParams = new LinkedHashMap<>();
-        insertParams.put("query", invalidBatch);
-        vantiq.publish("sources", testSourceName, insertParams);
-
-        // Query the table and make sure it is empty
-        Map<String, Object> queryParams = new LinkedHashMap<>();
-        queryParams.put("query", SELECT_TABLE_INVALID_BATCH);
-        VantiqResponse response = vantiq.query(testSourceName, queryParams);
-        JsonArray responseBody = (JsonArray) response.getBody();
-        assert responseBody.size() == 0;
-
-        // Now try a list of jibberish queries
-        for (int i = 0; i<50; i++) {
-            invalidBatch.add("jibberish");
-        }
-
-        // Attempt to insert data into the table, which should fail
-        insertParams.put("query", invalidBatch);
-        vantiq.publish("sources", testSourceName, insertParams);
-
-        // Query the table and make sure it is empty
-        response = vantiq.query(testSourceName, queryParams);
-        responseBody = (JsonArray) response.getBody();
-        assert responseBody.size() == 0;
-
-        // Delete the Source
-        deleteSource();
-    }
-
-    @Test
-    public void testBatchProcessing() {
-        // Only run test with intended vantiq availability
-        assumeTrue(testAuthToken != null && testVantiqServer != null);
-        assumeTrue(testDBUsername != null && testDBPassword != null && testDBURL != null && jdbcDriverLoc != null);
-
-        // Check that Source does not already exist in namespace, and skip test if they do
-        assumeFalse(checkSourceExists());
-
-        // Setup a VANTIQ JDBC Source, and start running the core
-        setupSource(createSourceDef(false, false));
-
-        // Create table
-        Map<String, Object> createParams = new LinkedHashMap<>();
-        createParams.put("query", CREATE_TABLE_BATCH);
-        vantiq.publish("sources", testSourceName, createParams);
-
-        // Creating a list of strings to insert as a batch
-        ArrayList<String> batch = new ArrayList<>();
-        for (int i = 0; i<50; i++) {
-            batch.add("INSERT INTO TestBatch VALUES (" + i + ", 'First', 'Second');");
-        }
-
-        // Inserting data into the table as a batch
-        Map<String, Object> insertParams = new LinkedHashMap<>();
-        insertParams.put("query", batch);
-        VantiqResponse response = vantiq.publish("sources", testSourceName, insertParams);
-        assert !response.hasErrors();
-
-        // Select the data from table and make sure the response is valid
-        Map<String, Object> queryParams = new LinkedHashMap<>();
-        queryParams.put("query", SELECT_TABLE_BATCH);
-        response = vantiq.query(testSourceName, queryParams);
-        if (response.hasErrors()) {
-            log.debug("Response errors: {}", response.getErrors());
-        }
-        assert response.isSuccess();
-        assert response.getBody() instanceof JsonArray;
-        JsonArray responseBody = (JsonArray) response.getBody();
-        assert responseBody.size() == 50;
-
-        // Delete the Source
-        deleteSource();
-    }
-
-    @Test
-    public void testQueryUpdate() {
-        // Only run test with intended vantiq availability
-        assumeTrue(testAuthToken != null && testVantiqServer != null);
-        assumeTrue(testDBUsername != null && testDBPassword != null && testDBURL != null && jdbcDriverLoc != null);
-
-        // Check that Source does not already exist in namespace, and skip test if they do
-        assumeFalse(checkSourceExists());
-
+        
         try {
-            // Setup a VANTIQ JDBC Source, and start running the core
-            setupSource(createSourceDef(false, false));
-            
+            jdbc = new JDBC();
+            jdbc.setupJDBC(testDBURL, testDBUsername, testDBPassword, false, 0);
+    
+            // Create table
+            Map<String, Object> createParams = new LinkedHashMap<>();
+            createParams.put("query", CREATE_TABLE_INVALID_BATCH);
+            vantiq.publish("sources", testSourceName, createParams);
+    
+            // Creating a list of integers to insert as a batch
+            ArrayList<Object> invalidBatch = new ArrayList<>();
+            for (int i = 0; i<50; i++) {
+                invalidBatch.add(10);
+            }
+    
+            // Attempt to insert data into the table, which should fail
+            Map<String, Object> insertParams = new LinkedHashMap<>();
+            insertParams.put("query", invalidBatch);
+            vantiq.publish("sources", testSourceName, insertParams);
+    
+            // Query the table and make sure it is empty
+            Map<String, Object> queryParams = new LinkedHashMap<>();
+            queryParams.put("query", SELECT_TABLE_INVALID_BATCH);
+            VantiqResponse response = vantiq.query(testSourceName, queryParams);
+            JsonArray responseBody = (JsonArray) response.getBody();
+            assert responseBody.size() == 0;
+    
+            // Now try a list of jibberish queries
+            for (int i = 0; i<50; i++) {
+                invalidBatch.add("jibberish");
+            }
+    
+            // Attempt to insert data into the table, which should fail
+            insertParams.put("query", invalidBatch);
+            vantiq.publish("sources", testSourceName, insertParams);
+    
+            // Query the table and make sure it is empty
+            response = vantiq.query(testSourceName, queryParams);
+            responseBody = (JsonArray) response.getBody();
+            assert responseBody.size() == 0;
+        } finally {
+            if (jdbc != null) {
+                jdbc.close();
+            }
+        }
+    }
+
+    @Test
+    public void testBatchProcessing() throws VantiqSQLException {
+        // Only run test with intended vantiq availability
+        assumeTrue(testAuthToken != null && testVantiqServer != null);
+        assumeTrue(testDBUsername != null && testDBPassword != null && testDBURL != null && jdbcDriverLoc != null);
+        try {
+            jdbc = new JDBC();
+            jdbc.setupJDBC(testDBURL, testDBUsername, testDBPassword, false, 0);
+    
+            // Create table
+            Map<String, Object> createParams = new LinkedHashMap<>();
+            createParams.put("query", CREATE_TABLE_BATCH);
+            vantiq.publish("sources", testSourceName, createParams);
+    
+            // Creating a list of strings to insert as a batch
+            ArrayList<String> batch = new ArrayList<>();
+            for (int i = 0; i<50; i++) {
+                batch.add("INSERT INTO TestBatch VALUES (" + i + ", 'First', 'Second');");
+            }
+    
+            // Inserting data into the table as a batch
+            Map<String, Object> insertParams = new LinkedHashMap<>();
+            insertParams.put("query", batch);
+            VantiqResponse response = vantiq.publish("sources", testSourceName, insertParams);
+            assert !response.hasErrors();
+    
+            // Select the data from table and make sure the response is valid
+            Map<String, Object> queryParams = new LinkedHashMap<>();
+            queryParams.put("query", SELECT_TABLE_BATCH);
+            response = vantiq.query(testSourceName, queryParams);
+            if (response.hasErrors()) {
+                log.debug("Response errors: {}", response.getErrors());
+            }
+            assert response.isSuccess();
+            assert response.getBody() instanceof JsonArray;
+            JsonArray responseBody = (JsonArray) response.getBody();
+            assert responseBody.size() == 50;
+        } finally {
+            if (jdbc != null) {
+                jdbc.close();
+            }
+        }
+    }
+
+    @Test
+    public void testQueryUpdate() throws VantiqSQLException {
+        // Only run test with intended vantiq availability
+        assumeTrue(testAuthToken != null && testVantiqServer != null);
+        assumeTrue(testDBUsername != null && testDBPassword != null && testDBURL != null && jdbcDriverLoc != null);
+  
+        try {
+            jdbc = new JDBC();
+            jdbc.setupJDBC(testDBURL, testDBUsername, testDBPassword, false, 0);
+    
             // Create table using query
             Map<String, Object> createParams = new LinkedHashMap<>();
             createParams.put("query", CREATE_TABLE_QUERY);
@@ -1153,22 +1198,20 @@ public class TestJDBC extends TestJDBCBase {
             log.error("Test failing with exception: ", e);
             fail("Trapped exception: " + e.getMessage());
         } finally {
-            // Delete the Source
-            deleteSource();
+            if (jdbc != null) {
+                jdbc.close();
+            }
         }
     }
 
     @Test
-    public void testQueryUpdateBatch() {
+    public void testQueryUpdateBatch() throws VantiqSQLException {
         // Only run test with intended vantiq availability
         assumeTrue(testAuthToken != null && testVantiqServer != null);
         assumeTrue(testDBUsername != null && testDBPassword != null && testDBURL != null && jdbcDriverLoc != null);
-
-        // Check that Source does not already exist in namespace, and skip test if they do
-        assumeFalse(checkSourceExists());
         try {
-            // Setup a VANTIQ JDBC Source, and start running the core
-            setupSource(createSourceDef(false, false));
+            jdbc = new JDBC();
+            jdbc.setupJDBC(testDBURL, testDBUsername, testDBPassword, false, 0);
     
             // Create table
             Map<String, Object> createParams = new LinkedHashMap<>();
@@ -1200,8 +1243,9 @@ public class TestJDBC extends TestJDBCBase {
             response = vantiq.query(testSourceName, insertParams);
             assert response.hasErrors();
         } finally {
-            // Delete the Source
-            deleteSource();
+            if (jdbc != null) {
+                jdbc.close();
+            }
         }
     }
 
@@ -1246,7 +1290,7 @@ public class TestJDBC extends TestJDBCBase {
 
         VantiqResponse insertResponse = vantiq.insert("system.sources", sourceDef);
         if (insertResponse.isSuccess()) {
-            core = new JDBCCore(testSourceName, testAuthToken, testVantiqServer);
+            core = new JDBCCore((String) sourceDef.get("name"), testAuthToken, testVantiqServer);
             core.start(CORE_START_TIMEOUT);
         }
         if (insertResponse.hasErrors()) {
@@ -1312,7 +1356,8 @@ public class TestJDBC extends TestJDBCBase {
         
         // Setting up the source definition
         sourceDef.put("config", sourceConfig);
-        sourceDef.put("name", testSourceName);
+        String srcNam = (isAsynch ? testSourceNameAsynch : testSourceName);
+        sourceDef.put("name", srcNam);
         sourceDef.put("type", "JDBC");
         sourceDef.put("active", "true");
         sourceDef.put("direction", "BOTH");
@@ -1320,9 +1365,17 @@ public class TestJDBC extends TestJDBCBase {
         return sourceDef;
     }
     
-    public static void deleteSource() {
+    public static void deleteSources() {
+        Map<String, Object> tsn = new LinkedHashMap<>();
+        tsn.put("name", testSourceName);
+        Map<String, Object> tsna = new LinkedHashMap<>();
+        tsna.put("name", testSourceNameAsynch);
         Map<String, Object> where = new LinkedHashMap<>();
-        where.put("name", testSourceName);
+        List<Map<String, Object>> qList = new ArrayList<>();
+        qList.add(tsn);
+        qList.add(tsna);
+        where.put("$or", qList);
+    
         VantiqResponse response = vantiq.delete("system.sources", where);
     }
 
