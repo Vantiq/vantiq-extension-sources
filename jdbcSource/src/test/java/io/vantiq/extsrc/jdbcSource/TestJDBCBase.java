@@ -38,6 +38,7 @@ public class TestJDBCBase {
     static String testVantiqServer;
     static String jdbcDriverLoc;
     static String testSourceName;
+    static String testSourceNameAsynch;
     static String testTypeName;
     static String testProcedureName;
     static String testRuleName;
@@ -52,6 +53,7 @@ public class TestJDBCBase {
         testVantiqServer = System.getProperty("TestVantiqServer", null);
         jdbcDriverLoc = System.getenv("JDBC_DRIVER_LOC");
         testSourceName = System.getProperty("EntConTestSourceName", "testSourceName");
+        testSourceNameAsynch = testSourceName + "_Asynch";
         testTypeName = System.getProperty("EntConTestTypeName", "testTypeName");
         testProcedureName = System.getProperty("EntConTestProcedureName", "testProcedureName");
         testRuleName = System.getProperty("EntConTestRuleName", "testRuleName");
