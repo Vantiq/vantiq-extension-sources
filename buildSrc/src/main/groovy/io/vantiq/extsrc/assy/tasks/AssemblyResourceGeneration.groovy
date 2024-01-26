@@ -448,7 +448,7 @@ class AssemblyResourceGeneration extends DefaultTask {
      * @param kamName String name of the kamelet which will be used to construct the source name
      * @param routeDoc String name of the document containing the route
      * @param props Map<String, Object> The Camel properties associated with this kamelet.
-     * @param declaredDepdencies List<String> dependencies found in the kamelet file
+     * @param declaredDependencies List<String> dependencies found in the kamelet file
      * @returns Map<String, Object> containing Path written & resourceReference
      */
     static Map<String, Object> addSourceDefinition(Path kameletAssemblyDir, String packageName, String kamName,
@@ -517,15 +517,15 @@ class AssemblyResourceGeneration extends DefaultTask {
         }
         def generalConfig = [:]
         if (declaredDependencies && declaredDependencies.size() > 0) {
-            List<String> additionalLibraries = new ArrayList<>(declaredDependencies.size());
+            List<String> additionalLibraries = new ArrayList<>(declaredDependencies.size())
             declaredDependencies.forEach( ( dep ) -> {
                 if (dep.startsWith('camel:')) {
-                    additionalLibraries.add('org.apache.camel:camel-' + dep.substring('camel:'.length()));
+                    additionalLibraries.add('org.apache.camel:camel-' + dep.substring('camel:'.length()))
                 } else if (dep.startsWith('mvn:')) {
                     additionalLibraries.add(dep.substring('mvn:'.length()))
                 } // Ignore github things...
             })
-            generalConfig[GENERAL_ADDITIONAL_LIBRARIES] = additionalLibraries;
+            generalConfig[GENERAL_ADDITIONAL_LIBRARIES] = additionalLibraries
         }
         sourceDef.config = [ (CONFIG_CAMEL_RUNTIME): camelAppConfig, (CONFIG_CAMEL_GENERAL): generalConfig]
         String srcDefJson = JsonOutput.prettyPrint(JsonOutput.toJson(sourceDef))
@@ -614,6 +614,13 @@ class AssemblyResourceGeneration extends DefaultTask {
             // are "false" in Groovy Truth land.
             if (pDesc.default != null) {
                 propDesc.default = pDesc.default
+                // Kamelets allow a required parameter to have a default value, Vantiq assemblies do not.
+                // If we have a default value, don't set the assembly config prop "required" flag.
+                if (propDesc.required != null && (pDesc.required as Boolean == true)) {
+                    propDesc.remove('required')
+                    log.debug('Project {} :: propDesc.required for {}: removed due to default value of "{}"',
+                        projectName, pName, propDesc.default)
+                }
             }
             if (pDesc.description != null) {
                 propDesc.description = pDesc.description
