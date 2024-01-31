@@ -1,0 +1,12 @@
+system
+{
+    url = 'http://localhost:8080'
+    username = 'system'
+    password = 'fxtrt$1492'
+}
+smartFrameworksUser
+{
+    url = 'http://localhost:8080'
+    username = 'testUser'
+    password = 'myPassword'
+}
