@@ -1,4 +1,4 @@
 websockets>=12.0
-aiohttp>=3.9.0
+aiohttp>=3.9.2
 urllib3>=2.0.7
 jprops>=2.0.2

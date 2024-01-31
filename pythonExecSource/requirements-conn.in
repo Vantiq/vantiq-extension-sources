@@ -1,5 +1,5 @@
 websockets>=12.0
-aiohttp>=3.9.0
+aiohttp>=3.9.2
 urllib3>=2.0.7
-vantiqconnectorsdk>=1.2.0
-vantiqsdk>=1.2.1
+vantiqconnectorsdk>=1.2.1
+vantiqsdk>=1.2.2
