@@ -75,7 +75,7 @@ The Vantiq Camel assemblies contained herein are composed of the following.
     `_serviceEvent`. Continuing the example above, `aws_sns_sink_serviceEvent` (so the full service event name is 
     `com.vantiq.extsrc.camel.kamelets.v3_21_0.aws_sns_sink.aws_sns_sink_service/aws_sns_sink_serviceEvent`).
 * Vantiq Rule -- this is the Vantiq component which marshals events between the Vantiq source and Vantiq service.
-  * The rules are in the package matching the assembly name, and named with the service name with the suffix 
+  * The rules are in the package matching the assembly name, and named using the associaed service name with the suffix 
     `_srcToSvc` (for a _sink_ assembly) or `_svcToSrc` (for a _source_ asssembly).
 * Vantiq Documents -- there are a few documents that may be present in the Vantiq Camel assembly.
   * Overview Document -- `<assembly name>_overview.md`.  This contains the provided high-level description of the 
