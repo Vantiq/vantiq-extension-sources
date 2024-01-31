@@ -31,8 +31,6 @@ click==8.1.7
     # via pip-tools
 codetiming==1.4.0
     # via -r requirements-build.in
-colorama==0.4.6
-    # via vantiqsdk
 docutils==0.20.1
     # via readme-renderer
 exceptiongroup==1.2.0
@@ -133,10 +131,9 @@ urllib3==2.1.0
     #   -r requirements-conn.in
     #   requests
     #   twine
-    #   vantiqsdk
-vantiqconnectorsdk==1.2.0
+vantiqconnectorsdk==1.2.1
     # via -r requirements-conn.in
-vantiqsdk==1.2.1
+vantiqsdk==1.2.2
     # via -r requirements-conn.in
 websockets==12.0
     # via
