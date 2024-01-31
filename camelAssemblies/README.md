@@ -9,7 +9,7 @@ create Vantiq services and sources for connections to or from external systems s
 
 # Prerequisites <a name="pre" id="pre"></a>
 
-**IMPORTANT:** A basic understanding of the [Vantiq Camel Connector](../CamelConnector/README.md) is assumed.
+**IMPORTANT:** A basic understanding of the [Vantiq Camel Connector](../camelConnector/README.md) is assumed.
 
 All assemblies contained herein are built atop the base Camel Connector assembly, 
 `com.vantiq.extsrc.camelconn.camelConnector`. Specifically, the Camel Connector 
@@ -48,7 +48,7 @@ while an assembly for sending data to Amazon's AWS SNS will be in assembly
 For each of these cases, the Vantiq components contained in the assembly will have that assembly name as their 
 package name.
 
-Each Vantiq assembly is realized via a Vantiq Camel Connector](../CamelConnector/README.md). The connector is 
+Each Vantiq assembly is realized via a [Vantiq Camel Connector](../camelConnector/README.md). The connector is 
 configured to make the connection to the associated information system via the Camel route defined in the assembly.
 
 ## Constructed Assemblies
