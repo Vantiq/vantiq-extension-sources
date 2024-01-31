@@ -37,8 +37,8 @@ for
 sending data _to_ another system are thought of as _sinks_, and have the word `sink` in the assembly name and the
 names of the included Vantiq components. Those that get data _from_ another system have the word `source` in the names.
 
-Each assembly and its included components are named including the name of the kamelet from which they
-derived and the Apache Camel version in use (kamelets are Camel version specific).  For example, an assembly using 
+Each assembly and its included components are named including the name of the system with which they
+interact and the Apache Camel version in use (kamelets are Camel version specific).  For example, an assembly using 
 Camel version 3.21.x for consuming information from Amazon's AWS S3 will be in the Vantiq Camel assembly
 
     com.vantiq.extsrc.camel.kamelets.v3_21_0.aws_s3_source
@@ -48,7 +48,8 @@ while an assembly for sending data to Amazon's AWS SNS will be found in
     com.vantiq.extsrc.camel.kamelets.v3_21_0.aws_sns_sink
 
 For each of these cases, the Vantiq components contained in the assembly will have that assembly name as their 
-package name.
+package name. The _base name_ for Vantiq components will be the kamelet name, with suffixes specific to the Vantiq 
+component type.
 
 Each Vantiq Camel assembly is realized via a [Vantiq Camel Connector](../camelConnector/README.md). The connector is 
 configured to make the connection to the associated information system via the Camel route defined in the assembly.
@@ -63,13 +64,14 @@ The Vantiq Camel assemblies contained herein are composed of the following.
     Component(s).
   * The configuration may include configuration information (such as credentials, type of interaction) generated 
     from Vantiq assembly configuration parameters.
-  * The Vantiq source is the in the package matching the assembly name with the name of the kamelet as the suffix 
+  * The Vantiq source is the in the package matching the assembly name, and name consisting of the base name with the 
+    suffix 
     `_source`.
 * Vantiq Service -- this is the Vantiq item with which Vail code interacts.
   * The service interacts with the Vantiq source to move information to/from the Vantiq system.
-  * The service is in the package matching the assembly name, and named with the kamelet name with the suffix 
+  * The service is in the package matching the assembly name, and named with the base name with the suffix 
     `_service`.  For example, `com.vantiq.extsrc.camel.kamelets.v3_21_0.aws_sns_sink.aws_sns_sink_service`.
-  * Each service is defined with an _inbound_ or _outbound_ event named with the kamelet name with the suffix 
+  * Each service is defined with an _inbound_ or _outbound_ event named with the base name with the suffix 
     `_serviceEvent`. Continuing the example above, `aws_sns_sink_serviceEvent` (so the full service event name is 
     `com.vantiq.extsrc.camel.kamelets.v3_21_0.aws_sns_sink.aws_sns_sink_service/aws_sns_sink_serviceEvent`).
 * Vantiq Rule -- this is the Vantiq component which marshals events between the Vantiq source and Vantiq service.
@@ -122,15 +124,13 @@ where the `header` property contains the Camel headers, and the `message` proper
 The associated Vantiq _schema_ is defined via the `com.vantiq.extsrc.camelconn.camelConnector` assembly imported as 
 described above.  This imported assembly is a prerequisite for the other Vantiq Camel assemblies.
 
-
 **Note**: Some Vantiq Camel assemblies (specifically those that work with systems with limited messaging 
 capabilities),
 the Vantiq Component will structure output messages with a single property (`stringVal` or `byteVal`) containing the 
 message content. This allows Vantiq applications to interact in a Vantiq application native manner.
 Users of these systems will need to be aware of this _impendance mismatch_ and respond accordingly.
 
-
-# Logging & Debugging
+## Logging & Debugging
 
 These Vantiq Camel assemblies themselves provide no direct support for logging or debugging -- they are simply 
 specifications for 
