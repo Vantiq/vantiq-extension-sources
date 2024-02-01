@@ -64,9 +64,8 @@ The Vantiq Camel assemblies contained herein are composed of the following.
     Component(s).
   * The configuration may include configuration information (such as credentials, type of interaction) generated 
     from Vantiq assembly configuration parameters.
-  * The Vantiq source is the in the package matching the assembly name, and name consisting of the base name with the 
-    suffix 
-    `_source`.
+  * The Vantiq source is in the package matching the assembly name, with the name consisting
+      of the base name with the suffix `_source`.
 * Vantiq Service -- this is the Vantiq item with which Vail code interacts.
   * The service interacts with the Vantiq source to move information to/from the Vantiq system.
   * The service is in the package matching the assembly name, and named with the base name with the suffix 
@@ -75,8 +74,9 @@ The Vantiq Camel assemblies contained herein are composed of the following.
     `_serviceEvent`. Continuing the example above, `aws_sns_sink_serviceEvent` (so the full service event name is 
     `com.vantiq.extsrc.camel.kamelets.v3_21_0.aws_sns_sink.aws_sns_sink_service/aws_sns_sink_serviceEvent`).
 * Vantiq Rule -- this is the Vantiq component which marshals events between the Vantiq source and Vantiq service.
-  * The rules are in the package matching the assembly name, and named using the associaed service name with the suffix 
-    `_srcToSvc` (for a _sink_ assembly) or `_svcToSrc` (for a _source_ asssembly).
+  * The rules are in the package matching the assembly name, and named using the associated 
+       service name with the suffix `_srcToSvc` (for a _sink_ assembly)
+       or `_svcToSrc` (for a _source_ assembly).
 * Vantiq Documents -- there are a few documents that may be present in the Vantiq Camel assembly.
   * Overview Document -- `<assembly name>_overview.md`.  This contains the provided high-level description of the 
     assembly. It will often provide other information concerning use of the assembly.
@@ -119,16 +119,17 @@ Connector, please see the [Camel Connector overview](../camelConnector/README.md
 
 As noted above, the service will have an inbound or outbound event defined, and interactions with the service are
 generally performed by publishing to that event or handling it (for _inbound_ or _outbound_ events).
-All of the defined to use the _structured messages_ as defined by the 
+All are constructed to use _structured messages_ as defined by the 
 [Camel Component](../camelComponent/README.md#structured-headers-and-messages). Consequently, messages sent to/from 
 the service should be in this format. Specifically, such messages contain two (2) properties: `header` and `message`,
 where the `header` property contains the Camel headers, and the `message` property contains Camel message.
 The associated Vantiq _schema_ is defined via the `com.vantiq.extsrc.camelconn.camelConnector` assembly imported as 
 described above.  This imported assembly is a prerequisite for the other Vantiq Camel assemblies.
 
-**Note**: Some Vantiq Camel assemblies (specifically those that work with systems with limited messaging 
-capabilities),
-the Vantiq Component will structure output messages with a single property (`stringVal` or `byteVal`) containing the 
+**Note**: Some of these Vantiq Camel assemblies (specifically those that work with systems
+with limited messaging capabilities),
+the Vantiq Component will construct output messages (the `message` property) with a single 
+property (`stringVal` or `byteVal`) containing the 
 message content. This allows Vantiq applications to interact in a Vantiq application native manner.
 Users of these systems will need to be aware of this _impendance mismatch_ and respond accordingly.
 
