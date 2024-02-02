@@ -11,27 +11,40 @@ package io.vantiq.extsrc.camel;
 import static io.vantiq.extsrc.camel.VantiqEndpoint.STRUCTURED_MESSAGE_HEADERS_PROPERTY;
 import static io.vantiq.extsrc.camel.VantiqEndpoint.STRUCTURED_MESSAGE_MESSAGE_PROPERTY;
 
+import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.DatabindException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.BinaryNode;
+import com.fasterxml.jackson.databind.node.BooleanNode;
+import com.fasterxml.jackson.databind.node.ContainerNode;
+import com.fasterxml.jackson.databind.node.TextNode;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import io.vantiq.extjsdk.ExtensionServiceMessage;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.camel.Exchange;
 import org.apache.camel.ExchangePattern;
 import org.apache.camel.StreamCache;
+import org.apache.camel.converter.stream.ByteArrayInputStreamCache;
 import org.apache.camel.converter.stream.InputStreamCache;
 import org.apache.camel.InvalidPayloadException;
 import org.apache.camel.support.DefaultProducer;
 
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.io.ObjectInputStream;
 import java.net.HttpURLConnection;
 import java.nio.ByteBuffer;
 import java.nio.charset.CharacterCodingException;
 import java.nio.charset.CharsetDecoder;
 import java.nio.charset.StandardCharsets;
-
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 
 @Slf4j
@@ -56,64 +69,113 @@ public class VantiqProducer extends DefaultProducer {
             log.trace("Type converter count: {}", exchange.getContext().getTypeConverterRegistry().size());
         }
         
-        Object msg = exchange.getIn().getBody();
-        Map<String, Object> vMsg;
-        if (!(msg instanceof StreamCache)) {
-            vMsg = exchange.getIn().getBody(HashMap.class);
-            // Jackson converts to json nodes but not to map.  Have to hunt for that or convert json node.
+        Map<String, Object> vMsg = exchange.getIn().getBody(HashMap.class);
+    
+        if (vMsg == null) {
+            Object msg = exchange.getIn().getBody();
             if (log.isDebugEnabled()) {
                 log.debug("Camel converted body is {}, msg type: {}, msg: {}", vMsg, msg.getClass().getName(), msg);
             }
-            if (vMsg == null) {
-                // Then Camel couldn't convert on its own.  Let's see if we can help things along...
-                if (msg instanceof String) {
-                    // Then we must be fetching a JSON string.
-                    String strMsg = (String) msg;
-                    vMsg = mapper.readValue(strMsg, new TypeReference<>() {});
-                } else  if (msg instanceof byte[]) {
-                    byte[] ba = (byte[]) msg;
-                    // Then we must be fetching a JSON string.
-                    if (checkUTF8(ba)) {
-                        String strMsg = new String((byte[]) msg, StandardCharsets.UTF_8);
-                        try {
-                            vMsg = mapper.readValue(strMsg, new TypeReference<>() {});
-                        } catch (Exception e) {
-                            String strVal = mapper.writeValueAsString(strMsg);
-                            vMsg = Map.of("stringVal", strVal);
-                        }
-                    } else {
-                        String strVal = mapper.writeValueAsString(ba);
-                        vMsg = Map.of("byteVal", strVal);
-                    }
-                } else if (msg instanceof Map) {
-                    vMsg = (Map<String, Object>) msg;
-                } else if (msg instanceof JsonNode) {
-                    vMsg = mapper.convertValue(msg, new TypeReference<>() {});
+    
+            // If we have a stream, extract the bytes before attempting to convert them
+            if (msg instanceof StreamCache) {
+                // First, let's extract the data from the stream
+                byte[] ba = null;
+                if (msg instanceof InputStreamCache) {
+                    // Here, we have an input stream cache to attempt to process
+                    InputStreamCache isc = (InputStreamCache) msg;
+                    isc.reset();
+                    ba = isc.readAllBytes();
+                } else if (msg instanceof ByteArrayInputStreamCache) {
+                    // Here, we have an input stream cache to attempt to process
+                    ByteArrayInputStreamCache basc = (ByteArrayInputStreamCache) msg;
+                    basc.reset();
+                    ba = basc.readAllBytes();
                 } else {
                     log.error("Unexpected type: {}.  Unable to convert to Map to send to Vantiq.",
                               msg.getClass().getName());
                     throw new InvalidPayloadException(exchange, Map.class);
                 }
+                msg = ba;
             }
-        } else {
-            if (msg instanceof InputStreamCache) {
-                // Here, we have an input stream cache to attempt to process
-                InputStreamCache isc = (InputStreamCache) msg;
-                isc.reset();
-                String str = new String(isc.readAllBytes());
-                if (str.charAt(0) == '"') {
-                    // Then strip leading & trailing quotes
-                    str = str.substring(1, str.length() - 1);
+    
+            // Jackson converts to json nodes but not to map.  Have to hunt for that or convert json node.
+            // Then Camel couldn't convert on its own.  Let's see if we can help things along...
+            if (msg instanceof String) {
+                // Then we must be fetching a JSON string.
+                String strMsg = (String) msg;
+                try {
+                    vMsg = mapper.readValue(strMsg, new TypeReference<>() {});
+                } catch (Exception e) {
+                    // Not valid JSON here, so we'll assume it's just a plain old string
+                    String strVal = mapper.writeValueAsString(strMsg);
+                    vMsg = Map.of("stringVal", strVal);
                 }
-                if (log.isTraceEnabled()) {
-                    log.trace("JSON String as input is: {}", str);
+            } else if (msg instanceof byte[]) {
+                // See if we can get Jackson to do the deserialization for us.
+                byte[] ba = (byte[]) msg;
+    
+                try {
+                    msg = mapper.readTree( ba);
+                    if (msg instanceof TextNode) {
+                        msg = ((TextNode) msg).asText();
+                    } else if (msg instanceof ContainerNode) {
+                        msg = mapper.convertValue(msg, Object.class);
+                        log.debug("Decoded ObjectNode into {}: {}", msg.getClass().getName(), msg);
+                    }
+                } catch (IOException e) {
+                    // Ignore -- we'll sort it out downstream
                 }
-        
-                vMsg = mapper.readValue(isc.readAllBytes(), new TypeReference<>() {});
-            } else {
-                log.error("Unexpected type: {}.  Unable to convert to Map to send to Vantiq.",
-                          msg.getClass().getName());
-                throw new InvalidPayloadException(exchange, Map.class);
+                if (msg instanceof byte[]) {
+                    try {
+                        msg = mapper.readValue(ba, new TypeReference<>() {});
+                        log.trace("Tried readValue() -- got a {}", msg.getClass().getName());
+                    } catch (JsonParseException | DatabindException dbe) {
+                        // This couldn't do the conversion.
+                        log.trace("Exception converting/readValue() input message:", dbe);
+                        // Let's see if this is a serialization of something else. Google pubsub sometimes does this
+                        try {
+                            ByteArrayInputStream baStream = new ByteArrayInputStream(
+                                    (byte[]) exchange.getIn().getBody());
+                            ObjectInputStream objFromByte = new ObjectInputStream(baStream);
+                            msg = objFromByte.readObject();
+                        } catch (Exception e) {
+                            // Guess not...
+                            log.trace("Trapped after Java deserialization", e);
+                        }
+                    }
+                }
+                // If these both fail, msg will still be a byte array. Guess that's what there is...
+                if (msg instanceof byte[]) {
+                    // Then we might be fetching a JSON string.
+                    if (checkUTF8(ba)) {
+                        String strMsg = new String((byte[]) msg, StandardCharsets.UTF_8);
+                        try {
+                            vMsg = mapper.readValue(strMsg, new TypeReference<>() {
+                            });
+                        } catch (Exception e) {
+                            String strVal = mapper.writeValueAsString(strMsg);
+                            vMsg = Map.of("stringVal", strVal);
+                        }
+                    } else {
+                        // But, maybe it's just a byte array...
+                        String strVal = mapper.writeValueAsString(ba);
+                        vMsg = Map.of("byteVal", strVal);
+                    }
+                }
+            }
+            // If we still haven't found anything good, try the already converted
+            if (vMsg == null) {
+                if (msg instanceof Map) {
+                    vMsg = (Map<String, Object>) msg;
+                } else if (msg instanceof JsonNode) {
+                    // Let's check for more specific value nodes -- possible if someone, say, sent a String
+                    vMsg = fromJsonNode((JsonNode) msg);
+                } else {
+                    log.error("Unexpected type: {}.  Unable to convert to Map to send to Vantiq.",
+                              msg.getClass().getName());
+                    throw new InvalidPayloadException(exchange, Map.class);
+                }
             }
         }
         if (log.isTraceEnabled()) {
@@ -136,22 +198,33 @@ public class VantiqProducer extends DefaultProducer {
             // Note that we can't always use the Jackson objectMapper here because headers sometimes use Java types it
             // doesn't understand (e.g., things from google come with Protobuf timestamps or soemthing like that.
             // Simple .toString() handles it, so we'll copy the map ourselves.
-            Map<String, Object> hdrs;
-            try {
-                hdrs = mapper.convertValue(exchange.getMessage().getHeaders(),
-                                           new TypeReference<>() {});
-            } catch (Exception e) {
-                Map<String, Object> h = new HashMap<>();
-                exchange.getMessage().getHeaders().forEach((k, v) -> {
-                    if (v instanceof Integer || v instanceof Map) {
-                        h.put(k, v);
-                    } else {
-                        h.put(k, v.toString());
-                    }
-                });
-                hdrs = h;
+            Map<String, Object> hdrs = null;
+            if (exchange.getMessage().hasHeaders()) {
+                try {
+                    hdrs = mapper.convertValue(exchange.getMessage().getHeaders(),
+                                               new TypeReference<>() {
+                                               });
+                } catch (Exception e) {
+                    Map<String, Object> h = new HashMap<>();
+                    exchange.getMessage().getHeaders().forEach((k, v) -> {
+                        if (v instanceof Integer || v instanceof Map) {
+                            h.put(k, v);
+                        } else if (v != null) {
+                            h.put(k, v.toString());
+                        } else {
+                            // If they just pass a null value, we'll send it along and let the message consumer deal
+                            // with it.  This seems like an improper thing to do, but it's really up to the message
+                            // consumers here to deal with the vagaries of how various camel connectors operate.
+                            h.put(k, v);
+                        }
+                    });
+                    hdrs = h;
+                }
             }
-            fmtMsg.put(STRUCTURED_MESSAGE_HEADERS_PROPERTY, hdrs);
+            if (hdrs != null) {
+                hdrs.putAll(endpoint.duplicateHeaders(hdrs));
+                fmtMsg.put(STRUCTURED_MESSAGE_HEADERS_PROPERTY, hdrs);
+            }
             Map<String, Object> m = mapper.convertValue(vMsg, new TypeReference<>() {});
             fmtMsg.put(STRUCTURED_MESSAGE_MESSAGE_PROPERTY, m);
             vMsg = fmtMsg;
@@ -171,8 +244,35 @@ public class VantiqProducer extends DefaultProducer {
                 endpoint.sendResponse(HttpURLConnection.HTTP_OK, responseAddr, vMsg);
             }
         } else {
+            log.debug("Producing message: {}", vMsg);
             endpoint.sendMessage(vMsg);
         }
+    }
+    
+    private Map<String, Object> fromJsonNode(JsonNode msg) {
+        Map<String, Object> retVal = null;
+        if (msg instanceof TextNode) {
+            retVal = Map.of("stringVal", msg.asText());
+        } else if (msg instanceof BinaryNode) {
+            retVal = Map.of("byteVal", msg.asText());
+        } else if (msg instanceof BooleanNode) {
+            retVal = Map.of("booleanVal", msg.asText());
+        } else if (msg instanceof ArrayNode) {
+            List<Map<String, Object>> list = new ArrayList<>(msg.size());
+            for (Iterator<JsonNode> it = msg.elements(); it.hasNext(); ) {
+                JsonNode n = it.next();
+                list.add(fromJsonNode(n));
+            }
+            retVal = Map.of("listVal", list);
+        } else {
+            try {
+                retVal = mapper.convertValue(msg, new TypeReference<>() {});
+            } catch (IllegalArgumentException iae) {
+                // If we get this, there's not much we can do except return the text
+                retVal = Map.of("unknownDatatype", msg.asText());
+            }
+        }
+        return retVal;
     }
     
     protected boolean checkUTF8(byte[] bytes) {

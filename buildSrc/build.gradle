@@ -1,0 +1,34 @@
+
+plugins {
+    id 'java'
+    id 'io.franzbecker.gradle-lombok' version '5.0.0'
+}
+
+repositories {
+    mavenCentral()
+}
+
+ext {
+    apacheCommonsLangVersion = '3.12.0'
+    jacksonVersion = '2.14.2'
+    log4JVersion='2.17.2'
+    lombokVersion = '1.18.24'
+    slf4jApiVersion = '1.7.25'
+    vantiqSDKVersion = '1.1.1'
+}
+
+dependencies {
+    implementation "org.projectlombok:lombok:${lombokVersion}"
+    implementation "org.snakeyaml:snakeyaml-engine:2.6"
+    implementation "org.apache.logging.log4j:log4j-slf4j-impl:${log4JVersion}"
+    implementation "org.apache.commons:commons-lang3:${apacheCommonsLangVersion}"
+    implementation "com.fasterxml.jackson.core:jackson-databind:${jacksonVersion}"
+}
+
+tasks.withType(JavaCompile) {
+    options.encoding = 'UTF-8'
+}
+
+test {
+    useJUnitPlatform()
+}

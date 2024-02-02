@@ -8,15 +8,22 @@
 
 package io.vantiq.extsrc.camelconn.discover;
 
+import io.vantiq.extsrc.camel.HeaderDuplicationBean;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.camel.CamelContext;
+import org.apache.camel.Component;
 import org.apache.camel.ExtendedCamelContext;
 import org.apache.camel.ProducerTemplate;
 import org.apache.camel.RoutesBuilder;
+import org.apache.camel.builder.TemplatedRouteBuilder;
 import org.apache.camel.impl.DefaultCamelContext;
 import org.apache.camel.main.MainRegistry;
 import org.apache.camel.main.MainSupport;
 import org.apache.camel.builder.RouteBuilder;
+import org.apache.camel.model.ModelCamelContext;
+import org.apache.camel.model.RouteDefinition;
+import org.apache.camel.model.RouteTemplateDefinition;
+import org.apache.camel.model.RoutesDefinition;
 import org.apache.camel.spi.Resource;
 import org.apache.camel.spi.RoutesBuilderLoader;
 import org.apache.camel.spi.RoutesLoader;
@@ -32,6 +39,7 @@ import java.net.URLClassLoader;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
@@ -49,6 +57,8 @@ public class CamelRunner extends MainSupport implements Closeable {
     private final List<Map<String, Object>> initComponents;
     
     private final Properties camelProperties;
+    String headerBeanName;
+    Map<String, String> headerDuplications;
     private final File ivyCache;
     private final File loadedLibraries;
     
@@ -57,6 +67,8 @@ public class CamelRunner extends MainSupport implements Closeable {
     private final String routeSpec;
     private final String routeSpecType;
     private ClassLoader routeBasedCL;
+    
+    private Map<String, Component> componentOverrides = null; // Used in testing only
     private ClassLoader originalClassLoader;
     
     protected final MainRegistry registry;
@@ -81,10 +93,13 @@ public class CamelRunner extends MainSupport implements Closeable {
      *         the properties included herein
      * @param camelProperties Properties set of general property values that Camel can use for property
      *         resolution
+     * @param headerBeanName String Name of bean to use generate.  Should match what's in route & be unique to this
+     *         camel instance
+     * @param headerDuplications Map<String, String> directed set of header names to duplicate
      */
     public CamelRunner(String appName, String routeSpecification, String routeSpecificationType, List<URI> repos,
                        String cacheDirectory, String loadedLibDir, List<Map<String, Object>> initComponents,
-                       Properties camelProperties) {
+                       Properties camelProperties, String headerBeanName, Map<String, String> headerDuplications) {
         super();
         this.registry = new MainRegistry();
         this.appName = appName;
@@ -98,6 +113,8 @@ public class CamelRunner extends MainSupport implements Closeable {
         this.additionalLibraries = null;
         this.initComponents = initComponents;
         this.camelProperties = camelProperties;
+        this.headerDuplications = headerDuplications != null ? headerDuplications : new HashMap<>();
+        this.headerBeanName = headerBeanName;
         mainConfigurationProperties.setRoutesCollectorEnabled(false);
     }
     
@@ -112,10 +129,13 @@ public class CamelRunner extends MainSupport implements Closeable {
      * @param initComponents List<Map<String, Object>> List of component names that need
      *                          initialization using the properties included herein
      * @param camelProperties Properties set of general property values that Camel can use for property resolution
+     * @param headerBeanName String Name of bean to use generate.  Should match what's in route & be unique to this
+     *                          camel instance
+     * @param headerDuplications Map<String, String> directed set of header names to duplicate
      */
     CamelRunner(String appName, RouteBuilder routeBuilder, List<URI> repos,
                 String cacheDirectory, String loadedLibDir, List<Map<String, Object>> initComponents,
-                Properties camelProperties) {
+                Properties camelProperties, String headerBeanName, Map<String, String> headerDuplications) {
         super();
         this.registry = new MainRegistry();
         this.appName = appName;
@@ -128,11 +148,16 @@ public class CamelRunner extends MainSupport implements Closeable {
         this.additionalLibraries = null;
         this.initComponents = initComponents;
         this.camelProperties = camelProperties;
+        this.headerDuplications = headerDuplications != null ? headerDuplications : new HashMap<>();
+        this.headerBeanName = headerBeanName;
     
         mainConfigurationProperties.setRoutesBuilders(List.of(routeBuilder));
         mainConfigurationProperties.setRoutesCollectorEnabled(false);
     }
     
+    protected void setComponentOverrides(Map<String, Component> compOverrides) {
+        this.componentOverrides = compOverrides;
+    }
     public void setAdditionalLibraries(List<String> libs) {
         this.additionalLibraries = libs;
     }
@@ -140,7 +165,15 @@ public class CamelRunner extends MainSupport implements Closeable {
     @Override
     protected void doInit() throws Exception {
         super.doInit();
-        createCamelContext();
+        CamelContext ctx = createCamelContext();
+        if (componentOverrides != null && !componentOverrides.isEmpty()) {
+            componentOverrides.forEach(ctx::addComponent);
+        }
+        if (headerBeanName != null) {
+            HeaderDuplicationBean hdBean = new HeaderDuplicationBean();
+            hdBean.setHeaderDuplicationMap(headerDuplications);
+            ctx.getRegistry().bind(headerBeanName, hdBean);
+        }
     }
     
     public Properties getCamelProperties() {
@@ -161,18 +194,23 @@ public class CamelRunner extends MainSupport implements Closeable {
      * @throws Exception for errors during the process.  IllegalStateException if called before there is a Camel
      *                   context available.  Others may be thrown by called methods.
      */
-    private ClassLoader constructClassLoader() throws Exception {
+    private ClassLoader discoverAndBuildClassloader() throws Exception {
         if (getCamelContext() == null) {
             throw new IllegalStateException("Camel context does not exist.");
         }
         CamelDiscovery discoverer = new CamelDiscovery();
         Map<String, Set<String>> discResults = discoverer.performComponentDiscovery(routeBuilder, camelProperties);
-        
+    
+        // Now, based on our discovery, construct a classLoader
+        return buildClassloader(discoverer, discResults);
+    }
+    
+    private ClassLoader buildClassloader(CamelDiscovery discoverer,
+                                         Map<String, Set<String>> discResults) throws Exception {
         // Now, generate the component list to load...
         // We use a set to avoid duplicates, but we want things resolved in the order they are found in the
         // repositories, so we'll use a LinkedHashSet<>.  That acts as a set but retains the order in which elements
         // were inserted.
-        Set<File> jarList = new LinkedHashSet<>();
         List<URI> repsToUse = repositories;
         if (repsToUse == null) {
             repsToUse = Collections.emptyList();
@@ -184,7 +222,7 @@ public class CamelRunner extends MainSupport implements Closeable {
                                                 discResults.get(CamelDiscovery.DATAFORMATS_TO_LOAD),
                                                 this.additionalLibraries,
                                                 discoverer);
-       jarList.addAll(aReposWorth);
+        Set<File> jarList = new LinkedHashSet<>(aReposWorth);
     
         // Now, construct a classloader that includes all these loaded files
     
@@ -193,7 +231,10 @@ public class CamelRunner extends MainSupport implements Closeable {
             URL url = jar.toURI().toURL();
             urlList.add(url);
         }
-    
+        if (log.isTraceEnabled()) {
+            // This list is long, so if we're ignoring it, no reason to prepare to Stringify it.
+            log.trace("URLList: {}", urlList);
+        }
         // Now, we'll set up a classLoader based on that list of jar files and use that to run our routes.
     
         ClassLoader parent = getCamelContext() != null ? getCamelContext().getApplicationContextClassLoader() : null;
@@ -232,40 +273,49 @@ public class CamelRunner extends MainSupport implements Closeable {
         Set<File> jarSet = new LinkedHashSet<>();
         CamelResolver cr = new CamelResolver(appName, repositories,
                                              ivyCache, loadedLibraries);
-        for (String comp : componentsToResolve) {
-            String lib = discoverer.findComponentForScheme(comp);
-            if (lib == null) {
-                // If we don't know the name, we have no chance of resolving it.  So complain.
-                throw new ResolutionException("Unable to determine jar file for component: " + comp);
+        if (discoverer != null) {
+            for (String comp : componentsToResolve) {
+                String lib = discoverer.findComponentForScheme(comp);
+                if (lib == null) {
+                    // If we don't know the name, we have no chance of resolving it.  So complain.
+                    throw new ResolutionException("Unable to determine jar file for component: " + comp);
+                }
+                // Our resolver is a chain resolver, including all the IBibloResolvers that are in our list of URLs.
+                // Thus, we will see an error here only if the artifact is resolved by none of the repos in our list.
+                // We could learn to ignore it & let camel throw the error, but our throwing the ResolutionException
+                // seems cleaner.  Notify about the problems closer to the source.
+                Collection<File> resolved = cr.resolve("org.apache.camel", lib, getCamelContext().getVersion(),
+                                                       "Component Resolution");
+                jarSet.addAll(resolved);
             }
-            // Our resolver is a chain resolver, including all the IBibloResolvers that are in our list of URLs.
-            // Thus, we will see an error here only if the artifact is resolved by none of the repos in our list.
-            // We could learn to ignore it & let camel throw the error, but our throwing the ResolutionException
-            // seems cleaner.  Notify about the problems closer to the source.
-            Collection<File> resolved = cr.resolve("org.apache.camel", lib, getCamelContext().getVersion(),
-                                                   "Component Resolution");
-            jarSet.addAll(resolved);
-        }
     
-        for (String df : dataformatsToResolve) {
-            String lib = discoverer.findDataFormatForName(df);
-            if (lib == null) {
-                // If we don't know the name, we have no chance of resolving it.  So complain.
-                throw new ResolutionException("Unable to determine jar file for dataformat: " + df);
+            for (String df : dataformatsToResolve) {
+                String lib = discoverer.findDataFormatForName(df);
+                if (lib == null) {
+                    // If we don't know the name, we have no chance of resolving it.  So complain.
+                    throw new ResolutionException("Unable to determine jar file for dataformat: " + df);
+                }
+                // Our resolver is a chain resolver, including all the IBibloResolvers that are in our list of URLs.
+                // Thus, we will see an error here only if the artifact is resolved by none of the repos in our list.
+                // We could learn to ignore it & let camel throw the error, but our throwing the ResolutionException
+                // seems cleaner.  Notify about the problems closer to the source.
+                Collection<File> resolved = cr.resolve("org.apache.camel", lib, getCamelContext().getVersion(),
+                                                       "Dataformat Resolution");
+                jarSet.addAll(resolved);
             }
-            // Our resolver is a chain resolver, including all the IBibloResolvers that are in our list of URLs.
-            // Thus, we will see an error here only if the artifact is resolved by none of the repos in our list.
-            // We could learn to ignore it & let camel throw the error, but our throwing the ResolutionException
-            // seems cleaner.  Notify about the problems closer to the source.
-            Collection<File> resolved = cr.resolve("org.apache.camel", lib, getCamelContext().getVersion(),
-                                                   "Dataformat Resolution");
-            jarSet.addAll(resolved);
         }
         // If our use has specified additional libraries to include, do those now.
         if (additionalLibraries != null && !additionalLibraries.isEmpty()) {
             for (String comp : additionalLibraries) {
                 String[] compParts = comp.split(":");
-                if (compParts.length != 3) {
+                if (compParts.length == 2 && compParts[0].startsWith("org.apache.camel")) {
+                    // Then, this is a camel component.  Use our current version
+                    String[] newParts = new String[3];
+                    newParts[0] = compParts[0];
+                    newParts[1] = compParts[1];
+                    newParts[2] = getCamelContext().getVersion();
+                    compParts = newParts;
+                } else if (compParts.length != 3) {
                     throw new IllegalArgumentException("The configuration's 'additionalLibraries' property must be a list " +
                                                        "of library specifications of the form " +
                                                        "<organization>:<name>:<revision>.  Found " + comp);
@@ -287,7 +337,6 @@ public class CamelRunner extends MainSupport implements Closeable {
      * Run the routes specified in this CamelRunner
      *
      * @param waitForThread boolean indicating whether to await the completion of the thread started by this method
-     * @throws Exception if camel thread throws an exception.
      */
     public void runRoutes(boolean waitForThread) {
         try {
@@ -374,8 +423,7 @@ public class CamelRunner extends MainSupport implements Closeable {
             // This method is tolerant being passed a null value, and will do the right thing. This needs to be done
             // before the class loader is constructed since some properties may be used as things like the URL which may
             // be used at class-load time.
-            camelContext.getPropertiesComponent().setLocalProperties(this.camelProperties);
-    
+            camelContext.getPropertiesComponent().setInitialProperties(this.camelProperties);
             if (routeBuilder == null) {
                 if (StringUtils.isEmpty(routeSpec) || StringUtils.isEmpty(routeSpecType)) {
                     log.error("No routes have been specified to run.  Either {} or {} and {} are " +
@@ -385,10 +433,10 @@ public class CamelRunner extends MainSupport implements Closeable {
                 routeBuilder = loadRouteFromText(this.routeSpec, this.routeSpecType);
             }
             if (routeBasedCL == null) {
-                // FIXME -- need to detect when there are no routes.  Do we need to supply properties here?
+                // FIXME -- need to detect when there are no routes.
                 if (routeBuilder != null) {
                     try {
-                        routeBasedCL = constructClassLoader();
+                        routeBasedCL = discoverAndBuildClassloader();
                     } catch (Exception e) {
                         throw new RuntimeException("Unable to create route-based class loader", e);
                     }
@@ -508,20 +556,70 @@ public class CamelRunner extends MainSupport implements Closeable {
      */
     protected RouteBuilder loadRouteFromText(String specification, String specificationType) throws Exception {
         log.debug("Loading route from {} specificationType", specificationType);
-        if (log.isDebugEnabled()) {
-            // Dump route spec out here only under trace.  Camel may have substituted key values and we don't want
+        if (log.isTraceEnabled()) {
+            // Dump route spec out here only under trace.  Camel may have substituted key values, and we don't want
             // these in the log files
-            log.debug("Loading route (specificationType {}):\n{}", specificationType, specification);
+            log.trace("Loading route (specificationType {}):\n{}", specificationType, specification);
         }
-        ExtendedCamelContext extendedCamelContext = camelContext.adapt(ExtendedCamelContext.class);
-        RoutesLoader loader = extendedCamelContext.getRoutesLoader();
-        Resource resource = ResourceHelper.fromString("in-memory." + specificationType, specification);
-        loader.loadRoutes(resource);
-        RoutesBuilderLoader rbl = loader.getRoutesLoader(specificationType);
-        RoutesBuilder rb = rbl.loadRoutesBuilder(resource);
-        log.debug("Route builder: {}", rb.toString());
+        // First, construct a simple classloader.  This is based on the dependencies defined in the Kamelet. Later,
+        // these will be augmented via discovery since these declarations need not be complete. These are used to
+        // satisfy camel's need to instantiate as part of setting up the routes.
+        Map<String, Set<String>> discResults = new HashMap<>();
+        discResults.put(CamelDiscovery.COMPONENTS_TO_LOAD, Set.of());
+        discResults.put(CamelDiscovery.DATAFORMATS_TO_LOAD, Set.of());
+        ClassLoader cl = buildClassloader(null, discResults);
         
-        return (RouteBuilder) rb;
+        ModelCamelContext mcc = (ModelCamelContext) camelContext;
+        ExtendedCamelContext extendedCamelContext = mcc.adapt(ExtendedCamelContext.class);
+        ClassLoader oldAppClassLoader = extendedCamelContext.getApplicationContextClassLoader();
+        try {
+            extendedCamelContext.setApplicationContextClassLoader(cl);
+            RoutesLoader loader = extendedCamelContext.getRoutesLoader();
+            Resource resource = ResourceHelper.fromString("in-memory." + specificationType, specification);
+            loader.loadRoutes(resource);
+            log.debug("loadRoutesFromText(): routes: {}, routeTemplates: {}", mcc.getRoutes(),
+                      mcc.getRouteTemplateDefinitions());
+            // Based on what was loaded, we can now construct our RouteBuilder.
+            // For cases where we have a route, we are done.
+            RoutesBuilderLoader rbl = loader.getRoutesLoader(specificationType);
+            RoutesBuilder rsb = rbl.loadRoutesBuilder(resource);
+            RouteBuilder rb;
+            if (rsb instanceof RouteBuilder) {
+                rb = (RouteBuilder) rsb;
+            } else {
+                String className = rsb == null ? "null" : rsb.getClass().getName();
+                throw new RuntimeException("loadRoutesFromText(): Expected RouteBuilder by got " + className);
+            }
+            if (mcc.getRouteTemplateDefinitions().size() > 0) {
+                // However, if we have a RouteTemplate rather than a route, we need to construct a route from the template.
+                // We don't (currently) support parameters on templates, we'll simply fetch any templates present and
+                // build the routes from them (property placeholder substitution will work as expected).
+                RoutesDefinition rsd = new RoutesDefinition();
+                List<String> beansInvolved = new ArrayList<>();
+                mcc.getRouteTemplateDefinitions().forEach((RouteTemplateDefinition rtd) -> {
+                    log.debug("loadRoutesFromText(): Found route Def id: {} :: {}", rtd.getId(), rtd.getRoute());
+                    String templateId = rtd.getId();
+                    TemplatedRouteBuilder builder = TemplatedRouteBuilder.builder(mcc, templateId).routeId(templateId);
+                    String routeId;
+                    try {
+                        routeId = builder.add();
+                    } catch (Exception e) {
+                        throw new RuntimeException("Error adding route template to context", e);
+                    }
+                    log.debug("loadRoutesFromText(): Added route (id {}) from template (id {}): {}", routeId,
+                              templateId,
+                              rtd.getRoute());
+                    RouteDefinition rd = mcc.getRouteDefinition(routeId);
+                    rsd.route(rd);
+                });
+                rb.setRouteCollection(rsd);
+            } // Else, all the work was done by loading the route.  Only templates have the extra steps above
+            log.debug("loadRoutesFromText(): Returning RouteBuilder: {}", rb);
+            return rb;
+        } finally {
+            // TODO -- tbis may need to go as we may need it for dependency determination.
+            extendedCamelContext.setApplicationContextClassLoader(oldAppClassLoader);
+        }
     }
     
     @Override

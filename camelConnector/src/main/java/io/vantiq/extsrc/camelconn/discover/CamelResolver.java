@@ -27,6 +27,8 @@ import org.apache.ivy.core.retrieve.RetrieveReport;
 import org.apache.ivy.core.settings.IvySettings;
 import org.apache.ivy.plugins.resolver.ChainResolver;
 import org.apache.ivy.plugins.resolver.IBiblioResolver;
+import org.apache.ivy.util.DefaultMessageLogger;
+import org.apache.ivy.util.Message;
 import org.slf4j.helpers.MessageFormatter;
 
 import java.io.File;
@@ -56,7 +58,7 @@ public class CamelResolver {
      * Create resolver for necessary artifacts
      *
      * @param name String name of resolver.  Primarily for logging & debugging
-     * @param repos URI repos from which to fetch.  If null, use maven central
+     * @param repo URI repos from which to fetch.  If null, use maven central
      * @param cache File Specification of directory for ivy's cache.  If null, take Ivy's defaults.
      * @param destination File Specification of directory to which to copy files
      * @throws IllegalArgumentException for invalid parameters
@@ -81,6 +83,10 @@ public class CamelResolver {
             throw new IllegalArgumentException("The destination parameter cannot be null.");
         }
     
+        if (!log.isTraceEnabled()) {
+            // Disable voluminous Ivy output that's not really helpful.
+            Message.setDefaultLogger(new DefaultMessageLogger(Message.MSG_WARN));
+        }
         //creates clear ivy settings
         ivySettings = new IvySettings();
         if (cache != null) {
@@ -96,7 +102,6 @@ public class CamelResolver {
                     String repoUrl = repo.toURL().toExternalForm();
                     aResolver.setRoot(repoUrl);
                     aResolver.setName(name + "::" + repoUrl);
-    
                 } catch (MalformedURLException mue) {
                     throw new IllegalArgumentException("Malformed repos URL: " + repo.toString(), mue);
                 }
@@ -202,7 +207,7 @@ public class CamelResolver {
         }
         md.addDependency(dd);
         
-        log.info("Resolving required libraries -- {}", purpose);
+        log.trace("Resolving required libraries -- {}", purpose);
         //init resolve report
         ResolveReport report = ivy.resolve(md, resolveOptions);
         
@@ -234,7 +239,7 @@ public class CamelResolver {
         for (File f: necessaryFiles) {
             log.trace("Retrieved or up-to-date file: {} ({})", f.getAbsolutePath(), identity());
         }
-        log.debug("{} -- Making {} artifacts available to {}", identity(), necessaryFiles.size(), purpose);
+        log.trace("{} -- Making {} artifacts available to {}", identity(), necessaryFiles.size(), purpose);
         return necessaryFiles;
     }
 }

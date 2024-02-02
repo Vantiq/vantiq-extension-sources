@@ -98,6 +98,7 @@ To change the logging settings, edit the logging config file
 which is an [Apache Log4j configuration file](https://logging.apache.org/log4j/2.x/manual/configuration.html). The logger 
 name for each class is the class's fully qualified class name, *e.g.* "io.vantiq.extjsdk.ExtensionWebSocketClient".  
 
+<a name="serverConfig" id="serverConfig"></a>
 ## Server Config File
 (Please read the [SDK's server config documentation](../extjsdk/README.md#serverConfig) first.)
 

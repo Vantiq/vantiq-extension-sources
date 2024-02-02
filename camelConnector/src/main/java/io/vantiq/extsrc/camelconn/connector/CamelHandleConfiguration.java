@@ -60,6 +60,8 @@ public class CamelHandleConfiguration extends Handler<ExtensionServiceMessage> {
     public static final String ROUTES_LIST = "routesList";
     public static final String ROUTES_FORMAT = "routesFormat";
     public static final String COMPONENT_PROPERTIES = "componentProperties";
+    public static final String HEADER_DUPLICATION = "headerDuplication";
+    public static final String HEADER_BEAN_NAME = "headerBeanName";
     public static final String PROPERTY_VALUES = "propertyValues";
     public static final String RAW_REQUIRED = "rawValuesRequired";
     public static final String DISCOVERED_RAW = "discovered";
@@ -188,6 +190,32 @@ public class CamelHandleConfiguration extends Handler<ExtensionServiceMessage> {
                 }
             }
         }
+        
+        target = camelConfig.get(HEADER_DUPLICATION);
+        if (target != null) {
+            if (!(target instanceof Map)) {
+                log.error("Camel connector property {} should be a Map (found {}).",
+                          HEADER_DUPLICATION, target.getClass().getName());
+                failConfig();
+                return;
+            } else {
+                boolean failed = false;
+                for (Map.Entry<?,?> ent: ((Map<?, ?>) target).entrySet()) {
+                    if (!(ent.getKey() instanceof String && ent.getValue() instanceof String)) {
+                        log.error("Both keys and values of the Camel connector property {} should be strings.  Found " +
+                                          "{} & {}, respectively.", HEADER_DUPLICATION,
+                                  ent.getKey() != null ? ent.getKey().getClass().getName() : null,
+                                  ent.getValue() != null ? ent.getValue().getClass().getName() : null);
+                        failed = true;
+                        break;
+                    }
+                }
+                if (failed) {
+                    failConfig();
+                    return;
+                }
+            }
+        }
         boolean success;
         try {
             success = runCamelApp(camelConfig, general);
@@ -247,7 +275,13 @@ public class CamelHandleConfiguration extends Handler<ExtensionServiceMessage> {
                     return false;
                 }
             }
-            
+    
+            // This is checked in the caller
+            String headerBeanName = (String) camelConfig.get(HEADER_BEAN_NAME);
+            // This is checked in the caller
+            //noinspection unchecked
+            Map<String, String> headerDuplications = (Map<String, String>) camelConfig.get(HEADER_DUPLICATION);
+    
             // This is checked in the caller
             //noinspection unchecked
             List<Map<String, Object>> componentProperties =
@@ -361,9 +395,10 @@ public class CamelHandleConfiguration extends Handler<ExtensionServiceMessage> {
             // The connector (or this method, when things are reconfigured -- see a few lines up) will handle closing
             // things as appropriate.
             CamelRunner runner =
-                         new CamelRunner(appName, Objects.requireNonNull(routeSpec).get(ROUTES_LIST),
+                    createCamelRunner(appName, Objects.requireNonNull(routeSpec).get(ROUTES_LIST),
                                          routeSpec.get(ROUTES_FORMAT), repoList,
-                                         componentCache, componentLib, componentProperties, propVals);
+                                         componentCache, componentLib, componentProperties, propVals,
+                                         headerBeanName, headerDuplications);
             if (additionalLibraries != null) {
                 runner.setAdditionalLibraries(additionalLibraries);
             }
@@ -378,6 +413,31 @@ public class CamelHandleConfiguration extends Handler<ExtensionServiceMessage> {
         return true;
     }
     
+    /**
+     * Create a CamelRunner instance
+     *
+     * @param appName String Name for this instance
+     * @param routeSpecification String specification for the route(s) to run.  Syntax must match
+     *         routeSpecificationType
+     * @param routeSpecificationType String the type of specification provided
+     * @param repos List<URI> The list of repos to search for libraries needed by the route(s)
+     * @param cacheDirectory String Directory path to use to cache downloaded libraries
+     * @param loadedLibDir String Directory path into which to put the libraries needed at run time.
+     * @param initComponents List<Map<String, Object>> List of component names that need initialization using
+     *         the properties included herein
+     * @param camelProperties Properties set of general property values that Camel can use for property
+     *         resolution
+     * @param headerBeanName String Name of bean to use generate.  Should match what's in route & be unique to this
+     *         camel instance
+     * @param headerDuplications Map<String, String> directed set of header names to duplicate
+     */
+    protected CamelRunner createCamelRunner(String appName, String routeSpecification, String routeSpecificationType,
+                               List<URI> repos,
+                       String cacheDirectory, String loadedLibDir, List<Map<String, Object>> initComponents,
+                       Properties camelProperties, String headerBeanName, Map<String, String> headerDuplications) {
+        return new CamelRunner(appName, routeSpecification, routeSpecificationType, repos, cacheDirectory,
+                                loadedLibDir, initComponents, camelProperties, headerBeanName, headerDuplications);
+    }
     private Map<String, String> fetchDocument(String docName) {
         String token = source.authToken;
         String url = source.targetVantiqServer;

@@ -68,11 +68,11 @@ public class CamelDiscovery {
             EnumeratingConfigurerResolver epcr = new EnumeratingConfigurerResolver();
             ectx.setConfigurerResolver(epcr);
             
-            // If our current context has local properties, we'll need to provide them to the context we create for
-            // discovery, since things like the URLs could be defined in properties, and that's used for discovery.
-            // We define a new context for use here since we're overriding all the resolvers with those specially
-            // designed for discovery.
-            ectx.getPropertiesComponent().setLocalProperties(propertyValues);
+            // If our current context has property placeholders defined, we'll need to provide them to the context we
+            // create for discovery, since things like the URLs could be defined in properties, and that's used for
+            // discovery. We define a new context for use here since we're overriding all the resolvers with those
+            // specially designed for discovery.
+            ectx.getPropertiesComponent().setInitialProperties(propertyValues);
 
             log.debug("Discovering Camel (version {}) components using context: {}", ectx.getVersion(), ectx.getName());
     
