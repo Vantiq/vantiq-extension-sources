@@ -64,7 +64,7 @@ public class TestWithServer extends RoundTripTestBase {
     @Test
     public void testNotificationEnMasse() throws Exception {
 
-        int MAX_TRIES = 100;
+        int MAX_TRIES = 200;
         int EXPECTED_ROW_COUNT = 5000;
         assumeTrue(testAuthToken != null && testVantiqServer != null);
 
@@ -96,6 +96,7 @@ public class TestWithServer extends RoundTripTestBase {
             ntfy.put("data", simpleList);
             ntfy.put("msgId", i);
             client.sendNotification(ntfy);
+            Thread.sleep(10);
         }
         Thread.sleep(500);
         
