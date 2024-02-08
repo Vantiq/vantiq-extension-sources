@@ -11,6 +11,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeTrue;
 
@@ -63,7 +64,7 @@ public class TestWithServer extends RoundTripTestBase {
     @Test
     public void testNotificationEnMasse() throws Exception {
 
-        int MAX_TRIES = 50;
+        int MAX_TRIES = 100;
         int EXPECTED_ROW_COUNT = 5000;
         assumeTrue(testAuthToken != null && testVantiqServer != null);
 
@@ -96,6 +97,7 @@ public class TestWithServer extends RoundTripTestBase {
             ntfy.put("msgId", i);
             client.sendNotification(ntfy);
         }
+        Thread.sleep(500);
         
         int rowCount = 0;
         for (int i = 0; (rowCount < EXPECTED_ROW_COUNT) && (i < MAX_TRIES); i++) {
@@ -104,6 +106,7 @@ public class TestWithServer extends RoundTripTestBase {
             Thread.sleep(50);
         }
         System.out.println("RowCount: " + rowCount);
-        assert rowCount == EXPECTED_ROW_COUNT;
+        assertEquals( "Expected " + EXPECTED_ROW_COUNT + ", found " + rowCount,
+                EXPECTED_ROW_COUNT, rowCount);
     }
 }
