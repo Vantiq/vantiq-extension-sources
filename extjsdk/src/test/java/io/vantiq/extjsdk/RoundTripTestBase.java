@@ -135,7 +135,6 @@ public class RoundTripTestBase {
         sourceDef.put("name", SOURCE_NAME);
         sourceDef.put("type", TEST_IMPL_NAME);
         sourceDef.put("active", "true");
-        sourceDef.put("direction", "BOTH");
         sourceDef.put("config", new LinkedHashMap());
 
         return sourceDef;
