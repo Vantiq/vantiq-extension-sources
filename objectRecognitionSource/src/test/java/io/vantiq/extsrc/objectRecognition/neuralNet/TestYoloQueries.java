@@ -8,6 +8,7 @@
 
 package io.vantiq.extsrc.objectRecognition.neuralNet;
 
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeTrue;
 
@@ -118,7 +119,9 @@ public class TestYoloQueries extends NeuralNetTestBase {
     static final int PRECROP_TOP_LEFT_Y_COORDINATE = 50;
     static final int CROPPED_WIDTH = 200;
     static final int CROPPED_HEIGHT = 150;
-
+    
+    static final String ipCameraToUse = IP_CAMERA_URL;
+    static boolean cameraOperational = false;
     @BeforeClass
     public static void setup() throws Exception {
         if (testAuthToken != null && testVantiqServer != null) {
@@ -141,6 +144,8 @@ public class TestYoloQueries extends NeuralNetTestBase {
             } catch (Exception e) {
                 fail("Trapped exception creating source impl: " + e);
             }
+            
+            cameraOperational = isIpAccessible(ipCameraToUse);
             createServerConfig();
             setupSource(createSourceDef());
         }
@@ -206,7 +211,8 @@ public class TestYoloQueries extends NeuralNetTestBase {
     public void testProcessNextFrameLocal() {
         // Only run test with intended vantiq availability
         assumeTrue(testAuthToken != null && testVantiqServer != null);
-        
+        assumeTrue(cameraOperational);
+    
         // Make sure that output directory has not yet been created
         File outputDir = new File(OUTPUT_DIR);
         assert !outputDir.exists();
@@ -274,7 +280,8 @@ public class TestYoloQueries extends NeuralNetTestBase {
     public void testProcessNextFrameVantiq() throws InterruptedException {
         // Only run test with intended vantiq availability
         assumeTrue(testAuthToken != null && testVantiqServer != null);
-        
+        assumeTrue(cameraOperational);
+    
         // Run query without setting "operation":"processNextFrame"
         Map<String, Object> params = new LinkedHashMap<>();
         params.put("NNsaveImage", "vantiq");
@@ -316,7 +323,8 @@ public class TestYoloQueries extends NeuralNetTestBase {
     public void testProcessNextFrameBoth() throws InterruptedException {
         // Only run test with intended vantiq availability
         assumeTrue(testAuthToken != null && testVantiqServer != null);
-        
+        assumeTrue(cameraOperational);
+
         // Make sure that output directory has not yet been created
         File outputDir = new File(OUTPUT_DIR);
         assert !outputDir.exists();
@@ -706,6 +714,13 @@ public class TestYoloQueries extends NeuralNetTestBase {
     }
     
     @Test
+    public void ranCameraBasedTests() {
+        // This test will fail when all the others are skipped.  This is there to simply alert us that a public
+        // camera on which we depend is currently not working.  IF this continues for a while, it's time to find
+        // a new public camera.
+        assertTrue("Public camera is not working: " + ipCameraToUse, cameraOperational);
+    }
+    @Test
     public void testImageDateDeleteAfter() throws IOException {
         // Only run test with intended vantiq availability
         assumeTrue(testAuthToken != null && testVantiqServer != null);
@@ -767,7 +782,8 @@ public class TestYoloQueries extends NeuralNetTestBase {
     public void testInvalidPreCroppingQuery() throws IOException {
         // Only run test with intended vantiq availability
         assumeTrue(testAuthToken != null && testVantiqServer != null);
-        
+        assumeTrue(cameraOperational);
+    
         // Make sure that output directory has not yet been created
         File outputDir = new File(OUTPUT_DIR);
         assert !outputDir.exists();
@@ -897,7 +913,8 @@ public class TestYoloQueries extends NeuralNetTestBase {
     public void doLabelTest(boolean localLabelRequest, boolean includeEncoded, boolean saveImage) throws IOException {
         // Only run test with intended vantiq availability
         assumeTrue(testAuthToken != null && testVantiqServer != null);
-        
+        assumeTrue(cameraOperational);
+    
         // Make sure that output directory has not yet been created
         File outputDir = new File(OUTPUT_DIR);
         assert !outputDir.exists();
@@ -980,7 +997,8 @@ public class TestYoloQueries extends NeuralNetTestBase {
     public void testPreCroppingQuery() throws IOException {
         // Only run test with intended vantiq availability
         assumeTrue(testAuthToken != null && testVantiqServer != null);
-        
+        assumeTrue(cameraOperational);
+    
         // Make sure that output directory has not yet been created
         File outputDir = new File(OUTPUT_DIR);
         assert !outputDir.exists();
@@ -1164,7 +1182,7 @@ public class TestYoloQueries extends NeuralNetTestBase {
         Map<String, Object> neuralNet = new LinkedHashMap<>();
         
         // Setting up dataSource config options
-        dataSource.put("camera", IP_CAMERA_URL);
+        dataSource.put("camera", ipCameraToUse);
         dataSource.put("type", "network");
         
         // Setting up general config options
