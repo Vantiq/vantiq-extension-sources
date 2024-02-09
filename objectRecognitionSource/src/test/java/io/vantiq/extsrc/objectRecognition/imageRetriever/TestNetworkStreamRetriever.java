@@ -3,8 +3,6 @@ package io.vantiq.extsrc.objectRecognition.imageRetriever;
 import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeTrue;
 
-import java.io.InputStream;
-import java.net.URL;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
@@ -84,30 +82,6 @@ public class TestNetworkStreamRetriever extends ObjRecTestBase {
             assert data.length > 0;
         } catch (ImageAcquisitionException e) {
             fail("Exception occurred when requesting frame from camera: " + e.toString());
-        }
-    }
-    
-    
-// ================================================= Helper functions =================================================
-    public boolean isIpAccessible(String url) {
-        URL img;
-
-        // Override schema to make sure something exists at the other end.  The URL class doesn't necessarily
-        // grok all the scheme's used by camera URLs, so we'll convert to a common version just so we can
-        // test the connection.
-        String schemeFreeURL = url.substring(url.indexOf(':'));
-        url = "http" + schemeFreeURL;
-        try {
-            img = new URL(url);
-            InputStream s = img.openStream();
-            byte[] b = new byte[256];
-            s.read(b);
-            String str = new String(b);
-            System.out.println(str);
-            s.close();
-            return true;
-        } catch (java.io.IOException e) {
-            return false;
         }
     }
 }

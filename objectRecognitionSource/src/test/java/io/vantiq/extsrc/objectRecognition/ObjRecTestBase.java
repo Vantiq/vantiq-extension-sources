@@ -46,7 +46,8 @@ public class ObjRecTestBase {
     // Keeping old around to swap back sometime.
 //    public static final String IP_CAMERA_URL = "https://wzmedia.dot.ca.gov/D4/N680_JSO_JCT_242.stream/playlist.m3u8";
 //    public static final String IP_CAMERA_URL = "https://wzmedia.dot.ca.gov/D3/80_reed.stream/playlist.m3u8";
-    public static final String IP_CAMERA_URL = "http://166.143.31.94/cgi-bin/camera?resolution=640&amp;quality=1&amp;Language=0&amp;1666639808";
+    public static final String IP_CAMERA_URL = "http://166.143.31.94/cgi-bin/camera?resolution=640&amp;" +
+            "quality=1&amp;Language=0&amp;1666639808";
     @BeforeClass
     public static void getProps() {
         testAuthToken = System.getProperty("TestAuthToken", null);
@@ -85,6 +86,27 @@ public class ObjRecTestBase {
             Files.deleteIfExists(d.toPath());
         } catch (Exception e) {
             throw new RuntimeException("Error deleting directory " + d.getAbsolutePath(), e);
+        }
+    }
+    
+    public static boolean isIpAccessible(String url) {
+        URL img;
+        
+        // Override schema to make sure something exists at the other end.  The URL class doesn't necessarily
+        // grok all the scheme's used by camera URLs, so we'll convert to a common version just so we can
+        // test the connection.
+        String schemeFreeURL = url.substring(url.indexOf(':'));
+        url = "http" + schemeFreeURL;
+        try {
+            img = new URL(url);
+            InputStream s = img.openStream();
+            byte[] b = new byte[256];
+            s.read(b);
+            String str = new String(b);
+            s.close();
+            return true;
+        } catch (java.io.IOException e) {
+            return false;
         }
     }
 }
