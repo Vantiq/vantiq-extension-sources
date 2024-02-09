@@ -1190,7 +1190,6 @@ public class TestYoloQueries extends NeuralNetTestBase {
         sourceDef.put("name", SOURCE_NAME);
         sourceDef.put("type", OR_SRC_TYPE);
         sourceDef.put("active", "true");
-        sourceDef.put("direction", "BOTH");
         
         return sourceDef;
     }

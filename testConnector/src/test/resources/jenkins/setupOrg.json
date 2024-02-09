@@ -1,0 +1,31 @@
+{
+  "namespace": "testNS",
+  "organization": {
+    "name": "testOrg",
+    "description": "",
+    "isIsolated": false,
+    "vCPU": 0,
+    "perServerMemory": 0,
+    "monitoringConfig": {
+      "enable": false
+    },
+    "products": {
+      "Pronto": {
+        "enabled": true,
+        "maxEventCatalogs": 1
+      },
+      "Modelo": {
+        "enabled": true
+      },
+      "IDE": {
+        "disableBadging": false
+      }
+    }
+  },
+  "organizationRef": null,
+  "encryptionKey": null,
+  "isOrgNamespace": false,
+  "username": "testUser",
+  "password": "myPassword",
+  "adminUserAuthZ": "create"
+}

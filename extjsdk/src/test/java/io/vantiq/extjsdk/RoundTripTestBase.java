@@ -107,6 +107,10 @@ public class RoundTripTestBase {
         Map<String,String> where = new LinkedHashMap<String,String>();
         where.put("name", TEST_IMPL_NAME);
         VantiqResponse implResp = vantiq.select("system.sourceimpls", null, where, null);
+        if (!implResp.isSuccess()) {
+            System.out.println("Got errors: " +  implResp);
+        }
+        assertTrue("Failure to SELECT source impl", implResp.isSuccess());
         if (((List) implResp.getBody()).size() == 0) {
             Map<String, Object> srcImpl = new LinkedHashMap<>();
             srcImpl.put("name", TEST_IMPL_NAME);
@@ -131,7 +135,6 @@ public class RoundTripTestBase {
         sourceDef.put("name", SOURCE_NAME);
         sourceDef.put("type", TEST_IMPL_NAME);
         sourceDef.put("active", "true");
-        sourceDef.put("direction", "BOTH");
         sourceDef.put("config", new LinkedHashMap());
 
         return sourceDef;

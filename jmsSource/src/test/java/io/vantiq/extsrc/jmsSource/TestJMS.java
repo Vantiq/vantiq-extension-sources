@@ -657,7 +657,6 @@ public class TestJMS extends TestJMSBase {
         sourceDef.put("name", testSourceName);
         sourceDef.put("type", "JMS");
         sourceDef.put("active", "true");
-        sourceDef.put("direction", "BOTH");
         
         return sourceDef;
     }
@@ -712,7 +711,6 @@ public class TestJMS extends TestJMSBase {
         sourceDef.put("name", testSourceName);
         sourceDef.put("type", "JMS");
         sourceDef.put("active", "true");
-        sourceDef.put("direction", "BOTH");
         
         return sourceDef;
     }

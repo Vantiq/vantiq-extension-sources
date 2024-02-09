@@ -1246,7 +1246,6 @@ public class TestJDBC extends TestJDBCBase {
         sourceDef.put("name", srcNam);
         sourceDef.put("type", "JDBC");
         sourceDef.put("active", "true");
-        sourceDef.put("direction", "BOTH");
         
         return sourceDef;
     }
