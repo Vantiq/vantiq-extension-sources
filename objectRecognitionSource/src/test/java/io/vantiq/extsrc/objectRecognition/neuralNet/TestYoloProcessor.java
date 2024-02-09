@@ -2171,7 +2171,6 @@ public class TestYoloProcessor extends NeuralNetTestBase {
         sourceDef.put("name", testSourceName);
         sourceDef.put("type", OR_SRC_TYPE);
         sourceDef.put("active", "true");
-        sourceDef.put("direction", "BOTH");
 
         return sourceDef;
     }
