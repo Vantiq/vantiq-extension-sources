@@ -32,6 +32,8 @@ public class TestNoProcessorQueries extends NeuralNetTestBase {
         put("name", QUERY_FILENAME);
     }};
     
+    static final String ipCameraInUse = IP_CAMERA_URL;
+    static boolean cameraOperational = false;
     @BeforeClass
     public static void setup() {
         if (testVantiqServer != null && testAuthToken != null) {
@@ -45,7 +47,10 @@ public class TestNoProcessorQueries extends NeuralNetTestBase {
                 fail("Trapped exception creating source impl: " + e);
             }
 
-            setupSource(createSourceDef());
+            cameraOperational = isIpAccessible(ipCameraInUse);
+            if (cameraOperational) {
+                setupSource(createSourceDef());
+            }
         }
     }
 
@@ -76,6 +81,7 @@ public class TestNoProcessorQueries extends NeuralNetTestBase {
     public void testProcessNextFrameLocal() {
         // Only run test with intended vantiq availability
         assumeTrue(testAuthToken != null && testVantiqServer != null);
+        assumeTrue(cameraOperational);
         
         // Make sure that output directory has not yet been created
         File outputDir = new File(OUTPUT_DIR);
@@ -144,7 +150,8 @@ public class TestNoProcessorQueries extends NeuralNetTestBase {
     public void testProcessNextFrameVantiq() throws InterruptedException {
         // Only run test with intended vantiq availability
         assumeTrue(testAuthToken != null && testVantiqServer != null);
-        
+        assumeTrue(cameraOperational);
+    
         // Run query without setting "operation":"processNextFrame"
         Map<String,Object> params = new LinkedHashMap<String,Object>();
         params.put("NNsaveImage", "vantiq");
@@ -186,7 +193,8 @@ public class TestNoProcessorQueries extends NeuralNetTestBase {
     public void testProcessNextFrameBoth() throws InterruptedException {
         // Only run test with intended vantiq availability
         assumeTrue(testAuthToken != null && testVantiqServer != null);
-        
+        assumeTrue(cameraOperational);
+    
         // Make sure that output directory has not yet been created
         File outputDir = new File(OUTPUT_DIR);
         assert !outputDir.exists();
@@ -275,6 +283,7 @@ public class TestNoProcessorQueries extends NeuralNetTestBase {
     public void testUploadAsImage() throws InterruptedException {
         // Only run test with intended vantiq availability
         assumeTrue(testAuthToken != null && testVantiqServer != null);
+        assumeTrue(cameraOperational);
 
         // Run query without setting "operation":"processNextFrame"
         Map<String,Object> params = new LinkedHashMap<String,Object>();
@@ -314,7 +323,7 @@ public class TestNoProcessorQueries extends NeuralNetTestBase {
         Map<String,Object> neuralNet = new LinkedHashMap<String,Object>();
         
         // Setting up dataSource config options
-        dataSource.put("camera", IP_CAMERA_URL);
+        dataSource.put("camera", ipCameraInUse);
         dataSource.put("type", "network");
         
         // Setting up general config options
