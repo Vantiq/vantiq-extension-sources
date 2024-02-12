@@ -84,14 +84,15 @@ The Vantiq Camel assemblies contained herein are composed of the following.
        or `_svcToSrc` (for a _source_ assembly).
 * Vantiq Documents -- there are a few documents that may be present in the Vantiq Camel assembly.
   * Overview Document -- `<assembly name>_overview.md`.  This contains the provided high-level description of the 
-    assembly. It will often provide other information concerning use of the assembly.
+    assembly. It will often provide other information concerning use of the assembly such as Camel headers required 
+    for use, the Vantiq Source created, etc.
   * Route Template Document -- `<assembly name>_routes.yaml`.  This is the routing information used by the Camel 
     Connector. It is referenced by the Vantiq Source configuration.
-    * Notes Document (optional) -- `<assembly name>_notes.md`.  When present, this contains information that Vail 
-      developers need to know about use of the assembly. Typically, this is information regarding non-standard message 
-      structure or functionality. The assemblies are interacting with external systems whose methods of operation are 
-      different from that of Vantiq. Amongst other things, the _notes_ document(s) are used to communicate this 
-      information when required.
+  * Notes Document (optional) -- `<assembly name>_notes.md`.  When present, this contains information that Vail 
+    developers need to know about use of the assembly. Typically, this is information regarding non-standard message 
+    structure or functionality. The assemblies are interacting with external systems whose methods of operation are 
+    different from that of Vantiq. Amongst other things, the _notes_ document(s) are used to communicate this 
+    information when required.
 
 # Vantiq Camel Assemblies in a Vantiq Namespace
 
