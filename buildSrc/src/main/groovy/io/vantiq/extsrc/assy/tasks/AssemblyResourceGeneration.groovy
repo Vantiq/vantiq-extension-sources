@@ -350,11 +350,14 @@ class AssemblyResourceGeneration extends DefaultTask {
         log.info('\nWriting project to: {}', assemblyRoot)
 
         Map routeDoc = writeRoutesDocument(assemblyRoot, packageName, kamName, routesDocumentString)
-        Map overviewDoc = (overview ? writeOverviewDocument(assemblyRoot, packageName, kamName, overview) : null)
-        Map notesDoc = writeVantiqNotesDocument(assemblyRoot, packageName, kamName)
         Map sourceDef = addSourceDefinition(assemblyRoot, packageName, kamName,
             routeDoc.path.fileName.toString(), props, dependencies)
         log.debug('Created sourceDef: {}', sourceDef)
+        Map overviewDoc = writeOverviewDocument(assemblyRoot, packageName, kamName,
+            overview, title, sourceDef.vailName as String)
+        String projDesc = constructOverviewText(true, title, overview,
+            sourceDef.vailName as String)
+        Map notesDoc = writeVantiqNotesDocument(assemblyRoot, packageName, kamName)
         Map serviceDef = addServiceDefinition(assemblyRoot, packageName, kamName, isSink)
         log.debug('Created serviceDef: {}', serviceDef)
 
@@ -379,7 +382,7 @@ class AssemblyResourceGeneration extends DefaultTask {
             assemblyRoot, packageName, kamName, title, props, componentList)
         //noinspection GroovyUnusedAssignment       // Useful for debugging...
         Map projectDef = addProjectDefinition(assemblyRoot, packageName, kamName,
-            title, props, requiredProps, componentList, serviceDef.service as Map)
+            projDesc, props, requiredProps, componentList, serviceDef.service as Map)
         log.debug('Created projectDef: {}', projectDef)
     }
 
@@ -569,7 +572,7 @@ class AssemblyResourceGeneration extends DefaultTask {
         project.isAssembly = true
 
         project.options = [
-            description: description + " from Camel version ${rawCamelVersion}",
+            description: description,
             filterBitArray: 'ffffffffffffffffffffffffffffffff',
             type: 'dev',
             v: 5,
@@ -689,12 +692,19 @@ class AssemblyResourceGeneration extends DefaultTask {
         log.info('Creating visible resources')
         log.debug('ServiceDef for {}: {}', project.name, serviceDef)
         project.visibleResources = components.findAll {
-            it.startsWith('/' + VANTIQ_SYSTEM_PREFIX + VANTIQ_SERVICES)
+            it.startsWith('/' + VANTIQ_SYSTEM_PREFIX + VANTIQ_SERVICES) ||
+                it.startsWith('/' + VANTIQ_DOCUMENTS)
         }.collect { comp ->
-            [ resourceReference: comp,
-              description: "Assembly ${project.name}'s service bridging source ${sourceName} " +
-                  "and event ${ -> serviceDef.eventTypes ? ((Map) serviceDef.eventTypes).keySet()[0] : ''}."
-            ]
+            if (comp.startsWith('/' + VANTIQ_SYSTEM_PREFIX + VANTIQ_SERVICES)) {
+                [resourceReference: comp,
+                 description: "Assembly ${project.name}'s service bridging source ${sourceName} " +
+                     "and event ${-> serviceDef.eventTypes ? ((Map) serviceDef.eventTypes).keySet()[0] : ''}."
+                ]
+            } else {
+                [resourceReference: comp,
+                 description: "Assembly ${project.name}'s supporting document"
+                ]
+            }
         }
 
         def projectJson =  JsonOutput.prettyPrint(JsonOutput.toJson(project))
@@ -728,20 +738,59 @@ class AssemblyResourceGeneration extends DefaultTask {
     }
 
     /**
+     * For the Overview provided, provide a string representing a complete description.
+     *
+     * @param isMarkdown boolean indicating if the result should be Markdown (.md) text
+     * @param title String the title provided in the kamelet
+     * @param baseDescription String the (usually) longer descriptive text as extracted from the Kamelet
+     * @param sourceName String the fully qualified source name defined by this assembly
+     * @return Map<String, Object> containing Path of document written & resourceReference to it when imported
+     */
+
+    static String constructOverviewText(boolean isMarkdown, String title, String baseDescription, String sourceName) {
+        StringBuffer overview = new StringBuffer()
+        if (isMarkdown) {
+            overview.append("# ")
+        }
+        overview.append("${title} from Camel ${rawCamelVersion}" + OVERVIEW_SOURCE_DISCLAIMER)
+        if (sourceName == null) {
+            sourceName = "Error: Source Name Not Provided.  Please report to Vantiq."
+        }
+        if (isMarkdown) {
+            overview.append("## ")
+        }
+        overview.append("Vantiq Sources\n\n")
+        overview.append("Vantiq Source defined in this assembly: ${sourceName.replace('_', '\\_')}")
+        overview.append("\n\n")
+        if (baseDescription != null) {
+            if (isMarkdown) {
+                overview.append("## ")
+            }
+            overview.append("Details\n\n")
+            overview.append(baseDescription)
+            overview.append("\n\n")
+        }
+
+        return overview
+    }
+
+    /**
      * For the Overview provided, write it out as a Vantiq document as part of the kamelets project.
      *
      * @param kameletAssemblyDir Path the directory used for this kamelet assembly
      * @param packageName String package name we'll use for this assembly
      * @param kamName String name of the kamelet on which we're working
      * @param overview String the (usually) longer descriptive text as extracted from the Kamelet
+     * @param title String the title provided in the kamelet
+     * @param sourceName String the fully qualified source name defined by this assembly
      * @return Map<String, Object> containing Path of document written & resourceReference to it when imported
      */
     static Map<String, Object> writeOverviewDocument(Path kameletAssemblyDir,
-                                                   String packageName, String kamName, String overview) {
+                                                     String packageName, String kamName, String overview,
+                                                     String title, String sourceName) {
         String docName = kamName + OVERVIEW_SUFFIX
         Map<String, Object> retVal = [:]
-        String titledOverview =
-            "# Description of ${kamName} from Camel ${rawCamelVersion}" + OVERVIEW_SOURCE_DISCLAIMER + overview
+        String titledOverview = constructOverviewText(true, title, overview, sourceName);
         retVal.path = writeVantiqEntity(VANTIQ_DOCUMENTS, kameletAssemblyDir, packageName,
             docName, titledOverview, false)
         retVal.reference = buildResourceRef(VANTIQ_DOCUMENTS, packageName + PACKAGE_SEPARATOR + docName)
