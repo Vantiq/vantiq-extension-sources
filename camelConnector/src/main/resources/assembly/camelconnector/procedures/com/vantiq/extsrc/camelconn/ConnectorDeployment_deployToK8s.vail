@@ -2,7 +2,7 @@ package com.vantiq.extsrc.camelconn
 
 import service io.vantiq.text.Template
 
-PROCEDURE deployToK8s(clusterName String REQUIRED, installationName String REQUIRED, k8sNamespace String, targetUrl String, accessToken String, sourceName String Required, cpuLimit String, memoryLimit String, connectorImageTag String)
+PROCEDURE ConnectorDeployment.deployToK8s(clusterName String REQUIRED, installationName String REQUIRED, k8sNamespace String, targetUrl String, accessToken String, sourceName String Required, cpuLimit String, memoryLimit String, connectorImageTag String)
 
 // Check for parameter values.  Overrides from parameters take precedence.
 

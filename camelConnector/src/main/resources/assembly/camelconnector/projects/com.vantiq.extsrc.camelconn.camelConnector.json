@@ -36,11 +36,17 @@
         "name" : "com.vantiq.extsrc.camelcomp.message",
         "resourceReference": "/types/com.vantiq.extsrc.camelcomp.message",
         "type": 1
-      },{
+      },
+      {
         "resourceReference": "/documents/com.vantiq.extsrc.camelconn.camelConnectorToK8s.template"
       },
       {
-        "resourceReference" : "/procedures/com.vantiq.extsrc.camelconn.deployToK8s",
+        "resourceReference" : "/system.services/com.vantiq.extsrc.camelconn.ConnectorDeployment"
+      },
+      {
+        "name" : "com.vantiq.extsrc.camelconn.ConnectorDeployment.deployToK8s",
+        "resourceReference" : "/procedures/com.vantiq.extsrc.camelconn.ConnectorDeployment.deployToK8s",
+        "serviceName" : "ConnectorDeployment"
       }
     ],
     "visibleResources": [
@@ -51,34 +57,34 @@
         "resourceReference": "/documents/com.vantiq.extsrc.camelconn.camelConnectorToK8s.template"
       },
       {
-        "resourceReference" : "/procedures/com.vantiq.extsrc.camelconn.deployToK8s",
+        "resourceReference" : "/system.services/com.vantiq.extsrc.camelconn.ConnectorDeployment"
       }
     ],
     "configurationMappings": {
       "connectorImageTag" : [ {
         "property" : "connectorImageTag",
         "resource" : "procedures",
-        "resourceId" : "com.vantiq.extsrc.camelconn.deployToK8s"
+        "resourceId" : "com.vantiq.extsrc.camelconn.ConnectorDeployment.deployToK8s"
       } ],
       "vantiqAccessToken" : [ {
         "property" : "vantiqAccessToken",
         "resource" : "procedures",
-        "resourceId" : "com.vantiq.extsrc.camelconn.deployToK8s"
+        "resourceId" : "com.vantiq.extsrc.camelconn.ConnectorDeployment.deployToK8s"
       } ],
       "vantiqCpuLimit" : [ {
         "property" : "vantiqCpuLimit",
         "resource" : "procedures",
-        "resourceId" : "com.vantiq.extsrc.camelconn.deployToK8s"
+        "resourceId" : "com.vantiq.extsrc.camelconn.ConnectorDeployment.deployToK8s"
       } ],
       "vantiqMemoryLimit" : [ {
         "property" : "vantiqMemoryLimit",
         "resource" : "procedures",
-        "resourceId" : "com.vantiq.extsrc.camelconn.deployToK8s"
+        "resourceId" : "com.vantiq.extsrc.camelconn.ConnectorDeployment.deployToK8s"
       } ],
       "vantiqServerUrl" : [ {
         "property" : "vantiqTargetUrl",
         "resource" : "procedures",
-        "resourceId" : "com.vantiq.extsrc.camelconn.deployToK8s"
+        "resourceId" : "com.vantiq.extsrc.camelconn.ConnectorDeployment.deployToK8s"
       } ]
     },
     "configurationProperties": {
