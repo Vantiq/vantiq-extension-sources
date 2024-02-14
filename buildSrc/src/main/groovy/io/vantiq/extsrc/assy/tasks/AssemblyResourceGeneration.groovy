@@ -80,11 +80,17 @@ class AssemblyResourceGeneration extends DefaultTask {
     public static final String ADDITIONAL_CONFIG_PROPERTIES = 'additionalConfigProps'
     public final static String VANTIQ_SYSTEM_PREFIX = 'system.'
     public static final String VANTIQ_DOCUMENTS = 'documents'
+    public static final String VANTIQ_PROCEDURES = 'procedures'
     public static final String VANTIQ_PROJECTS = 'projects'
     public static final String VANTIQ_RULES = 'rules'
     public static final String VANTIQ_SERVICES = 'services'
     public static final String VANTIQ_SOURCES = 'sources'
     public static final String VANTIQ_TYPES = 'types'
+    // This is the list of types that do not need the VANTIQ_SYSTEM_PREFIX on their types by convention in the UI.
+    // In the server, either form will work, but things can be a bit pickier at the interface level.
+    public static final String GRANDFATHERED_TYPES = [VANTIQ_DOCUMENTS, VANTIQ_PROCEDURES, VANTIQ_PROJECTS,
+                                                      VANTIQ_RULES, VANTIQ_TYPES]
+
     public static final String RULE_SINK_NAME_SUFFIX = '_svcToSrc'
     public static final String RULE_SOURCE_NAME_SUFFIX = '_srcToSvc'
     public static final String SERVICE_NAME_SUFFIX = '_service'
@@ -693,7 +699,9 @@ class AssemblyResourceGeneration extends DefaultTask {
         log.debug('ServiceDef for {}: {}', project.name, serviceDef)
         project.visibleResources = components.findAll {
             it.startsWith('/' + VANTIQ_SYSTEM_PREFIX + VANTIQ_SERVICES) ||
-                it.startsWith('/' + VANTIQ_DOCUMENTS)
+                it.startsWith('/' + VANTIQ_SERVICES) ||
+                it.startsWith('/' + VANTIQ_DOCUMENTS) ||
+                it.startsWith('/'  + VANTIQ_SYSTEM_PREFIX + VANTIQ_DOCUMENTS)
         }.collect { comp ->
             if (comp.startsWith('/' + VANTIQ_SYSTEM_PREFIX + VANTIQ_SERVICES)) {
                 [resourceReference: comp,
@@ -1026,7 +1034,11 @@ class AssemblyResourceGeneration extends DefaultTask {
     }
 
     static String buildResourceRef(String resourceType, String resourceId) {
-        return '/' + VANTIQ_SYSTEM_PREFIX + "${resourceType}/${resourceId}"
+        if (GRANDFATHERED_TYPES.contains(resourceType)) {
+            return '/' + "${resourceType}/${resourceId}"
+        } else {
+            return '/' + VANTIQ_SYSTEM_PREFIX + "${resourceType}/${resourceId}"
+        }
     }
 
     // Basic rule to route message sent to a service to the source implementing the kamelet route
