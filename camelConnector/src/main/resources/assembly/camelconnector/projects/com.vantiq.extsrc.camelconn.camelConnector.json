@@ -38,6 +38,9 @@
         "type": 1
       },{
         "resourceReference": "/documents/com.vantiq.extsrc.camelconn.camelConnectorToK8s.template"
+      },
+      {
+        "resourceReference" : "/procedures/com.vantiq.extsrc.camelconn.deployToK8s",
       }
     ],
     "visibleResources": [
@@ -46,14 +49,41 @@
       },
       {
         "resourceReference": "/documents/com.vantiq.extsrc.camelconn.camelConnectorToK8s.template"
+      },
+      {
+        "resourceReference" : "/procedures/com.vantiq.extsrc.camelconn.deployToK8s",
       }
     ],
     "configurationMappings": {
-
+      "connectorImageTag" : [ {
+        "property" : "connectorImageTag",
+        "resource" : "procedures",
+        "resourceId" : "com.vantiq.extsrc.camelconn.deployToK8s"
+      } ],
+      "vantiqAccessToken" : [ {
+        "property" : "vantiqAccessToken",
+        "resource" : "procedures",
+        "resourceId" : "com.vantiq.extsrc.camelconn.deployToK8s"
+      } ],
+      "vantiqCpuLimit" : [ {
+        "property" : "vantiqCpuLimit",
+        "resource" : "procedures",
+        "resourceId" : "com.vantiq.extsrc.camelconn.deployToK8s"
+      } ],
+      "vantiqMemoryLimit" : [ {
+        "property" : "vantiqMemoryLimit",
+        "resource" : "procedures",
+        "resourceId" : "com.vantiq.extsrc.camelconn.deployToK8s"
+      } ],
+      "vantiqServerUrl" : [ {
+        "property" : "vantiqTargetUrl",
+        "resource" : "procedures",
+        "resourceId" : "com.vantiq.extsrc.camelconn.deployToK8s"
+      } ]
     },
     "configurationProperties": {
       "vantiqServerUrl" : {
-        "description" : "The URL that the connector will use to contact Vantiq. Usually, this is what a user would type into the browser, but it could be different depending upon the configuration of the Kubernetes cluster in which this will run. Ignore if not running in Kubernetes.",
+        "description" : "The URL that the connector will use to contact Vantiq. Usually, this is what a user would type into the browser, but it may be different for access from the Kubernetes cluster in which this will run. Ignore if not running in Kubernetes.",
         "type" : "String"
       },
       "vantiqAccessToken" : {
