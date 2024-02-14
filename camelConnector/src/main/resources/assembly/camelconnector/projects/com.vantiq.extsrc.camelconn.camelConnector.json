@@ -36,17 +36,44 @@
         "name" : "com.vantiq.extsrc.camelcomp.message",
         "resourceReference": "/types/com.vantiq.extsrc.camelcomp.message",
         "type": 1
+      },{
+        "resourceReference": "/documents/com.vantiq.extsrc.camelconn.camelConnectorToK8s.template"
       }
     ],
     "visibleResources": [
       {
         "resourceReference": "/types/com.vantiq.extsrc.camelcomp.message"
+      },
+      {
+        "resourceReference": "/documents/com.vantiq.extsrc.camelconn.camelConnectorToK8s.template"
       }
     ],
     "configurationMappings": {
 
     },
     "configurationProperties": {
-
+      "vantiqServerUrl" : {
+        "description" : "The URL that the connector will use to contact Vantiq. Usually, this is what a user would type into the browser, but it could be different depending upon the configuration of the Kubernetes cluster in which this will run. Ignore if not running in Kubernetes.",
+        "type" : "String"
+      },
+      "vantiqAccessToken" : {
+        "description" : "Access token to be used by the connector to access Vantiq. Ignore if not using Kubernetes.",
+        "type" : "String"
+      },
+      "vantiqCpuLimit" : {
+        "default" : "500m",
+        "description" : "Kubernetes resource limit for the connector's CPU usage. Ignore if not using Kubernetes.",
+        "type" : "String"
+      },
+      "vantiqMemoryLimit" : {
+        "default" : "1Gi",
+        "description" : "Kubernetes resource limit for the connector's memory usage. Ignore if not using Kubernetes.",
+        "type" : "String"
+      },
+      "connectorImageTag" : {
+        "default": "stable",
+        "description" : "The image tag used to pull the Camel Connector image.  Generally, no need to change this. Ignore if not running in Kubernetes.",
+        "type" : "String"
+      }
     }
 }
