@@ -6,8 +6,9 @@
     "description": "Service for deployment of Camel Connector",
     "globalType": null,
     "interface" : [ {
-        "name" : "deployToK8s",
-        "parameters" : [
+      "name" : "deployToK8s",
+      "description" : "Creates a K8sInstallation running the Vantiq Camel Connector. The procedure parameters provide the specifics required. Assumes that a K8sCluster already exists.",
+      "parameters" : [
           {
             "description" : "The name of the K8sCluster to which to deploy this connector.",
             "multi" : false,
