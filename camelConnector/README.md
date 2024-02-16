@@ -365,9 +365,14 @@ is used (in place of the system provided defaults).
 (Note: this section assumes that you have set up the items outlined [above](#namespace-setup))
 
 After installing the assembly, you can open the installed `com.vantiq.extsrc.camelcomp.ConnectorDeployment` 
-(`ConnectorDeployment`). Select the `deployToK8s` procedure.
+(`ConnectorDeployment`). 
 
 ![Camel ConnectorDeployment Service](docs/images/ConnectorDeploymentService.png)
+
+
+Select the `deployToK8s` procedure, and press `Execute`.
+
+![Camel ConnectorDeployment.deployToK8s()](docs/images/DeployToK8s.png)
 
 The parameters are described below.
 
@@ -381,7 +386,9 @@ Optional Values:
 
 * **k8sNamespace** -- the namespace within the Kubernetes cluster into which to place the installation.
 * **targetUrl**, **accessToken**, **cpuLimit**, **memoryLimit**, **connectorImageTag** -- described 
-  as part of the [assembly installatio process](#assemblyInstallation)
+  as part of the [assembly installatio process](#assemblyInstallation).  _Note that there are system provided or 
+  determined values for most of these, the **accessToken** (or **vantiqAccessToken**) must have a value provided 
+  either an invocation or installation time._
 
 Once you run the `ConnectorDeployment.deployToK8s()` procedure, the Vantiq system will arrange for the deployment of 
 the installation. Information about this process is available as part of your Vantiq documentation.
