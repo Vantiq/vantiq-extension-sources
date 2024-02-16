@@ -55,9 +55,11 @@ in the Vantiq system. For an example of the definition,
 please see the [*camelConnectorImpl.json*](src/test/resources/camelConnectorImpl.json) file
 located in the *src/test/resources* directory.
 
-# Setting Up Your Machine <a name="machine" id="machine"></a>
+# Building and Running the Connector Locally
 
-## Repository Contents
+## Setting Up Your Machine <a name="machine" id="machine"></a>
+
+### Repository Contents
 
 The _connector_ directory (`src/main/java/io/vantiq/extsrc/camelconn/connector`) contains the following files:
 
@@ -72,7 +74,9 @@ The _discovery_ directory (`src/main/java/io/vantiq/extsrc/camelconn/discover`) 
 implementing the discovery, resolution, and provisioning of the components necessary to run the Apache Camel
 application configured as part of the source.
 
-## How to Run the Program <a name="runtheconnector" id="runtheconnector"></a>
+### How to Run the Program <a name="runtheconnector" id="runtheconnector"></a>
+
+### Running the Program Locally
 
 1.  Clone this repository (vantiq-extension-sources) and navigate into `<repo location>/vantiq-extension-sources`.
 2.  Run `./gradlew camelConnector:assemble`.
@@ -81,7 +85,7 @@ application configured as part of the source.
 4.  Uncompress the file in the location that you would like to install the program.
 5.  Run `<install location>/camelConnector/bin/camelConnector` with a local server.config file or specifying the [server config file](#serverConfig) as the first argument. Note that the `server.config` file can be placed in the `<install location>/camelConnector/serverConfig/server.config` or `<install location>/camelConnector/server.config` locations.
 
-### Changing Camel Versions
+#### Changing Camel Versions
 
 The camelConnector has been tested with the version of Apache Camel defined in the `build.gradle` file.
 If you wish to change this, you will need to perform the following actions:
@@ -92,17 +96,18 @@ If you wish to change this, you will need to perform the following actions:
    2. Set the `camelRoot` gradle property to the  root directory of the cloned repo above.
    3. Run the `./gradlew camelConnector:generateComponentList` command.  This will take a little while as it examines the source code in question to determine the set of components and data formats provided. This list is used when determining the set of libraries required to provision the connector for your Apache Camel application.
 
-## Logging
+### Logging
+
 To change the logging settings, edit the logging config file
 `<install location>/camelConnector/src/main/resources/log4j2.xml`,
 which is an [Apache Log4j configuration file](https://logging.apache.org/log4j/2.x/manual/configuration.html). The logger 
 name for each class is the class's fully qualified class name, *e.g.* "io.vantiq.extjsdk.ExtensionWebSocketClient".  
 
 <a name="serverConfig" id="serverConfig"></a>
-## Server Config File
-(Please read the [SDK's server config documentation](../extjsdk/README.md#serverConfig) first.)
+###lease read the [SDK's server config documentation](../extjsdk/README.md#serverConfig) first.)
 
 ### Vantiq Options
+
 *   **authToken**: Required. The authentication token to connect with. These can be obtained from the namespace admin.
 *   **sources**: Required. A comma separated list of the sources to which you wish to connect. Any whitespace will be
     removed when read.
@@ -110,7 +115,7 @@ name for each class is the class's fully qualified class name, *e.g.* "io.vantiq
 
 # Setting Up Your VANTIQ Modelo IDE <a name="vantiq" id="vantiq"></a>
 
-## Source Configuration
+## Source Configuration <a name="sourceConfiguration" id="sourceConfiguration"></a>
 
 To set up the Source in the VANTIQ Modelo IDE, you will need to add a Source to your project. Please check the [Prerequisites](#pre) 
 to make sure you have properly added a Source Definition to VANTIQ Modelo. Once this is complete,
@@ -299,6 +304,87 @@ Some tests may require other gradle properties as well.
 
 * **NOTE:** We strongly encourage users to create a unique VANTIQ Namespace in order to ensure that tests do not
 accidentally override any existing Sources or Types.
+
+# The Camel Connector Assembly
+
+This repository defines a Camel Connector Assembly (`com.vantiq.extsrc.camelconn.CamelConnector`) which can be
+imported into a Vantiq catalog. Some Vantiq installations will contain a public catalog (the _Camel Catalog_) that
+contains this assembly.
+
+The assembly, once imported, defines the following Vantiq entities.
+
+* The CAMEL Source Implementation.  This is used to [define the Vantiq Source](#sourceConfiguration).
+* The `com.vantiq.extsrc.camelcomp.message` schema type.
+    See [Camel Component Structured Messages](../camelComponent/README.md#structuredMessages)
+* The `com.vantiq.extsrc.camelcomp.ConnectorDeployment` service, including the `deployToK8s()` procedure.
+
+Once this assembly is installed, these items are available for use in the namespace in which the assembly is installed.
+Use of the source implementation and the schema type are outlined in the links provided.
+
+## Namespace Setup
+
+Use of the `ConnectorDeployment` service requires that the following Vantiq components exist in the Vantiq namespace 
+in which you are working.
+
+* K8sCluster -- you need to have a K8sCluster (Vantiq's representation of a Kubernetes cluster) set up.
+* Vantiq Source -- you need to have a Vantiq Source defined.  This is the point of interaction for the Vantiq 
+  applications with the connector.  See [Vantiq Source Configuration](#sourceConfiguration)
+* Access Token -- you need a Vantiq Access Token defined that the connector will use to connect to Vantiq
+* Secrets -- it is strongly recommended that you define Vantiq Secrets for any credential or credential type things. 
+  These credentials include the Vantiq Access token as well as any confidential information that the Camel Component(s)
+  you are using may require.
+
+## Installing the Camel Connector Assembly <a name="assemblyInstallation" id="assemblyInstallation"></a>
+
+When the Camel Connector Assembly is installed, it will _ask_ for a number of configuration property values.
+
+![Camel Connector Assemby Installation](docs/images/ConnectorAssemblyInstallation.png)
+
+These are all optional for the installation.  If provided, they provide defaults for the deployment of connectors.  
+The following properties are presented.
+
+* **vantiqServerUrl** -- this is the URL the connector will use to contact the Vantiq server.  Generally, this is 
+  the schema, node, and, optionally, port that one would use in the browser. If not provided, the system can 
+  generally determine this.  However, if you are, say, running in a local Kubernetes cluster that has a different 
+  network configuration, you may need to provide this.  (Note that _localhost_ is generally a bad node name to use.)
+* **vantiqAccessToken** -- this is the access token created for the connectors use in contacting the Vantiq server.  
+  It is strongly recommended that you create a Vantiq secret and use the `@secrets()` notation for the property value.
+* **vantiqCpuLimit** -- this is the Kubernetes CPU limit for the installed connector. Except for some specialized 
+  circumstances, this can be left empty.
+* **vantiqMemoryLimit** -- this is the Kubernetes memory limit for the installed connector. Except for some specialized
+  circumstances, this can be left empty.
+* **connectorImageTag** -- this is the Docker image tag used to fetch the image into Kubernetes.  Unless you have 
+  created your own image, this should be left blank.
+
+When provided for the assembly installation, the values provided become default values when the deployment procedure
+is used (in place of the system provided defaults).
+
+
+## Using the `ConnectorDeployment` Service <a name="camelConnectorDeployment" id="camelConnectorDeployment"></a>
+
+(Note: this section assumes that you have set up the items outlined [above](#namespace-setup))
+
+After installing the assembly, you can open the installed `com.vantiq.extsrc.camelcomp.ConnectorDeployment` 
+(`ConnectorDeployment`). Select the `deployToK8s` procedure.
+
+![Camel ConnectorDeployment Service](docs/images/ConnectorDeploymentService.png)
+
+The parameters are described below.
+
+Required Values:
+
+* **clusterName** -- this is the name of the Vantiq K8sCluster to which to deploy the connector.
+* **installation** -- this is the name of the installation to be deployed.
+* **sourceName** -- the name of the Vantiq Source that this connector will implement
+
+Optional Values:
+
+* **k8sNamespace** -- the namespace within the Kubernetes cluster into which to place the installation.
+* **targetUrl**, **accessToken**, **cpuLimit**, **memoryLimit**, **connectorImageTag** -- described 
+  as part of the [assembly installatio process](#assemblyInstallation)
+
+Once you run the `ConnectorDeployment.deployToK8s()` procedure, the Vantiq system will arrange for the deployment of 
+the installation. Information about this process is available as part of your Vantiq documentation.
 
 ## Licensing
 
