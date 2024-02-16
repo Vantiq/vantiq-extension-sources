@@ -96,7 +96,7 @@ data that can be naturally encoded as a string, and `byteVal` for binary data. I
 binary data, the actual data will be a Base64 encoded string.
 The underlying communication is JSON, so binary data must be Base64 encoded.
 
-### Structured Headers and Messages
+### Structured Headers and Messages <a name="structuredMessages" id="structuredMessages"></a>
 
 By adding the `structuredMessageHeader` component endpoint option with a value of `true` (see below), you can set or 
 access the Camel message headers.  When this option is set to `true`, messages sent to or received from the
