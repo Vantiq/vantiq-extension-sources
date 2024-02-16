@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023 Vantiq, Inc.
+ * Copyright (c) 2024 Vantiq, Inc.
  *
  * All rights reserved.
  *
@@ -34,7 +34,7 @@ import java.util.jar.JarFile
 import java.util.regex.Pattern
 
 /**
- * Gradle task to build assembly specifications from Camel Kamelet definitions.
+ * Gradle task to build assembly specifications from Apache Camel Kamelet definitions.
  */
 
 @Slf4j
@@ -49,6 +49,7 @@ class AssemblyResourceGeneration extends DefaultTask {
     public static final String KAMELETS_RESOURCE_PATH = KAMELETS_RESOURCE_FOLDER + '/'
     public static final String YAML_FILE_TYPE = '.yaml'
     public static final String YML_FILE_TYPE = '.yml'
+    public static final String JAVASCRIPT_FILE_TYPE = '.js'
     public static final String SOURCE_KAMELET_PREFIX = '-source.kamelet'
     public static final String SINK_KAMELET_PREFIX = '-sink.kamelet'
     public static final String SOURCE_KAMELET_YAML_SUFFIX = SOURCE_KAMELET_PREFIX + YAML_FILE_TYPE
@@ -85,16 +86,28 @@ class AssemblyResourceGeneration extends DefaultTask {
     public static final String VANTIQ_RULES = 'rules'
     public static final String VANTIQ_SERVICES = 'services'
     public static final String VANTIQ_SOURCES = 'sources'
+    public static final String VANTIQ_SOURCE_IMPLEMENTATION = "sourceimpls"
     public static final String VANTIQ_TYPES = 'types'
     // This is the list of types that do not need the VANTIQ_SYSTEM_PREFIX on their types by convention in the UI.
     // In the server, either form will work, but things can be a bit pickier at the interface level.
+    // Note that, while true, adding VANTIQ_SERVICES to this list ends up with the system not understanding that
+    // these services should be part of the interface. OTOH, these need to be here to act correctly.
     public static final String GRANDFATHERED_TYPES = [VANTIQ_DOCUMENTS, VANTIQ_PROCEDURES, VANTIQ_PROJECTS,
-                                                      VANTIQ_RULES, VANTIQ_TYPES]
+                                                      VANTIQ_RULES, VANTIQ_SOURCE_IMPLEMENTATION, VANTIQ_TYPES]
 
     public static final String RULE_SINK_NAME_SUFFIX = '_svcToSrc'
     public static final String RULE_SOURCE_NAME_SUFFIX = '_srcToSvc'
     public static final String SERVICE_NAME_SUFFIX = '_service'
     public static final String SOURCE_NAME_SUFFIX = '_source'
+
+    public static final String DEPLOYMENT_SERVICE_NAME_BASE = 'Deployment'
+    public static final String DEPLOYMENT_PROCEDURE_NAME = 'deployToK8s'
+
+    // Definitions from CamelConnector that we may need
+    public static final String CAMEL_CONNECTOR_DEPLOYMENT_SERVICE = 'ConnectorDeployment'
+    public static final String CAMEL_CONNECTOR_DEPLOYMENT_PACKAGE = 'com.vantiq.extsrc.camelconn'
+
+    public static final String CAMEL_CONNECTOR_DEPLOYMENT_PROCEDURE = DEPLOYMENT_PROCEDURE_NAME
 
     public static final String CAMEL_SOURCE_TYPE = 'CAMEL'
     public static final String CONFIG_CAMEL_RUNTIME = 'camelRuntime'
@@ -370,10 +383,22 @@ class AssemblyResourceGeneration extends DefaultTask {
         Map ruleDef = addRoutingRule(assemblyRoot, packageName, kamName,
             sourceDef.vailName as String, (serviceDef.vailName as String) - (packageName + PACKAGE_SEPARATOR), isSink)
         log.debug('Created rule def: {}', ruleDef)
+
+        // To ease use, we'll add a service & procedure to deploy this connector to Kubernetes.  This deployment
+        // makes use of the base function supplied as part of the CamelConnector assembly which contains the
+        // procedure to perform the actual work.  The service procedure provided here collects the parameters and
+        // adds the source name (since we're generating that and, consequently, know it).
+
+        Map deploymentProc = addDeploymentProcedure(assemblyRoot, packageName, kamName, sourceDef.vailName as String,
+            DEPLOYMENT_SERVICE_NAME_BASE)
+        Map deploymentService = addDeploymentServiceDefinition(assemblyRoot, packageName, kamName,
+            generateDeploymentServiceName(kamName, DEPLOYMENT_SERVICE_NAME_BASE), K8S_DEPLOYMENT_SERVICE_INTERFACE)
         List<String> componentList = [
             routeDoc.reference as String,
             sourceDef.reference as String,
             serviceDef.reference as String,
+            deploymentProc.reference as String,
+            deploymentService.reference as String
         ]
         if (overview != null) {
             componentList << (overviewDoc.reference as String)
@@ -393,7 +418,7 @@ class AssemblyResourceGeneration extends DefaultTask {
     }
 
     /**
-     * Add service definition
+     * Add service definition for event handler
      *
      * @param kameletAssemblyDir Path location of the base location for the project artifacts
      * @param packageName String name of the package to which this service will belong
@@ -447,6 +472,96 @@ class AssemblyResourceGeneration extends DefaultTask {
     }
 
     /**
+     * Create service procedure for deploying this connector to Kubernetes (via Vantiq)
+     *
+     * This procedure, generated from the K8S_DEPLOYMENT_PROCEDURE_TEMPLATE, gathers parameters and calls the
+     * CamelConnector.deployToK8s() procedure (from the CamelConnector assembly) to do the work.  This procedure
+     * extends that by providing the source name for the source generated by the assembly we're creating.
+     *
+     * @param kameletAssemblyDir Path Directory into which to place results
+     * @param packageName String name of package to which the rule belongs
+     * @param kamName String Name of the kamelet/assembly for which the rule is being constructed
+     * @param sourceName String name of the source about which the rule is being constructed
+     * @param serviceBase String base name of the service involved
+     * @return Map<String, Object> containing the Path of the procedure written and a resource reference to it.
+     */
+    static Map<String, Object> addDeploymentProcedure(Path kameletAssemblyDir, String packageName, String kamName,
+                                                      String sourceName, String serviceBase) {
+        Map<String, Object> retVal = [:]
+        String serviceName = generateDeploymentServiceName(kamName, serviceBase)
+        String procName = serviceName + PACKAGE_SEPARATOR + DEPLOYMENT_PROCEDURE_NAME
+        String procFileName = serviceName + '_' + DEPLOYMENT_PROCEDURE_NAME + VAIL_SUFFIX
+        def engine = new SimpleTemplateEngine()
+        String procText = engine.createTemplate(K8S_DEPLOYMENT_PROCEDURE_TEMPLATE).make(
+            [packageName: packageName,
+             serviceName: serviceName,
+             sourceName: sourceName,
+             procedureName: procName,
+             camConnectorPackage: CAMEL_CONNECTOR_DEPLOYMENT_PACKAGE,
+             camConnectorDepService: CAMEL_CONNECTOR_DEPLOYMENT_SERVICE,
+             camConnectorDepProcedure: CAMEL_CONNECTOR_DEPLOYMENT_PROCEDURE
+            ]).toString()
+
+        if (procText) {
+            retVal.path = writeVantiqEntity(VANTIQ_PROCEDURES, kameletAssemblyDir, packageName,
+                procFileName, procText, true)
+            retVal.reference = buildResourceRef(VANTIQ_PROCEDURES, packageName, procName)
+            return retVal
+        } else {
+            return null
+        }
+    }
+
+    static String generateDeploymentServiceName(String kamName, String serviceBase) {
+        return kamName.capitalize() + '_' + serviceBase
+    }
+
+    /**
+     * Add service definition for deployment service.
+     *
+     * This incorporates the deployment procedure created by addDeploymentProcedure().
+     *
+     * @param kameletAssemblyDir Path location of the base location for the project artifacts
+     * @param packageName String name of the package to which this service will belong
+     * @param kamName String name of the kamelet which will be used to construct the service name
+     * @param serviceName String name of the service we're creating
+     * @param interfaceSpec List<Map> service's interface definition
+     * @returns Map<String, Object> containing Path
+     * written &
+     * resourceReference
+     */
+    static Map<String, Object> addDeploymentServiceDefinition(Path kameletAssemblyDir, String packageName,
+                                                              String kamName, String serviceName,
+                                                              List<Map> interfaceSpec) {
+        def name = packageName + PACKAGE_SEPARATOR + serviceName
+        def service = [
+            active: true,
+            ars_relationships: [],
+            description: 'Service for deploying connector to a Kubernetes cluster defined in Vantiq',
+            globalType: null,
+            interface: [],
+            internalEventHandlers: [],
+            name: name,
+            partitionType: null,
+            replicationFactor: 1,
+            scheduledProcedures: [:]
+        ]
+        if (interfaceSpec) {
+            service.interface = interfaceSpec
+        }
+
+        String svcDefJson = JsonOutput.prettyPrint(JsonOutput.toJson(service))
+        log.info('Creating service {}:\n{}', service.name, svcDefJson)
+        Map<String, Object> retVal = [:]
+        retVal.path = writeVantiqEntity(VANTIQ_SERVICES, kameletAssemblyDir, packageName,
+            serviceName + JSON_SUFFIX, svcDefJson, true)
+        retVal.reference = buildResourceRef(VANTIQ_SERVICES, service.name as String)
+        retVal.vailName = service.name
+        retVal.service = service
+        return retVal
+    }
+
+    /**
      * Add source definition for Vantiq source for this kamelet.
      *
      * Will generate a camelConnector source defined for this kamelet using the properties and routes
@@ -476,7 +591,7 @@ class AssemblyResourceGeneration extends DefaultTask {
         List<String> propNameList = []
         List<String> rawHandlingRequired = []
 
-        // Note: Here, we could have the CAMEL source type define camelRuntime,propertyValues as configurable.
+        // Note: Here, we could have the CAMEL source type define camelRuntime.propertyValues as configurable.
         // However, if we did that, on installation, the user would have to provide an object with the various lower
         // level items & their values.  And any descriptive information provided by the kamelet definition would be
         // lost.  Consequently, it seems preferable for each source to define the set it needs and let the assembly
@@ -494,21 +609,7 @@ class AssemblyResourceGeneration extends DefaultTask {
                                                     CONFIG_CAMEL_RUNTIME,
                                                     CAMEL_RUNTIME_PROPERTY_VALUES,
                                                     aProp.key])
-            if (aProp.value instanceof Map) {
-                Map pDesc = aProp.value as Map
-                // FIXME: With more full dependency handling, this no longer seems necessary, at least for aws things.  Not
-                //  sure why that would make a difference, but the templates we get have the RAW encoding of the properties
-                //  when defining the endpoint
-                // TODO: Remove or otherwise make this section conditional...
-
-//                if (PASSWORD_LIKE.contains(pDesc.format?.toLowerCase()) ||
-//                    (pDesc[PROPERTY_X_DESCRIPTORS] != null &&
-//                        DISPLAY_HIDE_VALUES.contains(((String) pDesc[PROPERTY_X_DESCRIPTORS])))) {
-//                    // for things that are passwords or are marked to be masked in display, tell connector to instruct
-//                    // Camel to use RAW handling
-//                    rawHandlingRequired << aProp.key
-//                }
-            } else {
+            if (!(aProp.value instanceof Map)) {
                 throw new GradleException('Unexpected type for property description: ' + aProp.value?.class?.name)
             }
         }
@@ -583,8 +684,23 @@ class AssemblyResourceGeneration extends DefaultTask {
             type: 'dev',
             v: 5,
             isModeloProject: true,
-            exclusionList: [ "type/${CAMEL_MESSAGE_SCHEMA}",
-                             "sourceimpl/${CAMEL_SOURCE_TYPE}",
+
+            // Add exclusions for thing we bring in from other assemblies.  We don't wan to include them in our
+            // definition -- we want there to be only one copy/instance.
+            exclusionList: [buildExcListReference('type', CAMEL_MESSAGE_SCHEMA),
+                            buildExcListReference('sourceimpl', CAMEL_SOURCE_TYPE),
+                            buildExcListReference('system.services', CAMEL_CONNECTOR_DEPLOYMENT_PACKAGE +
+                                 PACKAGE_SEPARATOR +
+                                 CAMEL_CONNECTOR_DEPLOYMENT_SERVICE),
+                            buildExcListReference('procedure', CAMEL_CONNECTOR_DEPLOYMENT_PACKAGE +
+                                 PACKAGE_SEPARATOR +
+                                 CAMEL_CONNECTOR_DEPLOYMENT_SERVICE + PACKAGE_SEPARATOR +
+                                 CAMEL_CONNECTOR_DEPLOYMENT_PROCEDURE),
+                            // Need to include the generated javascript that's included for referenced or defined
+                            // services
+                            buildExcListReference('document', CAMEL_CONNECTOR_DEPLOYMENT_PACKAGE +
+                                 PACKAGE_SEPARATOR +
+                                 CAMEL_CONNECTOR_DEPLOYMENT_SERVICE + JAVASCRIPT_FILE_TYPE)
             ],
         ]
 
@@ -689,8 +805,17 @@ class AssemblyResourceGeneration extends DefaultTask {
         project.configurationMappings = cfgMappings
 
         List<Map<String, Object>> resources = []
+        String procCompPrefix = '/' + VANTIQ_PROCEDURES + '/'
         components.each {comp ->
-            resources << ([resourceReference: comp] as Map<String, Object>)
+            if (comp.startsWith(procCompPrefix)) {
+                def procParts = (comp - procCompPrefix).split('\\.')
+                String svcName = procParts[-2]
+                resources << ( [resourceReference: comp,
+                                name: (comp - procCompPrefix),
+                                serviceName: svcName] as Map<String, Object>)
+            } else {
+                resources << ([resourceReference: comp] as Map<String, Object>)
+            }
         }
         project.resources = resources
 
@@ -704,9 +829,16 @@ class AssemblyResourceGeneration extends DefaultTask {
                 it.startsWith('/'  + VANTIQ_SYSTEM_PREFIX + VANTIQ_DOCUMENTS)
         }.collect { comp ->
             if (comp.startsWith('/' + VANTIQ_SYSTEM_PREFIX + VANTIQ_SERVICES)) {
-                [resourceReference: comp,
-                 description: "Assembly ${project.name}'s service bridging source ${sourceName} " +
-                     "and event ${-> serviceDef.eventTypes ? ((Map) serviceDef.eventTypes).keySet()[0] : ''}."
+                String desc
+                if(comp.endsWith(DEPLOYMENT_SERVICE_NAME_BASE)) {
+                    desc = "Assembly ${project.name}'s deployment service."
+                } else {
+                    desc = "Assembly ${project.name}'s service bridging source ${sourceName} " +
+                        "and event ${-> serviceDef.eventTypes ? ((Map) serviceDef.eventTypes).keySet()[0] : ''}."
+                }
+                [
+                    resourceReference: comp,
+                    description: desc
                 ]
             } else {
                 [resourceReference: comp,
@@ -841,13 +973,51 @@ class AssemblyResourceGeneration extends DefaultTask {
     }
 
     /**
+     * Provide core underlying capability to write a file containing the Vantiq object definition.
+     *
+     * Handles placing things by package directories or just including the package name in the file name.
+     *
+     * @param entType String name of the resource type to be written
+     * @param kameletAssemblyDir Path file system base at which to write this entity file
+     * @param packageName String name of the package for the entity being created
+     * @param fileName String base name for the file.  May be "enhanced" depending on the packageIsDirectory setting.
+     * @param content String content to write for the entity.
+     * @param packageIsDirectory Boolean whether the package should be used to create a directory path (true) or
+     *              should be included in the file name (false).  Different component types do things differently.
+     * @return Path for the file created.
+     */
+    static Path writeVantiqEntity(String entType, Path kameletAssemblyDir, String packageName,
+                                  String fileName, String content, Boolean packageIsDirectory) {
+
+        List<String> entDirectoryList = [kameletAssemblyDir.toAbsolutePath().toString(), entType]
+        if (packageIsDirectory) {
+             entDirectoryList += packageName.split(Pattern.quote(PACKAGE_SEPARATOR)).toList()
+        }
+        log.debug('Creating def for packageIsDirectory: {}, package: {}, fileName: {}',
+            packageIsDirectory, packageName, fileName)
+
+        //noinspection GroovyAssignabilityCheck
+        Path entDir = Paths.get(*entDirectoryList)
+        if (!Files.exists(entDir)) {
+            Files.createDirectories(entDir)
+        }
+        def completeFileName = fileName
+        if (!packageIsDirectory) {
+            completeFileName = packageName + PACKAGE_SEPARATOR + fileName
+        }
+        Path entFilePath = Paths.get(entDir.toAbsolutePath().toString(), completeFileName)
+        log.info('Creating {} definition at path: {}', entType, entFilePath.toString())
+        return Files.writeString(entFilePath, content)
+    }
+
+    /**
      * Create simple rules for routing message from source to service event or vice versa
      *
      * @param kameletAssemblyDir Path Directory into which to place results
      * @param packageName String name of package to which the rule belongs
      * @param kamName String Name of the kamelet/assembly for which the rule is being constructed
      * @param sourceName String name of the source about which the rule is being constructed
-     * @param serviceName String name of th service involved
+     * @param serviceName String name of the service involved
      * @param isSink Boolean is the kamelet/assembly a SINK (sends messages to the source)
      * @return Map<String, Object> containing the Path of the rule written and a resource reference to it.
      */
@@ -880,29 +1050,6 @@ class AssemblyResourceGeneration extends DefaultTask {
         }
     }
 
-    static Path writeVantiqEntity(String entType, Path kameletAssemblyDir, String packageName,
-                                  String fileName, String content, Boolean packageIsDirectory) {
-
-        List<String> entDirectoryList = [kameletAssemblyDir.toAbsolutePath().toString(), entType]
-        if (packageIsDirectory) {
-             entDirectoryList += packageName.split(Pattern.quote(PACKAGE_SEPARATOR)).toList()
-        }
-        log.debug('Creating def for packageIsDirectory: {}, package: {}, fileName: {}',
-            packageIsDirectory, packageName, fileName)
-
-        //noinspection GroovyAssignabilityCheck
-        Path entDir = Paths.get(*entDirectoryList)
-        if (!Files.exists(entDir)) {
-            Files.createDirectories(entDir)
-        }
-        def completeFileName = fileName
-        if (!packageIsDirectory) {
-            completeFileName = packageName + PACKAGE_SEPARATOR + fileName
-        }
-        Path entFilePath = Paths.get(entDir.toAbsolutePath().toString(), completeFileName)
-        log.info('Creating {} definition at path: {}', entType, entFilePath.toString())
-        return Files.writeString(entFilePath, content)
-    }
 
     /**
      * Convert the route template into a reified route using the vantiq://server.config style endpoints
@@ -1026,11 +1173,11 @@ class AssemblyResourceGeneration extends DefaultTask {
 
     // Resource references in projects require the leading /
     static String buildResourceRef(String resourceType, String packageName, String resourceId) {
+        String resId = resourceId
         if (packageName) {
-            return '/' + VANTIQ_SYSTEM_PREFIX + "${resourceType}/${packageName}" + PACKAGE_SEPARATOR + "${resourceId}"
-        } else {
-            return buildResourceRef(resourceType, resourceId)
+            resId = packageName + PACKAGE_SEPARATOR + resId
         }
+        return buildResourceRef(resourceType, resId)
     }
 
     static String buildResourceRef(String resourceType, String resourceId) {
@@ -1039,6 +1186,19 @@ class AssemblyResourceGeneration extends DefaultTask {
         } else {
             return '/' + VANTIQ_SYSTEM_PREFIX + "${resourceType}/${resourceId}"
         }
+    }
+
+    /**
+     * Build a resourceReference-like think for use in exclusion lists.
+     *
+     * Structurally, these lack the initial '/'.
+     *
+     * @param resourceType String name of the resource as processed by the exclusion list
+     * @param resourceId String name of the resources as processed by the exclusion list
+     * @return String reference suitable for inclusion in the project exclusion list
+     */
+    static String buildExcListReference(String resourceType, String resourceId) {
+        return "${resourceType}/${resourceId}"
     }
 
     // Basic rule to route message sent to a service to the source implementing the kamelet route
@@ -1065,5 +1225,88 @@ log.debug("Source ${sourceName} rule got message {} to forward to service  {}", 
 
 PUBLISH { headers: svcMsg.value.headers, message: svcMsg.value.message } 
     TO SERVICE EVENT "${packageName + '.' + serviceName}/${serviceName + 'Event'}"
+'''
+
+    // Interface description for the generated deployment service.
+    public static final List<Map> K8S_DEPLOYMENT_SERVICE_INTERFACE = [
+        [
+          "name" : "deployToK8s",
+          "description" : "Creates a K8sInstallation running the Vantiq Camel Connector implementing the source " +
+                "defined by this assembly. The procedure parameters provide the specifics required. Assumes that a " +
+                "K8sCluster already exists.",
+          "parameters" : [
+                [
+                    "description" : "The name of the K8sCluster to which to deploy this connector.",
+                    "multi" : false,
+                    "name" : "clusterName",
+                    "required" : true,
+                    "type" : "String"
+                ],[
+                    "description" : "The name of the K8sInstallation to be deployed.",
+                    "multi" : false,
+                    "name" : "installationName",
+                    "required" : true,
+                    "type" : "String"
+                ],[
+                    "description" : "The name of Kubernetes namespace into which to deploy.",
+                    "multi" : false,
+                    "name" : "k8sNamespace",
+                    "required" : false,
+                    "type" : "String"
+                ],[
+                    "description" : "The URL of the Vantiq server with which the connector will interact. " +
+                        "Generally, this is the same as what might be used in the browser, but it may be different " +
+                        "depending upon the network configuration of the Kubernetes cluster.",
+                    "multi" : false,
+                    "name" : "targetUrl",
+                    "required" : false,
+                    "type" : "String"
+                ],[
+                    "description" : "The access token the connector will use to make the connection to the Vantiq server.",
+                    "multi" : false,
+                    "name" : "accessToken",
+                    "required" : false,
+                    "type" : "String"
+                ],[
+                    "description" : "The limit on the CPU usage for this connector within the Kubernetes cluster.",
+                    "multi" : false,
+                    "name" : "cpuLimit",
+                    "required" : false,
+                    "type" : "String"
+                ],[
+                    "description" : "The limit on the memory usage for this connector within the Kubernetes cluster.",
+                    "multi" : false,
+                    "name" : "memoryLimit",
+                    "required" : false,
+                    "type" : "String"
+                ],[
+                    "description" : "The docker image tag to be used when fetching the image to run",
+                    "multi" : false,
+                    "name" : "connectorImageTag",
+                    "required" : false,
+                    "type" : "String"
+                ] ]
+        ] ]
+
+    // Per-assembly procedure to call for k8s deployment.  It makes use of the common implementation provided by the
+    // connector assembly.  The per-assembly's contribution is knowing the source name. Otherwise, it will just
+    // gather the set of parameters and pass them along to the common service procedure.
+
+    // (Implementation note:  Note that this must be a pure string rather than Groovy GString.  The syntax for the
+    // template placeholders is the same as that used in GStrings, so we have to be careful about how this is used.
+    public static final String K8S_DEPLOYMENT_PROCEDURE_TEMPLATE = '''
+package ${packageName}
+
+import service ${camConnectorPackage}.${camConnectorDepService}
+
+PROCEDURE ${procedureName}(clusterName String REQUIRED, installationName String REQUIRED, k8sNamespace String,
+                targetUrl String, accessToken String,
+                cpuLimit String, memoryLimit String, connectorImageTag String)
+
+// Here, we pass the source name along to the doer, passing along any other values passed in...
+
+${camConnectorDepService}.${camConnectorDepProcedure}(clusterName, installationName, k8sNamespace,
+                                targetUrl, accessToken, "${sourceName}",
+                                cpuLimit, memoryLimit, connectorImageTag) 
 '''
 }
