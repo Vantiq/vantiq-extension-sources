@@ -526,9 +526,7 @@ class AssemblyResourceGeneration extends DefaultTask {
      * @param kamName String name of the kamelet which will be used to construct the service name
      * @param serviceName String name of the service we're creating
      * @param interfaceSpec List<Map> service's interface definition
-     * @returns Map<String, Object> containing Path
-     * written &
-     * resourceReference
+     * @returns Map<String, Object> containing Path written & resourceReference
      */
     static Map<String, Object> addDeploymentServiceDefinition(Path kameletAssemblyDir, String packageName,
                                                               String kamName, String serviceName,
@@ -685,8 +683,8 @@ class AssemblyResourceGeneration extends DefaultTask {
             v: 5,
             isModeloProject: true,
 
-            // Add exclusions for thing we bring in from other assemblies.  We don't wan to include them in our
-            // definition -- we want there to be only one copy/instance.
+            // Add exclusions for thing we bring in from other assemblies.  We don't want to include these files in our
+            // definition -- there should be only one copy/instance, not one per assembly.
             exclusionList: [buildExcListReference('type', CAMEL_MESSAGE_SCHEMA),
                             buildExcListReference('sourceimpl', CAMEL_SOURCE_TYPE),
                             buildExcListReference('system.services', CAMEL_CONNECTOR_DEPLOYMENT_PACKAGE +
@@ -1189,7 +1187,7 @@ class AssemblyResourceGeneration extends DefaultTask {
     }
 
     /**
-     * Build a resourceReference-like think for use in exclusion lists.
+     * Build a resourceReference-like thing for use in exclusion lists.
      *
      * Structurally, these lack the initial '/'.
      *

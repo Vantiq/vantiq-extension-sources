@@ -104,9 +104,11 @@ which is an [Apache Log4j configuration file](https://logging.apache.org/log4j/2
 name for each class is the class's fully qualified class name, *e.g.* "io.vantiq.extjsdk.ExtensionWebSocketClient".  
 
 <a name="serverConfig" id="serverConfig"></a>
-###lease read the [SDK's server config documentation](../extjsdk/README.md#serverConfig) first.)
+### Server Config File
 
-### Vantiq Options
+(Please read the [SDK's Server Config File documentation](../extjsdk/README.md#serverConfig) first.)
+
+#### Vantiq Options
 
 *   **authToken**: Required. The authentication token to connect with. These can be obtained from the namespace admin.
 *   **sources**: Required. A comma separated list of the sources to which you wish to connect. Any whitespace will be
@@ -386,9 +388,9 @@ Optional Values:
 
 * **k8sNamespace** -- the namespace within the Kubernetes cluster into which to place the installation.
 * **targetUrl**, **accessToken**, **cpuLimit**, **memoryLimit**, **connectorImageTag** -- described 
-  as part of the [assembly installatio process](#assemblyInstallation).  _Note that there are system provided or 
+  as part of the [assembly installation process](#assemblyInstallation).  _Note that there are system provided or 
   determined values for most of these, the **accessToken** (or **vantiqAccessToken**) must have a value provided 
-  either an invocation or installation time._
+  either at invocation or installation time._
 
 Once you run the `ConnectorDeployment.deployToK8s()` procedure, the Vantiq system will arrange for the deployment of 
 the installation. Information about this process is available as part of your Vantiq documentation.

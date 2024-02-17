@@ -131,7 +131,7 @@ subprojects {
         // and is better dealt with properly.
 
         // We have to check this later in the gradle process since the copyConnectorBuildFiles is generated later in
-        // the process (by the dcompose plugin). Slso, some projects may not have a distTar task, so only generate
+        // the process (by the dcompose plugin). Also, some projects may not have a distTar task, so only generate
         // this dependency when the tasks both exist.
 
         if (project.tasks.findByName('copyConnectorBuildFiles') && project.tasks.findByName('distTar')) {
