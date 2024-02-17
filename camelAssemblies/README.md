@@ -103,12 +103,13 @@ To make use of any Vantiq Camel assembly defined herein, the user should perform
 * Add the Vantiq Catalog containing the definitions. In Vantiq public systems, this is, at the time of this writing, 
   named `CamelCatalog`. This must be done once per namespace into which any of these assemblies will be installed.
 * From that catalog, import the `com.vantiq.extsrc.camelconn.camelConnector` assembly. This is a prerequisite for 
-  the Vantiq Camel assemblies.
+  the Vantiq Camel assemblies.  See the [Camel Connector document](../camelConnector/README.md).
   * As with the addition of the Vantiq Catalog, this needs to be done once per Vantiq namespace in which these 
     assemblies are being used.
   * This assembly defines the following items:
     * The `CAMEL` source implementation type.
     * The Vantiq _schema_ used for the _structured messages_ used to interact with the source.
+    * A deployment procedure used to deploy the connector to Kubernetes via a Vantiq K8sCluster.
 * From that catalog, import the Vantiq Camel assembly or assemblies desired, providing the configuration properties as 
   requested. 
   * These configuration properties
@@ -147,6 +148,49 @@ Apache Camel applications. To debug what is happening, you will need to look at 
 the assembly.  Generally, these will include the component for the target system and the [Vantiq component](../camelComponent/README.md).
 Information about other components is (usually) found in the 
 [Apache Component catalog](https://camel.apache.org/components/3.21.x/index.html).
+
+# Deploying the Camel Connector to Kubernetes
+
+Assuming you have K8sCluster defined in your Vantiq namespace, you are free to deploy the installation using the 
+usual Vantiq tools.  The name of the source defined by the assembly is provided in the overview document (and 
+the assembly description in the catalog).
+
+However, to make this simpler, each assembly includes connector deployment service that can be 
+used to perform this function. 
+
+Each assembly contains such a service for performing the deployment. The service is in the same package as other things 
+within the assembly, and is named using the base name with the `_Deployment` suffix.  So, for example, the 
+deployment service for the AWS EventBridge sink is
+
+`com.vantiq.extsrc.camel.kamelets.v3_21_0.aws_eventbridge_sink.Aws_eventbride_sink_Deployment`
+
+with the deployment procedure being
+
+`com.vantiq.extsrc.camel.kamelets.v3_21_0.aws_eventbridge_sink.Aws_eventbride_sink_Deployment.deployToK8s()`
+
+The actions required to perform the deployment are the same as those described for 
+[deploying a Camel Connector](../camelConnector/README.md#camelConnectorDeployment) with two (2) differences:
+
+1) The service and procedure to use varies from assembly to assembly
+  (they are named and packaged as per the assembly), and
+2) The source name value is not (cannot) be provided.  It is provided by the assembly and the specialized service 
+   contained therein.
+
+So, using the same assembly as an example, assembly installation will provide the service definition
+
+![EventBridge Deployment Service](docs/images/EventBrdgDepSvc.png)
+
+From there, you can execute the `deployToK8s` procedure by pressing the _Execute_ button.
+
+![EventBridge Deployment Procedure](docs/images/EventBrdgDepProc.png)
+
+which will present you with a set of parameter values to provide.
+
+![EventBridge Deployment](docs/images/EventBrdgDeployment.png)
+
+As with the underlying Camel Connector (on which these assemblies are based), the `clusterName` and 
+`installationName` values are required, but the remainder are optional.  They will take their defaults from the 
+Camel Connector assembly installation or from the system.
 
 # Licensing
 

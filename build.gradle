@@ -12,7 +12,7 @@ plugins {
     id 'io.franzbecker.gradle-lombok' version '5.0.0' apply false
     id 'pl.allegro.tech.build.axion-release' version '1.6.0'
     id 'jacoco'
-    id 'com.chrisgahlert.gradle-dcompose-plugin' version '0.17.1' apply false
+    id 'com.chrisgahlert.gradle-dcompose-plugin' version '0.17.2' apply false
 }
 
 wrapper {
@@ -124,6 +124,19 @@ subprojects {
     }
     if (project.tasks.findByName('buildConnectorImage')) {
         buildConnectorImage.dependsOn assemble
+    }
+    project.afterEvaluate { x ->
+        // Add dependency to Gradle for the archive file used in the connector docker image. This avoids warnings
+        // from gradle about undeclared dependencies.  The warning didn't really cause an issue, but it looks messy
+        // and is better dealt with properly.
+
+        // We have to check this later in the gradle process since the copyConnectorBuildFiles is generated later in
+        // the process (by the dcompose plugin). Also, some projects may not have a distTar task, so only generate
+        // this dependency when the tasks both exist.
+
+        if (project.tasks.findByName('copyConnectorBuildFiles') && project.tasks.findByName('distTar')) {
+            copyConnectorBuildFiles.dependsOn distTar
+        }
     }
 
     // only run with code-coverage metrics if property is explicitly specified
