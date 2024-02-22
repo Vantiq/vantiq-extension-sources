@@ -78,6 +78,25 @@ The Vantiq Camel assemblies contained herein are composed of the following.
   * Each service is defined with an _inbound_ or _outbound_ event named with the base name with the suffix 
     `_serviceEvent`. Continuing the example above, `aws_sns_sink_serviceEvent` (so the full service event name is 
     `com.vantiq.extsrc.camel.kamelets.v3_21_0.aws_sns_sink.aws_sns_sink_service/aws_sns_sink_serviceEvent`).
+* Vantiq Deployment Service
+  * A service is created to deploy a Vantiq Camel Connector to a Vantiq K8s CLuster.
+  * The service name is in the assembly's package, and named with the base name with the suffix `_Deployment`.
+  * The service contains a procedure `deployToK8s()`, with the following parameters:
+    * **clusterName** -- the name of the K8sCluster to which to deploy the connector
+    * **installationName** -- the name of the installation being deployed
+    * **k8sNamespace** -- (optional) the name of the Kubernetes namespace into which to deploy the connector
+    * **targetUrl** -- (optional) the URL of the Vantiq server with which the connector will work. This will default 
+      to the value given upon installation of the Camel Connector assembly or that determined from the Vantiq 
+      installation.  See
+      [Camel Connector assembly](../camelConnector/README.md#assemblyInstallation) for further details
+    * **accessToken** -- (optional) the access token value to use. As with the **targetUrl**, the value can be taken 
+      from the Camel Connector assembly installation.  This should be provided via a Vantiq Secret using `@secrets()`.
+    * **cpuLimit** -- (optional) the CPU limit to provide for the _request limits_ parameter. If not provided, will 
+      use the value provided as part of the Camel Connector asssembly, or a default value.
+    * **memoryLimit** -- (optional) the memory limit to provide for the _request limits_ parameter. If not provided, 
+      will use the value provided as part of the Camel Connector asssembly, or a default value.
+    * **connectorImageTag** -- (optional, very rarely used) The image tag used to fetch the Camel Connector image 
+      from the image repository.  Primarily provided for developers.
 * Vantiq Rule -- this is the Vantiq component which marshals events between the Vantiq source and Vantiq service.
   * The rules are in the package matching the assembly name, and named using the associated 
        service name with the suffix `_srcToSvc` (for a _sink_ assembly)
@@ -121,8 +140,9 @@ To make use of any Vantiq Camel assembly defined herein, the user should perform
 
 Once installed, each Vantiq Camel assembly creates a source & service for interacting with that source.
 
-The source is defined, but it is implemented via a [Camel Connector](../camelConnector/README.md). To run the Camel 
-Connector, please see the [Camel Connector overview](../camelConnector/README.md).
+The source is defined and  implemented via a [Camel Connector](../camelConnector/README.md). To run the Camel 
+Connector, please see the [Camel Connector overview](../camelConnector/README.md). To deploy said connector using a 
+Vantiq K8sCluster, see [Deploying the Camel Connector to Kubernetes](#deploying-the-camel-connector-to-kubernetes)
 
 As noted above, the service will have an inbound or outbound event defined, and interactions with the service are
 generally performed by publishing to that event or handling it (for _inbound_ or _outbound_ events).
@@ -191,6 +211,49 @@ which will present you with a set of parameter values to provide.
 As with the underlying Camel Connector (on which these assemblies are based), the `clusterName` and 
 `installationName` values are required, but the remainder are optional.  They will take their defaults from the 
 Camel Connector assembly installation or from the system.
+
+# Development using this Git Repo
+
+The assemblies contained herein are produced from the Kamelet definitions downloaded as dependencies. Should you 
+wish to populate your own catalogs, run the build step outlined [above](#repository-contents).
+
+Once that is done, you can import the assembly projects to a Vantiq namespace, and, from there, publish these 
+assemblies to a catalog.  The steps involved are as follows.
+
+## Importing Assemblies
+
+This can be done manually (using the Vantiq IDE to import the generated projects).
+
+However, if importing many projects, use `../gradlew importAssemblies -PcamelAssembliesProfile=<profileName>`
+
+where `<profileName>` is the name of a Vantiq CLI profile that will connect to your publishing namespace.  Other 
+gradle properties that are used are based on that profile name, and are as follows.
+
+* **<profileName>_camelAssembliesVantiq** -- command to be used as the Vantiq CLI.  Defaults to `vantiq`. 
+* **<profileName>_camelAssembliesList** -- a comma-separated list of the simple names of the assemblies you wish to 
+  import.  Defaults to all assemblies.
+
+## Publishing Assemblies
+
+Once imported, the assemblies can be published. This can be done manually (using the Vantiq IDE to publish the 
+generated and imported projects to a Catalog).
+
+However, if importing many projects, use `../gradlew publishAssemblies -PcamelAssembliesProfile=<profileName>`.
+
+In addition to the gradle properties used for import, you can define the following.
+
+* **<profileName>_camelAssembliesCatalog** -- the name of the catalog to which to publish the assemblies.  This is 
+  required, and may be specfied on the command line or in the `gradle.properties` file.
+* **changeLog** -- change log entry to include.  A very short (no spaces) description of what this upload entails.
+
+## Use of the Gradle Properties
+
+Generally, the likely behavior is that you would define all of the **<profileName>_camelAssemblies...** properties 
+in the `gradle.properties` file.  This is not required, but it generally makes your gradle command line easier to 
+manage.  Then, on the command line, select the profile name to use (`-PcamelAssembliesProfile=...`) and your change 
+log entry (if appropriate and desired).  The profile name is used to select the other properties so you can keep a 
+number of them if you have multiple catalogs to maintain.
+
 
 # Licensing
 
