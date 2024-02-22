@@ -1,4 +1,5 @@
 import io.vantiq.extsrc.assy.tasks.AssemblyResourceGeneration
+import groovy.json.JsonSlurper
 
 repositories {
     mavenCentral()
@@ -11,15 +12,16 @@ dependencies {
 ext {
     generatedResourceBase = 'vantiqGeneratedResources'
     distributionsDir = 'distributions'
+    camVersionString = 'v' + camelVersion.replace('.', '_')
 }
 
 tasks.withType(JavaCompile) {
     options.encoding = 'UTF-8'
 }
 
-test {
-    useJUnitPlatform()
-}
+//test {
+//    useJUnitPlatform()
+//}
 
 tasks.register('zipAssemblies') {
     outputs.upToDateWhen { false }
@@ -47,3 +49,114 @@ tasks.register('generateAssemblyResources', AssemblyResourceGeneration)
 assemble.finalizedBy('generateAssemblyResources')
 generateAssemblyResources.finalizedBy('zipAssemblies')
 zipAssemblies.mustRunAfter( 'generateAssemblyResources' )
+
+tasks.register('importAssemblies') {
+    outputs.upToDateWhen { false }
+    def importCount = 0
+    def skipCount = 0
+    String catalogProfile = project.rootProject.findProperty('camelAssembliesProfile') as String
+    logger.lifecycle('Found profile: {}', catalogProfile as String)
+    if (!catalogProfile?.trim()) {
+        throw new GradleException('Project property "camelAssembliesProfile" was missing or empty')
+    }
+
+    def catalogProjectList = project.rootProject.findProperty("${catalogProfile}_camelAssembliesList")
+    def catalogVantiqCommand = project.rootProject.findProperty("${catalogProfile}_camelAssembliesVantiq")
+    if (!catalogVantiqCommand?.trim()) {
+        catalogVantiqCommand = 'vantiq'
+        logger.lifecycle('Using {} as the "vantiq" command', catalogVantiqCommand)
+    }
+    doLast {
+        File genProjects = new File(project.buildDir, "${generatedResourceBase}")
+        genProjects.eachDir { projectDir ->
+            def assemblyName = projectDir.name
+            def assyParts = assemblyName.split('\\.')
+            logger.debug('Cam Version String: {}, Assy parts: {}', camVersionString, assyParts)
+
+            def simpleAssemblyName = assyParts[-1] - ('_' + camVersionString)
+            logger.debug('Simple Assembly Name for {}: {}', assemblyName, simpleAssemblyName)
+
+            if (!catalogProjectList?.trim() || catalogProjectList.contains(assemblyName) ||
+                    catalogProjectList.contains(simpleAssemblyName)) {
+                logger.lifecycle('Importing project from {}', projectDir)
+                exec {
+                    commandLine catalogVantiqCommand, '-s', catalogProfile, 'import', 'data', '-d', projectDir
+                }
+                exec {
+                    commandLine catalogVantiqCommand, '-s', catalogProfile, 'import', 'metadata', '-d', projectDir
+                }
+
+                importCount += 1
+            } else {
+                skipCount += 1
+                logger.debug('Skipping {} as it is not in our list of things to import', assemblyName)
+            }
+        }
+        logger.lifecycle('Total projects imported via profile {}: {}, skipped: {}', catalogProfile, importCount,
+            skipCount)
+    }
+}
+
+tasks.register('publishAssemblies') {
+    outputs.upToDateWhen { false }
+    def importCount = 0
+    def skipCount = 0
+    String catalogProfile = project.rootProject.findProperty('camelAssembliesProfile') as String
+    logger.lifecycle('Found profile: {}', catalogProfile as String)
+    if (!catalogProfile?.trim()) {
+        throw new GradleException('Project property "camelAssembliesProfile" was missing or empty')
+    }
+
+    def catalogProjectList = project.rootProject.findProperty("${catalogProfile}_camelAssembliesList")
+    def catalogVantiqCommand = project.rootProject.findProperty("${catalogProfile}_camelAssembliesVantiq")
+    if (!catalogVantiqCommand?.trim()) {
+        catalogVantiqCommand = 'vantiq'
+        logger.lifecycle('Using {} as the "vantiq" command', catalogVantiqCommand)
+    }
+    def catalogName = project.rootProject.findProperty("${catalogProfile}_camelAssembliesCatalog")
+    if (!catalogName?.trim()) {
+        throw new GradleException("Project property '${camelAssembliesProfile}_camelAssembliesCatalog' was " +
+            "missing" + " or empty")
+    }
+    def changeLog = project.rootProject.findProperty('changeLog')
+    if (!changeLog?.trim()) {
+        changeLog = ''
+    } else {
+        changeLog = changeLog.replace(' ', '\\ ')
+    }
+
+    doLast {
+        File genProjects = new File(project.buildDir, "${generatedResourceBase}")
+        def projectFiles= project.fileTree(dir: genProjects, include: '**/projects/*.json')
+        logger.debug('Project files: {}', projectFiles.asList())
+        projectFiles.each { projectFile ->
+            logger.debug("Processing project file: {}", projectFile.absolutePath)
+            def projDef = new JsonSlurper().parse(projectFile)
+            def assemblyName = projDef.name
+            def assyParts = assemblyName.split('\\.')
+            logger.debug('Cam Version String: {}, Assy parts: {}', camVersionString, assyParts)
+
+            def simpleAssemblyName = assyParts[-1]
+            logger.debug('Simple Assembly Name: {}', simpleAssemblyName)
+            logger.info('Looking at assembly {}', assemblyName, projectFile.absolutePath)
+            logger.debug('     ...from project file {}', projectFile.absolutePath)
+            if (!catalogProjectList?.trim() || catalogProjectList.contains(assemblyName) ||
+                catalogProjectList.contains(simpleAssemblyName)) {
+                logger.lifecycle('Publishing assembly {} :: {}', simpleAssemblyName, assemblyName)
+                logger.debug('Publishing project from {}', projectFile)
+                exec {
+                    commandLine catalogVantiqCommand, '-s', catalogProfile, 'run', 'procedure', 'Publisher.' +
+                        'publishAssembly', 'assemblyName:' + assemblyName, 'catalogName:' + catalogName,
+                        'changeLog:' + '"' + changeLog + '"'
+                }
+                importCount += 1
+            } else {
+                skipCount += 1
+                logger.debug('Skipping {} as it is not in our list of things to import', assemblyName)
+            }
+        }
+        logger.lifecycle('Total projects imported via profile {}: {}, skipped: {}', catalogProfile, importCount,
+            skipCount)
+    }
+}
+
