@@ -193,7 +193,8 @@ The actions required to perform the deployment are the same as those described f
 
 1) The service and procedure to use varies from assembly to assembly
   (they are named and packaged as per the assembly), and
-2) The source name value is not (cannot) be provided.  It is provided by the assembly and the specialized service 
+2) The source name value should not (cannot) be provided.  It is provided by the assembly and the specialized 
+   service 
    contained therein.
 
 So, using the same assembly as an example, assembly installation will provide the service definition
@@ -211,6 +212,10 @@ which will present you with a set of parameter values to provide.
 As with the underlying Camel Connector (on which these assemblies are based), the `clusterName` and 
 `installationName` values are required, but the remainder are optional.  They will take their defaults from the 
 Camel Connector assembly installation or from the system.
+
+Note:  The K8sInstallation created by this deployment procedure will pull the Camel Connector source image
+from a repository at quay.io.  The image is made available in a public
+repository, so no credentials are required.
 
 # Development using this Git Repo
 
