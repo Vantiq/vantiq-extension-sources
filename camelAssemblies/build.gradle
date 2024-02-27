@@ -119,10 +119,9 @@ tasks.register('publishAssemblies') {
             "missing" + " or empty")
     }
     def changeLog = project.rootProject.findProperty('changeLog')
-    if (!changeLog?.trim()) {
-        changeLog = ''
-    } else {
-        changeLog = changeLog.replace(' ', '\\ ')
+    if (changeLog?.trim()) {
+        // space -> _ -- passing thru many layers of scripts always turns out not quite right.
+        changeLog = changeLog.replace(' ', '_')
     }
 
     doLast {
@@ -144,10 +143,17 @@ tasks.register('publishAssemblies') {
                 catalogProjectList.contains(simpleAssemblyName)) {
                 logger.lifecycle('Publishing assembly {} :: {}', simpleAssemblyName, assemblyName)
                 logger.debug('Publishing project from {}', projectFile)
-                exec {
-                    commandLine catalogVantiqCommand, '-s', catalogProfile, 'run', 'procedure', 'Publisher.' +
-                        'publishAssembly', 'assemblyName:' + assemblyName, 'catalogName:' + catalogName,
-                        'changeLog:' + '"' + changeLog + '"'
+                if (!changeLog?.trim()) {
+                    exec {
+                        commandLine catalogVantiqCommand, '-s', catalogProfile, 'run', 'procedure', 'Publisher.' +
+                            'publishAssembly', 'assemblyName:' + assemblyName, 'catalogName:' + catalogName
+                    }
+                } else {
+                    exec {
+                        commandLine catalogVantiqCommand, '-s', catalogProfile, 'run', 'procedure', 'Publisher.' +
+                            'publishAssembly', 'assemblyName:' + assemblyName, 'catalogName:' + catalogName,
+                            'changeLog:' + changeLog
+                    }
                 }
                 importCount += 1
             } else {
