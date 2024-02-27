@@ -248,7 +248,7 @@ However, if importing many projects, use `../gradlew publishAssemblies -PcamelAs
 In addition to the gradle properties used for import, you can define the following.
 
 * **<profileName>_camelAssembliesCatalog** -- the name of the catalog to which to publish the assemblies.  This is 
-  required, and may be specfied on the command line or in the `gradle.properties` file.
+  required, and may be specified on the command line or in the `gradle.properties` file.
 * **changeLog** -- change log entry to include.  A very short (no spaces) description of what this upload entails.
 
 ## Use of the Gradle Properties
