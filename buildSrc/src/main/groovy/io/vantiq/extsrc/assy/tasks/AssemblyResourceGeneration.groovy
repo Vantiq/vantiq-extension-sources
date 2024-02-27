@@ -95,6 +95,127 @@ class AssemblyResourceGeneration extends DefaultTask {
     public static final String GRANDFATHERED_TYPES = [VANTIQ_DOCUMENTS, VANTIQ_PROCEDURES, VANTIQ_PROJECTS,
                                                       VANTIQ_RULES, VANTIQ_SOURCE_IMPLEMENTATION, VANTIQ_TYPES]
 
+    public enum ResourceType {
+        TYPE(1),
+        RULE(2),
+        PROCEDURE(3),
+        SOURCE(4),
+        OBSOLETE3(5),
+        XANALYTICSMODEL(6),
+        CONFIGURATION(7),
+        SITUATION(8),
+        SUBSCRIPTION(9),
+
+        TOPIC(10),
+        COLLABORATIONTYPE(11),
+        APP(12),
+        ANALYTICSSOURCE(13),
+        EVENTSTREAM(14),
+        CLIENT(15),
+        COLLABORATION(16),
+        SCHEDULEDEVENT(17),
+        ACTIVITYPATTERN(18),
+        DOCUMENT(19),
+
+        RCSPAGE(20),
+        ERRORQUERYRESULTS(21),
+        ERROR(22),
+        GRAPH(23),
+        NODE(24),
+        LOGLIST(25),
+        ACCESSTOKEN(26),
+        AUTOPSYLIST(27),
+        AUTOPSY(28),
+        FINDRECORDRESULTS(29),
+
+        DEPLOYMENTRESULTS(30),
+        DEBUGCONFIG(31),
+        UPDATERECORD(32),
+        OBSOLETE1(33),
+        GROUPS(34),
+        SERVICES(35),
+        USER(36),
+        PROFILES(37),
+        SITUATIONLIST(38),
+        COLLABORATIONLIST(39),
+
+        AUDITS(40),
+        AUDITLIST(41),
+        NAMESPACE(42),
+        ORG(43),
+        NODECONFIG(44),
+        SYSTEMMODEL(45),
+        EVENTTYPE(46),
+        EVENTLIST(47),
+        SECRETS(48),
+        DEPLOYCONFIG(49),
+
+        DEPLOYENVIRONMENT(50),
+        GROUP(51),
+        DELEGATEDREQUEST(52),
+        PROFILE(53),
+        TILEDOCK(54),
+        TESTLIST(55),
+        TEST(56),
+        TESTREPORTLIST(57),
+        TESTREPORT(58),
+        TESTSUITELIST(59),
+
+        TESTSUITE(60),
+        TESTSUITEREPORT(61),
+        UNITTESTREPORT(62),
+        SERVICE(63),
+        CATALOGSERVICE(64),
+        EVENTGENERATOR(65),
+        CAPTURE(66),
+        CATALOG(67),
+        CATALOGMEMBER(68),
+        SOURCEIMPL(69),
+
+        APPCOMPONENT(70),
+        K8SCLUSTERS(71),
+        CLIENTCOMPONENT(72),
+        ASSEMBLY(73),
+        ASSEMBLYCONFIG(74),
+        DESIGNMODEL(75),
+        STORAGEMANAGER(76),
+        SERVICECONNECTORS(77),
+        SERVICECONNECTOR(78),
+        SEMANTICINDEX(79),
+
+        LLM(80),
+        AICOMPONENT(81)
+
+        private final Integer value
+
+        ResourceType(Integer val) {
+            this.value = val
+        }
+
+        static byName(String name) {
+            ResourceType retVal = null
+            String target = name.toUpperCase()
+            if (target == 'SYSTEM.SERVICES') {
+                // Handle lookup for new style services here
+                target = 'SERVICE'
+            } else if (target.startsWith('SYSTEM.')) {
+                target = target.substring('SYSTEM.'.length())
+            }
+            try {
+                retVal = target as ResourceType
+                log.debug('Value of {}: {}', target, retVal)
+            } catch (IllegalArgumentException iae) {
+                log.debug("No ResourceType value for {}", target)
+                target = target.substring(0, target.length() - 1) // Remove trailing s
+                log.debug(' ... looking for {}', target)
+                retVal = target as ResourceType
+                log.debug('Value of {} (singular): {}', target, retVal)
+            }
+            log.info('Resource type for {}: {} ({})', name, retVal, retVal.value)
+            retVal
+        }
+    }
+
     public static final String RULE_SINK_NAME_SUFFIX = '_svcToSrc'
     public static final String RULE_SOURCE_NAME_SUFFIX = '_srcToSvc'
     public static final String SERVICE_NAME_SUFFIX = '_service'
@@ -805,15 +926,30 @@ class AssemblyResourceGeneration extends DefaultTask {
         List<Map<String, Object>> resources = []
         String procCompPrefix = '/' + VANTIQ_PROCEDURES + '/'
         components.each {comp ->
+            String[] resRefParts = comp.substring(1).split('/')
+            log.info('Looking for type for {} from {}, split as {}', resRefParts[1], comp,
+                resRefParts)
+            ResourceType rType = ResourceType.byName(resRefParts[0] as String)
+            log.info('Type value for {}; {} ({})', resRefParts[1], rType, rType.value)
+            Map<String, Object> thisResource
             if (comp.startsWith(procCompPrefix)) {
                 def procParts = (comp - procCompPrefix).split('\\.')
                 String svcName = procParts[-2]
-                resources << ( [resourceReference: comp,
-                                name: (comp - procCompPrefix),
-                                serviceName: svcName] as Map<String, Object>)
+                thisResource = [resourceReference: comp,
+                                name: resRefParts[1],
+                                label: resRefParts[1],
+                                serviceName: svcName,
+                                type: rType.value,
+                ] as Map<String, Object>
             } else {
-                resources << ([resourceReference: comp] as Map<String, Object>)
+                thisResource = [resourceReference: comp,
+                                name: resRefParts[1],
+                                label: resRefParts[1],
+                                type: rType.value,
+                ] as Map<String, Object>
             }
+            resources << thisResource
+            log.debug('Resource: {}', thisResource)
         }
         project.resources = resources
 

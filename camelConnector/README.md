@@ -395,6 +395,9 @@ Optional Values:
 Once you run the `ConnectorDeployment.deployToK8s()` procedure, the Vantiq system will arrange for the deployment of 
 the installation. Information about this process is available as part of your Vantiq documentation.
 
+Note that the deployment will pull the Camel Connector image from quay.io.  The image is made available in a public 
+repository, so no credentials are required.
+
 ## Licensing
 
 The source code uses the [MIT License](https://opensource.org/licenses/MIT).  
