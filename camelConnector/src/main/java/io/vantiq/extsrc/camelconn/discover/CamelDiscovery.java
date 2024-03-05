@@ -131,7 +131,7 @@ public class CamelDiscovery {
                 log.error("Unable to stop all discovery routes:", e);
             }
             ctx.getRoutes().forEach(ctx::removeRoute);
-            ;
+            
             List<RouteDefinition> rds = new ArrayList<>(ctx.getRouteDefinitions());
             rds.forEach( (rd) -> {
                 try {

@@ -567,9 +567,9 @@ public class VantiqConfigurationTest extends CamelTestSupport {
     
     // The following is a _modified for test purposes_ version of the route used in the fhir-sink kamelet. Testing
     // that, discovered that the _choice_ statement gets built up at discovery time (which we would expect), but the
-    // expression in generates internally is cached WITH a reference to the camel context used for discovery. Then,
+    // expression it generates internally is cached WITH a reference to the camel context used for discovery. Then,
     // when that context was closed (it no longer is), subsequent evaluations using that context found no
-    // typeConverter in the context (trashed on close), and thru an NPE.  Here, we verify that this basic route
+    // typeConverter in the context (trashed on close), and threw an NPE.  Here, we verify that this basic route
     // work as expected.  It takes a bit of time to set things up, but a reasonable test.
     public static final String FHIR_SINK_ROUTE_YAML = "\n"
             + "-   route-template:\n"

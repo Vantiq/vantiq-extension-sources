@@ -621,7 +621,7 @@ public class VantiqComponentResolverTest extends CamelTestSupport {
                 } else if (routeId.contains("fhir_sink")) {
                     // For FHIR search by Url, it expects a query parameter of URL that contains the search URL.
                     // However, we don't want to hard code that in the route (and the fhir-sink kamelet, on which the
-                    // route for this test is based) doesn't, so we'll use the header values as detailed in the FHIR
+                    // route for this test is based doesn't), so we'll use the header values as detailed in the FHIR
                     // component.  For those values, we include "CamelFhir.<parameter name>" in the header to get the
                     // value(s) in which we're interested.  Here, we want to look for a patient named "smith", so
                     // we'll use that.
