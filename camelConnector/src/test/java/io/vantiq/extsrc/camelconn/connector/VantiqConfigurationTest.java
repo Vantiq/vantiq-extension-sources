@@ -381,9 +381,7 @@ public class VantiqConfigurationTest extends CamelTestSupport {
         Properties fhirProps = new Properties();
         fhirProps.putAll(FHIR_PROPERTIES);
         performConfigTest(testName, FHIR_SINK_ROUTE_YAML, "yaml",
-                          List.of(
-                                  Map.of(CamelRunner.COMPONENT_NAME, "fhir",
-                                         COMPONENT_PROPERTIES, FHIR_PROPERTIES)),
+                          null,
                           fhirProps,
                           (CamelContext runnerContext) -> {
                               TriFunction<CamelContext, String, Object, Boolean> verifyOperation =
