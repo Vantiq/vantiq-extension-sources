@@ -24,6 +24,7 @@ import org.apache.camel.model.ModelCamelContext;
 import org.apache.camel.model.RouteDefinition;
 import org.apache.camel.model.RouteTemplateDefinition;
 import org.apache.camel.model.RoutesDefinition;
+import org.apache.camel.spi.PropertyConfigurer;
 import org.apache.camel.spi.Resource;
 import org.apache.camel.spi.RoutesBuilderLoader;
 import org.apache.camel.spi.RoutesLoader;
@@ -32,7 +33,6 @@ import org.apache.commons.lang3.StringUtils;
 
 import java.io.Closeable;
 import java.io.File;
-import java.lang.reflect.Method;
 import java.net.URI;
 import java.net.URL;
 import java.net.URLClassLoader;
@@ -200,7 +200,6 @@ public class CamelRunner extends MainSupport implements Closeable {
         }
         CamelDiscovery discoverer = new CamelDiscovery();
         Map<String, Set<String>> discResults = discoverer.performComponentDiscovery(routeBuilder, camelProperties);
-    
         // Now, based on our discovery, construct a classLoader
         return buildClassloader(discoverer, discResults);
     }
@@ -417,7 +416,6 @@ public class CamelRunner extends MainSupport implements Closeable {
      */
     @Override
     protected void beforeStart() throws Exception {
-    
         try {
             // Set any property values provided in the configuration.  These will be used in lieu of others in the classpath
             // This method is tolerant being passed a null value, and will do the right thing. This needs to be done
@@ -449,12 +447,15 @@ public class CamelRunner extends MainSupport implements Closeable {
                     }
                 }
             }
-
+            
             // Some routes may have components (e.g., Salesforce) that need specific configuration.
             // If that's the case, do that now before we start our route(s).
+            log.debug("Beginning component-specific property setting");
             if (initComponents != null && initComponents.size() > 0) {
                 for (Map<String, Object> compToInit : initComponents) {
                     Object propsObj = compToInit.get(COMPONENT_PROPERTIES);
+                    log.debug("Setting properties for component: {} using {}",
+                              compToInit.get(COMPONENT_NAME).toString(), camelContext);
                     Map<String, ?> props;
                     if (propsObj instanceof Map) {
                         //noinspection unchecked
@@ -465,36 +466,30 @@ public class CamelRunner extends MainSupport implements Closeable {
                     if (!props.isEmpty()) {
                         // Don't bother to go further if there are no properties to set
                 
-                        Object comp = camelContext.getComponent(compToInit.get(COMPONENT_NAME).toString());
+                        Component comp = camelContext.getComponent(compToInit.get(COMPONENT_NAME).toString());
                         if (comp != null) {
-                            Class<?> toBeInit = comp.getClass();
+                            PropertyConfigurer pc = comp.getComponentPropertyConfigurer();
                             for (Map.Entry<String, ?> compProp : props.entrySet()) {
                                 // For each property to be initialized, we'll look for the setter method
                                 // (i.e., set${propertyName}(value) where the parameter's class matches the class of
                                 // the property value passed in).  If that exists, we'll call it.  Otherwise, log a
                                 // warning and ignore it. Things are likely to fail, but there's not much we can do about
-                                // improper specifications.
-                                String methName = "set" + compProp.getKey().substring(0, 1).toUpperCase() +
-                                        compProp.getKey().substring(1);
-                                Class<?>[] paramSpec = {compProp.getValue().getClass()};
-                                try {
-                                    Method meth = toBeInit.getMethod(methName, paramSpec);
-                                    log.debug("Initializing component class {}.{}{}) (from property {})",
-                                              comp.getClass().getSimpleName(),
-                                              meth.getName(), compProp.getValue().getClass().getName(),
-                                              compProp.getKey());
-                                    meth.invoke(comp, compProp.getValue());
-                                } catch (NoSuchMethodException nsme) {
-                                    log.warn("No setter found for component class: {}.{}({}) :: " +
-                                                     "required by property name: {}",
-                                             toBeInit.getName(), methName,
-                                             compProp.getValue().getClass().getName(),
+                                // improper specifications
+                                
+                                if (pc != null) {
+                                    boolean propExists = pc.configure(camelContext, comp, compProp.getKey(),
+                                                              compProp.getValue(), false);
+                                    log.debug("PropertyConfigurer for {} (value: {}) succeeded: {}", compProp.getKey(),
+                                              compProp.getValue(), propExists);
+                                    if (!propExists) {
+                                        log.warn("Failed to set property {} (value {}) for component: {}",
+                                                 compProp.getKey(), compProp.getValue(), comp.getClass().getName());
+                                    }
+                                } else {
+                                    log.warn("Component {}'s class {} has no property configurer, so property {} " +
+                                                     "cannot" + "be set.",
+                                             compToInit.get(COMPONENT_NAME), comp.getClass().getName(),
                                              compProp.getKey());
-                                } catch (Exception e) {
-                                    // This is generally a fatal condition, so we'll toss the error up the chain
-                                    log.error("Cannot invoke {}.{}({}) due to Exception.", toBeInit.getName(),
-                                              methName, compProp.getValue().getClass().getName(), e);
-                                    throw e;
                                 }
                             }
                         } else {
@@ -505,8 +500,12 @@ public class CamelRunner extends MainSupport implements Closeable {
                         log.warn("Component {} was specified for initialization, but no properties were provided. " +
                                          "No initialization was performed.", compToInit.get(COMPONENT_NAME));
                     }
+                    log.debug("Completed setting properties for component: {} using {}",
+                              compToInit.get(COMPONENT_NAME).toString(), camelContext);
                 }
             }
+            log.debug("Finished component-specific property setting");
+    
             super.beforeStart();
         } catch (Exception e) {
             log.error("Failed in beforeStart(): ", e);
