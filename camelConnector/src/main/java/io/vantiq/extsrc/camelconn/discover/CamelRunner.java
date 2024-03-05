@@ -470,18 +470,16 @@ public class CamelRunner extends MainSupport implements Closeable {
                         if (comp != null) {
                             PropertyConfigurer pc = comp.getComponentPropertyConfigurer();
                             for (Map.Entry<String, ?> compProp : props.entrySet()) {
-                                // For each property to be initialized, we'll look for the setter method
-                                // (i.e., set${propertyName}(value) where the parameter's class matches the class of
-                                // the property value passed in).  If that exists, we'll call it.  Otherwise, log a
-                                // warning and ignore it. Things are likely to fail, but there's not much we can do about
-                                // improper specifications
-                                
                                 if (pc != null) {
                                     boolean propExists = pc.configure(camelContext, comp, compProp.getKey(),
                                                               compProp.getValue(), false);
                                     log.debug("PropertyConfigurer for {} (value: {}) succeeded: {}", compProp.getKey(),
                                               compProp.getValue(), propExists);
                                     if (!propExists) {
+                                        // This is only a warning -- we may have been overzealous in our code
+                                        // generation, and not every property may be needed.  If things are required
+                                        // (and we've messed something up), the underlying component will let us know
+                                        // in its own special way.
                                         log.warn("Failed to set property {} (value {}) for component: {}",
                                                  compProp.getKey(), compProp.getValue(), comp.getClass().getName());
                                     }
