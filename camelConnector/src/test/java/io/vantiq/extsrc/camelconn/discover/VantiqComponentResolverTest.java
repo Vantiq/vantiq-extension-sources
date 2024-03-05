@@ -11,6 +11,7 @@ package io.vantiq.extsrc.camelconn.discover;
 import static org.junit.Assume.assumeTrue;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import groovy.json.JsonSlurper;
 import io.vantiq.extsrc.camel.HeaderDuplicationBean;
 import io.vantiq.extsrc.camel.VantiqEndpoint;
 import org.apache.camel.CamelContext;
@@ -18,6 +19,7 @@ import org.apache.camel.Endpoint;
 import org.apache.camel.ProducerTemplate;
 import org.apache.camel.builder.RouteBuilder;
 import org.apache.camel.component.mock.MockEndpoint;
+import org.apache.camel.converter.stream.InputStreamCache;
 import org.apache.camel.model.dataformat.AvroLibrary;
 import org.apache.camel.model.dataformat.JsonLibrary;
 import org.apache.camel.test.junit4.CamelTestSupport;
@@ -38,6 +40,7 @@ import java.io.File;
 import java.net.URI;
 import java.net.URL;
 import java.net.URLClassLoader;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -609,8 +612,26 @@ public class VantiqComponentResolverTest extends CamelTestSupport {
             
                 ProducerTemplate template = context.createProducerTemplate();
                 log.debug("Test code using context: {}, route id: {}", context.getName(), routeId);
-                
-                resultEndpoint.expectedMessageCount(2);
+                Map<String, Object> headers = new HashMap<>();
+                Object message = null;
+                int expResults = 2;
+                if (routeId.contains("Dig")) {
+                    headers.put("dns.name", query);
+                    headers.put("dns.type", "TXT");
+                } else if (routeId.contains("fhir_sink")) {
+                    // For FHIR search by Url, it expects a query parameter of URL that contains the search URL.
+                    // However, we don't want to hard code that in the route (and the fhir-sink kamelet, on which the
+                    // route for this test is based) doesn't, so we'll use the header values as detailed in the FHIR
+                    // component.  For those values, we include "CamelFhir.<parameter name>" in the header to get the
+                    // value(s) in which we're interested.  Here, we want to look for a patient named "smith", so
+                    // we'll use that.
+                    message = "{ \"resourceType\": \"Patient\" }";
+                    headers = Map.of("CamelFhir.inBody", "url",
+                                     "CamelFhir.url", "Patient?name=" + query );
+                    expResults = 3;
+                }
+    
+                resultEndpoint.expectedMessageCount(expResults);
                 resultEndpoint.expectedMessagesMatches(exchange -> {
                     Object msg = exchange.getIn().getBody();
                     if (msg instanceof Message) {
@@ -632,22 +653,42 @@ public class VantiqComponentResolverTest extends CamelTestSupport {
                             }
                         }
                         return result;
+                    } else if (msg instanceof InputStreamCache) {
+                        InputStreamCache isc = (InputStreamCache) msg;
+                        String msgString = null;
+                        msgString = new String(isc.readAllBytes(), StandardCharsets.UTF_8);
+                        // THe FHIR Bundle structure is used to return the results.  In our route, we've converted it
+                        // to JSON, but that, due to camel-isms, give is a stream containing the JSON String (not a
+                        // bad idea since this one's ~ 26K).  So, we'll suck in the bytes from the stream and
+                        // convert it to JSON.  Then, we can verify the basics of our result & let the machine search
+                        // thru all that looking for a "smith" (which was who we asked for).
+                        log.debug("Message string is: {}", msgString);
+                        JsonSlurper jss = new JsonSlurper();
+                        Object rawData = jss.parse(msgString.getBytes());
+                        Map<String, ?> msgMap = null;
+                        if (rawData instanceof Map){
+                            //noinspection unchecked,rawtypes
+                            msgMap = (Map) rawData;
+                        } else {
+                            log.error("Unexpected type returned from FHIR search: {}", rawData.getClass().getName());
+                            return false;
+                        }
+                        boolean result = msgString.contains(answerStr);
+                        result = result && "Bundle".equals(msgMap.get("resourceType"));
+                        result = result && "searchset".equals(msgMap.get("type"));
+                        return result;
                     }
                     return false;
                 });
     
-                Map<String, Object> headers = new HashMap<>();
-                if (routeId.contains("Dig")) {
-                    headers.put("dns.name", query);
-                    headers.put("dns.type", "TXT");
-                }
                 if (context.isStopped()) {
                     log.error("Context {} is stopped", context.getName());
                 }
-                template.sendBodyAndHeaders("direct:start", null, headers);
+                template.sendBodyAndHeaders("direct:start", message, headers);
                 
                 assertTrue("Expected some exchanges", resultEndpoint.getReceivedCounter() > 0);
-                if (resultEndpoint.getReceivedCounter() > 1) {
+                log.debug("resultEndpoint received counter: {}", resultEndpoint.getReceivedCounter());
+                if (resultEndpoint.getReceivedCounter() >= expResults) {
                     resultEndpoint.assertIsSatisfied();
                 }
             } catch (Exception e) {
