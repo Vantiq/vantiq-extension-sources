@@ -256,7 +256,7 @@ class AssemblyResourceGeneration extends DefaultTask {
     public static String rawCamelVersion
     public static final String RESOURCE_BASE_DIRECTORY = 'src/main/resources'
     public static final String VANTIQ_NOTES_DIRECTORY = 'vantiqNotes'
-    public static final String ROUTES_OVERRIDE_DIREcTORY = 'routeOverrides'
+    public static final String ROUTES_OVERRIDE_DIRECTORY = 'routeOverrides'
 
     public static final String ASSEMBLY_RESOURCE_BASE_PROPERTY = 'generatedResourceBase'
 
@@ -479,7 +479,7 @@ class AssemblyResourceGeneration extends DefaultTask {
         // If we have an override for the routes document, pick that up & use it instead.  This is sometimes required
         // when there are flaws or enhancements to the route provided in the Kamelet.
 
-        File routesFile = project.file(RESOURCE_BASE_DIRECTORY + File.separator + ROUTES_OVERRIDE_DIREcTORY +
+        File routesFile = project.file(RESOURCE_BASE_DIRECTORY + File.separator + ROUTES_OVERRIDE_DIRECTORY +
             File.separator + kamName + File.separator + packageSafeCamelVersion + File.separator +  kamName +
             YAML_ROUTE_SUFFIX)
         log.debug('For {}, checking for replacement routes document found at {}', kamName, routesFile.absolutePath)

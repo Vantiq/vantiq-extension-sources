@@ -5,7 +5,7 @@
 The Vantiq component, which is the entry to the FHIR&reg; Component, accepts messages with `header` and `message` 
 values. These are translated into JSON for the FHIR Component.
 
-For example, for the `SEARCH` API, using the `searhByUrl` method, 
+For example, for the `SEARCH` API, using the `searchByUrl` method, 
 the `header` should contain properties specifying the search criteria in the `url` parameter.  The way the FHIR 
 component works, it expects the header-resident parameters to be specified as `CamelFhir.<paramName>`.  This means 
 that the `url` parameter will be included in the header as `CamelFhir.url=`.  For example, to look for information 
