@@ -34,3 +34,10 @@
                         accessToken: '{{?accessToken}}'
                         username: '{{?username}}'
                         password: '{{?password}}'
+            - marshal:
+                    fhirJson:
+                        fhir-version: '{{fhirVersion}}'
+                        pretty-print: '{{prettyPrint}}'
+            - to:
+                    uri: vantiq://server.config?consumerOutputJsonStream=true&structuredMessageHeader=true
+
