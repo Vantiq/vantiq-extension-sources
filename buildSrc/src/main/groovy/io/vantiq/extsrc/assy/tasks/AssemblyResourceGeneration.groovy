@@ -256,6 +256,7 @@ class AssemblyResourceGeneration extends DefaultTask {
     public static String rawCamelVersion
     public static final String RESOURCE_BASE_DIRECTORY = 'src/main/resources'
     public static final String VANTIQ_NOTES_DIRECTORY = 'vantiqNotes'
+    public static final String ROUTES_OVERRIDE_DIREcTORY = 'routeOverrides'
 
     public static final String ASSEMBLY_RESOURCE_BASE_PROPERTY = 'generatedResourceBase'
 
@@ -475,6 +476,28 @@ class AssemblyResourceGeneration extends DefaultTask {
         }
         String routesDocumentString = yamlDumper.dumpToString(routeSpec)
 
+        // If we have an override for the routes document, pick that up & use it instead.  This is sometimes required
+        // when there are flaws or enhancements to the route provided in the Kamelet.
+
+        File routesFile = project.file(RESOURCE_BASE_DIRECTORY + File.separator + ROUTES_OVERRIDE_DIREcTORY +
+            File.separator + kamName + File.separator + packageSafeCamelVersion + File.separator +  kamName +
+            YAML_ROUTE_SUFFIX)
+        log.debug('For {}, checking for replacement routes document found at {}', kamName, routesFile.absolutePath)
+        if (routesFile?.exists()) {
+            log.debug('For {}, using replacement routes document found at {}', kamName, routesFile.absolutePath)
+            String newRoutesDocString = ''
+
+            routesFile.readLines().each { aLine ->
+                newRoutesDocString += aLine + '\n'
+            }
+            if (!newRoutesDocString) {
+                log.error("Ignoring prebuilt routes document {} as it contains no content.", routesFile.absolutePath)
+            } else {
+                routesDocumentString = newRoutesDocString
+            }
+        } else {
+            log.debug('No replacement routes document found for {}', kamName)
+        }
         if (log.isDebugEnabled()) {
             log.debug('\nResults for Kamelet: {}', kamName)
             log.debug('\n>>>   Properties:')
