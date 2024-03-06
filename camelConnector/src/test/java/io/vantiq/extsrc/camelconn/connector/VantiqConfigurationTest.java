@@ -377,6 +377,22 @@ public class VantiqConfigurationTest extends CamelTestSupport {
     }
     
     @Test
+    public void testRouteWithChoice() {
+        Properties fhirProps = new Properties();
+        fhirProps.putAll(FHIR_PROPERTIES);
+        performConfigTest(testName, FHIR_SINK_ROUTE_YAML, "yaml",
+                          null,
+                          fhirProps,
+                          (CamelContext runnerContext) -> {
+                              TriFunction<CamelContext, String, Object, Boolean> verifyOperation =
+                                      defineVerifyOperation();
+                              assert verifyOperation.apply(runnerContext, "smith", "smith");
+                              assert verifyOperation.apply(runnerContext, "smithsonian", "\"total\"; 0");
+                              assert verifyOperation.apply(runnerContext, "jackson", "jackson");
+                          });
+    }
+    
+    @Test
     public void testComponentInitConfiguration() {
         assumeTrue(!sfLoginUrl.equals(MISSING_VALUE) && !sfClientId.equals(MISSING_VALUE) &&
                            !sfClientSecret.equals(MISSING_VALUE) && !sfRefreshToken.equals(MISSING_VALUE));
@@ -536,6 +552,71 @@ public class VantiqConfigurationTest extends CamelTestSupport {
                                                          "refreshToken", sfRefreshToken
     );
     
+    public static final Map<String, String> FHIR_PROPERTIES = Map.of (
+            "apiName", "SEARCH",
+            "prettyPrint", "true",
+            "log", "true",
+            "methodName", "searchByUrl",
+            "encoding", "JSON",
+            "lazyStartProducer", "false",
+            "serverUrl", "https://server.fire.ly",
+            "fhirVersion", "R4"//,
+    );
+    
+    // The following is a _modified for test purposes_ version of the route used in the fhir-sink kamelet. Testing
+    // that, discovered that the _choice_ statement gets built up at discovery time (which we would expect), but the
+    // expression it generates internally is cached WITH a reference to the camel context used for discovery. Then,
+    // when that context was closed (it no longer is), subsequent evaluations using that context found no
+    // typeConverter in the context (trashed on close), and threw an NPE.  Here, we verify that this basic route
+    // work as expected.  It takes a bit of time to set things up, but a reasonable test.
+    public static final String FHIR_SINK_ROUTE_YAML = "\n"
+            + "-   route-template:\n"
+            + "       id: Route templates from fhir_sink:v3_21_0\n"
+            + "       from:\n"
+            + "           uri: direct:start\n"
+//            + "           uri: vantiq://server.config?consumerOutputJsonStream=true&structuredMessageHeader=true\n"
+            + "           steps:\n"
+            + "           -   choice:\n"
+            + "                    precondition: true\n"
+            + "                    when:\n"
+            + "                    -   simple: ${properties:encoding} =~ 'JSON'\n"
+            + "                        steps:\n"
+            + "                        -   unmarshal:\n"
+            + "                                fhirJson:\n"
+            + "                                    fhir-version: '{{fhirVersion}}'\n"
+            + "                                    pretty-print: '{{prettyPrint}}'\n"
+            + "                    -   simple: ${properties:encoding} =~ 'XML'\n"
+            + "                        steps:\n"
+            + "                        -   unmarshal:\n"
+            + "                                fhirXml:\n"
+            + "                                    fhir-version: '{{fhirVersion}}'\n"
+            + "                                    pretty-print: '{{prettyPrint}}'\n"
+            + "           -   to:\n"
+            + "                    uri: fhir://{{apiName}}/{{methodName}}\n"
+            + "                    parameters:\n"
+            + "                        serverUrl: '{{serverUrl}}'\n"
+// fhir-sink kamelet says this is there, but it just gets errors about unknown parameter.  Leaving it out to get
+// things to work.  fhir-sink route is similarly overridden.
+//            + "                        inBody: \"resource\" \n"
+            + "                        encoding: '{{encoding}}'\n"
+            + "                        fhirVersion: '{{fhirVersion}}'\n"
+            + "                        log: '{{log}}'\n"
+            + "                        prettyPrint: '{{prettyPrint}}'\n"
+            + "                        lazyStartProducer: '{{lazyStartProducer}}'\n"
+            + "                        proxyHost: '{{?proxyHost}}'\n"
+            + "                        proxyPassword: '{{?proxyPassword}}'\n"
+            + "                        proxyPort: '{{?proxyPort}}'\n"
+            + "                        proxyUser: '{{?proxyUser}}'\n"
+            + "                        accessToken: '{{?accessToken}}'\n"
+            + "                        username: '{{?username}}'\n"
+            + "                        password: '{{?password}}'\n"
+            + "           - marshal:\n"
+            + "               fhirJson:\n"
+            + "                   fhir-version: '{{fhirVersion}}'\n"
+            + "                   pretty-print: '{{prettyPrint}}'\n"
+            + "           - to:\n"
+            + "                  uri: mock:result"; // Send off to mock result so we can verify the output
+
     public static final String SALESFORCETASKS_YAML =  "\n"
         + "- route:\n"
         + "    id: \"Salesforce from yaml-route\"\n"

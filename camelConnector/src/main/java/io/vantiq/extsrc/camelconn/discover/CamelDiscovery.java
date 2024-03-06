@@ -14,10 +14,15 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.camel.ExtendedCamelContext;
 import org.apache.camel.builder.RouteBuilder;
 import org.apache.camel.impl.DefaultCamelContext;
+import org.apache.camel.model.RouteDefinition;
+import org.apache.camel.reifier.ProcessorReifier;
+import org.apache.camel.reifier.language.ExpressionReifier;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
@@ -58,8 +63,15 @@ public class CamelDiscovery {
      */
     Map<String, Set<String>> performComponentDiscovery(RouteBuilder rb, Properties propertyValues)
             throws DiscoveryException {
+        // When the context used here gets closed, the type converter is removed/nulled out.  Later, when
+        // running in "real life," we try & use that expression predicate that we find and it fails (NPE due to
+        // typeconverter being null).  For this reason, to make things work (for the cases where this matters),
+        // we simply don't close the CamelContext in use.  I'm still looking for a better way.
         
-        try (DefaultCamelContext ctx = new DefaultCamelContext()) {
+        //noinspection resource
+        DefaultCamelContext ctx = new DefaultCamelContext();
+    
+        try  {
             ExtendedCamelContext ectx = ctx.adapt(ExtendedCamelContext.class);
             EnumeratingComponentResolver ecr = new EnumeratingComponentResolver(ectx.getComponentResolver());
             ectx.setComponentResolver(ecr);
@@ -98,22 +110,47 @@ public class CamelDiscovery {
     
             }
             Map<String, Set<String>> retVal = new HashMap<>();
+    
             retVal.put(SYSTEM_COMPONENTS, ecr.getSystemComponentsUsed());
             retVal.put(COMPONENTS_TO_LOAD, ecr.getComponentsToLoad());
             retVal.put(SYSTEM_DATAFORMATS, edfr.getSystemDataFormatsUsed());
             retVal.put(DATAFORMATS_TO_LOAD, edfr.getDataFormatsToLoad());
             return retVal;
-            // Note that ectx will be closed via the try-with-resources construct
         } catch (Exception e) {
             log.error("Trapped exception preparing or completing component discovery", e);
             throw new DiscoveryException("Exception preparing or completing component discovery processing", e);
+        } finally {
+            // The following is aimed at reducing the resource overhead that discovery may introduce.  The ctx.close()
+            // call claims to remove all stuff used, but it doesn't, leaving bits of expressions around that refer to
+            // the camel context under which they were built.  Consequently, we cannot close the context, so we'll do
+            // what we can to get rid of the detritus.
+    
+            try {
+                ctx.stopAllRoutes();
+            } catch (Exception e) {
+                log.error("Unable to stop all discovery routes:", e);
+            }
+            ctx.getRoutes().forEach(ctx::removeRoute);
+            
+            List<RouteDefinition> rds = new ArrayList<>(ctx.getRouteDefinitions());
+            rds.forEach( (rd) -> {
+                try {
+                    ctx.removeRouteDefinition(rd);
+                    log.debug("Removed discovery-time route definition: {}", rd.getShortName());
+                } catch (Exception e) {
+                    log.error("Failed to remove discovery-time route definition: {}", rd.getShortName());
+                    throw new RuntimeException(e);
+                }
+            });
+            ExpressionReifier.clearReifiers();
+            ProcessorReifier.clearReifiers();
         }
     }
     
     /**
      * Find the name of the camel component from which it runs these components based on the scheme.
      *
-     * Using the generated artifactsMap (see {@link build.gradle#generateComponentList}), lookup the schema
+     * Using the generated artifactsMap (see build.gradle's generateComponentList task), lookup the schema
      * name and return the component name found.  It (will be) assumed that these are all in org.apache.camel, and
      * that they all share the same camel version as that which we are running.  This is the Apache Camel way.
      *
