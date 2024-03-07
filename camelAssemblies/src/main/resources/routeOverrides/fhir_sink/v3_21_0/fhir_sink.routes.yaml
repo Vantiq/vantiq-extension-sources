@@ -1,0 +1,43 @@
+-   route-template:
+        id: Route templates from fhir_sink:v3_21_0 (modified)
+        from:
+            uri: vantiq://server.config?consumerOutputJsonStream=true&structuredMessageHeader=true
+            steps:
+            -   choice:
+                    precondition: true
+                    when:
+                    -   simple: ${properties:encoding} =~ 'JSON'
+                        steps:
+                        -   unmarshal:
+                                fhirJson:
+                                    fhir-version: '{{fhirVersion}}'
+                                    pretty-print: '{{prettyPrint}}'
+                    -   simple: ${properties:encoding} =~ 'XML'
+                        steps:
+                        -   unmarshal:
+                                fhirXml:
+                                    fhir-version: '{{fhirVersion}}'
+                                    pretty-print: '{{prettyPrint}}'
+            -   to:
+                    uri: fhir://{{apiName}}/{{methodName}}
+                    parameters:
+                        serverUrl: '{{serverUrl}}'
+                        encoding: '{{encoding}}'
+                        fhirVersion: '{{fhirVersion}}'
+                        log: '{{log}}'
+                        prettyPrint: '{{prettyPrint}}'
+                        lazyStartProducer: '{{lazyStartProducer}}'
+                        proxyHost: '{{?proxyHost}}'
+                        proxyPassword: '{{?proxyPassword}}'
+                        proxyPort: '{{?proxyPort}}'
+                        proxyUser: '{{?proxyUser}}'
+                        accessToken: '{{?accessToken}}'
+                        username: '{{?username}}'
+                        password: '{{?password}}'
+            - marshal:
+                    fhirJson:
+                        fhir-version: '{{fhirVersion}}'
+                        pretty-print: '{{prettyPrint}}'
+            - to:
+                    uri: vantiq://server.config?consumerOutputJsonStream=true&structuredMessageHeader=true
+

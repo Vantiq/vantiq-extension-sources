@@ -48,21 +48,22 @@ zipAssemblies.mustRunAfter( 'generateAssemblyResources' )
 
 tasks.register('importAssemblies') {
     outputs.upToDateWhen { false }
-    def importCount = 0
-    def skipCount = 0
-    String catalogProfile = project.rootProject.findProperty('camelAssembliesProfile') as String
-    logger.lifecycle('Found profile: {}', catalogProfile as String)
-    if (!catalogProfile?.trim()) {
-        throw new GradleException('Project property "camelAssembliesProfile" was missing or empty')
-    }
-
-    def catalogProjectList = project.rootProject.findProperty("${catalogProfile}_camelAssembliesList")
-    def catalogVantiqCommand = project.rootProject.findProperty("${catalogProfile}_camelAssembliesVantiq")
-    if (!catalogVantiqCommand?.trim()) {
-        catalogVantiqCommand = 'vantiq'
-        logger.lifecycle('Using {} as the "vantiq" command', catalogVantiqCommand)
-    }
     doLast {
+        def importCount = 0
+        def skipCount = 0
+        String catalogProfile = project.rootProject.findProperty('camelAssembliesProfile') as String
+        logger.debug('Found profile: {}', catalogProfile as String)
+        if (!catalogProfile?.trim()) {
+            throw new GradleException('Project property "camelAssembliesProfile" was missing or empty')
+        }
+
+        def catalogProjectList = project.rootProject.findProperty("${catalogProfile}_camelAssembliesList")
+        def catalogVantiqCommand = project.rootProject.findProperty("${catalogProfile}_camelAssembliesVantiq")
+        if (!catalogVantiqCommand?.trim()) {
+            catalogVantiqCommand = 'vantiq'
+            logger.lifecycle('Using {} as the "vantiq" command', catalogVantiqCommand)
+        }
+
         File genProjects = new File(project.buildDir, "${generatedResourceBase}")
         genProjects.eachDir { projectDir ->
             def assemblyName = projectDir.name
@@ -95,32 +96,34 @@ tasks.register('importAssemblies') {
 
 tasks.register('publishAssemblies') {
     outputs.upToDateWhen { false }
-    def importCount = 0
-    def skipCount = 0
-    String catalogProfile = project.rootProject.findProperty('camelAssembliesProfile') as String
-    logger.lifecycle('Found profile: {}', catalogProfile as String)
-    if (!catalogProfile?.trim()) {
-        throw new GradleException('Project property "camelAssembliesProfile" was missing or empty')
-    }
-
-    def catalogProjectList = project.rootProject.findProperty("${catalogProfile}_camelAssembliesList")
-    def catalogVantiqCommand = project.rootProject.findProperty("${catalogProfile}_camelAssembliesVantiq")
-    if (!catalogVantiqCommand?.trim()) {
-        catalogVantiqCommand = 'vantiq'
-        logger.lifecycle('Using {} as the "vantiq" command', catalogVantiqCommand)
-    }
-    def catalogName = project.rootProject.findProperty("${catalogProfile}_camelAssembliesCatalog")
-    if (!catalogName?.trim()) {
-        throw new GradleException("Project property '${camelAssembliesProfile}_camelAssembliesCatalog' was " +
-            "missing" + " or empty")
-    }
-    def changeLog = project.rootProject.findProperty('changeLog')
-    if (changeLog?.trim()) {
-        // space -> _ -- passing thru many layers of scripts always turns out not quite right.
-        changeLog = changeLog.replace(' ', '_')
-    }
 
     doLast {
+        def importCount = 0
+        def skipCount = 0
+        String catalogProfile = project.rootProject.findProperty('camelAssembliesProfile') as String
+        logger.debug('Found profile: {}', catalogProfile as String)
+
+        if (!catalogProfile?.trim()) {
+            throw new GradleException('Project property "camelAssembliesProfile" was missing or empty')
+        }
+
+        def catalogProjectList = project.rootProject.findProperty("${catalogProfile}_camelAssembliesList")
+        def catalogVantiqCommand = project.rootProject.findProperty("${catalogProfile}_camelAssembliesVantiq")
+        if (!catalogVantiqCommand?.trim()) {
+            catalogVantiqCommand = 'vantiq'
+            logger.lifecycle('Using {} as the "vantiq" command', catalogVantiqCommand)
+        }
+        def catalogName = project.rootProject.findProperty("${catalogProfile}_camelAssembliesCatalog")
+        if (!catalogName?.trim()) {
+            throw new GradleException("Project property '${camelAssembliesProfile}_camelAssembliesCatalog' was " +
+                "missing" + " or empty")
+        }
+        def changeLog = project.rootProject.findProperty('changeLog')
+        if (changeLog?.trim()) {
+            // space -> _ -- passing thru many layers of scripts always turns out not quite right.
+            changeLog = changeLog.replace(' ', '_')
+        }
+
         File genProjects = new File(project.buildDir, "${generatedResourceBase}")
         def projectFiles= project.fileTree(dir: genProjects, include: '**/projects/*.json')
         logger.debug('Project files: {}', projectFiles.asList())
@@ -161,4 +164,7 @@ tasks.register('publishAssemblies') {
             skipCount)
     }
 }
+
+importAssemblies.mustRunAfter( 'generateAssemblyResources' )
+publishAssemblies.mustRunAfter('importAssemblies')
 
