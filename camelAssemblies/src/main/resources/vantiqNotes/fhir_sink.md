@@ -30,7 +30,7 @@ publish {headers: headers, message: msg } to SERVICE EVENT  "com.vantiq.extsrc.c
 return null
 ```
 
-And this can be invoked using "Patient" as the resourceType, and "Patient?name=smith".
+And this can be invoked supplying "Patient" for `resourceType`, and "Patient?name=smith" for `urlParam`.
 
 However, this paradigm is not really very useful. We would like to see the result of the operation (especially for a 
 search).  To do this, we'll need to interact with the source that underlies the service & associated event seen above.
