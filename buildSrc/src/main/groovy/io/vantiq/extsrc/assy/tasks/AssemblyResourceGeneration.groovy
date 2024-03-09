@@ -11,6 +11,7 @@ package io.vantiq.extsrc.assy.tasks
 import static org.snakeyaml.engine.v2.common.FlowStyle.BLOCK
 
 import groovy.json.JsonOutput
+import groovy.json.JsonSlurper
 import groovy.text.SimpleTemplateEngine
 import groovy.util.logging.Slf4j
 import org.apache.commons.lang3.ArrayUtils
@@ -257,6 +258,7 @@ class AssemblyResourceGeneration extends DefaultTask {
     public static final String RESOURCE_BASE_DIRECTORY = 'src/main/resources'
     public static final String VANTIQ_NOTES_DIRECTORY = 'vantiqNotes'
     public static final String ROUTES_OVERRIDE_DIRECTORY = 'routeOverrides'
+    public static final String SOURCE_CONFIG_OVERRIDE_DIRECTORY = 'sourceConfigOverrides'
 
     public static final String ASSEMBLY_RESOURCE_BASE_PROPERTY = 'generatedResourceBase'
 
@@ -717,7 +719,7 @@ class AssemblyResourceGeneration extends DefaultTask {
      * @param declaredDependencies List<String> dependencies found in the kamelet file
      * @returns Map<String, Object> containing Path written & resourceReference
      */
-    static Map<String, Object> addSourceDefinition(Path kameletAssemblyDir, String packageName, String kamName,
+    Map<String, Object> addSourceDefinition(Path kameletAssemblyDir, String packageName, String kamName,
                                                    String routeDoc, Map<String, Object> props,
                                                    List<String> declaredDependencies) {
         log.info('Creating source for kamelet: {} in package {} using route: {}, ')
@@ -778,6 +780,25 @@ class AssemblyResourceGeneration extends DefaultTask {
                 } // Ignore github things...
             })
             generalConfig[GENERAL_ADDITIONAL_LIBRARIES] = additionalLibraries
+        }
+
+        // In some cases, we may have to override the source configuration in some cases.  For this, we'll check for
+        // an override document.  If present, we'll take the override values present and override what's been
+        // generated here. At some point, we may need to look at a deeper merge. But, for now, this is sufficient.
+
+        File configOverrideFile = project.file(RESOURCE_BASE_DIRECTORY + File.separator +
+            SOURCE_CONFIG_OVERRIDE_DIRECTORY +
+            File.separator + kamName + File.separator + packageSafeCamelVersion + File.separator +  kamName +
+            JSON_SUFFIX)
+
+        if (configOverrideFile.exists()) {
+            log.lifecycle('Taking config defaults from {}', configOverrideFile.absolutePath)
+            Map<String, Object> configDefault = new JsonSlurper().parse(configOverrideFile) as Map<String, Object>
+            log.lifecycle('Source config defaults for {}: {}', kamName, configDefault)
+            camelAppConfig << configDefault.get(CONFIG_CAMEL_RUNTIME)
+            generalConfig << configDefault.get(CONFIG_CAMEL_GENERAL)
+        } else {
+            log.debug('No source config found for {}', configOverrideFile.absolutePath)
         }
         sourceDef.config = [ (CONFIG_CAMEL_RUNTIME): camelAppConfig, (CONFIG_CAMEL_GENERAL): generalConfig]
         String srcDefJson = JsonOutput.prettyPrint(JsonOutput.toJson(sourceDef))
