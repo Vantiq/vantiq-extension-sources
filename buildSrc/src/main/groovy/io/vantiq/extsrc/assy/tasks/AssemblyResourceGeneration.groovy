@@ -792,9 +792,9 @@ class AssemblyResourceGeneration extends DefaultTask {
             JSON_SUFFIX)
 
         if (configOverrideFile.exists()) {
-            log.lifecycle('Taking config defaults from {}', configOverrideFile.absolutePath)
+            log.debug('Taking config defaults from {}', configOverrideFile.absolutePath)
             Map<String, Object> configDefault = new JsonSlurper().parse(configOverrideFile) as Map<String, Object>
-            log.lifecycle('Source config defaults for {}: {}', kamName, configDefault)
+            log.debug('Source config defaults for {}: {}', kamName, configDefault)
             camelAppConfig << configDefault.get(CONFIG_CAMEL_RUNTIME)
             generalConfig << configDefault.get(CONFIG_CAMEL_GENERAL)
         } else {
