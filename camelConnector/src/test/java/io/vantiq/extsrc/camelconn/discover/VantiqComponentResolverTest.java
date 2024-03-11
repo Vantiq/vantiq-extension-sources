@@ -283,6 +283,39 @@ public class VantiqComponentResolverTest extends CamelTestSupport {
     }
     
     @Test
+    public void testJiraSpecificRepo() throws Exception {
+        FileUtil.forceDelete(cache);    // Clear the cache
+        FileUtil.forceDelete(new File(DEST_PATH));
+        RouteBuilderWithProps rb = new JiraExternalRoute();
+        assertNotNull("No routebuilder", rb);
+        setUseRouteBuilder(false);
+        List<URI> repoList = new ArrayList<>();
+        // Still getting Error(s) encountered during resolution: download failed: com.atlassian.sal#sal-api;4.4.2!sal-api.atlassian-plugin
+        // Maybe plugin went away?  Can we avoid loading it? Seems to load anyway.  Have placed work around in
+        // CamelResolver which will look for this in the error & ignore it if present. This seems to be sufficient to
+        // get things going.  Apparently, there's an issue with the jira component. Without the extra library, we get
+        // other things not found as well, including, but not limited to:
+        //    	  -- artifact com.atlassian.sal#sal-api;4.4.2!sal-api.jar
+        //        -- artifact com.atlassian.jira#jira-rest-java-client-api;5.2.4!jira-rest-java-client-api.jar
+        //        -- artifact com.atlassian.jira#jira-rest-java-client-core;5.2.4!jira-rest-java-client-core.jar
+    
+        // As per https://developer.atlassian.com/server/framework/atlassian-sdk/atlassian-maven-repositories-2818705/,
+        // the following is the official atlassian proxy for their public repos.  Without this
+        repoList.add(new URI("https://packages.atlassian.com/mvn/maven-external/"));
+        
+        // The following seems to be an old version of the address, but leaving it here in case we need it.
+//        repoList.add(new URI("https://maven.atlassian.com/repository/public/"));
+        
+        try (CamelRunner runner = new CamelRunner(this.getTestMethodName(),rb, repoList,
+                                                  IVY_CACHE_PATH, DEST_PATH, rb.getComponentsToInit(),
+                                                  null, null, null)) {
+            runner.runRoutes(false);
+            log.debug("JIRA-based route started");
+        } catch (Exception e) {
+            fail("Unexpected exception starting jira route: " + e.getClass().getName() + " :: " + e.getMessage());
+        }
+    }
+    @Test
     public void testRouteTemplate() {
         FileUtil.forceDelete(cache);    // Clear the cache
         BeanIncludingRouteTemplate rb = new BeanIncludingRouteTemplate();
@@ -840,6 +873,23 @@ public class VantiqComponentResolverTest extends CamelTestSupport {
             from("jetty:http://0.0.0.0:0/myapp/myservice/?sessionSupport=true")
                     .to("log:" + log.getName()  + "level=debug");
         }
+    }
+    
+    private static class JiraExternalRoute extends RouteBuilderWithProps  {
+        @Override
+        public void configure() {
+            // From some jetty resource, get the message content & log it.
+            
+            // The following does nothing, but verifies that things all start up.  All we are really verifying here
+            // is that all the classes are loaded so that camel & its associated components are operating.
+            
+            // Since 1) we don't really care, and 2) Jenkins runs may not allow us to pick a "normal" port,
+            // we'll specify port 0 here.  Using port 0 tells Jetty to pick an unused port (well, actually, this tells
+            // the lower-level socket constructor).  In either case, this allows this code to work in
+            // environments more constrained than one's own machine.
+            from("jira:newIssues")
+                    .to("log:" + log.getName() + "level=debug");
+         }
     }
     
     private static class MarshaledExternalRoute extends RouteBuilderWithProps  {

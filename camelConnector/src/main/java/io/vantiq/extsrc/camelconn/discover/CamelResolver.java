@@ -37,6 +37,7 @@ import java.net.URI;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 @Slf4j
 public class CamelResolver {
@@ -211,7 +212,7 @@ public class CamelResolver {
         //init resolve report
         ResolveReport report = ivy.resolve(md, resolveOptions);
         
-        if (report.hasError()) {
+        if (!loadErrorsAcceptable(report)) {
             throw new ResolutionException(identity() + ": Error(s) encountered during resolution: " +
                                                   String.join(", ", report.getAllProblemMessages()));
         }
@@ -241,5 +242,30 @@ public class CamelResolver {
         }
         log.trace("{} -- Making {} artifacts available to {}", identity(), necessaryFiles.size(), purpose);
         return necessaryFiles;
+    }
+    
+    private static final List<String> okErrorIndicators = List.of(
+            "sal-api.atlassian-plugin"
+    );
+    
+    // Verify that all the errors in the list are contained in our indication list. Every element in the error report
+    // must be found in the indicator list.
+    private boolean loadErrorsAcceptable(ResolveReport report) {
+        if (report.hasError()) {
+            List<String> errs = report.getAllProblemMessages();
+            AtomicBoolean okError = new AtomicBoolean(false);
+            errs.forEach( (err) -> {
+                boolean foundOKError = false;
+                for (String goodIndicator: okErrorIndicators) {
+                    foundOKError = err.contains(goodIndicator);
+                    if (foundOKError) {
+                        break;
+                    }
+                }
+                okError.set(foundOKError);
+            });
+            return okError.get();
+        }
+        return true;
     }
 }
