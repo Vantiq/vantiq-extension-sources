@@ -3,8 +3,7 @@
   },
   "general": {
     "repoList": [
-      "https://maven.atlassian.com/repository/public/",
-      "https://packages.atlassian.com/artifactory/maven-external/",
+      "https://packages.atlassian.com/mvn/maven-external/",
       "https://repo.maven.apache.org/maven2/"
     ]
   }
