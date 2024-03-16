@@ -293,7 +293,7 @@ public class VantiqComponentResolverTest extends CamelTestSupport {
         // Still getting Error(s) encountered during resolution: download failed: com.atlassian.sal#sal-api;4.4.2!sal-api.atlassian-plugin
         // Maybe plugin went away?  Can we avoid loading it? Seems to load anyway.  Have placed work around in
         // CamelResolver which will look for this in the error & ignore it if present. This seems to be sufficient to
-        // get things going.  Apparently, there's an issue with the jira component. Without the extra library, we get
+        // get things going.  Apparent1y, there's an issue with the jira component. Without the extra library, we get
         // other things not found as well, including, but not limited to:
         //    	  -- artifact com.atlassian.sal#sal-api;4.4.2!sal-api.jar
         //        -- artifact com.atlassian.jira#jira-rest-java-client-api;5.2.4!jira-rest-java-client-api.jar
@@ -302,15 +302,34 @@ public class VantiqComponentResolverTest extends CamelTestSupport {
         // As per https://developer.atlassian.com/server/framework/atlassian-sdk/atlassian-maven-repositories-2818705/,
         // the following is the official atlassian proxy for their public repos.  Without this
         repoList.add(new URI("https://packages.atlassian.com/mvn/maven-external/"));
-        
+        repoList.add(new URI("https://repo.maven.apache.org/maven2/"));
         // The following seems to be an old version of the address, but leaving it here in case we need it.
 //        repoList.add(new URI("https://maven.atlassian.com/repository/public/"));
-        
+        boolean weInterrupted = false;
         try (CamelRunner runner = new CamelRunner(this.getTestMethodName(),rb, repoList,
                                                   IVY_CACHE_PATH, DEST_PATH, rb.getComponentsToInit(),
                                                   null, null, null)) {
+            // Due to apparent issues with the libraries, we'll add this to compensate for the error resolving things
+            // seemingly not completely packaged as plugins.  A similar compensation has been added to the
+            // kamelet-based assembly.
+            runner.setAdditionalLibraries(List.of("com.atlassian.sal:sal-api:4.4.2"));
             runner.runRoutes(false);
             log.debug("JIRA-based route started");
+            
+            Thread runnerThread = runner.getCamelThread();
+            int startWait = 1;
+            while (!runner.isStarted()) {
+                log.debug("Still waiting to start: {}", startWait++);
+                Thread.sleep(5000); // Resolution can take a few ticks.
+            }
+            Thread.sleep(5000); // Run a little bit.
+            weInterrupted = true;
+            runnerThread.interrupt();
+        } catch (InterruptedException ie) {
+            // This is OK -- it's how we exit
+            if (!weInterrupted) {
+                fail("Unexpected interrupted exception");
+            }
         } catch (Exception e) {
             fail("Unexpected exception starting jira route: " + e.getClass().getName() + " :: " + e.getMessage());
         }
@@ -887,8 +906,9 @@ public class VantiqComponentResolverTest extends CamelTestSupport {
             // we'll specify port 0 here.  Using port 0 tells Jetty to pick an unused port (well, actually, this tells
             // the lower-level socket constructor).  In either case, this allows this code to work in
             // environments more constrained than one's own machine.
-            from("jira:newIssues")
-                    .to("log:" + log.getName() + "level=debug");
+            from("jira:newIssues?jiraUrl=https://team-0myhxzwb0ejl.atlassian" +
+                         ".net/&jql=project=kamelets&username=fred.carter@mac.com&password=bogus")
+                    .to("log:" + log.getName() + "?level=debug");
          }
     }
     
