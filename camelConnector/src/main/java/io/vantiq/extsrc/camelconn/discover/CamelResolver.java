@@ -37,6 +37,7 @@ import java.net.URI;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 @Slf4j
@@ -54,6 +55,10 @@ public class CamelResolver {
     
     private static int unnamedResolverCount = 0;
     private static final String DEFAULT_CONFIGURATION = "default";
+    
+    private static final Map<String, String> typeOverrides = Map.of(
+            "com.atlassian.sal:sal-api:4.4.2", "jar"
+    );
     
     /**
      * Create resolver for necessary artifacts
@@ -87,6 +92,9 @@ public class CamelResolver {
         if (!log.isTraceEnabled()) {
             // Disable voluminous Ivy output that's not really helpful.
             Message.setDefaultLogger(new DefaultMessageLogger(Message.MSG_WARN));
+        } else {
+            // Disable voluminous Ivy output that's not really helpful.
+            Message.setDefaultLogger(new DefaultMessageLogger(Message.MSG_VERBOSE));
         }
         //creates clear ivy settings
         ivySettings = new IvySettings();
@@ -133,8 +141,10 @@ public class CamelResolver {
         if (!log.isTraceEnabled()) {
             // Reduce the volume of output from Ivy unless we really need/want it.
             resolveOptions.setLog(LogOptions.LOG_QUIET);
+        } else {
+            resolveOptions.setLog(LogOptions.LOG_DEFAULT);
         }
-    
+        
         retrieveOptions = new RetrieveOptions();
         retrieveOptions.setConfs(confs);
         retrieveOptions.setDestArtifactPattern(destination.getAbsolutePath() +
@@ -144,7 +154,7 @@ public class CamelResolver {
             // Reduce the volume of output from Ivy unless we really need/want it.
             retrieveOptions.setLog(LogOptions.LOG_QUIET);
         }
-        
+    
         //creates an Ivy instance with settings
         ivy = Ivy.newInstance(ivySettings);
     }
@@ -189,25 +199,33 @@ public class CamelResolver {
         DefaultModuleDescriptor md =
                 DefaultModuleDescriptor.newDefaultInstance(ModuleRevisionId.newInstance(organization,
                                                         name + "-caller", "working"));
-        
+
         DefaultDependencyDescriptor dd = new DefaultDependencyDescriptor(md,
                                                                          ModuleRevisionId.newInstance(organization, name, revision),
                                                                          false,
                                                                          false,
                                                                          true);
         dd.addDependencyConfiguration("default", "default");
-        
+        if (type == null) {
+            log.trace(">>>> Checking for artifact type override for {}:{}:{}", organization, name, revision);
+            String key = String.join(":", organization, name, revision);
+            String newType = typeOverrides.get(key);
+            if (newType != null) {
+                log.debug("Adding artifact type for {}:{}:{} :: {}", organization, name, revision, type);
+                type = newType;
+            }
+        }
         if (type != null) {
-            // TODO: Figure out why both of these are necessary, but it works when present & not when not.
+            // If we have a type specified, make sure that that's the artifact we get.
             Artifact typedArtifact = new DefaultArtifact(ModuleRevisionId.newInstance(organization, name, revision),
                                                          null, name, type, "." + type);
+            log.debug("Adding type-specific artifact for {}:{}:{} :: {}", organization, name, revision, type);
             DependencyArtifactDescriptor dad =
                     new DefaultDependencyArtifactDescriptor(dd, name, type, type, null, null);
             dd.addDependencyArtifact(DEFAULT_CONFIGURATION, dad);
             md.addArtifact(DEFAULT_CONFIGURATION, typedArtifact);
         }
         md.addDependency(dd);
-        
         log.trace("Resolving required libraries -- {}", purpose);
         //init resolve report
         ResolveReport report = ivy.resolve(md, resolveOptions);
@@ -223,15 +241,22 @@ public class CamelResolver {
             for (ArtifactDownloadReport aRep : reps) {
                 Artifact artifact = aRep.getArtifact();
                 File lclFile = aRep.getLocalFile();
-                log.trace("   --> Cached artifact {}:{}:{} is now available at {} ({})",
+                String origin;
+                if (aRep.getArtifactOrigin() != null) {
+                    origin = aRep.getArtifactOrigin().getLocation();
+                } else {
+                    origin = "<<artifact origin is missing>>";
+                }
+                log.trace("   --> Cached artifact {}:{}:{} ({}/{}) is now available at {} ({})",
                           artifact.getModuleRevisionId().getOrganisation(),
                           artifact.getName(),
                           artifact.getModuleRevisionId().getRevision(),
-                          lclFile.getAbsolutePath(),
+                          artifact.getUrl(),
+                          origin,
+                          (lclFile == null ? "<<local file missing>>" : lclFile.getAbsolutePath()),
                           identity());
             }
         }
-        
         
         RetrieveReport rr = ivy.retrieve(md.getModuleRevisionId(), retrieveOptions);
         // This is the union of files retrieved & those found up-to-date.  We need to include both since our
@@ -243,26 +268,27 @@ public class CamelResolver {
         log.trace("{} -- Making {} artifacts available to {}", identity(), necessaryFiles.size(), purpose);
         return necessaryFiles;
     }
-    
-    private static final List<String> okErrorIndicators = List.of(
-            "sal-api.atlassian-plugin"
-    );
-    
-    // Verify that all the errors in the list are contained in our indication list. Every element in the error report
-    // must be found in the indicator list.
+
+    // Verify that all the errors in the list are contained in our list of type overrides. Every element in the error
+    // report must be resolved via that override list.
     private boolean loadErrorsAcceptable(ResolveReport report) {
         if (report.hasError()) {
             List<String> errs = report.getAllProblemMessages();
-            AtomicBoolean okError = new AtomicBoolean(false);
+            AtomicBoolean okError = new AtomicBoolean(true); // OK until proven otherwise
             errs.forEach( (err) -> {
                 boolean foundOKError = false;
-                for (String goodIndicator: okErrorIndicators) {
+                for (String key: typeOverrides.keySet()) {
+                    String[] parts = key.split(":");
+                    String goodIndicator = parts[0] + "#" + parts[1] + ";" + parts[2];
                     foundOKError = err.contains(goodIndicator);
                     if (foundOKError) {
+                        log.warn("Resolution issues ignored for {} due to expected resolution.", key);
                         break;
                     }
                 }
-                okError.set(foundOKError);
+                if (!foundOKError) {
+                    okError.set(false);
+                }
             });
             return okError.get();
         }
