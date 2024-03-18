@@ -50,6 +50,8 @@ import java.util.Objects;
 import java.util.Properties;
 import java.util.stream.Collectors;
 
+import static org.junit.Assert.assertNull;
+
 /**
  * Perform unit tests for component resolution
  */
@@ -309,19 +311,16 @@ public class VantiqComponentResolverTest extends CamelTestSupport {
         try (CamelRunner runner = new CamelRunner(this.getTestMethodName(),rb, repoList,
                                                   IVY_CACHE_PATH, DEST_PATH, rb.getComponentsToInit(),
                                                   null, null, null)) {
-            // Due to apparent issues with the libraries, we'll add this to compensate for the error resolving things
-            // seemingly not completely packaged as plugins.  A similar compensation has been added to the
-            // kamelet-based assembly.
-            runner.setAdditionalLibraries(List.of("com.atlassian.sal:sal-api:4.4.2"));
             runner.runRoutes(false);
             log.debug("JIRA-based route started");
             
             Thread runnerThread = runner.getCamelThread();
             int startWait = 1;
-            while (!runner.isStarted()) {
+            while (!runner.isStarted() && startWait < 25 && !runner.isFailed()) {
                 log.debug("Still waiting to start: {}", startWait++);
                 Thread.sleep(5000); // Resolution can take a few ticks.
             }
+            assertNull("Runner failed to start", runner.getStartupFailed());
             Thread.sleep(5000); // Run a little bit.
             weInterrupted = true;
             runnerThread.interrupt();
@@ -907,7 +906,7 @@ public class VantiqComponentResolverTest extends CamelTestSupport {
             // the lower-level socket constructor).  In either case, this allows this code to work in
             // environments more constrained than one's own machine.
             from("jira:newIssues?jiraUrl=https://team-0myhxzwb0ejl.atlassian" +
-                         ".net/&jql=project=kamelets&username=fred.carter@mac.com&password=bogus")
+                         ".net/&jql=project=kamelets&username=bogusUser&password=bogus")
                     .to("log:" + log.getName() + "?level=debug");
          }
     }
