@@ -9,6 +9,7 @@
 package io.vantiq.extsrc.camelconn.discover;
 
 import io.vantiq.extsrc.camel.HeaderDuplicationBean;
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.camel.CamelContext;
 import org.apache.camel.Component;
@@ -76,6 +77,7 @@ public class CamelRunner extends MainSupport implements Closeable {
     private Thread camelThread;
     
     private Boolean startupCompleted = false;
+    @Getter
     private Exception startupFailed = null;
     private final static String startupSync = "startupSync";
     
@@ -284,7 +286,7 @@ public class CamelRunner extends MainSupport implements Closeable {
                 // We could learn to ignore it & let camel throw the error, but our throwing the ResolutionException
                 // seems cleaner.  Notify about the problems closer to the source.
                 Collection<File> resolved = cr.resolve("org.apache.camel", lib, getCamelContext().getVersion(),
-                                                       "Component Resolution");
+                                                       "Discovered Component Resolution");
                 jarSet.addAll(resolved);
             }
     
@@ -299,7 +301,7 @@ public class CamelRunner extends MainSupport implements Closeable {
                 // We could learn to ignore it & let camel throw the error, but our throwing the ResolutionException
                 // seems cleaner.  Notify about the problems closer to the source.
                 Collection<File> resolved = cr.resolve("org.apache.camel", lib, getCamelContext().getVersion(),
-                                                       "Dataformat Resolution");
+                                                       "Discovered Dataformat Resolution");
                 jarSet.addAll(resolved);
             }
         }
@@ -325,7 +327,7 @@ public class CamelRunner extends MainSupport implements Closeable {
                 // We could learn to ignore it & let camel throw the error, but our throwing the ResolutionException
                 // seems cleaner.  Notify about the problems closer to the source.
                 Collection<File> resolved = cr.resolve(compParts[0], compParts[1], compParts[2],
-                                                       "Additional Library Resolution");
+                                                       "Additional Library Resolution: " + comp);
                 jarSet.addAll(resolved);
             }
         }
@@ -507,6 +509,7 @@ public class CamelRunner extends MainSupport implements Closeable {
             super.beforeStart();
         } catch (Exception e) {
             log.error("Failed in beforeStart(): ", e);
+            doFail(e);
             throw e;
         }
     }
@@ -634,6 +637,13 @@ public class CamelRunner extends MainSupport implements Closeable {
         log.error("Camel startup has failed due to: ", e);
         notifyStarted();
         super.doFail(e);
+    }
+    
+    public boolean isFailed() {
+        if (startupFailed != null) {
+            return true;
+        }
+        return false;
     }
     
     @Override
