@@ -67,6 +67,6 @@ execute ResourceAPI.executeOp({
     op: "deploy",
     resourceName: "system.k8sclusters",
     resourceId: clusterName,
-    object: { name: installationName, namespace: k8sNamespace, clusterName: clusterName, config: k8sConfig}
+    object: { name: installationName, k8sNamespace: k8sNamespace, clusterName: clusterName, config: k8sConfig}
     //parameters: { name: "else" }
 })
