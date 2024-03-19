@@ -76,6 +76,13 @@ public class VantiqComponentResolverTest extends CamelTestSupport {
     public static final String sfClientSecret = System.getProperty("camel-salesforce-clientSecret");
     public static final String sfRefreshToken = System.getProperty("camel-salesforce-refreshToken");
     
+    // JIRA properties
+    public static String jiraUrl = System.getProperty("io.vantiq.camel.test.jiraUrl",
+                                        "https://team-0myhxzwb0ejl.atlassian.net/");
+    public static String jiraUsername = System.getProperty("io.vantiq.camel.test.jiraUsername", "invalidUser");
+    public static String jiraApiToken = System.getProperty("io.vantiq.camel.test.jiraApiToken", "bogusApiToken");
+    public static String jiraJql = System.getProperty("io.vantiq.camel.test.jiraJql", "RAW(project=kamelets)");
+    
     @Before
     public void setup() {
         dest = new File(DEST_PATH);
@@ -286,6 +293,16 @@ public class VantiqComponentResolverTest extends CamelTestSupport {
     
     @Test
     public void testJiraSpecificRepo() throws Exception {
+        
+        // Note -- invalid usenname/passworkd/token result in just errors of not found.  Test still valid
+        
+        // Set access properties for Jira server
+        Properties propertyValues = new Properties(3);
+        propertyValues.setProperty("jiraUrl", jiraUrl);
+        propertyValues.setProperty("jiraUsername", jiraUsername);
+        propertyValues.setProperty("jiraPassword", jiraApiToken);
+        propertyValues.setProperty("jiraJql", jiraJql);
+        
         FileUtil.forceDelete(cache);    // Clear the cache
         FileUtil.forceDelete(new File(DEST_PATH));
         RouteBuilderWithProps rb = new JiraExternalRoute();
@@ -310,7 +327,7 @@ public class VantiqComponentResolverTest extends CamelTestSupport {
         boolean weInterrupted = false;
         try (CamelRunner runner = new CamelRunner(this.getTestMethodName(),rb, repoList,
                                                   IVY_CACHE_PATH, DEST_PATH, rb.getComponentsToInit(),
-                                                  null, null, null)) {
+                                                  propertyValues, null, null)) {
             runner.runRoutes(false);
             log.debug("JIRA-based route started");
             
@@ -896,17 +913,14 @@ public class VantiqComponentResolverTest extends CamelTestSupport {
     private static class JiraExternalRoute extends RouteBuilderWithProps  {
         @Override
         public void configure() {
-            // From some jetty resource, get the message content & log it.
+            // From some jira resource, look for new issues in some project.  At present, this is usually empty, but
+            // we verify that that things load and start.
             
             // The following does nothing, but verifies that things all start up.  All we are really verifying here
             // is that all the classes are loaded so that camel & its associated components are operating.
-            
-            // Since 1) we don't really care, and 2) Jenkins runs may not allow us to pick a "normal" port,
-            // we'll specify port 0 here.  Using port 0 tells Jetty to pick an unused port (well, actually, this tells
-            // the lower-level socket constructor).  In either case, this allows this code to work in
-            // environments more constrained than one's own machine.
-            from("jira:newIssues?jiraUrl=https://team-0myhxzwb0ejl.atlassian" +
-                         ".net/&jql=project=kamelets&username=bogusUser&password=bogus")
+    
+            from("jira:newIssues?jiraUrl={{jiraUrl}}&jql={{jiraJql}}&username={{jiraUsername}}&" +
+                         "password={{jiraPassword}}")
                     .to("log:" + log.getName() + "?level=debug");
          }
     }

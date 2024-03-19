@@ -323,6 +323,22 @@ tasks.withType(Test) {
         systemProperty "camel-salesforce-refreshToken",
             rootProject.findProperty("camel-salesforce-refreshToken") ?: "empty"
     }
+    if (rootProject.hasProperty("io.vantiq.camel.test.jiraApiToken")) {
+        systemProperty "io.vantiq.camel.test.jiraApiToken",
+            rootProject.findProperty("io.vantiq.camel.test.jiraApiToken") ?: "empty"
+    }
+    if (rootProject.hasProperty("io.vantiq.camel.test.jiraUsername")) {
+        systemProperty "io.vantiq.camel.test.jiraUsername",
+            rootProject.findProperty("io.vantiq.camel.test.jiraUsername") ?: "empty"
+    }
+    if (rootProject.hasProperty("io.vantiq.camel.test.jiraJql")) {
+        systemProperty "io.vantiq.camel.test.jiraJql",
+            rootProject.findProperty("io.vantiq.camel.test.jiraJql") ?: "empty"
+    }
+    if (rootProject.hasProperty("io.vantiq.camel.test.jiraUrl")) {
+        systemProperty "io.vantiq.camel.test.jiraUrl",
+            rootProject.findProperty("io.vantiq.camel.test.jiraUrl") ?: "empty"
+    }
 }
 
 test {
