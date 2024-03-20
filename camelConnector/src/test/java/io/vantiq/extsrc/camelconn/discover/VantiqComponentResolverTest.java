@@ -50,6 +50,8 @@ import java.util.Objects;
 import java.util.Properties;
 import java.util.stream.Collectors;
 
+import static org.junit.Assert.assertNull;
+
 /**
  * Perform unit tests for component resolution
  */
@@ -73,6 +75,13 @@ public class VantiqComponentResolverTest extends CamelTestSupport {
     public static final String sfClientId = System.getProperty("camel-salesforce-clientId");
     public static final String sfClientSecret = System.getProperty("camel-salesforce-clientSecret");
     public static final String sfRefreshToken = System.getProperty("camel-salesforce-refreshToken");
+    
+    // JIRA properties
+    public static String jiraUrl = System.getProperty("io.vantiq.camel.test.jiraUrl",
+                                        "https://team-0myhxzwb0ejl.atlassian.net/");
+    public static String jiraUsername = System.getProperty("io.vantiq.camel.test.jiraUsername", "invalidUser");
+    public static String jiraApiToken = System.getProperty("io.vantiq.camel.test.jiraApiToken", "bogusApiToken");
+    public static String jiraJql = System.getProperty("io.vantiq.camel.test.jiraJql", "RAW(project=kamelets)");
     
     @Before
     public void setup() {
@@ -282,6 +291,59 @@ public class VantiqComponentResolverTest extends CamelTestSupport {
         }
     }
     
+    @Test
+    public void testJiraSpecificRepo() throws Exception {
+        
+        // Note -- invalid usenname/passworkd/token result in just errors of not found.  Test still valid
+        
+        // Set access properties for Jira server
+        Properties propertyValues = new Properties(3);
+        propertyValues.setProperty("jiraUrl", jiraUrl);
+        propertyValues.setProperty("jiraUsername", jiraUsername);
+        propertyValues.setProperty("jiraPassword", jiraApiToken);
+        propertyValues.setProperty("jiraJql", jiraJql);
+        
+        FileUtil.forceDelete(cache);    // Clear the cache
+        FileUtil.forceDelete(new File(DEST_PATH));
+        RouteBuilderWithProps rb = new JiraExternalRoute();
+        assertNotNull("No routebuilder", rb);
+        setUseRouteBuilder(false);
+        List<URI> repoList = new ArrayList<>();
+        
+        // Routes using the JIRA component require an additional repo from which to fetch their dependencies.
+        // As per https://developer.atlassian.com/server/framework/atlassian-sdk/atlassian-maven-repositories-2818705/,
+        // the following is the official atlassian proxy for their public repos. Without this, we end up with a
+        // number of unresolved dependencies, and things tend not to go well.
+        repoList.add(new URI("https://packages.atlassian.com/mvn/maven-external/"));
+        repoList.add(new URI("https://repo.maven.apache.org/maven2/"));
+        // The following seems to be an old version of the address, but leaving it here in case we need it.
+//        repoList.add(new URI("https://maven.atlassian.com/repository/public/"));
+        boolean weInterrupted = false;
+        try (CamelRunner runner = new CamelRunner(this.getTestMethodName(),rb, repoList,
+                                                  IVY_CACHE_PATH, DEST_PATH, rb.getComponentsToInit(),
+                                                  propertyValues, null, null)) {
+            runner.runRoutes(false);
+            log.debug("JIRA-based route started");
+            
+            Thread runnerThread = runner.getCamelThread();
+            int startWait = 1;
+            while (!runner.isStarted() && startWait < 25 && !runner.isFailed()) {
+                log.debug("Still waiting to start: {}", startWait++);
+                Thread.sleep(5000); // Resolution can take a few ticks.
+            }
+            assertNull("Runner failed to start", runner.getStartupFailed());
+            Thread.sleep(5000); // Run a little bit.
+            weInterrupted = true;
+            runnerThread.interrupt();
+        } catch (InterruptedException ie) {
+            // This is OK -- it's how we exit
+            if (!weInterrupted) {
+                fail("Unexpected interrupted exception");
+            }
+        } catch (Exception e) {
+            fail("Unexpected exception starting jira route: " + e.getClass().getName() + " :: " + e.getMessage());
+        }
+    }
     @Test
     public void testRouteTemplate() {
         FileUtil.forceDelete(cache);    // Clear the cache
@@ -840,6 +902,21 @@ public class VantiqComponentResolverTest extends CamelTestSupport {
             from("jetty:http://0.0.0.0:0/myapp/myservice/?sessionSupport=true")
                     .to("log:" + log.getName()  + "level=debug");
         }
+    }
+    
+    private static class JiraExternalRoute extends RouteBuilderWithProps  {
+        @Override
+        public void configure() {
+            // From some jira resource, look for new issues in some project.  At present, this is usually empty, but
+            // we verify that that things load and start.
+            
+            // The following does nothing, but verifies that things all start up.  All we are really verifying here
+            // is that all the classes are loaded so that camel & its associated components are operating.
+    
+            from("jira:newIssues?jiraUrl={{jiraUrl}}&jql={{jiraJql}}&username={{jiraUsername}}&" +
+                         "password={{jiraPassword}}")
+                    .to("log:" + log.getName() + "?level=debug");
+         }
     }
     
     private static class MarshaledExternalRoute extends RouteBuilderWithProps  {

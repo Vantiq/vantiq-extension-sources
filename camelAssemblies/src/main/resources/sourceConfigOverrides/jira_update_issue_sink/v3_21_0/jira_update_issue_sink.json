@@ -1,0 +1,10 @@
+{
+  "camelRuntime": {
+  },
+  "general": {
+    "repoList": [
+      "https://packages.atlassian.com/mvn/maven-external/",
+      "https://repo.maven.apache.org/maven2/"
+    ]
+  }
+}
