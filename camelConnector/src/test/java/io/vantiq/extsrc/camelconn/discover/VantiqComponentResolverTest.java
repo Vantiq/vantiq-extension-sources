@@ -309,15 +309,8 @@ public class VantiqComponentResolverTest extends CamelTestSupport {
         assertNotNull("No routebuilder", rb);
         setUseRouteBuilder(false);
         List<URI> repoList = new ArrayList<>();
-        // Still getting Error(s) encountered during resolution: download failed: com.atlassian.sal#sal-api;4.4.2!sal-api.atlassian-plugin
-        // Maybe plugin went away?  Can we avoid loading it? Seems to load anyway.  Have placed work around in
-        // CamelResolver which will look for this in the error & ignore it if present. This seems to be sufficient to
-        // get things going.  Apparent1y, there's an issue with the jira component. Without the extra library, we get
-        // other things not found as well, including, but not limited to:
-        //    	  -- artifact com.atlassian.sal#sal-api;4.4.2!sal-api.jar
-        //        -- artifact com.atlassian.jira#jira-rest-java-client-api;5.2.4!jira-rest-java-client-api.jar
-        //        -- artifact com.atlassian.jira#jira-rest-java-client-core;5.2.4!jira-rest-java-client-core.jar
-    
+        
+        // Routes using the JIRA component require an additional repo from which to fetch their dependencies.
         // As per https://developer.atlassian.com/server/framework/atlassian-sdk/atlassian-maven-repositories-2818705/,
         // the following is the official atlassian proxy for their public repos.  Without this
         repoList.add(new URI("https://packages.atlassian.com/mvn/maven-external/"));
