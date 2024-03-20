@@ -312,7 +312,8 @@ public class VantiqComponentResolverTest extends CamelTestSupport {
         
         // Routes using the JIRA component require an additional repo from which to fetch their dependencies.
         // As per https://developer.atlassian.com/server/framework/atlassian-sdk/atlassian-maven-repositories-2818705/,
-        // the following is the official atlassian proxy for their public repos.  Without this
+        // the following is the official atlassian proxy for their public repos. Without this, we end up with a
+        // number of unresolved dependencies, and things tend not to go well.
         repoList.add(new URI("https://packages.atlassian.com/mvn/maven-external/"));
         repoList.add(new URI("https://repo.maven.apache.org/maven2/"));
         // The following seems to be an old version of the address, but leaving it here in case we need it.
