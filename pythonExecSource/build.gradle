@@ -59,8 +59,8 @@ python {
     // copy virtualenv instead of symlink (when created)
     envCopy = false
 
-    pip 'pip:23.3.1'
-    pip 'pip-tools:7.3.0'
+    pip 'pip:24.0'
+    pip 'pip-tools:7.4.1'
 }
 
 tasks.withType(PythonTask) {
