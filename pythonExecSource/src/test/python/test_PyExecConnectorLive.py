@@ -559,6 +559,11 @@ class TestLiveConnection:
             if connectors is not None:
                 await connectors.connector_set.close()
 
+        if isinstance(self.vantiq_connection, Vantiq):
+            # close connection to avoid spurious warnings from the test framework.
+            # Good code hygiene to do the close anyway
+            await self.vantiq_connection.close()
+
     @staticmethod
     def check_test_conditions():
         if _server_url is None or _access_token is None or (_username is None and _password is None):
