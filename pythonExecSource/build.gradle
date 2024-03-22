@@ -16,7 +16,7 @@ ext {
     }
     // If these change, update requirements-conn.in as well -- as that's used to generate the requirements.txt file
     vantiqSdkVersion = '1.2.2'
-    vantiqConnectorSdkVersion = '1.2.1'
+    vantiqConnectorSdkVersion = '1.2.2'
 }
 
 python {
