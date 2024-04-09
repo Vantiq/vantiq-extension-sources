@@ -35,6 +35,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.xbill.DNS.Message;
 import org.xbill.DNS.Section;
+import org.xbill.DNS.TXTRecord;
 
 import java.io.File;
 import java.net.URI;
@@ -434,20 +435,27 @@ public class VantiqComponentResolverTest extends CamelTestSupport {
     }
     
     
-    public static final String QUERY_MONKEY = "monkey.wp.dg.cx";
-    public static final String RESPONSE_MONKEY = "\"A Macaque, an old world species of "
-            + "monkey native to Southeast Asia|thumb]A monkey is a primate of the "
-            + "Haplorrhini suborder and simian infraorder, either an Old World monkey "
-            + "or a New World monkey, but excluding apes. There are about 260 known "
-            + "living specie\" \"s of monkey. Many are arboreal, although there are "
-            + "species that live primarily on the ground, such as baboons... "
-            + "http://en.wikipedia.org/wiki/Monkey\"";
+//    public static final String QUERY_MONKEY = "monkey.wp.dg.cx";
+//    public static final String RESPONSE_MONKEY = "\"A Macaque, an old world species of "
+//        + "monkey native to Southeast Asia|thumb]A monkey is a primate of the "
+//        + "Haplorrhini suborder and simian infraorder, either an Old World monkey "
+//        + "or a New World monkey, but excluding apes. There are about 260 known "
+//        + "living specie\" \"s of monkey. Many are arboreal, although there are "
+//        + "species that live primarily on the ground, such as baboons... "
+//        + "http://en.wikipedia.org/wiki/Monkey\"";
     
-    public static final String QUERY_AARDVARK = "aardvark.wp.dg.cx";
-    public static final String RESPONSE_AARDVARK = "\"The aardvark (Orycteropus afer) is a medium-sized, burrowing, " +
-            "nocturnal mammal native to Africa. It is the only living species of the order Tubulidentata, although " +
-            "other prehistoric species and genera of Tubulidentata are known. " +
-            "http://en.wikipedia.org/wi\" \"ki/Aardvark\"";
+    public static final String QUERY_VANTIQ = "vantiq.com";
+    
+    public static final String RESPONSE_VANTIQ = "vantiq.com.";
+    
+//    public static final String QUERY_AARDVARK = "aardvark.wp.dg.cx";
+//    public static final String RESPONSE_AARDVARK = "\"The aardvark (Orycteropus afer) is a medium-sized, burrowing, " +
+//            "nocturnal mammal native to Africa. It is the only living species of the order Tubulidentata, although " +
+//            "other prehistoric species and genera of Tubulidentata are known. " +
+//            "http://en.wikipedia.org/wi\" \"ki/Aardvark\"";
+//
+    public static final String QUERY_WIKIPEDIA = "wikipedia.org";
+    public static final String RESPONSE_WIKIPEDIA = "wikipedia.org.";
     
     @Test
     public void testStartRunLoadedComponents() throws Exception {
@@ -697,12 +705,26 @@ public class VantiqComponentResolverTest extends CamelTestSupport {
                 resultEndpoint.expectedMessagesMatches(exchange -> {
                     Object msg = exchange.getIn().getBody();
                     if (msg instanceof Message) {
-                        String str =
-                                ((Message) exchange.getIn().getBody()).getSection(Section.ANSWER).get(0)
-                                                                      .rdataToString();
-                        log.debug("Matches: Route {} got {}", routeId, str);
                         assertNotNull(answerStr);
-                        return answerStr.contains(str);
+                        Object o = ((Message) exchange.getIn().getBody()).getSection(Section.ANSWER).get(0);
+                        if (o instanceof TXTRecord) {
+                            TXTRecord t = (TXTRecord) o;
+                            assertNotNull(answerStr);
+                            assertNotNull(t.getName());
+                            return answerStr.contains(t.getName().toString());
+                        } else {
+                            fail("Unexpected return type: " + (o == null ? "body/section is null" :
+                                    o.getClass().getName()));
+                        }
+                        // Saving in case dig/wikipedia lookup comes back online.
+//
+//                            String str =
+//                                    ((Message) exchange.getIn().getBody()).getSection(Section.ANSWER).get(0)
+//                                                                          .rdataToString();
+//                            Map<String, ?> hdrs = exchange.getIn().getHeaders();
+//                            log.debug("Matches: Route {} got headers: {}", routeId, hdrs);
+//                            log.debug("Matches: Route {} got {}", routeId, str);
+//                            return answerStr.contains(str);
                     } else if (msg instanceof Map) {
                         //noinspection unchecked
                         Map<String, ?> msgMap = (Map<String, ?>) msg;
@@ -716,6 +738,7 @@ public class VantiqComponentResolverTest extends CamelTestSupport {
                         }
                         return result;
                     } else if (msg instanceof InputStreamCache) {
+                        assertNotNull(answerStr);
                         InputStreamCache isc = (InputStreamCache) msg;
                         String msgString = null;
                         msgString = new String(isc.readAllBytes(), StandardCharsets.UTF_8);
@@ -731,6 +754,8 @@ public class VantiqComponentResolverTest extends CamelTestSupport {
                         if (rawData instanceof Map){
                             //noinspection unchecked,rawtypes
                             msgMap = (Map) rawData;
+                        } else if (rawData == null) {
+                            log.error("RAWDATA is null");
                         } else {
                             log.error("Unexpected type returned from FHIR search: {}", rawData.getClass().getName());
                             return false;
@@ -794,8 +819,8 @@ public class VantiqComponentResolverTest extends CamelTestSupport {
             // At this point, the route is running -- let's verify that it works.
     
             if (!defeatVerify) {
-                assert verifyOperation.apply(runnerContext, QUERY_MONKEY, RESPONSE_MONKEY);
-                assert verifyOperation.apply(runnerContext, QUERY_AARDVARK, RESPONSE_AARDVARK);
+                assert verifyOperation.apply(runnerContext, QUERY_VANTIQ, RESPONSE_VANTIQ);
+                assert verifyOperation.apply(runnerContext, QUERY_WIKIPEDIA, RESPONSE_WIKIPEDIA);
             }
         }
         
@@ -846,11 +871,11 @@ public class VantiqComponentResolverTest extends CamelTestSupport {
                                                         "question", MISSING_VALUE,
                                                         "resolver", MISSING_VALUE,
                                                         "header", MISSING_VALUE);
-                        assert verifyOperation.apply(runnerContext, QUERY_MONKEY, expectedMap);
-                        assert verifyOperation.apply(runnerContext, QUERY_AARDVARK, expectedMap);
+                        assert verifyOperation.apply(runnerContext, QUERY_VANTIQ, expectedMap);
+                        assert verifyOperation.apply(runnerContext, QUERY_WIKIPEDIA, expectedMap);
                     } else {
-                        assert verifyOperation.apply(runnerContext, QUERY_MONKEY, RESPONSE_MONKEY);
-                        assert verifyOperation.apply(runnerContext, QUERY_AARDVARK, RESPONSE_AARDVARK);
+                        assert verifyOperation.apply(runnerContext, QUERY_VANTIQ, RESPONSE_VANTIQ);
+                        assert verifyOperation.apply(runnerContext, QUERY_WIKIPEDIA, RESPONSE_WIKIPEDIA);
                     }
                 } else if (routeId.contains("Salesforce")) {
                     assert verifyOperation.apply(runnerContext, "not used",

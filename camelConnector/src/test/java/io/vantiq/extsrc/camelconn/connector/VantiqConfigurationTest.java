@@ -35,10 +35,10 @@ import static io.vantiq.extsrc.camelconn.connector.CamelHandleConfiguration.RAW_
 import static io.vantiq.extsrc.camelconn.connector.CamelHandleConfiguration.ROUTES_FORMAT;
 import static io.vantiq.extsrc.camelconn.connector.CamelHandleConfiguration.ROUTES_LIST;
 import static io.vantiq.extsrc.camelconn.discover.VantiqComponentResolverTest.MISSING_VALUE;
-import static io.vantiq.extsrc.camelconn.discover.VantiqComponentResolverTest.QUERY_AARDVARK;
-import static io.vantiq.extsrc.camelconn.discover.VantiqComponentResolverTest.QUERY_MONKEY;
-import static io.vantiq.extsrc.camelconn.discover.VantiqComponentResolverTest.RESPONSE_AARDVARK;
-import static io.vantiq.extsrc.camelconn.discover.VantiqComponentResolverTest.RESPONSE_MONKEY;
+import static io.vantiq.extsrc.camelconn.discover.VantiqComponentResolverTest.QUERY_WIKIPEDIA;
+import static io.vantiq.extsrc.camelconn.discover.VantiqComponentResolverTest.QUERY_VANTIQ;
+import static io.vantiq.extsrc.camelconn.discover.VantiqComponentResolverTest.RESPONSE_WIKIPEDIA;
+import static io.vantiq.extsrc.camelconn.discover.VantiqComponentResolverTest.RESPONSE_VANTIQ;
 import static io.vantiq.extsrc.camelconn.discover.VantiqComponentResolverTest.XML_ROUTE;
 import static io.vantiq.extsrc.camelconn.discover.VantiqComponentResolverTest.defineVerifyOperation;
 import static org.junit.Assume.assumeTrue;
@@ -371,8 +371,8 @@ public class VantiqConfigurationTest extends CamelTestSupport {
                           (CamelContext runnerContext) -> {
                               TriFunction<CamelContext, String, Object, Boolean> verifyOperation =
                                       defineVerifyOperation();
-                              assert verifyOperation.apply(runnerContext, QUERY_MONKEY, RESPONSE_MONKEY);
-                              assert verifyOperation.apply(runnerContext, QUERY_AARDVARK, RESPONSE_AARDVARK);
+                              assert verifyOperation.apply(runnerContext, QUERY_VANTIQ, RESPONSE_VANTIQ);
+                              assert verifyOperation.apply(runnerContext, QUERY_WIKIPEDIA, RESPONSE_WIKIPEDIA);
                           });
     }
     
