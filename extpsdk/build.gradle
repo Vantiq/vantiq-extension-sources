@@ -11,7 +11,7 @@ ext {
         pypi_repo = 'testpypi'
     }
     if (!project.rootProject.hasProperty('vantiqConnectorSdkVersion')) {
-        vantiqConnectorSdkVersion = '1.2.4'
+        vantiqConnectorSdkVersion = '1.2.5'
     }
 }
 
