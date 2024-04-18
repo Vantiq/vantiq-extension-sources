@@ -73,7 +73,7 @@ multidict==6.0.4
     #   yarl
 nh3==0.2.14
     # via readme-renderer
-packaging==23.2
+packaging==21.3
     # via
     #   build
     #   pytest
@@ -89,6 +89,8 @@ pygments==2.17.2
     # via
     #   readme-renderer
     #   rich
+pyparsing==3.1.2
+    # via packaging
 pyproject-hooks==1.0.0
     # via build
 pytest==7.4.3
@@ -133,7 +135,7 @@ urllib3==2.1.0
     #   -r requirements-conn.in
     #   requests
     #   twine
-vantiqconnectorsdk==1.2.3
+vantiqconnectorsdk==1.2.5
     # via -r requirements-conn.in
 vantiqsdk==1.2.3
     # via -r requirements-conn.in
