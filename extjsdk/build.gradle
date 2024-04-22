@@ -84,7 +84,7 @@ dependencies {
     testImplementation "io.vantiq:vantiq-sdk:${vantiqSDKVersion}"
 
     // Used to create EvictingQueue for failed messages queue
-    implementation 'com.google.guava:guava:23.0'
+    implementation "com.google.guava:guava:${guavaVersion}"
 }
 
 // Create a jar with all dependencies included
