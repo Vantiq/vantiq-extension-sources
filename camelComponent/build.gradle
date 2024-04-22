@@ -15,7 +15,6 @@ repositories {
 
 ext {
     log4JVersion='2.17.2'
-    extjsdkVersion='1.0'
     jacksonVersion = '2.14.2'
     gsonVersion = '2.9.1'
     commonsLang3Version = '3.12.0'

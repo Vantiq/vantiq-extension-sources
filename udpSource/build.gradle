@@ -59,7 +59,7 @@ dependencies {
     
 
     // This dependency is used internally, and not exposed to consumers on their own compile classpath.
-    implementation 'com.google.guava:guava:23.0'
+    implementation "com.google.guava:guava:${guavaVersion}"
 
     // Use JUnit test framework
     testImplementation 'junit:junit:4.12'
