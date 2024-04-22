@@ -15,7 +15,7 @@ ext {
         pyExecSrcVersion = '1.2.5'
     }
     // If these change, update requirements-conn.in as well -- as that's used to generate the requirements.txt file
-    vantiqSdkVersion = '1.2.4'
+    vantiqPythonSdkVersion = '1.2.5'
     vantiqConnectorSdkVersion = '1.2.6'
 }
 
@@ -90,7 +90,7 @@ task generateDockerFile(type: Copy) {
     include '**/Dockerfile.tmpl'
     expand(
             vantiqConnectorSdkVersion: vantiqConnectorSdkVersion,
-            vantiqSdkVersion: vantiqSdkVersion,
+            vantiqSdkVersion: vantiqPythonSdkVersion,
             pyExecSrcVersion  : pyExecSrcVersion)
     rename ~/(.*)\.tmpl/, '$1'
 }
@@ -101,7 +101,7 @@ task generateSetupCfg(type: Copy) {
     include '**/setup.cfg.tmpl'
     expand(
             vantiqConnectorSdkVersion: vantiqConnectorSdkVersion,
-            vantiqSdkVersion: vantiqSdkVersion,
+            vantiqSdkVersion: vantiqPythonSdkVersion,
             pyExecSrcVersion  : pyExecSrcVersion)
     rename ~/(.*)\.tmpl/, '$1'
 }
