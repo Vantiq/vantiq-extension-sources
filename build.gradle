@@ -37,7 +37,7 @@ group 'io.vantiq'
 ext {
     slf4jApiVersion = '1.7.25'
     eclipseMiloVersion = '0.2.1'
-    vantiqSDKVersion = '1.1.1'
+    vantiqSDKVersion = '1.2.1'
     log4jVersion = '2.17.2'
     lombokVersion = '1.18.26'
     camelVersion = '3.21.0'

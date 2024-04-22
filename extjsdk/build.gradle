@@ -20,7 +20,7 @@ ext {
     metricsVersion = '4.0.2'
     rxjavaVersion = '2.1.11'
     slf4jApiVersion = '1.7.25'
-    okhttpVersion = '4.9.1'
+    okhttpVersion = '4.12.0'
 }
 
 // Copies the README and licenses into the jar
