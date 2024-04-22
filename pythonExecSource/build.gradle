@@ -12,7 +12,7 @@ ext {
     }
 
     if (!project.rootProject.hasProperty('pyExecSrcVersion')) {
-        pyExecSrcVersion = '1.2.5'
+        pyExecSrcVersion = '1.2.6'
     }
     // If these change, update requirements-conn.in as well -- as that's used to generate the requirements.txt file
     vantiqPythonSdkVersion = '1.2.5'
