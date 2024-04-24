@@ -129,3 +129,9 @@ tasks.matching { !it.name.startsWith('generate')
                     && it.name != 'clean' }.all { Task task ->
     task.mustRunAfter generateSetupCfg
 }
+
+// This is an SDK so no connector image should be constructed or pushed.
+buildImages.onlyIf { false }
+buildConnectorImage.onlyIf { false }
+pushImages.onlyIf { false }
+pushConnectorImage.onlyIf { false }
