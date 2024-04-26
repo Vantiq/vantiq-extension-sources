@@ -101,3 +101,9 @@ task fatJar(type: Jar) {
                 findAll( { it.name.endsWith('jar') && !it.name.startsWith('groovy')}).
                 collect( { zipTree(it) })
 }
+
+// This is not a connector so no connector image should be constructed or pushed.
+buildImages.onlyIf { false }
+buildConnectorImage.onlyIf { false }
+pushImages.onlyIf { false }
+pushConnectorImage.onlyIf { false }

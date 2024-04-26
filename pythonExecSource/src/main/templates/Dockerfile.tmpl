@@ -1,10 +1,10 @@
 # syntax=docker/dockerfile:1
 
-FROM python:3.8.13-slim-buster
+FROM python:3.12.3-slim
 RUN mkdir /app
 ENV PYTHONPATH /app
 RUN pip install --no-cache-dir --upgrade pip
-# The localRequirements.txt file is a requirements.txt formatted file specfiying any local package installations
+# The localRequirements.txt file is a requirements.txt formatted file specifying any local package installations
 # desired.  This may be necessary if, for example, the python code this connector may execute requires additional
 # python packages installed (e.g., tensorflow).
 #

@@ -168,3 +168,8 @@ tasks.register('publishAssemblies') {
 importAssemblies.mustRunAfter( 'generateAssemblyResources' )
 publishAssemblies.mustRunAfter('importAssemblies')
 
+// This is not a connector so no connector image should be constructed or pushed.
+buildImages.onlyIf { false }
+buildConnectorImage.onlyIf { false }
+pushImages.onlyIf { false }
+pushConnectorImage.onlyIf { false }
