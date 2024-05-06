@@ -135,9 +135,9 @@ urllib3==2.1.0
     #   -r requirements-conn.in
     #   requests
     #   twine
-vantiqconnectorsdk==1.2.6
+vantiqconnectorsdk==1.2.7
     # via -r requirements-conn.in
-vantiqsdk==1.2.4
+vantiqsdk==1.2.6
     # via -r requirements-conn.in
 websockets==12.0
     # via
