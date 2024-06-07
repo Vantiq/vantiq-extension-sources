@@ -110,8 +110,9 @@ pytest-timeout==2.2.0
     # via -r requirements-build.in
 readme-renderer==42.0
     # via twine
-requests==2.31.0
+requests==2.32.3
     # via
+    #   -r requirements-conn.in
     #   requests-toolbelt
     #   twine
 requests-toolbelt==1.0.0
@@ -135,9 +136,9 @@ urllib3==2.1.0
     #   -r requirements-conn.in
     #   requests
     #   twine
-vantiqconnectorsdk==1.2.7
+vantiqconnectorsdk==1.2.8
     # via -r requirements-conn.in
-vantiqsdk==1.2.6
+vantiqsdk==1.3.2
     # via -r requirements-conn.in
 websockets==12.0
     # via
