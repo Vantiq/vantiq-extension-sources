@@ -128,9 +128,8 @@ tomli==2.0.1
     #   pytest
 twine==4.0.2
     # via -r requirements-build.in
-urllib3==2.1.0
+urllib3==2.2.2
     # via
-    #   -r requirements-sdk.in
     #   requests
     #   twine
 websockets==12.0
