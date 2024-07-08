@@ -12,11 +12,11 @@ ext {
     }
 
     if (!project.rootProject.hasProperty('pyExecSrcVersion')) {
-        pyExecSrcVersion = '1.2.9'
+        pyExecSrcVersion = '1.2.10'
     }
     // If these change, update requirements-conn.in as well -- as that's used to generate the requirements.txt file
-    vantiqPythonSdkVersion = '1.3.3'
-    vantiqConnectorSdkVersion = '1.2.9'
+    vantiqPythonSdkVersion = '1.3.4'
+    vantiqConnectorSdkVersion = '1.2.10'
 }
 
 python {
