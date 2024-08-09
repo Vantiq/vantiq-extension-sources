@@ -8,6 +8,8 @@ aioresponses>=0.7.6
 
 # Dependabot Fix
 jinja2>=3.1.4
+setuptools>=70.0.0
+zipp>=3.19.1
 
 # For build
 pip-tools
