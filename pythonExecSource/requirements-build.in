@@ -9,6 +9,8 @@ codetiming
 
 # Dependabot fix
 jinja2>=3.1.4
+setuptools>=70.0.0
+zipp>=3.19.1
 
 # For build
 pip-tools
