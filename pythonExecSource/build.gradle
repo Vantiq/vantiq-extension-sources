@@ -12,11 +12,11 @@ ext {
     }
 
     if (!project.rootProject.hasProperty('pyExecSrcVersion')) {
-        pyExecSrcVersion = '1.2.10'
+        pyExecSrcVersion = '1.2.11'
     }
     // If these change, update requirements-conn.in as well -- as that's used to generate the requirements.txt file
-    vantiqPythonSdkVersion = '1.3.4'
-    vantiqConnectorSdkVersion = '1.2.10'
+    vantiqPythonSdkVersion = '1.3.5'
+    vantiqConnectorSdkVersion = '1.2.11'
 }
 
 python {
@@ -59,7 +59,7 @@ python {
     // copy virtualenv instead of symlink (when created)
     envCopy = false
 
-    pip 'pip:24.0'
+    pip 'pip:24.2'
     pip 'pip-tools:7.4.1'
 }
 
