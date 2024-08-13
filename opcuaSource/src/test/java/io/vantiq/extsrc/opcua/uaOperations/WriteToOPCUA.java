@@ -136,7 +136,8 @@ public class WriteToOPCUA extends OpcUaTestBase {
         OpcUaESClient client = Utils.makeConnection(config, false);
 
         try {
-            client.writeValue(exampleNamespace + "IAmNotThere", "HelloWorld/ScalarTypes/Int32", "Int32", new Integer(42));
+            client.writeValue(exampleNamespace + "IAmNotThere", "HelloWorld/ScalarTypes/Int32",
+                              "Int32", 42);
         }
         catch (OpcExtRuntimeException e) {
             if (!e.getMessage().startsWith(OpcUaESClient.ERROR_PREFIX + ".badNamespaceURN")) {
