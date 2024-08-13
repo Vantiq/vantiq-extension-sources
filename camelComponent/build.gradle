@@ -48,7 +48,7 @@ group = 'io.vantiq.extsrc.camel'
 version = '1.0-SNAPSHOT'
 description = 'Camel Vantiq Component'
 java.sourceCompatibility = 1.11
-java.targetCompatibility = JavaVersion.VERSION_11
+java.targetCompatibility = JavaVersion.VERSION_17
 
 tasks.withType(JavaCompile) {
     options.encoding = 'UTF-8'
