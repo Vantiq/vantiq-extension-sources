@@ -43,6 +43,7 @@ public class TestConnectorMain {
     static final int NO_SOURCE_EXIT = 2;
     static final int NO_SERVER_EXIT = 3;
 
+    private static ExitProcessor exitProcessor = null;
     /**
      * Connects to the Vantiq source and starts polling for data. Exits when all sources are done running.
      * @param args  Should be either null or the first argument as a config file
@@ -60,6 +61,10 @@ public class TestConnectorMain {
         startSources(sources);
 
         // Can leave now because the threads created by the sources' WebSocket connections will keep the JVM alive
+    }
+    
+    public static void setExitProcessor(ExitProcessor ep) {
+        exitProcessor = ep;
     }
 
     /**
@@ -124,6 +129,15 @@ public class TestConnectorMain {
                 source.stop();
             }
         }
+        if (exitProcessor != null) {
+            exitProcessor.processExit(code);
+        }
         System.exit(code);
+    }
+    
+    public interface ExitProcessor {
+        default void processExit(int code) {
+            System.exit(code);
+        }
     }
 }

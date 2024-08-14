@@ -130,14 +130,14 @@ public class CSVMain {
             }
         }
         if (exitProcessor != null) {
-            exitProcessor.doExit(code);
+            exitProcessor.processExit(code);
         } else {
             System.exit(code);
         }
     }
     
-    interface ExitProcessor {
-        default void doExit(int code) {
+    public interface ExitProcessor {
+        default void processExit(int code) {
             System.exit(code);
         }
     }

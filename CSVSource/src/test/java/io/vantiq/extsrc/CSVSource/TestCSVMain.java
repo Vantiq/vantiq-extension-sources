@@ -106,7 +106,7 @@ public class TestCSVMain {
     
     private static class NoExit implements CSVMain.ExitProcessor {
         @Override
-        public void doExit(int status)
+        public void processExit(int status)
         {
             if (status == 1) {
                 throw new ExitException("Exit Requested: auth token was not specified.");

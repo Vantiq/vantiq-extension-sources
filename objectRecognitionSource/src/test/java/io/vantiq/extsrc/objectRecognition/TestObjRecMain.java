@@ -11,7 +11,6 @@ package io.vantiq.extsrc.objectRecognition;
 
 import static org.junit.Assert.fail;
 
-import java.security.Permission;
 import java.util.List;
 import java.util.Properties;
 
@@ -26,13 +25,13 @@ public class TestObjRecMain {
         ObjectRecognitionMain.authToken             = "gcy1hHR39ge2PNCZeiUbYKAev-G7u-KyPh2Ns4gI0Y8=";
         ObjectRecognitionMain.targetVantiqServer    = "http://localhost:8080";  // Used to be ws:  -- should handle this directly
         ObjectRecognitionMain.modelDirectory        = "models/";
-        System.setSecurityManager(new NoExit());
+        ObjectRecognitionMain.setExitProcessor(new NoExit());
     }
     
     @After
     public void tearDown() {
         List<ObjectRecognitionCore> sources = ObjectRecognitionMain.sources;
-        System.setSecurityManager(null);
+        ObjectRecognitionMain.setExitProcessor(null);
         if (sources != null) {
             for (ObjectRecognitionCore s : sources) {
                 s.stop();
@@ -100,16 +99,10 @@ public class TestObjRecMain {
     
 // ================================================= Helper functions =================================================
     
-    private static class NoExit extends SecurityManager 
-    {
+    private static class NoExit implements ObjectRecognitionMain.ExitProcessor {
         @Override
-        public void checkPermission(Permission perm) {}
-        @Override
-        public void checkPermission(Permission perm, Object context) {}
-        @Override
-        public void checkExit(int status) 
+        public void processExit(int status)
         {
-            super.checkExit(status);
             throw new ExitException("Exit Requested");
         }
     }
