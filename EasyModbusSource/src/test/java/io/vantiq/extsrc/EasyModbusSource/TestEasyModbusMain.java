@@ -10,7 +10,6 @@ package io.vantiq.extsrc.EasyModbusSource;
 
 import static org.junit.Assert.fail;
 
-import java.security.Permission;
 import java.util.List;
 import java.util.Properties;
 
@@ -22,13 +21,13 @@ public class TestEasyModbusMain {
 
     @Before
     public void setup() {
-        System.setSecurityManager(new NoExit());
+        EasyModbusMain.setExitProcessor(new NoExit());
     }
 
     @After
     public void tearDown() {
         List<EasyModbusCore> sources = EasyModbusMain.sources;
-        System.setSecurityManager(null);
+        EasyModbusMain.setExitProcessor(null);
         if (sources != null) {
             for (EasyModbusCore s : sources) {
                 s.stop();
@@ -103,21 +102,11 @@ public class TestEasyModbusMain {
         s2.stop();
     }
 
-    // ================================================= Helper functions
-    // =================================================
+    // ================================================= Helper functions ==============================================
 
-    private static class NoExit extends SecurityManager {
+    private static class NoExit implements EasyModbusMain.ExitProcessor {
         @Override
-        public void checkPermission(Permission perm) {
-        }
-
-        @Override
-        public void checkPermission(Permission perm, Object context) {
-        }
-
-        @Override
-        public void checkExit(int status) {
-            super.checkExit(status);
+        public void processExit(int status) {
             if (status == 1) {
                 throw new ExitException("Exit Requested: auth token was not specified.");
             } else if (status == 2) {

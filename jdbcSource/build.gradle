@@ -1,10 +1,14 @@
+
+plugins {
+    id("io.freefair.lombok") version "6.3.0" // version "8.7.1"
+    id 'java'
+    id 'application'
+    id 'idea'
+    id 'eclipse'
+}
+
 group 'io.vantiq'
 version 'unspecified'
-
-apply plugin: 'java'
-apply plugin: 'application'
-apply plugin: 'io.franzbecker.gradle-lombok'
-
 
 sourceCompatibility = 1.8
 

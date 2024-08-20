@@ -41,6 +41,8 @@ public class CSVMain {
     static final int NO_AUTH_EXIT = 1;
     static final int NO_SOURCE_EXIT = 2;
     static final int NO_SERVER_EXIT = 3;
+    
+    private static ExitProcessor exitProcessor = null;
 
     /**
      * Connects to the Vantiq source and starts polling for data. Exits when all sources are done running.
@@ -59,6 +61,10 @@ public class CSVMain {
         startSources(sources);
         
         // Can leave now because the threads created by the sources' WebSocket connections will keep the JVM alive
+    }
+    
+    public static void setExitProcessor(ExitProcessor ep) {
+        exitProcessor = ep;
     }
     
     /**
@@ -123,6 +129,16 @@ public class CSVMain {
                 source.stop();
             }
         }
-        System.exit(code);
+        if (exitProcessor != null) {
+            exitProcessor.processExit(code);
+        } else {
+            System.exit(code);
+        }
+    }
+    
+    public interface ExitProcessor {
+        default void processExit(int code) {
+            System.exit(code);
+        }
     }
 }

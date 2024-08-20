@@ -1,7 +1,7 @@
 plugins {
     id 'java'
     id 'application'
-    id 'io.franzbecker.gradle-lombok'
+    id("io.freefair.lombok") version "6.3.0" // version "8.7.1"
 }
 
 group 'io.vantiq'

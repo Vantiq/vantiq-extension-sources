@@ -9,12 +9,8 @@
 package io.vantiq.extsrc.EasyModbusSource;
 
 import io.vantiq.extjsdk.Utils;
-import java.io.File;
-import java.io.FileReader;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.Properties;
 
 import org.slf4j.Logger;
@@ -47,6 +43,7 @@ public class EasyModbusMain {
     static final int NO_SOURCE_EXIT = 2;
     static final int NO_SERVER_EXIT = 3;
 
+    private static ExitProcessor exitProcessor = null;
     /**
      * Connects to the Vantiq source and starts polling for data. Exits when all
      * sources are done running.
@@ -67,6 +64,10 @@ public class EasyModbusMain {
 
         // Can leave now because the threads created by the sources' WebSocket
         // connections will keep the JVM alive
+    }
+    
+    public static void setExitProcessor(ExitProcessor ep) {
+        exitProcessor = ep;
     }
 
     /**
@@ -136,6 +137,15 @@ public class EasyModbusMain {
                 source.stop();
             }
         }
+        if (exitProcessor != null) {
+            exitProcessor.processExit(code);
+        }
         System.exit(code);
+    }
+    
+    public interface ExitProcessor {
+        default void processExit(int code) {
+            System.exit(code);
+        }
     }
 }

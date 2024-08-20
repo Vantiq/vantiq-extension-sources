@@ -10,7 +10,6 @@ package io.vantiq.extsrc.CSVSource;
 
 import static org.junit.Assert.fail;
 
-import java.security.Permission;
 import java.util.List;
 import java.util.Properties;
 
@@ -22,13 +21,13 @@ public class TestCSVMain {
     
     @Before
     public void setup() {
-        System.setSecurityManager(new NoExit());
+        CSVMain.setExitProcessor(new NoExit());
     }
     
     @After
     public void tearDown() {
         List<CSVCore> sources = CSVMain.sources;
-        System.setSecurityManager(null);
+        CSVMain.setExitProcessor(null);
         if (sources != null) {
             for (CSVCore s : sources) {
                 s.stop();
@@ -105,16 +104,10 @@ public class TestCSVMain {
     
 // ================================================= Helper functions =================================================
     
-    private static class NoExit extends SecurityManager 
-    {
+    private static class NoExit implements CSVMain.ExitProcessor {
         @Override
-        public void checkPermission(Permission perm) {}
-        @Override
-        public void checkPermission(Permission perm, Object context) {}
-        @Override
-        public void checkExit(int status) 
+        public void processExit(int status)
         {
-            super.checkExit(status);
             if (status == 1) {
                 throw new ExitException("Exit Requested: auth token was not specified.");
             } else if (status == 2) {

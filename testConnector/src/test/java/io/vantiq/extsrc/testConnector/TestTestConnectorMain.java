@@ -10,7 +10,6 @@ package io.vantiq.extsrc.testConnector;
 
 import static org.junit.Assert.fail;
 
-import java.security.Permission;
 import java.util.List;
 import java.util.Properties;
 
@@ -22,13 +21,13 @@ public class TestTestConnectorMain {
 
     @Before
     public void setup() {
-        System.setSecurityManager(new NoExit());
+        TestConnectorMain.setExitProcessor(new NoExit());
     }
 
     @After
     public void tearDown() {
         List<TestConnectorCore> sources = TestConnectorMain.sources;
-        System.setSecurityManager(null);
+        TestConnectorMain.setExitProcessor(null);
         if (sources != null) {
             for (TestConnectorCore s : sources) {
                 s.stop();
@@ -105,16 +104,10 @@ public class TestTestConnectorMain {
 
 // ================================================= Helper functions =================================================
 
-    private static class NoExit extends SecurityManager
-    {
+    private static class NoExit implements TestConnectorMain.ExitProcessor {
         @Override
-        public void checkPermission(Permission perm) {}
-        @Override
-        public void checkPermission(Permission perm, Object context) {}
-        @Override
-        public void checkExit(int status)
+        public void processExit(int status)
         {
-            super.checkExit(status);
             if (status == 1) {
                 throw new ExitException("Exit Requested: auth token was not specified.");
             } else if (status == 2) {

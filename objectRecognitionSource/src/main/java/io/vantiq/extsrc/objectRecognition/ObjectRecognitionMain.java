@@ -10,12 +10,8 @@
 package io.vantiq.extsrc.objectRecognition;
 
 import io.vantiq.extjsdk.Utils;
-import java.io.File;
-import java.io.FileReader;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.Properties;
 
 import org.slf4j.Logger;
@@ -44,6 +40,8 @@ public class ObjectRecognitionMain {
     static String targetVantiqServer;
     static String modelDirectory;
     
+    private static ExitProcessor exitProcessor = null;
+    
     /**
      * Connects to the Vantiq source and starts polling for data. Exits when all sources are done running.
      * @param args  Should be either null or the first argument as a config file
@@ -61,6 +59,10 @@ public class ObjectRecognitionMain {
         startSources(sources);
         
         // Can leave now because the threads created by the sources' WebSocket connections will keep the JVM alive
+    }
+    
+    public static void setExitProcessor(ExitProcessor ep) {
+        exitProcessor = ep;
     }
     
     /**
@@ -127,6 +129,15 @@ public class ObjectRecognitionMain {
                 source.stop();
             }
         }
+        if (exitProcessor != null) {
+            exitProcessor.processExit(code);
+        }
         System.exit(code);
+    }
+    
+    public interface ExitProcessor {
+        default void processExit(int code) {
+            System.exit(code);
+        }
     }
 }

@@ -39,7 +39,6 @@ public class TestCSVReader extends TestCSVBase{
     @After
     public void tearDown() {
         List<CSVCore> sources = CSVMain.sources;
-        System.setSecurityManager(null);
         if (sources != null) {
             for (CSVCore s : sources) {
                 s.stop();

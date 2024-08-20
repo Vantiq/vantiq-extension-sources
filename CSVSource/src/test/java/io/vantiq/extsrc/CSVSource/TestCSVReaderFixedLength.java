@@ -38,7 +38,6 @@ public class TestCSVReaderFixedLength extends TestCSVConfigFixedLength {
     @After
     public void tearDown() {
         List<CSVCore> sources = CSVMain.sources;
-        System.setSecurityManager(null);
         if (sources != null) {
             for (CSVCore s : sources) {
                 s.stop();
