@@ -117,6 +117,7 @@ requests==2.32.3
     #   -r requirements-conn.in
     #   requests-toolbelt
     #   twine
+    #   vantiqsdk
 requests-toolbelt==1.0.0
     # via twine
 rfc3986==2.0.0
@@ -153,4 +154,6 @@ wheel==0.42.0
 yarl==1.9.4
     # via aiohttp
 zipp==3.19.2
-    # via importlib-metadata
+    # via
+    #   -r requirements-build.in
+    #   importlib-metadata
