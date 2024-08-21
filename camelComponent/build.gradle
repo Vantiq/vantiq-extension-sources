@@ -4,6 +4,7 @@
 
 plugins {
     id 'java'
+    id("io.freefair.lombok")   //version "6.3.0" // version "8.7.1"
 }
 
 repositories {
@@ -39,8 +40,11 @@ dependencies {
     implementation "com.fasterxml.jackson.datatype:jackson-datatype-jsr310:{jacksonVersion}"
 
     testImplementation "org.apache.logging.log4j:log4j-slf4j-impl:${log4JVersion}"
-    testImplementation "org.apache.camel:camel-test:${camelVersion}"
+    testImplementation "org.apache.camel:camel-test-junit5:${camelVersion}"
     testImplementation "io.vantiq:vantiq-sdk:${vantiqSDKVersion}"
+    testImplementation "org.junit.jupiter:junit-jupiter-api:${junit5Version}"
+    testRuntimeOnly "org.junit.jupiter:junit-jupiter-engine:${junit5Version}"
+
     testImplementation project(path: ":extjsdk", configuration: 'testArtifacts')
 }
 
@@ -48,7 +52,11 @@ group = 'io.vantiq.extsrc.camel'
 version = '1.0-SNAPSHOT'
 description = 'Camel Vantiq Component'
 java.sourceCompatibility = 1.11
-java.targetCompatibility = JavaVersion.VERSION_11
+java.targetCompatibility = JavaVersion.VERSION_17
+
+test {
+    useJUnitPlatform()
+}
 
 tasks.withType(JavaCompile) {
     options.encoding = 'UTF-8'

@@ -73,7 +73,7 @@ dependencies {
 
     testImplementation project(path: ":camelComponent", configuration: "testArtifacts")
     testImplementation "org.apache.logging.log4j:log4j-slf4j-impl:${log4JVersion}"
-    testImplementation "org.apache.camel:camel-test:${camelVersion}"
+    testImplementation "org.apache.camel:camel-test-junit5:${camelVersion}"
     testImplementation "io.vantiq:vantiq-sdk:${vantiqSDKVersion}"
     testImplementation project(path: ":extjsdk", configuration: 'testArtifacts')
     testImplementation "dnsjava:dnsjava:${dnsJavaVersion}"
@@ -182,12 +182,12 @@ tasks.register('generateComponentList', ) {
         return false
     })
     doFirst {
-        if (!rootProject.hasProperty('camelRoot')) {
+        if (!rootProject.hasProperty('camelRoot4')) {
             throw new GradleException('"camelRoot" property is required to generate the component list')
         }
     }
     doLast {
-        def camRootSpec = rootProject.getProperty('camelRoot')
+        def camRootSpec = rootProject.getProperty('camelRoot4')
         logger.info('CamelRootSpec: {}', camRootSpec)
         def camelRoot = file(camRootSpec)
         logger.info('Camel root is {}', camelRoot.absolutePath)
