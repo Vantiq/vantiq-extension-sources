@@ -8,7 +8,11 @@
 
 package io.vantiq.extsrc.camel;
 
-import static org.junit.Assume.assumeTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -24,10 +28,10 @@ import org.apache.camel.ExchangePattern;
 import org.apache.camel.builder.RouteBuilder;
 import org.apache.camel.component.jackson.converter.JacksonTypeConvertersLoader;
 import org.apache.camel.component.mock.MockEndpoint;
-import org.apache.camel.test.junit4.CamelTestSupport;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.apache.camel.test.junit5.CamelTestSupport;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 
 import java.io.InputStream;
 import java.net.URI;
@@ -73,7 +77,7 @@ public class VantiqLiveComponentTest extends CamelTestSupport {
     @Test
     public void testVantiqProducerLive() throws Exception {
         assumeTrue(vantiqInstallation != null && vantiqAccessToken != null);
-        ArrayList<String> msgs =new ArrayList<String>();
+        ArrayList<String> msgs =new ArrayList<>();
         int itemCount = 10;
         for (int i = 0; i < itemCount; i++) {
             msgs.add("{\"hi\": \"mom " + i + "\"}");
@@ -94,7 +98,7 @@ public class VantiqLiveComponentTest extends CamelTestSupport {
             mapList.add(mp);
         }
         
-        for (Map item: mapList) {
+        for (Map<String, String> item: mapList) {
             sendBody(routeStartUri, item);
         }
     
@@ -129,11 +133,13 @@ public class VantiqLiveComponentTest extends CamelTestSupport {
         @SuppressWarnings("unchecked")
         List<JsonObject> retVal = (List<JsonObject>) vr.getBody();
         retVal.forEach( row -> {
-            @SuppressWarnings("unchecked")
+            //noinspection unchecked
             Map<String, Object> ent = (Map<String, Object>) new Gson().fromJson(row, Map.class);
             log.debug("Got value: {} ({})", ent.get("value"), ent.get("value").getClass().getName());
-            if (((Map) ent.get("value")).containsKey("hi")) {
-                String val = (String) ((Map) ent.get("value")).get("hi");
+            //noinspection unchecked
+            if (((Map<String, Object>) ent.get("value")).containsKey("hi")) {
+                //noinspection unchecked
+                String val = ((Map<String, String>) ent.get("value")).get("hi");
                 if (val.contains("mom")) {
                     countBySubject.get("mom").add(val);
                 } else if (val.contains("dad")) {
@@ -143,9 +149,9 @@ public class VantiqLiveComponentTest extends CamelTestSupport {
                 }
             }
         });
-        assertEquals("Mom count", itemCount, countBySubject.get("mom").size());
-        assertEquals("Dad count", itemCount, countBySubject.get("dad").size());
-        assertEquals("Aki count", itemCount, countBySubject.get("aki").size());
+        assertEquals(itemCount, countBySubject.get("mom").size(), "Mom count");
+        assertEquals(itemCount, countBySubject.get("dad").size(), "Dad count");
+        assertEquals(itemCount, countBySubject.get("aki").size(), "Aki count");
         assert retVal.size() == 3 * itemCount + 1;
     }
     
@@ -168,9 +174,10 @@ public class VantiqLiveComponentTest extends CamelTestSupport {
         mocked.await(5L, TimeUnit.SECONDS);
         assert mocked.getReceivedCounter() == expectedMsgCount;
         List<Exchange> exchanges = mocked.getReceivedExchanges();
-        Set<String> uniqueMsgs = new HashSet<String>();
+        Set<String> uniqueMsgs = new HashSet<>();
         exchanges.forEach(exchange -> {
                 assert exchange.getIn().getBody() instanceof Map;
+                @SuppressWarnings("rawtypes")
                 Map msg = exchange.getIn().getBody(Map.class);
                 assert msg.containsKey("test");
                 assert msg.get("test") instanceof String;
@@ -199,9 +206,10 @@ public class VantiqLiveComponentTest extends CamelTestSupport {
         mocked.await(5L, TimeUnit.SECONDS);
         assert mocked.getReceivedCounter() == expectedMsgCount;
         List<Exchange> exchanges = mocked.getReceivedExchanges();
-        Set<String> uniqueMsgs = new HashSet<String>();
+        Set<String> uniqueMsgs = new HashSet<>();
         exchanges.forEach(exchange -> {
             assert exchange.getIn().getBody() instanceof Map;
+            @SuppressWarnings("rawtypes")
             Map msg = exchange.getIn().getBody(Map.class);
             assert msg.containsKey("test");
             assert msg.get("test") instanceof String;
@@ -212,7 +220,7 @@ public class VantiqLiveComponentTest extends CamelTestSupport {
     }
     
     @Override
-    protected RouteBuilder createRouteBuilder() throws Exception {
+    protected RouteBuilder createRouteBuilder() {
         return new RouteBuilder() {
             public void configure() {
                 // Used here as well as in the tests so that we don't try & set up routes
@@ -234,7 +242,7 @@ public class VantiqLiveComponentTest extends CamelTestSupport {
         };
     }
     
-    @BeforeClass
+    @BeforeAll
     public static void setupVantiqEnvironment() throws Exception {
         if (vantiqInstallation != null && vantiqAccessToken != null) {
             URI vuri = new URI(vantiqInstallation);
@@ -257,7 +265,7 @@ public class VantiqLiveComponentTest extends CamelTestSupport {
             }
             vantiq = new Vantiq(vantiqInstallation);
             vantiq.setAccessToken(vantiqAccessToken);
-            assertTrue("Vantiq Auth'd", vantiq.isAuthenticated());
+            assertTrue(vantiq.isAuthenticated(), "Vantiq Auth'd");
             createSourceImpl();
             createSource();
             createQuerySource();
@@ -268,7 +276,7 @@ public class VantiqLiveComponentTest extends CamelTestSupport {
         }
     }
     
-    @AfterClass
+    @AfterAll
     public static void teardownVantiqEnvironment() {
         if (vantiqInstallation != null && vantiqAccessToken != null) {
             deletePublishProcedure();
@@ -395,10 +403,10 @@ public class VantiqLiveComponentTest extends CamelTestSupport {
             Map<String, String> where = new LinkedHashMap<>();
             where.put("name", SRC_IMPL_TYPE);
             VantiqResponse implResp = vantiq.select(VANTIQ_SOURCE_IMPL, null, where, null);
-            assertFalse("Errors from fetching source impl", implResp.hasErrors());
+            assertFalse(implResp.hasErrors(), "Errors from fetching source impl");
             @SuppressWarnings({"rawtypes"})
             ArrayList responseBody = (ArrayList) implResp.getBody();
-            assertEquals("Missing sourceImpl -- expected a count of 1", 1, responseBody.size());
+            assertEquals(1, responseBody.size(), "Missing sourceImpl -- expected a count of 1");
             createdImpl = true;
         }
     }
@@ -412,7 +420,7 @@ public class VantiqLiveComponentTest extends CamelTestSupport {
         if (resp.hasErrors()) {
             List<VantiqError> errors = resp.getErrors();
             assert errors != null;
-            assert errors.size() > 0;
+            assert !errors.isEmpty();
             if (errors.size() != 1 || !"io.vantiq.resource.not.found".equals(errors.get(0).getCode())) {
                 fail("Error deleting source impl" + resp.getErrors());
             }
@@ -425,9 +433,10 @@ public class VantiqLiveComponentTest extends CamelTestSupport {
         Map<String, String> where = new LinkedHashMap<>();
         where.put("name", SRC_IMPL_TYPE);
         VantiqResponse implResp = vantiq.select(VANTIQ_SOURCE_IMPL, null, where, null);
-        assertFalse("Errors from fetching source impl", implResp.hasErrors());
+        assertFalse(implResp.hasErrors(), "Errors from fetching source impl");
+        @SuppressWarnings("rawtypes")
         ArrayList responseBody = (ArrayList) implResp.getBody();
-        assertEquals("Missing sourceimpl -- expected a count of 1", 1, responseBody.size());
+        assertEquals(1, responseBody.size(), "Missing sourceimpl -- expected a count of 1");
     
         Map<String, Object> sourceDef = new LinkedHashMap<>();
         // Setting up the source definition
@@ -444,9 +453,10 @@ public class VantiqLiveComponentTest extends CamelTestSupport {
         Map<String, String> where = new LinkedHashMap<>();
         where.put("name", SRC_IMPL_TYPE);
         VantiqResponse implResp = vantiq.select(VANTIQ_SOURCE_IMPL, null, where, null);
-        assertFalse("Errors from fetching source impl", implResp.hasErrors());
+        assertFalse(implResp.hasErrors(), "Errors from fetching source impl");
+        @SuppressWarnings("rawtypes")
         ArrayList responseBody = (ArrayList) implResp.getBody();
-        assertEquals("Missing sourceimpl -- expected a count of 1", 1, responseBody.size());
+        assertEquals(1, responseBody.size(), "Missing sourceimpl -- expected a count of 1");
         
         Map<String, Object> sourceDef = new LinkedHashMap<>();
         // Setting up the source definition

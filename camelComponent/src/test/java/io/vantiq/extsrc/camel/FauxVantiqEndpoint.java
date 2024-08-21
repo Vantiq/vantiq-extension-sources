@@ -19,7 +19,7 @@ import org.apache.camel.spi.UriParams;
  * vantiq endpoint, managing communications with the vantiq server.
  **/
 @UriEndpoint(firstVersion = "1.0-SNAPSHOT", scheme = "vantiq", title = "vantiq", syntax="vantiq:name",
-             category = {Category.JAVA})
+             category = {Category.CLOUD, Category.SAAS})
 @UriParams
 @Slf4j
 public class FauxVantiqEndpoint extends VantiqEndpoint {
