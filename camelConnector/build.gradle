@@ -100,7 +100,7 @@ group = 'io.vantiq.extsrc.camelconnector'
 version = 'unspecified'
 description = 'Vantiq Camel Connector'
 java.sourceCompatibility = 1.11
-java.targetCompatibility = JavaVersion.VERSION_11
+java.targetCompatibility = JavaVersion.VERSION_17
 
 /**
  * The following task builds an assembly project zip file to make the CAMEL source implementation type
