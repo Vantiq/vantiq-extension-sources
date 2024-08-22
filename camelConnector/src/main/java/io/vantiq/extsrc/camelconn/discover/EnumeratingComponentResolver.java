@@ -36,8 +36,8 @@ class EnumeratingComponentResolver implements ComponentResolver {
     private final ComponentResolver originalResolver;
     public static final Set<String> CORE_COMPONENTS_SCHEMES = new HashSet<>(
             Arrays.asList("bean", "binding", "browse", "class", "controlbus", "dataformat", "dataset", "direct",
-                    "direct-vm", "file", "language", "log", "mock", "properties", "ref", "rest", "rest-api",
-                    "saga", "scheduler", "seda", "stub", "test", "timer", "validator", "vm", "xslt"));
+                    "file", "language", "log", "mock", "properties", "ref", "rest", "rest-api",
+                    "saga", "scheduler", "seda", "stub", "test", "timer", "validator", "xslt"));
     
     // These don't load and are handled specially internally
     public static final Set<String> NONLOADABLE_CORE_COMPONENT_SCHEMES =  new HashSet<>(

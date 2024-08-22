@@ -41,7 +41,11 @@ import static io.vantiq.extsrc.camelconn.discover.VantiqComponentResolverTest.RE
 import static io.vantiq.extsrc.camelconn.discover.VantiqComponentResolverTest.RESPONSE_VANTIQ;
 import static io.vantiq.extsrc.camelconn.discover.VantiqComponentResolverTest.XML_ROUTE;
 import static io.vantiq.extsrc.camelconn.discover.VantiqComponentResolverTest.defineVerifyOperation;
-import static org.junit.Assume.assumeTrue;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 import io.vantiq.extjsdk.ExtensionServiceMessage;
 import io.vantiq.extjsdk.FalseClient;
@@ -54,13 +58,15 @@ import org.apache.camel.Component;
 import org.apache.camel.Endpoint;
 import org.apache.camel.ProducerTemplate;
 import org.apache.camel.spi.PropertiesComponent;
-import org.apache.camel.test.junit4.CamelTestSupport;
+import org.apache.camel.test.junit5.CamelTestSupport;
 import org.apache.commons.lang3.function.TriFunction;
 import org.apache.ivy.util.FileUtil;
-import org.junit.BeforeClass;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TestName;
+
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.TestInfo;
 
 import java.io.File;
 import java.io.IOException;
@@ -73,9 +79,7 @@ import java.util.concurrent.TimeUnit;
 
 @Slf4j
 public class VantiqConfigurationTest extends CamelTestSupport {
-    @Rule
-    public TestName name = new TestName();
-    public String testName = this.getClass().getSimpleName();
+    public String testName = null;
     
     private static final String BUILD_DIR = System.getProperty("BUILD_DIR", "build");
     private static final String CAMEL_CONN_BASE_DIR = "camelConnBase";
@@ -89,7 +93,19 @@ public class VantiqConfigurationTest extends CamelTestSupport {
         void doVerify(CamelContext runnerContext);
     }
     
-    @BeforeClass
+    @BeforeEach
+    public void getTestName(TestInfo ti) {
+        if (ti.getTestMethod().isPresent()) {
+            testName = ti.getTestMethod().get().getName();
+        }
+    }
+    
+    @AfterEach
+    public void clearTestName() {
+        testName = null;
+    }
+    
+    @BeforeAll
     public static void setup() {
         // Clean out cache to avoid spurious warnings about unknown resolvers.  These come about because our app name
         // (after which we name our resolvers) vary test by test or test class by test class.
@@ -160,16 +176,16 @@ public class VantiqConfigurationTest extends CamelTestSupport {
         }
 
         handler.handleMessage(esm);
-        assertTrue("handler completed", handler.isComplete());
-        assertNotNull("Camel Runner", handler.getCurrentCamelRunner());
-        assertTrue("Runner started", handler.getCurrentCamelRunner().isStarted());
-        assertNotNull("Runner's Camel Context", handler.getCurrentCamelRunner().getCamelContext());
-        assertNotNull("Runner's thread", handler.getCurrentCamelRunner().getCamelThread());
+        assertTrue(handler.isComplete(), "handler completed");
+        assertNotNull(handler.getCurrentCamelRunner(), "Camel Runner");
+        assertTrue(handler.getCurrentCamelRunner().isStarted(), "Runner started");
+        assertNotNull(handler.getCurrentCamelRunner().getCamelContext(), "Runner's Camel Context");
+        assertNotNull(handler.getCurrentCamelRunner().getCamelThread(), "Runner's thread");
         
         // Assuming things worked, now we have a camel app running.  We'll run our test against it & verify
         
         CamelContext runnerContext = handler.getCurrentCamelRunner().getCamelContext();
-        assertTrue("Context Running", runnerContext.isStarted());
+        assertTrue(runnerContext.isStarted(), "Context Running");
 
         try {
             vfy.doVerify(runnerContext);
@@ -480,7 +496,7 @@ public class VantiqConfigurationTest extends CamelTestSupport {
             String routeId = context.getRoutes().get(0).getId();
             ProducerTemplate template = null;
             try {
-                assertFalse("At test start, context " + context.getName() + " is stopped", context.isStopped());
+                assertFalse(context.isStopped(), "At test start, context " + context.getName() + " is stopped");
     
                 template = context.createProducerTemplate();
     
@@ -494,6 +510,7 @@ public class VantiqConfigurationTest extends CamelTestSupport {
                 assert hdrsToSend != null;
                 log.debug("Sending message to {}", startEp);
                 template.sendBodyAndHeaders(startEp, query.get(STRUCTURED_MESSAGE_MESSAGE_PROPERTY), hdrsToSend);
+                @SuppressWarnings("rawtypes")
                 Map lastMsg = fc.getLastMessageAsMap();
                 assert lastMsg.containsKey("op");
                 assert "notification".equals(lastMsg.get("op"));
@@ -509,7 +526,7 @@ public class VantiqConfigurationTest extends CamelTestSupport {
                         (Map<String, Object>) msg.get(STRUCTURED_MESSAGE_HEADERS_PROPERTY);
                 assert hdrs != null;
                 answerMap.forEach( (key, value) -> {
-                    assertTrue("Missing header " + key, hdrs.containsKey(key));
+                    assertTrue(hdrs.containsKey(key), "Missing header " + key);
                     log.debug("For key {}, comparing value {} ({}) with expected {} ({}).",
                               key, hdrs.get(key),
                               hdrs.get(key) != null ? hdrs.get(key).getClass().getName() : hdrs.get(key),
@@ -524,7 +541,7 @@ public class VantiqConfigurationTest extends CamelTestSupport {
                     }
                 });
             } catch (Exception e) {
-                log.error("Route " + routeId + ": Trapped exception", e);
+                log.error("Route {}: Trapped exception", routeId, e);
                 worked = false;
             } finally {
                 if (template != null) {
