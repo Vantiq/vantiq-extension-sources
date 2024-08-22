@@ -19,7 +19,6 @@ version 'unspecified'
 sourceCompatibility = 1.8
 
 ext {
-    jacksonVersion = '2.9.3'
     eclipseMiloVersion = '0.6.12'
     logbackVersion = '1.2.3'
     junitVersion = '4.12'
