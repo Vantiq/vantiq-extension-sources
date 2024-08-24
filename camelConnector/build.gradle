@@ -7,6 +7,7 @@ plugins {
     id 'java'
     id 'maven-publish'
     id 'application'
+    id("io.freefair.lombok")   //version "6.3.0" // version "8.7.1"
 }
 
 mainClassName = 'io.vantiq.extsrc.camelconn.connector.CamelMain'
@@ -35,14 +36,11 @@ repositories {
 
 ext {
     apacheCommonsLangVersion = '3.12.0'
-    dnsJavaVersion = '3.4.2'
+    dnsJavaVersion = '3.6.1'
     gsonVersion = '2.9.1'
     ivyVersion = '2.5.2'
-    jacksonVersion = '2.14.2'
-    junitVersion = '4.13.2'
     junitVintageEngineVersion = '5.8.2'
-    junitVersion = '4.13.2'
-    log4JVersion='2.17.2'
+    log4JVersion = '2.23.1'
 }
 
 dependencies {
@@ -59,7 +57,7 @@ dependencies {
     implementation project(":extjsdk")
     implementation project(":camelComponent")    // The Vantiq Camel Component is automatically included
     implementation "com.fasterxml.jackson.core:jackson-databind:${jacksonVersion}"
-    implementation "com.fasterxml.jackson.datatype:jackson-datatype-jsr310:{jacksonVersion}"
+    implementation "com.fasterxml.jackson.datatype:jackson-datatype-jsr310:${jacksonVersion}"
     implementation "com.google.code.gson:gson:${gsonVersion}"
     // Used for downloading route documents
     implementation "io.vantiq:vantiq-sdk:${vantiqSDKVersion}"
@@ -72,13 +70,13 @@ dependencies {
     // End of DSL-specific inclusions.
 
     testImplementation project(path: ":camelComponent", configuration: "testArtifacts")
-    testImplementation "org.apache.logging.log4j:log4j-slf4j-impl:${log4JVersion}"
+    testImplementation "org.apache.logging.log4j:log4j-slf4j2-impl:${log4JVersion}"
     testImplementation "org.apache.camel:camel-test-junit5:${camelVersion}"
     testImplementation "io.vantiq:vantiq-sdk:${vantiqSDKVersion}"
     testImplementation project(path: ":extjsdk", configuration: 'testArtifacts')
     testImplementation "dnsjava:dnsjava:${dnsJavaVersion}"
-    testImplementation("junit:junit:${junitVersion}")
-    testRuntimeOnly("org.junit.vintage:junit-vintage-engine:${junitVintageEngineVersion}")
+    testImplementation "org.junit.jupiter:junit-jupiter-api:${junit5Version}"
+    testRuntimeOnly "org.junit.jupiter:junit-jupiter-engine:${junit5Version}"
 }
 
 jar {
