@@ -58,10 +58,11 @@ public class CamelResolver {
     
     private static int unnamedResolverCount = 0;
     private static final String DEFAULT_CONFIGURATION = "default";
+    
     private static final String ANY_CONFIGURATION = "*";
     
     private static final Map<String, String> typeOverrides = Map.of(
-            "com.atlassian.sal:sal-api:4.4.2", "jar"
+            "com.atlassian.sal:sal-api:*", "jar"
     );
     
     /**
@@ -100,6 +101,7 @@ public class CamelResolver {
             // Turn on voluminous Ivy output in trace case....
             Message.setDefaultLogger(new DefaultMessageLogger(Message.MSG_VERBOSE));
         }
+        
         //creates clear ivy settings
         ivySettings = new IvySettings();
         if (cache != null) {
@@ -108,7 +110,7 @@ public class CamelResolver {
         // resolver for configuration of maven repos.  Defaults to including maven central
         resolver = new ChainResolver();
         resolver.setName(name + "::Chain");
-        if (repos.size() > 0) {
+        if (!repos.isEmpty()) {
             for (URI repo : repos) {
                 IBiblioResolver aResolver = new IBiblioResolver();
                 try {
@@ -118,9 +120,9 @@ public class CamelResolver {
                 } catch (MalformedURLException mue) {
                     throw new IllegalArgumentException("Malformed repos URL: " + repo, mue);
                 }
-                
                 aResolver.setM2compatible(true);
                 aResolver.setUsepoms(true);
+                aResolver.setSettings(ivySettings);
                 resolver.add(aResolver);
             }
         } else {
@@ -129,9 +131,11 @@ public class CamelResolver {
             aResolver.setM2compatible(true);
             aResolver.setUsepoms(true);
             aResolver.setName(name);
+            aResolver.setSettings(ivySettings);
             resolver.add(aResolver);
         }
         //adding maven repos resolver
+        resolver.setSettings(ivySettings);
         ivySettings.addResolver(resolver);
         //set to the default resolver
         ivySettings.setDefaultResolver(resolver.getName());
@@ -142,6 +146,7 @@ public class CamelResolver {
         resolveOptions.setConfs(confs);
         resolveOptions.setTransitive(true);
         resolveOptions.setDownload(true);
+        resolveOptions.setCheckIfChanged(true);
         if (!log.isTraceEnabled()) {
             // Reduce the volume of output from Ivy unless we really need/want it.
             resolveOptions.setLog(LogOptions.LOG_QUIET);
@@ -210,7 +215,7 @@ public class CamelResolver {
                                                                          false,
                                                                          false,
                                                                          true);
-        dd.addDependencyConfiguration(DEFAULT_CONFIGURATION, ANY_CONFIGURATION);
+        dd.addDependencyConfiguration(DEFAULT_CONFIGURATION, DEFAULT_CONFIGURATION);
 
         if (type != null) {
             Artifact typedArtifact = new DefaultArtifact(ModuleRevisionId.newInstance(organization, name, revision),
@@ -243,7 +248,8 @@ public class CamelResolver {
                 // We should get called only with the correct set, but I have seen things behave differently, so
                 // better to be safe.  So here we check that the passed-in dependency (target*) match the type
                 // overrides for which this DependencyDescriptorMediator is being constructed.
-                if (parts[0].equals(targetOrg) && parts[1].equals(targetName) && parts[2].equals(targetRev)) {
+                if (parts[0].equals(targetOrg) && parts[1].equals(targetName) && (parts[2].equals("*") ||
+                        parts[2].equals(targetRev))) {
                     log.trace(">>>> Specifying artifact for {}:{}:{}:{}", targetOrg, targetName, targetRev,
                               newType);
                     DependencyArtifactDescriptor dad =
@@ -252,7 +258,7 @@ public class CamelResolver {
                     if (dependencyDescriptor instanceof DefaultDependencyDescriptor) {
                         // PomModuleDescriptorBuilder.PomDependencyDescriptor is based on
                         // DefaultDependencyDescriptor so this covers that case as well.
-                        
+
                         // In this case, just update the existing dependency
                         ((DefaultDependencyDescriptor)
                                 dependencyDescriptor).addDependencyArtifact(ANY_CONFIGURATION, dad);
@@ -294,9 +300,12 @@ public class CamelResolver {
         ResolveReport report = ivy.resolve(md, resolveOptions);
         
         if (report.hasError()) {
-            // If we get errors, notify our users and fail.
-            throw new ResolutionException(identity() + ": Error(s) encountered during resolution: " +
-                                                  String.join(", ", report.getAllProblemMessages()));
+            // If we get errors, notify our users.  We don't fail here since our user may have worked around things
+            // using our additionalLibraries functionality.  There are cases (seemingly due to misconfigured repos)
+            // where this is necessary.
+            report.getAllProblemMessages().forEach( (problemMesssage) ->
+                            log.warn("Error during artifact resolution: {} -- ignoring this to allow compensation.",
+                                                                              problemMesssage));
         }
         if (log.isTraceEnabled()) {
             // do long-winded report only when requested

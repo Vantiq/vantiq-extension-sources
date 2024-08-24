@@ -328,6 +328,7 @@ public class CamelRunner extends MainSupport implements Closeable {
                 // seems cleaner.  Notify about the problems closer to the source.
                 Collection<File> resolved = cr.resolve(compParts[0], compParts[1], compParts[2],
                                                        "Additional Library Resolution: " + comp);
+                log.debug("Additional Library resolution: {}", resolved);
                 jarSet.addAll(resolved);
             }
         }
