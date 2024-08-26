@@ -494,7 +494,6 @@ public class VantiqComponentDiscoveryTest extends CamelTestSupport {
             RouteBuilder rb = new XmlRouteBuilder(content).getRouteBuilder();
             rb.configure();
             this.getRouteCollection().setRoutes(rb.getRoutes().getRoutes());
-//            this.setRouteCollection(rb.getRouteCollection());
         }
     }
     
@@ -525,7 +524,6 @@ public class VantiqComponentDiscoveryTest extends CamelTestSupport {
             
             RouteBuilder rb = new XmlRouteBuilder(content).getRouteBuilder();
             rb.configure();
-//            this.setRouteCollection(rb.getRouteCollection());
             this.getRouteCollection().setRoutes(rb.getRoutes().getRoutes());
         }
     }
@@ -556,7 +554,6 @@ public class VantiqComponentDiscoveryTest extends CamelTestSupport {
                     + "    </routes>";
             RouteBuilder rb = new XmlRouteBuilder(content).getRouteBuilder();
             rb.configure();
-//            this.setRouteCollection(rb.getRouteCollection());
             this.getRouteCollection().setRoutes(rb.getRoutes().getRoutes());
         }
         
@@ -627,7 +624,6 @@ public class VantiqComponentDiscoveryTest extends CamelTestSupport {
             // YAML support needs a camel context.  So provide one during setup...
             RouteBuilder rb = new YamlRouteBuilder(ctx, content).getRouteBuilder();
             rb.configure();
-//            this.setRouteCollection(rb.getRouteCollection());
             this.getRouteCollection().setRoutes(rb.getRoutes().getRoutes());
         }
     }

@@ -325,7 +325,7 @@ public class VantiqComponentResolverTest extends CamelTestSupport {
         repoList.add(new URI("https://repo1.maven.org/maven2"));
         repoList.add(new URI("https://packages.atlassian.com/mvn/maven-external/"));
         
-        // Something about the combination of the atlassian repo & our ivy setup is working has these libraries not
+        // Something about the combination of the atlassian repo & (maybe) our ivy setup is working has these libraries not
         // found when retrieved via dependency mapping.  This is the only project/component in which this happens.
         // To remedy this for the moment, we'll just add them manually and things work just fine.
         //
