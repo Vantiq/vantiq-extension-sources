@@ -8,18 +8,27 @@
 
 package io.vantiq.extsrc.camelconn.discover;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
+
+import lombok.extern.slf4j.Slf4j;
 import org.apache.camel.CamelContext;
-import org.apache.camel.ExtendedCamelContext;
 import org.apache.camel.builder.RouteBuilder;
 import org.apache.camel.dsl.yaml.YamlRoutesBuilderLoader;
 import org.apache.camel.impl.engine.DefaultComponentResolver;
 import org.apache.camel.spi.ComponentResolver;
 import org.apache.camel.spi.Resource;
+import org.apache.camel.support.PluginHelper;
 import org.apache.camel.support.ResourceHelper;
-import org.apache.camel.test.junit4.CamelTestSupport;
+import org.apache.camel.test.junit5.CamelTestSupport;
 import org.apache.camel.dsl.xml.io.XmlRoutesBuilderLoader;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 
 import java.net.URI;
 import java.util.ArrayList;
@@ -32,13 +41,15 @@ import java.util.Set;
 /**
  * Perform unit tests for component discovery
  */
+
+@Slf4j
 public class VantiqComponentDiscoveryTest extends CamelTestSupport {
     
     private final String routeStartUri = "direct:start";
     private final String routeEndUri = "mock:direct:result";
     private static String vantiqEndpointUri;
     
-    @BeforeClass
+    @BeforeAll
     public static void setup() throws Exception {
         URI vuri = new URI("http://localhost:8080");
         String endpointUri = CamelDiscovery.VANTIQ_COMPONENT_SCHEME + "://" + vuri.getHost();
@@ -58,16 +69,15 @@ public class VantiqComponentDiscoveryTest extends CamelTestSupport {
         CamelDiscovery cd = new CamelDiscovery();
         String artifactVersion = cd.getComponentListVersion();
         String camelVersion = context.getVersion();
-        assertTrue("Build version " + artifactVersion + " is incompatible with camel version " + camelVersion,
-                   cd.isVersionCompatible(camelVersion));
-        assertFalse("Bad version -- too short", cd.isVersionCompatible("1"));
-        assertFalse("Bad version -- Major different", cd.isVersionCompatible("6000.3456"));
+        assertTrue(cd.isVersionCompatible(camelVersion),
+                   "Build version " + artifactVersion + " is incompatible with camel version " + camelVersion);
+        assertFalse(cd.isVersionCompatible("1"), "Bad version -- too short");
+        assertFalse(cd.isVersionCompatible("6000.3456"), "Bad version -- Major different");
         String[] camelVersionParts = camelVersion.split("\\.");
-        assertFalse("Bad version -- Minor different",
-                    cd.isVersionCompatible(camelVersionParts[0] + ".9247877"));
-        assertTrue("Different extraneous parts",
-                   cd.isVersionCompatible(camelVersionParts[0] + "." + camelVersionParts[1] +
-                           "." + "1234.566778"));
+        assertFalse(cd.isVersionCompatible(camelVersionParts[0] + ".9247877"),
+                    "Bad version -- Minor different");
+        assertTrue(cd.isVersionCompatible(camelVersionParts[0] + "." + camelVersionParts[1] +
+                           "." + "1234.566778"), "Different extraneous parts");
     }
     
     @Test
@@ -81,12 +91,12 @@ public class VantiqComponentDiscoveryTest extends CamelTestSupport {
         CamelDiscovery cd = new CamelDiscovery();
         String artifactVersion = cd.getComponentListVersion();
         String camelVersion = context.getVersion();
-        assertTrue("Build version " + artifactVersion + " is incompatible with camel version " + camelVersion,
-            cd.isVersionCompatible(camelVersion));
+        assertTrue(cd.isVersionCompatible(camelVersion),
+                   "Build version " + artifactVersion + " is incompatible with camel version " + camelVersion);
         
         shouldExist.forEach(comp -> {
             try {
-                assertNotNull("Missing loadable for " + comp, cd.findComponentForScheme(comp));
+                assertNotNull(cd.findComponentForScheme(comp), "Missing loadable for " + comp);
             } catch (DiscoveryException de) {
                 fail("Trapped exception looking up " + comp +"::" + de.getMessage());
             }
@@ -94,7 +104,7 @@ public class VantiqComponentDiscoveryTest extends CamelTestSupport {
     
         shouldNotExist.forEach(comp -> {
             try {
-                assertNull("Extraneous loadable for " + comp, cd.findComponentForScheme(comp));
+                assertNull(cd.findComponentForScheme(comp), "Extraneous loadable for " + comp);
             } catch (DiscoveryException de) {
                 fail("Trapped exception looking up " + comp +"::" + de.getMessage());
             }
@@ -112,12 +122,12 @@ public class VantiqComponentDiscoveryTest extends CamelTestSupport {
         CamelDiscovery cd = new CamelDiscovery();
         String artifactVersion = cd.getComponentListVersion();
         String camelVersion = context.getVersion();
-        assertTrue("Build version " + artifactVersion + " is incompatible with camel version " + camelVersion,
-                   cd.isVersionCompatible(camelVersion));
+        assertTrue(cd.isVersionCompatible(camelVersion),
+                   "Build version " + artifactVersion + " is incompatible with camel version " + camelVersion);
         
         shouldExist.forEach(df -> {
             try {
-                assertNotNull("Missing loadable for " + df, cd.findDataFormatForName(df));
+                assertNotNull(cd.findDataFormatForName(df), "Missing loadable for " + df);
             } catch (DiscoveryException de) {
                 fail("Trapped exception looking up " + df +"::" + de.getMessage());
             }
@@ -125,7 +135,7 @@ public class VantiqComponentDiscoveryTest extends CamelTestSupport {
         
         shouldNotExist.forEach(df -> {
             try {
-                assertNull("Extraneous loadable for " + df, cd.findDataFormatForName(df));
+                assertNull(cd.findDataFormatForName(df), "Extraneous loadable for " + df);
             } catch (DiscoveryException de) {
                 fail("Trapped exception looking up " + df +"::" + de.getMessage());
             }
@@ -137,10 +147,11 @@ public class VantiqComponentDiscoveryTest extends CamelTestSupport {
      */
     @Test
     public void testTranscription() {
-        assert EnumeratingComponentResolver.CORE_COMPONENTS_SCHEMES.size() == 26;
-        ComponentResolver cr = context.adapt(ExtendedCamelContext.class).getComponentResolver();
-        assertTrue("Non-default component resolver: " + cr.getClass().getName(),
-                cr instanceof DefaultComponentResolver);
+        assertEquals(24, EnumeratingComponentResolver.CORE_COMPONENTS_SCHEMES.size(),
+                     "EnumeratingComponentResolver.CORE_COMPONENTS_SCHEME size");
+        ComponentResolver cr = PluginHelper.getComponentResolver(context);
+        assertInstanceOf(DefaultComponentResolver.class, cr,
+                         "Non-default component resolver: " + cr.getClass().getName());
         List<String> failureList = new ArrayList<>();
         EnumeratingComponentResolver.CORE_COMPONENTS_SCHEMES.forEach( comp -> {
             if (EnumeratingComponentResolver.NONLOADABLE_CORE_COMPONENT_SCHEMES.contains(comp)) {
@@ -159,7 +170,7 @@ public class VantiqComponentDiscoveryTest extends CamelTestSupport {
             }
         });
         failureList.forEach(failure -> log.error("Failed to load component: {}", failure));
-        assertEquals("Failed to load components", 0, failureList.size());
+        assertEquals(0, failureList.size(), "Failed to load components");
     }
     
     /**
@@ -231,37 +242,40 @@ public class VantiqComponentDiscoveryTest extends CamelTestSupport {
     
         discResults.get(CamelDiscovery.COMPONENTS_TO_LOAD).forEach(comp -> {
             log.debug("    ---> {}", comp);
-            assertTrue("Unexpected component to load: " + comp, expectedCTL.contains(comp));
+            assertTrue(expectedCTL.contains(comp), "Unexpected component to load: " + comp);
         });
     
         discResults.get(CamelDiscovery.SYSTEM_COMPONENTS).forEach(comp -> {
             log.debug("    ---> {}", comp);
-            assertTrue("Unexpected system component: " + comp, expectedSysComp.contains(comp));
+            assertTrue(expectedSysComp.contains(comp), "Unexpected system component: " + comp);
     
         });
-        assertEquals("Enumerated Components:",
-                     expectedCTL.size(),  discResults.get(CamelDiscovery.COMPONENTS_TO_LOAD).size());
-        assertEquals("System Components:", expectedSysComp.size(),
-                     discResults.get(CamelDiscovery.SYSTEM_COMPONENTS).size());
+        assertEquals(expectedCTL.size(),  discResults.get(CamelDiscovery.COMPONENTS_TO_LOAD).size(),
+                     "Enumerated Components:");
+        assertEquals(expectedSysComp.size(),
+                     discResults.get(CamelDiscovery.SYSTEM_COMPONENTS).size(),
+                     "System Components:");
     
         discResults.get(CamelDiscovery.DATAFORMATS_TO_LOAD).forEach(df -> {
             log.debug("    ---> {}", df);
-            assertTrue("Unexpected dataformat to load: " + df, expectedDFL.contains(df));
+            assertTrue(expectedDFL.contains(df), "Unexpected dataformat to load: " + df);
         });
     
         discResults.get(CamelDiscovery.SYSTEM_DATAFORMATS).forEach(df -> {
             log.debug("    ---> {}", df);
-            assertTrue("Unexpected system dataformat: " + df, expectedSysDF.contains(df));
+            assertTrue(expectedSysDF.contains(df), "Unexpected system dataformat: " + df);
         
         });
-        assertEquals("Enumerated Components:",
-                     expectedCTL.size(),  discResults.get(CamelDiscovery.COMPONENTS_TO_LOAD).size());
-        assertEquals("System Components:", expectedSysComp.size(),
-                     discResults.get(CamelDiscovery.SYSTEM_COMPONENTS).size());
-        assertEquals("Enumerated DataFormats:",
-                     expectedDFL.size(),  discResults.get(CamelDiscovery.DATAFORMATS_TO_LOAD).size());
-        assertEquals("System DataFormats:", expectedSysDF.size(),
-                     discResults.get(CamelDiscovery.SYSTEM_DATAFORMATS).size());
+        assertEquals(expectedCTL.size(),  discResults.get(CamelDiscovery.COMPONENTS_TO_LOAD).size(),
+                     "Enumerated Components:");
+        assertEquals(expectedSysComp.size(),
+                     discResults.get(CamelDiscovery.SYSTEM_COMPONENTS).size(),
+                     "System Components:");
+        assertEquals(expectedDFL.size(), (discResults.get(CamelDiscovery.DATAFORMATS_TO_LOAD).size()),
+                     "Enumerated DataFormats:");
+        assertEquals(expectedSysDF.size(),
+                     discResults.get(CamelDiscovery.SYSTEM_DATAFORMATS).size(),
+                     "System DataFormats:");
     
         // Double check that things are loadable
     
@@ -271,7 +285,7 @@ public class VantiqComponentDiscoveryTest extends CamelTestSupport {
                     String loadable = discoverer.findComponentForScheme(compSchema);
                     log.debug("Need to load {} for scheme: {}", loadable, compSchema);
                     
-                    assertNotNull("Missing loadable artifact: " + compSchema, loadable);
+                    assertNotNull(loadable, "Missing loadable artifact: " + compSchema);
                 }
             } catch (DiscoveryException de) {
                 fail("Trapped DiscoveryException: " + de.getMessage());
@@ -282,7 +296,7 @@ public class VantiqComponentDiscoveryTest extends CamelTestSupport {
             try {
                 String loadable = discoverer.findDataFormatForName(dfName);
                 log.debug("Need to load {} for name: {}", loadable, dfName);
-                assertNotNull("Missing loadable dataFormat artifact: " + dfName, loadable);
+                assertNotNull(loadable, "Missing loadable dataFormat artifact: " + dfName);
             } catch (DiscoveryException de) {
                 fail("Trapped DiscoveryException: " + de.getMessage());
             }
@@ -293,7 +307,7 @@ public class VantiqComponentDiscoveryTest extends CamelTestSupport {
             try {
                 String loadable = discoverer.findComponentForScheme(compSchema);
                 log.debug("Need to load {} for scheme: {}", loadable, compSchema);
-                assertNotNull("Missing loadable artifact: " + compSchema, loadable);
+                assertNotNull(loadable, "Missing loadable artifact: " + compSchema);
             } catch (DiscoveryException de) {
                 fail("Trapped DiscoveryException: " + de.getMessage());
             }
@@ -304,7 +318,7 @@ public class VantiqComponentDiscoveryTest extends CamelTestSupport {
             try {
                 String loadable = discoverer.findDataFormatForName(dfName);
                 log.debug("Need to load {} for name: {}", loadable, dfName);
-                assertNotNull("Missing loadable artifact: " + dfName, loadable);
+                assertNotNull(loadable ,"Missing loadable artifact: " + dfName);
             } catch (DiscoveryException de) {
                 fail("Trapped DiscoveryException: " + de.getMessage());
             }
@@ -352,7 +366,7 @@ public class VantiqComponentDiscoveryTest extends CamelTestSupport {
             from(routeStartUri)
                     .to("log:debug")
                     .to("mock:foobar")
-                    .to("direct-vm:something");
+                    .to("direct:something");
             
             
             from(vantiqEndpointUri)
@@ -363,7 +377,7 @@ public class VantiqComponentDiscoveryTest extends CamelTestSupport {
         }
         
         public List<String> getExpectedSystemComponents() {
-            return List.of("direct-vm", "direct", "mock", "log");
+            return List.of("direct", "mock", "log");
         }
     }
     
@@ -403,9 +417,7 @@ public class VantiqComponentDiscoveryTest extends CamelTestSupport {
                 .choice()
                     .when(xpath("/record/error"))
                         .to("log:error")
-                        .to("jmx:queue:errorNotification?acceptMessagesWhileStopping=false" +
-                            "&acknowledgementModeName=CLIENT_ACKNOWLEDGE&cacheLevelName=NONE" +
-                            "&deliveryMode=PERSISTENT")
+                        .to("jmx:queue:errorNotification")
                     .otherwise()
                         .to(vantiqEndpointUri);
         }
@@ -481,12 +493,22 @@ public class VantiqComponentDiscoveryTest extends CamelTestSupport {
                     + "</routes>";
             RouteBuilder rb = new XmlRouteBuilder(content).getRouteBuilder();
             rb.configure();
-            this.setRouteCollection(rb.getRouteCollection());
+            this.getRouteCollection().setRoutes(rb.getRoutes().getRoutes());
         }
     }
     
     private static class ComplexXmlRoutes extends RouteBuilder implements TestExpectations {
-    
+        
+        private String content = ""
+                + "    <routes>"
+                + "        <route id=\"salesforce1\">"
+                + "            <from uri=\"salesforce:CamelTestTopic?notifyForFields=ALL"
+                + "&amp;notifyForOperations=ALL&amp;sObjectName=Merchandise__c&amp;updateTopic=true"
+                + "&amp;sObjectQuery=SELECT Id, Name FROM Merchandise__c\"/>"
+                + "            <to uri=\"salesforce:createSObject?sObjectName=TestEvent__e\"/>"
+                + "            <to uri=\"direct:salesforce-notifier\"/>"
+                + "        </route>"
+                + "    </routes>";
         @Override
         public List<String> getExpectedComponentsToLoad() {
             return List.of("salesforce");
@@ -494,24 +516,15 @@ public class VantiqComponentDiscoveryTest extends CamelTestSupport {
         
         @Override
         public List<String> getExpectedSystemComponents() {
-            return List.of("direct-vm");
+            return List.of("direct");
         }
         
         @Override
         public void configure() throws Exception {
-            String content = ""
-                    + "    <routes>"
-                    + "        <route id=\"salesforce1\">"
-                    + "            <from uri=\"salesforce:CamelTestTopic?notifyForFields=ALL"
-                    + "&amp;notifyForOperations=ALL&amp;sObjectName=Merchandise__c&amp;updateTopic=true"
-                    + "&amp;sObjectQuery=SELECT Id, Name FROM Merchandise__c\"/>"
-                    + "            <to uri=\"salesforce:createSObject?sObjectName=TestEvent__e\"/>"
-                    + "            <to uri=\"direct-vm:salesforce-notifier\"/>"
-                    + "        </route>"
-                    + "    </routes>";
+            
             RouteBuilder rb = new XmlRouteBuilder(content).getRouteBuilder();
             rb.configure();
-            this.setRouteCollection(rb.getRouteCollection());
+            this.getRouteCollection().setRoutes(rb.getRoutes().getRoutes());
         }
     }
     
@@ -524,7 +537,7 @@ public class VantiqComponentDiscoveryTest extends CamelTestSupport {
         
         @Override
         public List<String> getExpectedSystemComponents() {
-            return List.of("direct-vm");
+            return List.of("direct");
         }
         
         @Override
@@ -541,14 +554,14 @@ public class VantiqComponentDiscoveryTest extends CamelTestSupport {
                     + "    </routes>";
             RouteBuilder rb = new XmlRouteBuilder(content).getRouteBuilder();
             rb.configure();
-            this.setRouteCollection(rb.getRouteCollection());
+            this.getRouteCollection().setRoutes(rb.getRoutes().getRoutes());
         }
         
         public Properties getRequiredProperties() {
             Properties props = new Properties();
             props.setProperty("query", "SELECT Id, Name FROM Merchandise__c");
             props.setProperty("outputObjectName", "TestEvent__e");
-            props.setProperty("directNotifier", "direct-vm:salesforce-notifier");
+            props.setProperty("directNotifier", "direct:salesforce-notifier");
             return props;
         }
     }
@@ -611,7 +624,7 @@ public class VantiqComponentDiscoveryTest extends CamelTestSupport {
             // YAML support needs a camel context.  So provide one during setup...
             RouteBuilder rb = new YamlRouteBuilder(ctx, content).getRouteBuilder();
             rb.configure();
-            this.setRouteCollection(rb.getRouteCollection());
+            this.getRouteCollection().setRoutes(rb.getRoutes().getRoutes());
         }
     }
 }

@@ -9,13 +9,15 @@
 package io.vantiq.extsrc.camel;
 
 import static io.vantiq.extjsdk.Utils.SERVER_CONFIG_FILENAME;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 import org.apache.camel.Endpoint;
 import org.apache.camel.InvalidPayloadException;
 import org.apache.camel.LoggingLevel;
 import org.apache.camel.builder.RouteBuilder;
 import org.apache.camel.model.ModelCamelContext;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.Collection;
 
@@ -59,8 +61,8 @@ public class VantiqEmptyURITest extends VantiqUriTestBase {
             // In the constructed case, these bean-simulation endpoints get registered manually.  Since they have the
             // same endpointUri, they are, in the registry, the same endpoint (same key)..  So verify that that's
             // true.
-            assertEquals("Number of Vantiq endpoints", 1, vantiqEndpoints);
-            assertEquals("Number of Endpoints found", 4, eps.size());
+            assertEquals(1, vantiqEndpoints, "Number of Vantiq endpoints");
+            assertEquals(4, eps.size(), "Number of Endpoints found");
         } finally {
             context.stop();
         }
@@ -132,7 +134,7 @@ public class VantiqEmptyURITest extends VantiqUriTestBase {
                     fve2 = new FauxVantiqEndpoint(null, us);
                     context.addEndpoint(fve2.getEndpointUri(), fve2);
                 } catch (Exception e) {
-                    assertNull("Exception while creating endpoints", e);
+                    assertNull(e, "Exception while creating endpoints");
                 }
     
                 from(routeStartUri)

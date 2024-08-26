@@ -9,7 +9,7 @@ repositories {
 
 ext {
     apacheCommonsLangVersion = '3.12.0'
-    jacksonVersion = '2.14.2'
+    jacksonVersion = '2.14.2' // This is lower than our regular build for compatibility with current Gradle version
     log4JVersion='2.17.2'
     lombokVersion = '1.18.26'
     slf4jApiVersion = '1.7.25'

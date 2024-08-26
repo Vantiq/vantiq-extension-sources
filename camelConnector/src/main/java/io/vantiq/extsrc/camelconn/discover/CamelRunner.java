@@ -328,6 +328,7 @@ public class CamelRunner extends MainSupport implements Closeable {
                 // seems cleaner.  Notify about the problems closer to the source.
                 Collection<File> resolved = cr.resolve(compParts[0], compParts[1], compParts[2],
                                                        "Additional Library Resolution: " + comp);
+                log.debug("Additional Library resolution: {}", resolved);
                 jarSet.addAll(resolved);
             }
         }
@@ -570,11 +571,11 @@ public class CamelRunner extends MainSupport implements Closeable {
         ClassLoader cl = buildClassloader(null, discResults);
         
         ModelCamelContext mcc = (ModelCamelContext) camelContext;
-        ExtendedCamelContext extendedCamelContext = mcc.adapt(ExtendedCamelContext.class);
-        ClassLoader oldAppClassLoader = extendedCamelContext.getApplicationContextClassLoader();
+        ExtendedCamelContext extendedCamelContext = mcc.getCamelContextExtension();
+        ClassLoader oldAppClassLoader = camelContext.getApplicationContextClassLoader();
         try {
-            extendedCamelContext.setApplicationContextClassLoader(cl);
-            RoutesLoader loader = extendedCamelContext.getRoutesLoader();
+            camelContext.setApplicationContextClassLoader(cl);
+            RoutesLoader loader = camelContext.getCamelContextExtension().getContextPlugin(RoutesLoader.class);
             Resource resource = ResourceHelper.fromString("in-memory." + specificationType, specification);
             loader.loadRoutes(resource);
             log.debug("loadRoutesFromText(): routes: {}, routeTemplates: {}", mcc.getRoutes(),
@@ -590,7 +591,7 @@ public class CamelRunner extends MainSupport implements Closeable {
                 String className = rsb == null ? "null" : rsb.getClass().getName();
                 throw new RuntimeException("loadRoutesFromText(): Expected RouteBuilder by got " + className);
             }
-            if (mcc.getRouteTemplateDefinitions().size() > 0) {
+            if (!mcc.getRouteTemplateDefinitions().isEmpty()) {
                 // However, if we have a RouteTemplate rather than a route, we need to construct a route from the template.
                 // We don't (currently) support parameters on templates, we'll simply fetch any templates present and
                 // build the routes from them (property placeholder substitution will work as expected).
@@ -612,13 +613,12 @@ public class CamelRunner extends MainSupport implements Closeable {
                     RouteDefinition rd = mcc.getRouteDefinition(routeId);
                     rsd.route(rd);
                 });
-                rb.setRouteCollection(rsd);
+                rb.getRouteCollection().setRoutes(rsd.getRoutes());
             } // Else, all the work was done by loading the route.  Only templates have the extra steps above
             log.debug("loadRoutesFromText(): Returning RouteBuilder: {}", rb);
             return rb;
         } finally {
-            // TODO -- tbis may need to go as we may need it for dependency determination.
-            extendedCamelContext.setApplicationContextClassLoader(oldAppClassLoader);
+            camelContext.setApplicationContextClassLoader(oldAppClassLoader);
         }
     }
     

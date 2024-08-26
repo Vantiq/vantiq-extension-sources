@@ -17,6 +17,10 @@ import org.apache.camel.impl.DefaultCamelContext;
 import org.apache.camel.model.RouteDefinition;
 import org.apache.camel.reifier.ProcessorReifier;
 import org.apache.camel.reifier.language.ExpressionReifier;
+import org.apache.camel.spi.ComponentResolver;
+import org.apache.camel.spi.ConfigurerResolver;
+import org.apache.camel.spi.DataFormatResolver;
+import org.apache.camel.support.PluginHelper;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -72,25 +76,28 @@ public class CamelDiscovery {
         DefaultCamelContext ctx = new DefaultCamelContext();
     
         try  {
-            ExtendedCamelContext ectx = ctx.adapt(ExtendedCamelContext.class);
-            EnumeratingComponentResolver ecr = new EnumeratingComponentResolver(ectx.getComponentResolver());
-            ectx.setComponentResolver(ecr);
-            EnumeratingDataFormatResolver edfr = new EnumeratingDataFormatResolver(ectx.getDataFormatResolver());
-            ectx.setDataFormatResolver(edfr);
+            ExtendedCamelContext ectx = ctx.getCamelContextExtension();
+            
+            EnumeratingComponentResolver ecr =
+                    new EnumeratingComponentResolver(PluginHelper.getComponentResolver(ectx));
+            ectx.addContextPlugin(ComponentResolver.class, ecr);
+            EnumeratingDataFormatResolver edfr =
+                    new EnumeratingDataFormatResolver(PluginHelper.getDataFormatResolver(ectx));
+            ectx.addContextPlugin(DataFormatResolver.class, edfr);
             EnumeratingConfigurerResolver epcr = new EnumeratingConfigurerResolver();
-            ectx.setConfigurerResolver(epcr);
+            ectx.addContextPlugin(ConfigurerResolver.class, epcr);
             
             // If our current context has property placeholders defined, we'll need to provide them to the context we
             // create for discovery, since things like the URLs could be defined in properties, and that's used for
             // discovery. We define a new context for use here since we're overriding all the resolvers with those
             // specially designed for discovery.
-            ectx.getPropertiesComponent().setInitialProperties(propertyValues);
+            ctx.getPropertiesComponent().setInitialProperties(propertyValues);
 
-            log.debug("Discovering Camel (version {}) components using context: {}", ectx.getVersion(), ectx.getName());
+            log.debug("Discovering Camel (version {}) components using context: {}", ctx.getVersion(), ctx.getName());
     
             try {
-                ectx.addRoutes(rb);
-                ectx.start();
+                ctx.addRoutes(rb);
+                ctx.start();
             } catch (Exception e) {
                 log.error("Trapped exception during component discovery:  ", e);
                 throw new DiscoveryException("Exception during component discovery", e);

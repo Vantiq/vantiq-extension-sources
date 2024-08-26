@@ -15,7 +15,6 @@ ext {
 //    revision = git.head().id
 
     vertxVersion = '3.5.1'
-    jacksonVersion = '2.9.3'
     hazelcastVersion = '3.8.2'
     metricsVersion = '4.0.2'
     rxjavaVersion = '2.1.11'

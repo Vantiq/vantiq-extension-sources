@@ -1,15 +1,15 @@
 package io.vantiq.extsrc.camel;
 
-import static org.assertj.core.api.Fail.fail;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
+import static org.junit.jupiter.api.Assertions.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 import io.vantiq.extjsdk.ExtensionWebSocketClient;
 import io.vantiq.extsrc.camel.utils.ClientRegistry;
 import org.apache.camel.CamelException;
-import org.junit.After;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Test;
 
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -23,7 +23,7 @@ public class ClientRegistryTest {
     private final static String SERVER_URL_W_SPACES = "   " + SERVER_URL + "/  ";
     
     
-    @After
+    @AfterEach
     public void removeDetritus() {
         removeClient(SOURCE_NAME, SERVER_URL);
         removeClient(SOURCE_NAME_2, SERVER_URL);
@@ -35,7 +35,7 @@ public class ClientRegistryTest {
     public void testNotThere() {
         ExtensionWebSocketClient client =
                 ClientRegistry.fetchClient(SOURCE_NAME, SERVER_URL);
-        assertNull("Client should be null", client);
+        assertNull(client, "Client should be null");
     }
     
     @Test
@@ -46,24 +46,24 @@ public class ClientRegistryTest {
             ClientRegistry.registerClient(SOURCE_NAME, SERVER_URL, client);
             ExtensionWebSocketClient foundClient =
                     ClientRegistry.fetchClient("bar", SERVER_URL);
-            assertNull("Client should be null", foundClient);
+            assertNull(foundClient, "Client should be null");
             foundClient = ClientRegistry.fetchClient(SOURCE_NAME, SERVER_URL);
-            assertNotNull("Client should be found", foundClient);
+            assertNotNull(foundClient, "Client should be found");
             assertEquals(client, foundClient);
     
             foundClient = ClientRegistry.fetchClient(SOURCE_NAME, SERVER_URL);
-            assertNotNull("Client should be found", foundClient);
+            assertNotNull(foundClient, "Client should be found");
             assertEquals(client, foundClient);
     
             foundClient = ClientRegistry.fetchClient(SOURCE_NAME, SERVER_URL + "/");
-            assertNotNull("Normalized URL-based client should be found", foundClient);
+            assertNotNull(foundClient, "Normalized URL-based client should be found");
             assertEquals(client, foundClient);
         } finally {
             // Verify remove functionality
             ExtensionWebSocketClient removedClient = ClientRegistry.removeClient(SOURCE_NAME, SERVER_URL, null);
-            assertNotNull("Client should exist before removal", removedClient);
+            assertNotNull(removedClient, "Client should exist before removal");
             removedClient = ClientRegistry.fetchClient(SOURCE_NAME, SERVER_URL);
-            assertNull("Client should be null after remove", removedClient);
+            assertNull(removedClient, "Client should be null after remove");
         }
     }
     
@@ -74,7 +74,7 @@ public class ClientRegistryTest {
         buildAndVerify(SOURCE_NAME, SERVER_URL_2, true);
         buildAndVerify(SOURCE_NAME_2, SERVER_URL_2, true);
         
-        assertEquals("Known client count", 4, ClientRegistry.getKnownClientCount());
+        assertEquals(4, ClientRegistry.getKnownClientCount(), "Known client count");
     }
     
     @Test
@@ -84,14 +84,14 @@ public class ClientRegistryTest {
         buildAndVerify(SOURCE_NAME, SERVER_URL_2, true);
         buildAndVerify(SOURCE_NAME_2, SERVER_URL_2,true);
     
-        assertEquals("Known client count", 4, ClientRegistry.getKnownClientCount());
+        assertEquals(4, ClientRegistry.getKnownClientCount(), "Known client count");
     
         buildAndVerify(SOURCE_NAME_2, SERVER_URL_2, false);
         buildAndVerify(SOURCE_NAME, SERVER_URL_2, false);
         buildAndVerify(SOURCE_NAME_2, SERVER_URL, false);
         buildAndVerify(SOURCE_NAME, SERVER_URL, false);
         
-        assertEquals("Known client count after duplicate creates", 4, ClientRegistry.getKnownClientCount());
+        assertEquals(4, ClientRegistry.getKnownClientCount(), "Known client count after duplicate creates");
     }
     
     @Test
@@ -99,7 +99,7 @@ public class ClientRegistryTest {
         buildAndVerify(SOURCE_NAME, SERVER_URL, true);
         buildAndVerify(SOURCE_NAME, SERVER_URL_W_SPACES, false);
         
-        assertEquals("Known client count", 1, ClientRegistry.getKnownClientCount());
+        assertEquals(1, ClientRegistry.getKnownClientCount(), "Known client count");
     }
     
     @Test
@@ -149,21 +149,21 @@ public class ClientRegistryTest {
         });
     
         if (shouldBeCreated) {
-            assertNotNull("Client should've been created", client.get());
+            assertNotNull(client.get(), "Client should've been created");
         } else {
-            assertNull("Should not be created", client.get());
+            assertNull(client.get(), "Should not be created");
         }
         ExtensionWebSocketClient foundClient = ClientRegistry.fetchClient(srcName, target);
-        assertNotNull("Client should be registered", foundClient);
+        assertNotNull(foundClient, "Client should be registered");
         if (shouldBeCreated) {
-            assertEquals("Registered client should be what we created", foundClient, client.get());
+            assertEquals(foundClient, client.get(), "Registered client should be what we created");
         }
-        assertEquals("Source name match", srcName, foundClient.getSourceName());
+        assertEquals(srcName, foundClient.getSourceName(), "Source name match");
     }
     
     private void removeClient(String srcName, String target) {
         ClientRegistry.removeClient(srcName, target, null);
         ExtensionWebSocketClient removedClient = ClientRegistry.fetchClient(srcName, target);
-        assertNull("Client should be null after remove", removedClient);
+        assertNull(removedClient, "Client should be null after remove");
     }
 }

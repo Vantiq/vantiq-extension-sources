@@ -13,9 +13,15 @@ import static io.vantiq.extsrc.camel.VantiqEndpoint.CONSUMER_OUTPUT_JSON_PARAM;
 import static io.vantiq.extsrc.camel.VantiqEndpoint.CONSUMER_OUTPUT_JSON_STREAM_PARAM;
 import static io.vantiq.extsrc.camel.VantiqEndpoint.HEADER_DUPLICATION_BEAN_NAME;
 import static io.vantiq.extsrc.camel.VantiqEndpoint.SOURCE_NAME_PARAM;
-import static io.vantiq.extsrc.camel.VantiqEndpoint.STRUCTURED_MESSAGE_HEADER_PARAM;
 import static io.vantiq.extsrc.camel.VantiqEndpoint.STRUCTURED_MESSAGE_HEADERS_PROPERTY;
+import static io.vantiq.extsrc.camel.VantiqEndpoint.STRUCTURED_MESSAGE_HEADER_PARAM;
 import static io.vantiq.extsrc.camel.VantiqEndpoint.STRUCTURED_MESSAGE_MESSAGE_PROPERTY;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -28,6 +34,20 @@ import io.vantiq.extjsdk.FalseClient;
 import io.vantiq.extjsdk.FalseWebSocket;
 import io.vantiq.extjsdk.Response;
 import io.vantiq.extjsdk.TestListener;
+import lombok.extern.slf4j.Slf4j;
+import okhttp3.WebSocket;
+import okio.ByteString;
+import org.apache.camel.Exchange;
+import org.apache.camel.ExchangePattern;
+import org.apache.camel.InvalidPayloadException;
+import org.apache.camel.LoggingLevel;
+import org.apache.camel.StreamCache;
+import org.apache.camel.builder.RouteBuilder;
+import org.apache.camel.component.mock.MockEndpoint;
+import org.apache.camel.converter.stream.ByteArrayInputStreamCache;
+import org.apache.camel.converter.stream.InputStreamCache;
+import org.apache.camel.test.junit5.CamelTestSupport;
+import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -43,20 +63,8 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
-import okhttp3.WebSocket;
-import okio.ByteString;
-import org.apache.camel.Exchange;
-import org.apache.camel.ExchangePattern;
-import org.apache.camel.InvalidPayloadException;
-import org.apache.camel.LoggingLevel;
-import org.apache.camel.StreamCache;
-import org.apache.camel.builder.RouteBuilder;
-import org.apache.camel.component.mock.MockEndpoint;
-import org.apache.camel.converter.stream.ByteArrayInputStreamCache;
-import org.apache.camel.converter.stream.InputStreamCache;
-import org.apache.camel.test.junit4.CamelTestSupport;
-import org.junit.Test;
 
+@Slf4j
 public class VantiqComponentTest extends CamelTestSupport {
     
     private static final String testSourceName = "camelSource";
@@ -274,7 +282,6 @@ public class VantiqComponentTest extends CamelTestSupport {
         }
     }
     
-    
     @Test
     public void testVantiqProducerStructuredJson() {
         
@@ -449,7 +456,7 @@ public class VantiqComponentTest extends CamelTestSupport {
                         (Map<String, Object>) msg.get(STRUCTURED_MESSAGE_HEADERS_PROPERTY);
                 assert hdrs != null;
                 expHdrs.forEach( (key, value) -> {
-                    assertTrue("Missing header " + key, hdrs.containsKey(key));
+                    assertTrue(hdrs.containsKey(key), "Missing header " + key);
                     log.debug("For key {}, comparing value {} ({}) with expected {} ({}).",
                               key, hdrs.get(key),
                               hdrs.get(key) != null ? hdrs.get(key).getClass().getName() : hdrs.get(key),
@@ -523,7 +530,7 @@ public class VantiqComponentTest extends CamelTestSupport {
     
         mocked.await(5L, TimeUnit.SECONDS);
     
-        assertEquals("Mocked service expected vs. actual", itemCount, mocked.getReceivedCounter());
+        assertEquals(itemCount, mocked.getReceivedCounter(), "Mocked service expected vs. actual");
     }
     
     @Test
@@ -563,7 +570,7 @@ public class VantiqComponentTest extends CamelTestSupport {
         // Consumers run in BG threads, so wait a bit for those to finish.
         mocked.await(5L, TimeUnit.SECONDS);
         
-        assertEquals("Mocked service expected vs. actual", expectedMsgCount, mocked.getReceivedCounter());
+        assertEquals(expectedMsgCount, mocked.getReceivedCounter(), "Mocked service expected vs. actual");
         List<Exchange> exchanges = mocked.getReceivedExchanges();
         Set<String> uniqueMsgs = new HashSet<>();
         exchanges.forEach(exchange -> {
@@ -631,8 +638,8 @@ public class VantiqComponentTest extends CamelTestSupport {
         // Consumers run in BG threads, so wait a bit for those to finish.
         mocked.await(5L, TimeUnit.SECONDS);
         
-        assertEquals("Mocked service expected vs. actual", mapMsgCount + extraTestMsgs.size(),
-                     mocked.getReceivedCounter());
+        assertEquals(mapMsgCount + extraTestMsgs.size(), mocked.getReceivedCounter(),
+                     "Mocked service expected vs. actual");
         List<Exchange> exchanges = mocked.getReceivedExchanges();
         Set<String> uniqueMsgs = new HashSet<>();
         AtomicInteger msgsReceived = new AtomicInteger();
@@ -641,7 +648,7 @@ public class VantiqComponentTest extends CamelTestSupport {
             Object msg = deserializeJsonBody(exchangeBody, mapper, streamRequired);
 
             msgsReceived.addAndGet(1);
-             assertNotNull("Deserialized msg is null", msg);
+             assertNotNull(msg, "Deserialized msg is null");
             if (msg instanceof Map) {
                 assert ((Map<?,?>) msg).containsKey(TEST_MSG_KEY);
                 assert ((Map<?,?>) msg).get(TEST_MSG_KEY) instanceof String;
@@ -723,8 +730,8 @@ public class VantiqComponentTest extends CamelTestSupport {
         // Consumers run in BG threads, so wait a bit for those to finish.
         mocked.await(5L, TimeUnit.SECONDS);
         
-        assertEquals("Mocked service expected vs. actual", mapMsgCount + extraTestMsgs.size(),
-                     mocked.getReceivedCounter());
+        assertEquals(mapMsgCount + extraTestMsgs.size(), mocked.getReceivedCounter(),
+                     "Mocked service expected vs. actual");
         List<Exchange> exchanges = mocked.getReceivedExchanges();
         Set<String> uniqueMsgs = new HashSet<>();
         AtomicInteger msgsReceived = new AtomicInteger();
@@ -829,8 +836,8 @@ public class VantiqComponentTest extends CamelTestSupport {
         // Consumers run in BG threads, so wait a bit for those to finish.
         mocked.await(5L, TimeUnit.SECONDS);
         
-        assertEquals("Mocked service expected vs. actual", mapMsgCount + extraTestMsgs.size(),
-                     mocked.getReceivedCounter());
+        assertEquals(mapMsgCount + extraTestMsgs.size(), mocked.getReceivedCounter(),
+                     "Mocked service expected vs. actual");
         List<Exchange> exchanges = mocked.getReceivedExchanges();
         Set<String> uniqueMsgs = new HashSet<>();
         AtomicInteger msgsReceived = new AtomicInteger();
@@ -839,7 +846,7 @@ public class VantiqComponentTest extends CamelTestSupport {
             Object msg = deserializeJsonBody(exchangeBody, mapper, streamRequired);
             Map<String, Object> exchangeHdrs = exchange.getIn().getHeaders();
             msgsReceived.addAndGet(1);
-            assertNotNull("Deserialized msg is null", msg);
+            assertNotNull(msg, "Deserialized msg is null");
             if (msg instanceof Map) {
                 assert ((Map<?,?>) msg).containsKey(TEST_MSG_KEY);
                 assert ((Map<?,?>) msg).get(TEST_MSG_KEY) instanceof String;
@@ -924,7 +931,7 @@ public class VantiqComponentTest extends CamelTestSupport {
         // Consumers run in BG threads, so wait a bit for those to finish.
         mocked.await(5L, TimeUnit.SECONDS);
         
-        assertEquals("Mocked service expected vs. actual", expectedMsgCount, mocked.getReceivedCounter());
+        assertEquals(expectedMsgCount, mocked.getReceivedCounter(), "Mocked service expected vs. actual");
         List<Exchange> exchanges = mocked.getReceivedExchanges();
         Set<String> uniqueMsgs = new HashSet<>();
         exchanges.forEach(exchange -> {
@@ -974,10 +981,9 @@ public class VantiqComponentTest extends CamelTestSupport {
         // Note that we need to fetch the endpoints by URI since there are more than one of them.
         FauxVantiqEndpoint endp = (FauxVantiqEndpoint) context.getEndpoint(consumerEndpoint);
     
-        assertNotNull("Endpoint's client is null", endp.myClient.getListener());
-        assertTrue("Endpoint's client is not a TestListener: " +
-                              endp.myClient.getListener().getClass().getName(),
-                      endp.myClient.getListener() instanceof TestListener);
+        assertNotNull(endp.myClient.getListener(), "Endpoint's client is null");
+        assertInstanceOf(TestListener.class, endp.myClient.getListener(), "Endpoint's client is not a TestListener: " +
+                endp.myClient.getListener().getClass().getName());
         TestListener tl = (TestListener) endp.myClient.getListener();
         
         int expectedMsgCount = 10;
@@ -1011,7 +1017,7 @@ public class VantiqComponentTest extends CamelTestSupport {
         // Consumers run in BG threads, so wait a bit for those to finish.
         mocked.await(5L, TimeUnit.SECONDS);
         
-        assertEquals("Mocked service expected vs. actual", expectedMsgCount, mocked.getReceivedCounter());
+        assertEquals(expectedMsgCount, mocked.getReceivedCounter(), "Mocked service expected vs. actual");
         List<Exchange> exchanges = mocked.getReceivedExchanges();
         Set<String> uniqueMsgs = new HashSet<>();
         exchanges.forEach(exchange -> {
@@ -1019,7 +1025,7 @@ public class VantiqComponentTest extends CamelTestSupport {
             Object mo = deserializeJsonBody(exchBody, mapper, streamRequired);
             assert mo instanceof Map;
             Map<?,?> msg = (Map<?, ?>) mo;
-            assertNotNull("Deserialized JSON message is null", msg);
+            assertNotNull(msg, "Deserialized JSON message is null");
             assert msg.containsKey(TEST_MSG_KEY);
             assert msg.get(TEST_MSG_KEY) instanceof String;
             assert ((String) msg.get(TEST_MSG_KEY)).startsWith(TEST_MSG_PREAMBLE);
@@ -1048,10 +1054,10 @@ public class VantiqComponentTest extends CamelTestSupport {
     }
     
     protected Object deserializeJsonBody(Object exchangeBody, ObjectMapper mapper, boolean streamExpected) {
-        assertNotNull("Null exchange body",  exchangeBody);
+        assertNotNull(exchangeBody, "Null exchange body");
         // Verify that we got JSON -- which will manifest here as a String, but we'll verify that we can convert it.
-        assertTrue("Vantiq Consumer Output wrong type: " + exchangeBody.getClass().getName(),
-                   exchangeBody instanceof BaseJsonNode || exchangeBody instanceof StreamCache);
+        assertTrue(exchangeBody instanceof BaseJsonNode || exchangeBody instanceof StreamCache,
+                   "Vantiq Consumer Output wrong type: " + exchangeBody.getClass().getName());
         if (exchangeBody instanceof StreamCache) {
             assert streamExpected;
             ((StreamCache) exchangeBody).reset();
@@ -1103,7 +1109,7 @@ public class VantiqComponentTest extends CamelTestSupport {
                     } catch (Exception e) {
                         log.error("Trapped exception: ", e);
                         msg = e;
-                        assertNull("Trapped exception: " + e.getMessage(), e);
+                        assertNull(e, "Trapped exception: " + e.getMessage());
                     }
                 }
             }

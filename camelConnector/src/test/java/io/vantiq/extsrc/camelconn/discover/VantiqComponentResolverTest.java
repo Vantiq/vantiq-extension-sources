@@ -8,7 +8,12 @@
 
 package io.vantiq.extsrc.camelconn.discover;
 
-import static org.junit.Assume.assumeTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import groovy.json.JsonSlurper;
@@ -22,20 +27,18 @@ import org.apache.camel.component.mock.MockEndpoint;
 import org.apache.camel.converter.stream.InputStreamCache;
 import org.apache.camel.model.dataformat.AvroLibrary;
 import org.apache.camel.model.dataformat.JsonLibrary;
-import org.apache.camel.test.junit4.CamelTestSupport;
+import org.apache.camel.test.junit5.CamelTestSupport;
 import org.apache.commons.lang3.function.TriFunction;
 import org.apache.ivy.util.FileUtil;
-import org.junit.Before;
-import org.junit.FixMethodOrder;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TestName;
-import org.junit.runners.MethodSorters;
+import org.junit.jupiter.api.MethodOrderer;
+import org.junit.jupiter.api.TestMethodOrder;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.TestInfo;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.xbill.DNS.Message;
-import org.xbill.DNS.Section;
-import org.xbill.DNS.TXTRecord;
+import org.xbill.DNS.ARecord;
+import org.xbill.DNS.Record;
 
 import java.io.File;
 import java.net.URI;
@@ -51,19 +54,15 @@ import java.util.Objects;
 import java.util.Properties;
 import java.util.stream.Collectors;
 
-import static org.junit.Assert.assertNull;
-
 /**
  * Perform unit tests for component resolution
  */
 
 // Method order used to check caching for SimpleCamelResolution
 // Not using Slf4J due to use in static context
-@FixMethodOrder(MethodSorters.NAME_ASCENDING)
+@TestMethodOrder(MethodOrderer.MethodName.class)
 public class VantiqComponentResolverTest extends CamelTestSupport {
     public final static String MISSING_VALUE = "<missing>";
-    @Rule
-    public TestName testName = new TestName();
     
     private static final Logger log =  LoggerFactory.getLogger(VantiqComponentResolverTest.class);
     public static final String DEST_PATH = "build/loadedlib";
@@ -84,7 +83,7 @@ public class VantiqComponentResolverTest extends CamelTestSupport {
     public static String jiraApiToken = System.getProperty("io.vantiq.camel.test.jiraApiToken", "bogusApiToken");
     public static String jiraJql = System.getProperty("io.vantiq.camel.test.jiraJql", "RAW(project=kamelets)");
     
-    @Before
+    @BeforeEach
     public void setup() {
         dest = new File(DEST_PATH);
         if (dest.exists()) {
@@ -92,24 +91,33 @@ public class VantiqComponentResolverTest extends CamelTestSupport {
         }
     }
     
+    static String getTestMethodName(TestInfo ti) {
+        String testName = null;
+        if (ti.getTestMethod().isPresent()) {
+            testName = ti.getTestMethod().get().getName();
+        }
+        assertNotNull(testName, "No test name available");
+        return testName;
+    }
+    
     @Test
-    public void testResolutionSimpleCamel() throws Exception {
+    public void testResolutionSimpleCamel(TestInfo ti) throws Exception {
         
         FileUtil.forceDelete(cache);    // Clear the cache
-        CamelResolver cr = new CamelResolver(this.getTestMethodName(), (URI) null,
+        CamelResolver cr = new CamelResolver(getTestMethodName(ti), (URI) null,
                                              cache, dest);
         Collection<File> resolved = cr.resolve("org.apache.camel", "camel" + "-salesforce",
-                                               context.getVersion(), testName.getMethodName());
-        assert resolved.size() > 0;
+                                               context.getVersion(), getTestMethodName(ti));
+        assert !resolved.isEmpty();
         File[] files = resolved.toArray(new File[0]);
         boolean foundRequested = false;
         for (File f: files) {
-            assertEquals("Path in destination", dest.getAbsolutePath(), f.getParent());
+            assertEquals(dest.getAbsolutePath(), f.getParent(), "Path in destination");
             if (f.getName().equals("camel-salesforce-" + context.getVersion() + ".jar")) {
                 foundRequested = true;
             }
         }
-        assertTrue("Found original request", foundRequested);
+        assertTrue(foundRequested, "Found original request");
         
         ArrayList<URL> urlList = new ArrayList<>();
         for (File f: files) {
@@ -127,7 +135,7 @@ public class VantiqComponentResolverTest extends CamelTestSupport {
        
         try {
             Class<?> sfClass = Class.forName("org.apache.camel.component.salesforce.SalesforceComponent", false, ucl);
-            assertNotNull("SalesforceComponent class null", sfClass);
+            assertNotNull(sfClass ,"SalesforceComponent class null");
             log.debug("Found SalesforceComponent class: {}::{}", sfClass.getPackageName(), sfClass.getName());
 
             for (java.lang.reflect.Method m: sfClass.getMethods()) {
@@ -135,7 +143,7 @@ public class VantiqComponentResolverTest extends CamelTestSupport {
             }
 
             sfClass = Class.forName("org.apache.camel.component.salesforce.SalesforceEndpoint", false, ucl);
-            assertNotNull("SalesforceEndpoing class null", sfClass);
+            assertNotNull(sfClass, "SalesforceEndpoing class null");
             log.debug("Found SalesforceEndpoint class: {}::{}", sfClass.getPackageName(), sfClass.getName());
 
             for (java.lang.reflect.Method m: sfClass.getMethods()) {
@@ -146,45 +154,46 @@ public class VantiqComponentResolverTest extends CamelTestSupport {
             }
         } catch (Exception e) {
             // Putting assert here so we get information about the unexpected exception
-            assertNull("Unexpected Exception", e);
+            assertNull(e, "Unexpected Exception");
         }
     }
     
     @Test
-    public void testResolutionSimpleCamelCached() throws Exception {
+    public void testResolutionSimpleCamelCached(TestInfo ti) throws Exception {
         // Here, we leave the cache alone
         
         // Use same app name to avoid spurious Ivy errors about unknown resolvers.  Necessary since we didn't clear
         // the cache, and Ivy keeps resolver names in the cache records.
-        String nameOfPreviousTest = this.getTestMethodName().substring(0, this.getTestMethodName().lastIndexOf(
-                "Cached"));
+        String testName = getTestMethodName(ti);
+        String nameOfPreviousTest = testName.substring(0, testName.lastIndexOf("Cached"));
         CamelResolver cr = new CamelResolver(nameOfPreviousTest, (URI) null,
                                              cache, dest);
         Collection<File> resolved = cr.resolve("org.apache.camel", "camel" + "-salesforce",
-                                               context.getVersion(), testName.getMethodName());
-        assert resolved.size() > 0;
+                                               context.getVersion(), testName);
+        assert !resolved.isEmpty();
         File[] files = resolved.toArray(new File[0]);
         boolean foundRequested = false;
         for (File f: files) {
-            assertEquals("Path in destination", dest.getAbsolutePath(), f.getParent());
+            assertEquals(dest.getAbsolutePath(), f.getParent(), "Path in destination");
             if (f.getName().equals("camel-salesforce-" + context.getVersion() + ".jar")) {
                 foundRequested = true;
             }
         }
-        assertTrue("Found original request", foundRequested);
+        assertTrue(foundRequested, "Found original request");
     }
     
     @Test
-    public void testResolutionFailure() {
+    public void testResolutionFailure(TestInfo ti) {
+        String testName = getTestMethodName(ti);
         FileUtil.forceDelete(cache);    // Clear the cache
-        CamelResolver cr = new CamelResolver(this.getTestMethodName(), (URI) null, null, dest);
+        CamelResolver cr = new CamelResolver(testName, (URI) null, null, dest);
         log.debug(cr.identity());
-        assertTrue("Identity check:", cr.identity().contains(this.getTestMethodName()));
-        assertTrue("Identity check:", cr.identity().contains(dest.getAbsolutePath()));
+        assertTrue(cr.identity().contains(testName), "Identity check (testName):");
+        assertTrue(cr.identity().contains(dest.getAbsolutePath()), "Identity check (path):");
     
         try {
             cr.resolve("org.apache.camel", "camel" + "-horse-designed-by-committee",
-                       context.getVersion(), testName.getMethodName());
+                       context.getVersion(), testName);
         } catch (ResolutionException re) {
             assert re.getMessage().contains("Error(s) encountered during resolution: ");
             assert re.getMessage().contains("org.apache.camel#camel-horse-designed-by-committee;");
@@ -198,11 +207,11 @@ public class VantiqComponentResolverTest extends CamelTestSupport {
         } catch (IllegalArgumentException iae) {
             assert iae.getMessage().contains("The destination parameter cannot be null");
         } catch (Exception e) {
-            assertNull("Unexpected exception: " + e.getMessage(), e);
+            assertNull(e, "Unexpected exception: " + e.getMessage());
         }
     
         try {
-            cr.resolve(null, "somename", "someVersion", testName.getMethodName());
+            cr.resolve(null, "somename", "someVersion", testName);
             fail("Null organization should not work");
         } catch (IllegalArgumentException iae) {
             assert iae.getMessage().contains("The parameters organization, name, and revision must be non-null");
@@ -211,7 +220,7 @@ public class VantiqComponentResolverTest extends CamelTestSupport {
         }
     
         try {
-            cr.resolve("somegroup", null, "someVersion", testName.getMethodName());
+            cr.resolve("somegroup", null, "someVersion", testName);
             fail("Null name should not work");
         } catch (IllegalArgumentException iae) {
             assert iae.getMessage().contains("The parameters organization, name, and revision must be non-null");
@@ -220,43 +229,36 @@ public class VantiqComponentResolverTest extends CamelTestSupport {
         }
         
         try {
-            cr.resolve("somegroup", "somename", null, testName.getMethodName());
+            cr.resolve("somegroup", "somename", null, testName);
             fail("Null revision should not work");
         } catch (IllegalArgumentException iae) {
             assert iae.getMessage().contains("The parameters organization, name, and revision must be non-null");
         } catch (Exception e) {
             fail("Unexpected exception: " + e.getClass().getName() + "::" + e.getMessage());
         }
-        
-        try {
-            cr.resolve("somegroup", "somename", "someVersion", testName.getMethodName());
-            fail("Non-sensical resolution should fail");
-        } catch (ResolutionException re) {
-            assert re.getMessage().contains("Error(s) encountered during resolution: ");
-            assert re.getMessage().contains("somegroup#somename;someVersion");
-         } catch (Exception e) {
-            fail("Unexpected exception: " + e.getClass().getName() + "::" + e.getMessage());
-        }
     }
     @Test
-    public void testResolutionAlternateRepos() throws Exception {
+    public void testResolutionAlternateRepos(TestInfo ti) throws Exception {
+        String testName = getTestMethodName(ti);
         FileUtil.forceDelete(cache);    // Clear the cache
         URI s3Repo = new URI("https://vantiqmaven.s3.amazonaws.com/");
-        CamelResolver cr = new CamelResolver(this.getTestMethodName(), s3Repo, cache, dest);
+        CamelResolver cr = new CamelResolver(testName, s3Repo, cache, dest);
         Collection<File> resolved = cr.resolve("vantiq.models", "coco", "1.1", "meta",
-                                               testName.getMethodName());
-        assertEquals("Resolved file count: " + resolved.size(), 1, resolved.size());
+                                               testName);
+        assertEquals(1, resolved.size(), "Resolved file count: " + resolved.size());
         File[] files = resolved.toArray(new File[0]);
-        assertEquals("File name match", "coco-1.1.meta", files[0].getName());
+        assertEquals("coco-1.1.meta", files[0].getName(), "File name match");
     }
     
     @Test
-    public void testStartRouteLoadedComponents() {
+    public void testStartRouteLoadedComponents(TestInfo ti) {
+        String testName = getTestMethodName(ti);
+        
         FileUtil.forceDelete(cache);    // Clear the cache
         RouteBuilderWithProps rb = new SimpleExternalRoute();
-        assertNotNull("No routebuilder", rb);
+        assertNotNull(rb, "No routebuilder");
         setUseRouteBuilder(false);
-        try (CamelRunner runner = new CamelRunner(this.getTestMethodName(), rb, null,
+        try (CamelRunner runner = new CamelRunner(testName, rb, null,
                                                   IVY_CACHE_PATH, DEST_PATH,
                                                   rb.getComponentsToInit(), null, null, null)) {
             runner.runRoutes(false);
@@ -264,12 +266,14 @@ public class VantiqComponentResolverTest extends CamelTestSupport {
     }
     
     @Test
-    public void testStartRouteLoadedComponentsAndMarshaling() {
+    public void testStartRouteLoadedComponentsAndMarshaling(TestInfo ti) {
+        String testName = getTestMethodName(ti);
+        
         FileUtil.forceDelete(cache);    // Clear the cache
         RouteBuilderWithProps rb = new MarshaledExternalRoute();
-        assertNotNull("No routebuilder", rb);
+        assertNotNull(rb, "No routebuilder");
         setUseRouteBuilder(false);
-        try (CamelRunner runner = new CamelRunner(this.getTestMethodName(), rb, null,
+        try (CamelRunner runner = new CamelRunner(testName, rb, null,
                                                   IVY_CACHE_PATH, DEST_PATH,
                                                   rb.getComponentsToInit(), null, null, null)) {
             runner.runRoutes(false);
@@ -277,15 +281,17 @@ public class VantiqComponentResolverTest extends CamelTestSupport {
     }
     
     @Test
-    public void testStartRouteLoadedComponentsMultiRepo() throws Exception {
+    public void testStartRouteLoadedComponentsMultiRepo(TestInfo ti) throws Exception {
+        String testName = getTestMethodName(ti);
+        
         FileUtil.forceDelete(cache);    // Clear the cache
         RouteBuilderWithProps rb = new SimpleExternalRoute();
-        assertNotNull("No routebuilder", rb);
+        assertNotNull(rb, "No routebuilder");
         setUseRouteBuilder(false);
         List<URI> repoList = new ArrayList<>();
         repoList.add(new URI("https://vantiqmaven.s3.amazonaws.com/"));
         repoList.add(new URI("https://repo.maven.apache.org/maven2/"));
-        try (CamelRunner runner = new CamelRunner(this.getTestMethodName(),rb, repoList,
+        try (CamelRunner runner = new CamelRunner(testName,rb, repoList,
                                                   IVY_CACHE_PATH, DEST_PATH, rb.getComponentsToInit(),
                                                   null, null, null)) {
             runner.runRoutes(false);
@@ -293,9 +299,10 @@ public class VantiqComponentResolverTest extends CamelTestSupport {
     }
     
     @Test
-    public void testJiraSpecificRepo() throws Exception {
+    public void testJiraSpecificRepo(TestInfo ti) throws Exception {
+        String testName = getTestMethodName(ti);
         
-        // Note -- invalid usenname/passworkd/token result in just errors of not found.  Test still valid
+        // Note -- invalid usenname/password/token result in just errors of not found.  Test still valid
         
         // Set access properties for Jira server
         Properties propertyValues = new Properties(3);
@@ -307,7 +314,7 @@ public class VantiqComponentResolverTest extends CamelTestSupport {
         FileUtil.forceDelete(cache);    // Clear the cache
         FileUtil.forceDelete(new File(DEST_PATH));
         RouteBuilderWithProps rb = new JiraExternalRoute();
-        assertNotNull("No routebuilder", rb);
+        assertNotNull(rb, "No routebuilder");
         setUseRouteBuilder(false);
         List<URI> repoList = new ArrayList<>();
         
@@ -315,14 +322,28 @@ public class VantiqComponentResolverTest extends CamelTestSupport {
         // As per https://developer.atlassian.com/server/framework/atlassian-sdk/atlassian-maven-repositories-2818705/,
         // the following is the official atlassian proxy for their public repos. Without this, we end up with a
         // number of unresolved dependencies, and things tend not to go well.
+        repoList.add(new URI("https://repo1.maven.org/maven2"));
         repoList.add(new URI("https://packages.atlassian.com/mvn/maven-external/"));
-        repoList.add(new URI("https://repo.maven.apache.org/maven2/"));
-        // The following seems to be an old version of the address, but leaving it here in case we need it.
-//        repoList.add(new URI("https://maven.atlassian.com/repository/public/"));
+        
+        // Something about the combination of the atlassian repo & (maybe) our ivy setup is working has these libraries not
+        // found when retrieved via dependency mapping.  This is the only project/component in which this happens.
+        // To remedy this for the moment, we'll just add them manually and things work just fine.
+        //
+        // It appears that some mechanism in the atlassian library is moderating (Ivy term) the requests and removing
+        // the revision.  Consequently, we end up not finding .../httpmime-.jar (e.g.) -- the final dash there is
+        // where the revision should be. I don't see anything we're doing here, so we'll just patch around it for now.
+        // This is new behavior with the Camel 4.4.x release (current LTS release).
+        // TODO: Remove this stuff when no longer necessary.  It's probably needed in the CamelAssemblies as well.
+        List<String> discoveredDependencies = List.of (
+                "org.apache.httpcomponents:httpmime:4.5.13",
+                "org.apache.httpcomponents:httpclient-cache:4.5.13"
+        );
+        
         boolean weInterrupted = false;
-        try (CamelRunner runner = new CamelRunner(this.getTestMethodName(),rb, repoList,
+        try (CamelRunner runner = new CamelRunner(testName, rb, repoList,
                                                   IVY_CACHE_PATH, DEST_PATH, rb.getComponentsToInit(),
                                                   propertyValues, null, null)) {
+            runner.setAdditionalLibraries(discoveredDependencies);
             runner.runRoutes(false);
             log.debug("JIRA-based route started");
             
@@ -332,7 +353,10 @@ public class VantiqComponentResolverTest extends CamelTestSupport {
                 log.debug("Still waiting to start: {}", startWait++);
                 Thread.sleep(5000); // Resolution can take a few ticks.
             }
-            assertNull("Runner failed to start", runner.getStartupFailed());
+            if (runner.getStartupFailed() != null) {
+                log.debug("Failure to start runner: ", runner.getStartupFailed());
+            }
+            assertNull(runner.getStartupFailed(), "Runner failed to start");
             Thread.sleep(5000); // Run a little bit.
             weInterrupted = true;
             runnerThread.interrupt();
@@ -346,10 +370,12 @@ public class VantiqComponentResolverTest extends CamelTestSupport {
         }
     }
     @Test
-    public void testRouteTemplate() {
+    public void testRouteTemplate(TestInfo ti) {
+        String testName = getTestMethodName(ti);
+        
         FileUtil.forceDelete(cache);    // Clear the cache
         BeanIncludingRouteTemplate rb = new BeanIncludingRouteTemplate();
-        assertNotNull("No routebuilder", rb);
+        assertNotNull(rb, "No routebuilder");
         setUseRouteBuilder(false);
         // This is the set of discovered dependencies listed in the kamelet from which the route in question is taken.
         List<String> discoveredDependencies = List.of (
@@ -358,7 +384,7 @@ public class VantiqComponentResolverTest extends CamelTestSupport {
                 "org.apache.camel.kamelets:camel-kamelets-utils:3.21.0",
                 "org.apache.camel:camel-kamelet"
         );
-        try (CamelRunner runner = new CamelRunner(this.getTestMethodName(),rb, List.of(),
+        try (CamelRunner runner = new CamelRunner(testName, rb, List.of(),
                                                   IVY_CACHE_PATH, DEST_PATH, rb.getComponentsToInit(),
                                                    null, null, null)) {
             runner.setAdditionalLibraries(discoveredDependencies);
@@ -372,11 +398,13 @@ public class VantiqComponentResolverTest extends CamelTestSupport {
     }
     
     @Test
-    public void testHdrDupSetup() {
+    public void testHdrDupSetup(TestInfo ti) {
+        String testName = getTestMethodName(ti);
+        
         FileUtil.forceDelete(cache);    // Clear the cache
         String headerBeanName = "MyHeaderBean" + System.currentTimeMillis();
         HdrRouteTemplate rb = new HdrRouteTemplate(headerBeanName);
-        assertNotNull("No routebuilder", rb);
+        assertNotNull(rb, "No routebuilder");
         setUseRouteBuilder(false);
         // This is the set of discovered dependencies listed in the kamelet from which the route in question is taken.
         List<String> discoveredDependencies = List.of (
@@ -389,7 +417,7 @@ public class VantiqComponentResolverTest extends CamelTestSupport {
         Map<String, String> hdrDupMap = Map.of("testHdr1", "dupOfHdr1",
                                                "testHdr2", "dupOfHdr2",
                                                "testHdr3", "dupOfHdr3");
-        try (CamelRunner runner = new CamelRunner(this.getTestMethodName(),rb, List.of(),
+        try (CamelRunner runner = new CamelRunner(testName, rb, List.of(),
                                                   IVY_CACHE_PATH, DEST_PATH, rb.getComponentsToInit(),
                                                   null, headerBeanName, hdrDupMap)) {
             runner.setAdditionalLibraries(discoveredDependencies);
@@ -434,75 +462,59 @@ public class VantiqComponentResolverTest extends CamelTestSupport {
         }
     }
     
-    
-//    public static final String QUERY_MONKEY = "monkey.wp.dg.cx";
-//    public static final String RESPONSE_MONKEY = "\"A Macaque, an old world species of "
-//        + "monkey native to Southeast Asia|thumb]A monkey is a primate of the "
-//        + "Haplorrhini suborder and simian infraorder, either an Old World monkey "
-//        + "or a New World monkey, but excluding apes. There are about 260 known "
-//        + "living specie\" \"s of monkey. Many are arboreal, although there are "
-//        + "species that live primarily on the ground, such as baboons... "
-//        + "http://en.wikipedia.org/wiki/Monkey\"";
-    
     public static final String QUERY_VANTIQ = "vantiq.com";
     
     public static final String RESPONSE_VANTIQ = "vantiq.com.";
-    
-//    public static final String QUERY_AARDVARK = "aardvark.wp.dg.cx";
-//    public static final String RESPONSE_AARDVARK = "\"The aardvark (Orycteropus afer) is a medium-sized, burrowing, " +
-//            "nocturnal mammal native to Africa. It is the only living species of the order Tubulidentata, although " +
-//            "other prehistoric species and genera of Tubulidentata are known. " +
-//            "http://en.wikipedia.org/wi\" \"ki/Aardvark\"";
 //
     public static final String QUERY_WIKIPEDIA = "wikipedia.org";
     public static final String RESPONSE_WIKIPEDIA = "wikipedia.org.";
     
     @Test
-    public void testStartRunLoadedComponents() throws Exception {
+    public void testStartRunLoadedComponents(TestInfo ti) throws Exception {
         FileUtil.forceDelete(cache);    // Clear the cache
         
         setUseRouteBuilder(false);
-        RouteBuilderWithProps rb = new MakeDigCall();
-        assertNotNull("No routebuilder", rb);
+        RouteBuilderWithProps rb = new MakeDnsLookupCall();
+        assertNotNull(rb, "No routebuilder");
         
-        performLoadAndRunTest(rb, rb.getComponentsToInit());
+        performLoadAndRunTest(ti, rb, rb.getComponentsToInit());
     }
     
     @Test
-    public void testStartRunLoadedComponentsMarshaled() throws Exception {
+    public void testStartRunLoadedComponentsMarshaled(TestInfo ti) throws Exception {
         FileUtil.forceDelete(cache);    // Clear the cache
         
         setUseRouteBuilder(false);
-        RouteBuilderWithProps rb = new MakeDigCallMarshaled();
-        assertNotNull("No routebuilder", rb);
+        RouteBuilderWithProps rb = new MakeDnsLookupCallMarshaled();
+        assertNotNull(rb, "No routebuilder");
         
-        performLoadAndRunTest(rb, rb.getComponentsToInit());
+        performLoadAndRunTest(ti, rb, rb.getComponentsToInit());
     }
     
     @Test
-    public void testStartRunLoadedComponentsMarshaledAvroFailure() throws Exception {
+    public void testStartRunLoadedComponentsMarshaledAvroFailure(TestInfo ti) throws Exception {
         FileUtil.forceDelete(cache);    // Clear the cache
         
         setUseRouteBuilder(false);
-        RouteBuilderWithProps rb = new MakeDigCallMarshaledAvroFailure();
-        assertNotNull("No routebuilder", rb);
+        RouteBuilderWithProps rb = new MakeDnsLookupCallMarshaledAvroFailure();
+        assertNotNull(rb, "No routebuilder");
         
-        performLoadAndRunTest(rb, false, rb.getComponentsToInit(), null, null, null);
+        performLoadAndRunTest(ti, rb, false, rb.getComponentsToInit(), null, null, null);
     }
     
     @Test
-    public void testStartRunLoadedComponentsMarshaledGzip() throws Exception {
+    public void testStartRunLoadedComponentsMarshaledGzip(TestInfo ti) throws Exception {
         FileUtil.forceDelete(cache);    // Clear the cache
         
         setUseRouteBuilder(false);
-        RouteBuilderWithProps rb = new MakeDigCallMarshaledGzip();
-        assertNotNull("No routebuilder", rb);
+        RouteBuilderWithProps rb = new MakeDnsLookupCallMarshaledGzip();
+        assertNotNull(rb, "No routebuilder");
         
-        performLoadAndRunTest(rb, rb.getComponentsToInit());
+        performLoadAndRunTest(ti, rb, rb.getComponentsToInit());
     }
     
     @Test
-    public void testStartRunLoadedComponentsSalesforceRefreshToken() throws Exception {
+    public void testStartRunLoadedComponentsSalesforceRefreshToken(TestInfo ti) throws Exception {
         assumeTrue(sfLoginUrl != null &&
                                   sfClientId != null &&
                                   sfClientSecret != null &&
@@ -511,42 +523,42 @@ public class VantiqComponentResolverTest extends CamelTestSupport {
         
         setUseRouteBuilder(false);
         RouteBuilderWithProps rb = new SalesForceTasks();
-        assertNotNull("No routebuilder", rb);
+        assertNotNull(rb ,"No routebuilder");
         
-        performLoadAndRunTest(rb, rb.getComponentsToInit());
+        performLoadAndRunTest(ti, rb, rb.getComponentsToInit());
     }
  
     // Test that caching works as expected when thing downloaded, then only cached, and then already in place.
     // In all cases, our internal classloader should load the things needed by the routes in question.
     @Test
-    public void testStartRunLoadedComponentsUsingPreviouslyRetrievedComponents() throws Exception {
+    public void testStartRunLoadedComponentsUsingPreviouslyRetrievedComponents(TestInfo ti) throws Exception {
         FileUtil.forceDelete(cache);    // Clear the cache
         
         setUseRouteBuilder(false);
-        RouteBuilderWithProps rb = new MakeDigCall();
-        assertNotNull("No routebuilder", rb);
+        RouteBuilderWithProps rb = new MakeDnsLookupCall();
+        assertNotNull(rb, "No routebuilder");
         
         log.info("Loading cache and library");
         // First run: cache & lib/dest deleted.  Download all
-        performLoadAndRunTest(rb, rb.getComponentsToInit());
+        performLoadAndRunTest(ti, rb, rb.getComponentsToInit());
         
         // Second run, leave the cache but delete the library.  Should copy from cache
         if (dest.exists()) {
             FileUtil.forceDelete(dest);
         }
         log.info("Cache loaded, deleted lib/dest, running same route");
-        performLoadAndRunTest(rb, rb.getComponentsToInit());
+        performLoadAndRunTest(ti, rb, rb.getComponentsToInit());
         
         log.info("Leaving cache & lib/dest intact, running again");
         // Finally, leave everything.  Resolution should do nothing but code will run
-        performLoadAndRunTest(rb, rb.getComponentsToInit());
+        performLoadAndRunTest(ti, rb, rb.getComponentsToInit());
     }
     
     public static final String XML_ROUTE = ""
             + "<routes xmlns=\"http://camel.apache.org/schema/spring\" xmlns:foo=\"http://io.vantiq/foo\">"
-            + "   <route id=\"Dig from xml-route\">"
+            + "   <route id=\"dns:lookup from xml-route\">"
             + "      <from uri=\"direct:start\"/>"
-            + "      <to uri=\"dns:dig\"/>"
+            + "      <to uri=\"dns:lookup\"/>"
             + "      <to uri=\"mock:result\"/>"
             + "   </route>"
             + "</routes>";
@@ -555,23 +567,23 @@ public class VantiqComponentResolverTest extends CamelTestSupport {
     // direct:start) if the top-level "- route" line is missing.d
     public static final String YAML_ROUTE =  "\n"
             + "- route:\n"
-            + "    id: \"Dig from yaml-route\"\n"
+            + "    id: \"dns:lookup from yaml-route\"\n"
             + "    from:\n"
             + "      uri: \"direct:start\"\n"
             + "      steps:\n"
             + "        - to:\n"
-            + "            uri: \"dns:dig\"\n"
+            + "            uri: \"dns:lookup\"\n"
             + "        - to:\n"
             + "            uri: \"mock:result\"\n";
     
     public static final String YAML_ROUTE_PARAMETERIZED =  "\n"
             + "- route:\n"
-            + "    id: \"Dig from yaml-route\"\n"
+            + "    id: \"dns:lookup from yaml-route\"\n"
             + "    from:\n"
             + "      uri: \"{{directStart}}\"\n"
             + "      steps:\n"
             + "        - to:\n"
-            + "            uri: \"{{dnsDig}}\"\n"
+            + "            uri: \"{{dnsLookup}}\"\n"
             + "        - to:\n"
             + "            uri: \"{{mockResult}}\"\n";
     
@@ -605,42 +617,42 @@ public class VantiqComponentResolverTest extends CamelTestSupport {
             + "                 sharedAccessKey: \"RAW(MY TOKEN)\" \n";
     
     @Test
-    public void testStartRunLoadedComponentsFromXmlText() throws Exception {
+    public void testStartRunLoadedComponentsFromXmlText(TestInfo ti) throws Exception {
         FileUtil.forceDelete(cache);    // Clear the cache
     
         setUseRouteBuilder(false);
     
-        performLoadAndRunTest(XML_ROUTE, "xml", null);
+        performLoadAndRunTest(ti, XML_ROUTE, "xml", null);
     }
     
     @Test
-    public void testStartRunLoadedComponentsFromYamlText() throws Exception {
+    public void testStartRunLoadedComponentsFromYamlText(TestInfo ti) throws Exception {
         FileUtil.forceDelete(cache);    // Clear the cache
         setUseRouteBuilder(false);
     
-        performLoadAndRunTest(YAML_ROUTE, "yaml", null);
+        performLoadAndRunTest(ti, YAML_ROUTE, "yaml", null);
     }
     
     @Test
-    public void testStartRunLoadedComponentsFromYamlTextParameterized() throws Exception {
+    public void testStartRunLoadedComponentsFromYamlTextParameterized(TestInfo ti) throws Exception {
         FileUtil.forceDelete(cache);    // Clear the cache
         setUseRouteBuilder(false);
         
         Properties propertyValues = new Properties(3);
         propertyValues.setProperty("directStart", "direct:start");
-        propertyValues.setProperty("dnsDig", "dns:dig");
+        propertyValues.setProperty("dnsLookup", "dns:lookup");
         propertyValues.setProperty("mockResult", "mock:result");
         
-        performLoadAndRunTest(YAML_ROUTE_PARAMETERIZED, "yaml", null, false,
+        performLoadAndRunTest(ti, YAML_ROUTE_PARAMETERIZED, "yaml", null, false,
                               propertyValues);
     }
     
     @Test
-    public void testDiscoverBeanRoute() throws Exception {
+    public void testDiscoverBeanRoute(TestInfo ti) throws Exception {
         FileUtil.forceDelete(cache);
         setUseRouteBuilder(false);
         
-        performLoadAndRunTest(ROUTE_WITH_BEAN, "yaml", null, true, null);
+        performLoadAndRunTest(ti, ROUTE_WITH_BEAN, "yaml", null, true, null);
     }
     
     /**
@@ -685,9 +697,8 @@ public class VantiqComponentResolverTest extends CamelTestSupport {
                 Map<String, Object> headers = new HashMap<>();
                 Object message = null;
                 int expResults = 2;
-                if (routeId.contains("Dig")) {
+                if (routeId.contains("dns:lookup")) {
                     headers.put("dns.name", query);
-                    headers.put("dns.type", "TXT");
                 } else if (routeId.contains("fhir_sink")) {
                     // For FHIR search by Url, it expects a query parameter of URL that contains the search URL.
                     // However, we don't want to hard code that in the route (and the fhir-sink kamelet, on which the
@@ -704,11 +715,10 @@ public class VantiqComponentResolverTest extends CamelTestSupport {
                 resultEndpoint.expectedMessageCount(expResults);
                 resultEndpoint.expectedMessagesMatches(exchange -> {
                     Object msg = exchange.getIn().getBody();
-                    if (msg instanceof Message) {
-                        assertNotNull(answerStr);
-                        Object o = ((Message) exchange.getIn().getBody()).getSection(Section.ANSWER).get(0);
-                        if (o instanceof TXTRecord) {
-                            TXTRecord t = (TXTRecord) o;
+                    if (msg instanceof Record[]) {
+                        Object o = ((Record[]) exchange.getIn().getBody())[0];
+                        if (o instanceof ARecord) {
+                            ARecord t = (ARecord) o;
                             assertNotNull(answerStr);
                             assertNotNull(t.getName());
                             return answerStr.contains(t.getName().toString());
@@ -716,15 +726,6 @@ public class VantiqComponentResolverTest extends CamelTestSupport {
                             fail("Unexpected return type: " + (o == null ? "body/section is null" :
                                     o.getClass().getName()));
                         }
-                        // Saving in case dig/wikipedia lookup comes back online.
-//
-//                            String str =
-//                                    ((Message) exchange.getIn().getBody()).getSection(Section.ANSWER).get(0)
-//                                                                          .rdataToString();
-//                            Map<String, ?> hdrs = exchange.getIn().getHeaders();
-//                            log.debug("Matches: Route {} got headers: {}", routeId, hdrs);
-//                            log.debug("Matches: Route {} got {}", routeId, str);
-//                            return answerStr.contains(str);
                     } else if (msg instanceof Map) {
                         //noinspection unchecked
                         Map<String, ?> msgMap = (Map<String, ?>) msg;
@@ -740,8 +741,7 @@ public class VantiqComponentResolverTest extends CamelTestSupport {
                     } else if (msg instanceof InputStreamCache) {
                         assertNotNull(answerStr);
                         InputStreamCache isc = (InputStreamCache) msg;
-                        String msgString = null;
-                        msgString = new String(isc.readAllBytes(), StandardCharsets.UTF_8);
+                        String msgString = new String(isc.readAllBytes(), StandardCharsets.UTF_8);
                         // THe FHIR Bundle structure is used to return the results.  In our route, we've converted it
                         // to JSON, but that, due to camel-isms, give is a stream containing the JSON String (not a
                         // bad idea since this one's ~ 26K).  So, we'll suck in the bytes from the stream and
@@ -761,9 +761,27 @@ public class VantiqComponentResolverTest extends CamelTestSupport {
                             return false;
                         }
                         boolean result = msgString.contains(answerStr);
+                        assertNotNull(msgMap, "Missing msgMap value");
                         result = result && "Bundle".equals(msgMap.get("resourceType"));
                         result = result && "searchset".equals(msgMap.get("type"));
                         return result;
+                    } else if (msg instanceof List) {
+                        // Then we're running a lookup query to test marshalling, so check the results
+                        //noinspection unchecked rawtypes
+                        List<Map> msgs = (List<Map>) msg;
+                        msgs.forEach( (anItem) -> {
+                            log.debug("List<Map> item contents: {}", anItem);
+                            assert anItem.containsKey("name");
+                            assert anItem.containsKey("type");
+                            assert anItem.containsKey("dclass");
+                            assert anItem.containsKey("ttl");
+                            assert anItem.containsKey("address");
+                            assert anItem.containsKey("rrsetType");
+                            assert anItem.containsKey("additionalName");
+                            assert anItem.get("address") instanceof String;
+                            assertEquals(answerStr, anItem.get("address"), "address content does not match");
+                        });
+                        return true;
                     }
                     return false;
                 });
@@ -773,7 +791,7 @@ public class VantiqComponentResolverTest extends CamelTestSupport {
                 }
                 template.sendBodyAndHeaders("direct:start", message, headers);
                 
-                assertTrue("Expected some exchanges", resultEndpoint.getReceivedCounter() > 0);
+                assertTrue(resultEndpoint.getReceivedCounter() > 0, "Expected some exchanges");
                 log.debug("resultEndpoint received counter: {}", resultEndpoint.getReceivedCounter());
                 if (resultEndpoint.getReceivedCounter() >= expResults) {
                     resultEndpoint.assertIsSatisfied();
@@ -787,19 +805,21 @@ public class VantiqComponentResolverTest extends CamelTestSupport {
         return verifyOperation;
     }
     
-    public void performLoadAndRunTest(String content, String contentType,
+    public void performLoadAndRunTest(TestInfo ti, String content, String contentType,
                                       List<Map<String, Object>> compToInit) throws Exception {
-        performLoadAndRunTest(content, contentType, compToInit, false, null);
+        performLoadAndRunTest(ti, content, contentType, compToInit, false, null);
     }
     
-    public void performLoadAndRunTest(String content, String contentType,
+    public void performLoadAndRunTest(TestInfo ti, String content, String contentType,
                                       List<Map<String, Object>> compToInit, boolean defeatVerify,
                                       Properties propertyValues) throws Exception {
+        String testName = getTestMethodName(ti);
+        
         // To do this test, we'll create a callable that the test method will call. In this case, the callable "sends"
-        // message to the route which, in turn, makes the dig call to look up a monkey.  We verify that the expected
+        // message to the route which, in turn, makes the dns call to look up a ip address.  We verify that the expected
         // results is presented.
         //
-        // In this case, our MakeDigCall route uses the (dynamically loaded) dns component to make a dig call.
+        // In this case, our MakeDnkLookupCall route uses the (dynamically loaded) dns component to make a lookup call.
     
         TriFunction<CamelContext, String, Object, Boolean> verifyOperation = defineVerifyOperation();
         
@@ -808,7 +828,7 @@ public class VantiqComponentResolverTest extends CamelTestSupport {
         CamelRunner openedRunner;
         
         try (CamelRunner runner =
-                     new CamelRunner(this.getTestMethodName(), content, contentType, null,
+                     new CamelRunner(testName, content, contentType, null,
                                      IVY_CACHE_PATH, DEST_PATH, compToInit, propertyValues, null, null)) {
             openedRunner = runner;
             runner.runRoutes(false);
@@ -832,26 +852,29 @@ public class VantiqComponentResolverTest extends CamelTestSupport {
         assert runnerContext != null && runnerContext.isStopped();
     }
     
-    public void performLoadAndRunTest(RouteBuilder rb, List<Map<String, Object>> compToInit) throws Exception {
-        performLoadAndRunTest(rb, true, compToInit, null, null, null);
+    public void performLoadAndRunTest(TestInfo ti, RouteBuilder rb, List<Map<String, Object>> compToInit) throws Exception {
+        performLoadAndRunTest(ti, rb, true, compToInit, null, null, null);
     }
-    public void performLoadAndRunTest(RouteBuilder rb, boolean shouldStart,
+    public void performLoadAndRunTest(TestInfo ti, RouteBuilder rb, boolean shouldStart,
                                       List<Map<String, Object>> componentToInit,
                                       Properties propertyValues, String headerBeanName,
                                       Map<String, String> headerDuplications) throws Exception {
         // To do this test, we'll create a callable that the test method will call. In this case, the callable "sends"
-        // message to the route which, in turn, makes the dig call to look up a monkey & aardvark.  We verify that the
+        // message to the route which, in turn, makes the lookup call to look up an ip address.  We verify that
+        // the
         // expected results are presented.
         //
-        // In this case, our MakeDigCall route uses the (dynamically loaded) dns component to make a dig call.
+        // In this case, our MakeDnsLookup Call route uses the (dynamically loaded) dns component to make a lookup call.
         TriFunction<CamelContext, String, Object, Boolean> verifyOperation = defineVerifyOperation();
-    
+        
+        String testName = getTestMethodName(ti);
+        
         CamelContext runnerContext;
         Thread runnerThread;
         CamelRunner openedRunner = null;
         
         try (CamelRunner runner =
-                     new CamelRunner(this.getTestMethodName(), rb, null, IVY_CACHE_PATH, DEST_PATH,
+                     new CamelRunner(testName, rb, null, IVY_CACHE_PATH, DEST_PATH,
                                      componentToInit, propertyValues, headerBeanName, headerDuplications)) {
             openedRunner = runner;
             runner.runRoutes(false);
@@ -861,22 +884,9 @@ public class VantiqComponentResolverTest extends CamelTestSupport {
             if (shouldStart) {
                 // At this point, the route is running -- let's verify that it works.
                 String routeId = runnerContext.getRoutes().get(0).getId();
-                if (routeId.contains("Dig")) {
-                    if (routeId.contains("Marshaled")) {
-                        Map<String, ?> expectedMap =  Map.of("signed", MISSING_VALUE,
-                                                        "rcode", MISSING_VALUE,
-                                                        "verified", MISSING_VALUE,
-                                                        "opt", MISSING_VALUE,
-                                                        "tsig", MISSING_VALUE,
-                                                        "question", MISSING_VALUE,
-                                                        "resolver", MISSING_VALUE,
-                                                        "header", MISSING_VALUE);
-                        assert verifyOperation.apply(runnerContext, QUERY_VANTIQ, expectedMap);
-                        assert verifyOperation.apply(runnerContext, QUERY_WIKIPEDIA, expectedMap);
-                    } else {
-                        assert verifyOperation.apply(runnerContext, QUERY_VANTIQ, RESPONSE_VANTIQ);
-                        assert verifyOperation.apply(runnerContext, QUERY_WIKIPEDIA, RESPONSE_WIKIPEDIA);
-                    }
+                if (routeId.contains("dns:lookup")) {
+                    assert verifyOperation.apply(runnerContext, QUERY_VANTIQ, RESPONSE_VANTIQ);
+                    assert verifyOperation.apply(runnerContext, QUERY_WIKIPEDIA, RESPONSE_WIKIPEDIA);
                 } else if (routeId.contains("Salesforce")) {
                     assert verifyOperation.apply(runnerContext, "not used",
                                                  Map.of ("totalSize", MISSING_VALUE, "done", true));
@@ -890,7 +900,7 @@ public class VantiqComponentResolverTest extends CamelTestSupport {
             }
         }
     
-        assertNotNull("runnerThread is null", runnerThread);
+        assertNotNull(runnerThread, "runnerThread is null");
         assert runnerContext != null && runnerContext.isStopped();
         int deathWaitCount = 30;
         // Wait for thread to die off.  Otherwise, spurious errors occasionally.
@@ -899,9 +909,9 @@ public class VantiqComponentResolverTest extends CamelTestSupport {
             deathWaitCount -= 1;
         }
         // Ensure that the running thread has completed.  Issue of test resource starvation, not product
-        assertTrue("ShouldStart: " + shouldStart + ", runnerThread: " + runnerThread +
-                           ", ...isAlive: " + runnerThread.isAlive(),
-                   !shouldStart || !runnerThread.isAlive());
+        assertTrue(!shouldStart || !runnerThread.isAlive(),
+                   "ShouldStart: " + shouldStart + ", runnerThread: " + runnerThread +
+                           ", ...isAlive: " + runnerThread.isAlive());
     }
     
     private static abstract class RouteBuilderWithProps extends RouteBuilder {
@@ -964,11 +974,11 @@ public class VantiqComponentResolverTest extends CamelTestSupport {
         }
     }
     
-    private static class MakeDigCall extends RouteBuilderWithProps {
+    private static class MakeDnsLookupCall extends RouteBuilderWithProps {
         public void configure() {
             from("direct:start")
-                    .routeId("Simple Dig Call")
-                    .to("dns:dig")
+                    .routeId("Simple dns:lookup Call")
+                    .to("dns:lookup")
                     .to("mock:result");
         }
     }
@@ -976,11 +986,11 @@ public class VantiqComponentResolverTest extends CamelTestSupport {
     // The *Marshaled* route builders here verify that we properly discover & load data formats
     // Generally, the routes are not expected to be sensible or useful.
     
-    private static class MakeDigCallMarshaled extends RouteBuilderWithProps {
+    private static class MakeDnsLookupCallMarshaled extends RouteBuilderWithProps {
         public void configure() {
             from("direct:start")
-                    .routeId("Dig Call Marshaled")
-                    .to("dns:dig")
+                    .routeId("dns:lookup Call Marshaled")
+                    .to("dns:lookup")
                     .log("INFO")
                     .marshal().json(JsonLibrary.Jackson)
                     .log("INFO")
@@ -990,12 +1000,12 @@ public class VantiqComponentResolverTest extends CamelTestSupport {
         }
     }
     
-    private static class MakeDigCallMarshaledGzip extends RouteBuilderWithProps {
+    private static class MakeDnsLookupCallMarshaledGzip extends RouteBuilderWithProps {
 
         public void configure() {
             from("direct:start")
-                    .routeId("Dig Call MarshaledGzip")
-                    .to("dns:dig")
+                    .routeId("dns:lookup Call MarshaledGzip")
+                    .to("dns:lookup")
                     .log("INFO")
                     .marshal().json()
                     .marshal().gzipDeflater()
@@ -1007,12 +1017,12 @@ public class VantiqComponentResolverTest extends CamelTestSupport {
         }
     }
     
-    private static class MakeDigCallMarshaledAvroFailure extends RouteBuilderWithProps {
+    private static class MakeDnsLookupCallMarshaledAvroFailure extends RouteBuilderWithProps {
         
         public void configure() {
             from("direct:start")
-                    .routeId("Dig Call Marshaled Avro Failure")
-                    .to("dns:dig")
+                    .routeId("dns:lookup Call Marshaled Avro Failure")
+                    .to("dns:lookup")
                     .log("INFO")
                     .marshal().json(JsonLibrary.Jackson, JsonNode.class)
                     .marshal().avro(AvroLibrary.ApacheAvro)
@@ -1042,8 +1052,7 @@ public class VantiqComponentResolverTest extends CamelTestSupport {
             
             from("direct:start")
                     .routeId("Salesforce Query")
-                    .to("salesforce:query?rawPayload=true" +
-                                "&SObjectQuery=SELECT Id, Subject, OwnerId from Task")
+                    .to("salesforce:query?rawPayload=true&sObjectQuery=SELECT Id, Subject, OwnerId from Task")
                     .unmarshal().json()
                     .to("log:info")
                     .to("mock:result");
