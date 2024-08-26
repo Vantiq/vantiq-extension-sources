@@ -571,7 +571,7 @@ public class CamelRunner extends MainSupport implements Closeable {
         ClassLoader cl = buildClassloader(null, discResults);
         
         ModelCamelContext mcc = (ModelCamelContext) camelContext;
-        ExtendedCamelContext extendedCamelContext = mcc.getCamelContextExtension(); // adapt(ExtendedCamelContext.class);
+        ExtendedCamelContext extendedCamelContext = mcc.getCamelContextExtension();
         ClassLoader oldAppClassLoader = camelContext.getApplicationContextClassLoader();
         try {
             camelContext.setApplicationContextClassLoader(cl);

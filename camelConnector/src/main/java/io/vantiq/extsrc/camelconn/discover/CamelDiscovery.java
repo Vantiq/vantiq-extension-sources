@@ -18,7 +18,6 @@ import org.apache.camel.model.RouteDefinition;
 import org.apache.camel.reifier.ProcessorReifier;
 import org.apache.camel.reifier.language.ExpressionReifier;
 import org.apache.camel.spi.ComponentResolver;
-import org.apache.camel.spi.Configurer;
 import org.apache.camel.spi.ConfigurerResolver;
 import org.apache.camel.spi.DataFormatResolver;
 import org.apache.camel.support.PluginHelper;
@@ -77,7 +76,7 @@ public class CamelDiscovery {
         DefaultCamelContext ctx = new DefaultCamelContext();
     
         try  {
-            ExtendedCamelContext ectx = ctx.getCamelContextExtension(); //ExtendedCamelContext.class);
+            ExtendedCamelContext ectx = ctx.getCamelContextExtension();
             
             EnumeratingComponentResolver ecr =
                     new EnumeratingComponentResolver(PluginHelper.getComponentResolver(ectx));
