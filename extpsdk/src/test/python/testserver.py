@@ -26,6 +26,8 @@ reconnect: Union[asyncio.Future, None] = None
 running: Union[asyncio.Future, None] = None
 starting: Union[asyncio.Future, None] = None
 
+prev_reconnect_secret: Union[str, None] = None
+
 wait_for_notifications: Union[asyncio.Future, None] = None
 wait_for_publications: Union[asyncio.Future, None] = None
 
@@ -55,7 +57,7 @@ async def handler(websocket):
     global wait_for_publications
     wait_for_notifications = asyncio.get_event_loop().create_future()
     wait_for_publications = asyncio.get_event_loop().create_future()
-
+    global prev_reconnect_secret
     print('Config properties: ', props)
     while True:
         try:
@@ -79,7 +81,19 @@ async def handler(websocket):
                     message = json.loads(raw_message)
                     message_dumper(message)
 
-                    assert vantiqconnectorsdk._RESOURCE_NAME in message
+                    assert 'parameters' in message
+                    assert message.get('parameters') is not None
+                    assert 'reconnectSecret' in message.get('parameters').keys()
+                    assert message.get('parameters').get('reconnectSecret') is not None
+                    rs = message.get('parameters').get('reconnectSecret')
+                    if prev_reconnect_secret is None:
+                        prev_reconnect_secret = rs
+                        print('Connect: found new connection, rs: ', rs)
+                    else:
+                        print('Connect: found reconnection, rs: ', rs, ', prev_rs: ', prev_reconnect_secret)
+
+                        assert rs == prev_reconnect_secret
+
                     assert 'op' in message
                     assert vantiqconnectorsdk._RESOURCE_ID in message
                     assert message[vantiqconnectorsdk._OPERATION] == vantiqconnectorsdk._OP_CONNECT_EXTENSION
@@ -103,8 +117,10 @@ async def handler(websocket):
                     await websocket.send(json.dumps({'op': vantiqconnectorsdk._TEST_CLOSE}))
                     await asyncio.sleep(0.1)  # Let message get sent before closing server
                     stop.set_result('done')
+                    prev_reconnect_secret = None
         except ConnectionClosed:
             # This is OK -- we sent our client a "go away" message so...
+            prev_reconnect_secret = None
             pass
             break
 

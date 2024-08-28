@@ -45,6 +45,7 @@ __all__ = ['VantiqSourceConnection',
            ]
 
 import asyncio
+import uuid
 from asyncio import Future
 import json
 import logging
@@ -70,6 +71,7 @@ _OP_RECONNECT_REQUIRED = 'reconnectRequired'
 _OP_PUBLISH = 'publish'
 _OP_QUERY = 'query'
 _OP_NOTIFY = 'notification'
+_PARAM_RECONNECT_SECRET = 'reconnectSecret'
 _CLOSED = 'connectionHasBeenClosed'  # Pseudo op used to track what's happened
 _TEST_CLOSE = 'testRequestsClientClose'  # Used during tests
 _CONNECTION_FAILED = 'connection_failed'
@@ -87,6 +89,7 @@ _RESOURCE_NAME = 'resourceName'
 _RESOURCE_ID = 'resourceId'
 _SOURCES_RESOURCE = 'sources'
 _OBJECT = 'object'
+_PARAMETERS = 'parameters'
 
 _WEBSOCKET_URL_PATTERN = '.*/api/v[0-9]+/wsock/websocket'
 _WEBSOCKET_V1_PATH = '/api/v1/wsock/websocket'
@@ -161,6 +164,7 @@ class VantiqConnector:
     SOURCES = 'sources'
     TARGET_SERVER = 'targetServer'
     AUTH_TOKEN = 'authToken'
+    FIXED_RECONNECT_SECRET = 'reconnectSecret'
     CONNECTOR_AUTH_TOKEN = 'CONNECTOR_AUTH_TOKEN'
     SEND_PINGS = 'sendPings'
     FAIL_ON_CONNECTION_ERROR = 'failOnConnectionError'
@@ -187,6 +191,8 @@ class VantiqSourceConnection:
     of the set of connections required for the sources defined in the server.config file.
     """
 
+    _reconnectSecret = None
+
     def __init__(self, source_name: string, config: Union[dict, None]):
         self.source_name = source_name
         # TODO: when upgrade to python 3.10, use more compact specification
@@ -200,12 +206,19 @@ class VantiqSourceConnection:
         self.is_connected = False
         self._is_connected_future = None
         self._connector_set = None
+        if config is not None:
+            fixedReconnectSecret : string = config.get(VantiqConnector.FIXED_RECONNECT_SECRET, None)
+            if fixedReconnectSecret is None:
+                self._reconnectSecret = source_name + '_' + str(uuid.uuid1())
+            else:
+                self._reconnectSecret = source_name + '_' + fixedReconnectSecret
 
     def __str__(self):
         return f'VantiqSourceConnection for source: {self.source_name}, is_connected: {self.is_connected}'
 
     def __repr__(self):
-        return f'VantiqSourceConnection(source_name={self.source_name}, config={self.config})'
+        return (f'VantiqSourceConnection(source_name={self.source_name}, config={self.config}, '
+                f'reconnectSecret={self._reconnectSecret})')
 
     def set_connector_set(self, conn_set):
         """ Set the connector set to which this connector belongs
@@ -425,7 +438,10 @@ class VantiqSourceConnection:
 
                 connect_msg = {_OPERATION: _OP_CONNECT_EXTENSION,
                                _RESOURCE_NAME: _SOURCES_RESOURCE,
-                               _RESOURCE_ID: self.source_name}
+                               _RESOURCE_ID: self.source_name,
+                               _PARAMETERS: {
+                                   _PARAM_RECONNECT_SECRET: self._reconnectSecret
+                               }}
                 await websocket.send(json.dumps(connect_msg))
                 raw_resp = await websocket.recv()
                 resp = json.loads(raw_resp)

@@ -48,8 +48,10 @@ public class ObjRecTestBase {
 //    public static final String IP_CAMERA_URL = "https://wzmedia.dot.ca.gov/D3/80_reed.stream/playlist.m3u8";
 //    public static final String IP_CAMERA_URL = "http://166.143.31.94/cgi-bin/camera?resolution=640&amp;" +
 //            "quality=1&amp;Language=0&amp;1666639808";
-    public static final String IP_CAMERA_URL = "http://115.179.100.76:8080/SnapshotJPEG?Resolution=640x480" +
-            "&Quality=Standard&View=Normal&Count=224935296";
+//    public static final String IP_CAMERA_URL = "http://115.179.100.76:8080/SnapshotJPEG?Resolution=640x480" +
+//            "&Quality=Standard&View=Normal&Count=224935296";
+    public static final String IP_CAMERA_URL = "http://220.233.144.165:8888/mjpg/video.mjpg"; // Sydney harbour camera
+
     @BeforeClass
     public static void getProps() {
         testAuthToken = System.getProperty("TestAuthToken", null);
