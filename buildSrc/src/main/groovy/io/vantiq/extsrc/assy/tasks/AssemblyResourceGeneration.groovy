@@ -1305,6 +1305,38 @@ class AssemblyResourceGeneration extends DefaultTask {
                     && KAMELET_SINK == stepDef.get(URI_ROUTE_TAG)) {
                 stepDef.put(URI_ROUTE_TAG, VANTIQ_SERVER_CONFIG_STRUCTURED)
             }
+
+            // The sections above focus on replacing the kamelet{source, sink} with Vantiq, as appropriate.
+            // Below, we make minor enhancements to change kamelet templates into real routes.  They are mostly the
+            // same, but there are some parameter definitions that are primarily intended to communicate with the
+            // human rather than the code.  For these, we'll quietly delete them.  In theory,  they are supported,
+            // but the underlying Camel mechanism just produces errors when they appear in a route definition.  Since
+            // they are serving no purpose for us, we'll just quietly delete them.
+            //
+            // Instances:
+            //  - to:
+            //      parameters
+            //        inBody: resource -- means to include the "resource" as the message body.  This is something the
+            //        caller needs to understand, and it's communicated into the Component documentation at the Camel
+            //        site.
+
+            if (k == TO_ROUTE_TAG && stepDef != null && stepDef.containsKey(URI_ROUTE_TAG) &&
+                    stepDef.containsKey('parameters')) {
+                log.debug("Checking for parameters:inBody: {}", stepDef)
+                Object oparms = stepDef.get('parameters')
+                if (oparms instanceof Map) {
+                    Map parms = oparms as Map
+                    if (parms.containsKey('inBody')) {
+                        // This is a directive the user/caller and isn't really handled well in Camel proper.
+                        // This is because the "property" specified is somewhat metaphoric
+                        // (e.g., inBody: "resource" -- meaning to send the _resource_ in the body of the
+                        // message) and isn't really useful here.  So we'll just quietly remove it.
+                        def o = parms.remove('inBody')
+                        stepDef.put('parameters', parms)
+                        log.debug('Removed "inBody" parameter from "to" step: {}', step)
+                    }
+                }
+            }
         }
     }
 
