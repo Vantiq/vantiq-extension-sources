@@ -33,7 +33,7 @@ This subproject will generate Vantiq assemblies from the Camel definitions downl
 as the `camel-kamelet` library from the dependencies (see the `build.gradle` file in this subproject).
 To generate the assembles, just run `../gradlew assemble`. After that, the Vantiq assemblies will be
 located in zip files under the build/distributions directory.
-For example,`build/distributions/ftp_sink_v3_21_0.zip`.
+For example,`build/distributions/ftp_sink_v4_4_3.zip`.
 
 ## Terminology and Naming
 
@@ -46,11 +46,11 @@ Each assembly and its included components are named including the name of the sy
 interact and the Apache Camel version in use (kamelets are Camel version specific).  For example, an assembly using 
 Camel version 3.21.x for consuming information from Amazon's AWS S3 will be in the Vantiq Camel assembly
 
-    com.vantiq.extsrc.camel.kamelets.v3_21_0.aws_s3_source
+    com.vantiq.extsrc.camel.kamelets.v4_4_3.aws_s3_source
 
 while an assembly for sending data to Amazon's AWS SNS will be found in
 
-    com.vantiq.extsrc.camel.kamelets.v3_21_0.aws_sns_sink
+    com.vantiq.extsrc.camel.kamelets.v4_4_3.aws_sns_sink
 
 For each of these cases, the Vantiq components contained in the assembly will have that assembly name as their 
 package name. The _base name_ for Vantiq components will be the kamelet name, with suffixes specific to the Vantiq 
@@ -74,10 +74,10 @@ The Vantiq Camel assemblies contained herein are composed of the following.
 * Vantiq Service -- this is the Vantiq item with which Vail code interacts.
   * The service interacts with the Vantiq source to move information to/from the Vantiq system.
   * The service is in the package matching the assembly name, and named with the base name with the suffix 
-    `_service`.  For example, `com.vantiq.extsrc.camel.kamelets.v3_21_0.aws_sns_sink.aws_sns_sink_service`.
+    `_service`.  For example, `com.vantiq.extsrc.camel.kamelets.v4_4_3.aws_sns_sink.aws_sns_sink_service`.
   * Each service is defined with an _inbound_ or _outbound_ event named with the base name with the suffix 
     `_serviceEvent`. Continuing the example above, `aws_sns_sink_serviceEvent` (so the full service event name is 
-    `com.vantiq.extsrc.camel.kamelets.v3_21_0.aws_sns_sink.aws_sns_sink_service/aws_sns_sink_serviceEvent`).
+    `com.vantiq.extsrc.camel.kamelets.v4_4_3.aws_sns_sink.aws_sns_sink_service/aws_sns_sink_serviceEvent`).
 * Vantiq Deployment Service
   * A service is created to deploy a Vantiq Camel Connector to a Vantiq K8s CLuster.
   * The service name is in the assembly's package, and named with the base name with the suffix `_Deployment`.
@@ -182,11 +182,11 @@ Each assembly contains such a service for performing the deployment. The service
 within the assembly, and is named using the base name with the `_Deployment` suffix.  So, for example, the 
 deployment service for the AWS EventBridge sink is
 
-`com.vantiq.extsrc.camel.kamelets.v3_21_0.aws_eventbridge_sink.Aws_eventbride_sink_Deployment`
+`com.vantiq.extsrc.camel.kamelets.v4_4_3.aws_eventbridge_sink.Aws_eventbride_sink_Deployment`
 
 with the deployment procedure being
 
-`com.vantiq.extsrc.camel.kamelets.v3_21_0.aws_eventbridge_sink.Aws_eventbride_sink_Deployment.deployToK8s()`
+`com.vantiq.extsrc.camel.kamelets.v4_4_3.aws_eventbridge_sink.Aws_eventbride_sink_Deployment.deployToK8s()`
 
 The actions required to perform the deployment are the same as those described for 
 [deploying a Camel Connector](../camelConnector/README.md#camelConnectorDeployment) with two (2) differences:
