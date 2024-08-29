@@ -1,0 +1,72 @@
+package com.vantiq.extsrc.camel4conn
+
+import service io.vantiq.text.Template
+
+PROCEDURE ConnectorDeployment.deployToK8s(clusterName String REQUIRED, installationName String REQUIRED, k8sNamespace String, targetUrl String, accessToken String, sourceName String Required, cpuLimit String, memoryLimit String, connectorImageTag String)
+
+// Check for parameter values.  Overrides from parameters take precedence.
+
+var selfNode = select ONE from system.nodes where type == "self"
+log.debug("Self node will use URI: {}", [selfNode.uri])
+
+if (k8sNamespace == null) {
+	k8sNamespace = "default"
+}
+
+if (targetUrl == null) {
+	var configVal = ResourceConfig.get("vantiqTargetUrl")
+	if (configVal == null || trim(configVal) == "") {
+		var selfNode = select ONE from system.nodes where
+			name == "self" and type == "self"
+		if (selfNode != null) {
+			targetUrl = selfNode.uri
+		}
+	} else {
+		targetUrl = configVal
+	}
+}
+
+if (accessToken == null) {
+	var configVal = ResourceConfig.get("vantiqAccessToken")
+	accessToken = configVal
+}
+
+if (cpuLimit == null) {
+	var configVal = ResourceConfig.get("vantiqCpuLimit")
+	cpuLimit = configVal
+}
+
+if (memoryLimit == null) {
+	var configVal = ResourceConfig.get("vantiqMemoryLimit")
+	memoryLimit = configVal
+}
+
+if (connectorImageTag == null) {
+	var configVal = ResourceConfig.get("connectorImageTag")
+	connectorImageTag = configVal
+}
+
+if (targetUrl == null || accessToken == null || sourceName == null || cpuLimit == null || memoryLimit == null || connectorImageTag == null) {
+	exception("com.vantiq.extsrc.camelconn.deployToK8s.parameters",
+		"Missing value for at least one of targetUrl ({0}), accessToken ({1}), sourceName ({2}), cpuLimit ({3}), memoryLimit ({4}), or connectorImageTag ({5}).",
+		[targetUrl, accessToken, sourceName, cpuLimit, memoryLimit, connectorImageTag])
+}
+
+// Now that we have the values we expect, let's prepare our installation configuration.
+
+var templateDoc = Template.documentReference("com.vantiq.extsrc.camelconn.camelConnectorToK8s.template")
+var k8sConfig = Template.format(templateDoc, {  TARGET_SERVER_URL: targetUrl,
+												AUTH_TOKEN: accessToken,
+												SOURCE_NAME: sourceName,
+												CPU_LIMIT: cpuLimit,
+												MEMORY_LIMIT: memoryLimit,
+												CONN_VERSION: connectorImageTag })
+log.debug("Preparing to create installation {} on cluster {} (ns: {}) with config: {}", [installationName, clusterName, k8sNamespace, k8sConfig])
+
+execute ResourceAPI.executeOp({
+    op: "deploy",
+    resourceName: "system.k8sclusters",
+    resourceId: clusterName,
+    object: { name: installationName, k8sNamespace: k8sNamespace, clusterName: clusterName, config: k8sConfig}
+    //parameters: { name: "else" }
+})

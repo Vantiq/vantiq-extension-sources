@@ -1,0 +1,24 @@
+[
+     {
+         "type": "image",
+         "name": "quay.io/vantiq/camelconnector-source:${CONN_VERSION}",
+         "pullPolicy": "IfNotPresent"
+     },
+     {
+        "type": "file",
+        "path": "/app/serverConfig",
+        "filename": "server.config",
+        "content": "targetServer=${TARGET_SERVER_URL}\\nsources=${SOURCE_NAME}\\n"
+     },
+     {
+        "type": "environmentVariable",
+        "name": "CONNECTOR_AUTH_TOKEN",
+        "value": "${AUTH_TOKEN}",
+        "asSecret": true
+     },
+     {
+        "type": "resourceLimit",
+        "cpu": "${CPU_LIMIT}",
+        "memory": "${MEMORY_LIMIT}"
+     }
+]
