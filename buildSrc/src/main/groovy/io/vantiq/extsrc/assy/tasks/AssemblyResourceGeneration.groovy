@@ -227,7 +227,7 @@ class AssemblyResourceGeneration extends DefaultTask {
 
     // Definitions from CamelConnector that we may need
     public static final String CAMEL_CONNECTOR_DEPLOYMENT_SERVICE = 'ConnectorDeployment'
-    public static final String CAMEL_CONNECTOR_DEPLOYMENT_PACKAGE = 'com.vantiq.extsrc.camelconn'
+    public static final String CAMEL_CONNECTOR_DEPLOYMENT_PACKAGE = 'com.vantiq.extsrc.camel4conn'
 
     public static final String CAMEL_CONNECTOR_DEPLOYMENT_PROCEDURE = DEPLOYMENT_PROCEDURE_NAME
 

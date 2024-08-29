@@ -107,7 +107,7 @@ java.targetCompatibility = JavaVersion.VERSION_17
  */
 
 task zipAssembly(type: Zip) {
-    def inFiles =  project.fileTree('src/main/resources/assembly/camelconnector')
+    def inFiles =  project.fileTree('src/main/resources/assembly/camel4connector')
     logger.debug('Infiles: {}', inFiles)
 
     project(':camelComponent').fileTree('src/main/resources/types').each { f ->
@@ -120,7 +120,7 @@ task zipAssembly(type: Zip) {
         include 'types/**/*'
     }
     into "${project.name}"
-    archiveName "${project.name}-assembly.zip"
+    archiveName "camel4connector-assembly.zip"
 }
 
 jar.finalizedBy zipAssembly
