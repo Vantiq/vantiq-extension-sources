@@ -205,7 +205,7 @@ class AssemblyResourceGeneration extends DefaultTask {
             try {
                 retVal = target as ResourceType
                 log.debug('Value of {}: {}', target, retVal)
-            } catch (IllegalArgumentException iae) {
+            } catch (IllegalArgumentException ignored) {
                 log.debug("No ResourceType value for {}", target)
                 target = target.substring(0, target.length() - 1) // Remove trailing s
                 log.debug(' ... looking for {}', target)
@@ -795,10 +795,13 @@ class AssemblyResourceGeneration extends DefaultTask {
             log.debug('Taking config defaults from {}', configOverrideFile.absolutePath)
             Map<String, Object> configDefault = new JsonSlurper().parse(configOverrideFile) as Map<String, Object>
             log.debug('Source config defaults for {}: {}', kamName, configDefault)
-            camelAppConfig << configDefault.get(CONFIG_CAMEL_RUNTIME)
-            generalConfig << configDefault.get(CONFIG_CAMEL_GENERAL)
+            mergeMaps(camelAppConfig, configDefault.get(CONFIG_CAMEL_RUNTIME) as Map)
+
+            log.debug('Before override, generalConfig: {}', generalConfig)
+            mergeMaps(generalConfig, configDefault.get(CONFIG_CAMEL_GENERAL) as Map)
+            log.debug('After override, generalConfig: {}', generalConfig)
         } else {
-            log.debug('No source config found for {}', configOverrideFile.absolutePath)
+            log.debug('No source config override found for {}', configOverrideFile.absolutePath)
         }
         sourceDef.config = [ (CONFIG_CAMEL_RUNTIME): camelAppConfig, (CONFIG_CAMEL_GENERAL): generalConfig]
         String srcDefJson = JsonOutput.prettyPrint(JsonOutput.toJson(sourceDef))
@@ -809,6 +812,24 @@ class AssemblyResourceGeneration extends DefaultTask {
         retVal.reference = buildResourceRef(VANTIQ_SOURCES, sourceDef.name as String)
         retVal.vailName = sourceDef.name
         return retVal
+    }
+
+    Map mergeMaps(Map lhs, Map rhs) {
+
+        log.debug('Attempting merge of {} & {}', lhs, rhs)
+        rhs.each { k, v ->
+            log.trace('Key value: {}, lhs type: {}, rhs: type: {}', k, lhs[k]?.class?.name, v?.class?.name)
+            if (lhs[k] instanceof Map && v instanceof Map) {
+                lhs[k] = (lhs[k] in Map ? mergeMaps(lhs[k] as Map, v as Map) : v)
+                log.trace('lhs[{}] is now {}', k, lhs[k])
+            } else if (lhs[k] instanceof List && v instanceof List) {
+                ((List) lhs[k]).addAll(rhs[k])
+            } else {
+                lhs[k] = v
+            }
+            log.trace('lhs[{}] is now {}', k, lhs[k])
+        }
+        return lhs
     }
 
     /**
