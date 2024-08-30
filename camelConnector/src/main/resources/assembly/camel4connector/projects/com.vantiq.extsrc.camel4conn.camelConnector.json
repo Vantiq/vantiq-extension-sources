@@ -41,12 +41,13 @@
         "resourceReference": "/documents/com.vantiq.extsrc.camel4conn.camelConnectorToK8s.template"
       },
       {
-        "resourceReference" : "/system.services/com.vantiq.extsrc.camel4conn.ConnectorDeployment"
+        "name" : "com.vantiq.extsrc.camel4conn.ConnectorDeployment",
+        "resourceReference" : "/services/com.vantiq.extsrc.camel4conn.ConnectorDeployment",
+        "type": 63
       },
       {
         "name" : "com.vantiq.extsrc.camel4conn.ConnectorDeployment.deployToK8s",
-        "resourceReference" : "/procedures/com.vantiq.extsrc.camel4conn.ConnectorDeployment.deployToK8s",
-        "serviceName" : "ConnectorDeployment"
+        "resourceReference" : "/procedures/com.vantiq.extsrc.camel4conn.ConnectorDeployment.deployToK8s"
       }
     ],
     "visibleResources": [
@@ -57,7 +58,7 @@
         "resourceReference": "/documents/com.vantiq.extsrc.camel4conn.camelConnectorToK8s.template"
       },
       {
-        "resourceReference" : "/system.services/com.vantiq.extsrc.camel4conn.ConnectorDeployment"
+        "resourceReference" : "/services/com.vantiq.extsrc.camel4conn.ConnectorDeployment"
       }
     ],
     "configurationMappings": {
@@ -107,7 +108,7 @@
         "type" : "String"
       },
       "connectorImageTag" : {
-        "default": "2.0.1",
+        "default": "4.4.3.1",
         "description" : "The image tag used to pull the Camel Connector image.  Generally, no need to change this. Ignore if not running in Kubernetes.",
         "type" : "String"
       }
