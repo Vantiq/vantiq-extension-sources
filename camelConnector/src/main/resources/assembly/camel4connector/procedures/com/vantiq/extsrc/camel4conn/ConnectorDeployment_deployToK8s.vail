@@ -54,7 +54,7 @@ if (targetUrl == null || accessToken == null || sourceName == null || cpuLimit =
 
 // Now that we have the values we expect, let's prepare our installation configuration.
 
-var templateDoc = Template.documentReference("com.vantiq.extsrc.camelconn.camelConnectorToK8s.template")
+var templateDoc = Template.documentReference("com.vantiq.extsrc.camel4conn.camelConnectorToK8s.template")
 var k8sConfig = Template.format(templateDoc, {  TARGET_SERVER_URL: targetUrl,
 												AUTH_TOKEN: accessToken,
 												SOURCE_NAME: sourceName,
