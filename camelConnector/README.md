@@ -309,7 +309,7 @@ accidentally override any existing Sources or Types.
 
 # The Camel Connector Assembly
 
-This repository defines a Camel Connector Assembly (`com.vantiq.extsrc.camelconn.CamelConnector`) which can be
+This repository defines a Camel Connector Assembly (`com.vantiq.extsrc.camel4conn.CamelConnector`) which can be
 imported into a Vantiq catalog. Some Vantiq installations will contain a public catalog (the _Camel Catalog_) that
 contains this assembly.
 
@@ -318,7 +318,7 @@ The assembly, once imported, defines the following Vantiq entities.
 * The CAMEL Source Implementation.  This is used to [define the Vantiq Source](#sourceConfiguration).
 * The `com.vantiq.extsrc.camelcomp.message` schema type.
     See [Camel Component Structured Messages](../camelComponent/README.md#structuredMessages)
-* The `com.vantiq.extsrc.camelcomp.ConnectorDeployment` service, including the `deployToK8s()` procedure.
+* The `com.vantiq.extsrc.camel4comp.ConnectorDeployment` service, including the `deployToK8s()` procedure.
 
 Once this assembly is installed, these items are available for use in the namespace in which the assembly is installed.
 Use of the source implementation and the schema type are outlined in the links provided.
