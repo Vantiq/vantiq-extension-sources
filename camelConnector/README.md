@@ -318,7 +318,7 @@ The assembly, once imported, defines the following Vantiq entities.
 * The CAMEL Source Implementation.  This is used to [define the Vantiq Source](#sourceConfiguration).
 * The `com.vantiq.extsrc.camelcomp.message` schema type.
     See [Camel Component Structured Messages](../camelComponent/README.md#structuredMessages)
-* The `com.vantiq.extsrc.camel4comp.ConnectorDeployment` service, including the `deployToK8s()` procedure.
+* The `com.vantiq.extsrc.camel4conn.ConnectorDeployment` service, including the `deployToK8s()` procedure.
 
 Once this assembly is installed, these items are available for use in the namespace in which the assembly is installed.
 Use of the source implementation and the schema type are outlined in the links provided.
