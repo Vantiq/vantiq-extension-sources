@@ -1,0 +1,9 @@
+{
+  "name" : "CAMEL",
+  "baseType" : "EXTENSION",
+  "verticle" : "service:extensionSource",
+  "config" : {},
+  "operations" : [ "publish", "query", "notification" ],
+  "baseConfigProperties": [
+  ]
+}

@@ -61,6 +61,7 @@ dependencies {
     implementation "com.google.code.gson:gson:${gsonVersion}"
     // Used for downloading route documents
     implementation "io.vantiq:vantiq-sdk:${vantiqSDKVersion}"
+    implementation "org.apache.logging.log4j:log4j-slf4j2-impl:${log4JVersion}"
 
     // The following are the DSL libraries to include for support of the various route builders.
     // We need to include them in the base product (as oppose to using our constructed classloader)
@@ -70,7 +71,6 @@ dependencies {
     // End of DSL-specific inclusions.
 
     testImplementation project(path: ":camelComponent", configuration: "testArtifacts")
-    testImplementation "org.apache.logging.log4j:log4j-slf4j2-impl:${log4JVersion}"
     testImplementation "org.apache.camel:camel-test-junit5:${camelVersion}"
     testImplementation "io.vantiq:vantiq-sdk:${vantiqSDKVersion}"
     testImplementation project(path: ":extjsdk", configuration: 'testArtifacts')
@@ -107,7 +107,7 @@ java.targetCompatibility = JavaVersion.VERSION_17
  */
 
 task zipAssembly(type: Zip) {
-    def inFiles =  project.fileTree('src/main/resources/assembly/camelconnector')
+    def inFiles =  project.fileTree('src/main/resources/assembly/camel4connector')
     logger.debug('Infiles: {}', inFiles)
 
     project(':camelComponent').fileTree('src/main/resources/types').each { f ->
@@ -120,7 +120,7 @@ task zipAssembly(type: Zip) {
         include 'types/**/*'
     }
     into "${project.name}"
-    archiveName "${project.name}-assembly.zip"
+    archiveName "camel4connector-assembly.zip"
 }
 
 jar.finalizedBy zipAssembly

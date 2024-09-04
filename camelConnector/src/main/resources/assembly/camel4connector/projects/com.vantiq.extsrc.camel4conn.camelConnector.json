@@ -1,0 +1,116 @@
+{
+    "name": "com.vantiq.extsrc.camel4conn.camelConnector",
+    "type": "dev",
+    "ars_relationships": [
+        
+    ],
+    "links": [
+        
+    ],
+    "tools": [
+        
+    ],
+    "views": [
+        
+    ],
+    "partitions": [
+        
+    ],
+    "isAssembly": true,
+    "options": {
+        "description": "Camel Connector Definition",
+        "filterBitArray": "ffffffffffffffffffffffffffffffff",
+        "type": "dev",
+        "v": 5,
+        "isModeloProject": true
+    },
+    "resources": [
+      {
+        "label": "CAMEL",
+        "name" : "CAMEL",
+        "resourceReference": "/sourceimpls/CAMEL",
+        "type" : 69
+      },
+      {
+        "label" : "com.vantiq.extsrc.camelcomp.message",
+        "name" : "com.vantiq.extsrc.camelcomp.message",
+        "resourceReference": "/types/com.vantiq.extsrc.camelcomp.message",
+        "type": 1
+      },
+      {
+        "resourceReference": "/documents/com.vantiq.extsrc.camel4conn.camelConnectorToK8s.template"
+      },
+      {
+        "name" : "com.vantiq.extsrc.camel4conn.ConnectorDeployment",
+        "resourceReference" : "/services/com.vantiq.extsrc.camel4conn.ConnectorDeployment",
+        "type": 63
+      },
+      {
+        "name" : "com.vantiq.extsrc.camel4conn.ConnectorDeployment.deployToK8s",
+        "resourceReference" : "/procedures/com.vantiq.extsrc.camel4conn.ConnectorDeployment.deployToK8s"
+      }
+    ],
+    "visibleResources": [
+      {
+        "resourceReference": "/types/com.vantiq.extsrc.camelcomp.message"
+      },
+      {
+        "resourceReference": "/documents/com.vantiq.extsrc.camel4conn.camelConnectorToK8s.template"
+      },
+      {
+        "resourceReference" : "/services/com.vantiq.extsrc.camel4conn.ConnectorDeployment"
+      }
+    ],
+    "configurationMappings": {
+      "connectorImageTag" : [ {
+        "property" : "connectorImageTag",
+        "resource" : "procedures",
+        "resourceId" : "com.vantiq.extsrc.camel4conn.ConnectorDeployment.deployToK8s"
+      } ],
+      "vantiqAccessToken" : [ {
+        "property" : "vantiqAccessToken",
+        "resource" : "procedures",
+        "resourceId" : "com.vantiq.extsrc.camel4conn.ConnectorDeployment.deployToK8s"
+      } ],
+      "vantiqCpuLimit" : [ {
+        "property" : "vantiqCpuLimit",
+        "resource" : "procedures",
+        "resourceId" : "com.vantiq.extsrc.camel4conn.ConnectorDeployment.deployToK8s"
+      } ],
+      "vantiqMemoryLimit" : [ {
+        "property" : "vantiqMemoryLimit",
+        "resource" : "procedures",
+        "resourceId" : "com.vantiq.extsrc.camel4conn.ConnectorDeployment.deployToK8s"
+      } ],
+      "vantiqServerUrl" : [ {
+        "property" : "vantiqTargetUrl",
+        "resource" : "procedures",
+        "resourceId" : "com.vantiq.extsrc.camel4conn.ConnectorDeployment.deployToK8s"
+      } ]
+    },
+    "configurationProperties": {
+      "vantiqServerUrl" : {
+        "description" : "The URL that the connector will use to contact Vantiq. Usually, this is what a user would type into the browser, but it may be different for access from the Kubernetes cluster in which this will run. Ignore if not running in Kubernetes.",
+        "type" : "String"
+      },
+      "vantiqAccessToken" : {
+        "description" : "Access token to be used by the connector to access Vantiq. Ignore if not using Kubernetes.",
+        "type" : "String"
+      },
+      "vantiqCpuLimit" : {
+        "default" : "500m",
+        "description" : "Kubernetes resource limit for the connector's CPU usage. Ignore if not using Kubernetes.",
+        "type" : "String"
+      },
+      "vantiqMemoryLimit" : {
+        "default" : "1Gi",
+        "description" : "Kubernetes resource limit for the connector's memory usage. Ignore if not using Kubernetes.",
+        "type" : "String"
+      },
+      "connectorImageTag" : {
+        "default": "4.4.3.1",
+        "description" : "The image tag used to pull the Camel Connector image.  Generally, no need to change this. Ignore if not running in Kubernetes.",
+        "type" : "String"
+      }
+    }
+}
