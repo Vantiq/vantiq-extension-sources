@@ -3,11 +3,12 @@ package io.vantiq.extsrc.camel;
 import static io.vantiq.extjsdk.Utils.AUTH_TOKEN_PROPERTY_NAME;
 import static io.vantiq.extjsdk.Utils.SOURCES_PROPERTY_NAME;
 import static io.vantiq.extjsdk.Utils.TARGET_SERVER_PROPERTY_NAME;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import io.vantiq.extjsdk.Utils;
 import org.apache.camel.Endpoint;
-import org.apache.camel.test.junit4.CamelTestSupport;
-import org.junit.BeforeClass;
+import org.apache.camel.test.junit5.CamelTestSupport;
+import org.junit.jupiter.api.BeforeAll;
 
 import java.io.File;
 import java.net.URI;
@@ -20,8 +21,7 @@ public class VantiqUriTestBase extends CamelTestSupport {
     protected static final String testSourceName = "camelSource";
     protected static final String accessToken = "someAccessToken";
     
-    
-    @BeforeClass
+    @BeforeAll
     public static void setupSourceConfig() throws Exception {
         File sc = new File(Utils.SERVER_CONFIG_FILENAME);
         sc.deleteOnExit();
@@ -38,9 +38,9 @@ public class VantiqUriTestBase extends CamelTestSupport {
         assert epConsumer.getEndpointUri().contains(accessToken);
         assert epConsumer.getEndpointUri().contains(testSourceName);
         URI senderUri = new URI(epConsumer.getEndpointUri());
-        assertEquals("vantiq", senderUri.getScheme());
-        assertEquals("localhost", senderUri.getHost());
-        assertEquals(8080, senderUri.getPort());
+        assertEquals("vantiq", senderUri.getScheme(), "Expected Scheme");
+        assertEquals("localhost", senderUri.getHost(), "Expected host");
+        assertEquals(8080, senderUri.getPort(), "Expeced port");
         String qry = senderUri.getQuery();
         assert qry.contains("accessToken");
         assert qry.contains("sourceName");

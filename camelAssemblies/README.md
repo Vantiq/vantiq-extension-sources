@@ -12,7 +12,7 @@ create Vantiq services and sources for connections to or from external systems s
 **IMPORTANT:** A basic understanding of the [Vantiq Camel Connector](../camelConnector/README.md) is assumed.
 
 All assemblies contained herein (Vantiq Camel assemblies) are built atop the base Camel Connector assembly, 
-`com.vantiq.extsrc.camelconn.camelConnector`.  Specifically, the Camel Connector 
+`com.vantiq.extsrc.camel4conn.camelConnector`.  Specifically, the Camel Connector 
 assembly defines the Camel Connector source implementation type and the schema type
 `com.vantiq.extsrc.camelcomp.message` that defines the message format for messages used between the Camel connector
 and the Vantiq system.
@@ -33,7 +33,7 @@ This subproject will generate Vantiq assemblies from the Camel definitions downl
 as the `camel-kamelet` library from the dependencies (see the `build.gradle` file in this subproject).
 To generate the assembles, just run `../gradlew assemble`. After that, the Vantiq assemblies will be
 located in zip files under the build/distributions directory.
-For example,`build/distributions/ftp_sink_v3_21_0.zip`.
+For example,`build/distributions/ftp_sink_v4_4_3.zip`.
 
 ## Terminology and Naming
 
@@ -44,13 +44,13 @@ names of the included Vantiq components. Those that get data _from_ another syst
 
 Each assembly and its included components are named including the name of the system with which they
 interact and the Apache Camel version in use (kamelets are Camel version specific).  For example, an assembly using 
-Camel version 3.21.x for consuming information from Amazon's AWS S3 will be in the Vantiq Camel assembly
+Camel version 4.4.3 for consuming information from Amazon's AWS S3 will be in the Vantiq Camel assembly
 
-    com.vantiq.extsrc.camel.kamelets.v3_21_0.aws_s3_source
+    com.vantiq.extsrc.camel.kamelets.v4_4_3.aws_s3_source
 
 while an assembly for sending data to Amazon's AWS SNS will be found in
 
-    com.vantiq.extsrc.camel.kamelets.v3_21_0.aws_sns_sink
+    com.vantiq.extsrc.camel.kamelets.v4_4_3.aws_sns_sink
 
 For each of these cases, the Vantiq components contained in the assembly will have that assembly name as their 
 package name. The _base name_ for Vantiq components will be the kamelet name, with suffixes specific to the Vantiq 
@@ -64,7 +64,8 @@ configured to make the connection to the associated information system via the C
 The Vantiq Camel assemblies contained herein are composed of the following.
 
 * Vantiq Source -- this is the Vantiq component that represents the external system to the Vantiq environment.
-  * The Vantiq source will be of type `CAMEL`. This is defined in the Camel Connector assembly `com.vantiq.extsrc.camelconn.camelConnector`.
+  * The Vantiq source will be of type `CAMEL`. This is defined in the Camel Connector assembly `com.vantiq.extsrc.
+    camel4conn.camelConnector`.
   * The source's configuration will include the Camel route to/from (source/sink) the external source via Camel 
     Component(s).
   * The configuration may include configuration information (such as credentials, type of interaction) generated 
@@ -74,10 +75,10 @@ The Vantiq Camel assemblies contained herein are composed of the following.
 * Vantiq Service -- this is the Vantiq item with which Vail code interacts.
   * The service interacts with the Vantiq source to move information to/from the Vantiq system.
   * The service is in the package matching the assembly name, and named with the base name with the suffix 
-    `_service`.  For example, `com.vantiq.extsrc.camel.kamelets.v3_21_0.aws_sns_sink.aws_sns_sink_service`.
+    `_service`.  For example, `com.vantiq.extsrc.camel.kamelets.v4_4_3.aws_sns_sink.aws_sns_sink_service`.
   * Each service is defined with an _inbound_ or _outbound_ event named with the base name with the suffix 
     `_serviceEvent`. Continuing the example above, `aws_sns_sink_serviceEvent` (so the full service event name is 
-    `com.vantiq.extsrc.camel.kamelets.v3_21_0.aws_sns_sink.aws_sns_sink_service/aws_sns_sink_serviceEvent`).
+    `com.vantiq.extsrc.camel.kamelets.v4_4_3.aws_sns_sink.aws_sns_sink_service/aws_sns_sink_serviceEvent`).
 * Vantiq Deployment Service
   * A service is created to deploy a Vantiq Camel Connector to a Vantiq K8s CLuster.
   * The service name is in the assembly's package, and named with the base name with the suffix `_Deployment`.
@@ -121,7 +122,7 @@ To make use of any Vantiq Camel assembly defined herein, the user should perform
 
 * Add the Vantiq Catalog containing the definitions. In Vantiq public systems, this is, at the time of this writing, 
   named `CamelCatalog`. This must be done once per namespace into which any of these assemblies will be installed.
-* From that catalog, import the `com.vantiq.extsrc.camelconn.camelConnector` assembly. This is a prerequisite for 
+* From that catalog, install the `com.vantiq.extsrc.camel4conn.camelConnector` assembly. This is a prerequisite for 
   the Vantiq Camel assemblies.  See the [Camel Connector document](../camelConnector/README.md).
   * As with the addition of the Vantiq Catalog, this needs to be done once per Vantiq namespace in which these 
     assemblies are being used.
@@ -129,18 +130,17 @@ To make use of any Vantiq Camel assembly defined herein, the user should perform
     * The `CAMEL` source implementation type.
     * The Vantiq _schema_ used for the _structured messages_ used to interact with the source.
     * A deployment procedure used to deploy the connector to Kubernetes via a Vantiq K8sCluster.
-* From that catalog, import the Vantiq Camel assembly or assemblies desired, providing the configuration properties as 
+* From that catalog, install the Vantiq Camel assembly or assemblies desired, providing the configuration properties as 
   requested. 
-  * These configuration properties
-  will often include addressing information and credentials for the remote systems. It is strongly suggested that 
-    credential information (or other confidential information) be stored in Vantiq 
+  * These configuration properties will often include addressing information and credentials for the remote systems. 
+    It is strongly suggested that credential information (or other confidential information) be stored in Vantiq 
     Secrets, and referenced using the `@secrets()` notation.
 
 ## Using the Vantiq Camel Assemblies
 
 Once installed, each Vantiq Camel assembly creates a source & service for interacting with that source.
 
-The source is defined and  implemented via a [Camel Connector](../camelConnector/README.md). To run the Camel 
+The source is defined and implemented via a [Camel Connector](../camelConnector/README.md). To run the Camel 
 Connector, please see the [Camel Connector overview](../camelConnector/README.md). To deploy said connector using a 
 Vantiq K8sCluster, see [Deploying the Camel Connector to Kubernetes](#deploying-the-camel-connector-to-kubernetes)
 
@@ -150,10 +150,10 @@ All are constructed to use _structured messages_ as defined by the
 [Camel Component](../camelComponent/README.md#structured-headers-and-messages). Consequently, messages sent to/from 
 the service should be in this format. Specifically, such messages contain two (2) properties: `header` and `message`,
 where the `header` property contains the Camel headers, and the `message` property contains Camel message.
-The associated Vantiq _schema_ is defined via the `com.vantiq.extsrc.camelconn.camelConnector` assembly imported as 
+The associated Vantiq _schema_ is defined via the `com.vantiq.extsrc.camel4conn.camelConnector` assembly imported as 
 described above.  This imported assembly is a prerequisite for the other Vantiq Camel assemblies.
 
-**Note**: Some of these Vantiq Camel assemblies (specifically those that work with systems
+**Note**: With some of these Vantiq Camel assemblies (specifically those that work with systems
 with limited messaging capabilities),
 the Vantiq Component will construct output messages (the `message` property) with a single 
 property (`stringVal` or `byteVal`) containing the 
@@ -182,11 +182,11 @@ Each assembly contains such a service for performing the deployment. The service
 within the assembly, and is named using the base name with the `_Deployment` suffix.  So, for example, the 
 deployment service for the AWS EventBridge sink is
 
-`com.vantiq.extsrc.camel.kamelets.v3_21_0.aws_eventbridge_sink.Aws_eventbride_sink_Deployment`
+`com.vantiq.extsrc.camel.kamelets.v4_4_3.aws_eventbridge_sink.Aws_eventbride_sink_Deployment`
 
 with the deployment procedure being
 
-`com.vantiq.extsrc.camel.kamelets.v3_21_0.aws_eventbridge_sink.Aws_eventbride_sink_Deployment.deployToK8s()`
+`com.vantiq.extsrc.camel.kamelets.v4_4_3.aws_eventbridge_sink.Aws_eventbride_sink_Deployment.deployToK8s()`
 
 The actions required to perform the deployment are the same as those described for 
 [deploying a Camel Connector](../camelConnector/README.md#camelConnectorDeployment) with two (2) differences:
@@ -194,8 +194,7 @@ The actions required to perform the deployment are the same as those described f
 1) The service and procedure to use varies from assembly to assembly
   (they are named and packaged as per the assembly), and
 2) The source name value should not (cannot) be provided.  It is provided by the assembly and the specialized 
-   service 
-   contained therein.
+   service contained therein.
 
 So, using the same assembly as an example, assembly installation will provide the service definition
 

@@ -25,7 +25,7 @@ PROCEDURE doFhirSearch(urlParam String, resourceType String): Object
 var msg = { resourceType: resourceType }
 var headers = {CamelFhir.url = urlParam }
 
-publish {headers: headers, message: msg } to SERVICE EVENT  "com.vantiq.extsrc.camel.kamelets.v3_21_0.fhir_sink.fhir_sink_service/fhir_sink_serviceEvent"
+publish {headers: headers, message: msg } to SERVICE EVENT  "com.vantiq.extsrc.camel.kamelets.v4_4_3.fhir_sink.fhir_sink_service/fhir_sink_serviceEvent"
 
 return null
 ```
@@ -44,7 +44,7 @@ PROCEDURE returnFhirSearch(urlParam String, resourceType String): Object array
 var msg = { resourceType: resourceType }
 var headers = {CamelFhir.url = urlParam }
 
-var res = select * from source com.vantiq.extsrc.camel.kamelets.v3_21_0.fhir_sink.fhir_sink_source 
+var res = select * from source com.vantiq.extsrc.camel.kamelets.v4_4_3.fhir_sink.fhir_sink_source 
 	with message = msg, headers = headers
 return res
 ```

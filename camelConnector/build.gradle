@@ -7,6 +7,7 @@ plugins {
     id 'java'
     id 'maven-publish'
     id 'application'
+    id("io.freefair.lombok")   //version "6.3.0" // version "8.7.1"
 }
 
 mainClassName = 'io.vantiq.extsrc.camelconn.connector.CamelMain'
@@ -35,14 +36,11 @@ repositories {
 
 ext {
     apacheCommonsLangVersion = '3.12.0'
-    dnsJavaVersion = '3.4.2'
+    dnsJavaVersion = '3.6.1'
     gsonVersion = '2.9.1'
     ivyVersion = '2.5.2'
-    jacksonVersion = '2.14.2'
-    junitVersion = '4.13.2'
     junitVintageEngineVersion = '5.8.2'
-    junitVersion = '4.13.2'
-    log4JVersion='2.17.2'
+    log4JVersion = '2.23.1'
 }
 
 dependencies {
@@ -59,10 +57,11 @@ dependencies {
     implementation project(":extjsdk")
     implementation project(":camelComponent")    // The Vantiq Camel Component is automatically included
     implementation "com.fasterxml.jackson.core:jackson-databind:${jacksonVersion}"
-    implementation "com.fasterxml.jackson.datatype:jackson-datatype-jsr310:{jacksonVersion}"
+    implementation "com.fasterxml.jackson.datatype:jackson-datatype-jsr310:${jacksonVersion}"
     implementation "com.google.code.gson:gson:${gsonVersion}"
     // Used for downloading route documents
     implementation "io.vantiq:vantiq-sdk:${vantiqSDKVersion}"
+    implementation "org.apache.logging.log4j:log4j-slf4j2-impl:${log4JVersion}"
 
     // The following are the DSL libraries to include for support of the various route builders.
     // We need to include them in the base product (as oppose to using our constructed classloader)
@@ -72,13 +71,12 @@ dependencies {
     // End of DSL-specific inclusions.
 
     testImplementation project(path: ":camelComponent", configuration: "testArtifacts")
-    testImplementation "org.apache.logging.log4j:log4j-slf4j-impl:${log4JVersion}"
-    testImplementation "org.apache.camel:camel-test:${camelVersion}"
+    testImplementation "org.apache.camel:camel-test-junit5:${camelVersion}"
     testImplementation "io.vantiq:vantiq-sdk:${vantiqSDKVersion}"
     testImplementation project(path: ":extjsdk", configuration: 'testArtifacts')
     testImplementation "dnsjava:dnsjava:${dnsJavaVersion}"
-    testImplementation("junit:junit:${junitVersion}")
-    testRuntimeOnly("org.junit.vintage:junit-vintage-engine:${junitVintageEngineVersion}")
+    testImplementation "org.junit.jupiter:junit-jupiter-api:${junit5Version}"
+    testRuntimeOnly "org.junit.jupiter:junit-jupiter-engine:${junit5Version}"
 }
 
 jar {
@@ -100,7 +98,7 @@ group = 'io.vantiq.extsrc.camelconnector'
 version = 'unspecified'
 description = 'Vantiq Camel Connector'
 java.sourceCompatibility = 1.11
-java.targetCompatibility = JavaVersion.VERSION_11
+java.targetCompatibility = JavaVersion.VERSION_17
 
 /**
  * The following task builds an assembly project zip file to make the CAMEL source implementation type
@@ -109,7 +107,7 @@ java.targetCompatibility = JavaVersion.VERSION_11
  */
 
 task zipAssembly(type: Zip) {
-    def inFiles =  project.fileTree('src/main/resources/assembly/camelconnector')
+    def inFiles =  project.fileTree('src/main/resources/assembly/camel4connector')
     logger.debug('Infiles: {}', inFiles)
 
     project(':camelComponent').fileTree('src/main/resources/types').each { f ->
@@ -122,7 +120,7 @@ task zipAssembly(type: Zip) {
         include 'types/**/*'
     }
     into "${project.name}"
-    archiveName "${project.name}-assembly.zip"
+    archiveName "camel4connector-assembly.zip"
 }
 
 jar.finalizedBy zipAssembly
@@ -143,7 +141,7 @@ publishing {
     }
 }
 
-tasks.withType(JavaCompile) {
+tasks.withType(JavaCompile).configureEach {
     options.encoding = 'UTF-8'
 }
 
@@ -182,12 +180,12 @@ tasks.register('generateComponentList', ) {
         return false
     })
     doFirst {
-        if (!rootProject.hasProperty('camelRoot')) {
+        if (!rootProject.hasProperty('camelRoot4')) {
             throw new GradleException('"camelRoot" property is required to generate the component list')
         }
     }
     doLast {
-        def camRootSpec = rootProject.getProperty('camelRoot')
+        def camRootSpec = rootProject.getProperty('camelRoot4')
         logger.info('CamelRootSpec: {}', camRootSpec)
         def camelRoot = file(camRootSpec)
         logger.info('Camel root is {}', camelRoot.absolutePath)
@@ -298,7 +296,7 @@ tasks.register('generateComponentList', ) {
     }
 }
 
-tasks.withType(Test) {
+tasks.withType(Test).configureEach {
     if (rootProject.hasProperty("TestAuthToken")) {
         systemProperty "TestAuthToken", rootProject.findProperty("TestAuthToken") ?: "empty"
     }

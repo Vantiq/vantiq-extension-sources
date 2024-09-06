@@ -1,0 +1,75 @@
+{
+    "active": true,
+    "ars_relationships": [
+        
+    ],
+    "description": "Service for deployment of Camel Connector",
+    "globalType": null,
+    "interface" : [ {
+      "name" : "deployToK8s",
+      "description" : "Creates a K8sInstallation running the Vantiq Camel Connector. The procedure parameters provide the specifics required. Assumes that a K8sCluster already exists.",
+      "parameters" : [
+          {
+            "description" : "The name of the K8sCluster to which to deploy this connector.",
+            "multi" : false,
+            "name" : "clusterName",
+            "required" : true,
+            "type" : "String"
+          },{
+            "description" : "The name of the K8sInstallation to be deployed.",
+            "multi" : false,
+            "name" : "installationName",
+            "required" : true,
+            "type" : "String"
+          },{
+            "description" : "The name of Kubernetes namespace into which to deploy.",
+            "multi" : false,
+            "name" : "k8sNamespace",
+            "required" : false,
+            "type" : "String"
+          },{
+            "description" : "The URL of the Vantiq server with which the connector will interact. Generally, this is the same as what might be used in the browser, but it may be different when contacting from within a Kubernetes cluster.",
+            "multi" : false,
+            "name" : "targetUrl",
+            "required" : false,
+            "type" : "String"
+          },{
+            "description" : "The access token the connector will use to make the connection to the Vantiq server.",
+            "multi" : false,
+            "name" : "accessToken",
+            "required" : false,
+            "type" : "String"
+          },{
+            "description" : "The name of the Vantiq source implemented by this connector.",
+            "multi" : false,
+            "name" : "sourceName",
+            "required" : true,
+            "type" : "String"
+          },{
+            "description" : "The limit on the CPU usage for this connector within the Kubernetes cluster.",
+            "multi" : false,
+            "name" : "cpuLimit",
+            "required" : false,
+            "type" : "String"
+          },{
+            "description" : "The limit on the memory usage for this connector within the Kubernetes cluster.",
+            "multi" : false,
+            "name" : "memoryLimit",
+            "required" : false,
+            "type" : "String"
+          },{
+          "description" : "The docker image tag to be used when fetching the image to run",
+          "multi" : false,
+          "name" : "connectorImageTag",
+          "required" : false,
+          "type" : "String"
+        } ]
+      } ],
+    "internalEventHandlers": [ ],
+    "name": "com.vantiq.extsrc.camel4conn.ConnectorDeployment",
+    "partitionType": null,
+    "replicationFactor": 1,
+    "scheduledProcedures": {
+        
+    }
+}

@@ -205,7 +205,7 @@ class AssemblyResourceGeneration extends DefaultTask {
             try {
                 retVal = target as ResourceType
                 log.debug('Value of {}: {}', target, retVal)
-            } catch (IllegalArgumentException iae) {
+            } catch (IllegalArgumentException ignored) {
                 log.debug("No ResourceType value for {}", target)
                 target = target.substring(0, target.length() - 1) // Remove trailing s
                 log.debug(' ... looking for {}', target)
@@ -227,7 +227,7 @@ class AssemblyResourceGeneration extends DefaultTask {
 
     // Definitions from CamelConnector that we may need
     public static final String CAMEL_CONNECTOR_DEPLOYMENT_SERVICE = 'ConnectorDeployment'
-    public static final String CAMEL_CONNECTOR_DEPLOYMENT_PACKAGE = 'com.vantiq.extsrc.camelconn'
+    public static final String CAMEL_CONNECTOR_DEPLOYMENT_PACKAGE = 'com.vantiq.extsrc.camel4conn'
 
     public static final String CAMEL_CONNECTOR_DEPLOYMENT_PROCEDURE = DEPLOYMENT_PROCEDURE_NAME
 
@@ -795,10 +795,13 @@ class AssemblyResourceGeneration extends DefaultTask {
             log.debug('Taking config defaults from {}', configOverrideFile.absolutePath)
             Map<String, Object> configDefault = new JsonSlurper().parse(configOverrideFile) as Map<String, Object>
             log.debug('Source config defaults for {}: {}', kamName, configDefault)
-            camelAppConfig << configDefault.get(CONFIG_CAMEL_RUNTIME)
-            generalConfig << configDefault.get(CONFIG_CAMEL_GENERAL)
+            mergeMaps(camelAppConfig, configDefault.get(CONFIG_CAMEL_RUNTIME) as Map)
+
+            log.debug('Before override, generalConfig: {}', generalConfig)
+            mergeMaps(generalConfig, configDefault.get(CONFIG_CAMEL_GENERAL) as Map)
+            log.debug('After override, generalConfig: {}', generalConfig)
         } else {
-            log.debug('No source config found for {}', configOverrideFile.absolutePath)
+            log.debug('No source config override found for {}', configOverrideFile.absolutePath)
         }
         sourceDef.config = [ (CONFIG_CAMEL_RUNTIME): camelAppConfig, (CONFIG_CAMEL_GENERAL): generalConfig]
         String srcDefJson = JsonOutput.prettyPrint(JsonOutput.toJson(sourceDef))
@@ -809,6 +812,24 @@ class AssemblyResourceGeneration extends DefaultTask {
         retVal.reference = buildResourceRef(VANTIQ_SOURCES, sourceDef.name as String)
         retVal.vailName = sourceDef.name
         return retVal
+    }
+
+    Map mergeMaps(Map lhs, Map rhs) {
+
+        log.debug('Attempting merge of {} & {}', lhs, rhs)
+        rhs.each { k, v ->
+            log.trace('Key value: {}, lhs type: {}, rhs: type: {}', k, lhs[k]?.class?.name, v?.class?.name)
+            if (lhs[k] instanceof Map && v instanceof Map) {
+                lhs[k] = (lhs[k] in Map ? mergeMaps(lhs[k] as Map, v as Map) : v)
+                log.trace('lhs[{}] is now {}', k, lhs[k])
+            } else if (lhs[k] instanceof List && v instanceof List) {
+                ((List) lhs[k]).addAll(rhs[k])
+            } else {
+                lhs[k] = v
+            }
+            log.trace('lhs[{}] is now {}', k, lhs[k])
+        }
+        return lhs
     }
 
     /**
@@ -1304,6 +1325,38 @@ class AssemblyResourceGeneration extends DefaultTask {
             } else if (k == TO_ROUTE_TAG && stepDef != null && stepDef.containsKey(URI_ROUTE_TAG)
                     && KAMELET_SINK == stepDef.get(URI_ROUTE_TAG)) {
                 stepDef.put(URI_ROUTE_TAG, VANTIQ_SERVER_CONFIG_STRUCTURED)
+            }
+
+            // The sections above focus on replacing the kamelet{source, sink} with Vantiq, as appropriate.
+            // Below, we make minor enhancements to change kamelet templates into real routes.  They are mostly the
+            // same, but there are some parameter definitions that are primarily intended to communicate with the
+            // human rather than the code.  For these, we'll quietly delete them.  In theory,  they are supported,
+            // but the underlying Camel mechanism just produces errors when they appear in a route definition.  Since
+            // they are serving no purpose for us, we'll just quietly delete them.
+            //
+            // Instances:
+            //  - to:
+            //      parameters
+            //        inBody: resource -- means to include the "resource" as the message body.  This is something the
+            //        caller needs to understand, and it's communicated into the Component documentation at the Camel
+            //        site.
+
+            if (k == TO_ROUTE_TAG && stepDef != null && stepDef.containsKey(URI_ROUTE_TAG) &&
+                    stepDef.containsKey('parameters')) {
+                log.debug("Checking for parameters:inBody: {}", stepDef)
+                Object oparms = stepDef.get('parameters')
+                if (oparms instanceof Map) {
+                    Map parms = oparms as Map
+                    if (parms.containsKey('inBody')) {
+                        // This is a directive the user/caller and isn't really handled well in Camel proper.
+                        // This is because the "property" specified is somewhat metaphoric
+                        // (e.g., inBody: "resource" -- meaning to send the _resource_ in the body of the
+                        // message) and isn't really useful here.  So we'll just quietly remove it.
+                        def o = parms.remove('inBody')
+                        stepDef.put('parameters', parms)
+                        log.debug('Removed "inBody" parameter from "to" step: {}', step)
+                    }
+                }
             }
         }
     }

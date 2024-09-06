@@ -50,7 +50,7 @@ import java.util.concurrent.ExecutorService;
  *
  */
 @UriEndpoint(firstVersion = "1.0-SNAPSHOT", scheme = "vantiq", title = "vantiq", syntax="vantiq:name",
-             category = {Category.JAVA})
+             category = {Category.CLOUD, Category.SAAS})
 @UriParams
 @Slf4j
 public class VantiqEndpoint extends DefaultEndpoint {
