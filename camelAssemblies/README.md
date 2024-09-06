@@ -182,11 +182,11 @@ Each assembly contains such a service for performing the deployment. The service
 within the assembly, and is named using the base name with the `_Deployment` suffix.  So, for example, the 
 deployment service for the AWS EventBridge sink is
 
-`com.vantiq.extsrc.camel.kamelets.v4_4_3.aws_eventbridge_sink.Aws_eventbride_sink_Deployment`
+`com.vantiq.extsrc.camel.kamelets.v4_4_3.aws_eventbridge_sink.Aws_eventbridge_sink_Deployment`
 
 with the deployment procedure being
 
-`com.vantiq.extsrc.camel.kamelets.v4_4_3.aws_eventbridge_sink.Aws_eventbride_sink_Deployment.deployToK8s()`
+`com.vantiq.extsrc.camel.kamelets.v4_4_3.aws_eventbridge_sink.Aws_eventbridge_sink_Deployment.deployToK8s()`
 
 The actions required to perform the deployment are the same as those described for 
 [deploying a Camel Connector](../camelConnector/README.md#camelConnectorDeployment) with two (2) differences:
