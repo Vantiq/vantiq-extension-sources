@@ -16,6 +16,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
 import java.nio.file.Files;
+import java.util.List;
 
 import static org.junit.Assume.assumeTrue;
 
@@ -41,16 +42,24 @@ public class ObjRecTestBase {
 
     // Camera with some recognizable objects in it.
     // Use camera "close to home" -- CalTrans camera close to the office...
-//    public static final String IP_CAMERA_URL = "https://wzmedia.dot.ca.gov/D4/S680_at_N_Main_St.stream/playlist.m3u8";
+    public static final String IP_CAMERA_CALTRANS_WALNUTCREEK = "https://wzmedia.dot.ca.gov/D4/S680_at_N_Main_St.stream/playlist.m3u8";
     // Walnut Creek/North Main camera (above) currently malfunctioning.  Swapping to Hwy 242 Junction for now.
     // Keeping old around to swap back sometime.
 //    public static final String IP_CAMERA_URL = "https://wzmedia.dot.ca.gov/D4/N680_JSO_JCT_242.stream/playlist.m3u8";
 //    public static final String IP_CAMERA_URL = "https://wzmedia.dot.ca.gov/D3/80_reed.stream/playlist.m3u8";
 //    public static final String IP_CAMERA_URL = "http://166.143.31.94/cgi-bin/camera?resolution=640&amp;" +
 //            "quality=1&amp;Language=0&amp;1666639808";
-//    public static final String IP_CAMERA_URL = "http://115.179.100.76:8080/SnapshotJPEG?Resolution=640x480" +
-//            "&Quality=Standard&View=Normal&Count=224935296";
-    public static final String IP_CAMERA_URL = "http://220.233.144.165:8888/mjpg/video.mjpg"; // Sydney harbour camera
+    public static final String IP_CAMERA_JAPAN = "http://115.179.100.76:8080/SnapshotJPEG?Resolution=640x480" +
+            "&Quality=Standard&View=Normal&Count=224935296";
+    public static final String IP_CAMERA_SYDNEY_HARBOR = "http://220.233.144.165:8888/mjpg/video.mjpg"; // Sydney
+    // harbour camera
+    public static final List<String> CAMERA_CHOICE = List.of(
+            IP_CAMERA_CALTRANS_WALNUTCREEK,
+            IP_CAMERA_JAPAN,
+            IP_CAMERA_SYDNEY_HARBOR
+    );
+    
+    public static String IP_CAMERA_URL = null;
 
     @BeforeClass
     public static void getProps() {
@@ -112,5 +121,19 @@ public class ObjRecTestBase {
         } catch (java.io.IOException e) {
             return false;
         }
+    }
+    
+    public static String findValidCamera() {
+        String workingIPCamera = null;
+        
+        for (String cam: CAMERA_CHOICE) {
+            if (isIpAccessible(cam)) {
+                workingIPCamera = cam;
+                break;
+            }
+        }
+        IP_CAMERA_URL = workingIPCamera;
+        assumeTrue("No valid IP camera found", IP_CAMERA_URL != null);
+        return IP_CAMERA_URL;
     }
 }
