@@ -120,7 +120,7 @@ public class TestYoloQueries extends NeuralNetTestBase {
     static final int CROPPED_WIDTH = 200;
     static final int CROPPED_HEIGHT = 150;
     
-    static final String ipCameraToUse = IP_CAMERA_URL;
+    static final String ipCameraToUse = findValidCamera();
     static boolean cameraOperational = false;
     @BeforeClass
     public static void setup() throws Exception {

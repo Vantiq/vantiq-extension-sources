@@ -39,7 +39,7 @@ public class TestNetworkStreamRetriever extends ObjRecTestBase {
     @Test
     public void testIpCamera() {
         // Don't fail if camera's offline...
-        assumeTrue("Could not open requested url", isIpAccessible(IP_CAMERA_URL));
+        findValidCamera();
         
         try {
             Map<String, String> config = new LinkedHashMap<>();
@@ -64,7 +64,7 @@ public class TestNetworkStreamRetriever extends ObjRecTestBase {
     @Ignore("Test camera seems to have disappeared.  Need a more reliable strategy for these things")
     public void testRtspCamera() {
         // Don't fail if camera's offline...
-        assumeTrue("Could not open requested url", isIpAccessible(IP_CAMERA_URL));
+        assumeTrue("Could not open requested url", isIpAccessible(RTSP_CAMERA_ADDRESS));
 
         try {
             Map<String, String> config = new LinkedHashMap<>();
