@@ -32,7 +32,7 @@ public class TestNoProcessorQueries extends NeuralNetTestBase {
         put("name", QUERY_FILENAME);
     }};
     
-    static final String ipCameraInUse = IP_CAMERA_URL;
+    static final String ipCameraInUse = findValidCamera();
     static boolean cameraOperational = false;
     @BeforeClass
     public static void setup() {
