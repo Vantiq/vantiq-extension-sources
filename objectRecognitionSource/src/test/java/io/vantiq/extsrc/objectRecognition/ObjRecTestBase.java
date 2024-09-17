@@ -18,6 +18,7 @@ import java.net.URL;
 import java.nio.file.Files;
 import java.util.List;
 
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assume.assumeTrue;
 
 public class ObjRecTestBase {
@@ -124,6 +125,10 @@ public class ObjRecTestBase {
     }
     
     public static String findValidCamera() {
+        return findValidCamera(false);
+    }
+    
+    public static String findValidCamera(boolean failIfNone) {
         String workingIPCamera = null;
         
         for (String cam: CAMERA_CHOICE) {
@@ -133,7 +138,11 @@ public class ObjRecTestBase {
             }
         }
         IP_CAMERA_URL = workingIPCamera;
-        assumeTrue("No valid IP camera found", IP_CAMERA_URL != null);
+        if (failIfNone) {
+            assertNotNull("No valid IP camera found for testing", IP_CAMERA_URL);
+        } else {
+            assumeTrue("No valid IP camera found found for testing", IP_CAMERA_URL != null);
+        }
         return IP_CAMERA_URL;
     }
 }
