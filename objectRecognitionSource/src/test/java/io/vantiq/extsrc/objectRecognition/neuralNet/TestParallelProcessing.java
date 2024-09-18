@@ -138,9 +138,9 @@ public class TestParallelProcessing extends NeuralNetTestBase {
         }
 
         // Setting up dataSource config options
-        findValidCamera();
-        dataSource.put("camera", IP_CAMERA_URL);
-        dataSource.put("type", "network");
+        dataSource.put("fileLocation", VIDEO_LOCATION);
+        dataSource.put("fileExtension", "mov");
+        dataSource.put("type", "file");
 
         // Setting up neuralNet config options
         neuralNet.put("type", "test");

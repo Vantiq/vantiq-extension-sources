@@ -1183,8 +1183,9 @@ public class TestYoloQueries extends NeuralNetTestBase {
         Map<String, Object> neuralNet = new LinkedHashMap<>();
         
         // Setting up dataSource config options
-        dataSource.put("camera", ipCameraToUse);
-        dataSource.put("type", "network");
+        dataSource.put("fileLocation", VIDEO_LOCATION);
+        dataSource.put("fileExtension", "mov");
+        dataSource.put("type", "file");
         
         // Setting up general config options
         general.put("allowQueries", true);
