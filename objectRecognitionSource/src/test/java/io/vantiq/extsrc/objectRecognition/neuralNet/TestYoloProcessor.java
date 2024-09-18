@@ -1915,6 +1915,9 @@ public class TestYoloProcessor extends NeuralNetTestBase {
         config.put("metaFile", META_FILE);
         config.put("cropBeforeAnalysis", preCrop);
         config.put("includeEncodedImage", true);
+        // Some of these tests are close here, so the confidence can vary.  Pick a
+        // reasonable value for the threshold.
+        config.put("threshold", 50);
         if (labelOption) {
             config.put("labelImage", "true");
         }
@@ -2088,7 +2091,8 @@ public class TestYoloProcessor extends NeuralNetTestBase {
 
     @SuppressWarnings({"rawtypes", "unchecked"})
     void resultsEquals(List<Map<String, ?>> list, List<Map> expectedRes) {
-        assertEquals("list Size: " + list.size() + ", expected: " + expectedRes.size() + " :: " + list,
+        assertEquals("list Size: " + list.size() +" :: " + list +
+                             ", expected: " + expectedRes.size() + " :: " + expectedRes,
                 expectedRes.size(), list.size());
         for (int i = 0; i < list.size(); i++) {
             mapEquals(list.get(i), expectedRes.get(i));
