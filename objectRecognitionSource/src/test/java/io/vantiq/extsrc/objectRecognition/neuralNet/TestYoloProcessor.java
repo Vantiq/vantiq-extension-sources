@@ -2160,7 +2160,7 @@ public class TestYoloProcessor extends NeuralNetTestBase {
         neuralNet.put("type", "yolo");
         neuralNet.put("metaFile", META_FILE);
         neuralNet.put("pbFile", PB_FILE);
-        neuralNet.put("threshold", 60); // Overcome strange interpretation of camera images
+        neuralNet.put("threshold", 50); // Overcome strange interpretation of camera images
 
         // Placing general config options in "objRecConfig"
         objRecConfig.put("general", general);
