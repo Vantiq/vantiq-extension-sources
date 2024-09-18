@@ -1,8 +1,8 @@
 package io.vantiq.extsrc.objectRecognition.imageRetriever;
 
 import static org.junit.Assert.fail;
-import static org.junit.Assume.assumeTrue;
 
+import java.security.MessageDigest;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
@@ -44,7 +44,7 @@ public class TestNetworkStreamRetriever extends ObjRecTestBase {
     }
     
     @Test
-    public void testIpCamera() {
+    public void testIpCamera() throws Exception {
         // Don't fail if camera's offline...
         findValidCamera();
         
@@ -56,19 +56,29 @@ public class TestNetworkStreamRetriever extends ObjRecTestBase {
             fail("Could not setup retriever: " + e.getMessage());
         }
         
-        try {
-            ImageRetrieverResults imgResults = retriever.getImage();
-            assert imgResults != null;
-            byte[] data = imgResults.getImage();
-            assert data != null;
-            assert data.length > 0;
-        } catch (ImageAcquisitionException e) {
-            fail("Exception occurred when requesting frame from camera: " + e.toString());
+        byte[] previousDigest = null;
+        MessageDigest md = MessageDigest.getInstance("MD5");
+        
+        for (int i = 0; i < 10; i++) {
+            try {
+                ImageRetrieverResults imgResults = retriever.getImage();
+                assert imgResults != null;
+                byte[] data = imgResults.getImage();
+                assert data != null;
+                assert data.length > 0;
+                byte[] digest = md.digest(data);
+                if (previousDigest != null) {
+                    assert !previousDigest.equals(digest);
+                }
+                previousDigest = digest;
+            } catch (ImageAcquisitionException e) {
+                fail("Exception occurred when requesting frame from camera: " + e.toString());
+            }
         }
     }
 
     @Test
-    public void testRtspCamera() {
+    public void testRtspCamera() throws Exception {
         // Don't fail if camera's offline...
 
         try {
@@ -78,15 +88,24 @@ public class TestNetworkStreamRetriever extends ObjRecTestBase {
         } catch (Exception e) {
             fail("Could not setup retriever: " + e.getMessage());
         }
-
-        try {
-            ImageRetrieverResults imgResults = retriever.getImage();
-            assert imgResults != null;
-            byte[] data = imgResults.getImage();
-            assert data != null;
-            assert data.length > 0;
-        } catch (ImageAcquisitionException e) {
-            fail("Exception occurred when requesting frame from camera: " + e.toString());
+        
+        byte[] previousDigest = null;
+        MessageDigest md = MessageDigest.getInstance("MD5");
+        for (int i = 0; i < 10; i++) {
+            try {
+                ImageRetrieverResults imgResults = retriever.getImage();
+                assert imgResults != null;
+                byte[] data = imgResults.getImage();
+                assert data != null;
+                assert data.length > 0;
+                byte[] digest = md.digest(data);
+                if (previousDigest != null) {
+                    assert !previousDigest.equals(digest);
+                }
+                previousDigest = digest;
+            } catch (ImageAcquisitionException e) {
+                fail("Exception occurred when requesting frame from camera: " + e.toString());
+            }
         }
     }
 }
