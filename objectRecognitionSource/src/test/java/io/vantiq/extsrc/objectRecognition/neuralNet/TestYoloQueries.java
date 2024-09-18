@@ -120,8 +120,9 @@ public class TestYoloQueries extends NeuralNetTestBase {
     static final int CROPPED_WIDTH = 200;
     static final int CROPPED_HEIGHT = 150;
     
-    static final String ipCameraToUse = findValidCamera();
+    static String ipCameraToUse = null;
     static boolean cameraOperational = false;
+    
     @BeforeClass
     public static void setup() throws Exception {
         if (testAuthToken != null && testVantiqServer != null) {
@@ -144,7 +145,7 @@ public class TestYoloQueries extends NeuralNetTestBase {
             } catch (Exception e) {
                 fail("Trapped exception creating source impl: " + e);
             }
-            
+            ipCameraToUse = findValidCamera();
             cameraOperational = isIpAccessible(ipCameraToUse);
             createServerConfig();
             setupSource(createSourceDef());
@@ -1182,8 +1183,9 @@ public class TestYoloQueries extends NeuralNetTestBase {
         Map<String, Object> neuralNet = new LinkedHashMap<>();
         
         // Setting up dataSource config options
-        dataSource.put("camera", ipCameraToUse);
-        dataSource.put("type", "network");
+        dataSource.put("fileLocation", VIDEO_LOCATION);
+        dataSource.put("fileExtension", "mov");
+        dataSource.put("type", "file");
         
         // Setting up general config options
         general.put("allowQueries", true);

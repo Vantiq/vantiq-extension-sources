@@ -323,8 +323,9 @@ public class TestNoProcessorQueries extends NeuralNetTestBase {
         Map<String,Object> neuralNet = new LinkedHashMap<String,Object>();
         
         // Setting up dataSource config options
-        dataSource.put("camera", ipCameraInUse);
-        dataSource.put("type", "network");
+        dataSource.put("fileLocation", VIDEO_LOCATION);
+        dataSource.put("fileExtension", "mov");
+        dataSource.put("type", "file");
         
         // Setting up general config options
         general.put("allowQueries", true);
