@@ -73,7 +73,7 @@ class AssemblyResourceGeneration extends DefaultTask {
 
     public static final String FROM_ROUTE_TAG = 'from'
     public static final String ID_ROUTE_TAG = 'id'
-    public static final String ROUTE_TEMPLATE_TAG = 'route-template'
+    public static final String ROUTE_TEMPLATE_TAG = 'routeTemplate'
     public static final String TO_ROUTE_TAG = 'to'
     public static final String URI_ROUTE_TAG = 'uri'
 
