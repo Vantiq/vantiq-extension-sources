@@ -587,7 +587,7 @@ public class VantiqConfigurationTest extends CamelTestSupport {
     // typeConverter in the context (trashed on close), and threw an NPE.  Here, we verify that this basic route
     // work as expected.  It takes a bit of time to set things up, but a reasonable test.
     public static final String FHIR_SINK_ROUTE_YAML = "\n"
-            + "-   route-template:\n"
+            + "-   routeTemplate:\n"
             + "       id: Route templates from fhir_sink:v3_21_0\n"
             + "       from:\n"
             + "           uri: direct:start\n"
@@ -600,14 +600,14 @@ public class VantiqConfigurationTest extends CamelTestSupport {
             + "                        steps:\n"
             + "                        -   unmarshal:\n"
             + "                                fhirJson:\n"
-            + "                                    fhir-version: '{{fhirVersion}}'\n"
-            + "                                    pretty-print: '{{prettyPrint}}'\n"
+            + "                                    fhirVersion: '{{fhirVersion}}'\n"
+            + "                                    prettyPrint: '{{prettyPrint}}'\n"
             + "                    -   simple: ${properties:encoding} =~ 'XML'\n"
             + "                        steps:\n"
             + "                        -   unmarshal:\n"
             + "                                fhirXml:\n"
-            + "                                    fhir-version: '{{fhirVersion}}'\n"
-            + "                                    pretty-print: '{{prettyPrint}}'\n"
+            + "                                    fhirVersion: '{{fhirVersion}}'\n"
+            + "                                    prettyPrint: '{{prettyPrint}}'\n"
             + "           -   to:\n"
             + "                    uri: fhir://{{apiName}}/{{methodName}}\n"
             + "                    parameters:\n"
@@ -629,8 +629,8 @@ public class VantiqConfigurationTest extends CamelTestSupport {
             + "                        password: '{{?password}}'\n"
             + "           - marshal:\n"
             + "               fhirJson:\n"
-            + "                   fhir-version: '{{fhirVersion}}'\n"
-            + "                   pretty-print: '{{prettyPrint}}'\n"
+            + "                   fhirVersion: '{{fhirVersion}}'\n"
+            + "                   prettyPrint: '{{prettyPrint}}'\n"
             + "           - to:\n"
             + "                  uri: mock:result"; // Send off to mock result so we can verify the output
 

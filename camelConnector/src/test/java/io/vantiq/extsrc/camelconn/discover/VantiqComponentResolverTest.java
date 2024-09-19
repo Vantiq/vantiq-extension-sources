@@ -1061,7 +1061,7 @@ public class VantiqComponentResolverTest extends CamelTestSupport {
     
     private static class BeanIncludingRouteTemplate extends RouteBuilderWithProps {
         public String content = ""
-                + "-   route-template:\n"
+                + "-   routeTemplate:\n"
                 + "        id: Route templates from aws_s3_source:v3_21_0\n"
                 + "        beans:\n"
                 + "        -   name: renameHeaders\n"
@@ -1103,7 +1103,7 @@ public class VantiqComponentResolverTest extends CamelTestSupport {
         String headerDupBeanName;
         
         public String content = ""
-                + "-   route-template:\n"
+                + "-   routeTemplate:\n"
                 + "        id: Route templates from aws_s3_source:v3_21_0\n"
                 + "        beans:\n"
                 + "        -   name: renameHeaders\n"
