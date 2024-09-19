@@ -1,4 +1,4 @@
--   route-template:
+-   routeTemplate:
         id: Route templates from fhir_sink:v4_4_3 (modified)
         from:
             uri: vantiq://server.config?consumerOutputJsonStream=true&structuredMessageHeader=true
