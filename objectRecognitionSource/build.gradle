@@ -79,14 +79,14 @@ test {
 }
 
 tasks.withType(Test).configureEach {
+    // Use the build dir as a base to get our various test artifacts.
+    systemProperty 'buildDir', "{layout.buildDirectory as String}"
     if (rootProject.hasProperty("TestAuthToken")) {
         systemProperty "TestAuthToken", rootProject.findProperty("TestAuthToken") ?: "empty"
     }
     if (rootProject.hasProperty("TestVantiqServer")) {
         systemProperty "TestVantiqServer", rootProject.findProperty("TestVantiqServer") ?: "empty"
     }
-    // Use the build dir as a base to get our various test artifacts.
-    systemProperty "buildDir", "${layout.buildDirectory}"
 }
 
 compileJava.doFirst {
@@ -183,14 +183,14 @@ task copyModels(type: Copy, dependsOn: [configurations.testRuntimeClasspath, con
         configurations.metaTest.find { it.name == "coco-1.1.meta" },
         configurations.metaTest.find { it.name == "coco-1.1.pb" }
 
-    into "$layout.buildDirectory/models/"
+    into "${layout.buildDirectory.dir('models')}"
 }
 
 task copyOldCocoModels(type: Copy, dependsOn: [configurations.testRuntimeClasspath, configurations.oldYoloNames]) {
     from configurations.oldYoloNames.find { it.name == 'coco-1.0.pb' },
          configurations.oldYoloNames.find { it.name == 'coco-1.0.names' }
 
-    into "$layout.buildDirectory/models/"
+    into "${layout.buildDirectory.dir('models')}"
 }
 
 
@@ -206,7 +206,7 @@ task copyOldYoloModels(type: Copy, dependsOn: [configurations.testRuntimeClasspa
         }
     }
 
-    into "$layout.buildDirectory/models/"
+    into "${layout.buildDirectory.dir('models')}"
 }
 
 task copyTestResources(type: Copy, dependsOn: [configurations.testRuntimeClasspath, configurations.oldYoloNames]) {
@@ -214,7 +214,7 @@ task copyTestResources(type: Copy, dependsOn: [configurations.testRuntimeClasspa
          configurations.testRuntimeClasspath.find { it.name == 'nothingVideo-1.0.mov' },
          sourceSets.test.resources.asList()
 
-    into "$layout.buildDirectory/testResources/"
+    into "${layout.buildDirectory.dir('testResources')}"
 }
 
 test.dependsOn copyModels, copyTestResources

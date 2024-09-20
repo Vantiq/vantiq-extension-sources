@@ -56,7 +56,7 @@ tasks.withType(Test).configureEach {
         systemProperty "TestRepeatedConnects", rootProject.findProperty("TestRepeatedConnects") ?: "empty"
     }
     // Use the build dir as a base to get our various test artifacts.
-    systemProperty "buildDir", "${layout.buildDirectory}"
+    systemProperty "buildDir", "${layout.buildDirectory as String}"
 }
 
 task testJar (type: Jar) {
