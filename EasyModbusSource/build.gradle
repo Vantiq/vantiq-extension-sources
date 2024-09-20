@@ -1,17 +1,19 @@
+plugins {
+    id 'java'
+    id 'application'
+}
 
 group 'io.vantiq'
 version 'unspecified'
 
-apply plugin: 'java'
-apply plugin: 'application'
-
-sourceCompatibility = 1.8
+java {
+    sourceCompatibility = 1.8
+}
 
 repositories {
     mavenCentral()
 }
 
-mainClassName = 'io.vantiq.extsrc.EasyModbusSource.EasyModbusMain'
 
 startScripts{
     doLast{
@@ -23,10 +25,14 @@ startScripts{
     }
 }
 
-// Copies the logger setup into logConfig in the distribution
-applicationDistribution.from("src/main/resources") {
-    include "log4j2.xml"
-    into "logConfig"
+application {
+    mainClassName = 'io.vantiq.extsrc.EasyModbusSource.EasyModbusMain'
+
+    // Copies the logger setup into logConfig in the distribution
+    applicationDistribution.from("src/main/resources") {
+        include "log4j2.xml"
+        into "logConfig"
+    }
 }
 
 if (System.env.EASY_MODBUS_LOC == null ) {

@@ -10,13 +10,13 @@ plugins {
 group 'io.vantiq'
 version 'unspecified'
 
-sourceCompatibility = 1.8
+java {
+    sourceCompatibility = 1.8
+}
 
 repositories {
     mavenCentral()
 }
-
-mainClassName = 'io.vantiq.extsrc.jdbcSource.JDBCMain'
 
 startScripts{
     doLast{
@@ -28,18 +28,21 @@ startScripts{
     }
 }
 
-// Copies the logger setup into logConfig in the distribution
-applicationDistribution.from("src/main/resources") {
-    include "log4j2.xml"
-    into "logConfig"
+application {
+    mainClassName = 'io.vantiq.extsrc.jdbcSource.JDBCMain'
+    // Copies the logger setup into logConfig in the distribution
+    applicationDistribution.from("src/main/resources") {
+        include "log4j2.xml"
+        into "logConfig"
+    }
 }
 
-tasks.withType(Test) {
-	if (System.env.JDBC_DRIVER_LOC == null) {
-    	logger.warn("Some tests may have been skipped. Environment variable 'JDBC_DRIVER_LOC' is not set. " +
-    			"Please set it to a location containing the appropriate JDBC Driver .jar file.")
-    }	
-	if (rootProject.hasProperty("EntConJDBCUsername")) {
+tasks.withType(Test).configureEach {
+    if (System.env.JDBC_DRIVER_LOC == null) {
+        logger.warn("Some tests may have been skipped. Environment variable 'JDBC_DRIVER_LOC' is not set. " +
+            "Please set it to a location containing the appropriate JDBC Driver .jar file.")
+    }
+    if (rootProject.hasProperty("EntConJDBCUsername")) {
         systemProperty "EntConJDBCUsername", rootProject.findProperty("EntConJDBCUsername") ?: "empty"
     }
     if (rootProject.hasProperty("EntConJDBCPassword")) {
@@ -84,9 +87,9 @@ dependencies {
     testImplementation "io.vantiq:vantiq-sdk:${vantiqSDKVersion}"
     
     // Use JUnit test framework
-    testImplementation 'junit:junit:4.12'
+    testImplementation 'junit:junit:4.13.1'
     testImplementation project(path:":extjsdk", configuration:"testArtifacts")
-    testImplementation "com.fasterxml.jackson.core:jackson-databind:2.9.3"
+    testImplementation 'com.fasterxml.jackson.core:jackson-databind:2.17.2'
 
     // Used to create a connection pool if asynchronous processing has been specified for publish/query handlers
     implementation group: 'com.zaxxer', name: 'HikariCP', version: '3.3.1'

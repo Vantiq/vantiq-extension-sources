@@ -1,16 +1,17 @@
+plugins {
+    id 'java'
+    id 'application'
+}
 group 'io.vantiq'
 version 'unspecified'
 
-apply plugin: 'java'
-apply plugin: 'application'
-
+java {
 sourceCompatibility = 1.8
+    }
 
 repositories {
     mavenCentral()
 }
-
-mainClassName = 'io.vantiq.extsrc.testConnector.TestConnectorMain'
 
 startScripts{
     doLast{
@@ -22,13 +23,17 @@ startScripts{
     }
 }
 
-// Copies the logger setup into logConfig in the distribution
-applicationDistribution.from("src/main/resources") {
-    include "log4j2.xml"
-    into "logConfig"
+application {
+    mainClassName = 'io.vantiq.extsrc.testConnector.TestConnectorMain'
+
+    // Copies the logger setup into logConfig in the distribution
+    applicationDistribution.from("src/main/resources") {
+        include "log4j2.xml"
+        into "logConfig"
+    }
 }
 
-tasks.withType(Test) {
+tasks.withType(Test).configureEach {
     if (rootProject.hasProperty("TestConnectorEnvVarName")) {
         systemProperty "TestConnectorEnvVarName", rootProject.findProperty("TestConnectorEnvVarName") ?: "empty"
     }
@@ -47,6 +52,6 @@ dependencies {
     implementation "org.apache.logging.log4j:log4j-slf4j-impl:${log4jVersion}"
 
     // Use JUnit test framework
-    testImplementation 'junit:junit:4.12'
+    testImplementation 'junit:junit:4.13.1'
     testImplementation project(path:":extjsdk", configuration:"testArtifacts")
 }

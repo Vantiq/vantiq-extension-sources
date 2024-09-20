@@ -16,7 +16,9 @@ plugins {
 group 'io.vantiq'
 version 'unspecified'
 
-sourceCompatibility = 1.8
+java {
+    sourceCompatibility = 1.8
+}
 
 ext {
     eclipseMiloVersion = '0.6.12'
@@ -59,8 +61,6 @@ dependencies {
     testImplementation "org.eclipse.milo:client-examples:${eclipseMiloVersion}"
 }
 
-mainClassName = 'io.vantiq.extsrc.opcua.opcUaSource.OpcUaServer'
-
 startScripts{
     doLast{
         def windowsScriptFile = file getWindowsScript()
@@ -71,12 +71,16 @@ startScripts{
     }
 }
 
-applicationDistribution.from("src/main/resources/LICENSES") {
-    into "LICENSES"
-}
+application {
+    mainClassName = 'io.vantiq.extsrc.opcua.opcUaSource.OpcUaServer'
 
-applicationDistribution.from("src/main/resources/log4j2.xml") {
-    into "logConfig"
+    applicationDistribution.from("src/main/resources/LICENSES") {
+        into "LICENSES"
+    }
+
+    applicationDistribution.from("src/main/resources/log4j2.xml") {
+        into "logConfig"
+    }
 }
 
 test {

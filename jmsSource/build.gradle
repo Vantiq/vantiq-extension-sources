@@ -4,13 +4,13 @@ version 'unspecified'
 apply plugin: 'java'
 apply plugin: 'application'
 
-sourceCompatibility = 1.8
+java {
+    sourceCompatibility = 1.8
+}
 
 repositories {
     mavenCentral()
 }
-
-mainClassName = 'io.vantiq.extsrc.jmsSource.JMSMain'
 
 startScripts{
     doLast{
@@ -22,24 +22,28 @@ startScripts{
     }
 }
 
-// Copies the logger setup into logConfig in the distribution
-applicationDistribution.from("src/main/resources") {
-    include "log4j2.xml"
-    into "logConfig"
+application {
+    mainClassName = 'io.vantiq.extsrc.jmsSource.JMSMain'
+
+    // Copies the logger setup into logConfig in the distribution
+    applicationDistribution.from("src/main/resources") {
+        include "log4j2.xml"
+        into "logConfig"
+    }
 }
 
 def configProps = ["EntConJMSUsername", "EntConJMSPassword", "EntConJMSURL", "EntConJMSConnectionFactory", "EntConJMSInitialContext",
 				"EntConJMSTopic", "EntConJMSQueue", "EntConTestSourceName", "EntConTestTypeName", "TestAuthToken", "TestVantiqServer"]
 
-tasks.withType(Test) {
+tasks.withType(Test).configureEach {
     if (System.env.JMS_DRIVER_LOC == null) {
-    	logger.warn("Some tests may have been skipped. Environment variable 'JMS_DRIVER_LOC' is not set. " +
-    			"Please set it to a location containing the appropriate JMS Driver .jar file.")
+        logger.warn("Some tests may have been skipped. Environment variable 'JMS_DRIVER_LOC' is not set. " +
+            "Please set it to a location containing the appropriate JMS Driver .jar file.")
     }
     configProps.each { aConfigProp ->
-	    if (rootProject.hasProperty(aConfigProp)) {
-	        systemProperty aConfigProp, rootProject.findProperty(aConfigProp)
-	    }
+        if (rootProject.hasProperty(aConfigProp)) {
+            systemProperty aConfigProp, rootProject.findProperty(aConfigProp)
+        }
     }
 }
 
@@ -65,6 +69,6 @@ dependencies {
     testImplementation "io.vantiq:vantiq-sdk:${vantiqSDKVersion}"
 
     // Use JUnit test framework
-    testImplementation 'junit:junit:4.12'
+    testImplementation 'junit:junit:4.13.1'
     testImplementation project(path:":extjsdk", configuration:"testArtifacts")
 }

@@ -10,8 +10,6 @@ plugins {
     id("io.freefair.lombok")   //version "6.3.0" // version "8.7.1"
 }
 
-mainClassName = 'io.vantiq.extsrc.camelconn.connector.CamelMain'
-
 startScripts{
     // Use shorter classpath here. We've injected the complete list into the main jar file's manifest.
     classpath = jar.outputs.files
@@ -25,9 +23,13 @@ startScripts{
 }
 
 // Copies the logger setup into logConfig in the distribution
-applicationDistribution.from("src/main/resources") {
-    include "log4j2.xml"
-    into "logConfig"
+application {
+    mainClassName = 'io.vantiq.extsrc.camelconn.connector.CamelMain'
+
+    applicationDistribution.from("src/main/resources") {
+        include "log4j2.properties"
+        into "logConfig"
+    }
 }
 
 repositories {
