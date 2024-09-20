@@ -74,7 +74,7 @@ tasks.withType(Test) {
 
 
 task testJar (type: Jar) {
-    baseName = "${project.name}-test"
+    archiveBaseName = "${project.name}-test"
     from sourceSets.test.output
 }
 

@@ -12,7 +12,7 @@ plugins {
     id("io.freefair.lombok") version "6.3.0" // version "8.7.1
     id 'pl.allegro.tech.build.axion-release' version '1.6.0'
     id 'jacoco'
-    id 'com.chrisgahlert.gradle-dcompose-plugin' version '0.17.2' apply false
+    id 'com.vantiq.gradle-dcompose-plugin' version '0.18.0' apply false
 }
 
 wrapper {
@@ -88,7 +88,7 @@ subprojects {
     if (!['extpdk', 'pythonExecSource', 'kamelet2assembly'].contains(it.name)) {
         apply plugin: 'java'
     }
-    apply plugin: 'com.chrisgahlert.gradle-dcompose-plugin'
+    apply plugin: 'com.vantiq.gradle-dcompose-plugin'
 
     // Using gradle-dcompose-plugin to build/push docker images
     dcompose {
@@ -307,7 +307,7 @@ task jacocoRootReport(type: JacocoReport, group: 'Coverage reports') {
     }
 
     reports {
-        html.enabled = true // human readable
-        xml.enabled = true // required by coveralls
+        html.required = true // human readable
+        xml.required = true // required by coveralls
     }
 }

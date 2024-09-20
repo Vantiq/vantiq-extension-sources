@@ -60,7 +60,7 @@ tasks.withType(Test) {
 }
 
 task testJar (type: Jar) {
-    baseName = "${project.name}-test"
+    archiveBaseName = "${project.name}-test"
     from sourceSets.test.output
 }
 
@@ -88,7 +88,7 @@ dependencies {
 
 // Create a jar with all dependencies included
 task fatJar(type: Jar) {
-    appendix = 'fat'
+    archiveAppendix = 'fat'
     from sourceSets.main.output
     duplicatesStrategy 'include'
     from(".") {

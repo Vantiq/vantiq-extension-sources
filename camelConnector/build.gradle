@@ -120,7 +120,7 @@ task zipAssembly(type: Zip) {
         include 'types/**/*'
     }
     into "${project.name}"
-    archiveName "camel4connector-assembly.zip"
+    archiveFileName = "camel4connector-assembly.zip"
 }
 
 jar.finalizedBy zipAssembly

@@ -91,6 +91,6 @@ task generateJavadoc(type: Javadoc) {
 }
 
 task runExampleServer(type: JavaExec) {
-    main = "io.vantiq.extsrc.opcua.io.vantiq.extsrc.opcua.sampleServer.RunExampleServer"
+    mainClass = "io.vantiq.extsrc.opcua.io.vantiq.extsrc.opcua.sampleServer.RunExampleServer"
     classpath = sourceSets.test.runtimeClasspath
 }
