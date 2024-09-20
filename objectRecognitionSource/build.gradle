@@ -80,7 +80,7 @@ test {
 
 tasks.withType(Test).configureEach {
     // Use the build dir as a base to get our various test artifacts.
-    systemProperty 'buildDir', "{layout.buildDirectory as String}"
+    systemProperty 'buildDir', "${layout.buildDirectory as String}"
     if (rootProject.hasProperty("TestAuthToken")) {
         systemProperty "TestAuthToken", rootProject.findProperty("TestAuthToken") ?: "empty"
     }
