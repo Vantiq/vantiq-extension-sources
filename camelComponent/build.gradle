@@ -57,11 +57,11 @@ test {
     useJUnitPlatform()
 }
 
-tasks.withType(JavaCompile) {
+tasks.withType(JavaCompile).configureEach {
     options.encoding = 'UTF-8'
 }
 
-tasks.withType(Test) {
+tasks.withType(Test).configureEach {
     if (rootProject.hasProperty("TestAuthToken")) {
         systemProperty "TestAuthToken", rootProject.findProperty("TestAuthToken") ?: "empty"
     }
@@ -69,7 +69,7 @@ tasks.withType(Test) {
         systemProperty "TestVantiqServer", rootProject.findProperty("TestVantiqServer") ?: "empty"
     }
     // Use the build dir as a base to get our various test artifacts.
-    systemProperty "buildDir", "${buildDir}"
+    systemProperty "buildDir", "${layout.buildDirectory}"
 }
 
 

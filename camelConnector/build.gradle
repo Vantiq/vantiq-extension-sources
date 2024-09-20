@@ -306,7 +306,7 @@ tasks.withType(Test).configureEach {
         systemProperty "TestVantiqServer", rootProject.findProperty("TestVantiqServer") ?: "empty"
     }
     // Use the build dir as a base to get our various test artifacts.
-    systemProperty "buildDir", "${buildDir}"
+    systemProperty "buildDir", "${layout.buildDirectory}"
 
     if (rootProject.hasProperty("camel-salesforce-loginUrl")) {
         systemProperty "camel-salesforce-loginUrl", rootProject.findProperty("camel-salesforce-loginUrl") ?: "empty"

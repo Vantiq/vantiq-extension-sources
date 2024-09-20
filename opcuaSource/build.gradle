@@ -23,7 +23,7 @@ java {
 ext {
     eclipseMiloVersion = '0.6.12'
     logbackVersion = '1.2.3'
-    junitVersion = '4.12'
+    junitVersion = '4.13.1'
     commonsCliVersion = '1.4'
     bouncyCastleVersion = '1.58'
     slf4jApiVersion = '1.7.25'
