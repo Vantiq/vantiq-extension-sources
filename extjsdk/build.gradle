@@ -44,7 +44,7 @@ test {
     }
 }
 
-tasks.withType(Test) {
+tasks.withType(Test).configureEach {
     if (rootProject.hasProperty("TestAuthToken")) {
         systemProperty "TestAuthToken", rootProject.findProperty("TestAuthToken") ?: "empty"
     }
@@ -56,11 +56,11 @@ tasks.withType(Test) {
         systemProperty "TestRepeatedConnects", rootProject.findProperty("TestRepeatedConnects") ?: "empty"
     }
     // Use the build dir as a base to get our various test artifacts.
-    systemProperty "buildDir", "${buildDir}"
+    systemProperty "buildDir", "${layout.buildDirectory as String}"
 }
 
 task testJar (type: Jar) {
-    baseName = "${project.name}-test"
+    archiveBaseName = "${project.name}-test"
     from sourceSets.test.output
 }
 
@@ -77,7 +77,7 @@ dependencies {
     implementation "com.squareup.okhttp3:okhttp:${okhttpVersion}"
     implementation "com.fasterxml.jackson.core:jackson-databind:${jacksonVersion}"
 
-    testImplementation group: 'junit', name: 'junit', version: '4.12'
+    testImplementation group: 'junit', name: 'junit', version: '4.13.1'
 
     // Used in tests
     testImplementation "io.vantiq:vantiq-sdk:${vantiqSDKVersion}"
@@ -88,7 +88,7 @@ dependencies {
 
 // Create a jar with all dependencies included
 task fatJar(type: Jar) {
-    appendix = 'fat'
+    archiveAppendix = 'fat'
     from sourceSets.main.output
     duplicatesStrategy 'include'
     from(".") {

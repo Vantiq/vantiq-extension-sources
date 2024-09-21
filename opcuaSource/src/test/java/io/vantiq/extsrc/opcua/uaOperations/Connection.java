@@ -19,7 +19,10 @@ import org.junit.Assert;
 import org.junit.Test;
 
 import java.io.IOException;
+import java.net.InetSocketAddress;
 import java.net.Socket;
+import java.net.SocketAddress;
+import java.net.SocketTimeoutException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.UnknownHostException;
@@ -32,6 +35,7 @@ import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
 
 import lombok.extern.slf4j.Slf4j;
 
@@ -42,6 +46,7 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class Connection extends OpcUaTestBase {
 
+    public final static long SOCKET_CONNECT_TIMEOUT_MS = TimeUnit.SECONDS.toMillis(6);
     // List of status that means the server's a mess so we'll ignore it in this test...
     public static final List<String> serverHosedStatus =
             Arrays.asList(
@@ -793,11 +798,12 @@ public class Connection extends OpcUaTestBase {
                 String host = opcuri.getHost();
                 int port = opcuri.getPort();
                 log.info("Making socket connection to {}:{}", host, port);
-
+                
                 // We don't use the result so we won't save it.  We just care that it completes w/o error
                 // We'll use a try-with-resources block here to ensure that the socket is closed...
-                //noinspection EmptyTryBlock
-                try (Socket s = new Socket(host, port)) {
+                try (Socket s = new Socket()) {
+                    SocketAddress addr = new InetSocketAddress(host, port);
+                    s.connect(addr, (int) SOCKET_CONNECT_TIMEOUT_MS);
                     // Ignore
                 }
                 log.trace("Socket connection to {}:{} succeeded", host, port);
@@ -805,12 +811,14 @@ public class Connection extends OpcUaTestBase {
                 // We'll assume it's our OPC server & let the test proceed
             } catch (UnknownHostException | URISyntaxException badURL) {
                 fail("URL " + discEP + " has unknown host or invalid syntax.  " +
-                                "Probably means that the list of free servers has changed... ");
+                             "Probably means that the list of free servers has changed... ");
+            } catch (SocketTimeoutException soe) {
+                log.warn("Discovery Endpoint: {} timed out on open.  Skipping it.", discEP);
             } catch (IOException ioe) {
                 // Could be bad connection or socket timeout (a subclass of ioexception)
                 // In either case, this means our free server is not currently available (you get what you pay for)
                 // so skip this one...
-                log.warn("Discovery Endpoint: {} not responding to open.  Skipping it.", discEP);
+                log.warn("Discovery Endpoint: {} not responding to open.  Skipping it.", discEP, ioe);
                 continue;
             }
 

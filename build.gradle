@@ -1,3 +1,5 @@
+
+
 buildscript {
     repositories { mavenCentral() }
     dependencies {
@@ -12,24 +14,13 @@ plugins {
     id("io.freefair.lombok") version "6.3.0" // version "8.7.1
     id 'pl.allegro.tech.build.axion-release' version '1.6.0'
     id 'jacoco'
-    id 'com.chrisgahlert.gradle-dcompose-plugin' version '0.17.2' apply false
+    id 'com.vantiq.gradle-dcompose-plugin' version '0.18.0' apply false
+    id 'idea'
 }
 
 wrapper {
-    gradleVersion = '7.3.1'
+    gradleVersion = '8.9'
     distributionUrl = "https://services.gradle.org/distributions/gradle-$gradleVersion-all.zip"
-}
-
-private Map getHostInfo() {
-    def info = [:]
-    try {
-        info.name = InetAddress.localHost.hostName
-        info.ip = InetAddress.localHost.hostAddress
-    } catch (Exception e) {
-        info.name = 'localhost'
-        info.ip = '127.0.0.1'
-    }
-    return info
 }
 
 group 'io.vantiq'
@@ -44,10 +35,6 @@ ext {
     junit5Version = '5.11.0'
     jacksonVersion = '2.17.2'
 }
-
-
-// Add idea support in root project to get around bug in Scala plugin
-apply plugin: 'idea'
 
 allprojects {
     group 'io.vantiq'
@@ -80,7 +67,6 @@ if (!rootProject.hasProperty('dockerRegistryPassword')) {
     logger.warn('The property "dockerRegistryPassword" was not provided. This may affect publish operations.')
 }
 
-
 subprojects {
     apply plugin: 'groovy'
     apply plugin: 'idea'
@@ -88,7 +74,7 @@ subprojects {
     if (!['extpdk', 'pythonExecSource', 'kamelet2assembly'].contains(it.name)) {
         apply plugin: 'java'
     }
-    apply plugin: 'com.chrisgahlert.gradle-dcompose-plugin'
+    apply plugin: 'com.vantiq.gradle-dcompose-plugin'
 
     // Using gradle-dcompose-plugin to build/push docker images
     dcompose {
@@ -114,7 +100,7 @@ subprojects {
                 repositoryBase = repositoryBase.replace('//', '/')
                 repository = rootProject.hasProperty('imageTag') ? repositoryBase + ":${rootProject.getProperty('imageTag')}" : repositoryBase
                 logBuildStatus = true
-                buildLogFile = file("$buildDir/dockerBuildLog.txt")
+                buildLogFile = file(layout.buildDirectory.dir('dockerBuildLog.txt'))
             }
 
             // The credentials here should be stored in gradle.properties.
@@ -146,9 +132,10 @@ subprojects {
         apply plugin: "jacoco"
     }
 
-    sourceCompatibility = 1.8
-    java.sourceCompatibility = 1.8
-    java.targetCompatibility = JavaVersion.VERSION_1_8
+    java {
+        sourceCompatibility = 1.8
+        targetCompatibility = JavaVersion.VERSION_1_8
+    }
 
 
     // Simulate provided dependencies
@@ -233,8 +220,6 @@ subprojects {
     }
 }
 
-apply plugin: 'java'
-
 repositories {
     mavenCentral()
     maven { url 'https://jitpack.io' }
@@ -254,9 +239,9 @@ apply plugin: 'base'
 // Otherwise, this task will RUN ALL the tests, rather than just collecting the existing reports...
 //     
 task testReport(type: TestReport) {
-    destinationDir = file("$buildDir/reports/allTests")
+    destinationDirectory = file(layout.buildDirectory.dir('reports/allTests'))
     // Include the results from the `test` task in all subprojects
-    reportOn subprojects*.test
+    testResults.from(subprojects*.test*.binaryResultsDirectory)
 }
 
 def publishedProjects = subprojects.findAll()
@@ -307,7 +292,7 @@ task jacocoRootReport(type: JacocoReport, group: 'Coverage reports') {
     }
 
     reports {
-        html.enabled = true // human readable
-        xml.enabled = true // required by coveralls
+        html.required = true // human readable
+        xml.required = true // required by coveralls
     }
 }

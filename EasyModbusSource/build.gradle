@@ -1,17 +1,19 @@
+plugins {
+    id 'java'
+    id 'application'
+}
 
 group 'io.vantiq'
 version 'unspecified'
 
-apply plugin: 'java'
-apply plugin: 'application'
-
-sourceCompatibility = 1.8
+java {
+    sourceCompatibility = 1.8
+}
 
 repositories {
     mavenCentral()
 }
 
-mainClassName = 'io.vantiq.extsrc.EasyModbusSource.EasyModbusMain'
 
 startScripts{
     doLast{
@@ -23,10 +25,14 @@ startScripts{
     }
 }
 
-// Copies the logger setup into logConfig in the distribution
-applicationDistribution.from("src/main/resources") {
-    include "log4j2.xml"
-    into "logConfig"
+application {
+    mainClassName = 'io.vantiq.extsrc.EasyModbusSource.EasyModbusMain'
+
+    // Copies the logger setup into logConfig in the distribution
+    applicationDistribution.from("src/main/resources") {
+        include "log4j2.xml"
+        into "logConfig"
+    }
 }
 
 if (System.env.EASY_MODBUS_LOC == null ) {
@@ -48,18 +54,18 @@ dependencies {
     testImplementation "io.vantiq:vantiq-sdk:${vantiqSDKVersion}"
     
     // Use JUnit test framework
-    testImplementation 'junit:junit:4.12'
+    testImplementation 'junit:junit:4.13.1'
     testImplementation project(path:":extjsdk", configuration:"testArtifacts")
 
     // Used to create a connection pool if asynchronous processing has been specified for publish/query handlers
     implementation group: 'com.zaxxer', name: 'HikariCP', version: '3.3.1'
 
 }
-tasks.withType(Test) {
-	//if (System.env.EASYModBus_LOC == null) {
+tasks.withType(Test).configureEach {
+    //if (System.env.EASYModBus_LOC == null) {
     //	logger.warn("Some tests may have been skipped. Environment variable 'EASYModBus_LOC' is not set. " +
     //			"Please set it to a location containing the appropriate EasyModbus Driver .jar file.")
-    //}	
+    //}
     if (rootProject.hasProperty("EntConTestSourceName")) {
         systemProperty "EntConTestSourceName", rootProject.findProperty("EntConTestSourceName")
     }
@@ -72,7 +78,7 @@ tasks.withType(Test) {
     }
     if (rootProject.hasProperty("EntConIPAddress")) {
         systemProperty 'EntConIPAddress', rootProject.findProperty('EntConIPAddress') ?: "127.0.0.1"
-    } 
+    }
     if (rootProject.hasProperty("EntConIPPort")) {
         systemProperty "EntConIPPort", rootProject.findProperty("EntConIPPort") ?: "502"
     }
