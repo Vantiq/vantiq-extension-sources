@@ -100,7 +100,7 @@ subprojects {
                 repositoryBase = repositoryBase.replace('//', '/')
                 repository = rootProject.hasProperty('imageTag') ? repositoryBase + ":${rootProject.getProperty('imageTag')}" : repositoryBase
                 logBuildStatus = true
-                buildLogFile = file("$buildDir/dockerBuildLog.txt")
+                buildLogFile = file(layout.buildDirectory.dir('dockerBuildLog.txt'))
             }
 
             // The credentials here should be stored in gradle.properties.
@@ -240,7 +240,7 @@ apply plugin: 'base'
 // Otherwise, this task will RUN ALL the tests, rather than just collecting the existing reports...
 //     
 task testReport(type: TestReport) {
-    destinationDirectory = file("$buildDir/reports/allTests")
+    destinationDirectory = file(layout.buildDirectory.dir('reports/allTests'))
     // Include the results from the `test` task in all subprojects
     testResults.from(subprojects*.test*.binaryResultsDirectory)
 }

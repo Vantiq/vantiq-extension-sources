@@ -69,7 +69,7 @@ tasks.withType(Test).configureEach {
         systemProperty "TestVantiqServer", rootProject.findProperty("TestVantiqServer") ?: "empty"
     }
     // Use the build dir as a base to get our various test artifacts.
-    systemProperty "buildDir", "${layout.buildDirectory as String}"
+    systemProperty "buildDir", layout.buildDirectory.get().asFile.absolutePath
 }
 
 

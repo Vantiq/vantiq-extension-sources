@@ -23,8 +23,8 @@ tasks.register('zipAssemblies') {
     outputs.upToDateWhen { false }
     def assyCount = 0
     doLast {
-        File vtqResources = new File(project.buildDir, "${generatedResourceBase}")
-        def distributions = new File(project.buildDir, "${distributionsDir}")
+        File vtqResources = new File(layout.buildDirectory.dir(generatedResourceBase).get().asFile.absolutePath)
+        def distributions = new File(layout.buildDirectory.dir(distributionsDir).get().asFile.absolutePath)
         mkdir(distributions)
         vtqResources.eachDir { resourceDir ->
             def projName = resourceDir.name
@@ -64,7 +64,7 @@ tasks.register('importAssemblies') {
             logger.lifecycle('Using {} as the "vantiq" command', catalogVantiqCommand)
         }
 
-        File genProjects = new File(project.buildDir, "${generatedResourceBase}")
+        File genProjects = new File(layout.buildDirectory.dir(generatedResourceBase).get().asFile.absolutePath)
         genProjects.eachDir { projectDir ->
             def assemblyName = projectDir.name
             def assyParts = assemblyName.split('\\.')
@@ -124,7 +124,7 @@ tasks.register('publishAssemblies') {
             changeLog = changeLog.replace(' ', '_')
         }
 
-        File genProjects = new File(project.buildDir, "${generatedResourceBase}")
+        File genProjects = new File(layout.buildDirectory.dir(generatedResourceBase).get().asFile.absolutePath)
         def projectFiles= project.fileTree(dir: genProjects, include: '**/projects/*.json')
         logger.debug('Project files: {}', projectFiles.asList())
         projectFiles.each { projectFile ->
