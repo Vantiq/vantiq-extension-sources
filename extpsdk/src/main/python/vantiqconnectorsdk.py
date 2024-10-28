@@ -50,6 +50,7 @@ from asyncio import Future
 import json
 import logging
 import logging.config
+from json import JSONDecodeError
 from logging import Logger
 import os
 import re
@@ -170,6 +171,7 @@ class VantiqConnector:
     FAIL_ON_CONNECTION_ERROR = 'failOnConnectionError'
     PORT_PROPERTY_NAME = "tcpProbePort"
     TCP_PROBE_PORT_DEFAULT = 8000
+    CONNECT_KW_ARGS = 'connectKWArgs'
 
 
 class VantiqConnectorException(RuntimeError):
@@ -206,12 +208,23 @@ class VantiqSourceConnection:
         self.is_connected = False
         self._is_connected_future = None
         self._connector_set = None
+        # Initialize with empty to make usage easier.
+        self.connect_kw_args: dict = {}
         if config is not None:
             fixedReconnectSecret : string = config.get(VantiqConnector.FIXED_RECONNECT_SECRET, None)
             if fixedReconnectSecret is None:
                 self._reconnectSecret = source_name + '_' + str(uuid.uuid1())
             else:
                 self._reconnectSecret = source_name + '_' + fixedReconnectSecret
+            kwArgString: string = config.get(VantiqConnector.CONNECT_KW_ARGS)
+            if kwArgString is not None:
+                try:
+                    kw_temp : dict = json.loads(kwArgString)
+                    self.connect_kw_args = kw_temp
+                except JSONDecodeError as jde:
+                    raise VantiqConnectorConfigException(f'{VantiqConnector.CONNECT_KW_ARGS} did not contain valid '
+                                                         f'JSON string.') from jde
+
 
     def __str__(self):
         return f'VantiqSourceConnection for source: {self.source_name}, is_connected: {self.is_connected}'
@@ -415,7 +428,8 @@ class VantiqSourceConnection:
             _vlog.debug('perform_connection() to %s', self.config[VantiqConnector.TARGET_SERVER])
             async with websockets.connect(uri=self.config[VantiqConnector.TARGET_SERVER],
                                           ping_interval=20 if do_pings else None,
-                                          ping_timeout=20 if do_pings else None) as websocket:
+                                          ping_timeout=20 if do_pings else None,
+                                          **self.connect_kw_args) as websocket:
                 _vlog.debug('Connection completed')
                 auth_msg = {
                     _OPERATION: _OP_VALIDATE,

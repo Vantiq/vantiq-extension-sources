@@ -6,8 +6,10 @@ __license__ = "MIT License"
 __email__ = "support@vantiq.com"
 
 import asyncio
+import json
 import re
 import os
+import string
 
 import pytest
 import websockets.exceptions
@@ -167,6 +169,48 @@ class TestSingleConnection:
             assert sc[VantiqConnector.TARGET_SERVER]
             assert sc[VantiqConnector.AUTH_TOKEN]
             assert sc[VantiqConnector.TARGET_SERVER].startswith('ws')
+            assert VantiqConnector.CONNECT_KW_ARGS not in sc
+            assert re.match(_WEBSOCKET_URL_PATTERN, sc[VantiqConnector.TARGET_SERVER])
+            assert self._close_count == 0
+            assert self._connect_count == 0
+            assert self._publish_count == 0
+            assert self._query_count == 0
+        finally:
+            if filename:
+                os.remove(filename)
+
+    def test_configuration_with_connect_args(self):
+        source_name = 'pythonTestSource'
+        # Note: 'false' must be JSON format, not False of Python...
+        connect_args = '{"ssl": false, "server_hostname": "host.not.there.com" }'
+        cf = f'''
+        targetServer=http://localhost:9090
+        authToken=testtoken
+        sources={source_name}
+        connectKWArgs={connect_args}
+                    '''
+        filename = None
+        try:
+            scf = open('serverConfig/server.config', encoding='utf-8', mode='wt')
+            scf.write(cf)
+            filename = scf.name
+            scf.close()
+            vc = VantiqConnectorSet()
+            connector = vc.get_connection_for_source(source_name)
+            source = connector.get_source()
+            assert source == source_name
+            sc = connector.get_server_config()
+            assert sc
+            assert sc[VantiqConnector.TARGET_SERVER]
+            assert sc[VantiqConnector.AUTH_TOKEN]
+            assert sc[VantiqConnector.TARGET_SERVER].startswith('ws')
+            assert sc[VantiqConnector.CONNECT_KW_ARGS] is not None
+            assert sc[VantiqConnector.CONNECT_KW_ARGS]
+            # Ensure that the connection arguments in the config file where populated as expected
+            da : dict = connector.connect_kw_args
+            assert da['ssl'] is not None
+            assert da['server_hostname'] is not None
+            assert da['server_hostname'] == 'host.not.there.com'
             assert re.match(_WEBSOCKET_URL_PATTERN, sc[VantiqConnector.TARGET_SERVER])
             assert self._close_count == 0
             assert self._connect_count == 0
@@ -186,6 +230,40 @@ targetServer=http://localhost:{unused_tcp_port}
 authToken=testtoken
 sources={source_name}
             '''
+        try:
+            scf = open('server.config', encoding='utf-8', mode='wt')
+            scf.write(cf)
+            filename = scf.name
+            scf.close()
+            vc = VantiqConnectorSet()
+            vc.configure_handlers_for_all(self.close_handler, self.connect_handler,
+                                          self.publish_handler, self.query_handler)
+            expected_message_count = 125
+            await run_server_test(unused_tcp_port, filename, expected_message_count, 0, vc, 0)
+            assert self._message_count == expected_message_count
+            assert self._connect_count == 1
+            assert self._close_count == self._connect_count
+            assert self._publish_count == expected_message_count
+            assert self._query_count == 0
+
+        finally:
+            os.remove('server.config')
+
+    @pytest.mark.asyncio
+    @pytest.mark.timeout(20)
+    async def test_only_publish_with_connect_args(self, unused_tcp_port):
+        # Construct a server config file to use...
+        source_name = 'pythonTestSource'
+        # Note: 'max_queue' is not of interest, it's just harmless,
+        # Sending, e.g., ssl=false fails because the connection is not a secure (ssl) connection
+        # Here, we're just validating that we can send something through successfully
+        connect_args = '{ "max_queue" : 16 }'
+        cf = f'''
+    targetServer=http://localhost:{unused_tcp_port}
+    authToken=testtoken
+    sources={source_name}
+    connectKWArgs={connect_args}
+                '''
         try:
             scf = open('server.config', encoding='utf-8', mode='wt')
             scf.write(cf)

@@ -82,6 +82,8 @@ In addition to the configuration properties shown above, the `server.config` fil
 
 *   `sendPings`: A boolean property that, if set to `true`, enables the SDK to send ping messages to the Vantiq Server. 
 The ping messages are handled by the underlying websockets library.
+*   `connectKWArgs`: A string property that, if set, contains a JSON string representing keyword arguments to be passed
+to the `websockets.client.connect()` call. A common case is alter SSL processing in development environments.
 
 The system expects the `server.config` file to be located in a directory named `serverConfig` in the working directory of the connector.
 
@@ -91,12 +93,26 @@ Otherwise, if the `authToken` is not set in the configuration file, the system w
 The server config file is written as `property=value`, with each property on its own line. The following is an example 
 of a valid `server.config` file (including the `authToken`, but that can be omitted and specified as an environment 
 variable instead):
+
 ```
 authToken=XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 sources=MySourceName
 targetServer=https://dev.vantiq.com/
 sendPings=true
 ```
+
+In a development environment, one might disable SSL processing by providing the following config file:
+
+```
+authToken=XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+sources=MySourceName
+targetServer=https://dev.vantiq.com/
+sendPings=true
+connectKWArgs={ "ssl": false }
+```
+
+(Note that although this is Python code, the `connectKWArgs` property contains JSON, so the `false` must be
+provided as JSON -- lowercase.)
 
 ### Program Flow
 
