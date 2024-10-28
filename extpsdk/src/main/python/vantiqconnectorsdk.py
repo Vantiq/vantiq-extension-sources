@@ -226,7 +226,10 @@ class VantiqSourceConnection:
                     disable_ssl = kw_temp.get(VantiqConnector.DISABLE_SSL_VERIFICATION)
                     if disable_ssl is not None and disable_ssl:
                         self.disable_ssl_check = True
-                        self.connect_kw_args = {"ssl": ssl.SSLContext(ssl.CERT_NONE)}
+                        ctx = ssl.create_default_context()
+                        ctx.check_hostname = False
+                        ctx.verify_mode = ssl.CERT_NONE
+                        self.connect_kw_args = {"ssl": ctx}
                     else:
                         self.connect_kw_args = kw_temp
                 except JSONDecodeError as jde:
