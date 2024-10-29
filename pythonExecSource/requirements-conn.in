@@ -1,5 +1,5 @@
 websockets>=12.0
 aiohttp>=3.10.2
-vantiqconnectorsdk>=1.2.12
-vantiqsdk>=1.3.5
+vantiqconnectorsdk>=1.3.3
+vantiqsdk>=1.4.0
 requests>=2.32.3

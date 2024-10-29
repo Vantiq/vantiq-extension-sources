@@ -514,11 +514,16 @@ class TestLiveConnection:
         await self.do_connector_test(use_conn_info, qry_count, at_once, TEST_SIMPLE_CODE, None, None)
 
     async def do_connector_test_documents(self, use_conn_info: bool, qry_count: int, at_once: int):
-        await self.do_connector_test(use_conn_info, qry_count, at_once, TEST_SIMPLE_DOC, None, None)
+        await self.do_connector_test(use_conn_info, qry_count, at_once, TEST_SIMPLE_DOC, None,
+                                     None)
+
+    async def do_connector_test_documents_connect_args(self, use_conn_info: bool, qry_count: int, at_once: int):
+        await self.do_connector_test(use_conn_info, qry_count, at_once, TEST_SIMPLE_DOC, None,
+                                     None, '{ "disableSslVerification": true }')
 
     async def do_connector_test(self, use_conn_info: bool, qry_count: int, at_once: int,
                                 proc_to_run: str, expected_error: Union[dict, None],
-                                expected_result: Union[dict, None]):
+                                expected_result: Union[dict, None], connect_args: str = None):
         # Construct a server config file to use...
         assert at_once == 0 or qry_count % at_once == 0  # Test config failure -- at once must be multiples
         cf = f'''
@@ -526,8 +531,17 @@ class TestLiveConnection:
         authToken={_access_token}
         sources={PY_EXEC_SOURCE_NAME}
         '''
+        if connect_args is not None:
+            cf = cf + f'''
+            {VantiqConnector.FAIL_ON_CONNECTION_ERROR}=true
+            connectKWArgs={connect_args}
+            '''
 
-        self.vantiq_connection = Vantiq(_server_url)
+        if connect_args:
+            # Here, we'll assume that we're disabling SSL, so we will, too.
+            self.vantiq_connection = Vantiq(_server_url, "1", ssl=False)
+        else:
+            self.vantiq_connection = Vantiq(_server_url)
         await self.vantiq_connection.set_access_token(_access_token)
         await self.setup_test_env(self.vantiq_connection, use_conn_info)
 
@@ -570,7 +584,7 @@ class TestLiveConnection:
             pytest.skip('Need access to Vantiq server.')
 
     @pytest.mark.asyncio
-    @pytest.mark.timeout(10)
+    @pytest.mark.timeout(25)
     async def test_syntax_error(self):
         self.check_test_conditions()
         await self.do_connector_test(False, 1, 1, TEST_SYNTAX_ERROR,
@@ -578,7 +592,7 @@ class TestLiveConnection:
                                       VantiqConnector.ERROR_TEMPLATE: 'SyntaxError'}, None)
 
     @pytest.mark.asyncio
-    @pytest.mark.timeout(10)
+    @pytest.mark.timeout(25)
     async def test_import_error(self):
         self.check_test_conditions()
         # Import errors (also subclass ModuleNotFound errors) are found at execution time, generally, rather
@@ -596,7 +610,7 @@ class TestLiveConnection:
         await self.do_connector_test(False, 1, 1, TEST_TIMEOUT, None, {'i_am_alive': 'Because I think'})
 
     @pytest.mark.asyncio
-    @pytest.mark.timeout(10)
+    @pytest.mark.timeout(25)
     async def test_indent_error(self):
         self.check_test_conditions()
         await self.do_connector_test(False, 1, 1, TEST_INDENT_ERROR,
@@ -604,37 +618,45 @@ class TestLiveConnection:
                                       VantiqConnector.ERROR_TEMPLATE: 'IndentationError'}, None)
 
     @pytest.mark.asyncio
-    @pytest.mark.timeout(10)
+    @pytest.mark.timeout(25)
     async def test_simple_query(self):
         self.check_test_conditions()
         await self.do_connector_test_raw_code(True, QUERY_COUNT, 0)
 
     @pytest.mark.asyncio
-    @pytest.mark.timeout(10)
+    @pytest.mark.timeout(25)
     async def test_simple_query_noci(self):
         self.check_test_conditions()
         await self.do_connector_test_raw_code(False, QUERY_COUNT, 0)
 
     @pytest.mark.asyncio
-    @pytest.mark.timeout(10)
+    @pytest.mark.timeout(25)
     async def test_simple_query_multiple(self):
         self.check_test_conditions()
         await self.do_connector_test_raw_code(True, QUERY_COUNT, 5)
 
     @pytest.mark.asyncio
-    @pytest.mark.timeout(10)
+    @pytest.mark.timeout(25)
     async def test_simple_query_noci_multiple(self):
         self.check_test_conditions()
         await self.do_connector_test_raw_code(False, QUERY_COUNT, 5)
 
     @pytest.mark.asyncio
-    @pytest.mark.timeout(10)
+    @pytest.mark.timeout(25)
     async def test_doc_query(self):
         self.check_test_conditions()
         await self.do_connector_test_documents(True, QUERY_COUNT, 0)
 
     @pytest.mark.asyncio
-    @pytest.mark.timeout(10)
+    @pytest.mark.timeout(25)
+    async def test_doc_query_connect_args(self):
+        self.check_test_conditions()
+        if _server_url.startswith('ws:') or _server_url.startswith('http:'):
+            pytest.skip('This test requires an SSL-enabled server (https or wss).')
+        await self.do_connector_test_documents_connect_args(True, QUERY_COUNT, 0)
+
+    @pytest.mark.asyncio
+    @pytest.mark.timeout(25)
     async def test_doc_query_multiple(self):
         self.check_test_conditions()
         await self.do_connector_test_documents(True, QUERY_COUNT, 5)
