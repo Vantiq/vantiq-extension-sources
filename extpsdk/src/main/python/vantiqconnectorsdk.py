@@ -45,6 +45,7 @@ __all__ = ['VantiqSourceConnection',
            ]
 
 import asyncio
+import ssl
 import uuid
 from asyncio import Future
 import json
@@ -172,6 +173,7 @@ class VantiqConnector:
     PORT_PROPERTY_NAME = "tcpProbePort"
     TCP_PROBE_PORT_DEFAULT = 8000
     CONNECT_KW_ARGS = 'connectKWArgs'
+    DISABLE_SSL_VERIFICATION = 'disableSslVerification'
 
 
 class VantiqConnectorException(RuntimeError):
@@ -210,6 +212,7 @@ class VantiqSourceConnection:
         self._connector_set = None
         # Initialize with empty to make usage easier.
         self.connect_kw_args: dict = {}
+        self.disable_ssl_check = False
         if config is not None:
             fixedReconnectSecret : string = config.get(VantiqConnector.FIXED_RECONNECT_SECRET, None)
             if fixedReconnectSecret is None:
@@ -220,7 +223,15 @@ class VantiqSourceConnection:
             if kwArgString is not None:
                 try:
                     kw_temp : dict = json.loads(kwArgString)
-                    self.connect_kw_args = kw_temp
+                    disable_ssl = kw_temp.get(VantiqConnector.DISABLE_SSL_VERIFICATION)
+                    if disable_ssl is not None and disable_ssl:
+                        self.disable_ssl_check = True
+                        ctx = ssl.create_default_context()
+                        ctx.check_hostname = False
+                        ctx.verify_mode = ssl.CERT_NONE
+                        self.connect_kw_args = {"ssl": ctx}
+                    else:
+                        self.connect_kw_args = kw_temp
                 except JSONDecodeError as jde:
                     raise VantiqConnectorConfigException(f'{VantiqConnector.CONNECT_KW_ARGS} did not contain valid '
                                                          f'JSON string.') from jde
