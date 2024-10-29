@@ -398,7 +398,10 @@ class PyExecConnector:
                 url = config[VantiqConnector.TARGET_SERVER]
                 # We may need to sanitize the URL here.
                 url = self.sanitize_url(url)
-                self.vantiq_client = Vantiq(url)
+                if isinstance(self.connection.connect_kw_args, dict) and self.connection.connect_kw_args:
+                    self.vantiq_client = Vantiq(url, "1", **self.connection.connect_kw_args)
+                else:
+                    self.vantiq_client = Vantiq(url)
                 await self.vantiq_client.set_access_token(config[VantiqConnector.AUTH_TOKEN])
         except VantiqException as ve:
             if self.vantiq_client is not None:

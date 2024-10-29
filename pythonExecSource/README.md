@@ -43,6 +43,25 @@ authToken = _cDWBfZLNO9FkXd-twjwKnVIBZSGwns35nF4nQFV_ps=
 sources = pythonSource
 ```
 
+As outlined in the vantiqconnectorsdk, there is also the option of providing extra keyword arguments that will be used
+to make connections to Vantiq.  These will be used both for the vantiqconnectorsdk connection as well any "regular"
+Vantiq connections used.  These are use, for example, for reading documents containing Python
+code.
+
+To make use of this capability, include the `connectKWArgs` property in your config file.
+
+A special case is use for disabling SSL verification (often used in development environments). To do this, use the
+argument `disableSslVerification`.  This sets up both the connector's websocket connection and the auxiliary 
+Vantiq connection to skip SSL verification.  Doing so, internally, requires some Python code not directly
+representable in JSON.  The following example shows how this is done.
+
+``
+targetServer = https://dev.vantiq.com
+authToken = _cDWBfZLNO9FkXd-twjwKnVIBZSGwns35nF4nQFV_ps=
+sources = pythonSource
+connectKWArgs={ "disableSslVerification": true }
+```
+
 For users who may not want to write the `authToken` property to a file because of its sensitive nature, set the environment variable `CONNECTOR_AUTH_TOKEN` to its value. If the `authToken` is specified in the `server.config` document, that value will take precedence.
 Otherwise, if the `authToken` is not set in the configuration file, the system will retrieve whatever value is provided in the environment variable.
 
