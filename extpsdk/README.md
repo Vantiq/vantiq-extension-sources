@@ -83,9 +83,13 @@ In addition to the configuration properties shown above, the `server.config` fil
 *   `sendPings`: A boolean property that, if set to `true`, enables the SDK to send ping messages to the Vantiq Server. 
 The ping messages are handled by the underlying websockets library.
 *   `connectKWArgs`: A string property that, if set, contains a JSON string representing keyword arguments to be passed
-to the `websockets.client.connect()` call. A common case is alter SSL processing in development environments.
+to the `websockets.client.connect()` call. A common case is alter SSL processing in development environments. Here, you
+can pass either a set of keyword arguments to the `connect()` call, or the special argument `disableSslVerification`
+with a value of `true`.  This _special_ argument allows the connector SDK to perform the internal setup required to
+disable SSL verification.
 
-The system expects the `server.config` file to be located in a directory named `serverConfig` in the working directory of the connector.
+The system expects the `server.config` file to be located in a directory named `serverConfig` in 
+the working directory of the connector.
 
 For users who may not want to write the `authToken` property to a file because of its sensitive nature, set the environment variable `CONNECTOR_AUTH_TOKEN` to its value. If the `authToken` is specified in the `server.config` document, that value will take precedence.
 Otherwise, if the `authToken` is not set in the configuration file, the system will retrieve whatever value is provided in the environment variable.
@@ -108,10 +112,10 @@ authToken=XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 sources=MySourceName
 targetServer=https://dev.vantiq.com/
 sendPings=true
-connectKWArgs={ "ssl": false }
+connectKWArgs={ "disableSslVerification": true }
 ```
 
-(Note that although this is Python code, the `connectKWArgs` property contains JSON, so the `false` must be
+(Note that although this is Python code, the `connectKWArgs` property contains JSON, so the `true` must be
 provided as JSON -- lowercase.)
 
 ### Program Flow
