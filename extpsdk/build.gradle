@@ -130,8 +130,10 @@ tasks.matching { !it.name.startsWith('generate')
     task.mustRunAfter generateSetupCfg
 }
 
-// This is an SDK so no connector image should be constructed or pushed.
-buildImages.onlyIf { false }
-buildConnectorImage.onlyIf { false }
-pushImages.onlyIf { false }
-pushConnectorImage.onlyIf { false }
+if (project.tasks.findByName('buildImages') && project.tasks.findByName('buildConnectorImage')) {
+    // This is an SDK so no connector image should be constructed or pushed.
+    buildImages.onlyIf { false }
+    buildConnectorImage.onlyIf { false }
+    pushImages.onlyIf { false }
+    pushConnectorImage.onlyIf { false }
+}
