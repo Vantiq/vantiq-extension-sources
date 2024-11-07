@@ -110,9 +110,7 @@ subprojects {
             }
         }
     }
-    if (project.tasks.findByName('buildConnectorImage')) {
-        buildConnectorImage.dependsOn assemble
-    }
+
     project.afterEvaluate { x ->
         // Add dependency to Gradle for the archive file used in the connector docker image. This avoids warnings
         // from gradle about undeclared dependencies.  The warning didn't really cause an issue, but it looks messy
@@ -124,6 +122,10 @@ subprojects {
 
         if (project.tasks.findByName('copyConnectorBuildFiles') && project.tasks.findByName('distTar')) {
             copyConnectorBuildFiles.dependsOn distTar
+        }
+
+        if (project.tasks.findByName('buildConnectorImage')) {
+            buildConnectorImage.dependsOn assemble
         }
     }
 
