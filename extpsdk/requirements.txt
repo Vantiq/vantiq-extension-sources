@@ -4,51 +4,55 @@
 #
 #    pip-compile --output-file=requirements.txt --unsafe-package=py --unsafe-package=pywin32 requirements-build.in requirements-sdk.in
 #
-aiofiles==23.2.1
+aiofiles==24.1.0
     # via -r requirements-build.in
-aiohappyeyeballs==2.3.5
+aiohappyeyeballs==2.4.3
     # via aiohttp
-aiohttp==3.10.2
-    # via
-    #   -r requirements-sdk.in
-    #   aioresponses
-aioresponses==0.7.6
+aiohttp==3.11.2
+    # via aioresponses
+aioresponses==0.7.7
     # via -r requirements-build.in
 aiosignal==1.3.1
     # via aiohttp
-async-timeout==4.0.3
+async-timeout==5.0.1
     # via aiohttp
 attrs==24.2.0
     # via aiohttp
-build==1.1.1
+backports-tarfile==1.2.0
+    # via jaraco-context
+build==1.2.2.post1
     # via
     #   -r requirements-build.in
     #   pip-tools
-certifi==2024.7.4
+certifi==2024.8.30
     # via requests
-charset-normalizer==3.3.2
+charset-normalizer==3.4.0
     # via requests
 click==8.1.7
     # via pip-tools
-docutils==0.20.1
+docutils==0.21.2
     # via readme-renderer
-exceptiongroup==1.2.0
+exceptiongroup==1.2.2
     # via pytest
-frozenlist==1.4.1
+frozenlist==1.5.0
     # via
     #   aiohttp
     #   aiosignal
-idna==3.7
+idna==3.10
     # via
     #   requests
     #   yarl
-importlib-metadata==6.8.0
+importlib-metadata==8.5.0
     # via
     #   keyring
     #   twine
 iniconfig==2.0.0
     # via pytest
-jaraco-classes==3.3.0
+jaraco-classes==3.4.0
+    # via keyring
+jaraco-context==6.0.1
+    # via keyring
+jaraco-functools==4.1.0
     # via keyring
 jinja2==3.1.4
     # via
@@ -56,58 +60,65 @@ jinja2==3.1.4
     #   pytest-html
 jprops==2.0.2
     # via -r requirements-sdk.in
-keyring==24.3.0
+keyring==25.5.0
     # via twine
 markdown-it-py==3.0.0
     # via rich
-markupsafe==2.1.3
+markupsafe==3.0.2
     # via jinja2
 mdurl==0.1.2
     # via markdown-it-py
-more-itertools==10.1.0
-    # via jaraco-classes
-multidict==6.0.5
+more-itertools==10.5.0
+    # via
+    #   jaraco-classes
+    #   jaraco-functools
+multidict==6.1.0
     # via
     #   aiohttp
     #   yarl
-nh3==0.2.14
+nh3==0.2.18
     # via readme-renderer
-packaging==21.3
+packaging==24.2
     # via
+    #   aioresponses
     #   build
     #   pytest
-pip==23.3.1
+pip==24.3.1
     # via pip-tools
-pip-tools==7.3.0
+pip-tools==7.4.1
     # via -r requirements-build.in
-pkginfo==1.9.6
+pkginfo==1.10.0
     # via twine
-pluggy==1.3.0
+pluggy==1.5.0
     # via pytest
-pygments==2.17.2
+propcache==0.2.0
+    # via
+    #   aiohttp
+    #   yarl
+pygments==2.18.0
     # via
     #   readme-renderer
     #   rich
-pyparsing==3.0.7
-    # via packaging
-pyproject-hooks==1.0.0
-    # via build
-pytest==7.4.3
+pyproject-hooks==1.2.0
+    # via
+    #   build
+    #   pip-tools
+pytest==8.3.3
     # via
     #   -r requirements-build.in
     #   pytest-asyncio
     #   pytest-html
     #   pytest-metadata
     #   pytest-timeout
-pytest-asyncio==0.23.6
+pytest-asyncio==0.24.0
     # via -r requirements-build.in
 pytest-html==4.1.1
     # via -r requirements-build.in
-pytest-metadata==3.0.0
+pytest-metadata==3.1.1
     # via pytest-html
-pytest-timeout==2.2.0
+pytest-timeout==2.3.1
     # via -r requirements-build.in
-readme-renderer==42.0
+readme-renderer==44.0
     # via twine
 requests==2.32.3
     # via
@@ -118,31 +129,34 @@ requests-toolbelt==1.0.0
     # via twine
 rfc3986==2.0.0
     # via twine
-rich==13.7.0
+rich==13.9.4
     # via twine
-setuptools==72.1.0
+setuptools==75.6.0
     # via
     #   -r requirements-build.in
     #   pip-tools
-tomli==2.0.1
+tomli==2.1.0
     # via
     #   build
     #   pip-tools
-    #   pyproject-hooks
     #   pytest
-twine==4.0.2
+twine==5.1.1
     # via -r requirements-build.in
-urllib3==2.2.2
+typing-extensions==4.12.2
+    # via
+    #   multidict
+    #   rich
+urllib3==2.2.3
     # via
     #   requests
     #   twine
-websockets==12.0
+websockets==14.1
     # via -r requirements-sdk.in
-wheel==0.42.0
+wheel==0.45.0
     # via pip-tools
-yarl==1.9.4
+yarl==1.17.2
     # via aiohttp
-zipp==3.19.2
+zipp==3.21.0
     # via
     #   -r requirements-build.in
     #   importlib-metadata

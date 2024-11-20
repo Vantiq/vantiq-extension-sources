@@ -55,7 +55,7 @@ argument `disableSslVerification`.  This sets up both the connector's websocket 
 Vantiq connection to skip SSL verification.  Doing so, internally, requires some Python code not directly
 representable in JSON.  The following example shows how this is done.
 
-``
+```
 targetServer = https://dev.vantiq.com
 authToken = _cDWBfZLNO9FkXd-twjwKnVIBZSGwns35nF4nQFV_ps=
 sources = pythonSource
