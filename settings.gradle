@@ -12,6 +12,8 @@ include 'testConnector'
 include 'objectRecognitionSource'
 include 'jdbcSource'
 include 'jmsSource'
+include 'jmsSource'
+include 'fhirAssembly'
 if (System.env.EASY_MODBUS_LOC) {
     include 'EasyModbusSource' 
 }
