@@ -10,6 +10,7 @@ import io.vantiq.extsrc.objectRecognition.ObjRecTestBase;
 import org.junit.After;
 import org.junit.Before;
 
+import org.junit.Ignore;
 import org.junit.Test;
 
 import io.vantiq.extsrc.objectRecognition.NoSendORCore;
@@ -78,6 +79,7 @@ public class TestNetworkStreamRetriever extends ObjRecTestBase {
     }
 
     @Test
+    @Ignore("Camera is broken -- need better replacement")
     public void testRtspCamera() throws Exception {
         // Don't fail if camera's offline...
 
