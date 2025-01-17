@@ -11,6 +11,7 @@ services:
       - db
 
   db:
+    container_name: fhir_postgres
     image: postgres
     restart: always
     environment:
@@ -18,10 +19,7 @@ services:
       POSTGRES_USER: admin
       POSTGRES_DB: hapi
     volumes:
-      - pgdata:/var/lib/postgresql/data
-
-volumes:
-  pgdata:
+      - ./hapi.postgres.data:/var/lib/postgresql/data
 
 configs:
   hapi:
