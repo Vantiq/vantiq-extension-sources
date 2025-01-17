@@ -7,19 +7,6 @@ services:
     configs:
       - source: hapi
         target: /app/config/application.yaml
-    depends_on:
-      - db
-
-  db:
-    container_name: fhir_postgres
-    image: postgres
-    restart: always
-    environment:
-      POSTGRES_PASSWORD: admin
-      POSTGRES_USER: admin
-      POSTGRES_DB: hapi
-    volumes:
-      - ./hapi.postgres.data:/var/lib/postgresql/data
 
 configs:
   hapi:

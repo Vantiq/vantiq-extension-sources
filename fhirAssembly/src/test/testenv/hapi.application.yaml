@@ -1,14 +1,3 @@
-spring:
-  datasource:
-    url: 'jdbc:postgresql://db:5432/hapi'
-    username: admin
-    password: admin
-    driverClassName: org.postgresql.Driver
-  jpa:
-    properties:
-      hibernate.dialect: ca.uhn.fhir.jpa.model.dialect.HapiFhirPostgresDialect
-      hibernate.search.enabled: false
-
 hapi:
   fhir:
     server_address: http://localhost:8090/fhir
