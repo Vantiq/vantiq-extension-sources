@@ -159,13 +159,17 @@ tasks.register('uploadSampleData') {
             try {
                 attempts += 1
                 for (;;) {
-                    logger.info('Uploading file {} to {}', sampleFile.name, redirectedServer)
                     HttpURLConnection req = new URL(redirectedServer).openConnection() as HttpURLConnection
                     req.setFixedLengthStreamingMode(sampleFile.length())
                     req.setRequestMethod("POST")
                     req.setRequestProperty("Content-Type", "application/json; charset=UTF-8")
+                    // Note:  If accept header isn't set (or not set to app/json or app/xml), you get HTML back,
+                    // and the work isn't actually done.  Only took a day to figure that out :-(
+                    req.setRequestProperty("Accept", "application/json")
                     req.setDoOutput(true)
+                    req.setDoInput(true)
                     req.getOutputStream().write(sampleFile.bytes)
+                    logger.debug('Uploading to {}: {}', redirectedServer, new String(sampleFile.bytes))
                     logger.info "Status code: ${req.getResponseCode()}" // HTTP request done on first read
                     switch (req.getResponseCode()) {
                         case HttpURLConnection.HTTP_MOVED_PERM:
@@ -190,6 +194,11 @@ tasks.register('uploadSampleData') {
                             logger.error('HTTP Error loading {}: {}',
                                 sampleFile.name, req.getResponseCode())
                             break
+                    }
+                    if (logger.isDebugEnabled()) {
+                        InputStream bis = new BufferedInputStream(req.getInputStream());
+                        String result = new String(bis.readAllBytes())
+                        logger.debug('Result: {}', result)
                     }
                     break
                 }
