@@ -1,6 +1,5 @@
 plugins {
     id 'java'
-    id 'application'
     id("io.freefair.lombok") // version "6.3.0" // version "8.7.1"
 }
 
@@ -33,54 +32,10 @@ repositories {
     }
 }
 
-application {
-    mainClassName = 'io.vantiq.extsrc.objectRecognition.ObjectRecognitionMain'
-    // Copies the README and licenses into the distribution
-    applicationDistribution.from(".") {
-        include "README.md"
-        include "LICENSE/*"
-        into ""
-    }
-
-    // Copies the logger setup into logConfig in the distribution
-    applicationDistribution.from("src/main/resources") {
-        include "log4j2.xml"
-        into "logConfig"
-    }
-}
-
-// Used to automatically ignore tests for implementations that have been removed.
-// The tests should be called "Test<source file name>.java"
-// And should be included in the list as "**/Test<source file name>.java"
-def standardImplementationTestPatterns = new ArrayList<String>(
-    [
-        "**/TestCameraRetriever.java",
-        "**/TestFileRetriever.java",
-        "**/TestYoloProcessor.java",
-        "**/TestNetworkStreamRetriever.java",
-        "**/TestFtpRetriever.java"
-    ]
-)
-
-// Add the logConfig folder to the classpath so that changes to logConfig/log4j2.xml will be used for logging
-startScripts{
-    doLast{
-        def windowsScriptFile = file getWindowsScript()
-        def unixScriptFile = file getUnixScript()
-        // Add the log Config to the top of the classpath
-        windowsScriptFile.text = windowsScriptFile.text.replace("CLASSPATH=", "CLASSPATH=%APP_HOME%\\logConfig;")
-        unixScriptFile.text = unixScriptFile.text.replace('CLASSPATH=', 'CLASSPATH=$APP_HOME/logConfig:')
-    }
-}
-
-// Don't javadoc the Yolo code
-javadoc.exclude("edu/*")
-
 test {
     // set heap size for the test JVM(s)
     minHeapSize = "2048m"
     maxHeapSize = "2048m"
-    forkEvery = 1
 }
 
 tasks.withType(Test).configureEach {
@@ -92,32 +47,6 @@ tasks.withType(Test).configureEach {
     if (rootProject.hasProperty("TestVantiqServer")) {
         systemProperty "TestVantiqServer", rootProject.findProperty("TestVantiqServer") ?: "empty"
     }
-}
-
-compileJava.doFirst {
-    removeUnnecessaryTests()
-}
-
-// Make 'removeUnnecessaryTests' a callable function
-// It makes the build not compile tests for any of the standard image retriever or neural net implementations that
-// have been deleted 
-ext.removeUnnecessaryTests = {
-
-    standardImplementationTestPatterns.removeIf {
-        testPattern -> 
-            def testedFile = testPattern.substring(7) // Remove '**/Test' from the Pattern, leaving the tested file
-            def testedFilePattern = '**/' + testedFile // Add '**/' to the tested file so it can be found in the source sets
-            // Get all files that match "**/<source file>" which should just be the source file or nothing if the
-            // source file has been removed
-            def standardFile = sourceSets.main.java.matching(
-                    { delegate.include(testedFilePattern) }
-            )
-            return !standardFile.getFiles().isEmpty() // Return true (and remove) if the file it tests still exists
-    }
-    // Now standardImplementationTestPatterns only contains tests for files that don't exist
-    
-    // Remove all tests for files that don't exist
-    sourceSets.test.java.filter.exclude(standardImplementationTestPatterns)
 }
 
 configurations {
@@ -282,6 +211,3 @@ test.finalizedBy(stopFhirContainer)
 startFhirContainer.finalizedBy(awaitFhirStartup)
 uploadSampleData.dependsOn(unzipSampleData)
 uploadSampleData.dependsOn(startFhirContainer)
-
-
-
