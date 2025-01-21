@@ -233,13 +233,6 @@ dcompose {
     namePrefix = 'test_'
     fhir {
         image = 'hapiproject/hapi:latest'
-        // Not sure why, but in this case, the running container is
-        // inaccessible without explictly exposing this port.  Most
-        // other containers don't seem to need it, but we do need it here.
-        // This is instructing the underlying container to expose it's port
-        // 8080, and the subsequent portBindings property will forward the
-        // the host machine's port 8090 to this container's (exposed) port
-        // 8080.
         exposedPorts = [ '8080' ]
         portBindings = ['8090:8080']
         env = [
