@@ -4,10 +4,5 @@ services:
     image: "hapiproject/hapi:latest"
     ports:
       - "8090:8080"
-    configs:
-      - source: hapi
-        target: /app/config/application.yaml
-
-configs:
-  hapi:
-     file: ./hapi.application.yaml
+    environment:
+      - HAPI_FHIR_SERVER_ADDRESS:"http://localhost:8090/fhir"
