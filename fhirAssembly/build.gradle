@@ -1,0 +1,213 @@
+plugins {
+    id 'java'
+    id("io.freefair.lombok") // version "6.3.0" // version "8.7.1"
+}
+
+group 'io.vantiq'
+version 'unspecified'
+
+java {
+    sourceCompatibility = 1.11
+}
+
+ext {
+    fhirServerUrl = 'http://localhost:8090/fhir'
+    fhirServerStartLimitSeconds = 180
+}
+
+repositories {
+    mavenCentral()
+
+    maven {
+        url "https://vantiqmaven.s3.amazonaws.com/"
+        metadataSources {
+            // The artifact() metadataSource allows the dependency resolver to use the existence of the file
+            // we want to be sufficient.  Then we don't have to publish fake POM files for our coco models
+            // or image/video files.  Since this repo is used primarily to store big test objects that
+            // we don't want in our GIT repo, this allows our strategy to work.  This change came during
+            // upgrade to Gradle 6.x from 5.x.
+            mavenPom()
+            artifact()
+        }
+    }
+}
+
+test {
+    // set heap size for the test JVM(s)
+    minHeapSize = "2048m"
+    maxHeapSize = "2048m"
+}
+
+tasks.withType(Test).configureEach {
+    // Use the build dir as a base to get our various test artifacts.
+    systemProperty 'buildDir', layout.buildDirectory.get().asFile.absolutePath
+    if (rootProject.hasProperty("TestAuthToken")) {
+        systemProperty "TestAuthToken", rootProject.findProperty("TestAuthToken") ?: "empty"
+    }
+    if (rootProject.hasProperty("TestVantiqServer")) {
+        systemProperty "TestVantiqServer", rootProject.findProperty("TestVantiqServer") ?: "empty"
+    }
+}
+
+configurations {
+    testResources.extendsFrom(testRuntimeOnly) // added so configurations search is allowed
+}
+
+dependencies {
+    testImplementation "org.slf4j:slf4j-api:1.7.25"
+    testImplementation "org.apache.logging.log4j:log4j-slf4j-impl:${log4jVersion}"
+    testImplementation "org.projectlombok:lombok:${lombokVersion}"
+    testImplementation 'com.fasterxml.jackson.core:jackson-databind:2.17.2'
+
+    // Used for uploading documents (images) to VANTIQ with VANTIQ SDK
+    testImplementation "io.vantiq:vantiq-sdk:${vantiqSDKVersion}"
+
+    // Use JUnit test framework
+    testImplementation 'junit:junit:4.13.1'
+    // Data to preload into our FHIR server
+    testResources "vantiq.testArtifacts:fhirR4Sample:1.0@zip"
+}
+
+tasks.register('unzipSampleData', Copy) {
+    outputs.upToDateWhen { new File(layout.buildDirectory.dir('sampleData').get().toString()).exists()}
+    def zipPath = project.configurations.testResources.find {
+        it.name.startsWith("fhirR4Sample")
+    }
+    logger.debug('Unzipping data from {}', zipPath)
+    def zipFile = file(zipPath)
+
+    from zipTree(zipFile)
+    into layout.buildDirectory.dir('sampleData')
+}
+
+/**
+ * We start our server empty so we'll load a few entries from the synthea sample set.  We aren't testing the FHIR
+ * server, just our ability to access it, so
+ */
+tasks.register('uploadSampleData') {
+    inputs.dir(layout.buildDirectory.dir('sampleData').get())
+    outputs.upToDateWhen { false }
+    doLast {
+        File dir = new File(layout.buildDirectory.dir('sampleData').get().toString())
+        String fhirServer = "${fhirServerUrl}"
+        int loaded = 0
+        int errors = 0
+        int redirects = 0
+        int attempts = 0
+        dir.listFiles().each { sampleFile ->
+            def redirectedServer = fhirServer
+            try {
+                attempts += 1
+                def redirecting = true
+                while (redirecting) {
+                    HttpURLConnection req = new URL(redirectedServer).openConnection() as HttpURLConnection
+                    req.setFixedLengthStreamingMode(sampleFile.length())
+                    req.setRequestMethod('POST')
+                    req.setRequestProperty('Content-Type', 'application/json; charset=UTF-8')
+                    // Note:  If accept header isn't set (or not set to app/json or app/xml), you get HTML back,
+                    // and the work isn't actually done.  Only took a day to figure that out :-(
+                    req.setRequestProperty('Accept', 'application/json')
+                    req.setDoOutput(true)
+                    req.setDoInput(true)
+                    req.getOutputStream().write(sampleFile.bytes)
+                    logger.debug('Uploading to {}: {}', redirectedServer, new String(sampleFile.bytes))
+                    logger.info "Status code: ${req.getResponseCode()}" // HTTP request done on first read
+                    switch (req.getResponseCode()) {
+                        case HttpURLConnection.HTTP_MOVED_PERM:
+                        //noinspection FallThruinSwitch
+                        case HttpURLConnection.HTTP_MOVED_TEMP:
+                            def location = req.getHeaderField("Location")
+                            location = URLDecoder.decode(location, "UTF-8")
+                            def base = new URL(fhirServer)
+                            redirectedServer = new URL(base, location).toExternalForm()  // Deal with relative URLs
+                            logger.info('Redirected to {}', redirectedServer)
+                            redirects += 1
+                            break
+
+                            // Handle the set of 'it worked' conditions.  Most here should just be OK.
+                        case HttpURLConnection.HTTP_OK:
+                        //noinspection FallThruinSwitch
+                        case HttpURLConnection.HTTP_ACCEPTED:
+                        //noinspection FallThruinSwitch
+                        case HttpURLConnection.HTTP_CREATED:
+                            loaded += 1
+                            redirecting = false
+                            break
+
+                        default:
+                            errors += 1
+                            logger.error('HTTP Error loading {}: {}',
+                                sampleFile.name, req.getResponseCode())
+                            break
+                    }
+                    if (logger.isDebugEnabled()) {
+                        InputStream bis = new BufferedInputStream(req.getInputStream())
+                        String result = new String(bis.readAllBytes())
+                        logger.debug('Result: {}', result)
+                    }
+                }
+            } catch (Exception e) {
+                logger.error('Upload of {} failed: ', sampleFile.name, e)
+            }
+        }
+        logger.quiet('uploadSampleData: {} attempts, {} successes, {} errors, {} redirects',
+            attempts, loaded, errors, redirects)
+    }
+}
+
+// This defines an in-memory FHIR server.  The H2 database, sans any configuration, runs in memory only.  So any
+// changes that happen as a result of the tests are lost on shutdown.  We'll reload the sample data on each startup
+// (see task dependencies below with uploadSampleData).
+dcompose {
+    namePrefix = 'test_'
+    fhir {
+        image = 'hapiproject/hapi:latest'
+        exposedPorts = [ '8080' ]
+        portBindings = ['8090:8080']
+        env = [
+            'HAPI_FHIR_SERVER_ADDRESS=http://localhost:8090/fhir'
+        ]
+    }
+}
+
+/**
+ * To load data, the server needs to be up & initialized. This often takes a while, so we'll scan the server to fetch
+ * its capability statement.  Once that's available, it should ge usable to load data.
+ */
+tasks.register('awaitFhirStartup') {
+    doLast {
+        long start = System.currentTimeSeconds()
+        String fhirServer = "${fhirServerUrl}/metadata"
+        boolean awaitingMetdata = true
+        int iterationCount = 0
+        while (awaitingMetdata) {
+            iterationCount += 1
+            try {
+                HttpURLConnection req = new URL(fhirServer).openConnection() as HttpURLConnection
+                req.setRequestMethod('GET')
+                req.setRequestProperty('Content-Type', 'application/jsos; charset=UTF-8')
+                req.setRequestProperty('Accept', 'application/json')
+                switch (req.getResponseCode()) {
+                    case HttpURLConnection.HTTP_OK:
+                        awaitingMetdata = false
+                        logger.quiet('FHIR Server startup completed in {} seconds (after {} iterations)',
+                            System.currentTimeSeconds() - start, iterationCount)
+                        break
+                }
+            } catch (Exception ignored) {
+                // not ready yet.  Continue
+            }
+            if ((System.currentTimeSeconds() - start) > fhirServerStartLimitSeconds) {
+                throw new GradleException("FHIR container failed to start within ${fhirServerStartLimit} seconds.")
+            }
+            Thread.sleep(500)
+        }
+    }
+}
+
+test.dependsOn(startFhirContainer)
+test.dependsOn(uploadSampleData)
+test.finalizedBy(stopFhirContainer)
+startFhirContainer.finalizedBy(awaitFhirStartup)
+uploadSampleData.dependsOn(unzipSampleData)
+uploadSampleData.dependsOn(startFhirContainer)
