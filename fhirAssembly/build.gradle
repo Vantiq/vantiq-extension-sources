@@ -8,6 +8,7 @@ version 'unspecified'
 
 java {
     sourceCompatibility = 1.11
+    targetCompatibility = 1.11
 }
 
 ext {
@@ -31,6 +32,24 @@ repositories {
         }
     }
 }
+
+/**
+ * The following task builds an assembly project zip file for the FHIR Connection.
+ */
+
+tasks.register('zipAssembly', Zip) {
+    def inFiles =  project.fileTree('src/main/resources/assembly/com.vantiq.fhir.fhirConnection')
+    logger.debug('Infiles: {}', inFiles)
+
+    from(inFiles) {
+        include '**/*'
+    }
+
+    into "com.vantiq.fhir.fhirConnection"
+    archiveFileName = "fhirConnection-assembly.zip"
+}
+
+assemble.finalizedBy zipAssembly
 
 test {
     // set heap size for the test JVM(s)
@@ -58,8 +77,6 @@ dependencies {
     testImplementation "org.apache.logging.log4j:log4j-slf4j-impl:${log4jVersion}"
     testImplementation "org.projectlombok:lombok:${lombokVersion}"
     testImplementation 'com.fasterxml.jackson.core:jackson-databind:2.17.2'
-
-    // Used for uploading documents (images) to VANTIQ with VANTIQ SDK
     testImplementation "io.vantiq:vantiq-sdk:${vantiqSDKVersion}"
 
     // Use JUnit test framework
