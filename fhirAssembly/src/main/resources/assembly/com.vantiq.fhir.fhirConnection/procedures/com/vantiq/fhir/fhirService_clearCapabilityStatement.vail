@@ -1,0 +1,4 @@
+package com.vantiq.fhir
+private PROCEDURE fhirService.clearCapabilityStatement()
+
+fhirCapabilityStatement.setValue(null)

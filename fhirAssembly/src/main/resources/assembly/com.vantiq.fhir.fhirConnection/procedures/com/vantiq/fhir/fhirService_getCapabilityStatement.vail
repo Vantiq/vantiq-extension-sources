@@ -1,0 +1,15 @@
+/* Returns the capability statement for the source used by this service.
+  If none present, it will fetch one from the source. */
+package com.vantiq.fhir
+
+import service com.vantiq.fhir.fhirService
+
+PROCEDURE fhirService.getCapabilityStatement(): Object
+var retVal = fhirCapabilityStatement.getValue()
+if (!retVal) {
+	log.debug("Fetching new FHIR capability statement")
+	var stmt = fhirService.fetchCapabilityStatement()
+	retVal = fhirCapabilityStatement.setValue(stmt)
+}
+
+return retVal

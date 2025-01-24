@@ -1,0 +1,24 @@
+{
+  "activationConstraint" : "",
+  "active" : true,
+  "ars_properties" : null,
+  "ars_relationships" : [ ],
+  "autoUnwind" : false,
+  "config" : {
+    "oauthContentType" : "application/x-www-form-urlencoded",
+    "oauthGrantType" : "client_credentials",
+    "oauthUseBasicAuth" : false,
+    "passwordType" : "string",
+    "pollingInterval" : 0,
+    "query" : { },
+    "requestDefaults" : {
+      "contentType" : "application/fhir+json"
+    },
+    "uri" : "http://localhost:8090/fhir/"
+  },
+  "isUnavailable" : false,
+  "messageType" : null,
+  "mockProcedures" : { },
+  "name" : "com.vantiq.fhir.fhirServer",
+  "type" : "REMOTE"
+}
