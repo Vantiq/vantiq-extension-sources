@@ -234,7 +234,7 @@ public class TestFhirAssembly {
         return mapper.readValue(new Gson().toJson(resp.getBody()), Map.class);
     }
     
-    /**
+    /*
      * [
      *    {
      *       "resourceType": "Bundle",
@@ -467,10 +467,6 @@ public class TestFhirAssembly {
      *       ]
      *    }
      * ]
-     * @param v
-     * @param type
-     * @param query
-     * @return
      */
     Map<String, ?> findTarget(Vantiq v, String type, Map<String, ?> query) throws Exception {
         VantiqResponse resp = v.execute("com.vantiq.fhir.fhirService.searchType",
