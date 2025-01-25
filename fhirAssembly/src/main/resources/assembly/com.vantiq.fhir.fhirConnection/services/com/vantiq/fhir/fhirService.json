@@ -163,6 +163,21 @@
       "required" : false,
       "type" : "Object"
     } ]
+  }, {
+    "name" : "searchType",
+    "parameters" : [ {
+      "description" : null,
+      "multi" : false,
+      "name" : "type",
+      "required" : true,
+      "type" : "String"
+    }, {
+      "description" : null,
+      "multi" : false,
+      "name" : "theQuery",
+      "required" : true,
+      "type" : "Object"
+    } ]
   } ],
   "internalEventHandlers" : [ ],
   "name" : "com.vantiq.fhir.fhirService",
