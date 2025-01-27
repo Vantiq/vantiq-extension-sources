@@ -1,0 +1,9 @@
+/* Returns the capability statement for this FHIR server */
+package com.vantiq.fhir
+import service com.vantiq.fhir.fhirService
+
+private PROCEDURE fhirService.fetchCapabilityStatement():Object
+var returnValue
+
+returnValue = fhirService.performGet("metadata")
+return returnValue[0]

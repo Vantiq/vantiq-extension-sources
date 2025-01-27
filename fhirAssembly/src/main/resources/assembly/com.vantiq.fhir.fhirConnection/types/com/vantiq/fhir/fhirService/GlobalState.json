@@ -1,0 +1,21 @@
+{
+  "ars_relationships" : [ ],
+  "name" : "com.vantiq.fhir.fhirService.GlobalState",
+  "properties" : {
+    "fhirCapabilityStatement" : {
+      "encrypted" : false,
+      "multi" : false,
+      "required" : false,
+      "type" : "Value",
+      "unique" : false
+    },
+    "fhirSource" : {
+      "encrypted" : false,
+      "multi" : false,
+      "required" : false,
+      "type" : "Value",
+      "unique" : false
+    }
+  },
+  "role" : "schema"
+}

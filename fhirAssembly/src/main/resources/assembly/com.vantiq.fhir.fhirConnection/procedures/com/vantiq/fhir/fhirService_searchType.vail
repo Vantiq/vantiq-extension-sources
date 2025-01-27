@@ -1,0 +1,17 @@
+package com.vantiq.fhir
+
+import service com.vantiq.fhir.fhirService
+
+PROCEDURE fhirService.searchType(type String REQUIRED, theQuery Object REQUIRED)
+var theSource = fhirSource.getValue()
+log.debug("Current value of fhirSource to use: {}", [theSource])
+
+if (!theSource) {
+    fhirSource.setValue("com.vantiq.fhir.fhirServer")
+    theSource = fhirSource.getValue()
+}
+return SELECT * FROM SOURCE @theSource with 
+    method = "GET",
+    path = type,
+    query = theQuery,
+    responseType = "application/fhir+json"

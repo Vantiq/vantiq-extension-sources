@@ -1,0 +1,187 @@
+{
+  "active" : true,
+  "ars_properties" : {
+    "filterPrivateGenerated" : false,
+    "filterPublicGenerated" : false
+  },
+  "ars_relationships" : [ ],
+  "description" : null,
+  "eventTypes" : { },
+  "globalType" : "com.vantiq.fhir.fhirService.GlobalState",
+  "interface" : [ {
+    "name" : "create",
+    "parameters" : [ {
+      "description" : null,
+      "multi" : false,
+      "name" : "type",
+      "required" : true,
+      "type" : "String"
+    }, {
+      "description" : null,
+      "multi" : false,
+      "name" : "resource",
+      "required" : true,
+      "type" : "Object"
+    }, {
+      "description" : null,
+      "multi" : false,
+      "name" : "versionId",
+      "required" : false,
+      "type" : "String"
+    }, {
+      "description" : null,
+      "multi" : false,
+      "name" : "generalParms",
+      "required" : false,
+      "type" : "Object"
+    } ],
+    "returnType" : {
+      "multi" : false,
+      "type" : "Object"
+    }
+  }, {
+    "name" : "delete",
+    "parameters" : [ {
+      "description" : null,
+      "multi" : false,
+      "name" : "type",
+      "required" : true,
+      "type" : "String"
+    }, {
+      "description" : null,
+      "multi" : false,
+      "name" : "id",
+      "required" : true,
+      "type" : "String"
+    } ],
+    "returnType" : {
+      "multi" : false,
+      "type" : "Object"
+    }
+  }, {
+    "name" : "getCapabilityStatement",
+    "parameters" : [ ],
+    "returnType" : {
+      "multi" : false,
+      "type" : "Object"
+    }
+  }, {
+    "name" : "read",
+    "parameters" : [ {
+      "description" : null,
+      "multi" : false,
+      "name" : "type",
+      "required" : true,
+      "type" : "String"
+    }, {
+      "description" : null,
+      "multi" : false,
+      "name" : "id",
+      "required" : true,
+      "type" : "String"
+    }, {
+      "description" : null,
+      "multi" : false,
+      "name" : "genParams",
+      "required" : false,
+      "type" : "Object"
+    } ],
+    "returnType" : {
+      "multi" : false,
+      "type" : "Object"
+    }
+  }, {
+    "name" : "setSource",
+    "parameters" : [ {
+      "description" : null,
+      "multi" : false,
+      "name" : "theSource",
+      "required" : false,
+      "type" : "String"
+    } ]
+  }, {
+    "name" : "update",
+    "parameters" : [ {
+      "description" : null,
+      "multi" : false,
+      "name" : "type",
+      "required" : true,
+      "type" : "String"
+    }, {
+      "description" : null,
+      "multi" : false,
+      "name" : "id",
+      "required" : true,
+      "type" : "String"
+    }, {
+      "description" : null,
+      "multi" : false,
+      "name" : "resource",
+      "required" : true,
+      "type" : "Object"
+    }, {
+      "description" : null,
+      "multi" : false,
+      "name" : "versionId",
+      "required" : false,
+      "type" : "String"
+    }, {
+      "description" : null,
+      "multi" : false,
+      "name" : "generalParms",
+      "required" : false,
+      "type" : "Object"
+    } ],
+    "returnType" : {
+      "multi" : false,
+      "type" : "Object"
+    }
+  }, {
+    "name" : "vread",
+    "parameters" : [ {
+      "description" : null,
+      "multi" : false,
+      "name" : "type",
+      "required" : true,
+      "type" : "String"
+    }, {
+      "description" : null,
+      "multi" : false,
+      "name" : "id",
+      "required" : true,
+      "type" : "String"
+    }, {
+      "description" : null,
+      "multi" : false,
+      "name" : "versionId",
+      "required" : false,
+      "type" : "String"
+    }, {
+      "description" : null,
+      "multi" : false,
+      "name" : "generalParms",
+      "required" : false,
+      "type" : "Object"
+    } ]
+  }, {
+    "name" : "searchType",
+    "parameters" : [ {
+      "description" : null,
+      "multi" : false,
+      "name" : "type",
+      "required" : true,
+      "type" : "String"
+    }, {
+      "description" : null,
+      "multi" : false,
+      "name" : "theQuery",
+      "required" : true,
+      "type" : "Object"
+    } ]
+  } ],
+  "internalEventHandlers" : [ ],
+  "name" : "com.vantiq.fhir.fhirService",
+  "partitionedType" : null,
+  "replicationFactor" : 1,
+  "scheduledProcedures" : { }
+}
