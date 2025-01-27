@@ -174,9 +174,15 @@
     }, {
       "description" : null,
       "multi" : false,
-      "name" : "theQuery",
+      "name" : "query",
       "required" : true,
       "type" : "Object"
+    }, {
+      "description" : null,
+      "multi" : false,
+      "name" : "method",
+      "required" : false,
+      "type" : "String"
     } ]
   } ],
   "internalEventHandlers" : [ ],

@@ -79,6 +79,7 @@ public class TestFhirAssembly {
             assertTrue("Could not create test catalog: " + resp.getErrors(), resp.isSuccess());
             resp = v.select("system.catalogs", Collections.emptyList(), null, null);
             assertTrue(resp.isSuccess());
+            //noinspection unchecked
             for (int i = 0; i < ((List<JsonObject>) resp.getBody()).size(); i++ ) {
                 //noinspection unchecked
                 log.debug("Found catalog: {}", ((List<JsonObject>) resp.getBody()).get(i).getAsJsonObject()
@@ -471,7 +472,7 @@ public class TestFhirAssembly {
     Map<String, ?> findTarget(Vantiq v, String type, Map<String, ?> query) throws Exception {
         VantiqResponse resp = v.execute("com.vantiq.fhir.fhirService.searchType",
                                         Map.of("type", type,
-                                               "theQuery", query));
+                                               "query", query));
         assertTrue("Could not perform searchType: " + resp.getErrors(), resp.isSuccess());
         log.trace("Search Type {} {} response: {}", type, query, resp.getBody());
         //noinspection unchecked
