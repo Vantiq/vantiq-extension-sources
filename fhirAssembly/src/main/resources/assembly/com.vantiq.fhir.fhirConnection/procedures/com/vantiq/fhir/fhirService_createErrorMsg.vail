@@ -13,7 +13,7 @@ var resValue = null
 
 log.debug("Error details: {}: {}", [typeOf(errDetails), errDetails])
 if (errDetails && typeOf(errDetails) == "String") {
-    // If we get an error back, check to see if the error include was JSON.  If so, parse
+    // If we get an error back, check to see if the error included was JSON.  If so, parse
     // it & report the details.  If we get an error parsing it, then it's probably just a plain
     // string so we'll just pass it along.
     try {
