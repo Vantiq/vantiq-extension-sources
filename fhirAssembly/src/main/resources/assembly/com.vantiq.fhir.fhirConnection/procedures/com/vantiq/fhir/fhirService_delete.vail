@@ -6,8 +6,8 @@ var path = type + "/" + id
 
 var retVal = fhirService.performRestOp("DELETE", path)
 if (typeOf(retVal) == "List") {
-	log.debug("retVal is an array: {}", [typeOf(retVal)])
-	retVal = retVal[0]
+    log.debug("retVal is an array: {}", [typeOf(retVal)])
+    retVal = retVal[0]
 } else {
     log.debug("retVal is not an array")
 }

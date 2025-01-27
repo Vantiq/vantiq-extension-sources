@@ -7,9 +7,9 @@ import service com.vantiq.fhir.fhirService
 PROCEDURE fhirService.getCapabilityStatement(): Object
 var retVal = fhirCapabilityStatement.getValue()
 if (!retVal) {
-	log.debug("Fetching new FHIR capability statement")
-	var stmt = fhirService.fetchCapabilityStatement()
-	retVal = fhirCapabilityStatement.setValue(stmt)
+    log.debug("Fetching new FHIR capability statement")
+    var stmt = fhirService.fetchCapabilityStatement()
+    retVal = fhirCapabilityStatement.setValue(stmt)
 }
 
 return retVal

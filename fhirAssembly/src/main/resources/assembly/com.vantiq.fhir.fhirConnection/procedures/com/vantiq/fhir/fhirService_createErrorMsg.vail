@@ -13,36 +13,36 @@ var resValue = null
 
 log.debug("Error details: {}: {}", [typeOf(errDetails), errDetails])
 if (errDetails && typeOf(errDetails) == "String") {
-	// If we get an error back, check to see if the error include was JSON.  If so, parse
-	// it & report the details.  If we get an error parsing it, then it's probably just a plain
-	// string so we'll just pass it along.
-	try {
-		errDetails = parse(errDetails)
-	} catch (badParse) {
-		log.debug("Unable to parse exception params as JSON: {} -- {}",
-			[badParse.message, errDetails])
-	}
+    // If we get an error back, check to see if the error include was JSON.  If so, parse
+    // it & report the details.  If we get an error parsing it, then it's probably just a plain
+    // string so we'll just pass it along.
+    try {
+        errDetails = parse(errDetails)
+    } catch (badParse) {
+        log.debug("Unable to parse exception params as JSON: {} -- {}",
+            [badParse.message, errDetails])
+    }
 }
 if (errDetails && typeOf(errDetails) == "Object") {
-	resValue = errDetails
+    resValue = errDetails
 }
 log.debug("resValue: {}", [resValue])
 if (!resValue || resValue.resourceType != "OperationOutcome") {
-	opOutcome = {
-		resourceType : "OperationOutcome",
-		issue : [
-			{ severity: "error",
-			  code: "exception",
-			  details: "Source " + fhirSource.getValue() + " returned an unexpected error: " + exc.code + ".",
-			  diagnostics: exc.message,
-			  expression: targetPath
-			}
-		]
-	}
-	if (resValue) {
-		opOutcome.issue[0].details = opOutcome.issue[0].details + " :: " + resValue
-	}
+    opOutcome = {
+        resourceType : "OperationOutcome",
+        issue : [
+            { severity: "error",
+              code: "exception",
+              details: "Source " + fhirSource.getValue() + " returned an unexpected error: " + exc.code + ".",
+              diagnostics: exc.message,
+              expression: targetPath
+            }
+        ]
+    }
+    if (resValue) {
+        opOutcome.issue[0].details = opOutcome.issue[0].details + " :: " + resValue
+    }
 } else {
-	opOutcome = resValue
+    opOutcome = resValue
 }
 return opOutcome

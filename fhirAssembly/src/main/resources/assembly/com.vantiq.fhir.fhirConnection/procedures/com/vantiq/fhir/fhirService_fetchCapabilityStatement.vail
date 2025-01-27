@@ -6,9 +6,4 @@ private PROCEDURE fhirService.fetchCapabilityStatement():Object
 var returnValue
 
 returnValue = fhirService.performGet("metadata")
-//SELECT ONE FROM SOURCE @theSource WITH path = "metadata",
-//        method = "GET",
-//        contentType = "application/json",
-//        responseType = "application/json",
-//        headers = { Accept: "*/*" }
 return returnValue[0]
