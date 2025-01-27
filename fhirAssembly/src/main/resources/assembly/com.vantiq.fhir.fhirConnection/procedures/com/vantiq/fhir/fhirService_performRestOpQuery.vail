@@ -1,0 +1,41 @@
+package com.vantiq.fhir
+
+import service com.vantiq.fhir.fhirService
+
+private PROCEDURE fhirService.performRestOpQuery(method String REQUIRED, targetPath String REQUIRED,
+                    query Object Required): Any
+
+var theSource = fhirSource.getValue()
+log.debug("Current value of fhirSource to use: {}", [theSource])
+
+if (!theSource) {
+    fhirSource.setValue("com.vantiq.fhir.fhirServer")
+    theSource = fhirSource.getValue()
+}
+var retVal = ""
+
+log.debug("Performing {} method on path {} with query {}", [method, targetPath, query])
+try {
+    if (method == "GET" || method == "HEAD") {
+        retVal = SELECT from SOURCE @theSource with path = targetPath,
+            method = method,
+            query = query,
+            contentType = "application/fhir+json",
+            responseType = "application/fhir+json"
+    } else {
+        var bod = Encode.formUrl(query)
+        retVal = SELECT from SOURCE @theSource with path = targetPath,
+            method = method,
+            body = bod,
+            contentType = "application/x-www-form-urlencoded",
+            responseType = "application/fhir+json"
+
+    }
+} catch (e) {
+    if (e.code == "io.vantiq.sourcemgr.remote.query.client.failure") {
+        retVal = fhirService.createErrorMsg(e, targetPath)
+    } else {
+        rethrow(e)
+    }
+}
+return retVal
