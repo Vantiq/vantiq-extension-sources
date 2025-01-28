@@ -1,0 +1,41 @@
+package com.vantiq.fhir
+
+import service com.vantiq.fhir.fhirService
+
+/**
+* Perform a search based on the type & query provided
+*
+* Using the current source, run the search query for a particular type. If no method is provided,
+* we use GET. If search via POST is desired, provide "POST" as the method parameter.
+*
+* @param type String The FHIR Resource type to search
+* @param query Object The FHIR query.  Object where the keys are the resource property names, and values are the values desired. If there are no restrictions, provide an empty object here ("{}").
+* @param method String GET or POST
+*/
+
+PROCEDURE fhirService.returnLink(link String REQUIRED)
+var theSource = fhirSource.getValue()
+var sourceBase = fhirSourceBase.getValue()
+var sourceBaseSansSlash = sourceBase.substr(0, sourceBase.length() - 1)
+log.debug("Current value of fhirSource to use: {}", [theSource])
+
+if (!theSource) {
+    // FIXME -- this should snarf the assembly's parameter value
+    fhirService.setSource("com.vantiq.fhir.fhirServer")
+    theSource = fhirSource.getValue()
+}
+
+if (!link.trimLeft().startsWith(sourceBase) && !link.trimLeft().startsWith(sourceBaseSansSlash)) {
+    exception("com.vantiq.fhir.link.mismatch", 
+                "The link provided ({0}) is not serviced by the current source ({1}) whose URI is {2}.",
+                [link, theSource, sourceBase])
+}
+var relativeLink 
+if (link.trimLeft().startsWith(sourceBase)) {
+    relativeLink = link.trimLeft().substring(sourceBase.length())
+} else {
+    relativeLink = link.trimLeft().substring(sourceBaseSansSlash.length())
+}
+log.debug("Looking for relative link {} from {}", [relativeLink, link])
+
+return fhirService.performRestOp("GET", relativeLink)

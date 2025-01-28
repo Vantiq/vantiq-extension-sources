@@ -2,7 +2,7 @@ package com.vantiq.fhir
 
 import service com.vantiq.fhir.fhirService
 
-PROCEDURE fhirService.setSource(theSource String)
+PROCEDURE fhirService.setSource(theSource String): String
 
 // See if there's any path defined.  If so, we'll need to know about it 
 
@@ -10,3 +10,15 @@ PROCEDURE fhirService.setSource(theSource String)
 fhirService.clearCapabilityStatement()
 fhirSource.setValue(theSource)
 
+// Links in FHIR are full URLs.  Our REMOTE sources are more constrained, really wanting a path within the context of 
+// the URL known to the REMOTE source.  To handle this impedance mismatch, we'll extract the path base URL part of
+// the source and save it here.  This will allow us to move that from any links passed in before sending them to 
+// the remote source for operation.
+
+var theConf = SELECT ONE config FROM system.sources where name == theSource
+if (theConf == null) {
+    exception("io.fred.oops", "no config", [])
+}
+log.debug("Base URL for source {} is {} based on {}", [theSource, theConf.config.uri, theConf])
+fhirSourceBase.setValue(theConf.config.uri)
+return theSource

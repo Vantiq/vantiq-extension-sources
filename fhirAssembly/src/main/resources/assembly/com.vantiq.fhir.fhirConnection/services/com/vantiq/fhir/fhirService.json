@@ -184,6 +184,63 @@
       "required" : false,
       "type" : "String"
     } ]
+  }, {
+    "name" : "searchCompartment",
+    "parameters" : [ {
+      "description" : null,
+      "multi" : false,
+      "name" : "compartment",
+      "required" : true,
+      "type" : "String"
+    }, {
+      "description" : null,
+      "multi" : false,
+      "name" : "id",
+      "required" : true,
+      "type" : "String"
+    }, {
+      "description" : null,
+      "multi" : false,
+      "name" : "query",
+      "required" : true,
+      "type" : "Object"
+    }, {
+      "description" : null,
+      "multi" : false,
+      "name" : "type",
+      "required" : false,
+      "type" : "String"
+    }, {
+      "description" : null,
+      "multi" : false,
+      "name" : "method",
+      "required" : false,
+      "type" : "String"
+    } ]
+  }, {
+    "name" : "searchSystem",
+    "parameters" : [ {
+      "description" : null,
+      "multi" : false,
+      "name" : "query",
+      "required" : true,
+      "type" : "Object"
+    }, {
+      "description" : null,
+      "multi" : false,
+      "name" : "method",
+      "required" : false,
+      "type" : "String"
+    } ]
+  }, {
+    "name" : "returnLink",
+    "parameters" : [ {
+      "description" : null,
+      "multi" : false,
+      "name" : "link",
+      "required" : true,
+      "type" : "String"
+    } ]
   } ],
   "internalEventHandlers" : [ ],
   "name" : "com.vantiq.fhir.fhirService",
