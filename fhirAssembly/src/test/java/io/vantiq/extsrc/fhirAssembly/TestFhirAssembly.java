@@ -52,6 +52,7 @@ public class TestFhirAssembly {
     
     public static String heroId = null;
     public static Map heroMap = null;
+    static int invocationCount = 0;
     
     
     @BeforeClass
@@ -152,6 +153,8 @@ public class TestFhirAssembly {
         } else {
             fail("Have not yet setup running in other environments");
         }
+        assertTrue("Not enough invocations of searchType() -- count: " + invocationCount,
+                   invocationCount >= 2);
     }
     
     @Test
@@ -470,9 +473,20 @@ public class TestFhirAssembly {
      * ]
      */
     Map<String, ?> findTarget(Vantiq v, String type, Map<String, ?> query) throws Exception {
-        VantiqResponse resp = v.execute("com.vantiq.fhir.fhirService.searchType",
-                                        Map.of("type", type,
-                                               "query", query));
+        VantiqResponse resp;
+        // Alternate calling via GET (the default) vs. POST.  Both methods are allowed, some servers apparently have
+        // a preference one vs. the other.  We don't care, but want to allow our customers to use the one that suits
+        // them best.
+        if ((invocationCount++ % 2) == 0) {
+             resp = v.execute("com.vantiq.fhir.fhirService.searchType",
+                              Map.of("type", type,
+                                     "query", query));
+        } else {
+            resp = v.execute("com.vantiq.fhir.fhirService.searchType",
+                             Map.of("type", type,
+                                    "query", query,
+                                    "method", "POST"));
+        }
         assertTrue("Could not perform searchType: " + resp.getErrors(), resp.isSuccess());
         log.trace("Search Type {} {} response: {}", type, query, resp.getBody());
         //noinspection unchecked
@@ -585,5 +599,77 @@ public class TestFhirAssembly {
         assertEquals("Wrong status post delete", "processing", one.get("code"));
         assertTrue("Wrong diagnostics post delete",
                    one.get("diagnostics").toString().startsWith("Resource was deleted"));
+    }
+    
+    @Test
+    public void test500SearchUnrestrictedPatient() throws Exception {
+        
+        int countSize = 20;
+        Vantiq v = new Vantiq(TEST_SERVER, 1);
+        v.authenticate(SUB_USER, SUB_USER);
+        
+        traverseSearch(v, countSize, "Patient", Collections.emptyMap(), 28);
+    }
+    
+    @Test
+    public void test501SearchUnrestrictedEncounter() throws Exception {
+        
+        int countSize = 20;
+        Vantiq v = new Vantiq(TEST_SERVER, 1);
+        v.authenticate(SUB_USER, SUB_USER);
+        
+        traverseSearch(v, countSize, "Encounter", Collections.emptyMap(), 842);
+    }
+    
+    void traverseSearch(Vantiq v, int bundleSize, String type, Map<String, ?> query, int expectedCount) throws Exception {
+        VantiqResponse resp;
+        String nextUrl;
+        if ((invocationCount++ % 2) == 0) {
+            resp = v.execute("com.vantiq.fhir.fhirService.searchType",
+                             Map.of("type", type,
+                                    "query", query));
+        } else {
+            resp = v.execute("com.vantiq.fhir.fhirService.searchType",
+                             Map.of("type", type,
+                                    "query", query,
+                                    "method", "POST"));
+        }
+        int totalResourceCount = 0;
+        do {
+            log.trace("Response: {}", resp);
+            //noinspection unchecked
+            List<Map<String, ?>> bundle = mapper.readValue(new Gson().toJson(resp.getBody()), List.class);
+            log.trace("Bundle is {}", bundle);
+            
+            Map<String, ?> bundleEntry = bundle.get(0);
+            assertEquals("Wrong size Bundle", 1, bundle.size());
+            assertEquals("Wrong resource type", "Bundle", bundleEntry.get("resourceType"));
+            assertEquals("Wrong lower type", "searchset", bundleEntry.get("type"));
+            //noinspection unchecked
+            List<Map<String, ?>> entrySet = (List<Map<String, ?>>) bundleEntry.get("entry");
+            assertTrue("Wrong " + type + " count: " + bundleSize, bundleSize >= entrySet.size());
+            for (Map<String, ?> entry : entrySet) {
+                //noinspection unchecked
+                assertEquals("Wrong resource type in list", type,
+                             ((Map<String, ?>) entry.get("resource")).get("resourceType"));
+                totalResourceCount += 1;
+            }
+            
+            //noinspection unchecked
+            List<Map<String, ?>> links = (List<Map<String, ?>>) bundleEntry.get("link");
+            assertNotNull("Bundle should have links", links);
+            nextUrl = null;
+            for (Map<String, ?> aLink: links) {
+                if (aLink.get("relation").equals("next")) {
+                    nextUrl = (String) aLink.get("url");
+                    break;
+                }
+            }
+            log.debug("Next url is {}",  nextUrl);
+            if (nextUrl != null) {
+                resp = v.execute("com.vantiq.fhir.fhirService.returnLink", Map.of("link", nextUrl));
+            }
+        } while (nextUrl != null);
+        assertEquals("Wrong total resource count", expectedCount, totalResourceCount);
     }
 }
