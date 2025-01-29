@@ -621,6 +621,27 @@ public class TestFhirAssembly {
         traverseSearch(v, countSize, "Encounter", Collections.emptyMap(), 842);
     }
     
+    @Test
+    public void test502SearchPatientQual() throws Exception {
+        Map<Map<String, ?>, Integer> searches = Map.of(
+                Map.of("name", "Lesch175"), 1,
+                Map.of("name", "Mr."), 14,
+                Map.of("gender:not","female"), 20);
+        
+        int countSize = 20;
+        Vantiq v = new Vantiq(TEST_SERVER, 1);
+        v.authenticate(SUB_USER, SUB_USER);
+        
+        searches.forEach ( (key, val) -> {
+            try {
+                traverseSearch(v, countSize, "Patient", key, val);
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+        });
+    }
+    
+    
     void traverseSearch(Vantiq v, int bundleSize, String type, Map<String, ?> query, int expectedCount) throws Exception {
         VantiqResponse resp;
         String nextUrl;
