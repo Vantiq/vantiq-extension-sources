@@ -4,7 +4,10 @@ import service com.vantiq.fhir.fhirService
 
 PROCEDURE fhirService.setSource(theSource String): String
 
-// See if there's any path defined.  If so, we'll need to know about it 
+if (!theSource) {
+    // If no source name is specified (the norm), use the source that's part of the assembly
+    theSource = "com.vantiq.fhir.fhirServer"
+}
 
 // Since we're changing the source, the capability atatement is no longer valid.
 fhirService.clearCapabilityStatement()

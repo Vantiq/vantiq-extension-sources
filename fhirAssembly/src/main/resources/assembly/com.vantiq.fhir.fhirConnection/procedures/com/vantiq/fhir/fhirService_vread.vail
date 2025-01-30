@@ -1,18 +1,20 @@
-// Read a type based on its id
-//
-// @param type String the FHIR resource type
-// @param id String the id desired
-// @param versionId String version id if versioning is supported and a specific version is requested.
-// @param generalParms Object (optional) a set of name/value pairs representing the general parameters for this call.
-//                                       The general parameters include _summary & _element. _pretty can be included.
-//                                       though it provides no value since the caller is not getting JSON back.
-//                                       _format is not permitted in this context.
+/**
+* Read a type based on its id
+*
+* @param type String the FHIR resource type
+* @param id String the id desired
+* @param versionId String version id if versioning is supported and a specific version is requested.
+* @param generalParams Object (optional) a set of name/value pairs representing the general parameters for this call.
+*                                         The general parameters include _summary & _element. _pretty can be included.
+*                                         though it provides no value since the caller is not getting JSON back.
+*                                         _format is not permitted in this context.
+*/
 
 package com.vantiq.fhir
 
 import service com.vantiq.fhir.fhirService
 
-PROCEDURE fhirService.vread(type String REQUIRED, id String REQUIRED, versionId String, generalParms Object): Object
+PROCEDURE fhirService.vread(type String REQUIRED, id String REQUIRED, versionId String, generalParams Object): Object
 
 var path = type + "/" + id
 
@@ -24,28 +26,9 @@ if (versionId) {
     path = path + "/_history/" + versionId
 }
 
-if (generalParms) {
-    var gpExt = ""
-    var prefix = ""
-    for (gp in generalParms) {
-        var gpValue = gp.value
-        if (gp.key == "_format") {
-            exception("com.vantiq.fhir.formatnotsupport", 
-                "The _format argument is not supported.", [])
-        } else if (gp.key == "_elements") {
-            // Be nice & trim whitespace out of an _elements specification
-            gpValue = replace(gpValue, "\\s+", "")
-        }
-        gpExt = gpExt + prefix + gp.key + "=" + gpValue
-        prefix = "&"
-    }
+var checkedParams = fhirService.checkGeneralParams(generalParams)
 
-    if (gpExt.length() > 0) {
-        path = path + "?" + gpExt
-    }
-}
-
-var retVal = fhirService.performGet(path)
+var retVal = fhirService.performRestOpQuery("GET", path, checkedParams)
 if (typeOf(retVal) == "List") {
     log.debug("retVal is an array: {}", [typeOf(retVal)])
     retVal = retVal[0]

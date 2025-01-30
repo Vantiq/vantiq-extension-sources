@@ -14,22 +14,22 @@ import service com.vantiq.fhir.fhirService
 */
 
 PROCEDURE fhirService.returnLink(link String REQUIRED)
+
 var theSource = fhirSource.getValue()
+if (!theSource) {
+    fhirService.setSource()
+    theSource = fhirSource.getValue()
+}
 var sourceBase = fhirSourceBase.getValue()
 var sourceBaseSansSlash = sourceBase.substr(0, sourceBase.length() - 1)
 log.debug("Current value of fhirSource to use: {}", [theSource])
-
-if (!theSource) {
-    // FIXME -- this should snarf the assembly's parameter value
-    fhirService.setSource("com.vantiq.fhir.fhirServer")
-    theSource = fhirSource.getValue()
-}
 
 if (!link.trimLeft().startsWith(sourceBase) && !link.trimLeft().startsWith(sourceBaseSansSlash)) {
     exception("com.vantiq.fhir.link.mismatch", 
                 "The link provided ({0}) is not serviced by the current source ({1}) whose URI is {2}.",
                 [link, theSource, sourceBase])
 }
+
 var relativeLink 
 if (link.trimLeft().startsWith(sourceBase)) {
     relativeLink = link.trimLeft().substring(sourceBase.length())

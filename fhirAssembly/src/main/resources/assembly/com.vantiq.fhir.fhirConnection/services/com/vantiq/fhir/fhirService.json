@@ -28,12 +28,6 @@
       "name" : "versionId",
       "required" : false,
       "type" : "String"
-    }, {
-      "description" : null,
-      "multi" : false,
-      "name" : "generalParms",
-      "required" : false,
-      "type" : "Object"
     } ],
     "returnType" : {
       "multi" : false,
@@ -82,7 +76,7 @@
     }, {
       "description" : null,
       "multi" : false,
-      "name" : "genParams",
+      "name" : "generalParams",
       "required" : false,
       "type" : "Object"
     } ],
@@ -91,97 +85,12 @@
       "type" : "Object"
     }
   }, {
-    "name" : "setSource",
+    "name" : "returnLink",
     "parameters" : [ {
       "description" : null,
       "multi" : false,
-      "name" : "theSource",
-      "required" : false,
-      "type" : "String"
-    } ]
-  }, {
-    "name" : "update",
-    "parameters" : [ {
-      "description" : null,
-      "multi" : false,
-      "name" : "type",
+      "name" : "link",
       "required" : true,
-      "type" : "String"
-    }, {
-      "description" : null,
-      "multi" : false,
-      "name" : "id",
-      "required" : true,
-      "type" : "String"
-    }, {
-      "description" : null,
-      "multi" : false,
-      "name" : "resource",
-      "required" : true,
-      "type" : "Object"
-    }, {
-      "description" : null,
-      "multi" : false,
-      "name" : "versionId",
-      "required" : false,
-      "type" : "String"
-    }, {
-      "description" : null,
-      "multi" : false,
-      "name" : "generalParms",
-      "required" : false,
-      "type" : "Object"
-    } ],
-    "returnType" : {
-      "multi" : false,
-      "type" : "Object"
-    }
-  }, {
-    "name" : "vread",
-    "parameters" : [ {
-      "description" : null,
-      "multi" : false,
-      "name" : "type",
-      "required" : true,
-      "type" : "String"
-    }, {
-      "description" : null,
-      "multi" : false,
-      "name" : "id",
-      "required" : true,
-      "type" : "String"
-    }, {
-      "description" : null,
-      "multi" : false,
-      "name" : "versionId",
-      "required" : false,
-      "type" : "String"
-    }, {
-      "description" : null,
-      "multi" : false,
-      "name" : "generalParms",
-      "required" : false,
-      "type" : "Object"
-    } ]
-  }, {
-    "name" : "searchType",
-    "parameters" : [ {
-      "description" : null,
-      "multi" : false,
-      "name" : "type",
-      "required" : true,
-      "type" : "String"
-    }, {
-      "description" : null,
-      "multi" : false,
-      "name" : "query",
-      "required" : true,
-      "type" : "Object"
-    }, {
-      "description" : null,
-      "multi" : false,
-      "name" : "method",
-      "required" : false,
       "type" : "String"
     } ]
   }, {
@@ -233,14 +142,103 @@
       "type" : "String"
     } ]
   }, {
-    "name" : "returnLink",
+    "name" : "searchType",
     "parameters" : [ {
       "description" : null,
       "multi" : false,
-      "name" : "link",
+      "name" : "type",
       "required" : true,
       "type" : "String"
+    }, {
+      "description" : null,
+      "multi" : false,
+      "name" : "query",
+      "required" : true,
+      "type" : "Object"
+    }, {
+      "description" : null,
+      "multi" : false,
+      "name" : "generalParams",
+      "required" : false,
+      "type" : "Object"
+    }, {
+      "description" : null,
+      "multi" : false,
+      "name" : "method",
+      "required" : false,
+      "type" : "String"
     } ]
+  }, {
+    "name" : "setSource",
+    "parameters" : [ {
+      "description" : null,
+      "multi" : false,
+      "name" : "theSource",
+      "required" : false,
+      "type" : "String"
+    } ]
+  }, {
+    "name" : "update",
+    "parameters" : [ {
+      "description" : null,
+      "multi" : false,
+      "name" : "type",
+      "required" : true,
+      "type" : "String"
+    }, {
+      "description" : null,
+      "multi" : false,
+      "name" : "id",
+      "required" : true,
+      "type" : "String"
+    }, {
+      "description" : null,
+      "multi" : false,
+      "name" : "resource",
+      "required" : true,
+      "type" : "Object"
+    }, {
+      "description" : null,
+      "multi" : false,
+      "name" : "versionId",
+      "required" : false,
+      "type" : "String"
+    } ],
+    "returnType" : {
+      "multi" : false,
+      "type" : "Object"
+    }
+  }, {
+    "name" : "vread",
+    "parameters" : [ {
+      "description" : null,
+      "multi" : false,
+      "name" : "type",
+      "required" : true,
+      "type" : "String"
+    }, {
+      "description" : null,
+      "multi" : false,
+      "name" : "id",
+      "required" : true,
+      "type" : "String"
+    }, {
+      "description" : null,
+      "multi" : false,
+      "name" : "versionId",
+      "required" : false,
+      "type" : "String"
+    }, {
+      "description" : null,
+      "multi" : false,
+      "name" : "generalParams",
+      "required" : false,
+      "type" : "Object"
+    } ],
+    "returnType" : {
+      "multi" : false,
+      "type" : "Object"
+    }
   } ],
   "internalEventHandlers" : [ ],
   "name" : "com.vantiq.fhir.fhirService",
