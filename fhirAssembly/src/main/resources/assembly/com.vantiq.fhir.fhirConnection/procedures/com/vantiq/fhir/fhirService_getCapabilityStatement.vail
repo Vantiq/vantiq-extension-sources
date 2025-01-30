@@ -1,5 +1,7 @@
-/* Returns the capability statement for the source used by this service.
-  If none present, it will fetch one from the source. */
+/**
+* Returns the capability statement for the source used by this service.
+* If none present, it will fetch one from the source.
+*/
 package com.vantiq.fhir
 
 import service com.vantiq.fhir.fhirService

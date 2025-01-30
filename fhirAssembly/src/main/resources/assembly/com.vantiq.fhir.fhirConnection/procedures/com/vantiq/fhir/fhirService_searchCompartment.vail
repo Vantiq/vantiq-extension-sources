@@ -1,7 +1,3 @@
-package com.vantiq.fhir
-
-import service com.vantiq.fhir.fhirService
-
 /**
 * Perform a search based on the compartment, id, & query provided
 *
@@ -11,12 +7,16 @@ import service com.vantiq.fhir.fhirService
 * The compartment will be searched.  If the type parameter is provided, the results are restricted to entries of
 * that type.
 *
-* @param type String The FHIR Resource type to search
+* @param compartment String The FHIR Resource compartment to search
 * @param id String Id of the compartment
 * @param query Object The FHIR query.  Object where the keys are the resource property names, and values are the values desired. If there are no restrictions, provide an empty object here ("{}").
 * @param type String The FHIR resource type within the compartment to which to restrict the search.
 * @param method String GET or POST
 */
+
+package com.vantiq.fhir
+
+import service com.vantiq.fhir.fhirService
 
 PROCEDURE fhirService.searchCompartment(compartment String REQUIRED, 
                                         id String REQUIRED,

@@ -1,7 +1,3 @@
-package com.vantiq.fhir
-
-import service com.vantiq.fhir.fhirService
-
 /**
 * Perform a search based on the type & query provided
 *
@@ -11,9 +7,13 @@ import service com.vantiq.fhir.fhirService
 * @param type String The FHIR Resource type to search
 * @param query Object The FHIR query.  Object where the keys are the resource property names, and values are the values desired. If there are no restrictions, provide an empty object here ("{}").
 * @param generalParams (optional) a set of name/value pairs representing the modifiers for this call.
-*                                        The general parameters include _summary & _elements. 
+*                                        The general parameters include _summary & _elements.
 * @param method String (optional) GET or POST
 */
+
+package com.vantiq.fhir
+
+import service com.vantiq.fhir.fhirService
 
 PROCEDURE fhirService.searchType(type String REQUIRED, query Object REQUIRED, generalParams Object, method String)
 var theSource = fhirSource.getValue()

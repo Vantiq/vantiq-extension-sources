@@ -1,7 +1,3 @@
-package com.vantiq.fhir
-
-import service com.vantiq.fhir.fhirService
-
 /**
 * Perform a search of the system
 *
@@ -11,6 +7,10 @@ import service com.vantiq.fhir.fhirService
 * @param query Object The FHIR query.  Object where the keys are the resource property names, and values are the values desired. If there are no restrictions, provide an empty object ("{}").
 * @param method String GET or POST.  Optional
 */
+
+package com.vantiq.fhir
+
+import service com.vantiq.fhir.fhirService
 
 PROCEDURE fhirService.searchSystem(query Object REQUIRED, method String)
 var theSource = fhirSource.getValue()

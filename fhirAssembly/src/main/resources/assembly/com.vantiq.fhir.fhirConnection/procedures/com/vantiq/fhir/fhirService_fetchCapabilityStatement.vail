@@ -1,4 +1,6 @@
-/* Returns the capability statement for this FHIR server */
+/**
+* Returns the capability statement for this FHIR server
+*/
 package com.vantiq.fhir
 import service com.vantiq.fhir.fhirService
 

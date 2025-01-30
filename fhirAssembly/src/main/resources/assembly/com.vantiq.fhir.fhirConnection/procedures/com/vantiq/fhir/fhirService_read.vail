@@ -1,11 +1,14 @@
-// Read a type based on its id
-//
-// @param type String the FHIR resource type
-// @param id String the id desired
-// @param generalParams Object (optional) a set of name/value pairs representing the general parameters for this call.
-//                                       The general parameters include _summary & _element. _pretty can be included.
-//                                       though it provides no value since the caller is not getting JSON back.
-//                                       _format is not permitted in this context.
+/**
+* Read a type based on its id
+*
+* @param type String the FHIR resource type
+* @param id String the id desired
+* @param generalParams Object (optional) a set of name/value pairs representing the general parameters for this call.
+*                                        The general parameters include _summary & _element. _pretty can be included.
+*                                        though it provides no value since the caller is not getting JSON back.
+*                                        _format is not permitted in this context.
+*/
+
 package com.vantiq.fhir
 
 import service com.vantiq.fhir.fhirService
