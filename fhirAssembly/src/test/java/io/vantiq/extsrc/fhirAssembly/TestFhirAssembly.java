@@ -23,7 +23,9 @@ import org.junit.Test;
 import org.junit.runners.MethodSorters;
 
 import java.io.File;
+import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -194,6 +196,21 @@ public class TestFhirAssembly {
     }
     
     @Test
+    public void test120ReadWithGeneralParams() throws Exception {
+        Vantiq v = new Vantiq(TEST_SERVER, 1);
+        v.authenticate(SUB_USER, SUB_USER);
+        
+        // We have to do these searches because 1) the "read" interaction requires an id, and 2) id assignment in the
+        // server is not consistent/repeatable.  So we'll hunt them down by birthday...
+        
+        Map<String, ?>  berg = findTarget(v, "Patient", Map.of("birthdate", "1957-05-06" ));
+        Map<String, ?> lang = findTarget(v, "Patient", Map.of( "birthdate","2011-03-11"));
+        fetchAndCheckPatient(v, berg.get("id").toString(), "Bergstrom287",
+                                Map.of("_elements", "name,birthDate"));
+        fetchAndCheckPatient(v, lang.get("id").toString(), "Lang846");
+    }
+    
+    @Test
     public void test150ReadError() throws Exception {
         Vantiq v = new Vantiq(TEST_SERVER, 1);
         v.authenticate(SUB_USER, SUB_USER);
@@ -213,15 +230,25 @@ public class TestFhirAssembly {
     }
     
     void fetchAndCheckPatient(Vantiq v, String id, String name) throws Exception {
-        Map<String, ?> res = fetchResource(v, "Patient", id);
-        String pName =
-                ((Map) ((List) res.get("name")).get(0))
-                  .get("family").toString();
-        assertEquals("Wrong Patient for id: " + id, pName, name);
+        fetchAndCheckPatient(v, id, name, null);
     }
     
-    Map<String, ?> fetchResource(Vantiq v, String type, String id) throws Exception {
-        Map<String, ?> res = fetchResourceUnchecked(v, type, id);
+    void fetchAndCheckPatient(Vantiq v, String id, String name, Map<String, ?> gp) throws Exception {
+        Map<String, ?> res = fetchResource(v, "Patient", id, gp);
+        //noinspection unchecked
+        String pName =
+                ((List<Map<String, ?>>) res.get("name")).get(0).get("family").toString();
+        assertEquals("Wrong Patient for id: " + id, pName, name);
+        if (gp != null) {
+            if (gp.containsKey("_elements")) {
+                List<String> expKeySet = new ArrayList<>(List.of(((String) gp.get("_elements")).split(",")));
+                checkPropertySet(expKeySet, res);
+            }
+        }
+    }
+    
+    Map<String, ?> fetchResource(Vantiq v, String type, String id, Map<String, ?> gp) throws Exception {
+        Map<String, ?> res = fetchResourceUnchecked(v, type, id, gp);
         
         assertEquals("Wrong resource type returned", type,
                      res.get("resourceType"));
@@ -229,9 +256,17 @@ public class TestFhirAssembly {
     }
     
     Map<String, ?> fetchResourceUnchecked(Vantiq v, String type, String id) throws Exception {
-        VantiqResponse resp = v.execute("com.vantiq.fhir.fhirService.read",
-                                        Map.of("type", type,
-                                               "id", id));
+        return fetchResourceUnchecked(v, type, id, null);
+    }
+    
+    Map<String, ?> fetchResourceUnchecked(Vantiq v, String type, String id, Map<String, ?> gp) throws Exception {
+        Map<String, Object> params = new HashMap<>();
+        params.put("type", type);
+        params.put("id", id);
+        if (gp != null) {
+            params.put("generalParams", gp);
+        }
+        VantiqResponse resp = v.execute("com.vantiq.fhir.fhirService.read", params);
         assertTrue("Could not read resource: " + resp.getErrors(), resp.isSuccess());
         log.debug("Read {} {} response: {}", type, id, resp.getBody());
         //noinspection unchecked
@@ -641,21 +676,57 @@ public class TestFhirAssembly {
         });
     }
     
+    @Test
+    public void test550SearchPatientModifiers() throws Exception {
+        Map<Map<String, ?>, Integer> searches = Map.of(
+                Map.of("name", "Lesch175"), 1,
+                Map.of("name", "Mr."), 14,
+                Map.of("gender:not","female"), 20);
+        
+        Map<String, ?> genParams = Map.of (
+                "_count", 3, // Page size of 3
+                "_sort", "name",
+                "_elements", "name, birthDate"
+        );
+        
+        int countSize = (int) genParams.get("_count");
+        Vantiq v = new Vantiq(TEST_SERVER, 1);
+        v.authenticate(SUB_USER, SUB_USER);
+        
+        searches.forEach ( (key, val) -> {
+            try {
+                traverseSearch(v, countSize, "Patient", key, val, genParams);
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+        });
+    }
     
-    void traverseSearch(Vantiq v, int bundleSize, String type, Map<String, ?> query, int expectedCount) throws Exception {
+    void traverseSearch(Vantiq v, int bundleSize, String type, Map<String, ?> query, int expectedCount)
+            throws Exception {
+        traverseSearch(v, bundleSize, type, query, expectedCount, null);
+    }
+    
+    public final static List<String> FHIR_INTERNAL_KEYS = List.of("resourceType", "id", "meta");
+    
+    void traverseSearch(Vantiq v, int bundleSize, String type, Map<String, ?> query, int expectedCount,
+                    Map<String, ?> modifiers) throws Exception {
         VantiqResponse resp;
         String nextUrl;
-        if ((invocationCount++ % 2) == 0) {
-            resp = v.execute("com.vantiq.fhir.fhirService.searchType",
-                             Map.of("type", type,
-                                    "query", query));
-        } else {
-            resp = v.execute("com.vantiq.fhir.fhirService.searchType",
-                             Map.of("type", type,
-                                    "query", query,
-                                    "method", "POST"));
+        Map<String, Object> params = new java.util.HashMap<>();
+        params.put("type", type);
+        params.put("query", query);
+        if ((invocationCount++ % 2) ==0) {
+            params.put("method", "POST");
         }
+        if (modifiers != null) {
+            params.put("generalParams", modifiers);
+        }
+        resp = v.execute("com.vantiq.fhir.fhirService.searchType", params);
+        
         int totalResourceCount = 0;
+        List<Map<String, ?>> sortCheck = new ArrayList<>();
+        
         do {
             log.trace("Response: {}", resp);
             //noinspection unchecked
@@ -668,11 +739,24 @@ public class TestFhirAssembly {
             assertEquals("Wrong lower type", "searchset", bundleEntry.get("type"));
             //noinspection unchecked
             List<Map<String, ?>> entrySet = (List<Map<String, ?>>) bundleEntry.get("entry");
-            assertTrue("Wrong " + type + " count: " + bundleSize, bundleSize >= entrySet.size());
+            assertTrue("Wrong entry count in bundle: expected <= " + bundleSize +
+                               ", but found entry count: " + entrySet.size(),
+                       bundleSize >= entrySet.size());
+            List<String> expKeySet = new ArrayList<>();
+            if (modifiers != null && modifiers.containsKey("_elements")) {
+                expKeySet.addAll(List.of(((String) modifiers.get("_elements")).split(",")));
+            }
             for (Map<String, ?> entry : entrySet) {
                 //noinspection unchecked
+                Map<String, ?> resource =  ((Map<String, ?>) entry.get("resource"));
                 assertEquals("Wrong resource type in list", type,
-                             ((Map<String, ?>) entry.get("resource")).get("resourceType"));
+                            resource.get("resourceType"));
+                checkPropertySet(expKeySet, resource);
+                
+                if (modifiers != null && modifiers.containsKey("_sort")) {
+                    //noinspection unchecked
+                    sortCheck.add((Map<String, ?>) ((List<?>) resource.get("name")).get(0));
+                }
                 totalResourceCount += 1;
             }
             
@@ -691,6 +775,34 @@ public class TestFhirAssembly {
                 resp = v.execute("com.vantiq.fhir.fhirService.returnLink", Map.of("link", nextUrl));
             }
         } while (nextUrl != null);
+        if (!sortCheck.isEmpty()) {
+            log.trace("SortCheck: {}", sortCheck);
+            String lastSeen = null;
+            for (Map<String, ?> oneName: sortCheck) {
+                if (lastSeen != null) {
+                    String nextOne = (String) oneName.get("family");
+                    assertTrue("Family names in wrong order: "  +lastSeen + " should be <= " + nextOne,
+                               lastSeen.compareTo(nextOne) <= 0);
+                } else {
+                    lastSeen = (String) oneName.get("family");
+                }
+            }
+        }
         assertEquals("Wrong total resource count", expectedCount, totalResourceCount);
+    }
+    
+    void checkPropertySet(List<String> expKeySet, Map<String, ?> resource) {
+        if (!expKeySet.isEmpty()) {
+            expKeySet.forEach( (k) -> {
+                assertTrue("Property " + k.trim() + " not in resource: " + resource,
+                           resource.containsKey(k.trim()));
+            });
+            // Check that we got only what we expect.  The FHIR_INTERNAL_KEYS are always there...
+            // But we could have fewer if one of the keys requested isn't in that particular item.
+            assertTrue("Too many properties returned: expected " + expKeySet.size() +
+                               ", found " + resource.keySet().size() + " in resource: " + resource,
+                       resource.keySet().size() <= expKeySet.size() + FHIR_INTERNAL_KEYS.size());
+        }
+        
     }
 }
