@@ -9,7 +9,7 @@ var theSource = fhirSource.getValue()
 log.debug("Current value of fhirSource to use: {}", [theSource])
 
 if (!theSource) {
-    fhirService.setSource("com.vantiq.fhir.fhirServer")
+    fhirService.setSource()
     theSource = fhirSource.getValue()
 }
 var retVal = ""

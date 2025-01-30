@@ -29,7 +29,7 @@ log.debug("searchCompartment({}, {}, {}, {}, {})", [
     compartment, id, query, type, method
 ])
 if (!theSource) {
-    fhirService.setSource("com.vantiq.fhir.fhirServer")
+    fhirService.setSource()
     theSource = fhirSource.getValue()
 }
 var targetPath = compartment + "/" + id
