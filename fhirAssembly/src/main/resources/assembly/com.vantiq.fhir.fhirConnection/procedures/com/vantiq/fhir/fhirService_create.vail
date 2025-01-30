@@ -1,28 +1,7 @@
 package com.vantiq.fhir
-PROCEDURE fhirService.create(type String REQUIRED, resource Object REQUIRED, versionId String, generalParms Object): Object
+PROCEDURE fhirService.create(type String REQUIRED, resource Object REQUIRED, versionId String): Object
 
 var path = type
-
-if (generalParms) {
-    var gpExt = ""
-    var prefix = ""
-    for (gp in generalParms) {
-        var gpValue = gp.value
-        if (gp.key == "_format") {
-            exception("com.vantiq.fhir.formatnotsupport",
-            "The _format argument is not supported.", [])
-        } else if (gp.key == "_elements") {
-            // Be nice & trim whitespace out of an _elements specification
-            gpValue = replace(gpValue, "\\s+", "")
-        }
-        gpExt = gpExt + prefix + gp.key + "=" + gpValue
-        prefix = "&"
-    }
-
-    if (gpExt.length() > 0) {
-        path = path + "?" + gpExt
-    }
-}
 
 var retVal = fhirService.performRestOpWithData("POST", path, resource)
 if (typeOf(retVal) == "List") {

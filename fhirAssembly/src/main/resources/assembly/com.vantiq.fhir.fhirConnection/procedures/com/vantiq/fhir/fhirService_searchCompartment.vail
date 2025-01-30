@@ -1,0 +1,54 @@
+/**
+* Perform a search based on the compartment, id, & query provided
+*
+* Using the current source, run the search query for a particular compartment. If no method is provided,
+* we use GET. If search via POST is desired, provide "POST" as the method parameter.
+*
+* The compartment will be searched.  If the type parameter is provided, the results are restricted to entries of
+* that type.
+*
+* @param compartment String The FHIR Resource compartment to search
+* @param id String Id of the compartment
+* @param query Object The FHIR query.  Object where the keys are the resource property names, and values are the values desired. If there are no restrictions, provide an empty object here ("{}").
+* @param type String The FHIR resource type within the compartment to which to restrict the search.
+* @param method String GET or POST
+*/
+
+package com.vantiq.fhir
+
+import service com.vantiq.fhir.fhirService
+
+PROCEDURE fhirService.searchCompartment(compartment String REQUIRED, 
+                                        id String REQUIRED,
+                                        query Object REQUIRED,
+                                        type String,
+                                        method String)
+var theSource = fhirSource.getValue()
+log.debug("Current value of fhirSource to use: {}", [theSource])
+log.debug("searchCompartment({}, {}, {}, {}, {})", [
+    compartment, id, query, type, method
+])
+if (!theSource) {
+    fhirService.setSource()
+    theSource = fhirSource.getValue()
+}
+var targetPath = compartment + "/" + id
+if (type) {
+    targetPath = targetPath + "/" + type
+}
+if (!method) {
+    method = "GET"
+} 
+if (method == "GET" && !type) {
+    // The spec requires that GET requests for a compartment/id (sans type) require the extra * to distinguish
+    // the request from a "read" operation on a type with the same name as the compartment.
+    targetPath = targetPath + "/*"
+} else if (method == "POST") {
+    if (type) {
+        targetPath = targetPath + "/" + type + "/_search"
+    } else {
+        targetPath = targetPath + "/_search"
+    }
+}
+log.debug("Performing compartment search using targetPath: {}, query: query", [targetPath, query])
+return fhirService.performRestOpQuery(method, targetPath, query )

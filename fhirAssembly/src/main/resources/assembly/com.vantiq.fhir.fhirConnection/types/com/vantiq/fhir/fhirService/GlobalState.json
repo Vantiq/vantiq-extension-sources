@@ -15,6 +15,13 @@
       "required" : false,
       "type" : "Value",
       "unique" : false
+    },
+    "fhirSourceBase" : {
+      "encrypted" : false,
+      "multi" : false,
+      "required" : false,
+      "type" : "Value",
+      "unique" : false
     }
   },
   "role" : "schema"

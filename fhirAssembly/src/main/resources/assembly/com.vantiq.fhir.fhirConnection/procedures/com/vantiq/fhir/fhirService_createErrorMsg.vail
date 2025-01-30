@@ -11,8 +11,10 @@ var errDetails = exc.params[2]
 var opOutcome = null
 var resValue = null
 
+log.debug("Creating error message for {}", [exc])
 log.debug("Error details: {}: {}", [typeOf(errDetails), errDetails])
 if (errDetails && typeOf(errDetails) == "String") {
+    log.debug("ErrDetails is a String, parsing {}", [errDetails])
     // If we get an error back, check to see if the error included was JSON.  If so, parse
     // it & report the details.  If we get an error parsing it, then it's probably just a plain
     // string so we'll just pass it along.
