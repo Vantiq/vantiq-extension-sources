@@ -3,14 +3,12 @@ package com.vantiq.fhir
 import service com.vantiq.fhir.fhirService
 
 /**
-* Perform a search based on the type & query provided
+* Fetch a link
 *
-* Using the current source, run the search query for a particular type. If no method is provided,
-* we use GET. If search via POST is desired, provide "POST" as the method parameter.
+* Using the current source, fetch the link by converting the absolute URL to a relative one. FHIR uses absolutes which
+* don't mix well with Vantiq sources.
 *
-* @param type String The FHIR Resource type to search
-* @param query Object The FHIR query.  Object where the keys are the resource property names, and values are the values desired. If there are no restrictions, provide an empty object here ("{}").
-* @param method String GET or POST
+* @param link String The URL of the link to return.
 */
 
 PROCEDURE fhirService.returnLink(link String REQUIRED)
