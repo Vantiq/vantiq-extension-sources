@@ -9,7 +9,7 @@ if (!theSource) {
     theSource = "com.vantiq.fhir.fhirServer"
 }
 
-// Since we're changing the source, the capability atatement is no longer valid.
+// Since we're changing the source, the capability statement is no longer valid.
 fhirService.clearCapabilityStatement()
 fhirSource.setValue(theSource)
 
