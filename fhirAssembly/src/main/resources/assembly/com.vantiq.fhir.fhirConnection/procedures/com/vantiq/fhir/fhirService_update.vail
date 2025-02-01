@@ -3,7 +3,7 @@ PROCEDURE fhirService.update(type String REQUIRED,
                              id String REQUIRED,
                              resource Object REQUIRED,
                              versionId String,
-                             modifiers Object): Object WITH updateInterface=true
+                             modifiers com.vantiq.fhir.Modifiers): com.vantiq.fhir.FHIRResponse WITH updateInterface=true
 
 var path = type + "/" + id
 
@@ -15,7 +15,7 @@ if (versionId) {
     path = path + "/_history/" + versionId
 }
 
-var retVal = fhirService.performRestOpWithData("PUT", path, resource)
+var retVal = fhirService.performRestOpWithData("PUT", path, resource, modifiers)
 if (typeOf(retVal.body) == "List") {
     log.debug("retVal.body is an array: {}", [typeOf(retVal.body)])
     retVal.body = retVal.body[0]

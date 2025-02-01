@@ -8,7 +8,7 @@ PROCEDURE fhirService.create(type String REQUIRED DESCRIPTION "The type of resou
 
 var path = type
 
-var retVal = fhirService.performRestOpWithData("POST", path, resource)
+var retVal = fhirService.performRestOpWithData("POST", path, resource, modifiers)
 if (typeOf(retVal.body) == "List") {
     log.debug("retVal.body is an array: {}", [typeOf(retVal.body)])
     retVal.body = retVal.body[0]
