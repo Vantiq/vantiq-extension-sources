@@ -264,13 +264,15 @@ public class TestFhirAssembly {
         params.put("type", type);
         params.put("id", id);
         if (gp != null) {
-            params.put("generalParams", gp);
+            Map<String, ?> mods = Map.of("generalParams", gp);
+            params.put("modifiers", mods);
         }
         VantiqResponse resp = v.execute("com.vantiq.fhir.fhirService.read", params);
         assertTrue("Could not read resource: " + resp.getErrors(), resp.isSuccess());
         log.debug("Read {} {} response: {}", type, id, resp.getBody());
+        Map<String, ?> fhirResp = extractFhirResponse(resp);
         //noinspection unchecked
-        return mapper.readValue(new Gson().toJson(resp.getBody()), Map.class);
+        return (Map<String, ?>) fhirResp.get("body");
     }
     
     /*
@@ -524,14 +526,27 @@ public class TestFhirAssembly {
         }
         assertTrue("Could not perform searchType: " + resp.getErrors(), resp.isSuccess());
         log.trace("Search Type {} {} response: {}", type, query, resp.getBody());
+        Map<String, ?> fhirResp = extractFhirResponse(resp);
         //noinspection unchecked
-        Map<String, ?> bundle = mapper.readValue(new Gson().toJson(((JsonArray) resp.getBody()).get(0)), Map.class);
+        Map<String, ?> bundle = (Map<String, ?>) fhirResp.get("body");
         assertEquals("Wrong result type: ", "Bundle", bundle.get("resourceType"));
         assertEquals("Wrong entry count", 1, bundle.get("total"));
         //noinspection unchecked
         Map<String, ?> one = (Map<String, ?>) ((List<Map<String, ?>>) bundle.get("entry")).get(0).get("resource");
         assertEquals("Wrong resource type from search type", type, one.get("resourceType"));
         return one;
+    }
+    
+    Map<String, ?> extractFhirResponse(VantiqResponse resp) throws Exception {
+        Map<String, ?> fhirResp = mapper.readValue(new Gson().toJson(((JsonObject) resp.getBody())),
+                                                            Map.class);
+        assertTrue("Invalid status code type: " + fhirResp.get("statusCode").getClass().getName(),
+                   fhirResp.get("statusCode") instanceof Integer);
+        assertTrue("Invalid fhirResp.body type: " + fhirResp.get("body").getClass().getName(),
+                   fhirResp.get("body") instanceof Map);
+        assertTrue("Invalid result headers type: " + fhirResp.get("headers").getClass().getName(),
+                   fhirResp.get("headers") instanceof Map);
+        return fhirResp;
     }
     
     @Test
@@ -546,16 +561,20 @@ public class TestFhirAssembly {
         VantiqResponse resp = v.execute("com.vantiq.fhir.fhirService.create",
                   Map.of("type", "Patient", "resource", ourHeroMap));
         assertTrue("Could not create our hero: " + resp.getErrors(), resp.isSuccess());
-        log.debug("Created Patient : {}", resp.getBody());
+        Map<String, ?> fhirResp = extractFhirResponse(resp);
+        log.debug("Created Patient : {}", fhirResp.get("body"));
+        //noinspection unchecked
         assertEquals("Wrong resource type returned", "Patient",
-                     ((JsonObject) resp.getBody()).asMap().get("resourceType").getAsString());
+                     ((Map<String, ?>) fhirResp.get("body")).get("resourceType").toString());
+        //noinspection unchecked
         String insertedHeroId =
-                ((JsonObject) resp.getBody()).get("id").getAsString();
+                ((Map<String, ?>) fhirResp.get("body")).get("id").toString();
         log.debug("Our hero's id: {}", insertedHeroId);
         Gson gson = new Gson();
-        String insertedHero = gson.toJson(resp.getBody());
+        String insertedHero = gson.toJson(fhirResp.get("body"));
         log.trace("Our hero as string: {}", insertedHero);
-        Map insertedHeroMap = mapper.readValue(insertedHero, Map.class);
+        //noinspection unchecked
+        Map<String, ?> insertedHeroMap = mapper.readValue(insertedHero, Map.class);
         heroId = insertedHeroId;
         heroMap = insertedHeroMap;
     }
@@ -576,8 +595,9 @@ public class TestFhirAssembly {
                                                "id", heroId,
                                                "resource", heroMap));
         assertTrue("Could not update our hero: " + resp.getErrors(), resp.isSuccess());
+        Map<String, ?> fhirResp = extractFhirResponse(resp);
         Gson gson = new Gson();
-        String updatedHero = gson.toJson(resp.getBody());
+        String updatedHero = gson.toJson(fhirResp.get("body"));
         log.trace("Our updated hero as string: {}", updatedHero);
         //noinspection unchecked
         Map<String, ?> updatedHeroMap = mapper.readValue(updatedHero, Map.class);
@@ -688,6 +708,7 @@ public class TestFhirAssembly {
                 "_sort", "name",
                 "_elements", "name, birthDate"
         );
+        Map<String, ?> modifiers = Map.of("generalParams", genParams);
         
         int countSize = (int) genParams.get("_count");
         Vantiq v = new Vantiq(TEST_SERVER, 1);
@@ -695,7 +716,7 @@ public class TestFhirAssembly {
         
         searches.forEach ( (key, val) -> {
             try {
-                traverseSearch(v, countSize, "Patient", key, val, genParams);
+                traverseSearch(v, countSize, "Patient", key, val, modifiers);
             } catch (Exception e) {
                 throw new RuntimeException(e);
             }
@@ -720,7 +741,7 @@ public class TestFhirAssembly {
             params.put("method", "POST");
         }
         if (modifiers != null) {
-            params.put("generalParams", modifiers);
+            params.put("modifiers", modifiers);
         }
         resp = v.execute("com.vantiq.fhir.fhirService.searchType", params);
         
@@ -729,12 +750,12 @@ public class TestFhirAssembly {
         
         do {
             log.trace("Response: {}", resp);
+            Map<String, ?> fhirResp = extractFhirResponse(resp);
+            log.trace("FHIRResponse: {}", fhirResp);
             //noinspection unchecked
-            List<Map<String, ?>> bundle = mapper.readValue(new Gson().toJson(resp.getBody()), List.class);
-            log.trace("Bundle is {}", bundle);
+            Map<String, ?> bundleEntry = (Map<String, ?>) fhirResp.get("body");
+            log.trace("Bundle is {}", bundleEntry);
             
-            Map<String, ?> bundleEntry = bundle.get(0);
-            assertEquals("Wrong size Bundle", 1, bundle.size());
             assertEquals("Wrong resource type", "Bundle", bundleEntry.get("resourceType"));
             assertEquals("Wrong lower type", "searchset", bundleEntry.get("type"));
             //noinspection unchecked
