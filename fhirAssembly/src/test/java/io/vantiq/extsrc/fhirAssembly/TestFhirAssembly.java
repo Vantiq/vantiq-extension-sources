@@ -1,6 +1,7 @@
 package io.vantiq.extsrc.fhirAssembly;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
@@ -19,6 +20,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.FixMethodOrder;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runners.MethodSorters;
 
@@ -54,6 +56,7 @@ public class TestFhirAssembly {
     
     public static String heroId = null;
     public static Map heroMap = null;
+    public static String heroUpdateEtag = null;
     static int invocationCount = 0;
     
     
@@ -562,6 +565,9 @@ public class TestFhirAssembly {
                   Map.of("type", "Patient", "resource", ourHeroMap));
         assertTrue("Could not create our hero: " + resp.getErrors(), resp.isSuccess());
         Map<String, ?> fhirResp = extractFhirResponse(resp);
+        // 201 statu means a new thingy was created
+        assertEquals("Unexpected return status" + fhirResp.get("statusCode"), 201,
+                     fhirResp.get("statusCode"));
         log.debug("Created Patient : {}", fhirResp.get("body"));
         //noinspection unchecked
         assertEquals("Wrong resource type returned", "Patient",
@@ -577,6 +583,35 @@ public class TestFhirAssembly {
         Map<String, ?> insertedHeroMap = mapper.readValue(insertedHero, Map.class);
         heroId = insertedHeroId;
         heroMap = insertedHeroMap;
+    }
+    
+    @Test
+    public void test210CreateConditional() throws Exception {
+        assertNotNull("No inserted hero id found", heroId);
+        assertNotNull("No inserted here map found", heroMap);
+        Vantiq v = new Vantiq(TEST_SERVER, 1);
+        v.authenticate(SUB_USER, SUB_USER);
+        
+        Map<String, ?> modifiers = Map.of("headers",
+                                          Map.of("If-None-Exist", "name=" + "Man"));
+        
+        // Now, create our here again, but conditional on it's not being already there.
+        
+        VantiqResponse resp = v.execute("com.vantiq.fhir.fhirService.create",
+                                        Map.of("type", "Patient",
+                                               "id", heroId,
+                                               "resource", heroMap,
+                                               "modifiers", modifiers));
+        assertTrue("Could not create our hero: " + resp.getErrors(), resp.isSuccess());
+        Map<String, ?> fhirResp = extractFhirResponse(resp);
+        log.debug("Create FHIR response : {}", fhirResp);
+        // 200 is returned when things "worked" as intended, but it wasn't created.
+        // We expect this here because we sent a modifiers saying to only create if there's no match,
+        assertEquals("Unexpected return status" + fhirResp.get("statusCode"), 200,
+                     fhirResp.get("statusCode"));
+        // Now, make sure we have only a single here
+        traverseSearch(v, 20, "Patient",  Map.of("name", "Man"), 1);
+        
     }
     
     @Test
@@ -596,6 +631,10 @@ public class TestFhirAssembly {
                                                "resource", heroMap));
         assertTrue("Could not update our hero: " + resp.getErrors(), resp.isSuccess());
         Map<String, ?> fhirResp = extractFhirResponse(resp);
+        log.debug("FHIR Response: {}", fhirResp);
+        //noinspection unchecked
+        String eTag = ((Map<String, ?>) fhirResp.get("headers")).get("ETag").toString();
+        heroUpdateEtag = eTag;
         Gson gson = new Gson();
         String updatedHero = gson.toJson(fhirResp.get("body"));
         log.trace("Our updated hero as string: {}", updatedHero);
@@ -608,6 +647,48 @@ public class TestFhirAssembly {
         //noinspection unchecked
         assertEquals("Wrong family name post update", "McGillicuddy",
                     ((List<Map<String, ?>>) heroMap.get("name")).get(0).get("family"));
+    }
+    
+    @Test
+    @Ignore("This does not seem to be supported (it's ignored) by the HAPI FHIR server.")
+    public void test310UpdateEtag() throws Exception {
+        assertNotNull("No inserted hero id found", heroId);
+        assertNotNull("No inserted here map found", heroMap);
+        assertNotNull("No saved Etag", heroUpdateEtag);
+        // Now, make an update.  Change the last name to Boy
+        //noinspection unchecked
+        ((Map) ((List) heroMap.get("name")).get(0)).put("family", "Boy");
+        Vantiq v = new Vantiq(TEST_SERVER, 1);
+        v.authenticate(SUB_USER, SUB_USER);
+        
+        Map<String, ?> modifiers = Map.of("headers",
+                                          Map.of("If-None-Match", "*"));
+        VantiqResponse resp = v.execute("com.vantiq.fhir.fhirService.update",
+                                        Map.of("type", "Patient",
+                                               "id", heroId,
+                                               "resource", heroMap,
+                                               "modifiers", modifiers));
+
+        assertTrue("Could not update our hero: " + resp.getErrors(), resp.isSuccess());
+        Map<String, ?> fhirResp = extractFhirResponse(resp);
+        log.debug("FHIR Response: {}", fhirResp);
+        assertEquals("Wrong status code: " + fhirResp.get("statusCode"), 200,
+                     fhirResp.get("statusCode"));
+        //noinspection unchecked
+        String eTag = ((Map<String, ?>) fhirResp.get("headers")).get("ETag").toString();
+        assertNotEquals("Etags match when they should not", heroUpdateEtag, eTag);
+        Gson gson = new Gson();
+        String updatedHero = gson.toJson(fhirResp.get("body"));
+        log.trace("Our updated hero as string: {}", updatedHero);
+        //noinspection unchecked
+        Map<String, ?> updatedHeroMap = mapper.readValue(updatedHero, Map.class);
+        
+        log.debug("Updated Hero : {}", updatedHero);
+        assertEquals("Wrong resource type returned", "Patient",
+                     updatedHeroMap.get("resourceType"));
+        //noinspection unchecked
+        assertEquals("Wrong family name post update", "McGillicuddy",
+                     ((List<Map<String, ?>>) heroMap.get("name")).get(0).get("family"));
     }
     
     @Test
