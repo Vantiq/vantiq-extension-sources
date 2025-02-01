@@ -1,17 +1,10 @@
-/**
-* Fetch a link
-*
-* Using the current source, fetch the link by converting the absolute URL to a relative one. FHIR uses absolutes which
-* don't mix well with Vantiq sources.
-*
-* @param link String The URL of the link to return.
-*/
+// Return the content of the provided link
 
 package com.vantiq.fhir
 
 import service com.vantiq.fhir.fhirService
 
-PROCEDURE fhirService.returnLink(link String REQUIRED)
+PROCEDURE fhirService.returnLink(link String REQUIRED DESCRIPTION "The URL of the link to return."): com.vantiq.fhir.FHIRResponse WITH updateInterface=true
 
 var theSource = fhirSource.getValue()
 if (!theSource) {

@@ -2,7 +2,7 @@ package com.vantiq.fhir
 
 import service com.vantiq.fhir.fhirService
 
-private PROCEDURE fhirService.performRestOp(method String REQUIRED, targetPath String REQUIRED): Any
+private PROCEDURE fhirService.performRestOp(method String REQUIRED, targetPath String REQUIRED, modifiers com.vantiq.fhir.Modifiers): com.vantiq.fhir.FHIRResponse
 
 var theSource = fhirSource.getValue()
 log.debug("Current value of fhirSource to use: {}", [theSource])
@@ -12,12 +12,25 @@ if (!theSource) {
     theSource = fhirSource.getValue()
 }
 var retVal = ""
+var gp = {}
+var headers = {}
+if (modifiers) {
+    if (modifiers.generalParams) {
+        gp = modifiers.generalParams
+    }
+    if (modifiers.headers) {
+        headers = modifiers.headers
+    }
+}
 
 try {
     retVal = SELECT from SOURCE @theSource with path = targetPath,
         method = method,
+        query = gp,
+        headers = headers,
         contentType = "application/fhir+json",
-        responseType = "application/fhir+json"
+        responseType = "application/fhir+json",
+        asFullResponse = true
 } catch (e) {
     if (e.code == "io.vantiq.sourcemgr.remote.query.client.failure") {
         retVal = fhirService.createErrorMsg(e, targetPath)
@@ -25,4 +38,7 @@ try {
         rethrow(e)
     }
 }
-return retVal
+if (typeOf(retVal) == "List" && retVal.size() == 1) {
+    retVal = retVal[0]
+}
+return {statusCode: retVal.status, body: retVal.body, headers: retVal.headers}

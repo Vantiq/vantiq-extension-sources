@@ -1,20 +1,14 @@
-/**
-* Read a type based on its id and version (if specified)
-*
-* @param type String the FHIR resource type
-* @param id String the id desired
-* @param versionId String version id if versioning is supported and a specific version is requested.
-* @param generalParams Object (optional) a set of name/value pairs representing the general parameters for this call.
-*                                        The general parameters include _summary & _element. _pretty can be included.
-*                                        though it provides no value since the caller is not getting JSON back.
-*                                        _format is not permitted in this context.
-*/
+// Read a type based on its id and version (if specified)
+
 
 package com.vantiq.fhir
 
 import service com.vantiq.fhir.fhirService
 
-PROCEDURE fhirService.vread(type String REQUIRED, id String REQUIRED, versionId String, generalParams Object): Object
+PROCEDURE fhirService.vread(type String REQUIRED DESCRIPTION "Type of the resource to read.", 
+                            id String REQUIRED DESCRIPTION "Id of the instance to read",
+                            versionId String DESCRIPTION "Version id of the instance to read",
+                            modifiers com.vantiq.fhir.Modifiers DESCRIPTION "Query modifiers and headers for the call."): com.vantiq.fhir.FHIRResponse WITH updateInterface=true
 
 var path = type + "/" + id
 
@@ -25,14 +19,15 @@ var path = type + "/" + id
 if (versionId) {
     path = path + "/_history/" + versionId
 }
+log.debug("vread: VersionId: {}, path: {}", [versionId, path])
 
-var checkedParams = fhirService.checkGeneralParams(generalParams)
+var checkedParams = fhirService.checkModifiers(modifiers)
 
-var retVal = fhirService.performRestOpQuery("GET", path, checkedParams)
-if (typeOf(retVal) == "List") {
-    log.debug("retVal is an array: {}", [typeOf(retVal)])
-    retVal = retVal[0]
+var retVal = fhirService.performRestOpQuery("GET", path, null, checkedParams)
+if (typeOf(retVal.body) == "List") {
+    log.debug("retVal.body is an array: {}", [typeOf(retVal.body)])
+    retVal.body = retVal.body[0]
 } else {
-    log.debug("retVal is not an array")
+    log.debug("retVal.body is not an array")
 }
 return retVal

@@ -20,7 +20,8 @@ try {
         method = method,
         body = resource,
         contentType = "application/fhir+json",
-        responseType = "application/fhir+json"
+        responseType = "application/fhir+json",
+        asFullResponse = true
 } catch (e) {
     if (e.code == "io.vantiq.sourcemgr.remote.query.client.failure") {
         retVal = fhirService.createErrorMsg(e, targetPath)
@@ -28,4 +29,7 @@ try {
         rethrow(e)
     }
 }
-return retVal
+if (typeOf(retVal) == "List" && retVal.size() == 1) {
+    retVal = retVal[0]
+}
+return {statusCode: retVal.status, body: retVal.body, headers: retVal.headers}

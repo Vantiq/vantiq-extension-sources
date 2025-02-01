@@ -1,7 +1,13 @@
 package com.vantiq.fhir
-private stateless PROCEDURE fhirService.checkGeneralParams(generalParams Object): Object
+private stateless PROCEDURE fhirService.checkModifiers(modifiers com.vantiq.fhir.Modifiers): com.vantiq.fhir.Modifiers
 
 var checkedParams = {}
+var generalParams = {}
+var headers = {}
+if (modifiers) {
+    generalParams = modifiers.generalParams
+    headers = modifiers.headers
+}
 
 if (generalParams) {
     for (gp in generalParams) {
@@ -16,4 +22,5 @@ if (generalParams) {
         }
     }
 }
-return checkedParams
+
+return { headers: headers, generalParams: checkedParams }

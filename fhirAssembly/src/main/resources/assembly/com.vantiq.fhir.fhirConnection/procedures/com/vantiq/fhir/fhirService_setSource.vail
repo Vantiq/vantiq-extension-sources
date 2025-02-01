@@ -2,7 +2,7 @@ package com.vantiq.fhir
 
 import service com.vantiq.fhir.fhirService
 
-PROCEDURE fhirService.setSource(theSource String): String
+private PROCEDURE fhirService.setSource(theSource String): String
 
 if (!theSource) {
     // If no source name is specified (the norm), use the source that's part of the assembly

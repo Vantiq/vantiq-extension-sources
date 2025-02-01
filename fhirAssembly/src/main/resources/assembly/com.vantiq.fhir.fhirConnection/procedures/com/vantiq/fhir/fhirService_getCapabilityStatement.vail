@@ -6,7 +6,7 @@ package com.vantiq.fhir
 
 import service com.vantiq.fhir.fhirService
 
-PROCEDURE fhirService.getCapabilityStatement(): Object
+PROCEDURE fhirService.getCapabilityStatement(): Object WITH updateInterface=true
 var retVal = fhirCapabilityStatement.getValue()
 if (!retVal) {
     log.debug("Fetching new FHIR capability statement")

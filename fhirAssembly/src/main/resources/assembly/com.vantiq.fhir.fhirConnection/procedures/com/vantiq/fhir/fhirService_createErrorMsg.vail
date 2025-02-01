@@ -8,6 +8,15 @@ package com.vantiq.fhir
 
 private PROCEDURE fhirService.createErrorMsg(exc Object REQUIRED, targetPath String REQUIRED): Object
 var errDetails = exc.params[2]
+var statusCode = 400
+if (exc.params.size() >= 3) {
+    var sc = exc.params[3]
+    if (typeOf(sc) == "Object" && sc.has("code")) {
+        statusCode = sc.code
+    } else if (typeOf(sc) == "Integer") {
+        statusCode = sc
+    }
+}
 var opOutcome = null
 var resValue = null
 
@@ -47,4 +56,5 @@ if (!resValue || resValue.resourceType != "OperationOutcome") {
 } else {
     opOutcome = resValue
 }
-return opOutcome
+// Here, we return what looks like a asFullResponse for our callers to handle
+return {status: statusCode, body: opOutcome, headers: {}}

@@ -1,5 +1,9 @@
 package com.vantiq.fhir
-PROCEDURE fhirService.update(type String REQUIRED, id String REQUIRED, resource Object REQUIRED, versionId String): Object
+PROCEDURE fhirService.update(type String REQUIRED,
+                             id String REQUIRED,
+                             resource Object REQUIRED,
+                             versionId String,
+                             modifiers Object): Object WITH updateInterface=true
 
 var path = type + "/" + id
 
@@ -12,11 +16,11 @@ if (versionId) {
 }
 
 var retVal = fhirService.performRestOpWithData("PUT", path, resource)
-if (typeOf(retVal) == "List") {
-    log.debug("retVal is an array: {}", [typeOf(retVal)])
-    retVal = retVal[0]
+if (typeOf(retVal.body) == "List") {
+    log.debug("retVal.body is an array: {}", [typeOf(retVal.body)])
+    retVal.body = retVal.body[0]
 } else {
-    log.debug("retVal is not an array")
+    log.debug("retVal.body is not an array")
 }
 return retVal
 
