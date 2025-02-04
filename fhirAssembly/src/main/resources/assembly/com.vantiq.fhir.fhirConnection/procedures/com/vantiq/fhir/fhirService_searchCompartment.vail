@@ -13,9 +13,7 @@ PROCEDURE fhirService.searchCompartment(compartment String REQUIRED DESCRIPTION 
 
 var theSource = fhirSource.getValue()
 log.debug("Current value of fhirSource to use: {}", [theSource])
-log.debug("searchCompartment({}, {}, {}, {}, {}, {})", [
-    compartment, id, query, type, modifiers, method
-])
+log.debug("searchCompartment({}, {}, {}, {}, {}, {})", [compartment, id, query, type, modifiers, method])
 if (!theSource) {
     fhirService.setSource()
     theSource = fhirSource.getValue()
