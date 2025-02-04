@@ -285,11 +285,11 @@
       "multi" : false,
       "name" : "modifiers",
       "required" : false,
-      "type" : "Object"
+      "type" : "com.vantiq.fhir.Modifiers"
     } ],
     "returnType" : {
       "multi" : false,
-      "type" : "Object"
+      "type" : "com.vantiq.fhir.FHIRResponse"
     }
   }, {
     "description" : "Read a type based on its id and version (if specified)",

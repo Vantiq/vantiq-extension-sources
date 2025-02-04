@@ -26,8 +26,13 @@ var targetPath = "/"
 var checkedParams = fhirService.checkModifiers(modifiers)
 var comboQuery = fhirService.combineQueryAndParams(query, checkedParams.generalParams)
 if (!method) {
-    method = "GET"
-} else if (method == "POST") {
+    method = ResourceConfig.get("defaultSearchHttpMethod")
+    // Shouldn't happen, but ...
+    if (!method) {
+        method = "GET"
+    }
+} 
+if (method == "POST") {
     targetPath = "/_search"
 }
 return fhirService.performRestOpQuery(method, targetPath, comboQuery, checkedParams.headers )

@@ -1,6 +1,19 @@
 {
   "ars_relationships" : [ ],
   "configurationMappings" : {
+    "defaultSearchHttpMethod" : [ {
+      "property" : "defaultSearchHttpMethod",
+      "resource" : "procedures",
+      "resourceId" : "com.vantiq.fhir.fhirService.searchType"
+    }, {
+      "property" : "defaultSearchHttpMethod",
+      "resource" : "procedures",
+      "resourceId" : "com.vantiq.fhir.fhirService.searchSystem"
+    }, {
+      "property" : "defaultSearchHttpMethod",
+      "resource" : "procedures",
+      "resourceId" : "com.vantiq.fhir.fhirService.searchCompartment"
+    } ],
     "fhirServerBaseUrl" : [ {
       "property" : "config.uri",
       "resource" : "sources",
@@ -8,6 +21,14 @@
     } ]
   },
   "configurationProperties" : {
+    "defaultSearchHttpMethod" : {
+      "default" : "GET",
+      "description" : "HTTP Method to use for search.  The FHIR specification provides for using either GET or POST for search, saying that some servers may have a preference for some cases.  This parameter sets the default.  If not set, the default is GET.",
+      "enumValues" : [ "GET", "POST" ],
+      "multi" : false,
+      "required" : false,
+      "type" : "Enum"
+    },
     "fhirServerBaseUrl" : {
       "default" : null,
       "description" : "URL for connection to FHIR server.  This should include scheme, host, and port, as well as any path elements.  It should end with a '/'. (_E.g._, http://somehost/fhir/",
@@ -156,9 +177,6 @@
     "source" : "procedure/com.vantiq.fhir.fhirService.searchSystem",
     "target" : "services/com.vantiq.fhir.fhirService"
   }, {
-    "source" : "procedure/com.vantiq.fhir.fhirService.searchSystem",
-    "target" : "procedure/com.vantiq.fhir.fhirService.performRestOpQuery"
-  }, {
     "source" : "procedure/com.vantiq.fhir.fhirService.setSource",
     "target" : "procedure/com.vantiq.fhir.fhirService.clearCapabilityStatement"
   }, {
@@ -192,9 +210,6 @@
     "source" : "procedure/com.vantiq.fhir.fhirService.checkModifiers",
     "target" : "services/com.vantiq.fhir.fhirService"
   }, {
-    "source" : "procedure/com.vantiq.fhir.fhirService.searchSystem",
-    "target" : "procedure/com.vantiq.fhir.fhirService.setSource"
-  }, {
     "source" : "procedure/com.vantiq.fhir.fhirService.vread",
     "target" : "procedure/com.vantiq.fhir.fhirService.performRestOpQuery"
   }, {
@@ -234,12 +249,6 @@
     "source" : "procedure/com.vantiq.fhir.fhirService.vread",
     "target" : "type/com.vantiq.fhir.Modifiers"
   }, {
-    "source" : "procedure/com.vantiq.fhir.fhirService.searchSystem",
-    "target" : "type/com.vantiq.fhir.FHIRResponse"
-  }, {
-    "source" : "procedure/com.vantiq.fhir.fhirService.searchSystem",
-    "target" : "type/com.vantiq.fhir.Modifiers"
-  }, {
     "source" : "procedure/com.vantiq.fhir.fhirService.searchCompartment",
     "target" : "type/com.vantiq.fhir.FHIRResponse"
   }, {
@@ -270,12 +279,6 @@
     "source" : "procedure/com.vantiq.fhir.fhirService.searchType",
     "target" : "procedure/com.vantiq.fhir.fhirService.combineQueryAndParams"
   }, {
-    "source" : "procedure/com.vantiq.fhir.fhirService.searchSystem",
-    "target" : "procedure/com.vantiq.fhir.fhirService.combineQueryAndParams"
-  }, {
-    "source" : "procedure/com.vantiq.fhir.fhirService.searchSystem",
-    "target" : "procedure/com.vantiq.fhir.fhirService.checkModifiers"
-  }, {
     "source" : "procedure/com.vantiq.fhir.fhirService.performRestOp",
     "target" : "type/com.vantiq.fhir.FHIRResponse"
   }, {
@@ -293,6 +296,33 @@
   }, {
     "source" : "procedure/com.vantiq.fhir.fhirService.performGet",
     "target" : "type/com.vantiq.fhir.FHIRResponse"
+  }, {
+    "source" : "procedure/com.vantiq.fhir.fhirService.performRestOpWithData",
+    "target" : "type/com.vantiq.fhir.Modifiers"
+  }, {
+    "source" : "procedure/com.vantiq.fhir.fhirService.update",
+    "target" : "type/com.vantiq.fhir.Modifiers"
+  }, {
+    "source" : "procedure/com.vantiq.fhir.fhirService.update",
+    "target" : "type/com.vantiq.fhir.FHIRResponse"
+  }, {
+    "source" : "procedure/com.vantiq.fhir.fhirService.searchSystem",
+    "target" : "type/com.vantiq.fhir.Modifiers"
+  }, {
+    "source" : "procedure/com.vantiq.fhir.fhirService.searchSystem",
+    "target" : "type/com.vantiq.fhir.FHIRResponse"
+  }, {
+    "source" : "procedure/com.vantiq.fhir.fhirService.searchSystem",
+    "target" : "procedure/com.vantiq.fhir.fhirService.checkModifiers"
+  }, {
+    "source" : "procedure/com.vantiq.fhir.fhirService.searchSystem",
+    "target" : "procedure/com.vantiq.fhir.fhirService.setSource"
+  }, {
+    "source" : "procedure/com.vantiq.fhir.fhirService.searchSystem",
+    "target" : "procedure/com.vantiq.fhir.fhirService.combineQueryAndParams"
+  }, {
+    "source" : "procedure/com.vantiq.fhir.fhirService.searchSystem",
+    "target" : "procedure/com.vantiq.fhir.fhirService.performRestOpQuery"
   } ],
   "name" : "com.vantiq.fhir.fhirConnection",
   "options" : {
@@ -321,7 +351,7 @@
     "showGrid" : true,
     "structure" : {
       "fraction" : 1,
-      "type" : "R[5]"
+      "type" : "R[6]"
     },
     "type" : "dev",
     "v" : 6,
@@ -350,7 +380,7 @@
     "label" : "com.vantiq.fhir.fhirService",
     "name" : "com.vantiq.fhir.fhirService",
     "resourceReference" : "/services/com.vantiq.fhir.fhirService",
-    "timestamp" : "2025-01-31T22:40:03.171Z",
+    "timestamp" : "2025-02-03T20:06:57.270Z",
     "type" : 63
   }, {
     "label" : "com.vantiq.fhir.fhirService.GlobalState",
@@ -365,7 +395,7 @@
     "procedureName" : "checkModifiers",
     "resourceReference" : "/procedures/com.vantiq.fhir.fhirService.checkModifiers",
     "serviceName" : "fhirService",
-    "timestamp" : "2025-01-31T22:30:30.063Z",
+    "timestamp" : "2025-02-03T19:31:42.050Z",
     "type" : 3
   }, {
     "label" : "com.vantiq.fhir.fhirService.clearCapabilityStatement",
@@ -383,7 +413,7 @@
     "procedureName" : "combineQueryAndParams",
     "resourceReference" : "/procedures/com.vantiq.fhir.fhirService.combineQueryAndParams",
     "serviceName" : "fhirService",
-    "timestamp" : "2025-01-31T21:25:21.531Z",
+    "timestamp" : "2025-02-03T19:31:43.495Z",
     "type" : 3
   }, {
     "label" : "com.vantiq.fhir.fhirService.create",
@@ -392,7 +422,7 @@
     "procedureName" : "create",
     "resourceReference" : "/procedures/com.vantiq.fhir.fhirService.create",
     "serviceName" : "fhirService",
-    "timestamp" : "2025-01-31T21:47:38.326Z",
+    "timestamp" : "2025-02-03T19:31:42.052Z",
     "type" : 3
   }, {
     "label" : "com.vantiq.fhir.fhirService.createErrorMsg",
@@ -401,7 +431,7 @@
     "procedureName" : "createErrorMsg",
     "resourceReference" : "/procedures/com.vantiq.fhir.fhirService.createErrorMsg",
     "serviceName" : "fhirService",
-    "timestamp" : "2025-01-31T22:06:10.289Z",
+    "timestamp" : "2025-02-03T19:31:42.074Z",
     "type" : 3
   }, {
     "label" : "com.vantiq.fhir.fhirService.delete",
@@ -410,7 +440,7 @@
     "procedureName" : "delete",
     "resourceReference" : "/procedures/com.vantiq.fhir.fhirService.delete",
     "serviceName" : "fhirService",
-    "timestamp" : "2025-01-31T22:17:30.526Z",
+    "timestamp" : "2025-02-03T19:31:42.917Z",
     "type" : 3
   }, {
     "label" : "com.vantiq.fhir.fhirService.fetchCapabilityStatement",
@@ -419,7 +449,7 @@
     "procedureName" : "fetchCapabilityStatement",
     "resourceReference" : "/procedures/com.vantiq.fhir.fhirService.fetchCapabilityStatement",
     "serviceName" : "fhirService",
-    "timestamp" : "2025-01-31T22:39:58.790Z",
+    "timestamp" : "2025-02-03T19:31:42.813Z",
     "type" : 3
   }, {
     "label" : "com.vantiq.fhir.fhirService.getCapabilityStatement",
@@ -434,7 +464,7 @@
     "label" : "com.vantiq.fhir.fhirService.js",
     "name" : "com.vantiq.fhir.fhirService.js",
     "resourceReference" : "/documents/com.vantiq.fhir.fhirService.js",
-    "timestamp" : "2025-01-31T20:00:23.405Z",
+    "timestamp" : "2025-02-03T19:31:41.747Z",
     "type" : 19
   }, {
     "label" : "com.vantiq.fhir.fhirService.performGet",
@@ -452,7 +482,7 @@
     "procedureName" : "performRestOp",
     "resourceReference" : "/procedures/com.vantiq.fhir.fhirService.performRestOp",
     "serviceName" : "fhirService",
-    "timestamp" : "2025-01-31T22:19:05.174Z",
+    "timestamp" : "2025-02-03T19:31:43.453Z",
     "type" : 3
   }, {
     "label" : "com.vantiq.fhir.fhirService.performRestOpQuery",
@@ -461,7 +491,7 @@
     "procedureName" : "performRestOpQuery",
     "resourceReference" : "/procedures/com.vantiq.fhir.fhirService.performRestOpQuery",
     "serviceName" : "fhirService",
-    "timestamp" : "2025-01-31T22:01:45.288Z",
+    "timestamp" : "2025-02-03T19:31:42.821Z",
     "type" : 3
   }, {
     "label" : "com.vantiq.fhir.fhirService.performRestOpWithData",
@@ -470,7 +500,7 @@
     "procedureName" : "performRestOpWithData",
     "resourceReference" : "/procedures/com.vantiq.fhir.fhirService.performRestOpWithData",
     "serviceName" : "fhirService",
-    "timestamp" : "2025-01-31T21:46:59.349Z",
+    "timestamp" : "2025-02-03T19:31:42.815Z",
     "type" : 3
   }, {
     "label" : "com.vantiq.fhir.fhirService.read",
@@ -479,7 +509,7 @@
     "procedureName" : "read",
     "resourceReference" : "/procedures/com.vantiq.fhir.fhirService.read",
     "serviceName" : "fhirService",
-    "timestamp" : "2025-01-31T20:08:16.798Z",
+    "timestamp" : "2025-02-03T19:31:42.050Z",
     "type" : 3
   }, {
     "label" : "com.vantiq.fhir.fhirService.returnLink",
@@ -497,7 +527,7 @@
     "procedureName" : "searchCompartment",
     "resourceReference" : "/procedures/com.vantiq.fhir.fhirService.searchCompartment",
     "serviceName" : "fhirService",
-    "timestamp" : "2025-01-31T22:07:28.903Z",
+    "timestamp" : "2025-02-03T19:59:13.234Z",
     "type" : 3
   }, {
     "label" : "com.vantiq.fhir.fhirService.searchSystem",
@@ -506,7 +536,7 @@
     "procedureName" : "searchSystem",
     "resourceReference" : "/procedures/com.vantiq.fhir.fhirService.searchSystem",
     "serviceName" : "fhirService",
-    "timestamp" : "2025-01-31T21:38:34.152Z",
+    "timestamp" : "2025-02-03T19:59:10.932Z",
     "type" : 3
   }, {
     "label" : "com.vantiq.fhir.fhirService.searchType",
@@ -515,7 +545,7 @@
     "procedureName" : "searchType",
     "resourceReference" : "/procedures/com.vantiq.fhir.fhirService.searchType",
     "serviceName" : "fhirService",
-    "timestamp" : "2025-01-31T21:38:36.494Z",
+    "timestamp" : "2025-02-03T20:06:52.965Z",
     "type" : 3
   }, {
     "label" : "com.vantiq.fhir.fhirService.setSource",
@@ -533,7 +563,7 @@
     "procedureName" : "update",
     "resourceReference" : "/procedures/com.vantiq.fhir.fhirService.update",
     "serviceName" : "fhirService",
-    "timestamp" : "2025-01-31T21:48:31.465Z",
+    "timestamp" : "2025-02-03T19:31:42.161Z",
     "type" : 3
   }, {
     "label" : "com.vantiq.fhir.fhirService.vread",
@@ -542,7 +572,7 @@
     "procedureName" : "vread",
     "resourceReference" : "/procedures/com.vantiq.fhir.fhirService.vread",
     "serviceName" : "fhirService",
-    "timestamp" : "2025-01-31T21:31:08.807Z",
+    "timestamp" : "2025-02-03T19:31:42.222Z",
     "type" : 3
   } ],
   "selectData" : { },

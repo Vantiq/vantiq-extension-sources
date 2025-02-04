@@ -25,8 +25,13 @@ var checkedParams = fhirService.checkModifiers(modifiers)
 var comboQuery = fhirService.combineQueryAndParams(query, checkedParams.generalParams)
 var targetPath = type
 if (!method) {
-    method = "GET"
-} else if (method == "POST") {
+    method = ResourceConfig.get("defaultSearchHttpMethod")
+    // Shouldn't happen since config value has a default, but just in case...
+    if (!method) {
+        method = "GET"
+    }
+} 
+if (method == "POST") {
     targetPath = type + "/_search"
 }
 return fhirService.performRestOpQuery(method, targetPath, comboQuery)

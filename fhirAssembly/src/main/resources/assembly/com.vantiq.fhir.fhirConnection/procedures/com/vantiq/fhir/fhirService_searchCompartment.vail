@@ -25,18 +25,18 @@ if (type) {
     targetPath = targetPath + "/" + type
 }
 if (!method) {
-    method = "GET"
+    method = ResourceConfig.get("defaultSearchHttpMethod")
+    // Shouldn't happen, but ...
+    if (!method) {
+        method = "GET"
+    }
 } 
 if (method == "GET" && !type) {
     // The spec requires that GET requests for a compartment/id (sans type) require the extra * to distinguish
     // the request from a "read" operation on a type with the same name as the compartment.
     targetPath = targetPath + "/*"
 } else if (method == "POST") {
-    if (type) {
-        targetPath = targetPath + "/" + type + "/_search"
-    } else {
         targetPath = targetPath + "/_search"
-    }
 }
 log.debug("Performing compartment search using targetPath: {}, query: {}, modifiers: {}", [targetPath, query, modifiers])
 return fhirService.performRestOpQuery(method, targetPath, query, modifiers)
