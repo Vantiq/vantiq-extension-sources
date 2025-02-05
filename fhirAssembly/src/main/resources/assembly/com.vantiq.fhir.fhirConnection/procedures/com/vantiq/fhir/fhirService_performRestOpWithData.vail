@@ -50,4 +50,4 @@ try {
 if (typeOf(retVal) == "List" && retVal.size() == 1) {
     retVal = retVal[0]
 }
-return {statusCode: retVal.status, body: retVal.body, headers: retVal.headers, extra: {headers: headers, gp: gp}}
+return {statusCode: retVal.status, body: retVal.body, headers: retVal.headers}
