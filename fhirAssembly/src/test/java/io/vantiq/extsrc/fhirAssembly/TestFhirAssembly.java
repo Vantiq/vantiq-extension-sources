@@ -3,6 +3,7 @@ package io.vantiq.extsrc.fhirAssembly;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
@@ -57,6 +58,8 @@ public class TestFhirAssembly {
     public static String heroId = null;
     public static Map<String, ?> heroMap = null;
     public static String heroUpdateEtag = null;
+    public static String batGirlId = null;
+    public static Map<String, ?> batGirlMap = null;
     static int invocationCount = 0;
     
     
@@ -585,7 +588,7 @@ public class TestFhirAssembly {
         assertTrue("Could not create our hero: " + resp.getErrors(), resp.isSuccess());
         Map<String, ?> fhirResp = extractFhirResponse(resp);
         // 201 statu means a new thingy was created
-        assertEquals("Unexpected return status" + fhirResp.get("statusCode"), 201,
+        assertEquals("Unexpected return status: " + fhirResp.get("statusCode"), 201,
                      fhirResp.get("statusCode"));
         log.debug("Created Patient : {}", fhirResp.get("body"));
         //noinspection unchecked
@@ -710,6 +713,145 @@ public class TestFhirAssembly {
     }
     
     @Test
+    public void test320Patch() throws Exception {
+        Map<String, ?> makeHimATwin = Map.of("op", "replace",
+                                  "path", "/multipleBirthBoolean",
+                                  "value", true);
+        Map<String, ?> removeLanguage = Map.of("op", "remove",
+                                                "path", "/communication");
+        List<Map<String, ?>> patchCommands = List.of(
+                makeHimATwin,
+                removeLanguage
+                );
+                
+        assertNotNull("No inserted hero id found", heroId);
+        assertNotNull("No inserted here map found", heroMap);
+        assertNotNull("No saved Etag", heroUpdateEtag);
+        
+        assertEquals("Our hero should be a multiple: " + heroMap, false,
+                     heroMap.get("multipleBirthBoolean"));
+        assertNotNull("Our Hero should have no communication field: " + heroMap, heroMap.get("communication"));
+        // Now, make an update.  Change the last name to Boy
+        //noinspection unchecked
+        ((List<Map<String, String>>) heroMap.get("name")).get(0).put("family", "Boy");
+        Vantiq v = new Vantiq(TEST_SERVER, 1);
+        v.authenticate(SUB_USER, SUB_USER);
+        
+        Map<String, ?> modifiers = Map.of("headers",
+                                          Map.of("If-None-Match", "*"));
+        VantiqResponse resp = v.execute("com.vantiq.fhir.fhirService.patch",
+                                        Map.of("type", "Patient",
+                                               "id", heroId,
+                                               "patchCommands", patchCommands,
+                                               "modifiers", modifiers));
+        assertTrue("Could not update our hero: " + resp.getErrors(), resp.isSuccess());
+        Map<String, ?> fhirResp = extractFhirResponse(resp);
+        log.debug("FHIR Response: {}", fhirResp);
+        assertEquals("Wrong status code: " + fhirResp.get("statusCode"), 200,
+                     fhirResp.get("statusCode"));
+        Map<String, ?> twinHero = fetchResource(v, "Patient", heroId, null);
+        assertEquals("Our hero should be a multiple: " + twinHero, true,
+                     twinHero.get("multipleBirthBoolean"));
+        assertNull("Our Hero should have no communication field: " + twinHero, twinHero.get("communication"));
+    }
+    
+    @Test
+    public void test350Transaction() throws Exception {
+        File bgTransactionFile = new File("build/resources/test/bgXact.json");
+        //noinspection unchecked
+        Map<String, ?> bgXactMap = mapper.readValue(bgTransactionFile, Map.class);
+        log.debug("New hero: {}", bgXactMap);
+        
+        Vantiq v = new Vantiq(TEST_SERVER, 1);
+        v.authenticate(SUB_USER, SUB_USER);
+        
+        VantiqResponse resp = v.execute("com.vantiq.fhir.fhirService.bundleInteraction",
+                                        Map.of("bundle", bgXactMap));
+        assertTrue("Could not create bat girl: " + resp.getErrors(), resp.isSuccess());
+        Map<String, ?> fhirResp = extractFhirResponse(resp);
+        // 201 statu means a new thingy was created
+        assertEquals("Unexpected return status: " + fhirResp.get("statusCode"), 200,
+                     fhirResp.get("statusCode"));
+        log.debug("Created bat girl and associated data : {}", fhirResp.get("body"));
+        //noinspection unchecked
+        assertEquals("Wrong resource type returned", "Bundle",
+                     ((Map<String, ?>) fhirResp.get("body")).get("resourceType").toString());
+        //noinspection unchecked
+        assertEquals("Wrong bundle type returned", "transaction-response",
+                     ((Map<String, ?>) fhirResp.get("body")).get("type").toString());
+        
+        //noinspection unchecked
+        Map<String, ?> resultBundleMap = (Map<String, ?>) fhirResp.get("body");
+        //noinspection unchecked
+        assertEquals("Wrong number of results: " + resultBundleMap.get("entry"), 30,
+                     ((List<Map<String, ?>>) resultBundleMap.get("entry")).size());
+        
+        //noinspection unchecked
+        Map<String, ?> ptOutcome = ((List<Map<String, ?>>) resultBundleMap.get("entry")).get(0);
+        //noinspection unchecked
+        String bgLocation = ((Map<String, ?>) ptOutcome.get("response")).get("location").toString();
+        String[] locArray = bgLocation.split("/");
+        assertEquals("First response is not a Patient: " + ptOutcome, "Patient", locArray[0]);
+        String bgId = locArray[1];
+
+        log.debug("Bat Girl's id: {}", bgId);
+        log.trace("Bat Girl as string: {}", ptOutcome);
+        batGirlId = bgId;
+    }
+    
+    @Test
+    public void test360Batch() throws Exception {
+        assertNotNull("No batgirl id found", batGirlId);
+        String patientFullUrl = "Patient" + "/" + batGirlId;
+        File bgTransactionFile = new File("build/resources/test/bgBatch.json");
+        //noinspection unchecked
+        Map<String, ?> bgXactMap = mapper.readValue(bgTransactionFile, Map.class);
+        
+        //noinspection unchecked
+        List<Map<String, ?>> items = ((List<Map<String, ?>>) bgXactMap.get("entry"));
+        int urlsReplaced = 0;
+        for (Map<String, ?> item: items) {
+            log.debug("Checking {} for url to replace", item);
+            //noinspection unchecked
+            if (((Map<String, ?>) item.get("resource")).containsKey("subject") &&
+                    ((Map<String, String>) ((Map<String, ?>) item.get("resource"))
+                            .get("subject")).containsKey("reference")) {
+                //noinspection unchecked
+                ((Map<String, String>) ((Map<String, ?>) item.get("resource"))
+                        .get("subject")).put("reference", patientFullUrl);
+                urlsReplaced += 1;
+            }
+        }
+        log.debug("Replaced {} urls with {}", urlsReplaced, patientFullUrl);
+        Vantiq v = new Vantiq(TEST_SERVER, 1);
+        v.authenticate(SUB_USER, SUB_USER);
+        
+        VantiqResponse resp = v.execute("com.vantiq.fhir.fhirService.bundleInteraction",
+                                        Map.of("bundle", bgXactMap));
+        assertTrue("Could not run batch: " + resp.getErrors(), resp.isSuccess());
+        Map<String, ?> fhirResp = extractFhirResponse(resp);
+        // 201 statu means a new thingy was created
+        assertEquals("Unexpected return status: " + fhirResp.get("statusCode"), 200,
+                     fhirResp.get("statusCode"));
+        log.debug("Created batch data : {}", fhirResp.get("body"));
+        //noinspection unchecked
+        assertEquals("Wrong resource type returned", "Bundle",
+                     ((Map<String, ?>) fhirResp.get("body")).get("resourceType").toString());
+        //noinspection unchecked
+        assertEquals("Wrong bundle type returned", "batch-response",
+                     ((Map<String, ?>) fhirResp.get("body")).get("type").toString());
+        
+        //noinspection unchecked
+        Map<String, ?> resultBundleMap = (Map<String, ?>) fhirResp.get("body");
+        //noinspection unchecked
+        assertEquals("Wrong number of results: " + resultBundleMap.get("entry"), 5,
+                     ((List<Map<String, ?>>) resultBundleMap.get("entry")).size());
+        // Note: Most if not all of these will fail because the placeholder URLs for things during the transaction
+        // test are not correctly fixed up.  That's find -- that means we got the request correctly over which is all
+        // this test really needs to verify.
+    }
+    
+    @Test
     public void test400Delete() throws Exception {
         assertNotNull("No inserted hero id found", heroId);
         assertNotNull("No inserted here map found", heroMap);
@@ -717,16 +859,24 @@ public class TestFhirAssembly {
         Vantiq v = new Vantiq(TEST_SERVER, 1);
         v.authenticate(SUB_USER, SUB_USER);
         
-        VantiqResponse resp = v.execute("com.vantiq.fhir.fhirService.delete",
-                                        Map.of("type", "Patient",
-                                               "id", heroId));
-        assertTrue("Could not delete our hero: " + resp.getErrors(), resp.isSuccess());
-        // Now, verify that he's gone.  Really a FHIR check, but we'll do it anyway
-        
-        Map<String, ?> resAsMap = fetchResourceUnchecked(v, "Patient", heroId);
-        
-        assertEquals("Wrong resource type returned", "OperationOutcome",
-                     resAsMap.get("resourceType"));
+        Map<String, Object> toDelete = Map.of(heroId, 200, batGirlId, 409);
+        for (Map.Entry<String, Object> ent: toDelete.entrySet()) {
+            log.debug("Deleting Patient {}", ent);
+            VantiqResponse resp = v.execute("com.vantiq.fhir.fhirService.delete",
+                                            Map.of("type", "Patient",
+                                                   "id", ent.getKey()));
+            assertTrue("Could not delete id: " + ent + ": " + resp.getErrors(), resp.isSuccess());
+            Map<String, ?> fhirResp = extractFhirResponse(resp);
+            assertEquals("Wrong status code returned for " + ent, ent.getValue(), fhirResp.get("statusCode"));
+            
+            // Now, verify the expected state.  Really a FHIR check, but we'll do it anyway to ensure we return the
+            // right status & data
+            
+            Map<String, ?> resAsMap = fetchResourceUnchecked(v, "Patient", ent.getKey());
+            log.debug("Result of fetch of {}: {}", ent, resAsMap);
+            if (ent.getValue().equals(200)) {
+                assertEquals("Wrong resource type returned", "OperationOutcome",
+                             resAsMap.get("resourceType"));
 //{
 //            "resourceType": "OperationOutcome",
 //            "issue": [
@@ -746,13 +896,20 @@ public class TestFhirAssembly {
 //            }
 //          ]
 //        }
-        //noinspection unchecked
-        List<Map<String, ?>> issues = (List<Map<String, ?>>) resAsMap.get("issue");
-        Map<String, ?> one = issues.get(0);
-        assertEquals("Wrong severity", "error", one.get("severity"));
-        assertEquals("Wrong status post delete", "processing", one.get("code"));
-        assertTrue("Wrong diagnostics post delete",
-                   one.get("diagnostics").toString().startsWith("Resource was deleted"));
+                //noinspection unchecked
+                List<Map<String, ?>> issues = (List<Map<String, ?>>) resAsMap.get("issue");
+                Map<String, ?> one = issues.get(0);
+                assertEquals("Wrong severity", "error", one.get("severity"));
+                assertEquals("Wrong status post delete", "processing", one.get("code"));
+                assertTrue("Wrong diagnostics post delete",
+                           one.get("diagnostics").toString().startsWith("Resource was deleted"));
+            } else if (ent.getValue().equals(409)) {
+                // Then our delete didn't happen for referential integrity reasons.
+                // We should get a Patient back
+                assertEquals("Wrong resource type returned", "Patient",
+                             resAsMap.get("resourceType"));
+            }
+        }
     }
     
     @Test
@@ -762,7 +919,8 @@ public class TestFhirAssembly {
         Vantiq v = new Vantiq(TEST_SERVER, 1);
         v.authenticate(SUB_USER, SUB_USER);
         
-        traverseSearch(v, countSize, "Patient", Collections.emptyMap(), 28);
+        // We added bat girl, so one mor ethan originally inserted
+        traverseSearch(v, countSize, "Patient", Collections.emptyMap(), 29);
     }
     
     @Test
@@ -772,7 +930,7 @@ public class TestFhirAssembly {
         Vantiq v = new Vantiq(TEST_SERVER, 1);
         v.authenticate(SUB_USER, SUB_USER);
         
-        traverseSearch(v, countSize, "Encounter", Collections.emptyMap(), 842);
+        traverseSearch(v, countSize, "Encounter", Collections.emptyMap(), 848);
     }
     
     @Test
