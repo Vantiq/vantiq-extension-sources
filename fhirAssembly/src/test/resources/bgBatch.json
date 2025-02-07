@@ -1,0 +1,419 @@
+{
+  "resourceType": "Bundle",
+  "type": "batch",
+  "entry": [
+    {
+      "fullUrl": "urn:uuid:5bdbc398-404e-4fdc-a6c8-d43cca7d38b6",
+      "resource": {
+        "resourceType": "MedicationRequest",
+        "id": "5bdbc398-404e-4fdc-a6c8-d43cca7d38b6",
+        "status": "stopped",
+        "intent": "order",
+        "medicationCodeableConcept": {
+          "coding": [
+            {
+              "system": "http://www.nlm.nih.gov/research/umls/rxnorm",
+              "code": "389221",
+              "display": "Etonogestrel 68 MG Drug Implant"
+            }
+          ],
+          "text": "Etonogestrel 68 MG Drug Implant"
+        },
+        "subject": {
+          "reference": "urn:uuid:2c6fa5e7-c1aa-428e-a9e0-fd14bfdf08d9"
+        },
+        "encounter": {
+          "reference": "urn:uuid:b63df5af-a8b5-4e0f-87e1-ad9cfbc13962"
+        },
+        "authoredOn": "2008-10-28T11:48:39-04:00",
+        "requester": {
+          "reference": "urn:uuid:0000016d-3a85-4cca-0000-0000000000dc",
+          "display": "Dr. César846 Serrato62"
+        }
+      },
+      "request": {
+        "method": "POST",
+        "url": "MedicationRequest"
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:3f3d7f99-f43c-4f13-a4b5-d5098f0e7a4a",
+      "resource": {
+        "resourceType": "Claim",
+        "id": "3f3d7f99-f43c-4f13-a4b5-d5098f0e7a4a",
+        "status": "active",
+        "type": {
+          "coding": [
+            {
+              "system": "http://terminology.hl7.org/CodeSystem/claim-type",
+              "code": "pharmacy"
+            }
+          ]
+        },
+        "use": "claim",
+        "patient": {
+          "reference": "urn:uuid:2c6fa5e7-c1aa-428e-a9e0-fd14bfdf08d9"
+        },
+        "billablePeriod": {
+          "start": "2008-10-28T11:48:39-04:00",
+          "end": "2008-10-28T12:34:39-04:00"
+        },
+        "created": "2008-10-28T12:34:39-04:00",
+        "provider": {
+          "reference": "urn:uuid:b1ddf812-1fdd-3adf-b1d5-32cc8bd07ebb",
+          "display": "BETH ISRAEL DEACONESS HOSPITAL - PLYMOUTH"
+        },
+        "priority": {
+          "coding": [
+            {
+              "system": "http://terminology.hl7.org/CodeSystem/processpriority",
+              "code": "normal"
+            }
+          ]
+        },
+        "prescription": {
+          "reference": "urn:uuid:5bdbc398-404e-4fdc-a6c8-d43cca7d38b6"
+        },
+        "insurance": [
+          {
+            "sequence": 1,
+            "focal": true,
+            "coverage": {
+              "display": "Medicaid"
+            }
+          }
+        ],
+        "item": [
+          {
+            "sequence": 1,
+            "productOrService": {
+              "coding": [
+                {
+                  "system": "http://snomed.info/sct",
+                  "code": "698314001",
+                  "display": "Consultation for treatment"
+                }
+              ],
+              "text": "Consultation for treatment"
+            },
+            "encounter": [
+              {
+                "reference": "urn:uuid:b63df5af-a8b5-4e0f-87e1-ad9cfbc13962"
+              }
+            ]
+          }
+        ],
+        "total": {
+          "value": 553.0,
+          "currency": "USD"
+        }
+      },
+      "request": {
+        "method": "POST",
+        "url": "Claim"
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:97fbf3be-9ac7-4676-a2fe-bd8ffa8f4216",
+      "resource": {
+        "resourceType": "Claim",
+        "id": "97fbf3be-9ac7-4676-a2fe-bd8ffa8f4216",
+        "status": "active",
+        "type": {
+          "coding": [
+            {
+              "system": "http://terminology.hl7.org/CodeSystem/claim-type",
+              "code": "institutional"
+            }
+          ]
+        },
+        "use": "claim",
+        "patient": {
+          "reference": "urn:uuid:2c6fa5e7-c1aa-428e-a9e0-fd14bfdf08d9",
+          "display": "Walter473 Haley279"
+        },
+        "billablePeriod": {
+          "start": "2008-10-28T11:48:39-04:00",
+          "end": "2008-10-28T12:34:39-04:00"
+        },
+        "created": "2008-10-28T12:34:39-04:00",
+        "provider": {
+          "reference": "urn:uuid:b1ddf812-1fdd-3adf-b1d5-32cc8bd07ebb",
+          "display": "BETH ISRAEL DEACONESS HOSPITAL - PLYMOUTH"
+        },
+        "priority": {
+          "coding": [
+            {
+              "system": "http://terminology.hl7.org/CodeSystem/processpriority",
+              "code": "normal"
+            }
+          ]
+        },
+        "insurance": [
+          {
+            "sequence": 1,
+            "focal": true,
+            "coverage": {
+              "display": "Medicaid"
+            }
+          }
+        ],
+        "item": [
+          {
+            "sequence": 1,
+            "productOrService": {
+              "coding": [
+                {
+                  "system": "http://snomed.info/sct",
+                  "code": "698314001",
+                  "display": "Consultation for treatment"
+                }
+              ],
+              "text": "Consultation for treatment"
+            },
+            "encounter": [
+              {
+                "reference": "urn:uuid:b63df5af-a8b5-4e0f-87e1-ad9cfbc13962"
+              }
+            ]
+          }
+        ],
+        "total": {
+          "value": 129.16,
+          "currency": "USD"
+        }
+      },
+      "request": {
+        "method": "POST",
+        "url": "Claim"
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:c20e64f6-e728-4be2-b500-92ff41678ef7",
+      "resource": {
+        "resourceType": "ExplanationOfBenefit",
+        "id": "c20e64f6-e728-4be2-b500-92ff41678ef7",
+        "contained": [
+          {
+            "resourceType": "ServiceRequest",
+            "id": "referral",
+            "status": "completed",
+            "intent": "order",
+            "subject": {
+              "reference": "urn:uuid:2c6fa5e7-c1aa-428e-a9e0-fd14bfdf08d9"
+            },
+            "requester": {
+              "reference": "urn:uuid:0000016d-3a85-4cca-0000-0000000000dc"
+            },
+            "performer": [
+              {
+                "reference": "urn:uuid:0000016d-3a85-4cca-0000-0000000000dc"
+              }
+            ]
+          },
+          {
+            "resourceType": "Coverage",
+            "id": "coverage",
+            "status": "active",
+            "type": {
+              "text": "Medicaid"
+            },
+            "beneficiary": {
+              "reference": "urn:uuid:2c6fa5e7-c1aa-428e-a9e0-fd14bfdf08d9"
+            },
+            "payor": [
+              {
+                "display": "Medicaid"
+              }
+            ]
+          }
+        ],
+        "identifier": [
+          {
+            "system": "https://bluebutton.cms.gov/resources/variables/clm_id",
+            "value": "97fbf3be-9ac7-4676-a2fe-bd8ffa8f4216"
+          },
+          {
+            "system": "https://bluebutton.cms.gov/resources/identifier/claim-group",
+            "value": "99999999999"
+          }
+        ],
+        "status": "active",
+        "type": {
+          "coding": [
+            {
+              "system": "http://terminology.hl7.org/CodeSystem/claim-type",
+              "code": "institutional"
+            }
+          ]
+        },
+        "use": "claim",
+        "patient": {
+          "reference": "urn:uuid:2c6fa5e7-c1aa-428e-a9e0-fd14bfdf08d9"
+        },
+        "billablePeriod": {
+          "start": "2008-10-28T12:34:39-04:00",
+          "end": "2009-10-28T12:34:39-04:00"
+        },
+        "created": "2008-10-28T12:34:39-04:00",
+        "insurer": {
+          "display": "Medicaid"
+        },
+        "provider": {
+          "reference": "urn:uuid:0000016d-3a85-4cca-0000-0000000000dc"
+        },
+        "referral": {
+          "reference": "#referral"
+        },
+        "claim": {
+          "reference": "urn:uuid:97fbf3be-9ac7-4676-a2fe-bd8ffa8f4216"
+        },
+        "outcome": "complete",
+        "careTeam": [
+          {
+            "sequence": 1,
+            "provider": {
+              "reference": "urn:uuid:0000016d-3a85-4cca-0000-0000000000dc"
+            },
+            "role": {
+              "coding": [
+                {
+                  "system": "http://terminology.hl7.org/CodeSystem/claimcareteamrole",
+                  "code": "primary",
+                  "display": "Primary Care Practitioner"
+                }
+              ]
+            }
+          }
+        ],
+        "insurance": [
+          {
+            "focal": true,
+            "coverage": {
+              "reference": "#coverage",
+              "display": "Medicaid"
+            }
+          }
+        ],
+        "item": [
+          {
+            "sequence": 1,
+            "category": {
+              "coding": [
+                {
+                  "system": "https://bluebutton.cms.gov/resources/variables/line_cms_type_srvc_cd",
+                  "code": "1",
+                  "display": "Medical care"
+                }
+              ]
+            },
+            "productOrService": {
+              "coding": [
+                {
+                  "system": "http://snomed.info/sct",
+                  "code": "698314001",
+                  "display": "Consultation for treatment"
+                }
+              ],
+              "text": "Consultation for treatment"
+            },
+            "servicedPeriod": {
+              "start": "2008-10-28T11:48:39-04:00",
+              "end": "2008-10-28T12:34:39-04:00"
+            },
+            "locationCodeableConcept": {
+              "coding": [
+                {
+                  "system": "http://terminology.hl7.org/CodeSystem/ex-serviceplace",
+                  "code": "21",
+                  "display": "Inpatient Hospital"
+                }
+              ]
+            },
+            "encounter": [
+              {
+                "reference": "urn:uuid:b63df5af-a8b5-4e0f-87e1-ad9cfbc13962"
+              }
+            ]
+          }
+        ],
+        "total": [
+          {
+            "category": {
+              "coding": [
+                {
+                  "system": "http://terminology.hl7.org/CodeSystem/adjudication",
+                  "code": "submitted",
+                  "display": "Submitted Amount"
+                }
+              ],
+              "text": "Submitted Amount"
+            },
+            "amount": {
+              "value": 129.16,
+              "currency": "USD"
+            }
+          }
+        ],
+        "payment": {
+          "amount": {
+            "value": 0.0,
+            "currency": "USD"
+          }
+        }
+      },
+      "request": {
+        "method": "POST",
+        "url": "ExplanationOfBenefit"
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:c2436d97-36b1-4b75-8ccd-e0eb103ee308",
+      "resource": {
+        "resourceType": "Encounter",
+        "id": "c2436d97-36b1-4b75-8ccd-e0eb103ee308",
+        "status": "finished",
+        "class": {
+          "system": "http://terminology.hl7.org/CodeSystem/v3-ActCode",
+          "code": "AMB"
+        },
+        "type": [
+          {
+            "coding": [
+              {
+                "system": "http://snomed.info/sct",
+                "code": "698314001",
+                "display": "Consultation for treatment"
+              }
+            ],
+            "text": "Consultation for treatment"
+          }
+        ],
+        "subject": {
+          "reference": "urn:uuid:2c6fa5e7-c1aa-428e-a9e0-fd14bfdf08d9",
+          "display": "Mrs. Walter473 Haley279"
+        },
+        "participant": [
+          {
+            "individual": {
+              "reference": "urn:uuid:0000016d-3a85-4cca-0000-0000000000dc",
+              "display": "Dr. César846 Serrato62"
+            }
+          }
+        ],
+        "period": {
+          "start": "2009-10-23T11:48:39-04:00",
+          "end": "2009-10-23T12:03:39-04:00"
+        },
+        "serviceProvider": {
+          "reference": "urn:uuid:b1ddf812-1fdd-3adf-b1d5-32cc8bd07ebb",
+          "display": "BETH ISRAEL DEACONESS HOSPITAL - PLYMOUTH"
+        }
+      },
+      "request": {
+        "method": "POST",
+        "url": "Encounter"
+      }
+    }
+  ]
+}
