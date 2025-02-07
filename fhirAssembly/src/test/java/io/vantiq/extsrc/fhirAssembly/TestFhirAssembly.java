@@ -1,6 +1,7 @@
 package io.vantiq.extsrc.fhirAssembly;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
@@ -59,7 +60,7 @@ public class TestFhirAssembly {
     public static Map<String, ?> heroMap = null;
     public static String heroUpdateEtag = null;
     public static String batGirlId = null;
-    public static Map<String, ?> batGirlMap = null;
+    public static Map<String, String> placeholderToLocation = new HashMap<>();
     static int invocationCount = 0;
     
     
@@ -761,6 +762,8 @@ public class TestFhirAssembly {
         //noinspection unchecked
         Map<String, ?> bgXactMap = mapper.readValue(bgTransactionFile, Map.class);
         log.debug("New hero: {}", bgXactMap);
+        //noinspection unchecked
+        List<Map<String, ?>> entries = (List<Map<String, ?>>) bgXactMap.get("entry");
         
         Vantiq v = new Vantiq(TEST_SERVER, 1);
         v.authenticate(SUB_USER, SUB_USER);
@@ -787,7 +790,8 @@ public class TestFhirAssembly {
                      ((List<Map<String, ?>>) resultBundleMap.get("entry")).size());
         
         //noinspection unchecked
-        Map<String, ?> ptOutcome = ((List<Map<String, ?>>) resultBundleMap.get("entry")).get(0);
+        List<Map<String, ?>> outcomes = ((List<Map<String, ?>>) resultBundleMap.get("entry"));
+        Map<String, ?> ptOutcome = outcomes.get(0);
         //noinspection unchecked
         String bgLocation = ((Map<String, ?>) ptOutcome.get("response")).get("location").toString();
         String[] locArray = bgLocation.split("/");
@@ -797,6 +801,28 @@ public class TestFhirAssembly {
         log.debug("Bat Girl's id: {}", bgId);
         log.trace("Bat Girl as string: {}", ptOutcome);
         batGirlId = bgId;
+        // Now, map all the placeholder URL to the locations returned.  We'll use this in the batch test to refer
+        // back to what was created.
+        for (int i = 0; i < outcomes.size(); i++ ) {
+            //noinspection unchecked
+            log.debug("Transaction adding conversion for {} --> {}",
+                      entries.get(i).get("fullUrl"),
+                      entSansHistory((String) ((Map<String, ?>) outcomes.get(i).get("response")).get("location")));
+            
+            //noinspection unchecked
+            placeholderToLocation.put((String) entries.get(i).get("fullUrl"),
+                                      entSansHistory((String) ((Map<String, ?>) outcomes.get(i).get("response"))
+                                                                                                .get("location")));
+        }
+        log.debug("Placeholder to Location map: {}", placeholderToLocation);
+    }
+    
+    private String entSansHistory(String fullUrl) {
+        String[] locArray = fullUrl.split("/");
+        assert locArray.length >= 2;
+        String retVal = locArray[0] + "/" + locArray[1];
+        assertNotNull("Bad conversion for " + fullUrl, retVal);
+        return retVal;
     }
     
     @Test
@@ -805,10 +831,12 @@ public class TestFhirAssembly {
         String patientFullUrl = "Patient" + "/" + batGirlId;
         File bgTransactionFile = new File("build/resources/test/bgBatch.json");
         //noinspection unchecked
-        Map<String, ?> bgXactMap = mapper.readValue(bgTransactionFile, Map.class);
+        Map<String, ?> bgBatchMap = mapper.readValue(bgTransactionFile, Map.class);
+        //noinspection unchecked
+        List<Map<String, ?>> entries = (List<Map<String, ?>>) bgBatchMap.get("entry");
         
         //noinspection unchecked
-        List<Map<String, ?>> items = ((List<Map<String, ?>>) bgXactMap.get("entry"));
+        List<Map<String, ?>> items = ((List<Map<String, ?>>) bgBatchMap.get("entry"));
         int urlsReplaced = 0;
         for (Map<String, ?> item: items) {
             log.debug("Checking {} for url to replace", item);
@@ -817,8 +845,41 @@ public class TestFhirAssembly {
                     ((Map<String, String>) ((Map<String, ?>) item.get("resource"))
                             .get("subject")).containsKey("reference")) {
                 //noinspection unchecked
+                String refKey = ((Map<String, String>) ((Map<String, ?>) item.get("resource"))
+                        .get("subject")).get("reference");
+                assertNotNull("No real location for placeholder: " + refKey,
+                              placeholderToLocation.get(refKey));
+                //noinspection unchecked
                 ((Map<String, String>) ((Map<String, ?>) item.get("resource"))
-                        .get("subject")).put("reference", patientFullUrl);
+                        .get("subject")).put("reference", placeholderToLocation.get(refKey));
+                urlsReplaced += 1;
+            }
+            //noinspection unchecked
+            if (((Map<String, ?>) item.get("resource")).containsKey("encounter") &&
+                ((Map<String, String>) ((Map<String, ?>) item.get("resource"))
+                        .get("encounter")).containsKey("reference")) {
+                //noinspection unchecked
+                String refKey = ((Map<String, String>) ((Map<String, ?>) item.get("resource"))
+                        .get("encounter")).get("reference");
+                assertNotNull("No real location for placeholder: " + refKey,
+                              placeholderToLocation.get(refKey));
+                //noinspection unchecked
+                ((Map<String, String>) ((Map<String, ?>) item.get("resource"))
+                        .get("encounter")).put("reference", placeholderToLocation.get(refKey));
+                urlsReplaced += 1;
+            }
+            //noinspection unchecked
+            if (((Map<String, ?>) item.get("resource")).containsKey("requester") &&
+                    ((Map<String, String>) ((Map<String, ?>) item.get("resource"))
+                            .get("requester")).containsKey("reference")) {
+                //noinspection unchecked
+                String refKey = ((Map<String, String>) ((Map<String, ?>) item.get("resource"))
+                        .get("requester")).get("reference");
+                assertNotNull("No real location for placeholder: " + refKey,
+                              placeholderToLocation.get(refKey));
+                //noinspection unchecked
+                ((Map<String, String>) ((Map<String, ?>) item.get("resource"))
+                        .get("requester")).put("reference", placeholderToLocation.get(refKey));
                 urlsReplaced += 1;
             }
         }
@@ -827,7 +888,7 @@ public class TestFhirAssembly {
         v.authenticate(SUB_USER, SUB_USER);
         
         VantiqResponse resp = v.execute("com.vantiq.fhir.fhirService.bundleInteraction",
-                                        Map.of("bundle", bgXactMap));
+                                        Map.of("bundle", bgBatchMap));
         assertTrue("Could not run batch: " + resp.getErrors(), resp.isSuccess());
         Map<String, ?> fhirResp = extractFhirResponse(resp);
         // 201 statu means a new thingy was created
@@ -844,11 +905,23 @@ public class TestFhirAssembly {
         //noinspection unchecked
         Map<String, ?> resultBundleMap = (Map<String, ?>) fhirResp.get("body");
         //noinspection unchecked
-        assertEquals("Wrong number of results: " + resultBundleMap.get("entry"), 5,
+        assertEquals("Wrong number of results: " + resultBundleMap.get("entry"), items.size(),
                      ((List<Map<String, ?>>) resultBundleMap.get("entry")).size());
-        // Note: Most if not all of these will fail because the placeholder URLs for things during the transaction
-        // test are not correctly fixed up.  That's find -- that means we got the request correctly over which is all
-        // this test really needs to verify.
+        // Now, map all the placeholder URL to the locations returned.  We'll use this in the batch test to refer
+        // back to what was created.
+        //noinspection unchecked
+        List<Map<String, ?>> outcomes = ((List<Map<String, ?>>) resultBundleMap.get("entry"));
+        for (int i = 0; i < outcomes.size(); i++ ) {
+            //noinspection unchecked
+            log.debug("Batch: Adding conversion for {} --> {}",
+                      entries.get(i).get("fullUrl"),
+                      entSansHistory((String) ((Map<String, ?>) outcomes.get(i).get("response")).get("location")));
+            //noinspection unchecked
+            placeholderToLocation.put((String) entries.get(i).get("fullUrl"),
+                                    entSansHistory((String) ((Map<String, ?>) outcomes.get(i).get("response"))
+                                            .get("location")));
+        }
+        log.debug("After batch operations, placeholder to Location map: {}", placeholderToLocation);
     }
     
     @Test
@@ -913,6 +986,50 @@ public class TestFhirAssembly {
     }
     
     @Test
+    public void test450TransactionalDelete() throws Exception {
+        // Note:  Has to be done in a transaction.  Batches cannot have references between the entities in the batch,
+        // and all of these things are interelated.
+        assertFalse("No placeholder to location data found: " + placeholderToLocation,
+                    placeholderToLocation.isEmpty());
+        
+        Vantiq v = new Vantiq(TEST_SERVER, 1);
+        v.authenticate(SUB_USER, SUB_USER);
+        Map<String, Object> batchDelete = new HashMap<>();
+
+        batchDelete.put("resourceType", "Bundle");
+        batchDelete.put("type", "transaction");
+        batchDelete.put("id", "test450BatchDelete-request");
+        List<Map<String, Object>> entList = new ArrayList<>(placeholderToLocation.size());
+        batchDelete.put("entry", entList);
+        for (Map.Entry<String, String> p2l: placeholderToLocation.entrySet()) {
+            Map<String, Object> ent = new HashMap<>();
+            ent.put("request", Map.of("method", "DELETE",
+                                      "url", p2l.getValue()));
+            entList.add(ent);
+        }
+
+        VantiqResponse resp = v.execute("com.vantiq.fhir.fhirService.bundleInteraction",
+                                        Map.of("bundle", batchDelete));
+        assertTrue("Could not process batch delete: " + entList + ": " + resp.getErrors(), resp.isSuccess());
+        Map<String, ?> fhirResp = extractFhirResponse(resp);
+        log.debug("Batch delete response: {}", fhirResp);
+        //noinspection unchecked
+        Map<String, ?> resultBundleMap = (Map<String, ?>) fhirResp.get("body");
+        // Now, map all the placeholder URL to the locations returned.  We'll use this in the batch test to refer
+        // back to what was created.
+        //noinspection unchecked
+        List<Map<String, ?>> outcomes = ((List<Map<String, ?>>) resultBundleMap.get("entry"));
+        for (Map<String, ?> outcome: outcomes) {
+            //noinspection unchecked
+            String opResult = (String) ((Map<String, ?>) outcome.get("response"))
+                    .get("status");
+            String[] resArray = opResult.split("\\s+");
+            int status = Integer.parseInt(resArray[0]);
+            assertTrue("Wrong status code returned for " + outcome,status < 300);
+        }
+    }
+    
+    @Test
     public void test500SearchUnrestrictedPatient() throws Exception {
         
         int countSize = 20;
@@ -920,7 +1037,7 @@ public class TestFhirAssembly {
         v.authenticate(SUB_USER, SUB_USER);
         
         // We added bat girl, so one mor ethan originally inserted
-        traverseSearch(v, countSize, "Patient", Collections.emptyMap(), 29);
+        traverseSearch(v, countSize, "Patient", Collections.emptyMap(), 28);
     }
     
     @Test
@@ -930,7 +1047,7 @@ public class TestFhirAssembly {
         Vantiq v = new Vantiq(TEST_SERVER, 1);
         v.authenticate(SUB_USER, SUB_USER);
         
-        traverseSearch(v, countSize, "Encounter", Collections.emptyMap(), 848);
+        traverseSearch(v, countSize, "Encounter", Collections.emptyMap(), 842);
     }
     
     @Test
