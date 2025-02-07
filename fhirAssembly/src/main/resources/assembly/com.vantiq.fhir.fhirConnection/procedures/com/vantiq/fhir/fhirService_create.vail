@@ -1,14 +1,19 @@
+// Create a new FHIR resource instance
+
 package com.vantiq.fhir
-PROCEDURE fhirService.create(type String REQUIRED, resource Object REQUIRED, versionId String): Object
+PROCEDURE fhirService.create(type String REQUIRED DESCRIPTION "The type of resource to create.",
+                             resource Object REQUIRED DESCRIPTION "The instance of the resource.",
+                             versionId String DESCRIPTION "Version identifier for the resource instance to create.",
+                             modifiers com.vantiq.fhir.Modifiers DESCRIPTION "Query modifiers and headers for the call."): com.vantiq.fhir.FHIRResponse WITH updateInterface=true
 
 var path = type
 
-var retVal = fhirService.performRestOpWithData("POST", path, resource)
-if (typeOf(retVal) == "List") {
-    log.debug("retVal is an array: {}", [typeOf(retVal)])
-    retVal = retVal[0]
+var retVal = fhirService.performRestOpWithData("POST", path, resource, modifiers)
+if (typeOf(retVal.body) == "List") {
+    log.debug("retVal.body is an array: {}", [typeOf(retVal.body)])
+    retVal.body = retVal.body[0]
 } else {
-    log.debug("retVal is not an array")
+    log.debug("retVal.body is not an array")
 }
 return retVal
 

@@ -1,21 +1,18 @@
-/**
-* Perform a search based on the type & query provided
-*
-* Using the current source, run the search query for a particular type. If no method is provided,
-* we use GET. If search via POST is desired, provide "POST" as the method parameter.
-*
-* @param type String The FHIR Resource type to search
-* @param query Object The FHIR query.  Object where the keys are the resource property names, and values are the values desired. If there are no restrictions, provide an empty object here ("{}").
-* @param generalParams (optional) a set of name/value pairs representing the modifiers for this call.
-*                                        The general parameters include _summary & _elements.
-* @param method String (optional) GET or POST
-*/
+// Perform a search based on the type & query provided
+//
+// Using the current source, run the search query for a particular type. If no method is provided,
+// use the assembly's default. Provide this parameter to override the assembly default.
 
 package com.vantiq.fhir
 
 import service com.vantiq.fhir.fhirService
+import type com.vantiq.fhir.FHIRResponse
+import type com.vantiq.fhir.Modifiers
 
-PROCEDURE fhirService.searchType(type String REQUIRED, query Object REQUIRED, generalParams Object, method String)
+PROCEDURE fhirService.searchType(type String REQUIRED DESCRIPTION "The FHIR Resource type to search",
+                                 query Object REQUIRED DESCRIPTION "The FHIR query.  Object where the keys are the resource property names, and values are the values desired. If there are no restrictions, provide an empty object here (\"{}\").",
+                                 modifiers com.vantiq.fhir.Modifiers DESCRIPTION "a set of name/value pairs representing the modifiers for this call. The general parameters include _summary & _elements.",
+                                 method String DESCRIPTION "HTTP Method to use, overriding search default: GET or POST"): com.vantiq.fhir.FHIRResponse WITH updateInterface=true
 var theSource = fhirSource.getValue()
 log.debug("Current value of fhirSource to use: {}", [theSource])
 
@@ -24,21 +21,17 @@ if (!theSource) {
     theSource = fhirSource.getValue()
 }
 
-var checkedParams = fhirService.checkGeneralParams(generalParams)
-var comboQuery = Object.clone(query)
-for (p in checkedParams) {
-    if (comboQuery.has(p.key)) {
-        exception("com.vantiq.fhir.generalparam.conflict",
-                    "The generalParam {0} would overwrite the query parameter of the same name.",
-                    [p.key])
-    } else {
-        comboQuery[p.key] = p.value
-    }
-}
+var checkedParams = fhirService.checkModifiers(modifiers)
+var comboQuery = fhirService.combineQueryAndParams(query, checkedParams.generalParams)
 var targetPath = type
 if (!method) {
-    method = "GET"
-} else if (method == "POST") {
+    method = ResourceConfig.get("defaultSearchHttpMethod")
+    // Shouldn't happen since config value has a default, but just in case...
+    if (!method) {
+        method = "GET"
+    }
+} 
+if (method == "POST") {
     targetPath = type + "/_search"
 }
 return fhirService.performRestOpQuery(method, targetPath, comboQuery)

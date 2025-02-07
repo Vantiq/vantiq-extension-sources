@@ -2,6 +2,13 @@
   "ars_relationships" : [ ],
   "name" : "com.vantiq.fhir.fhirService.GlobalState",
   "properties" : {
+    "defaultSearchMethod" : {
+      "encrypted" : false,
+      "multi" : false,
+      "required" : false,
+      "type" : "String",
+      "unique" : false
+    },
     "fhirCapabilityStatement" : {
       "encrypted" : false,
       "multi" : false,

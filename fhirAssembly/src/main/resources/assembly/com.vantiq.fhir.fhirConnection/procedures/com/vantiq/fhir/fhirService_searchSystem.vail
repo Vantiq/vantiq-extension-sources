@@ -4,7 +4,7 @@
 * Using the current source, run the search query for a particular type. If no method is provided,
 * we use GET. If search via POST is desired, provide "POST" as the method parameter.
 *
-* @param query Object The FHIR query.  Object where the keys are the resource property names, and values are the values desired. If there are no restrictions, provide an empty object ("{}").
+* @param query Object ).
 * @param method String GET or POST.  Optional
 */
 
@@ -12,7 +12,9 @@ package com.vantiq.fhir
 
 import service com.vantiq.fhir.fhirService
 
-PROCEDURE fhirService.searchSystem(query Object REQUIRED, method String)
+PROCEDURE fhirService.searchSystem(query Object REQUIRED DESCRIPTION "The FHIR query.  Object where the keys are the resource property names, and values are the values desired. If there are no restrictions, provide an empty object (\"{}\")",
+                                   modifiers com.vantiq.fhir.Modifiers DESCRIPTION "a set of name/value pairs representing the modifiers for this call. The general parameters include _summary & _elements.",
+                                   method String DESCRIPTION "HTTP Method to use, overriding search default: GET or POST"): com.vantiq.fhir.FHIRResponse WITH updateInterface=true
 var theSource = fhirSource.getValue()
 log.debug("Current value of fhirSource to use: {}", [theSource])
 
@@ -21,9 +23,16 @@ if (!theSource) {
     theSource = fhirSource.getValue()
 }
 var targetPath = "/"
+var checkedParams = fhirService.checkModifiers(modifiers)
+var comboQuery = fhirService.combineQueryAndParams(query, checkedParams.generalParams)
 if (!method) {
-    method = "GET"
-} else if (method == "POST") {
+    method = ResourceConfig.get("defaultSearchHttpMethod")
+    // Shouldn't happen, but ...
+    if (!method) {
+        method = "GET"
+    }
+} 
+if (method == "POST") {
     targetPath = "/_search"
 }
-return fhirService.performRestOpQuery(method, targetPath, query )
+return fhirService.performRestOpQuery(method, targetPath, comboQuery, checkedParams.headers )

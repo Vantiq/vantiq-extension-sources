@@ -1,4 +1,4 @@
 package com.vantiq.fhir
-private PROCEDURE fhirService.performGet(targetPath String REQUIRED): Any
+private PROCEDURE fhirService.performGet(targetPath String REQUIRED): com.vantiq.fhir.FHIRResponse
 
 return fhirService.performRestOp("GET", targetPath)

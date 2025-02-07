@@ -1,0 +1,27 @@
+{
+  "ars_properties" : {
+    "Description" : "Describes the structure for passing general parameters/modifiers and headers to a FHIR interaction call"
+  },
+  "ars_relationships" : [ ],
+  "groupBy" : "",
+  "name" : "com.vantiq.fhir.Modifiers",
+  "properties" : {
+    "generalParams" : {
+      "description" : "Query modifiers such as _format or _elements",
+      "encrypted" : false,
+      "multi" : false,
+      "required" : false,
+      "type" : "Object",
+      "unique" : false
+    },
+    "headers" : {
+      "description" : "HTTP Headers to include in the call",
+      "encrypted" : false,
+      "multi" : false,
+      "required" : false,
+      "type" : "Object",
+      "unique" : false
+    }
+  },
+  "role" : "schema"
+}

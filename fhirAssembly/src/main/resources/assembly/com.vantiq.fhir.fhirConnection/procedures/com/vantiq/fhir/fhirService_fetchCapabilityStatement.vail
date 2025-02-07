@@ -5,7 +5,11 @@ package com.vantiq.fhir
 import service com.vantiq.fhir.fhirService
 
 private PROCEDURE fhirService.fetchCapabilityStatement():Object
-var returnValue
-
-returnValue = fhirService.performGet("metadata")
-return returnValue[0]
+var fhirResp = fhirService.performGet("metadata")
+var retVal
+if (typeOf(fhirResp.body) == "List") {
+    retVal = fhirResp.body[0]
+} else {
+    retVal = fhirResp.body
+}
+return retVal

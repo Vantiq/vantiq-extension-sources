@@ -1,0 +1,35 @@
+{
+  "ars_properties" : {
+    "Description" : "The entity returned from calls to FHIR interactions"
+  },
+  "ars_relationships" : [ ],
+  "groupBy" : "",
+  "name" : "com.vantiq.fhir.FHIRResponse",
+  "properties" : {
+    "body" : {
+      "description" : "The message returned from the FHIR interaction",
+      "encrypted" : false,
+      "multi" : false,
+      "required" : false,
+      "type" : "Object",
+      "unique" : false
+    },
+    "headers" : {
+      "description" : "HTTP Headers returned in the response",
+      "encrypted" : false,
+      "multi" : false,
+      "required" : false,
+      "type" : "Object",
+      "unique" : false
+    },
+    "statusCode" : {
+      "description" : "The HTTP Status code returned",
+      "encrypted" : false,
+      "multi" : false,
+      "required" : false,
+      "type" : "Integer",
+      "unique" : false
+    }
+  },
+  "role" : "schema"
+}
