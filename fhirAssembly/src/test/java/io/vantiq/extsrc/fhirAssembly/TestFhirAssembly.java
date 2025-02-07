@@ -27,8 +27,10 @@ import org.junit.Test;
 import org.junit.runners.MethodSorters;
 
 import java.io.File;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -54,6 +56,10 @@ public class TestFhirAssembly {
     public static final String FHIR_ASSY_NAME = "com.vantiq.fhir.fhirConnection";
     public static String SUB_USER;
     public static String PUB_USER;
+    
+    public static Integer BASE_ENCOUNTER_COUNT = 842;
+    // Used as a base for history configurations
+    public static String startTime = null;
     public ObjectMapper mapper = new ObjectMapper();
     
     public static String heroId = null;
@@ -80,6 +86,8 @@ public class TestFhirAssembly {
     }
     
     public static void performSetup(Map<String, ?> assemblyConfig) {
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss");
+        startTime = sdf.format(new Date());
         SUB_USER = "admin__" + SUBSCRIBER_NS_NAME;
         PUB_USER = "admin__" + CATALOG_NS_NAME;
         File assyZip = new File("build/distributions/fhirConnection-assembly.zip");
@@ -925,6 +933,38 @@ public class TestFhirAssembly {
     }
     
     @Test
+    public void test380HistoryIndividuals() throws Exception {
+        assertNotNull("No inserted hero id found", heroId);
+        assertNotNull("No inserted here map found", heroMap);
+        
+        Vantiq v = new Vantiq(TEST_SERVER, 1);
+        v.authenticate(SUB_USER, SUB_USER);
+        
+        Map<String, Integer> toQuery = Map.of(heroId, 3, batGirlId, 1);
+        for (Map.Entry<String, Integer> ent : toQuery.entrySet()) {
+            log.debug("Querying Patient {}", ent);
+            VantiqResponse resp = v.execute("com.vantiq.fhir.fhirService.history",
+                                            Map.of("type", "Patient",
+                                                   "id", ent.getKey()));
+            assertTrue("Could not get history for Patient id: " + ent + ": " + resp.getErrors(),
+                       resp.isSuccess());
+            Map<String, ?> fhirResp = extractFhirResponse(resp);
+            log.debug("FHIR Response for history for Patient {}: {}", ent.getKey(), fhirResp);
+            assertTrue("Wrong status code returned for Patient " + ent,
+                       (int) fhirResp.get("statusCode") < 300);
+            //noinspection unchecked
+            assertEquals("Wrong resource type", "Bundle",
+                         ((Map<String, ?>) fhirResp.get("body")).get("resourceType"));
+            //noinspection unchecked
+            assertEquals("Wrong type", "history",
+                         ((Map<String, ?>) fhirResp.get("body")).get("type"));
+            //noinspection unchecked
+            assertEquals("Wrong history count", ent.getValue(),
+                         ((Map<String, ?>) fhirResp.get("body")).get("total"));
+        }
+    }
+    
+    @Test
     public void test400Delete() throws Exception {
         assertNotNull("No inserted hero id found", heroId);
         assertNotNull("No inserted here map found", heroMap);
@@ -1047,7 +1087,7 @@ public class TestFhirAssembly {
         Vantiq v = new Vantiq(TEST_SERVER, 1);
         v.authenticate(SUB_USER, SUB_USER);
         
-        traverseSearch(v, countSize, "Encounter", Collections.emptyMap(), 842);
+        traverseSearch(v, countSize, "Encounter", Collections.emptyMap(), BASE_ENCOUNTER_COUNT);
     }
     
     @Test
@@ -1097,6 +1137,142 @@ public class TestFhirAssembly {
         });
     }
     
+    @Test
+    public void test600HistoryType() throws Exception {
+        Vantiq v = new Vantiq(TEST_SERVER, 1);
+        v.authenticate(SUB_USER, SUB_USER);
+        
+        VantiqResponse resp = v.execute("com.vantiq.fhir.fhirService.history",
+                                        Map.of("type", "Encounter"));
+        assertTrue("Could not get history for Encounter: " + resp.getErrors(),
+                   resp.isSuccess());
+        Map<String, ?> fhirResp = extractFhirResponse(resp);
+        log.debug("FHIR Response for history for Encounter: {}", fhirResp);
+        assertTrue("Wrong status code returned for Encounter",
+                   (int) fhirResp.get("statusCode") < 300);
+        //noinspection unchecked
+        assertEquals("Wrong resource type", "Bundle",
+                     ((Map<String, ?>) fhirResp.get("body")).get("resourceType"));
+        //noinspection unchecked
+        assertEquals("Wrong type", "history",
+                     ((Map<String, ?>) fhirResp.get("body")).get("type"));
+        // History here is tricky -- even deletes end up with history.  So we'll check that the total returned
+        // exceeds the base number of encounters.  Kinda the best we can do.  Otherwise, we're checking that the FHIR
+        // server is working -- and that's not our job.
+        //noinspection unchecked
+        int expectedTotal = (Integer) ((Map<String, ?>) fhirResp.get("body")).get("total");
+        assertTrue("Low Encounter/history count: " + expectedTotal,
+                   expectedTotal > BASE_ENCOUNTER_COUNT);
+    }
+    
+    @Test
+    public void test610HistoryTypeModifiers() throws Exception {
+        Vantiq v = new Vantiq(TEST_SERVER, 1);
+        v.authenticate(SUB_USER, SUB_USER);
+        
+        VantiqResponse resp = v.execute("com.vantiq.fhir.fhirService.history",
+                                        Map.of("type", "Encounter",
+                                               "modifiers",
+                                                        Map.of("generalParams",
+                                                               Map.of("_since", startTime,
+                                                                      "_sort", "_lastUpdated"))));
+        assertTrue("Could not get history for Encounter (_at): " + resp.getErrors(),
+                   resp.isSuccess());
+        Map<String, ?> fhirResp = extractFhirResponse(resp);
+        log.debug("FHIR Response for history for Encounter(_at): {}", fhirResp);
+        assertTrue("Wrong status code returned for Encounter",
+                   (int) fhirResp.get("statusCode") < 300);
+        //noinspection unchecked
+        assertEquals("Wrong resource type", "Bundle",
+                     ((Map<String, ?>) fhirResp.get("body")).get("resourceType"));
+        //noinspection unchecked
+        assertEquals("Wrong type", "history",
+                     ((Map<String, ?>) fhirResp.get("body")).get("type"));
+        // History here is tricky -- even deletes end up with history.  So we'll check that the total returned
+        // exceeds the base number of encounters.  Kinda the best we can do.  Otherwise, we're checking that the FHIR
+        // server is working -- and that's not our job.
+        //noinspection unchecked
+        if (((Map<String, ?>) fhirResp.get("body")).containsKey("total")) {
+            //noinspection unchecked
+            int expectedTotal = (Integer) ((Map<String, ?>) fhirResp.get("body")).get("total");
+            assertTrue("Low Encounter/history count: " + expectedTotal,
+                       expectedTotal > BASE_ENCOUNTER_COUNT);
+        } else {
+            // Returning the total doesn't seem to happen (with this server) when a modifier is added.
+            // Consequently, the best we can do is to ensure that we have some results...
+            //noinspection unchecked
+            assertTrue("No results for Encounter(_since) request",
+                       ((Map<String, ?>) fhirResp.get("body")).containsKey("entry"));
+        }
+    }
+    
+    
+    @Test
+    public void test620HistorySystem() throws Exception {
+        Vantiq v = new Vantiq(TEST_SERVER, 1);
+        v.authenticate(SUB_USER, SUB_USER);
+        
+        VantiqResponse resp = v.execute("com.vantiq.fhir.fhirService.history",
+                                        Collections.emptyMap());
+        assertTrue("Could not get history for everything: " + resp.getErrors(),
+                   resp.isSuccess());
+        Map<String, ?> fhirResp = extractFhirResponse(resp);
+        assertTrue("Wrong status code returned for everything",
+                   (int) fhirResp.get("statusCode") < 300);
+        //noinspection unchecked
+        assertEquals("Wrong resource type", "Bundle",
+                     ((Map<String, ?>) fhirResp.get("body")).get("resourceType"));
+        //noinspection unchecked
+        assertEquals("Wrong type", "history",
+                     ((Map<String, ?>) fhirResp.get("body")).get("type"));
+        // History here is tricky -- even deletes end up with history.  So we'll check that the total returned
+        // exceeds the base number of encounters.  Kinda the best we can do.  Otherwise, we're checking that the FHIR
+        // server is working -- and that's not our job.
+        //noinspection unchecked
+        int expectedTotal = (Integer) ((Map<String, ?>) fhirResp.get("body")).get("total");
+        log.debug("History total for everything: {}", expectedTotal);
+        assertTrue("Low everything /history count: " + expectedTotal,
+                   expectedTotal > 1000);
+    }
+    
+    @Test
+    public void test630HistorySystemModifiers() throws Exception {
+        Vantiq v = new Vantiq(TEST_SERVER, 1);
+        v.authenticate(SUB_USER, SUB_USER);
+        
+        VantiqResponse resp = v.execute("com.vantiq.fhir.fhirService.history",
+                                            Map.of("modifiers",
+                                                Map.of("generalParams",
+                                                       Map.of("_since", startTime))));
+        assertTrue("Could not get history for everything: " + resp.getErrors(),
+                   resp.isSuccess());
+        Map<String, ?> fhirResp = extractFhirResponse(resp);
+        assertTrue("Wrong status code returned for everything",
+                   (int) fhirResp.get("statusCode") < 300);
+        //noinspection unchecked
+        assertEquals("Wrong resource type", "Bundle",
+                     ((Map<String, ?>) fhirResp.get("body")).get("resourceType"));
+        //noinspection unchecked
+        assertEquals("Wrong type", "history",
+                     ((Map<String, ?>) fhirResp.get("body")).get("type"));
+        // History here is tricky -- even deletes end up with history.  So we'll check that the total returned
+        // exceeds the base number of encounters.  Kinda the best we can do.  Otherwise, we're checking that the FHIR
+        // server is working -- and that's not our job.
+        //noinspection unchecked
+        if (((Map<String, ?>) fhirResp.get("body")).containsKey("total")) {
+            //noinspection unchecked
+            int expectedTotal = (Integer) ((Map<String, ?>) fhirResp.get("body")).get("total");
+            assertTrue("Low everything/history count: " + expectedTotal,
+                       expectedTotal > BASE_ENCOUNTER_COUNT);
+        } else {
+            // Returning the total doesn't seem to happen (with this server) when a modifier is added.
+            // Consequently, the best we can do is to ensure that we have some results...
+            //noinspection unchecked
+            assertTrue("No results for everytning(_since) request",
+                       ((Map<String, ?>) fhirResp.get("body")).containsKey("entry"));
+        }
+    }
+    
     void traverseSearch(Vantiq v, int bundleSize, String type, Map<String, ?> query, int expectedCount)
             throws Exception {
         traverseSearch(v, bundleSize, type, query, expectedCount, null);
@@ -1123,7 +1299,7 @@ public class TestFhirAssembly {
         List<Map<String, ?>> sortCheck = new ArrayList<>();
         int initialSearchAttempt = 1;
         boolean gotEntries = false;
-        Map<String, ?> bundleEntry = null;  // Keep this around after the loop for some cursory testing...
+        Map<String, ?> bundleEntry;  // Keep this around after the loop for some cursory testing...
         do {
             log.debug("Response: {}", resp);
             Map<String, ?> fhirResp = extractFhirResponse(resp);
