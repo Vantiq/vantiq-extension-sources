@@ -17,6 +17,7 @@ if (!theSource) {
 var retVal = ""
 var headers
 var gp
+var effectiveResource = resource
 
 if (modifiers) {
     if (modifiers.headers) {
@@ -31,13 +32,23 @@ if (modifiers) {
     }
 }
 
+var ct = "application/fhir+json"
+if (method == "PATCH") {
+    ct = "application/json-patch+json"
+    effectiveResource = resource.patchCommands
+    if (effectiveResource == null) {
+        exception("com.vantiq.fhir.patch.nocommands", "Internal Error: The PATCH commands must be passed in via the 'patchCommands' property. Resource passed in was {0}.",
+                    [stringify(resource, true)])
+    }
+}
+
 try {
     retVal = SELECT ONE from SOURCE @theSource with path = targetPath,
         method = method,
-        body = resource,
+        body = effectiveResource,
         query = gp,
         headers = headers,
-        contentType = "application/fhir+json",
+        contentType = ct,
         responseType = "application/fhir+json",
         asFullResponse = true
 } catch (e) {

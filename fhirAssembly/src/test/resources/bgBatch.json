@@ -1,0 +1,73 @@
+{
+  "resourceType": "Bundle",
+  "type": "batch",
+  "entry": [
+    {
+      "fullUrl": "urn:uuid:5bdbc398-404e-4fdc-a6c8-d43cca7d38b6",
+      "resource": {
+        "resourceType": "MedicationRequest",
+        "id": "5bdbc398-404e-4fdc-a6c8-d43cca7d38b6",
+        "status": "stopped",
+        "intent": "order",
+        "medicationCodeableConcept": {
+          "coding": [
+            {
+              "system": "http://www.nlm.nih.gov/research/umls/rxnorm",
+              "code": "389221",
+              "display": "Etonogestrel 68 MG Drug Implant"
+            }
+          ],
+          "text": "Etonogestrel 68 MG Drug Implant"
+        },
+        "subject": {
+          "reference": "urn:uuid:2c6fa5e7-c1aa-428e-a9e0-fd14bfdf08d9"
+        },
+        "authoredOn": "2008-10-28T11:48:39-04:00",
+        "requester": {
+          "reference": "urn:uuid:0000016d-3a85-4cca-0000-0000000000dc",
+          "display": "Dr. César846 Serrato62"
+        }
+      },
+      "request": {
+        "method": "POST",
+        "url": "MedicationRequest"
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:c2436d97-36b1-4b75-8ccd-e0eb103ee308",
+      "resource": {
+        "resourceType": "Encounter",
+        "id": "c2436d97-36b1-4b75-8ccd-e0eb103ee308",
+        "status": "finished",
+        "class": {
+          "system": "http://terminology.hl7.org/CodeSystem/v3-ActCode",
+          "code": "AMB"
+        },
+        "type": [
+          {
+            "coding": [
+              {
+                "system": "http://snomed.info/sct",
+                "code": "698314001",
+                "display": "Consultation for treatment"
+              }
+            ],
+            "text": "Consultation for treatment"
+          }
+        ],
+        "subject": {
+          "reference": "urn:uuid:2c6fa5e7-c1aa-428e-a9e0-fd14bfdf08d9",
+          "display": "Mrs. Walter473 Haley279"
+        },
+        "period": {
+          "start": "2009-10-23T11:48:39-04:00",
+          "end": "2009-10-23T12:03:39-04:00"
+        }
+      },
+      "request": {
+        "method": "POST",
+        "url": "Encounter"
+      }
+    }
+  ]
+}
