@@ -1,8 +1,10 @@
 package io.vantiq.extsrc.fhirAssembly;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
@@ -25,8 +27,10 @@ import org.junit.Test;
 import org.junit.runners.MethodSorters;
 
 import java.io.File;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -52,11 +56,17 @@ public class TestFhirAssembly {
     public static final String FHIR_ASSY_NAME = "com.vantiq.fhir.fhirConnection";
     public static String SUB_USER;
     public static String PUB_USER;
+    
+    public static Integer BASE_ENCOUNTER_COUNT = 842;
+    // Used as a base for history configurations
+    public static String startTime = null;
     public ObjectMapper mapper = new ObjectMapper();
     
     public static String heroId = null;
     public static Map<String, ?> heroMap = null;
     public static String heroUpdateEtag = null;
+    public static String batGirlId = null;
+    public static Map<String, String> placeholderToLocation = new HashMap<>();
     static int invocationCount = 0;
     
     
@@ -76,6 +86,8 @@ public class TestFhirAssembly {
     }
     
     public static void performSetup(Map<String, ?> assemblyConfig) {
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss");
+        startTime = sdf.format(new Date());
         SUB_USER = "admin__" + SUBSCRIBER_NS_NAME;
         PUB_USER = "admin__" + CATALOG_NS_NAME;
         File assyZip = new File("build/distributions/fhirConnection-assembly.zip");
@@ -585,7 +597,7 @@ public class TestFhirAssembly {
         assertTrue("Could not create our hero: " + resp.getErrors(), resp.isSuccess());
         Map<String, ?> fhirResp = extractFhirResponse(resp);
         // 201 statu means a new thingy was created
-        assertEquals("Unexpected return status" + fhirResp.get("statusCode"), 201,
+        assertEquals("Unexpected return status: " + fhirResp.get("statusCode"), 201,
                      fhirResp.get("statusCode"));
         log.debug("Created Patient : {}", fhirResp.get("body"));
         //noinspection unchecked
@@ -710,6 +722,251 @@ public class TestFhirAssembly {
     }
     
     @Test
+    public void test320Patch() throws Exception {
+        Map<String, ?> makeHimATwin = Map.of("op", "replace",
+                                  "path", "/multipleBirthBoolean",
+                                  "value", true);
+        Map<String, ?> removeLanguage = Map.of("op", "remove",
+                                                "path", "/communication");
+        List<Map<String, ?>> patchCommands = List.of(
+                makeHimATwin,
+                removeLanguage
+                );
+                
+        assertNotNull("No inserted hero id found", heroId);
+        assertNotNull("No inserted here map found", heroMap);
+        assertNotNull("No saved Etag", heroUpdateEtag);
+        
+        assertEquals("Our hero should not be a multiple: " + heroMap, false,
+                     heroMap.get("multipleBirthBoolean"));
+        assertNotNull("Our Hero should have communication field: " + heroMap, heroMap.get("communication"));
+        // Now, make an updates via patch
+        //noinspection unchecked
+        ((List<Map<String, String>>) heroMap.get("name")).get(0).put("family", "Boy");
+        Vantiq v = new Vantiq(TEST_SERVER, 1);
+        v.authenticate(SUB_USER, SUB_USER);
+        
+        Map<String, ?> modifiers = Map.of("headers",
+                                          Map.of("If-None-Match", "*"));
+        VantiqResponse resp = v.execute("com.vantiq.fhir.fhirService.patch",
+                                        Map.of("type", "Patient",
+                                               "id", heroId,
+                                               "patchCommands", patchCommands,
+                                               "modifiers", modifiers));
+        assertTrue("Could not patch our hero: " + resp.getErrors(), resp.isSuccess());
+        Map<String, ?> fhirResp = extractFhirResponse(resp);
+        log.debug("patch FHIR Response: {}", fhirResp);
+        assertEquals("Wrong status code: " + fhirResp.get("statusCode"), 200,
+                     fhirResp.get("statusCode"));
+        Map<String, ?> twinHero = fetchResource(v, "Patient", heroId, null);
+        assertEquals("Our hero should be a multiple: " + twinHero, true,
+                     twinHero.get("multipleBirthBoolean"));
+        assertNull("Our Hero should have no communication field: " + twinHero, twinHero.get("communication"));
+    }
+    
+    @Test
+    public void test350Transaction() throws Exception {
+        File bgTransactionFile = new File("build/resources/test/bgXact.json");
+        //noinspection unchecked
+        Map<String, ?> bgXactMap = mapper.readValue(bgTransactionFile, Map.class);
+        log.debug("New hero: {}", bgXactMap);
+        //noinspection unchecked
+        List<Map<String, ?>> entries = (List<Map<String, ?>>) bgXactMap.get("entry");
+        
+        Vantiq v = new Vantiq(TEST_SERVER, 1);
+        v.authenticate(SUB_USER, SUB_USER);
+        
+        VantiqResponse resp = v.execute("com.vantiq.fhir.fhirService.bundleInteraction",
+                                        Map.of("bundle", bgXactMap));
+        assertTrue("Could not create bat girl: " + resp.getErrors(), resp.isSuccess());
+        Map<String, ?> fhirResp = extractFhirResponse(resp);
+        // 201 statu means a new thingy was created
+        assertEquals("Unexpected return status: " + fhirResp.get("statusCode"), 200,
+                     fhirResp.get("statusCode"));
+        log.debug("Created bat girl and associated resouce instances: {}", fhirResp.get("body"));
+        //noinspection unchecked
+        assertEquals("Wrong resource type returned", "Bundle",
+                     ((Map<String, ?>) fhirResp.get("body")).get("resourceType").toString());
+        //noinspection unchecked
+        assertEquals("Wrong bundle type returned", "transaction-response",
+                     ((Map<String, ?>) fhirResp.get("body")).get("type").toString());
+        
+        //noinspection unchecked
+        Map<String, ?> resultBundleMap = (Map<String, ?>) fhirResp.get("body");
+        //noinspection unchecked
+        assertEquals("Wrong number of results: " + resultBundleMap.get("entry"), 30,
+                     ((List<Map<String, ?>>) resultBundleMap.get("entry")).size());
+        
+        //noinspection unchecked
+        List<Map<String, ?>> outcomes = ((List<Map<String, ?>>) resultBundleMap.get("entry"));
+        Map<String, ?> ptOutcome = outcomes.get(0);
+        //noinspection unchecked
+        String bgLocation = ((Map<String, ?>) ptOutcome.get("response")).get("location").toString();
+        String[] locArray = bgLocation.split("/");
+        assertEquals("First response is not a Patient: " + ptOutcome, "Patient", locArray[0]);
+        String bgId = locArray[1];
+
+        log.debug("Bat Girl's id: {}", bgId);
+        log.trace("Bat Girl as string: {}", ptOutcome);
+        batGirlId = bgId;
+        // Now, map all the placeholder URL to the locations returned.  We'll use this in the batch test to refer
+        // back to what was created.
+        for (int i = 0; i < outcomes.size(); i++ ) {
+            //noinspection unchecked
+            log.debug("Transaction adding conversion for {} --> {}",
+                      entries.get(i).get("fullUrl"),
+                      instanceIdSansHistory((String) ((Map<String, ?>) outcomes.get(i).get("response")).get("location")));
+            
+            //noinspection unchecked
+            placeholderToLocation.put((String) entries.get(i).get("fullUrl"),
+                                      instanceIdSansHistory((String) ((Map<String, ?>) outcomes.get(i).get("response"))
+                                                                                                .get("location")));
+        }
+        log.debug("Placeholder to Location map: {}", placeholderToLocation);
+    }
+    
+    private String instanceIdSansHistory(String fullUrl) {
+        String[] locArray = fullUrl.split("/");
+        assert locArray.length >= 2;
+        String retVal = locArray[0] + "/" + locArray[1];
+        assertNotNull("Bad conversion for " + fullUrl, retVal);
+        return retVal;
+    }
+    
+    @Test
+    public void test360Batch() throws Exception {
+        assertNotNull("No batgirl id found", batGirlId);
+        String patientFullUrl = "Patient" + "/" + batGirlId;
+        File bgTransactionFile = new File("build/resources/test/bgBatch.json");
+        //noinspection unchecked
+        Map<String, ?> bgBatchMap = mapper.readValue(bgTransactionFile, Map.class);
+        //noinspection unchecked
+        List<Map<String, ?>> entries = (List<Map<String, ?>>) bgBatchMap.get("entry");
+        
+        //noinspection unchecked
+        List<Map<String, ?>> items = ((List<Map<String, ?>>) bgBatchMap.get("entry"));
+        int urlsReplaced = 0;
+        for (Map<String, ?> item: items) {
+            log.debug("Checking {} for url to replace", item);
+            // These are not else cases since there may be multiple references in an instance.  An encounter has a
+            // patient reference, their doctor(s), their facility, their organization, etc.
+            //noinspection unchecked
+            if (((Map<String, ?>) item.get("resource")).containsKey("subject") &&
+                    ((Map<String, String>) ((Map<String, ?>) item.get("resource"))
+                            .get("subject")).containsKey("reference")) {
+                //noinspection unchecked
+                String refKey = ((Map<String, String>) ((Map<String, ?>) item.get("resource"))
+                        .get("subject")).get("reference");
+                assertNotNull("No real location for placeholder: " + refKey,
+                              placeholderToLocation.get(refKey));
+                //noinspection unchecked
+                ((Map<String, String>) ((Map<String, ?>) item.get("resource"))
+                        .get("subject")).put("reference", placeholderToLocation.get(refKey));
+                urlsReplaced += 1;
+            }
+            //noinspection unchecked
+            if (((Map<String, ?>) item.get("resource")).containsKey("encounter") &&
+                ((Map<String, String>) ((Map<String, ?>) item.get("resource"))
+                        .get("encounter")).containsKey("reference")) {
+                //noinspection unchecked
+                String refKey = ((Map<String, String>) ((Map<String, ?>) item.get("resource"))
+                        .get("encounter")).get("reference");
+                assertNotNull("No real location for placeholder: " + refKey,
+                              placeholderToLocation.get(refKey));
+                //noinspection unchecked
+                ((Map<String, String>) ((Map<String, ?>) item.get("resource"))
+                        .get("encounter")).put("reference", placeholderToLocation.get(refKey));
+                urlsReplaced += 1;
+            }
+            //noinspection unchecked
+            if (((Map<String, ?>) item.get("resource")).containsKey("requester") &&
+                    ((Map<String, String>) ((Map<String, ?>) item.get("resource"))
+                            .get("requester")).containsKey("reference")) {
+                //noinspection unchecked
+                String refKey = ((Map<String, String>) ((Map<String, ?>) item.get("resource"))
+                        .get("requester")).get("reference");
+                assertNotNull("No real location for placeholder: " + refKey,
+                              placeholderToLocation.get(refKey));
+                //noinspection unchecked
+                ((Map<String, String>) ((Map<String, ?>) item.get("resource"))
+                        .get("requester")).put("reference", placeholderToLocation.get(refKey));
+                urlsReplaced += 1;
+            }
+        }
+        log.debug("Replaced {} urls.", urlsReplaced);
+        Vantiq v = new Vantiq(TEST_SERVER, 1);
+        v.authenticate(SUB_USER, SUB_USER);
+        
+        VantiqResponse resp = v.execute("com.vantiq.fhir.fhirService.bundleInteraction",
+                                        Map.of("bundle", bgBatchMap));
+        assertTrue("Could not run batch: " + resp.getErrors(), resp.isSuccess());
+        Map<String, ?> fhirResp = extractFhirResponse(resp);
+        // 201 statu means a new thingy was created
+        assertEquals("Unexpected return status: " + fhirResp.get("statusCode"), 200,
+                     fhirResp.get("statusCode"));
+        log.debug("Created batch data : {}", fhirResp.get("body"));
+        //noinspection unchecked
+        assertEquals("Wrong resource type returned", "Bundle",
+                     ((Map<String, ?>) fhirResp.get("body")).get("resourceType").toString());
+        //noinspection unchecked
+        assertEquals("Wrong bundle type returned", "batch-response",
+                     ((Map<String, ?>) fhirResp.get("body")).get("type").toString());
+        
+        //noinspection unchecked
+        Map<String, ?> resultBundleMap = (Map<String, ?>) fhirResp.get("body");
+        //noinspection unchecked
+        assertEquals("Wrong number of results: " + resultBundleMap.get("entry"), items.size(),
+                     ((List<Map<String, ?>>) resultBundleMap.get("entry")).size());
+        // Now, map all the placeholder URL to the locations returned.  We'll use this in the batch test to refer
+        // back to what was created.
+        //noinspection unchecked
+        List<Map<String, ?>> outcomes = ((List<Map<String, ?>>) resultBundleMap.get("entry"));
+        for (int i = 0; i < outcomes.size(); i++ ) {
+            //noinspection unchecked
+            log.debug("Batch: Adding conversion for {} --> {}",
+                      entries.get(i).get("fullUrl"),
+                      instanceIdSansHistory((String) ((Map<String, ?>) outcomes.get(i).get("response")).get("location")));
+            //noinspection unchecked
+            placeholderToLocation.put((String) entries.get(i).get("fullUrl"),
+                                      instanceIdSansHistory((String) ((Map<String, ?>) outcomes.get(i).get("response"))
+                                            .get("location")));
+        }
+        log.debug("After batch operations, placeholder to Location map: {}", placeholderToLocation);
+    }
+    
+    @Test
+    public void test380HistoryIndividuals() throws Exception {
+        assertNotNull("No inserted hero id found", heroId);
+        assertNotNull("No batgirl id found", batGirlId);
+        
+        Vantiq v = new Vantiq(TEST_SERVER, 1);
+        v.authenticate(SUB_USER, SUB_USER);
+        
+        Map<String, Integer> toQuery = Map.of(heroId, 3, batGirlId, 1);
+        for (Map.Entry<String, Integer> ent : toQuery.entrySet()) {
+            log.debug("Querying Patient {}", ent);
+            VantiqResponse resp = v.execute("com.vantiq.fhir.fhirService.history",
+                                            Map.of("type", "Patient",
+                                                   "id", ent.getKey()));
+            assertTrue("Could not get history for Patient id: " + ent + ": " + resp.getErrors(),
+                       resp.isSuccess());
+            Map<String, ?> fhirResp = extractFhirResponse(resp);
+            log.debug("FHIR Response for history for Patient {}: {}", ent.getKey(), fhirResp);
+            assertTrue("Wrong status code returned for Patient " + ent,
+                       (int) fhirResp.get("statusCode") < 300);
+            //noinspection unchecked
+            assertEquals("Wrong resource type", "Bundle",
+                         ((Map<String, ?>) fhirResp.get("body")).get("resourceType"));
+            //noinspection unchecked
+            assertEquals("Wrong type", "history",
+                         ((Map<String, ?>) fhirResp.get("body")).get("type"));
+            //noinspection unchecked
+            assertEquals("Wrong history count", ent.getValue(),
+                         ((Map<String, ?>) fhirResp.get("body")).get("total"));
+        }
+    }
+    
+    @Test
     public void test400Delete() throws Exception {
         assertNotNull("No inserted hero id found", heroId);
         assertNotNull("No inserted here map found", heroMap);
@@ -717,16 +974,24 @@ public class TestFhirAssembly {
         Vantiq v = new Vantiq(TEST_SERVER, 1);
         v.authenticate(SUB_USER, SUB_USER);
         
-        VantiqResponse resp = v.execute("com.vantiq.fhir.fhirService.delete",
-                                        Map.of("type", "Patient",
-                                               "id", heroId));
-        assertTrue("Could not delete our hero: " + resp.getErrors(), resp.isSuccess());
-        // Now, verify that he's gone.  Really a FHIR check, but we'll do it anyway
-        
-        Map<String, ?> resAsMap = fetchResourceUnchecked(v, "Patient", heroId);
-        
-        assertEquals("Wrong resource type returned", "OperationOutcome",
-                     resAsMap.get("resourceType"));
+        Map<String, Object> toDelete = Map.of(heroId, 200, batGirlId, 409);
+        for (Map.Entry<String, Object> ent: toDelete.entrySet()) {
+            log.debug("Deleting Patient {}", ent);
+            VantiqResponse resp = v.execute("com.vantiq.fhir.fhirService.delete",
+                                            Map.of("type", "Patient",
+                                                   "id", ent.getKey()));
+            assertTrue("Could not delete id: " + ent + ": " + resp.getErrors(), resp.isSuccess());
+            Map<String, ?> fhirResp = extractFhirResponse(resp);
+            assertEquals("Wrong status code returned for " + ent, ent.getValue(), fhirResp.get("statusCode"));
+            
+            // Now, verify the expected state.  Really a FHIR check, but we'll do it anyway to ensure we return the
+            // right status & data
+            
+            Map<String, ?> resAsMap = fetchResourceUnchecked(v, "Patient", ent.getKey());
+            log.debug("Result of fetch of {}: {}", ent, resAsMap);
+            if (ent.getValue().equals(200)) {
+                assertEquals("Wrong resource type returned", "OperationOutcome",
+                             resAsMap.get("resourceType"));
 //{
 //            "resourceType": "OperationOutcome",
 //            "issue": [
@@ -746,13 +1011,64 @@ public class TestFhirAssembly {
 //            }
 //          ]
 //        }
+                //noinspection unchecked
+                List<Map<String, ?>> issues = (List<Map<String, ?>>) resAsMap.get("issue");
+                Map<String, ?> one = issues.get(0);
+                assertEquals("Wrong severity", "error", one.get("severity"));
+                assertEquals("Wrong status post delete", "processing", one.get("code"));
+                assertTrue("Wrong diagnostics post delete",
+                           one.get("diagnostics").toString().startsWith("Resource was deleted"));
+            } else if (ent.getValue().equals(409)) {
+                // Then our delete didn't happen for referential integrity reasons.
+                // We should get a Patient back
+                assertEquals("Wrong resource type returned", "Patient",
+                             resAsMap.get("resourceType"));
+            }
+        }
+    }
+    
+    @Test
+    public void test450TransactionalDelete() throws Exception {
+        // Note:  Has to be done in a transaction.  Batches cannot have references between the entities in the batch,
+        // and all of these things are interelated.
+        assertFalse("No placeholder to location data found: " + placeholderToLocation,
+                    placeholderToLocation.isEmpty());
+        
+        Vantiq v = new Vantiq(TEST_SERVER, 1);
+        v.authenticate(SUB_USER, SUB_USER);
+        Map<String, Object> xactDelete = new HashMap<>();
+
+        xactDelete.put("resourceType", "Bundle");
+        xactDelete.put("type", "transaction");
+        xactDelete.put("id", "test450BatchDelete-request");
+        List<Map<String, Object>> entList = new ArrayList<>(placeholderToLocation.size());
+        xactDelete.put("entry", entList);
+        for (Map.Entry<String, String> p2l: placeholderToLocation.entrySet()) {
+            Map<String, Object> ent = new HashMap<>();
+            ent.put("request", Map.of("method", "DELETE",
+                                      "url", p2l.getValue()));
+            entList.add(ent);
+        }
+
+        VantiqResponse resp = v.execute("com.vantiq.fhir.fhirService.bundleInteraction",
+                                        Map.of("bundle", xactDelete));
+        assertTrue("Could not process batch delete: " + entList + ": " + resp.getErrors(), resp.isSuccess());
+        Map<String, ?> fhirResp = extractFhirResponse(resp);
+        log.debug("Batch delete response: {}", fhirResp);
         //noinspection unchecked
-        List<Map<String, ?>> issues = (List<Map<String, ?>>) resAsMap.get("issue");
-        Map<String, ?> one = issues.get(0);
-        assertEquals("Wrong severity", "error", one.get("severity"));
-        assertEquals("Wrong status post delete", "processing", one.get("code"));
-        assertTrue("Wrong diagnostics post delete",
-                   one.get("diagnostics").toString().startsWith("Resource was deleted"));
+        Map<String, ?> resultBundleMap = (Map<String, ?>) fhirResp.get("body");
+        // Now, map all the placeholder URL to the locations returned.  We'll use this in the batch test to refer
+        // back to what was created.
+        //noinspection unchecked
+        List<Map<String, ?>> outcomes = ((List<Map<String, ?>>) resultBundleMap.get("entry"));
+        for (Map<String, ?> outcome: outcomes) {
+            //noinspection unchecked
+            String opResult = (String) ((Map<String, ?>) outcome.get("response"))
+                    .get("status");
+            String[] resArray = opResult.split("\\s+");
+            int status = Integer.parseInt(resArray[0]);
+            assertTrue("Wrong status code returned for " + outcome,status < 300);
+        }
     }
     
     @Test
@@ -762,6 +1078,7 @@ public class TestFhirAssembly {
         Vantiq v = new Vantiq(TEST_SERVER, 1);
         v.authenticate(SUB_USER, SUB_USER);
         
+        // We added bat girl, so one mor ethan originally inserted
         traverseSearch(v, countSize, "Patient", Collections.emptyMap(), 28);
     }
     
@@ -772,7 +1089,7 @@ public class TestFhirAssembly {
         Vantiq v = new Vantiq(TEST_SERVER, 1);
         v.authenticate(SUB_USER, SUB_USER);
         
-        traverseSearch(v, countSize, "Encounter", Collections.emptyMap(), 842);
+        traverseSearch(v, countSize, "Encounter", Collections.emptyMap(), BASE_ENCOUNTER_COUNT);
     }
     
     @Test
@@ -822,6 +1139,142 @@ public class TestFhirAssembly {
         });
     }
     
+    @Test
+    public void test600HistoryType() throws Exception {
+        Vantiq v = new Vantiq(TEST_SERVER, 1);
+        v.authenticate(SUB_USER, SUB_USER);
+        
+        VantiqResponse resp = v.execute("com.vantiq.fhir.fhirService.history",
+                                        Map.of("type", "Encounter"));
+        assertTrue("Could not get history for Encounter: " + resp.getErrors(),
+                   resp.isSuccess());
+        Map<String, ?> fhirResp = extractFhirResponse(resp);
+        log.debug("FHIR Response for history for Encounter: {}", fhirResp);
+        assertTrue("Wrong status code returned for Encounter",
+                   (int) fhirResp.get("statusCode") < 300);
+        //noinspection unchecked
+        assertEquals("Wrong resource type", "Bundle",
+                     ((Map<String, ?>) fhirResp.get("body")).get("resourceType"));
+        //noinspection unchecked
+        assertEquals("Wrong type", "history",
+                     ((Map<String, ?>) fhirResp.get("body")).get("type"));
+        // History here is tricky -- even deletes end up with history.  So we'll check that the total returned
+        // exceeds the base number of encounters.  Kinda the best we can do.  Otherwise, we're checking that the FHIR
+        // server is working -- and that's not our job.
+        //noinspection unchecked
+        int expectedTotal = (Integer) ((Map<String, ?>) fhirResp.get("body")).get("total");
+        assertTrue("Low Encounter/history count: " + expectedTotal,
+                   expectedTotal > BASE_ENCOUNTER_COUNT);
+    }
+    
+    @Test
+    public void test610HistoryTypeModifiers() throws Exception {
+        Vantiq v = new Vantiq(TEST_SERVER, 1);
+        v.authenticate(SUB_USER, SUB_USER);
+        
+        VantiqResponse resp = v.execute("com.vantiq.fhir.fhirService.history",
+                                        Map.of("type", "Encounter",
+                                               "modifiers",
+                                                        Map.of("generalParams",
+                                                               Map.of("_since", startTime,
+                                                                      "_sort", "_lastUpdated"))));
+        assertTrue("Could not get history for Encounter (_at): " + resp.getErrors(),
+                   resp.isSuccess());
+        Map<String, ?> fhirResp = extractFhirResponse(resp);
+        log.debug("FHIR Response for history for Encounter(_at): {}", fhirResp);
+        assertTrue("Wrong status code returned for Encounter",
+                   (int) fhirResp.get("statusCode") < 300);
+        //noinspection unchecked
+        assertEquals("Wrong resource type", "Bundle",
+                     ((Map<String, ?>) fhirResp.get("body")).get("resourceType"));
+        //noinspection unchecked
+        assertEquals("Wrong type", "history",
+                     ((Map<String, ?>) fhirResp.get("body")).get("type"));
+        // History here is tricky -- even deletes end up with history.  So we'll check that the total returned
+        // exceeds the base number of encounters.  Kinda the best we can do.  Otherwise, we're checking that the FHIR
+        // server is working -- and that's not our job.
+        //noinspection unchecked
+        if (((Map<String, ?>) fhirResp.get("body")).containsKey("total")) {
+            //noinspection unchecked
+            int expectedTotal = (Integer) ((Map<String, ?>) fhirResp.get("body")).get("total");
+            assertTrue("Low Encounter/history count: " + expectedTotal,
+                       expectedTotal > BASE_ENCOUNTER_COUNT);
+        } else {
+            // Returning the total doesn't seem to happen (with this server) when a modifier is added.
+            // Consequently, the best we can do is to ensure that we have some results...
+            //noinspection unchecked
+            assertTrue("No results for Encounter(_since) request",
+                       ((Map<String, ?>) fhirResp.get("body")).containsKey("entry"));
+        }
+    }
+    
+    
+    @Test
+    public void test620HistorySystem() throws Exception {
+        Vantiq v = new Vantiq(TEST_SERVER, 1);
+        v.authenticate(SUB_USER, SUB_USER);
+        
+        VantiqResponse resp = v.execute("com.vantiq.fhir.fhirService.history",
+                                        Collections.emptyMap());
+        assertTrue("Could not get history for everything: " + resp.getErrors(),
+                   resp.isSuccess());
+        Map<String, ?> fhirResp = extractFhirResponse(resp);
+        assertTrue("Wrong status code returned for everything",
+                   (int) fhirResp.get("statusCode") < 300);
+        //noinspection unchecked
+        assertEquals("Wrong resource type", "Bundle",
+                     ((Map<String, ?>) fhirResp.get("body")).get("resourceType"));
+        //noinspection unchecked
+        assertEquals("Wrong type", "history",
+                     ((Map<String, ?>) fhirResp.get("body")).get("type"));
+        // History here is tricky -- even deletes end up with history.  So we'll check that the total returned
+        // exceeds the base number of encounters.  Kinda the best we can do.  Otherwise, we're checking that the FHIR
+        // server is working -- and that's not our job.
+        //noinspection unchecked
+        int expectedTotal = (Integer) ((Map<String, ?>) fhirResp.get("body")).get("total");
+        log.debug("History total for everything: {}", expectedTotal);
+        assertTrue("Low everything /history count: " + expectedTotal,
+                   expectedTotal > 1000);
+    }
+    
+    @Test
+    public void test630HistorySystemModifiers() throws Exception {
+        Vantiq v = new Vantiq(TEST_SERVER, 1);
+        v.authenticate(SUB_USER, SUB_USER);
+        
+        VantiqResponse resp = v.execute("com.vantiq.fhir.fhirService.history",
+                                            Map.of("modifiers",
+                                                Map.of("generalParams",
+                                                       Map.of("_since", startTime))));
+        assertTrue("Could not get history for everything: " + resp.getErrors(),
+                   resp.isSuccess());
+        Map<String, ?> fhirResp = extractFhirResponse(resp);
+        assertTrue("Wrong status code returned for everything",
+                   (int) fhirResp.get("statusCode") < 300);
+        //noinspection unchecked
+        assertEquals("Wrong resource type", "Bundle",
+                     ((Map<String, ?>) fhirResp.get("body")).get("resourceType"));
+        //noinspection unchecked
+        assertEquals("Wrong type", "history",
+                     ((Map<String, ?>) fhirResp.get("body")).get("type"));
+        // History here is tricky -- even deletes end up with history.  So we'll check that the total returned
+        // exceeds the base number of encounters.  Kinda the best we can do.  Otherwise, we're checking that the FHIR
+        // server is working -- and that's not our job.
+        //noinspection unchecked
+        if (((Map<String, ?>) fhirResp.get("body")).containsKey("total")) {
+            //noinspection unchecked
+            int expectedTotal = (Integer) ((Map<String, ?>) fhirResp.get("body")).get("total");
+            assertTrue("Low everything/history count: " + expectedTotal,
+                       expectedTotal > BASE_ENCOUNTER_COUNT);
+        } else {
+            // Returning the total doesn't seem to happen (with this server) when a modifier is added.
+            // Consequently, the best we can do is to ensure that we have some results...
+            //noinspection unchecked
+            assertTrue("No results for everytning(_since) request",
+                       ((Map<String, ?>) fhirResp.get("body")).containsKey("entry"));
+        }
+    }
+    
     void traverseSearch(Vantiq v, int bundleSize, String type, Map<String, ?> query, int expectedCount)
             throws Exception {
         traverseSearch(v, bundleSize, type, query, expectedCount, null);
@@ -848,7 +1301,7 @@ public class TestFhirAssembly {
         List<Map<String, ?>> sortCheck = new ArrayList<>();
         int initialSearchAttempt = 1;
         boolean gotEntries = false;
-        Map<String, ?> bundleEntry = null;  // Keep this around after the loop for some cursory testing...
+        Map<String, ?> bundleEntry;  // Keep this around after the loop for some cursory testing...
         do {
             log.debug("Response: {}", resp);
             Map<String, ?> fhirResp = extractFhirResponse(resp);
