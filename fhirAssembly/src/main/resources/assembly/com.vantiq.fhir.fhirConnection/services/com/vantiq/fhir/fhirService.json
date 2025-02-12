@@ -2,8 +2,7 @@
   "active" : true,
   "ars_properties" : {
     "filterPrivateGenerated" : false,
-    "filterPublicGenerated" : false,
-    "fragmentList" : [ ]
+    "filterPublicGenerated" : false
   },
   "ars_relationships" : [ ],
   "description" : null,
@@ -84,73 +83,6 @@
     "returnType" : {
       "multi" : false,
       "type" : "Object"
-    }
-  }, {
-    "description" : "Fetch history for all instances or one instance of the type provided, or for all instances of all types.",
-    "isSubscriberAdminRestricted" : false,
-    "name" : "history",
-    "parameters" : [ {
-      "default" : null,
-      "description" : "The FHIR Resource type for which to fetch history",
-      "multi" : false,
-      "name" : "type",
-      "required" : false,
-      "type" : "String"
-    }, {
-      "default" : null,
-      "description" : "The id of the FHIR instance for which to fetch history. If not provided, fetch history for all of the type instances.",
-      "multi" : false,
-      "name" : "id",
-      "required" : false,
-      "type" : "String"
-    }, {
-      "default" : null,
-      "description" : "a set of name/value pairs representing the modifiers for this call. The general parameters include _count & _sort.",
-      "multi" : false,
-      "name" : "modifiers",
-      "required" : false,
-      "type" : "com.vantiq.fhir.Modifiers"
-    } ],
-    "returnType" : {
-      "multi" : false,
-      "type" : "com.vantiq.fhir.FHIRResponse"
-    }
-  }, {
-    "description" : "Perform a FHIR Patch operation.  Operates using the JSON Patch format.",
-    "isSubscriberAdminRestricted" : false,
-    "name" : "patch",
-    "parameters" : [ {
-      "default" : null,
-      "description" : "The type of resource instance to be patched",
-      "multi" : false,
-      "name" : "type",
-      "required" : true,
-      "type" : "String"
-    }, {
-      "default" : null,
-      "description" : "The id of the resource instance to be patched",
-      "multi" : false,
-      "name" : "id",
-      "required" : true,
-      "type" : "String"
-    }, {
-      "default" : null,
-      "description" : "The patch specification (array of commands) as a Vantiq Object; will be sent as a JSON Patch document",
-      "multi" : true,
-      "name" : "patchSpec",
-      "required" : true,
-      "type" : "Object"
-    }, {
-      "default" : null,
-      "description" : "Any general parameters or headers to use to modify this interaction",
-      "multi" : false,
-      "name" : "modifiers",
-      "required" : false,
-      "type" : "com.vantiq.fhir.Modifiers"
-    } ],
-    "returnType" : {
-      "multi" : false,
-      "type" : "com.vantiq.fhir.FHIRResponse"
     }
   }, {
     "description" : "Read a type based on its id",
@@ -384,29 +316,6 @@
       "name" : "versionId",
       "required" : false,
       "type" : "String"
-    }, {
-      "default" : null,
-      "description" : "Query modifiers and headers for the call.",
-      "multi" : false,
-      "name" : "modifiers",
-      "required" : false,
-      "type" : "com.vantiq.fhir.Modifiers"
-    } ],
-    "returnType" : {
-      "multi" : false,
-      "type" : "com.vantiq.fhir.FHIRResponse"
-    }
-  }, {
-    "description" : "Process a Bundle interaction (typically bundle type 'batch' or 'transaction' but others may be supported by the server)",
-    "isSubscriberAdminRestricted" : false,
-    "name" : "bundleInteraction",
-    "parameters" : [ {
-      "default" : null,
-      "description" : "The bundle to be invoked.",
-      "multi" : false,
-      "name" : "bundle",
-      "required" : true,
-      "type" : "Object"
     }, {
       "default" : null,
       "description" : "Query modifiers and headers for the call.",
