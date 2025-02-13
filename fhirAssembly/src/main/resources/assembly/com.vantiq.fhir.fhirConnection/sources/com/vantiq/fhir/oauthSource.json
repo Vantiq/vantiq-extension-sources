@@ -1,6 +1,6 @@
 {
   "activationConstraint" : "",
-  "active" : true,
+  "active" : false,
   "ars_properties" : null,
   "ars_relationships" : [ ],
   "autoUnwind" : false,
@@ -11,14 +11,12 @@
     "passwordType" : "string",
     "pollingInterval" : 0,
     "query" : { },
-    "requestDefaults" : {
-      "contentType" : "application/fhir+json"
-    },
-    "uri" : "http://not.really.there"
+    "requestDefaults" : { },
+    "uri" : "https://invalid.to.be.replaced"
   },
   "isUnavailable" : false,
   "messageType" : null,
   "mockProcedures" : { },
-  "name" : "com.vantiq.fhir.fhirServer",
+  "name" : "com.vantiq.fhir.oauthSource",
   "type" : "REMOTE"
 }

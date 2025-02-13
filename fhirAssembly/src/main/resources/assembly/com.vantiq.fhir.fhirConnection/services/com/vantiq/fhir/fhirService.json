@@ -10,6 +10,29 @@
   "eventTypes" : { },
   "globalType" : "com.vantiq.fhir.fhirService.GlobalState",
   "interface" : [ {
+    "description" : "Process a Bundle interaction (typically bundle type 'batch' or 'transaction' but others may be supported by the server)",
+    "isSubscriberAdminRestricted" : false,
+    "name" : "bundleInteraction",
+    "parameters" : [ {
+      "default" : null,
+      "description" : "The bundle to be invoked.",
+      "multi" : false,
+      "name" : "bundle",
+      "required" : true,
+      "type" : "Object"
+    }, {
+      "default" : null,
+      "description" : "Query modifiers and headers for the call.",
+      "multi" : false,
+      "name" : "modifiers",
+      "required" : false,
+      "type" : "com.vantiq.fhir.Modifiers"
+    } ],
+    "returnType" : {
+      "multi" : false,
+      "type" : "com.vantiq.fhir.FHIRResponse"
+    }
+  }, {
     "description" : "Create a new FHIR resource instance",
     "isSubscriberAdminRestricted" : false,
     "name" : "create",
@@ -384,29 +407,6 @@
       "name" : "versionId",
       "required" : false,
       "type" : "String"
-    }, {
-      "default" : null,
-      "description" : "Query modifiers and headers for the call.",
-      "multi" : false,
-      "name" : "modifiers",
-      "required" : false,
-      "type" : "com.vantiq.fhir.Modifiers"
-    } ],
-    "returnType" : {
-      "multi" : false,
-      "type" : "com.vantiq.fhir.FHIRResponse"
-    }
-  }, {
-    "description" : "Process a Bundle interaction (typically bundle type 'batch' or 'transaction' but others may be supported by the server)",
-    "isSubscriberAdminRestricted" : false,
-    "name" : "bundleInteraction",
-    "parameters" : [ {
-      "default" : null,
-      "description" : "The bundle to be invoked.",
-      "multi" : false,
-      "name" : "bundle",
-      "required" : true,
-      "type" : "Object"
     }, {
       "default" : null,
       "description" : "Query modifiers and headers for the call.",

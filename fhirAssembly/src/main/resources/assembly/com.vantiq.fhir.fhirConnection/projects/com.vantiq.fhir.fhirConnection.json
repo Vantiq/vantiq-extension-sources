@@ -1,6 +1,29 @@
 {
   "ars_relationships" : [ ],
   "configurationMappings" : {
+    "authenticationMechanism" : [ {
+      "property" : "authenticationMechanism",
+      "resource" : "procedures",
+      "resourceId" : "com.vantiq.fhir.fhirService.setSource"
+    } ],
+    "basicPassword" : [ {
+      "property" : "config.password",
+      "resource" : "sources",
+      "resourceId" : "com.vantiq.fhir.fhirServer"
+      }, {
+        "property" : "basicPassword",
+        "resource" : "procedures",
+        "resourceId" : "com.vantiq.fhir.fhirService.configureAuthentication"
+      } ],
+    "basicUsername" : [ {
+      "property" : "config.username",
+      "resource" : "sources",
+      "resourceId" : "com.vantiq.fhir.fhirServer"
+    }, {
+      "property" : "basicUsername",
+      "resource" : "procedures",
+      "resourceId" : "com.vantiq.fhir.fhirService.configureAuthentication"
+    } ],
     "defaultSearchHttpMethod" : [ {
       "property" : "defaultSearchHttpMethod",
       "resource" : "procedures",
@@ -18,9 +41,87 @@
       "property" : "config.uri",
       "resource" : "sources",
       "resourceId" : "com.vantiq.fhir.fhirServer"
+    } ],
+    "oauthAudience" : [ {
+      "property" : "config.oauthAudience",
+      "resource" : "sources",
+      "resourceId" : "com.vantiq.fhir.oauthSource"
+    } ],
+    "oauthClientId" : [ {
+      "property" : "config.oauthClientId",
+      "resource" : "sources",
+      "resourceId" : "com.vantiq.fhir.oauthSource"
+    }, {
+      "property" : "oauthClientId",
+      "resource" : "procedures",
+      "resourceId" : "com.vantiq.fhir.fhirService.configureAuthentication"
+    } ],
+    "oauthClientSecret" : [ {
+      "property" : "config.oauthClientSecret",
+      "resource" : "sources",
+      "resourceId" : "com.vantiq.fhir.oauthSource"
+    }, {
+      "property" : "oauthClientSecret",
+      "resource" : "procedures",
+      "resourceId" : "com.vantiq.fhir.fhirService.configureAuthentication"
+    } ],
+    "oauthGrantType" : [ {
+      "property" : "config.oauthGrantType",
+      "resource" : "sources",
+      "resourceId" : "com.vantiq.fhir.oauthSource"
+    }, {
+      "property" : "oauthGrantType",
+      "resource" : "procedures",
+      "resourceId" : "com.vantiq.fhir.fhirService.configureAuthentication"
+    } ],
+    "oauthRefreshToken" : [ {
+      "property" : "config.oauthRefreshToken",
+      "resource" : "sources",
+      "resourceId" : "com.vantiq.fhir.oauthSource"
+    }, {
+      "property" : "oauthRefreshToken",
+      "resource" : "procedures",
+      "resourceId" : "com.vantiq.fhir.fhirService.configureAuthentication"
+    } ],
+    "oauthScope" : [ {
+      "property" : "config.oauthScope",
+      "resource" : "sources",
+      "resourceId" : "com.vantiq.fhir.oauthSource"
+    } ],
+    "oauthServerUrl" : [ {
+      "property" : "config.uri",
+      "resource" : "sources",
+      "resourceId" : "com.vantiq.fhir.oauthSource"
+    } ],
+    "oauthUseBasicAuth" : [ {
+      "property" : "config.oauthUseBasicAuth",
+      "resource" : "sources",
+      "resourceId" : "com.vantiq.fhir.oauthSource"
     } ]
   },
   "configurationProperties" : {
+    "authenticationMechanism" : {
+      "default" : "None",
+      "description" : "Type or mechanism of authentication used by this FHIR server.",
+      "enumValues" : [ "OAuth", "Basic", "None" ],
+      "multi" : false,
+      "required" : false,
+      "type" : "Enum"
+    },
+    "basicPassword" : {
+      "default" : "",
+      "description" : "Password to use for Basic authentication.  Vantiq encourages you to specify using @secrets() notation.",
+      "multi" : false,
+      "required" : false,
+      "type" : "String"
+    },
+    "basicUsername" : {
+      "default" : "",
+      "description" : "Username to use for basic authentication",
+      "multi" : false,
+      "required" : false,
+      "type" : "String"
+    },
     "defaultSearchHttpMethod" : {
       "default" : "GET",
       "description" : "HTTP Method to use for search.  The FHIR specification provides for using either GET or POST for search, saying that some servers may have a preference for some cases.  This parameter sets the default.  If not set, the default is GET.",
@@ -35,6 +136,63 @@
       "multi" : false,
       "required" : true,
       "type" : "String"
+    },
+    "oauthAudience" : {
+      "default" : "",
+      "description" : "The audience specification for the OAuth call.",
+      "multi" : false,
+      "required" : false,
+      "type" : "String"
+    },
+    "oauthClientId" : {
+      "default" : "",
+      "description" : "Client ID to use with OAuth authentication",
+      "multi" : false,
+      "required" : false,
+      "type" : "String"
+    },
+    "oauthClientSecret" : {
+      "default" : "",
+      "description" : "Client Secret for use with OAuth Authentication",
+      "multi" : false,
+      "required" : false,
+      "type" : "String"
+    },
+    "oauthGrantType" : {
+      "default" : null,
+      "description" : "Grant type to be used for OAuth Authentication",
+      "enumValues" : [ "refresh_token", "client_credentials" ],
+      "multi" : false,
+      "required" : false,
+      "type" : "Enum"
+    },
+    "oauthRefreshToken" : {
+      "default" : "",
+      "description" : "Refresh Token supplied to the user when using OAuth refresh_token authentication mechanism",
+      "multi" : false,
+      "required" : false,
+      "type" : "String"
+    },
+    "oauthScope" : {
+      "default" : "",
+      "description" : "Scope used by OAuth authentication",
+      "multi" : false,
+      "required" : false,
+      "type" : "String"
+    },
+    "oauthServerUrl" : {
+      "default" : "",
+      "description" : "URL OAuth server associated with this FHIR server.  This is used for authentication for some authentication configurations.",
+      "multi" : false,
+      "required" : false,
+      "type" : "String"
+    },
+    "oauthUseBasicAuth" : {
+      "default" : false,
+      "description" : "This tells Vantiq to package the client_id & client_secret into a BasicAuth credential, and use that to access the authorization server.",
+      "multi" : false,
+      "required" : false,
+      "type" : "Boolean"
     }
   },
   "isAssembly" : true,
@@ -374,6 +532,15 @@
   }, {
     "source" : "procedure/com.vantiq.fhir.fhirService.bundleInteraction",
     "target" : "procedure/com.vantiq.fhir.fhirService.performRestOpWithData"
+  }, {
+    "source" : "services/com.vantiq.fhir.fhirService",
+    "target" : "procedure/com.vantiq.fhir.fhirService.configureAuthentication"
+  }, {
+    "source" : "procedure/com.vantiq.fhir.fhirService.configureAuthentication",
+    "target" : "services/com.vantiq.fhir.fhirService"
+  }, {
+    "source" : "procedure/com.vantiq.fhir.fhirService.setSource",
+    "target" : "procedure/com.vantiq.fhir.fhirService.configureAuthentication"
   } ],
   "name" : "com.vantiq.fhir.fhirConnection",
   "options" : {
@@ -431,7 +598,7 @@
     "label" : "com.vantiq.fhir.fhirService",
     "name" : "com.vantiq.fhir.fhirService",
     "resourceReference" : "/services/com.vantiq.fhir.fhirService",
-    "timestamp" : "2025-02-05T22:52:50.466Z",
+    "timestamp" : "2025-02-12T20:49:00.780Z",
     "type" : 63
   }, {
     "label" : "com.vantiq.fhir.fhirService.GlobalState",
@@ -474,6 +641,15 @@
     "resourceReference" : "/procedures/com.vantiq.fhir.fhirService.combineQueryAndParams",
     "serviceName" : "fhirService",
     "timestamp" : "2025-02-03T19:31:43.495Z",
+    "type" : 3
+  }, {
+    "label" : "com.vantiq.fhir.fhirService.configureAuthentication",
+    "name" : "com.vantiq.fhir.fhirService.configureAuthentication",
+    "packageName" : "com.vantiq.fhir",
+    "procedureName" : "configureAuthentication",
+    "resourceReference" : "/procedures/com.vantiq.fhir.fhirService.configureAuthentication",
+    "serviceName" : "fhirService",
+    "timestamp" : "2025-02-12T20:16:50.914Z",
     "type" : 3
   }, {
     "label" : "com.vantiq.fhir.fhirService.create",
@@ -533,7 +709,7 @@
     "label" : "com.vantiq.fhir.fhirService.js",
     "name" : "com.vantiq.fhir.fhirService.js",
     "resourceReference" : "/documents/com.vantiq.fhir.fhirService.js",
-    "timestamp" : "2025-02-05T21:57:54.355Z",
+    "timestamp" : "2025-02-12T20:27:14.704Z",
     "type" : 19
   }, {
     "label" : "com.vantiq.fhir.fhirService.patch",
@@ -632,7 +808,7 @@
     "procedureName" : "setSource",
     "resourceReference" : "/procedures/com.vantiq.fhir.fhirService.setSource",
     "serviceName" : "fhirService",
-    "timestamp" : "2025-01-31T00:16:26.357Z",
+    "timestamp" : "2025-02-12T20:48:56.577Z",
     "type" : 3
   }, {
     "label" : "com.vantiq.fhir.fhirService.update",
@@ -652,6 +828,12 @@
     "serviceName" : "fhirService",
     "timestamp" : "2025-02-03T19:31:42.222Z",
     "type" : 3
+  }, {
+    "label" : "com.vantiq.fhir.oauthSource",
+    "name" : "com.vantiq.fhir.oauthSource",
+    "resourceReference" : "/sources/com.vantiq.fhir.oauthSource",
+    "timestamp" : "2025-02-12T19:47:56.529Z",
+    "type" : 4
   } ],
   "selectData" : { },
   "tools" : [ {
