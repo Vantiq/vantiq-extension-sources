@@ -24,7 +24,8 @@ public class TestFhirAssemblySearchGet extends TestFhirAssembly {
     
     public static Map<String,?> getAssemblyConfigForTest() {
         Map<String, ?> config =  Map.of("fhirServerBaseUrl", FHIR_SERVER,
-                                        "defaultSearchHttpMethod", "GET");
+                                        "defaultSearchHttpMethod", "GET",
+                                        "authenticationMechanism", "None");
         log.debug("Returning assembly config of: {}", config);
         return config;
     }

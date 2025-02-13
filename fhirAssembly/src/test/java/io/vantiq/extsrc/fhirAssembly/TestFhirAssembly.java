@@ -189,6 +189,16 @@ public class TestFhirAssembly {
                    invocationCount >= 2);
     }
     
+    // used in some subclasses.
+    public static void registerGetConfiguredSource(Vantiq v) {
+        String procedure =
+                "PROCEDURE getConfiguredSource(sourceName)\n" +
+                        "return SELECT ONE FROM sources WITH configure = true where name == sourceName";
+        
+        VantiqResponse vr = v.insert("system.procedures", procedure);
+        assert vr.isSuccess();
+    }
+    
     @Test
     public void test000CapabilityFetch() {
         Vantiq v = new Vantiq(TEST_SERVER, 1);
