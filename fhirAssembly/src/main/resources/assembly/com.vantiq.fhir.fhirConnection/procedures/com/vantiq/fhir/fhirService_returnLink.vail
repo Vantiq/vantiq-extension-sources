@@ -4,7 +4,7 @@ package com.vantiq.fhir
 
 import service com.vantiq.fhir.fhirService
 
-PROCEDURE fhirService.returnLink(link String REQUIRED DESCRIPTION "The URL of the link to return."): com.vantiq.fhir.FHIRResponse WITH updateInterface=true
+PROCEDURE fhirService.returnLink(link String REQUIRED DESCRIPTION "The URL of the link to return."): com.vantiq.fhir.FHIRResponse
 
 var theSource = fhirSource.getValue()
 if (!theSource) {
@@ -12,6 +12,10 @@ if (!theSource) {
     theSource = fhirSource.getValue()
 }
 var sourceBase = fhirSourceBase.getValue()
+if (sourceBase == null) {
+    exception("com.vantiq.fhir.returnlink.nosourcebase",
+                "No source base value was found.", [])
+}
 var sourceBaseSansSlash = sourceBase.substr(0, sourceBase.length() - 1)
 log.debug("Current value of fhirSource to use: {}", [theSource])
 

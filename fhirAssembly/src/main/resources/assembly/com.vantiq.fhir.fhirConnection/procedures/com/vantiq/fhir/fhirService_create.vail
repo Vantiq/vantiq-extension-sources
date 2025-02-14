@@ -4,7 +4,7 @@ package com.vantiq.fhir
 PROCEDURE fhirService.create(type String REQUIRED DESCRIPTION "The type of resource to create.",
                              resource Object REQUIRED DESCRIPTION "The instance of the resource.",
                              versionId String DESCRIPTION "Version identifier for the resource instance to create.",
-                             modifiers com.vantiq.fhir.Modifiers DESCRIPTION "Query modifiers and headers for the call."): com.vantiq.fhir.FHIRResponse WITH updateInterface=true
+                             modifiers com.vantiq.fhir.Modifiers DESCRIPTION "Query modifiers and headers for the call."): com.vantiq.fhir.FHIRResponse
 
 var path = type
 

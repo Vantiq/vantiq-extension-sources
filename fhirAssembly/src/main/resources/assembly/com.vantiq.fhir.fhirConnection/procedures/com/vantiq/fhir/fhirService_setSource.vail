@@ -13,15 +13,25 @@ if (!theSource) {
 fhirService.clearCapabilityStatement()
 fhirSource.setValue(theSource)
 
-// Links in FHIR are full URLs.  Our REMOTE sources are more constrained, really wanting a path within the context of 
+// Links in FHIR are full URLs.  Our REMOTE sources are more constrained, really wanting a path within the context of
 // the URL known to the REMOTE source.  To handle this impedance mismatch, we'll extract the path base URL part of
-// the source and save it here.  This will allow us to move that from any links passed in before sending them to 
+// the source and save it here.  This will allow us to move that from any links passed in before sending them to
 // the remote source for operation.
 
-var theConf = SELECT ONE config FROM system.sources where name == theSource
+var theConf = SELECT ONE FROM system.sources WITH configure = true WHERE name == theSource
 if (theConf == null) {
-    exception("io.fred.oops", "no config", [])
+    exception("com.vantiq.fhir.source.noconfig", "No configuration was found for source {0}.", [theSource])
 }
 log.debug("Base URL for source {} is {} based on {}", [theSource, theConf.config.uri, theConf])
 fhirSourceBase.setValue(theConf.config.uri)
+
+log.debug("setSource(): looking for authenticationMechanism...", [])
+
+// Set up authentication, if any
+var authMechanism = ResourceConfig.get("authenticationMechanism")
+log.debug("setSource(): authenticationMechanism: {}", [authMechanism])
+if (authMechanism != null && authMechanism != "None") {
+    fhirService.checkAuthenticationSetup(theSource, authMechanism)
+}
+
 return theSource

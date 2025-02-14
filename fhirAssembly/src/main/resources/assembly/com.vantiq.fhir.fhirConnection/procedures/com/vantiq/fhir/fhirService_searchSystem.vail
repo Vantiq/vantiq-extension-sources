@@ -1,12 +1,8 @@
-/**
-* Perform a search of the system
-*
-* Using the current source, run the search query for a particular type. If no method is provided,
-* we use GET. If search via POST is desired, provide "POST" as the method parameter.
-*
-* @param query Object ).
-* @param method String GET or POST.  Optional
-*/
+// Perform a search of the system
+//
+// Using the current source, run the search query for a particular type. If no method is provided,
+// we use the default set for the assembly. If an alternative HTTP method for search is desired, provide
+// the method parameter.
 
 package com.vantiq.fhir
 
@@ -14,7 +10,7 @@ import service com.vantiq.fhir.fhirService
 
 PROCEDURE fhirService.searchSystem(query Object REQUIRED DESCRIPTION "The FHIR query.  Object where the keys are the resource property names, and values are the values desired. If there are no restrictions, provide an empty object (\"{}\")",
                                    modifiers com.vantiq.fhir.Modifiers DESCRIPTION "a set of name/value pairs representing the modifiers for this call. The general parameters include _summary & _elements.",
-                                   method String DESCRIPTION "HTTP Method to use, overriding search default: GET or POST"): com.vantiq.fhir.FHIRResponse WITH updateInterface=true
+                                   method String DESCRIPTION "HTTP Method to use, overriding search default: GET or POST"): com.vantiq.fhir.FHIRResponse
 var theSource = fhirSource.getValue()
 log.debug("Current value of fhirSource to use: {}", [theSource])
 

@@ -1,6 +1,5 @@
 // Read a type based on its id and version (if specified)
 
-
 package com.vantiq.fhir
 
 import service com.vantiq.fhir.fhirService
@@ -8,7 +7,7 @@ import service com.vantiq.fhir.fhirService
 PROCEDURE fhirService.vread(type String REQUIRED DESCRIPTION "Type of the resource to read.", 
                             id String REQUIRED DESCRIPTION "Id of the instance to read",
                             versionId String DESCRIPTION "Version id of the instance to read",
-                            modifiers com.vantiq.fhir.Modifiers DESCRIPTION "Query modifiers and headers for the call."): com.vantiq.fhir.FHIRResponse WITH updateInterface=true
+                            modifiers com.vantiq.fhir.Modifiers DESCRIPTION "Query modifiers and headers for the call."): com.vantiq.fhir.FHIRResponse
 
 var path = type + "/" + id
 

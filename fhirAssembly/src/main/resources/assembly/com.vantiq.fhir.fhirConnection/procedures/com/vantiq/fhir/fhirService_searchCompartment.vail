@@ -9,7 +9,7 @@ PROCEDURE fhirService.searchCompartment(compartment String REQUIRED DESCRIPTION 
                                         query Object REQUIRED DESCRIPTION "he FHIR query.  Object where the keys are the resource property names, and values are the values desired. If there are no restrictions, provide an empty object here (\"{}\").",
                                         type String DESCRIPTION "The FHIR resource type within the compartment to which to restrict the search.",
                                         modifiers com.vantiq.fhir.Modifiers DESCRIPTION "Query modifiers and headers for the call.",
-                                        method String DESCRIPTION "HTTP Method to use, overriding search default: GET or POST"): com.vantiq.fhir.FHIRResponse WITH updateInterface=true
+                                        method String DESCRIPTION "HTTP Method to use, overriding search default: GET or POST"): com.vantiq.fhir.FHIRResponse
 
 var theSource = fhirSource.getValue()
 log.debug("Current value of fhirSource to use: {}", [theSource])
