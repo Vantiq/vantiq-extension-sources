@@ -2,7 +2,7 @@ package com.vantiq.fhir
 
 import service com.vantiq.fhir.fhirService
 
-private PROCEDURE fhirService.configureAuthentication(theSource String, authMechanism String REQUIRED)
+private PROCEDURE fhirService.checkAuthenticationSetup(theSource String, authMechanism String REQUIRED)
 
 var configChanged = false
 var oauthConfigChanged = false
@@ -10,10 +10,9 @@ var theConfig = SELECT ONE FROM sources WITH configure = true WHERE name == theS
 if (theConfig == null) {
     exception("com.vantiq.fhir.source.noconfig", "No configuration was found for source {0}.", [theSource])
 }
-//theConfig = theConfig.config
 
 var oauthConfig = SELECT ONE FROM sources WITH configure = true WHERE name == "com.vantiq.fhir.oauthSource"
-if (oauthConfig == null) {
+if (oauthConfig == null || oauthConfig.config == null) {
     exception("com.vantiq.fhir.source.noconfig", "No configuration was found for source {0}.", ["com.vantiq.fhir.oauthSource"])
 }
 
@@ -23,43 +22,44 @@ if (authMechanism == "Basic") {
             "A username and password are required for Basic authentication: {0}", [theConfig])
     }
     if (oauthConfig.active) {
-        oauthConfig.active = false
-        oauthConfigChanged = true
+        exception("com.vantiq.fhir.oauth.active",
+            "The Oauth Source ({0}) for this assembly cannot be ACTIVE when using authentication mechanism {1}.",
+            [oauthConfig.name, authMechanism])
     }
 } else if (authMechanism == "OAuth") {
-
     var missingParams = []
 
-    var requiredParams = ["oauthGrantType", "oauthClientId", "oauthClientSecret"]
     if (oauthConfig.config.oauthGrantType == null) {
-        missingParams.pusn("oauthGrantType")
+        missingParams.push("oauthGrantType")
     }
     if (oauthConfig.config.oauthClientId == null) {
-        missingParams.pusn("oauthClientId")
+        missingParams.push("oauthClientId")
     }
     if (oauthConfig.config.oauthClientSecret == null) {
-        missingParams.pusn("oauthClientSecret")
+        missingParams.push("oauthClientSecret")
     }
-    if (oauthConfig.oauthGrantType == "refresh_token" && oauthConfig.config.oauthRefreshToken == null) {
+    if (oauthConfig.config.oauthGrantType == "refresh_token" && oauthConfig.config.oauthRefreshToken == null) {
         missingParams.push("oauthRefreshToken with grant type of refresh_token")
     }
 
     if (missingParams.length() != 0) {
         exception("com.vantiq.fhir.oauth.config.missing.properties",
-                    "The following parameters are required to define an OAuth source for the FHIR system's use: {0}",
+                    "The following parameters are required to define an OAuth source for the FHIR system''s use: {0}",
                     [missingParams])
     }
-    oauthConfig.active = true
-    oauthConfigChanged = true
-    theConfig.config.oauthSource = "com.vantiq.fhir.oauthSource"
-    configChanged = true
+
+    if (!oauthConfig.active) {
+        exception("com.vantiq.fhir.oauth.active",
+            "The Oauth Source ({0}) for this assembly must be ACTIVE when using authentication mechanism {1}.",
+            [oauthConfig.name, authMechanism])
+    }
+
+    if (theConfig.config.oauthSourceName != oauthConfig.name) {
+        exception("com.vantiq.fhir.oauth.sourcename",
+            "The FHIR Source ({0}) for this assembly must have the oauthSource set to {1} when using authentication mechanism {2}.  Found {3}.",
+            [theConfig.name, oauthConfig.name, authMechanism, theConfig.config.oauthSourceName])
+
+    }
 }
 
-if (oauthConfigChanged) {
-    UPDATE system.sources (config: oauthConfig.config, active: oauthConfig.active)
-            WHERE name == "com.vantiq.fhir.oauthSource"
-}
-if (configChanged) {
-    UPDATE system.sources (config: theConfig.config) WHERE name == theSource
-}
 

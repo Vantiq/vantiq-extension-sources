@@ -12,6 +12,10 @@ if (!theSource) {
     theSource = fhirSource.getValue()
 }
 var sourceBase = fhirSourceBase.getValue()
+if (sourceBase == null) {
+    exception("com.vantiq.fhir.returnlink.nosourcebase",
+                "No source base value was found.", [])
+}
 var sourceBaseSansSlash = sourceBase.substr(0, sourceBase.length() - 1)
 log.debug("Current value of fhirSource to use: {}", [theSource])
 

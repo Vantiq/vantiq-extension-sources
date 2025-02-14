@@ -160,7 +160,7 @@
       "default" : null,
       "description" : "The patch specification (array of commands) as a Vantiq Object; will be sent as a JSON Patch document",
       "multi" : true,
-      "name" : "patchSpec",
+      "name" : "patchCommands",
       "required" : true,
       "type" : "Object"
     }, {
