@@ -209,6 +209,7 @@ public class TestFhirAssembly {
                                             Collections.emptyList());
             assertTrue("Could not fetch capabilities: " + resp.getErrors(), resp.isSuccess());
             Map<String, ?> newCapStmt = ((JsonObject) resp.getBody()).asMap();
+            log.debug("New capability return: {}", newCapStmt);
             assertEquals("Not a capability statement",
                          "CapabilityStatement",
                          ((JsonElement) newCapStmt.get("resourceType")).getAsString());

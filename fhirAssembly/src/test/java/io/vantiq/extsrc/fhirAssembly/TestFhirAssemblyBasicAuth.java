@@ -42,6 +42,7 @@ public class TestFhirAssemblyBasicAuth extends TestFhirAssembly {
                 "basicUsername", TEST_USERNAME,
                 "basicPassword", TEST_PASSWORD,
                 "fhirServerBaseUrl", FHIR_SERVER,
+                "oauthActive", false,
                 "defaultSearchHttpMethod", "GET",
                 "authenticationMechanism", "Basic");
         log.debug("Returning assembly config of: {}", config);
