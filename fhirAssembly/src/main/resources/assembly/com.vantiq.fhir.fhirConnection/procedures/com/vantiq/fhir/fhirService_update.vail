@@ -3,7 +3,7 @@ PROCEDURE fhirService.update(type String REQUIRED,
                              id String REQUIRED,
                              resource Object REQUIRED,
                              versionId String,
-                             modifiers com.vantiq.fhir.Modifiers): com.vantiq.fhir.FHIRResponse WITH updateInterface=true
+                             modifiers com.vantiq.fhir.Modifiers): com.vantiq.fhir.FHIRResponse
 
 var path = type + "/" + id
 

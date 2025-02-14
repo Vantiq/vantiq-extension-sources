@@ -4,7 +4,7 @@ package com.vantiq.fhir
 
 import service com.vantiq.fhir.fhirService
 
-PROCEDURE fhirService.returnLink(link String REQUIRED DESCRIPTION "The URL of the link to return."): com.vantiq.fhir.FHIRResponse WITH updateInterface=true
+PROCEDURE fhirService.returnLink(link String REQUIRED DESCRIPTION "The URL of the link to return."): com.vantiq.fhir.FHIRResponse
 
 var theSource = fhirSource.getValue()
 if (!theSource) {

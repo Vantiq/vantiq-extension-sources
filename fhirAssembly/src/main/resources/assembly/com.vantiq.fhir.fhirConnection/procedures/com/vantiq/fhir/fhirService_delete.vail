@@ -3,7 +3,7 @@
 package com.vantiq.fhir
 PROCEDURE fhirService.delete(type String REQUIRED DESCRIPTION "Type of the resource to delete.",
                              id String REQUIRED DESCRIPTION "Id of the instance to delete.",
-                             modifiers com.vantiq.fhir.Modifiers DESCRIPTION "Query modifiers and headers for the call."): com.vantiq.fhir.FHIRResponse WITH updateInterface=true
+                             modifiers com.vantiq.fhir.Modifiers DESCRIPTION "Query modifiers and headers for the call."): com.vantiq.fhir.FHIRResponse
 
 var path = type + "/" + id
 

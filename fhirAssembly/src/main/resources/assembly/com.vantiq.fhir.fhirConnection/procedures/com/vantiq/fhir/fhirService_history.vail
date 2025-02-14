@@ -8,7 +8,7 @@ PROCEDURE fhirService.history(type String DESCRIPTION "The FHIR Resource type fo
                               id String DESCRIPTION "The id of the FHIR instance for which to fetch history. If not provided, fetch history for all of the type instances.",
                               modifiers com.vantiq.fhir.Modifiers
                                   DESCRIPTION "a set of name/value pairs representing the modifiers for this call. The general parameters include _count & _sort."): 
-                      com.vantiq.fhir.FHIRResponse WITH updateInterface=true
+                      com.vantiq.fhir.FHIRResponse
 var theSource = fhirSource.getValue()
 log.debug("Current value of fhirSource to use: {}", [theSource])
 
