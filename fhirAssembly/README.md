@@ -250,3 +250,7 @@ the issue.
 
 ![SimplePatientError.png](docs/images/SimplePatientError.png)
 
+## Building the FHIR Assembly
+
+TBD
+
