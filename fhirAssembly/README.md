@@ -250,7 +250,49 @@ the issue.
 
 ![SimplePatientError.png](docs/images/SimplePatientError.png)
 
+
+# Development using this Git Repo
+
 ## Building the FHIR Assembly
 
-TBD
+To build the FHIR assembly, use the `assemble` task for Gradle.  That is, run the command
+
+`./gradlew fhirAssembly:assemble`
+
+This will produce the 'com.vantiq.fhir.fhirConnection.zip' file in the project's `build/distribution` directory.
+
+Once that is done, you can import the assembly projects to a Vantiq namespace, and, from there, publish these
+assemblies to a catalog.  The steps involved are as follows.
+
+## Importing Assemblies
+
+This can be done manually (using the Vantiq IDE to import the generated projects).
+
+However, if importing many projects, use `../gradlew importAssemblies -PfhirAssembliesProfile=<profileName>`
+
+where `<profileName>` is the name of a Vantiq CLI profile that will connect to your publishing namespace.  Other
+gradle properties that are used are based on that profile name, and are as follows.
+
+* **<profileName>_fhirAssembliesVantiq** -- command to be used as the Vantiq CLI.  Defaults to `vantiq`.
+
+## Publishing Assemblies
+
+Once imported, the assemblies can be published. This can be done manually (using the Vantiq IDE to publish the
+generated and imported projects to a Catalog).
+
+However, if importing many projects, use `../gradlew publishAssemblies -PfhirAssembliesProfile=<profileName>`.
+
+In addition to the gradle properties used for import, you can define the following.
+
+* **<profileName>_fhirAssembliesCatalog** -- the name of the catalog to which to publish the assemblies.  This is
+  required, and may be specified on the command line or in the `gradle.properties` file.
+* **changeLog** -- change log entry to include.  A very short (no spaces) description of what this upload entails.
+
+## Use of the Gradle Properties
+
+Generally, the likely behavior is that you would define all of the **<profileName>_fhirAssemblies...** properties
+in the `gradle.properties` file.  This is not required, but it generally makes your gradle command line easier to
+manage.  Then, on the command line, select the profile name to use (`-PfhirAssembliesProfile=...`) and your change
+log entry (if appropriate and desired).  The profile name is used to select the other properties so you can keep a
+number of them if you have multiple catalogs to maintain.
 
