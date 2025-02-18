@@ -6,7 +6,7 @@
     "fragmentList" : [ ]
   },
   "ars_relationships" : [ ],
-  "description" : null,
+  "description" : "# Provide interaction-based interface to FHIR server.",
   "eventTypes" : { },
   "globalType" : "com.vantiq.fhir.fhirService.GlobalState",
   "interface" : [ {
