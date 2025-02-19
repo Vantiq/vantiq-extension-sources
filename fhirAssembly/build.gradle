@@ -1,3 +1,5 @@
+import groovy.json.JsonSlurper
+
 plugins {
     id 'java'
     id("io.freefair.lombok") // version "6.3.0" // version "8.7.1"
@@ -228,3 +230,111 @@ test.finalizedBy(stopFhirContainer)
 startFhirContainer.finalizedBy(awaitFhirStartup)
 uploadSampleData.dependsOn(unzipSampleData)
 uploadSampleData.dependsOn(startFhirContainer)
+
+tasks.register('importAssemblies') {
+    outputs.upToDateWhen { false }
+    doLast {
+        def importCount = 0
+        def skipCount = 0
+        String catalogProfile = project.rootProject.findProperty('fhirAssembliesProfile') as String
+        logger.debug('Found profile: {}', catalogProfile as String)
+        if (!catalogProfile?.trim()) {
+            throw new GradleException('Project property "fhirAssembliesProfile" was missing or empty')
+        }
+
+        def catalogVantiqCommand = project.rootProject.findProperty("${catalogProfile}_fhirAssembliesVantiq")
+        if (!catalogVantiqCommand?.trim()) {
+            catalogVantiqCommand = 'vantiq'
+            logger.lifecycle('Using {} as the "vantiq" command', catalogVantiqCommand)
+        }
+
+        File assemblies = new File(sourceSets.main.output.resourcesDir, "assembly")
+        assemblies.eachDir { projectDir ->
+            def assemblyName = projectDir.name
+            def assyParts = assemblyName.split('\\.')
+            logger.lifecycle('Importing {}', projectDir)
+
+            def simpleAssemblyName = assyParts[-1]
+            logger.lifecycle('Simple Assembly Name for {}: {}', assemblyName, simpleAssemblyName)
+
+            logger.lifecycle('Importing project from {}', projectDir)
+            exec {
+                commandLine catalogVantiqCommand, '-s', catalogProfile, 'import', 'data', '-d', projectDir
+            }
+            exec {
+                commandLine catalogVantiqCommand, '-s', catalogProfile, 'import', 'metadata', '-d', projectDir
+            }
+
+            importCount += 1
+        }
+        logger.lifecycle('Total projects imported via profile {}: {}, skipped: {}', catalogProfile, importCount,
+            skipCount)
+    }
+}
+
+tasks.register('publishAssemblies') {
+    outputs.upToDateWhen { false }
+
+    doLast {
+        def importCount = 0
+        def skipCount = 0
+        String catalogProfile = project.rootProject.findProperty('fhirAssembliesProfile') as String
+        logger.debug('Found profile: {}', catalogProfile as String)
+
+        if (!catalogProfile?.trim()) {
+            throw new GradleException('Project property "fhirAssembliesProfile" was missing or empty')
+        }
+
+        def catalogVantiqCommand = project.rootProject.findProperty("${catalogProfile}_fhirAssembliesVantiq")
+        if (!catalogVantiqCommand?.trim()) {
+            catalogVantiqCommand = 'vantiq'
+            logger.lifecycle('Using {} as the "vantiq" command', catalogVantiqCommand)
+        }
+        def catalogName = project.rootProject.findProperty("${catalogProfile}_fhirAssembliesCatalog")
+        if (!catalogName?.trim()) {
+            throw new GradleException("Project property '${catalogProfile}_fhirAssembliesCatalog' was " +
+                "missing" + " or empty")
+        }
+        def changeLog = project.rootProject.findProperty('changeLog')
+        if (changeLog?.trim()) {
+            // space -> _ -- passing thru many layers of scripts always turns out not quite right.
+            changeLog = changeLog.replace(' ', '_')
+        }
+
+        File assemblies = new File(sourceSets.main.output.resourcesDir, "assembly")
+        def projectFiles= project.fileTree(dir: assemblies, include: '**/projects/*.json')
+        logger.debug('Project files: {}', projectFiles.asList())
+        projectFiles.each { projectFile ->
+            logger.debug("Processing project file: {}", projectFile.absolutePath)
+            def projDef = new JsonSlurper().parse(projectFile)
+            def assemblyName = projDef.name
+            def assyParts = assemblyName.split('\\.')
+
+            def simpleAssemblyName = assyParts[-1]
+            logger.debug('Simple Assembly Name: {}', simpleAssemblyName)
+            logger.info('Looking at assembly {}', assemblyName, projectFile.absolutePath)
+            logger.debug('     ...from project file {}', projectFile.absolutePath)
+
+            logger.lifecycle('Publishing assembly {} :: {}', simpleAssemblyName, assemblyName)
+            logger.debug('Publishing project from {}', projectFile)
+            if (!changeLog?.trim()) {
+                exec {
+                    commandLine catalogVantiqCommand, '-s', catalogProfile, 'run', 'procedure', 'Publisher.' +
+                        'publishAssembly', 'assemblyName:' + assemblyName, 'catalogName:' + catalogName
+                }
+            } else {
+                exec {
+                    commandLine catalogVantiqCommand, '-s', catalogProfile, 'run', 'procedure', 'Publisher.' +
+                        'publishAssembly', 'assemblyName:' + assemblyName, 'catalogName:' + catalogName,
+                        'changeLog:' + changeLog
+                }
+            }
+            importCount += 1
+
+        }
+        logger.lifecycle('Total projects imported via profile {}: {}, skipped: {}', catalogProfile, importCount,
+            skipCount)
+    }
+}
+
+publishAssemblies.mustRunAfter('importAssemblies')
