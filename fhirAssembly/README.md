@@ -60,7 +60,8 @@ outline those defined below. These are all found in the package `com.vantiq.fhir
       [Encounter](https://hl7.org/fhir/R4/encounter.html)) or information/errors returned in the form of an 
       [OperationOutcome](https://hl7.org/fhir/R4/operationoutcome.html).
     * These data items are often important to the interpretation of an interaction's outcome.
-* `Modifiers` -- This can be used as a general parameter to most operations. It generally contains , and 
+* `Modifiers` -- This can be used as a general parameter to most operations. This object can contain the following 
+  properties.
     * `headers` -- (Object) Any HTTP headers that may be desired (_e.g._, the `If-None-Exist` header used for conditional create)
     * `generalParams` -- (Object) Any _general parameters_ (_e.g._, `_summary`, `_count`) to be used for the 
       interaction. Those of use for what data is returned (such as those mentioned) are accepted.  The `_format` 
