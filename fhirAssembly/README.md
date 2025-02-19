@@ -273,7 +273,7 @@ However, if importing many projects, use `../gradlew importAssemblies -PfhirAsse
 where `<profileName>` is the name of a Vantiq CLI profile that will connect to your publishing namespace.  Other
 gradle properties that are used are based on that profile name, and are as follows.
 
-* **<profileName>_fhirAssembliesVantiq** -- command to be used as the Vantiq CLI.  Defaults to `vantiq`.
+* **\<profileName\>_fhirAssembliesVantiq** -- command to be used as the Vantiq CLI.  Defaults to `vantiq`.
 
 ## Publishing Assemblies
 
@@ -284,13 +284,13 @@ However, if importing many projects, use `../gradlew publishAssemblies -PfhirAss
 
 In addition to the gradle properties used for import, you can define the following.
 
-* **<profileName>_fhirAssembliesCatalog** -- the name of the catalog to which to publish the assemblies.  This is
+* **\<profileName\>_fhirAssembliesCatalog** -- the name of the catalog to which to publish the assemblies.  This is
   required, and may be specified on the command line or in the `gradle.properties` file.
 * **changeLog** -- change log entry to include.  A very short (no spaces) description of what this upload entails.
 
 ## Use of the Gradle Properties
 
-Generally, the likely behavior is that you would define all of the **<profileName>_fhirAssemblies...** properties
+Generally, the likely behavior is that you would define all of the **\<profileName\>_fhirAssemblies...** properties
 in the `gradle.properties` file.  This is not required, but it generally makes your gradle command line easier to
 manage.  Then, on the command line, select the profile name to use (`-PfhirAssembliesProfile=...`) and your change
 log entry (if appropriate and desired).  The profile name is used to select the other properties so you can keep a
