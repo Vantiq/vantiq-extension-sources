@@ -1,0 +1,64 @@
+package com.vantiq.fhir
+
+import service com.vantiq.fhir.fhirService
+
+private PROCEDURE fhirService.performRestOpWithData(method String REQUIRED, 
+                                                  targetPath String REQUIRED,
+                                                  resource Object REQUIRED,
+                                                  modifiers com.vantiq.fhir.Modifiers): Any
+
+var theSource = fhirSource.getValue()
+log.debug("Current value of fhirSource to use: {}", [theSource])
+
+if (!theSource) {
+    fhirService.setSource()
+    theSource = fhirSource.getValue()
+}
+var retVal = ""
+var headers
+var gp
+var effectiveResource = resource
+
+if (modifiers) {
+    if (modifiers.headers) {
+        headers = modifiers.headers
+    } else {
+        headers = {}
+    }
+    if (modifiers.generalParams){
+        gp = modifiers.generalParams
+    } else {
+        gp = {}
+    }
+}
+
+var ct = "application/fhir+json"
+if (method == "PATCH") {
+    ct = "application/json-patch+json"
+    effectiveResource = resource.patchCommands
+    if (effectiveResource == null) {
+        exception("com.vantiq.fhir.patch.nocommands", "Internal Error: The PATCH commands must be passed in via the 'patchCommands' property. Resource passed in was {0}.",
+                    [stringify(resource, true)])
+    }
+}
+
+try {
+    retVal = SELECT ONE from SOURCE @theSource with path = targetPath,
+        method = method,
+        body = effectiveResource,
+        query = gp,
+        headers = headers,
+        contentType = ct,
+        responseType = "application/fhir+json",
+        asFullResponse = true
+} catch (e) {
+    if (e.code == "io.vantiq.sourcemgr.remote.query.client.failure") {
+        retVal = fhirService.createErrorMsg(e, targetPath)
+    } else {
+        rethrow(e)
+    }
+}
+if (typeOf(retVal) == "List" && retVal.size() == 1) {
+    retVal = retVal[0]
+}
+return {statusCode: retVal.status, body: retVal.body, headers: retVal.headers}

@@ -1,0 +1,18 @@
+// Delete a resource instance
+
+package com.vantiq.fhir
+PROCEDURE fhirService.delete(type String REQUIRED DESCRIPTION "Type of the resource to delete.",
+                             id String REQUIRED DESCRIPTION "Id of the instance to delete.",
+                             modifiers com.vantiq.fhir.Modifiers DESCRIPTION "Query modifiers and headers for the call."): com.vantiq.fhir.FHIRResponse
+
+var path = type + "/" + id
+
+var retVal = fhirService.performRestOp("DELETE", path, modifiers)
+if (typeOf(retVal.body) == "List") {
+    log.debug("retVal.body is an array: {}", [typeOf(retVal.body)])
+    retVal.body = retVal.body[0]
+} else {
+    log.debug("retVal.body is not an array")
+}
+return retVal
+

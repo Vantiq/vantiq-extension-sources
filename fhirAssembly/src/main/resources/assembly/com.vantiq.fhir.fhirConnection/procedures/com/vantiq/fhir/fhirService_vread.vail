@@ -1,0 +1,32 @@
+// Read a type based on its id and version (if specified)
+
+package com.vantiq.fhir
+
+import service com.vantiq.fhir.fhirService
+
+PROCEDURE fhirService.vread(type String REQUIRED DESCRIPTION "Type of the resource to read.", 
+                            id String REQUIRED DESCRIPTION "Id of the instance to read",
+                            versionId String DESCRIPTION "Version id of the instance to read",
+                            modifiers com.vantiq.fhir.Modifiers DESCRIPTION "Query modifiers and headers for the call."): com.vantiq.fhir.FHIRResponse
+
+var path = type + "/" + id
+
+// If the version id is provided, then fetch that specific version.
+// This assumes that versioning is supported by our FHIR server, but we'll leave it up to them to inform the
+// caller appropriately.
+
+if (versionId) {
+    path = path + "/_history/" + versionId
+}
+log.debug("vread: VersionId: {}, path: {}", [versionId, path])
+
+var checkedParams = fhirService.checkModifiers(modifiers)
+
+var retVal = fhirService.performRestOpQuery("GET", path, null, checkedParams)
+if (typeOf(retVal.body) == "List") {
+    log.debug("retVal.body is an array: {}", [typeOf(retVal.body)])
+    retVal.body = retVal.body[0]
+} else {
+    log.debug("retVal.body is not an array")
+}
+return retVal

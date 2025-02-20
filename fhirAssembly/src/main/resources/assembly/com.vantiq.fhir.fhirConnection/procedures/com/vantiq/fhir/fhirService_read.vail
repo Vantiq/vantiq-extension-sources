@@ -1,0 +1,11 @@
+// Read a type based on its id
+
+package com.vantiq.fhir
+
+import service com.vantiq.fhir.fhirService
+
+PROCEDURE fhirService.read(type String REQUIRED DESCRIPTION "Type of the resource to read.", 
+                           id String REQUIRED DESCRIPTION "Id of the resource to read",
+                           modifiers com.vantiq.fhir.Modifiers DESCRIPTION "Query modifiers and headers for the call."): com.vantiq.fhir.FHIRResponse
+
+return fhirService.vread(type, id, null, modifiers)

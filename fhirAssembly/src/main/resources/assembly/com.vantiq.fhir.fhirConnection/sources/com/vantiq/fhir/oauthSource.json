@@ -1,0 +1,22 @@
+{
+  "activationConstraint" : "",
+  "active" : false,
+  "ars_properties" : null,
+  "ars_relationships" : [ ],
+  "autoUnwind" : false,
+  "config" : {
+    "oauthContentType" : "application/x-www-form-urlencoded",
+    "oauthGrantType" : "client_credentials",
+    "oauthUseBasicAuth" : false,
+    "passwordType" : "string",
+    "pollingInterval" : 0,
+    "query" : { },
+    "requestDefaults" : { },
+    "uri" : "https://invalid.to.be.replaced"
+  },
+  "isUnavailable" : false,
+  "messageType" : null,
+  "mockProcedures" : { },
+  "name" : "com.vantiq.fhir.oauthSource",
+  "type" : "REMOTE"
+}

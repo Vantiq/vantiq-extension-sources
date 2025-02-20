@@ -1,0 +1,60 @@
+// Create a FHIR OperationOutcome message from an error.
+//
+// In most cases, the FHIR server will send this back & we'll pick it up from the exception.
+// However, if there is no underlying error reported (or not reported properly), create an OperationOutcome
+// resource/message to return.
+
+package com.vantiq.fhir
+
+private PROCEDURE fhirService.createErrorMsg(exc Object REQUIRED, targetPath String REQUIRED): Object
+var errDetails = exc.params[2]
+var statusCode = 400
+if (exc.params.size() >= 3) {
+    var sc = exc.params[3]
+    if (typeOf(sc) == "Object" && sc.has("code")) {
+        statusCode = sc.code
+    } else if (typeOf(sc) == "Integer") {
+        statusCode = sc
+    }
+}
+var opOutcome = null
+var resValue = null
+
+log.debug("Creating error message for {}", [exc])
+log.debug("Error details: {}: {}", [typeOf(errDetails), errDetails])
+if (errDetails && typeOf(errDetails) == "String") {
+    log.debug("ErrDetails is a String, parsing {}", [errDetails])
+    // If we get an error back, check to see if the error included was JSON.  If so, parse
+    // it & report the details.  If we get an error parsing it, then it's probably just a plain
+    // string so we'll just pass it along.
+    try {
+        errDetails = parse(errDetails)
+    } catch (badParse) {
+        log.debug("Unable to parse exception params as JSON: {} -- {}",
+            [badParse.message, errDetails])
+    }
+}
+if (errDetails && typeOf(errDetails) == "Object") {
+    resValue = errDetails
+}
+log.debug("resValue: {}", [resValue])
+if (!resValue || resValue.resourceType != "OperationOutcome") {
+    opOutcome = {
+        resourceType : "OperationOutcome",
+        issue : [
+            { severity: "error",
+              code: "exception",
+              details: "Source " + fhirSource.getValue() + " returned an unexpected error: " + exc.code + ".",
+              diagnostics: exc.message,
+              expression: targetPath
+            }
+        ]
+    }
+    if (resValue) {
+        opOutcome.issue[0].details = opOutcome.issue[0].details + " :: " + resValue
+    }
+} else {
+    opOutcome = resValue
+}
+// Here, we return what looks like a asFullResponse for our callers to handle
+return {status: statusCode, body: opOutcome, headers: {}}

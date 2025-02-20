@@ -1,0 +1,26 @@
+package com.vantiq.fhir
+PROCEDURE fhirService.update(type String REQUIRED,
+                             id String REQUIRED,
+                             resource Object REQUIRED,
+                             versionId String,
+                             modifiers com.vantiq.fhir.Modifiers): com.vantiq.fhir.FHIRResponse
+
+var path = type + "/" + id
+
+// If the version id is provided, then update with that specific version.
+// This assumes that versioning is supported by our FHIR server, but we'll leave it up to them to inform the
+// caller appropriately.
+
+if (versionId) {
+    path = path + "/_history/" + versionId
+}
+
+var retVal = fhirService.performRestOpWithData("PUT", path, resource, modifiers)
+if (typeOf(retVal.body) == "List") {
+    log.debug("retVal.body is an array: {}", [typeOf(retVal.body)])
+    retVal.body = retVal.body[0]
+} else {
+    log.debug("retVal.body is not an array")
+}
+return retVal
+

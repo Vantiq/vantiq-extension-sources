@@ -1,0 +1,17 @@
+package com.vantiq.fhir
+private stateless PROCEDURE fhirService.combineQueryAndParams(query Object, generalParams Object): Object
+
+var comboQuery = Object.clone(query)
+if (comboQuery == null) {
+    comboQuery = {}
+}
+for (p in generalParams) {
+    if (comboQuery.has(p.key)) {
+        exception("com.vantiq.fhir.generalparam.conflict",
+                    "The generalParam {0} would overwrite the query parameter of the same name.",
+                    [p.key])
+    } else {
+        comboQuery[p.key] = p.value
+    }
+}
+return comboQuery

@@ -1,0 +1,26 @@
+package com.vantiq.fhir
+private stateless PROCEDURE fhirService.checkModifiers(modifiers com.vantiq.fhir.Modifiers): com.vantiq.fhir.Modifiers
+
+var checkedParams = {}
+var generalParams = {}
+var headers = {}
+if (modifiers) {
+    generalParams = modifiers.generalParams
+    headers = modifiers.headers
+}
+
+if (generalParams) {
+    for (gp in generalParams) {
+        if (gp.key == "_format") {
+            exception("com.vantiq.fhir.notsupported.format", 
+                "The _format argument is not supported.", [])
+        } else if (gp.key == "_elements") {
+            // Be nice & trim whitespace out of an _elements specification
+            checkedParams[gp.key] = replace(gp.value, "\\s+", "")
+        } else {
+            checkedParams[gp.key] = gp.value
+        }
+    }
+}
+
+return { headers: headers, generalParams: checkedParams }

@@ -1,0 +1,36 @@
+// Return the content of the provided link
+
+package com.vantiq.fhir
+
+import service com.vantiq.fhir.fhirService
+
+PROCEDURE fhirService.returnLink(link String REQUIRED DESCRIPTION "The URL of the link to return."): com.vantiq.fhir.FHIRResponse
+
+var theSource = fhirSource.getValue()
+if (!theSource) {
+    fhirService.setSource()
+    theSource = fhirSource.getValue()
+}
+var sourceBase = fhirSourceBase.getValue()
+if (sourceBase == null) {
+    exception("com.vantiq.fhir.returnlink.nosourcebase",
+                "No source base value was found.", [])
+}
+var sourceBaseSansSlash = sourceBase.substr(0, sourceBase.length() - 1)
+log.debug("Current value of fhirSource to use: {}", [theSource])
+
+if (!link.trimLeft().startsWith(sourceBase) && !link.trimLeft().startsWith(sourceBaseSansSlash)) {
+    exception("com.vantiq.fhir.link.mismatch", 
+                "The link provided ({0}) is not serviced by the current source ({1}) whose URI is {2}.",
+                [link, theSource, sourceBase])
+}
+
+var relativeLink 
+if (link.trimLeft().startsWith(sourceBase)) {
+    relativeLink = link.trimLeft().substring(sourceBase.length())
+} else {
+    relativeLink = link.trimLeft().substring(sourceBaseSansSlash.length())
+}
+log.debug("Looking for relative link {} from {}", [relativeLink, link])
+
+return fhirService.performRestOp("GET", relativeLink)

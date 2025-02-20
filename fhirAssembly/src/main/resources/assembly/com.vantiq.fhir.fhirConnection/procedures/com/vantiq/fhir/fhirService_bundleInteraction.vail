@@ -1,0 +1,15 @@
+// Process a Bundle interaction (typically bundle type 'batch' or 'transaction' but others may be supported by the server)
+
+package com.vantiq.fhir
+PROCEDURE fhirService.bundleInteraction(bundle Object REQUIRED DESCRIPTION "The bundle to be invoked.",
+                                        modifiers com.vantiq.fhir.Modifiers DESCRIPTION "Query modifiers and headers for the call."): 
+                      com.vantiq.fhir.FHIRResponse
+
+var retVal = fhirService.performRestOpWithData("POST", "", bundle, modifiers)
+if (typeOf(retVal.body) == "List") {
+    log.debug("retVal.body is an array: {}", [typeOf(retVal.body)])
+    retVal.body = retVal.body[0]
+} else {
+    log.debug("retVal.body is not an array")
+}
+return retVal

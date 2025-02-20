@@ -1,0 +1,35 @@
+{
+  "ars_relationships" : [ ],
+  "name" : "com.vantiq.fhir.fhirService.GlobalState",
+  "properties" : {
+    "defaultSearchMethod" : {
+      "encrypted" : false,
+      "multi" : false,
+      "required" : false,
+      "type" : "String",
+      "unique" : false
+    },
+    "fhirCapabilityStatement" : {
+      "encrypted" : false,
+      "multi" : false,
+      "required" : false,
+      "type" : "Value",
+      "unique" : false
+    },
+    "fhirSource" : {
+      "encrypted" : false,
+      "multi" : false,
+      "required" : false,
+      "type" : "Value",
+      "unique" : false
+    },
+    "fhirSourceBase" : {
+      "encrypted" : false,
+      "multi" : false,
+      "required" : false,
+      "type" : "Value",
+      "unique" : false
+    }
+  },
+  "role" : "schema"
+}

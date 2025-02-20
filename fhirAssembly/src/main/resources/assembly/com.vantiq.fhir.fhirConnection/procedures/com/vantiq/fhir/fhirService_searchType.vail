@@ -1,0 +1,37 @@
+// Perform a search based on the type & query provided
+//
+// Using the current source, run the search query for a particular type. If no method is provided,
+// use the assembly's default. Provide this parameter to override the assembly default.
+
+package com.vantiq.fhir
+
+import service com.vantiq.fhir.fhirService
+import type com.vantiq.fhir.FHIRResponse
+import type com.vantiq.fhir.Modifiers
+
+PROCEDURE fhirService.searchType(type String REQUIRED DESCRIPTION "The FHIR Resource type to search",
+                                 query Object REQUIRED DESCRIPTION "The FHIR query.  Object where the keys are the resource property names, and values are the values desired. If there are no restrictions, provide an empty object here (\"{}\").",
+                                 modifiers com.vantiq.fhir.Modifiers DESCRIPTION "a set of name/value pairs representing the modifiers for this call. The general parameters include _summary & _elements.",
+                                 method String DESCRIPTION "HTTP Method to use, overriding search default: GET or POST"): com.vantiq.fhir.FHIRResponse
+var theSource = fhirSource.getValue()
+log.debug("Current value of fhirSource to use: {}", [theSource])
+
+if (!theSource) {
+    fhirService.setSource()
+    theSource = fhirSource.getValue()
+}
+
+var checkedParams = fhirService.checkModifiers(modifiers)
+var comboQuery = fhirService.combineQueryAndParams(query, checkedParams.generalParams)
+var targetPath = type
+if (!method) {
+    method = ResourceConfig.get("defaultSearchHttpMethod")
+    // Shouldn't happen since config value has a default, but just in case...
+    if (!method) {
+        method = "GET"
+    }
+} 
+if (method == "POST") {
+    targetPath = type + "/_search"
+}
+return fhirService.performRestOpQuery(method, targetPath, comboQuery)

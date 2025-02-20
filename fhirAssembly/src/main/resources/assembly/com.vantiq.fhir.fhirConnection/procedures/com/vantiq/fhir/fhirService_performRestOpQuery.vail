@@ -1,0 +1,65 @@
+package com.vantiq.fhir
+
+import service com.vantiq.fhir.fhirService
+
+private PROCEDURE fhirService.performRestOpQuery(method String REQUIRED, targetPath String REQUIRED,
+                    query Object Required, modifiers com.vantiq.fhir.Modifiers): com.vantiq.fhir.FHIRResponse
+
+var theSource = fhirSource.getValue()
+log.debug("Current value of fhirSource to use: {}", [theSource])
+
+if (!theSource) {
+    fhirService.setSource()
+    theSource = fhirSource.getValue()
+}
+var retVal = ""
+var headers
+if (modifiers && modifiers.headers) {
+    headers = modifiers.headers
+} else {
+    headers = {}
+}
+
+var gp
+if (modifiers && modifiers.generalParams) {
+    gp = modifiers.generalParams
+} else {
+    gp = {}
+}
+
+var comboQuery = fhirService.combineQueryAndParams(query, gp)
+
+log.debug("Performing {} method on path {} with query {} and headers {}", [method, targetPath, comboQuery, headers])
+try {
+    if (method == "GET" || method == "HEAD") {
+        retVal = SELECT from SOURCE @theSource with path = targetPath,
+            method = method,
+            query = comboQuery,
+            headers = headers,
+            contentType = "application/fhir+json",
+            responseType = "application/fhir+json",
+            asFullResponse = true
+    } else {
+        var bod = Encode.formUrl(comboQuery)
+        retVal = SELECT from SOURCE @theSource with path = targetPath,
+            method = method,
+            body = bod,
+            headers = headers,
+            contentType = "application/x-www-form-urlencoded",
+            responseType = "application/fhir+json",
+            asFullResponse = true
+
+    }
+} catch (e) {
+    log.debug("Trapped exception: {}", [e])
+    if (e.code == "io.vantiq.sourcemgr.remote.query.client.failure") {
+        retVal = fhirService.createErrorMsg(e, targetPath)
+    } else {
+        rethrow(e)
+    }
+}
+log.debug("Source query returned: {}", [retVal])
+if (typeOf(retVal) == "List" && retVal.size() == 1) {
+    retVal = retVal[0]
+}
+return {statusCode: retVal.status, body: retVal.body, headers: retVal.headers}
