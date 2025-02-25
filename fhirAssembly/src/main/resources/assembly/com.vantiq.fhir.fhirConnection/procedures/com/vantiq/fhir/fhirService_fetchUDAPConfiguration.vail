@@ -1,0 +1,15 @@
+/**
+* Returns the UDAP configuration for this FHIR server
+*/
+package com.vantiq.fhir
+import service com.vantiq.fhir.fhirService
+
+private PROCEDURE fhirService.fetchUDAPConfiguration():Object
+var fhirResp = fhirService.performGet(".well-known/udap")
+var retVal
+if (typeOf(fhirResp.body) == "List") {
+    retVal = fhirResp.body[0]
+} else {
+    retVal = fhirResp.body
+}
+return retVal

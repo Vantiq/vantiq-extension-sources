@@ -1,0 +1,7 @@
+/* Fetches the SMART configuration, if any, for the defined FHIR server */
+package com.vantiq.fhir
+PROCEDURE fhirService.getSMARTConfiguration():Object
+
+log.debug("Fetching new FHIR SMART configuration")
+var stmt = fhirService.fetchSMARTConfiguration()
+return stmt

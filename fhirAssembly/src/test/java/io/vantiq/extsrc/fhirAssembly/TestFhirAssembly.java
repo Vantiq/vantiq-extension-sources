@@ -223,6 +223,42 @@ public class TestFhirAssembly {
     }
     
     @Test
+    public void test010SMARTConfigFetch() {
+        Vantiq v = new Vantiq(TEST_SERVER, 1);
+        v.authenticate(SUB_USER, SUB_USER);
+        Map<String, ?> capStmt = null;
+        VantiqResponse resp = v.execute("com.vantiq.fhir.fhirService.getSMARTConfiguration",
+                                        Collections.emptyList());
+        assertTrue("Could not fetch SMART Config: " + resp.getErrors(), resp.isSuccess());
+        Map<String, ?> newSmartConfig = ((JsonObject) resp.getBody()).asMap();
+        log.debug("New SMART Config return: {}", newSmartConfig);
+        assertEquals("Not an error when no SMART configuration is present",
+                     "OperationOutcome",
+                     ((JsonElement) newSmartConfig.get("resourceType")).getAsString());
+        capStmt = newSmartConfig;
+        log.debug("Found SMART configuration with {} entries", capStmt.size());
+        log.trace("Found SMART Configuration: {}", capStmt);
+    }
+    
+    @Test
+    public void test020UDAPConfigFetch() {
+        Vantiq v = new Vantiq(TEST_SERVER, 1);
+        v.authenticate(SUB_USER, SUB_USER);
+        Map<String, ?> capStmt = null;
+        VantiqResponse resp = v.execute("com.vantiq.fhir.fhirService.getUDAPConfiguration",
+                                        Collections.emptyList());
+        assertTrue("Could not fetch UDAP Config: " + resp.getErrors(), resp.isSuccess());
+        Map<String, ?> newUDAPConfig = ((JsonObject) resp.getBody()).asMap();
+        log.debug("New UDAP Config return: {}", newUDAPConfig);
+        assertEquals("Not an error when no UDAP configuration is present",
+                     "OperationOutcome",
+                     ((JsonElement) newUDAPConfig.get("resourceType")).getAsString());
+        capStmt = newUDAPConfig;
+        log.debug("Found UDAP configuration with {} entries", capStmt.size());
+        log.trace("Found UDAP Configuration: {}", capStmt);
+    }
+    
+    @Test
     public void test100Read() throws Exception {
         Vantiq v = new Vantiq(TEST_SERVER, 1);
         v.authenticate(SUB_USER, SUB_USER);

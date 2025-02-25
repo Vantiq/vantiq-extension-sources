@@ -1,0 +1,7 @@
+/* Fetches the UDAP configuration, if any, for the defined FHIR server */
+package com.vantiq.fhir
+PROCEDURE fhirService.getUDAPConfiguration():Object
+
+log.debug("Fetching new FHIR UDAP configuration")
+var stmt = fhirService.fetchUDAPConfiguration()
+return stmt

@@ -11,17 +11,14 @@
   "globalType" : "com.vantiq.fhir.fhirService.GlobalState",
   "interface" : [ {
     "description" : "Process a Bundle interaction (typically bundle type 'batch' or 'transaction' but others may be supported by the server)",
-    "isSubscriberAdminRestricted" : false,
     "name" : "bundleInteraction",
     "parameters" : [ {
-      "default" : null,
       "description" : "The bundle to be invoked.",
       "multi" : false,
       "name" : "bundle",
       "required" : true,
       "type" : "Object"
     }, {
-      "default" : null,
       "description" : "Query modifiers and headers for the call.",
       "multi" : false,
       "name" : "modifiers",
@@ -34,31 +31,26 @@
     }
   }, {
     "description" : "Create a new FHIR resource instance",
-    "isSubscriberAdminRestricted" : false,
     "name" : "create",
     "parameters" : [ {
-      "default" : null,
       "description" : "The type of resource to create.",
       "multi" : false,
       "name" : "type",
       "required" : true,
       "type" : "String"
     }, {
-      "default" : null,
       "description" : "The instance of the resource.",
       "multi" : false,
       "name" : "resource",
       "required" : true,
       "type" : "Object"
     }, {
-      "default" : null,
       "description" : "Version identifier for the resource instance to create.",
       "multi" : false,
       "name" : "versionId",
       "required" : false,
       "type" : "String"
     }, {
-      "default" : null,
       "description" : "Query modifiers and headers for the call.",
       "multi" : false,
       "name" : "modifiers",
@@ -71,24 +63,20 @@
     }
   }, {
     "description" : "Delete a resource instance",
-    "isSubscriberAdminRestricted" : false,
     "name" : "delete",
     "parameters" : [ {
-      "default" : null,
       "description" : "Type of the resource to delete.",
       "multi" : false,
       "name" : "type",
       "required" : true,
       "type" : "String"
     }, {
-      "default" : null,
       "description" : "Id of the instance to delete.",
       "multi" : false,
       "name" : "id",
       "required" : true,
       "type" : "String"
     }, {
-      "default" : null,
       "description" : "Query modifiers and headers for the call.",
       "multi" : false,
       "name" : "modifiers",
@@ -101,7 +89,6 @@
     }
   }, {
     "description" : "*\n* Returns the capability statement for the source used by this service.\n* If none present, it will fetch one from the source.",
-    "isSubscriberAdminRestricted" : false,
     "name" : "getCapabilityStatement",
     "parameters" : [ ],
     "returnType" : {
@@ -110,24 +97,20 @@
     }
   }, {
     "description" : "Fetch history for all instances or one instance of the type provided, or for all instances of all types.",
-    "isSubscriberAdminRestricted" : false,
     "name" : "history",
     "parameters" : [ {
-      "default" : null,
       "description" : "The FHIR Resource type for which to fetch history",
       "multi" : false,
       "name" : "type",
       "required" : false,
       "type" : "String"
     }, {
-      "default" : null,
       "description" : "The id of the FHIR instance for which to fetch history. If not provided, fetch history for all of the type instances.",
       "multi" : false,
       "name" : "id",
       "required" : false,
       "type" : "String"
     }, {
-      "default" : null,
       "description" : "a set of name/value pairs representing the modifiers for this call. The general parameters include _count & _sort.",
       "multi" : false,
       "name" : "modifiers",
@@ -140,31 +123,26 @@
     }
   }, {
     "description" : "Perform a FHIR Patch operation.  Operates using the JSON Patch format.",
-    "isSubscriberAdminRestricted" : false,
     "name" : "patch",
     "parameters" : [ {
-      "default" : null,
       "description" : "The type of resource instance to be patched",
       "multi" : false,
       "name" : "type",
       "required" : true,
       "type" : "String"
     }, {
-      "default" : null,
       "description" : "The id of the resource instance to be patched",
       "multi" : false,
       "name" : "id",
       "required" : true,
       "type" : "String"
     }, {
-      "default" : null,
       "description" : "The patch specification (array of commands) as a Vantiq Object; will be sent as a JSON Patch document",
       "multi" : true,
       "name" : "patchCommands",
       "required" : true,
       "type" : "Object"
     }, {
-      "default" : null,
       "description" : "Any general parameters or headers to use to modify this interaction",
       "multi" : false,
       "name" : "modifiers",
@@ -177,24 +155,20 @@
     }
   }, {
     "description" : "Read a type based on its id",
-    "isSubscriberAdminRestricted" : false,
     "name" : "read",
     "parameters" : [ {
-      "default" : null,
       "description" : "Type of the resource to read.",
       "multi" : false,
       "name" : "type",
       "required" : true,
       "type" : "String"
     }, {
-      "default" : null,
       "description" : "Id of the resource to read",
       "multi" : false,
       "name" : "id",
       "required" : true,
       "type" : "String"
     }, {
-      "default" : null,
       "description" : "Query modifiers and headers for the call.",
       "multi" : false,
       "name" : "modifiers",
@@ -207,10 +181,8 @@
     }
   }, {
     "description" : "Return the content of the provided link",
-    "isSubscriberAdminRestricted" : false,
     "name" : "returnLink",
     "parameters" : [ {
-      "default" : null,
       "description" : "The URL of the link to return.",
       "multi" : false,
       "name" : "link",
@@ -223,45 +195,38 @@
     }
   }, {
     "description" : "Perform a search based on the compartment, id, & query provided",
-    "isSubscriberAdminRestricted" : false,
     "name" : "searchCompartment",
     "parameters" : [ {
-      "default" : null,
       "description" : "The FHIR Resource Compartment to search",
       "multi" : false,
       "name" : "compartment",
       "required" : true,
       "type" : "String"
     }, {
-      "default" : null,
       "description" : "The instance id desired",
       "multi" : false,
       "name" : "id",
       "required" : true,
       "type" : "String"
     }, {
-      "default" : null,
       "description" : "he FHIR query.  Object where the keys are the resource property names, and values are the values desired. If there are no restrictions, provide an empty object here (\"{}\").",
       "multi" : false,
       "name" : "query",
       "required" : true,
       "type" : "Object"
     }, {
-      "default" : null,
       "description" : "The FHIR resource type within the compartment to which to restrict the search.",
       "multi" : false,
       "name" : "type",
       "required" : false,
       "type" : "String"
     }, {
-      "default" : null,
       "description" : "Query modifiers and headers for the call.",
       "multi" : false,
       "name" : "modifiers",
       "required" : false,
       "type" : "com.vantiq.fhir.Modifiers"
     }, {
-      "default" : null,
       "description" : "HTTP Method to use, overriding search default: GET or POST",
       "multi" : false,
       "name" : "method",
@@ -274,24 +239,20 @@
     }
   }, {
     "description" : "*\n* Perform a search of the system\n*\n* Using the current source, run the search query for a particular type. If no method is provided,\n* we use GET. If search via POST is desired, provide \"POST\" as the method parameter.\n*\n* @param query Object ).\n* @param method String GET or POST.  Optional",
-    "isSubscriberAdminRestricted" : false,
     "name" : "searchSystem",
     "parameters" : [ {
-      "default" : null,
       "description" : "The FHIR query.  Object where the keys are the resource property names, and values are the values desired. If there are no restrictions, provide an empty object (\"{}\")",
       "multi" : false,
       "name" : "query",
       "required" : true,
       "type" : "Object"
     }, {
-      "default" : null,
       "description" : "a set of name/value pairs representing the modifiers for this call. The general parameters include _summary & _elements.",
       "multi" : false,
       "name" : "modifiers",
       "required" : false,
       "type" : "com.vantiq.fhir.Modifiers"
     }, {
-      "default" : null,
       "description" : "HTTP Method to use, overriding search default: GET or POST",
       "multi" : false,
       "name" : "method",
@@ -304,31 +265,26 @@
     }
   }, {
     "description" : "Perform a search based on the type & query provided\n\n Using the current source, run the search query for a particular type. If no method is provided,\n use the assembly's default. Provide this parameter to override the assembly default.",
-    "isSubscriberAdminRestricted" : false,
     "name" : "searchType",
     "parameters" : [ {
-      "default" : null,
       "description" : "The FHIR Resource type to search",
       "multi" : false,
       "name" : "type",
       "required" : true,
       "type" : "String"
     }, {
-      "default" : null,
       "description" : "The FHIR query.  Object where the keys are the resource property names, and values are the values desired. If there are no restrictions, provide an empty object here (\"{}\").",
       "multi" : false,
       "name" : "query",
       "required" : true,
       "type" : "Object"
     }, {
-      "default" : null,
       "description" : "a set of name/value pairs representing the modifiers for this call. The general parameters include _summary & _elements.",
       "multi" : false,
       "name" : "modifiers",
       "required" : false,
       "type" : "com.vantiq.fhir.Modifiers"
     }, {
-      "default" : null,
       "description" : "HTTP Method to use, overriding search default: GET or POST",
       "multi" : false,
       "name" : "method",
@@ -340,38 +296,32 @@
       "type" : "com.vantiq.fhir.FHIRResponse"
     }
   }, {
-    "isSubscriberAdminRestricted" : false,
     "name" : "update",
     "parameters" : [ {
-      "default" : null,
       "description" : null,
       "multi" : false,
       "name" : "type",
       "required" : true,
       "type" : "String"
     }, {
-      "default" : null,
       "description" : null,
       "multi" : false,
       "name" : "id",
       "required" : true,
       "type" : "String"
     }, {
-      "default" : null,
       "description" : null,
       "multi" : false,
       "name" : "resource",
       "required" : true,
       "type" : "Object"
     }, {
-      "default" : null,
       "description" : null,
       "multi" : false,
       "name" : "versionId",
       "required" : false,
       "type" : "String"
     }, {
-      "default" : null,
       "description" : null,
       "multi" : false,
       "name" : "modifiers",
@@ -384,31 +334,26 @@
     }
   }, {
     "description" : "Read a type based on its id and version (if specified)",
-    "isSubscriberAdminRestricted" : false,
     "name" : "vread",
     "parameters" : [ {
-      "default" : null,
       "description" : "Type of the resource to read.",
       "multi" : false,
       "name" : "type",
       "required" : true,
       "type" : "String"
     }, {
-      "default" : null,
       "description" : "Id of the instance to read",
       "multi" : false,
       "name" : "id",
       "required" : true,
       "type" : "String"
     }, {
-      "default" : null,
       "description" : "Version id of the instance to read",
       "multi" : false,
       "name" : "versionId",
       "required" : false,
       "type" : "String"
     }, {
-      "default" : null,
       "description" : "Query modifiers and headers for the call.",
       "multi" : false,
       "name" : "modifiers",
@@ -418,6 +363,22 @@
     "returnType" : {
       "multi" : false,
       "type" : "com.vantiq.fhir.FHIRResponse"
+    }
+  }, {
+    "description" : "Fetch FHIR server's SMART configuration (if any)",
+    "name" : "getSMARTConfiguration",
+    "parameters" : [ ],
+    "returnType" : {
+      "multi" : false,
+      "type" : "Object"
+    }
+  }, {
+    "description" : "Fetch FHIR server's UDAP configuration (if any)",
+    "name" : "getUDAPConfiguration",
+    "parameters" : [ ],
+    "returnType" : {
+      "multi" : false,
+      "type" : "Object"
     }
   } ],
   "internalEventHandlers" : [ ],

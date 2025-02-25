@@ -1,0 +1,17 @@
+/**
+* Returns the SMART configuration for this FHIR server
+*/
+package com.vantiq.fhir
+import service com.vantiq.fhir.fhirService
+
+private PROCEDURE fhirService.fetchSMARTConfiguration():Object
+var retVal
+
+var fhirResp = fhirService.performGet(".well-known/smart-configuration")
+if (typeOf(fhirResp.body) == "List") {
+	retVal = fhirResp.body[0]
+} else {
+	retVal = fhirResp.body
+}
+
+return retVal
