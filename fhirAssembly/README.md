@@ -134,6 +134,12 @@ outline those defined below. These are all found in the package `com.vantiq.fhir
       * `modifiers` -- (Modifiers) Any modifiers to the interaction
   * `getCapabilityStatement` -- returns the capability statement for the FHIR server
       * (No parameters)
+  * `getSMARTConfiguration` -- returns the SMART configuration for the FHIR server (if any).  If none is present, 
+    an error is returned (the error returned varies by server).
+    * (No parameters)
+  * `getUDAPConfiguration` -- returns the UDAP configuration for the FHIR server (if any).  If none is present,
+    an error is returned (the error returned varies by server).
+      * (No parameters)
   * `bundleInteraction` -- perform an interaction that requires a `Bundle` type.  These are typically `batch` or 
     `transaction` interactions, but others may be defined by your FHIR server
       * `bundle` -- (Object, Required) The bundle representing the operation to perform
