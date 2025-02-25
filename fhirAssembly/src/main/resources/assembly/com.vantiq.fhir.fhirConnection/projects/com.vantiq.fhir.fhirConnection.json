@@ -101,7 +101,7 @@
     },
     "basicAccessToken" : {
       "default" : "",
-      "description" : "Access token to use for Basic authentication",
+      "description" : "Access token to use for Basic authentication. Vantiq encourages you to specify using @secrets() notation.",
       "multi" : false,
       "required" : false,
       "type" : "String"
