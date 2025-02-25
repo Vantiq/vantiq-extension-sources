@@ -17,9 +17,11 @@ if (oauthConfig == null || oauthConfig.config == null) {
 }
 
 if (authMechanism == "Basic") {
-    if (theConfig.config.username == null || theConfig.config.password == null) {
+    if (theConfig.config.accessToken == null &&
+            (theConfig.config.username == null || theConfig.config.password == null)) {
         exception("com.vantiq.fhir.basicauth.required",
-            "A username and password are required for Basic authentication: {0}", [theConfig])
+            "A username and password are required for Basic authentication when an access token is not present: {0}",
+            [theConfig])
     }
     if (oauthConfig.active) {
         exception("com.vantiq.fhir.oauth.active",

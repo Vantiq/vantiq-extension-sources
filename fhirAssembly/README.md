@@ -198,9 +198,9 @@ Depending upon the value provided, you may need to provide other values. These a
 
 If `authenticationMechanism` is _None_, no further property values are required.
 
-If `authenticationMechanism` is _Basic_, then the `basicUsername` and `basicPassword` values must be provided. We 
-strongly suggest that at least the `basicPassword` be a value stored in a Vantiq Secret, and provided here using the 
-`@secrets(`_secretName_`)` notation.
+If `authenticationMechanism` is _Basic_, then the `basicUsername` and `basicPassword` or `basicAccessToken` values must
+be provided. We strongly suggest that at least the `basicPassword`or `basicAccessToken` be a value stored in a Vantiq
+Secret, and provided here using the `@secrets(`_secretName_`)` notation.
 
 If `authenticationMechanism` is _OAuth_, then the following values maybe necessary, depending upon the 
 `oauthGrantType` provided.  Your system administrator should be able to help with these.
