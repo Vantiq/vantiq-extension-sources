@@ -1,0 +1,14 @@
+/* Sets the access token to use for FHIR server communications.  Overrides any others provided, and is intended to be used for SMART & UDAP-based authentication. */
+package com.vantiq.fhir
+
+import service com.vantiq.fhir.fhirService
+PROCEDURE fhirService.useAccessToken(accessToken String REQUIRED, tokenType String):Object
+var token
+token = { accessToken: accessToken }
+if (tokenType) {
+	token.tokenType = tokenType
+} else {
+	token.tokenType = "Bearer"
+}
+token.authHeader = token.tokenType + " " + token.accessToken
+return providedAccessToken.setValue(token)
