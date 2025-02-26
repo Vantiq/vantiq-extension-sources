@@ -163,18 +163,36 @@ public class TestFhirAssembly {
                                  ((JsonElement) targetAssembly.get("name")).getAsString(),
                          ((JsonElement) targetAssembly.get("name")).getAsString(),
                          FHIR_ASSY_NAME);
-            log.debug("Using assembly configuration: {}", assemblyConfig);
-            resp = v.execute("Subscriber.installAssembly", Map.of("assemblyName", FHIR_ASSY_NAME,
-                                                                  "catalogName", CATALOG_NAME,
-                                                                  "configuration", assemblyConfig));
-            assertTrue("Could not install our assembly: " + resp.getErrors(), resp.isSuccess());
+            if (assemblyConfig != null && !assemblyConfig.isEmpty()) {
+                installAssembly(v, assemblyConfig);
+            }
         } else {
             fail("Have not yet setup running in other environments");
         }
     }
     
+    public static void installAssembly(Vantiq v, Map<String, ?> assemblyConfig) {
+        log.debug("Using assembly configuration: {}", assemblyConfig);
+        VantiqResponse resp = v.execute("Subscriber.installAssembly", Map.of("assemblyName", FHIR_ASSY_NAME,
+                                                              "catalogName", CATALOG_NAME,
+                                                              "configuration", assemblyConfig));
+        assertTrue("Could not install our assembly: " + resp.getErrors(), resp.isSuccess());
+    }
+    
+    public static void uninstallAssembly(Vantiq v) {
+        VantiqResponse resp = v.execute("Subscriber.uninstallAssembly",
+                                        Map.of("assemblyName", FHIR_ASSY_NAME));
+        assertTrue("Could not uninstall our assembly: " + resp.getErrors(), resp.isSuccess());
+    }
+    
     @AfterClass
     public static void teardownEnv() {
+        performTeardown();
+        assertTrue("Not enough invocations of searchType() -- count: " + invocationCount,
+                   invocationCount >= 2);
+    }
+    
+    public static void performTeardown() {
         Vantiq v = new Vantiq(TEST_SERVER, 1);
         if (CREATE_TEST_NAMESPACE) {
             v.authenticate("system", "fxtrt$1492");
@@ -185,10 +203,7 @@ public class TestFhirAssembly {
         } else {
             fail("Have not yet setup running in other environments");
         }
-        assertTrue("Not enough invocations of searchType() -- count: " + invocationCount,
-                   invocationCount >= 2);
     }
-    
     // used in some subclasses.
     public static void registerGetConfiguredSource(Vantiq v) {
         String procedure =

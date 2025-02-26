@@ -96,6 +96,22 @@
       "type" : "Object"
     }
   }, {
+    "description" : "Fetch FHIR server's SMART configuration (if any)",
+    "name" : "getSMARTConfiguration",
+    "parameters" : [ ],
+    "returnType" : {
+      "multi" : false,
+      "type" : "Object"
+    }
+  }, {
+    "description" : "Fetch FHIR server's UDAP configuration (if any)",
+    "name" : "getUDAPConfiguration",
+    "parameters" : [ ],
+    "returnType" : {
+      "multi" : false,
+      "type" : "Object"
+    }
+  }, {
     "description" : "Fetch history for all instances or one instance of the type provided, or for all instances of all types.",
     "name" : "history",
     "parameters" : [ {
@@ -365,17 +381,21 @@
       "type" : "com.vantiq.fhir.FHIRResponse"
     }
   }, {
-    "description" : "Fetch FHIR server's SMART configuration (if any)",
-    "name" : "getSMARTConfiguration",
-    "parameters" : [ ],
-    "returnType" : {
+    "description" : "Sets the access token to use for FHIR server communications.  Overrides any others provided, and is intended to be used for SMART & UDAP-based authentication.",
+    "name" : "useAccessToken",
+    "parameters" : [ {
+      "description" : "Access token to use for FHIR server communication",
       "multi" : false,
-      "type" : "Object"
-    }
-  }, {
-    "description" : "Fetch FHIR server's UDAP configuration (if any)",
-    "name" : "getUDAPConfiguration",
-    "parameters" : [ ],
+      "name" : "accessToken",
+      "required" : true,
+      "type" : "String"
+    }, {
+      "description" : "Token type for the access token. Defaults to 'Bearer'.",
+      "multi" : false,
+      "name" : "tokenType",
+      "required" : false,
+      "type" : "String"
+    } ],
     "returnType" : {
       "multi" : false,
       "type" : "Object"

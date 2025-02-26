@@ -29,6 +29,13 @@
       "required" : false,
       "type" : "Value",
       "unique" : false
+    },
+    "providedAccessToken" : {
+      "encrypted" : false,
+      "multi" : false,
+      "required" : false,
+      "type" : "Value",
+      "unique" : false
     }
   },
   "role" : "schema"

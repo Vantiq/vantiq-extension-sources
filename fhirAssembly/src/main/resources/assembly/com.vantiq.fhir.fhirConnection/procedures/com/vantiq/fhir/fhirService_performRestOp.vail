@@ -13,14 +13,21 @@ if (!theSource) {
 }
 var retVal = ""
 var gp = {}
-var headers = {}
-if (modifiers) {
-    if (modifiers.generalParams) {
-        gp = modifiers.generalParams
-    }
-    if (modifiers.headers) {
-        headers = modifiers.headers
-    }
+var headers
+if (modifiers && modifiers.headers) {
+    headers = Object.clone(modifiers.headers)
+} else {
+    headers = {}
+}
+
+var pAT = providedAccessToken.getValue()
+if (pAT && pAT.has("authHeader") && !headers.Authorization) {
+    // Here, if the call has provided an access token & type, we'll use that if their headers
+    // do not already contain one.
+    headers.Authorization = pAT.authHeader
+}
+if (modifiers && modifiers.generalParams) {
+    gp = modifiers.generalParams
 }
 
 try {
