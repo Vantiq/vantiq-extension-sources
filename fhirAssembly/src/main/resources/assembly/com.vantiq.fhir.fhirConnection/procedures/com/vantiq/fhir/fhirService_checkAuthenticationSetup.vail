@@ -13,7 +13,8 @@ if (theConfig == null) {
 
 var oauthConfig = SELECT ONE FROM sources WITH configure = true WHERE name == "com.vantiq.fhir.oauthSource"
 if (oauthConfig == null || oauthConfig.config == null) {
-    exception("com.vantiq.fhir.source.noconfig", "No configuration was found for source {0}.", ["com.vantiq.fhir.oauthSource"])
+    exception("com.vantiq.fhir.source.noconfig", "No configuration was found for source {0}.",
+        ["com.vantiq.fhir.oauthSource"])
 }
 
 if (authMechanism == "Basic") {
@@ -21,6 +22,22 @@ if (authMechanism == "Basic") {
             (theConfig.config.username == null || theConfig.config.password == null)) {
         exception("com.vantiq.fhir.basicauth.required",
             "A username and password are required for Basic authentication when an access token is not present: {0}",
+            [theConfig])
+    }
+    if (theConfig.config.accessToken == null && theConfig.config.realm != null) {
+       exception("com.vantiq.fhir.basicauth.required",
+            "A realm value is valid for Basic authentication only when an access token is present: {0}",
+            [theConfig]) 
+    }
+    if (oauthConfig.active) {
+        exception("com.vantiq.fhir.oauth.active",
+            "The Oauth Source ({0}) for this assembly cannot be ACTIVE when using authentication mechanism {1}.",
+            [oauthConfig.name, authMechanism])
+    }
+} else if (authMechanism == "ApplicationManaged") {
+    if (theConfig.config.accessToken == null && theConfig.config.realm != null) {
+       exception("com.vantiq.fhir.appmanagedauth.required",
+            "A realm value is valid for authentication only when an access token is present: {0}",
             [theConfig])
     }
     if (oauthConfig.active) {
