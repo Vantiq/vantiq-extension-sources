@@ -132,6 +132,20 @@ outline those defined below. These are all found in the package `com.vantiq.fhir
       * `id` -- (String, Required) The id of the resource instance to be read
       * `versionId` -- (String) The version id to be read.  If missing, this operates the same as a `read` procedure.
       * `modifiers` -- (Modifiers) Any modifiers to the interaction
+  * `bundleInteraction` -- perform an interaction that requires a `Bundle` type.  These are typically `batch` or
+          `transaction` interactions, but others may be defined by your FHIR server
+    * `bundle` -- (Object, Required) The bundle representing the operation to perform
+    * `modifiers` -- (Modifiers) Any modifiers to the interaction
+
+The following procedure is closely related to the _interaction_ related procedures above.  It is used to follow 
+_links_ returned,
+
+  * `returnLink` -- returns the link provided.  This is typically used for paging operations (following the `next`
+    or `previous` links), but this procedure is agnostic with respect to the purpose of the _link_.
+    * `link` -- (String, Required) The link to be returned
+
+In addition to the _interaction_-related procedures above, there are a number of procedures that can be used to 
+fetch about the FHIR server.
   * `getCapabilityStatement` -- returns the capability statement for the FHIR server
       * (No parameters)
   * `getSMARTConfiguration` -- returns the SMART configuration for the FHIR server (if any).  If none is present, 
@@ -140,13 +154,15 @@ outline those defined below. These are all found in the package `com.vantiq.fhir
   * `getUDAPConfiguration` -- returns the UDAP configuration for the FHIR server (if any).  If none is present,
     an error is returned (the error returned varies by server).
       * (No parameters)
-  * `bundleInteraction` -- perform an interaction that requires a `Bundle` type.  These are typically `batch` or 
-    `transaction` interactions, but others may be defined by your FHIR server
-      * `bundle` -- (Object, Required) The bundle representing the operation to perform
-      * `modifiers` -- (Modifiers) Any modifiers to the interaction
-  * `returnLink` -- returns the link provided.  This is typically used for paging operations (following the `next` 
-    or `previous` links), but this procedure is agnostic with respect to the purpose of the _link_.
-    * `link` -- (String, Required) The link to be returned
+
+Finally, there is one procedure used to provide authentication information (an _access token_) for communication 
+with the FHIR server. This is used when the `authenticationMechanism` is set to `ApplicationManaged`.  See the 
+discussion in [Security or Authentication Properties](#security-or-authentication-properties), specifically the 
+[`ApplicationManaged` section](#authentication-mechanism-applicationmanaged).
+  * `useAccessToken` -- set the access token to be used for authentication to the FHIR server.
+     * `accessToken` -- (String, Required) the access token to use
+     * `tokenType` -- (String) The type of token.  This is used on the `Authorization` header.  The default value is 
+       `Bearer`.
 
 ### Internal Components
 
@@ -190,7 +206,7 @@ Some of these will need to be provided to configure the assembly in your namespa
 * `fhirServerBaseUrl` -- A String with the URL of the FHIR server.  As noted above, if the URL contains a _path_ 
   part, the URL should be specified with a trailing slash ('/') -- _e.g.,_ `http://localhost:8090/fhir/`.
 
-#### Optional Properties
+#### Security or Authentication Properties
 
 The following properties are optional, but may be required in conjunction with other property values.  This is 
 mostly based on the value of the first: `authenticationMechanism`.
@@ -202,11 +218,18 @@ Depending upon the value provided, you may need to provide other values. These a
 [Vantiq REMOTE source documentation](https://dev.vantiq.com/docs/system/sources/remote/)
 (referenced here on [dev.vantiq.com](https://dev.vantiq.com)).
 
+##### Authentication Mechanism: None
+
 If `authenticationMechanism` is _None_, no further property values are required.
 
-If `authenticationMechanism` is _Basic_, then the `basicUsername` and `basicPassword` or `basicAccessToken` values must
+##### Authentication Mechanism: Basic
+
+If `authenticationMechanism` is _Basic_, then the `basicUsername` and `basicPassword` or `basicAccessToken` (and, 
+optionally, `basicRealm`) values must
 be provided. We strongly suggest that at least the `basicPassword`or `basicAccessToken` be a value stored in a Vantiq
 Secret, and provided here using the `@secrets(`_secretName_`)` notation.
+
+##### Authentication Mechanism: OAuth
 
 If `authenticationMechanism` is _OAuth_, then the following values maybe necessary, depending upon the 
 `oauthGrantType` provided.  Your system administrator should be able to help with these.
@@ -229,6 +252,32 @@ If `authenticationMechanism` is _OAuth_, then the following values maybe necessa
 * `oauthUseBasicAuth` -- _true_ if the `oauthClientId` and `oauthClientSecret` should be packaged as Basic 
   authentication to the OAuth server. Consult your OAuth administrator
 
+##### Authentication Mechanism: ApplicationManaged
+
+If `authenicationMechanism` is _ApplicationManaged_, then the caller is expected to provide the appropriate 
+credentials via an access token. This mechanism is intended for use with FHIR servers using SMART or UDAP profiles. 
+Both of these choices can be layered on an OAuth _authorization code_ grant type.
+
+The `authorization code` grant type is specifically intended for cases where the end user is directly involved in 
+the authentication process. Thus, it is not appropriate for the server-based FHIR Connection assembly to participate 
+directly. Instead, we leave the acquiring of an _access token_ to the client application for cases where the 
+_authorization code_ grant type is involved. Once an _access token_ has been acquired, it can be used for the FHIR 
+server operations by calling `fhirService.useAccessToken()`, providing the acquired access token and, if necessary, 
+the token type.
+
+Be aware that the recommended access token lifetime is a matter of minutes, so if the application runs for an extended 
+period of time, it may need to refresh this value periodically. That refresh, like the initial acquisition, is 
+beyond the scope of the `fhirService` service. If the lifetime of the access token is sufficiently long, you can set 
+the `basicAccessToken` (and, optionally, `basicRealm`) settings that will apply for the lifetime of the assembly 
+installation.  However, that is not likely to be the case for most situations, but it may be useful in some testing 
+scenarios.
+
+Note that if the FHIR server supports the _client credentials_ or _refresh token_ OAuth grant types, those can be used 
+with the [OAuth authentication mechanism settings](#authentication-mechanism-oauth). Generally speaking, these are 
+more appropriate grant types to use with server-to-server operations.
+
+#### Completing the Installation
+
 Once all the appropriate values are completed, press OK.
 
 ## FHIR Connection Assembly -- Usage
@@ -237,7 +286,7 @@ Once you have installed the assembly, you can add the installed service to your 
 
 ![AddService.png](docs/images/AddService.png)
 
-This will provide you with the service & the procedures outline above.
+This will provide you with the service & the procedures outlined above.
 
 ![fhirService.png](docs/images/fhirService.png)
 
@@ -270,6 +319,20 @@ This will produce the 'com.vantiq.fhir.fhirConnection.zip' file in the project's
 
 Once that is done, you can import the assembly projects to a Vantiq namespace, and, from there, publish these
 assemblies to a catalog.  The steps involved are as follows.
+
+## Testing the FHIR assembly
+
+To run the unit tests, use the `test` task for Gradle.  To build and test, use `build`.
+
+`./gradlew fhirAssembly:test`
+
+or 
+
+`./gradlew fhirAssembly:build`
+
+Running the tests expects Vantiq edge server to be available -- the tests will use the default system credentials to 
+create namespaces and a catalog through which to run the tests.  The tests will also start a local FHIR server 
+(using Docker) with which to interact. 
 
 ## Importing Assemblies
 
