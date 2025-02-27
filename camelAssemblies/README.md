@@ -233,8 +233,8 @@ However, if importing many projects, use `../gradlew importAssemblies -PcamelAss
 where `<profileName>` is the name of a Vantiq CLI profile that will connect to your publishing namespace.  Other 
 gradle properties that are used are based on that profile name, and are as follows.
 
-* **<profileName>_camelAssembliesVantiq** -- command to be used as the Vantiq CLI.  Defaults to `vantiq`. 
-* **<profileName>_camelAssembliesList** -- a comma-separated list of the simple names of the assemblies you wish to 
+* **\<profileName\>_camelAssembliesVantiq** -- command to be used as the Vantiq CLI.  Defaults to `vantiq`. 
+* **\<profileName\>_camelAssembliesList** -- a comma-separated list of the simple names of the assemblies you wish to 
   import.  Defaults to all assemblies.
 
 ## Publishing Assemblies
@@ -246,7 +246,7 @@ However, if importing many projects, use `../gradlew publishAssemblies -PcamelAs
 
 In addition to the gradle properties used for import, you can define the following.
 
-* **<profileName>_camelAssembliesCatalog** -- the name of the catalog to which to publish the assemblies.  This is 
+* **\<profileName\>_camelAssembliesCatalog** -- the name of the catalog to which to publish the assemblies.  This is 
   required, and may be specified on the command line or in the `gradle.properties` file.
 * **changeLog** -- change log entry to include.  A very short (no spaces) description of what this upload entails.
 
