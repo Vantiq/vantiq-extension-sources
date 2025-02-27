@@ -151,6 +151,26 @@ public class TestFhirUseAccessToken extends LocalServerTestBase {
     }
     
     @Test
+    public void testOperationsWithBasicTokenAndRealm() {
+        String tokenValue = "ImALittleTeaPot";
+        String tokenRealm = "HonaleeLandOfPuff";
+        Map<String, ?> config =  Map.of("fhirServerBaseUrl", fauxServer,
+                                        "authenticationMechanism", "Basic",
+                                        "basicRealm", tokenRealm,
+                                        "basicAccessToken", tokenValue);
+        doOperations(tokenRealm, tokenValue, config, true);
+    }
+    
+    @Test
+    public void testOperationsBasicConfigBasedToken() {
+        String tokenValue = "ImALittleTeaPot";
+        Map<String, ?> config =  Map.of("fhirServerBaseUrl", fauxServer,
+                                        "authenticationMechanism", "Basic",
+                                        "basicAccessToken", tokenValue);
+        doOperations("Bearer", tokenValue, config, true);
+    }
+    
+    @Test
     public void testOperationsWithAppManagedConfigBasedTokenAndRealm() {
         String tokenValue = "ImALittleTeaPot";
         String tokenRealm = "HonaleeLandOfPuff";
