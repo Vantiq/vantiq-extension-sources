@@ -35,7 +35,7 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 @Slf4j
-public class TestFhirOtherAuth extends LocalServerTestBase {
+public class TestFhirUseAccessToken extends LocalServerTestBase {
     
     public static String fauxServer = null;
     public final static String FHIR_SERVER_PATH = "/fhir/";
@@ -56,7 +56,8 @@ public class TestFhirOtherAuth extends LocalServerTestBase {
             };
     
     public static Map<String,?> getAssemblyConfigForTest() {
-        Map<String, ?> config =  Map.of("fhirServerBaseUrl", fauxServer);
+        Map<String, ?> config =  Map.of("fhirServerBaseUrl", fauxServer,
+                                        "authenticationMechanism", "ApplicationManaged");
         log.debug("Returning assembly config of: {}", config);
         return config;
     }
@@ -97,15 +98,80 @@ public class TestFhirOtherAuth extends LocalServerTestBase {
     
     @Test
     public void testOperationsWithRealmAuth() {
-        doOperations("Realm", "sillyRealmToken", getAssemblyConfigForTest());
+        doOperations("SomeRandomRealm", "sillyRealmToken", getAssemblyConfigForTest());
     }
     
+    @Test
+    public void testOperationsWithConfigBasedToken() {
+        String tokenValue = "ImALittleTeaPot";
+        Map<String, ?> config =  Map.of("fhirServerBaseUrl", fauxServer,
+                                        "authenticationMechanism", "ApplicationManaged",
+                                        "basicAccessToken", tokenValue);
+        doOperations("Bearer", tokenValue, config);
+    }
+    
+    @Test
+    public void testOperationsWithConfigBasedTokenAndRealm() {
+        String tokenValue = "ImALittleTeaPot";
+        String tokenRealm = "HonaleeLandOfPuff";
+        Map<String, ?> config =  Map.of("fhirServerBaseUrl", fauxServer,
+                                        "authenticationMechanism", "ApplicationManaged",
+                                        "basicRealm", tokenRealm,
+                                        "basicAccessToken", tokenValue);
+        doOperations(tokenRealm, tokenValue, config);
+    }
+    
+    @Test
+    public void testOperationsWithOverrideConfigBasedToken() {
+        String tokenValue = "ImALittleTeaPot";
+        Map<String, ?> config =  Map.of("fhirServerBaseUrl", fauxServer,
+                                        "authenticationMechanism", "ApplicationManaged",
+                                        "basicAccessToken", tokenValue);
+        doOperations("Bearer", "IAmNotATeaPot", config);
+    }
+    
+    @Test
+    public void testOperationsWithOverrideConfigBasedTokenAndRealm() {
+        String tokenValue = "ImALittleTeaPot";
+        String tokenRealm = "HonaleeLandOfPuff";
+        Map<String, ?> config =  Map.of("fhirServerBaseUrl", fauxServer,
+                                        "authenticationMechanism", "ApplicationManaged",
+                                        "basicRealm", tokenRealm,
+                                        "basicAccessToken", tokenValue);
+        doOperations("LandOfMakeBelieve", "IAmNotATeaPot", config);
+    }
+    
+    @Test
+    public void testOperationsWithAppManagedConfigBasedToken() {
+        String tokenValue = "ImALittleTeaPot";
+        Map<String, ?> config =  Map.of("fhirServerBaseUrl", fauxServer,
+                                        "authenticationMechanism", "ApplicationManaged",
+                                        "basicAccessToken", tokenValue);
+        doOperations("Bearer", tokenValue, config, true);
+    }
+    
+    @Test
+    public void testOperationsWithAppManagedConfigBasedTokenAndRealm() {
+        String tokenValue = "ImALittleTeaPot";
+        String tokenRealm = "HonaleeLandOfPuff";
+        Map<String, ?> config =  Map.of("fhirServerBaseUrl", fauxServer,
+                                        "authenticationMechanism", "ApplicationManaged",
+                                        "basicRealm", tokenRealm,
+                                        "basicAccessToken", tokenValue);
+        doOperations(tokenRealm, tokenValue, config, true);
+    }
+    
+    
     void doOperations(String tType, String tValue, Map<String, ?> assyConfig) {
+        doOperations(tType, tValue, assyConfig, false);
+    }
+    
+    void doOperations(String tType, String tValue, Map<String, ?> assyConfig, boolean suppressUseToken) {
         Vantiq v = new Vantiq(TEST_SERVER, 1);
         v.authenticate(SUB_USER, SUB_USER);
         VantiqResponse resp;
         TestFhirAssembly.installAssembly(v, assyConfig);
-        if (tType != null || tValue != null) {
+        if (!suppressUseToken && (tType != null || tValue != null)) {
             Map<String, String> params = new HashMap<>();
             params.put("accessToken", tValue);
             if (tType != null) {
@@ -168,7 +234,7 @@ public class TestFhirOtherAuth extends LocalServerTestBase {
     
     Header findHeader(String headerName) {
         for (Header foundHeader : foundHeaders) {
-            if (foundHeader.getName().equals(headerName)) {
+            if (headerName.equalsIgnoreCase(foundHeader.getName())) {
                 return foundHeader;
             }
         }
