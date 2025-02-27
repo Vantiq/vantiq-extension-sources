@@ -11,6 +11,8 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.gson.Gson;
+import com.google.gson.JsonObject;
 import io.vantiq.client.Vantiq;
 import io.vantiq.client.VantiqResponse;
 
@@ -41,18 +43,20 @@ public class TestFhirUseAccessToken extends LocalServerTestBase {
     public final static String FHIR_SERVER_PATH = "/fhir/";
     ObjectMapper mapper = new ObjectMapper();
     
-    Header[] foundHeaders;
-    
     @BeforeClass
     public static void setupEnv() throws Exception {
         performSetup(null);
     }
     
-    private HttpRequestHandler returnEmpty =
+    private final HttpRequestHandler returnRequestHeaders =
             (request, response, context) -> {
                 log.debug("Got headers: {}", (Object) request.getAllHeaders());
-                foundHeaders = request.getAllHeaders();
-                response.setEntity(new StringEntity("{}"));
+                Header[] foundHeaders = request.getAllHeaders();
+                Map<String, String> hmap = new HashMap<>();
+                for (Header h: foundHeaders) {
+                    hmap.put(h.getName(), h.getValue());
+                }
+                response.setEntity(new StringEntity(mapper.writeValueAsString(hmap)));
             };
     
     public static Map<String,?> getAssemblyConfigForTest() {
@@ -69,8 +73,7 @@ public class TestFhirUseAccessToken extends LocalServerTestBase {
     
     @Before
     public void setup() throws Exception {
-        foundHeaders = null;
-        this.serverBootstrap.registerHandler(FHIR_SERVER_PATH + "*", returnEmpty);
+        this.serverBootstrap.registerHandler(FHIR_SERVER_PATH + "*", returnRequestHeaders);
         this.serverBootstrap.setConnectionReuseStrategy((response, context) -> false);
         HttpHost host = super.start();
         fauxServer = host.toURI() + FHIR_SERVER_PATH;
@@ -187,82 +190,107 @@ public class TestFhirUseAccessToken extends LocalServerTestBase {
     }
     
     void doOperations(String tType, String tValue, Map<String, ?> assyConfig, boolean suppressUseToken) {
-        Vantiq v = new Vantiq(TEST_SERVER, 1);
-        v.authenticate(SUB_USER, SUB_USER);
-        VantiqResponse resp;
-        TestFhirAssembly.installAssembly(v, assyConfig);
-        if (!suppressUseToken && (tType != null || tValue != null)) {
-            Map<String, String> params = new HashMap<>();
-            params.put("accessToken", tValue);
-            if (tType != null) {
-                params.put("tokenType", tType);
-            }
-            resp = v.execute("com.vantiq.fhir.fhirService.useAccessToken",
-                                            params);
-            
-            assertTrue("Could not provide access token: " + resp.getErrors(), resp.isSuccess());
-        }
-        resp = v.execute("com.vantiq.fhir.fhirService.getSMARTConfiguration",
-                                        Collections.emptyList());
-        assertTrue("Could not fetch SMART Config: " + resp.getErrors(), resp.isSuccess());
-        assertNotNull("Ho headers found", foundHeaders);
-        checkAuthHeader(tType, tValue);
-        
-        foundHeaders = null;
-        Map<String, String> params = new HashMap<>();
-        
-        params.put("id", "doesn'tMatter");
-        params.put("type", "Patient");
-        resp = v.execute("com.vantiq.fhir.fhirService.read", params);
-        assertTrue("Could not read resource: " + resp.getErrors(), resp.isSuccess());
-        assertNotNull("Ho headers found", foundHeaders);
-        checkAuthHeader(tType, tValue);
-        
-        foundHeaders = null;
-        File ourHeroFile = new File("build/resources/test/ourHero.json");
-        Map<String, ?> ourHeroMap = null;
         try {
+            Vantiq v = new Vantiq(TEST_SERVER, 1);
+            v.authenticate(SUB_USER, SUB_USER);
+            VantiqResponse resp;
+            TestFhirAssembly.installAssembly(v, assyConfig);
+            if (!suppressUseToken && (tType != null || tValue != null)) {
+                Map<String, String> params = new HashMap<>();
+                params.put("accessToken", tValue);
+                if (tType != null) {
+                    params.put("tokenType", tType);
+                }
+                resp = v.execute("com.vantiq.fhir.fhirService.useAccessToken",
+                                 params);
+                
+                assertTrue("Could not provide access token: " + resp.getErrors(), resp.isSuccess());
+            }
+            resp = v.execute("com.vantiq.fhir.fhirService.getSMARTConfiguration",
+                             Collections.emptyList());
+            assertTrue("Could not fetch SMART Config: " + resp.getErrors(), resp.isSuccess());
             //noinspection unchecked
-            ourHeroMap = mapper.readValue(ourHeroFile, Map.class);
+            Map<String, String> foundHeaders =
+                    (Map<String, String>) mapper.readValue(new Gson().toJson(((JsonObject) resp.getBody())),
+                                                                                      Map.class);
+            log.debug("Found headers: {}", foundHeaders);
+            assertNotNull("Ho headers found", foundHeaders);
+            checkAuthHeader(tType, tValue, foundHeaders);
+            
+            Map<String, String> params = new HashMap<>();
+            
+            params.put("id", "doesn'tMatter");
+            params.put("type", "Patient");
+            resp = v.execute("com.vantiq.fhir.fhirService.read", params);
+            assertTrue("Could not read resource: " + resp.getErrors(), resp.isSuccess());
+            //noinspection unchecked
+            foundHeaders =
+                    (Map<String, String>) mapper.readValue(new Gson().toJson(((JsonObject) resp.getBody())),
+                                                           Map.class).get("body");
+            log.debug("Found headers: {}", foundHeaders);
+            
+            assertNotNull("Ho headers found", foundHeaders);
+            checkAuthHeader(tType, tValue, foundHeaders);
+            
+            File ourHeroFile = new File("build/resources/test/ourHero.json");
+            Map<String, ?> ourHeroMap = null;
+            try {
+                //noinspection unchecked
+                ourHeroMap = mapper.readValue(ourHeroFile, Map.class);
+            } catch (Exception e) {
+                fail("Couldn't read standard file" + e);
+            }
+            
+            resp = v.execute("com.vantiq.fhir.fhirService.create",
+                             Map.of("type", "Patient", "resource", ourHeroMap));
+            assertTrue("Could not create our hero: " + resp.getErrors(), resp.isSuccess());
+            //noinspection unchecked
+            foundHeaders =
+                    (Map<String, String>) mapper.readValue(new Gson().toJson(((JsonObject) resp.getBody())),
+                                                           Map.class).get("body");
+            log.debug("Found headers: {}", foundHeaders);
+            
+            assertNotNull("Ho headers found", foundHeaders);
+            checkAuthHeader(tType, tValue, foundHeaders);
+            
+            Map<String, ?> modifiers = Map.of("headers",
+                                              Map.of("If-None-Exist", "name=" + "Man"));
+            
+            // Now, create our here again, but conditional on it's not being already there.
+            
+            resp = v.execute("com.vantiq.fhir.fhirService.create",
+                             Map.of("type", "Patient",
+                                    "id", "batman",
+                                    "resource", ourHeroMap,
+                                    "modifiers", modifiers));
+            assertTrue("Could not create our hero: " + resp.getErrors(), resp.isSuccess());
+            //noinspection unchecked
+            foundHeaders =
+                    (Map<String, String>) mapper.readValue(new Gson().toJson(((JsonObject) resp.getBody())),
+                                                           Map.class).get("body");
+            log.debug("Found headers: {}", foundHeaders);
+            
+            assertNotNull("Ho headers found", foundHeaders);
+            checkAuthHeader(tType, tValue, foundHeaders);
+            Map.Entry<String, String> modHeader = findHeader("If-None-Exist", foundHeaders);
+            assertNotNull("No If-None-Exist header found", modHeader);
+            assertEquals("Wrong value for If-None_Exist header", "name=Man", modHeader.getValue());
         } catch (Exception e) {
-            fail("Couldn't read standard file" + e);
+            fail("Trapped exception " + e);
         }
-        
-        resp = v.execute("com.vantiq.fhir.fhirService.create",
-                                        Map.of("type", "Patient", "resource", ourHeroMap));
-        assertTrue("Could not create our hero: " + resp.getErrors(), resp.isSuccess());
-        assertNotNull("Ho headers found", foundHeaders);
-        checkAuthHeader(tType, tValue);
-        
-        Map<String, ?> modifiers = Map.of("headers",
-                                          Map.of("If-None-Exist", "name=" + "Man"));
-        
-        // Now, create our here again, but conditional on it's not being already there.
-        
-        resp = v.execute("com.vantiq.fhir.fhirService.create",
-                                        Map.of("type", "Patient",
-                                               "id", "batman",
-                                               "resource", ourHeroMap,
-                                               "modifiers", modifiers));
-        assertTrue("Could not create our hero: " + resp.getErrors(), resp.isSuccess());
-        assertNotNull("Ho headers found", foundHeaders);
-        checkAuthHeader(tType, tValue);
-        Header modHeader = findHeader("If-None-Exist");
-        assertNotNull("No If-None-Exist header found", modHeader);
-        assertEquals("Wrong value for If-None_Exist header", "name=Man", modHeader.getValue());
     }
     
-    Header findHeader(String headerName) {
-        for (Header foundHeader : foundHeaders) {
-            if (headerName.equalsIgnoreCase(foundHeader.getName())) {
+    Map.Entry<String, String> findHeader(String headerName, Map<String, String> foundHeaders) {
+        for ( Map.Entry<String, String> foundHeader : foundHeaders.entrySet()) {
+            if (headerName.equalsIgnoreCase(foundHeader.getKey())) {
                 return foundHeader;
             }
         }
         return null;
     }
     
-    void checkAuthHeader(String tType, String tValue) {
-        Header authHeader = findHeader("Authorization");
+    void checkAuthHeader(String tType, String tValue, Map<String, String> foundHeaders) {
+        Map.Entry<String, String> authHeader = findHeader("Authorization", foundHeaders);
         if (tValue != null) {
             assertNotNull("No Authorization header found", authHeader);
             String[] hParts = authHeader.getValue().split("\\s");
