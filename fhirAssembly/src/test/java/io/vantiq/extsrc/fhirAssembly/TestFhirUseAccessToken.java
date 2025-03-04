@@ -256,7 +256,7 @@ public class TestFhirUseAccessToken extends LocalServerTestBase {
             Map<String, ?> modifiers = Map.of("headers",
                                               Map.of("If-None-Exist", "name=" + "Man"));
             
-            // Now, create our here again, but conditional on it's not being already there.
+            // Now, create our hero again, but conditional on his not being already there.
             
             resp = v.execute("com.vantiq.fhir.fhirService.create",
                              Map.of("type", "Patient",

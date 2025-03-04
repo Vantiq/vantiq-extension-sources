@@ -71,7 +71,7 @@ outline those defined below. These are all found in the package `com.vantiq.fhir
 
 * `fhirService` -- This is the point of interaction with the FHIR server.  It includes the following procedures and 
   their parameters, most of which are modeled after the similarly named 
-  [FHIR _interactions_](https://hl7.org/fhir/R4/http.html).  
+  [FHIR _interactions_](https://hl7.org/fhir/R4/http.html).
     * `create` -- Creates a FHIR Resource
         * `type` -- (String, Required) The name of the resource type
         * `resource` -- (Object, Required) The instance of the resource type
@@ -145,7 +145,8 @@ _links_ returned,
     * `link` -- (String, Required) The link to be returned
 
 In addition to the _interaction_-related procedures above, there are a number of procedures that can be used to 
-fetch about the FHIR server.
+fetch information about the FHIR server.
+
   * `getCapabilityStatement` -- returns the capability statement for the FHIR server
       * (No parameters)
   * `getSMARTConfiguration` -- returns the SMART configuration for the FHIR server (if any).  If none is present, 
@@ -159,6 +160,7 @@ Finally, there is one procedure used to provide authentication information (an _
 with the FHIR server. This is used when the `authenticationMechanism` is set to `ApplicationManaged`.  See the 
 discussion in [Security or Authentication Properties](#security-or-authentication-properties), specifically the 
 [`ApplicationManaged` section](#authentication-mechanism-applicationmanaged).
+
   * `useAccessToken` -- set the access token to be used for authentication to the FHIR server.
      * `accessToken` -- (String, Required) the access token to use
      * `tokenType` -- (String) The type of token.  This is used on the `Authorization` header.  The default value is 
