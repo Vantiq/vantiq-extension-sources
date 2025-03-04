@@ -15,21 +15,24 @@ if (!theSource) {
     theSource = fhirSource.getValue()
 }
 var retVal = ""
-var headers
-var gp
+var headers = {}
+var gp = {}
 var effectiveResource = resource
 
 if (modifiers) {
     if (modifiers.headers) {
-        headers = modifiers.headers
-    } else {
-        headers = {}
+        headers = Object.clone(modifiers.headers)
     }
     if (modifiers.generalParams){
         gp = modifiers.generalParams
-    } else {
-        gp = {}
     }
+}
+
+var pAT = providedAccessToken.getValue()
+if (pAT && pAT.has("authHeader") && !headers.Authorization) {
+    // Here, if the call has provided an access token & type, we'll use that if their headers
+    // do not already contain one.
+    headers.Authorization = pAT.authHeader
 }
 
 var ct = "application/fhir+json"

@@ -16,6 +16,7 @@ java {
 ext {
     fhirServerUrl = 'http://localhost:8090/fhir'
     fhirServerStartLimitSeconds = 180
+    httpComponentVersion = '4.5.14'
 }
 
 repositories {
@@ -80,6 +81,8 @@ dependencies {
     testImplementation "org.projectlombok:lombok:${lombokVersion}"
     testImplementation 'com.fasterxml.jackson.core:jackson-databind:2.17.2'
     testImplementation "io.vantiq:vantiq-sdk:${vantiqSDKVersion}"
+    testImplementation "org.apache.httpcomponents:httpclient:${httpComponentVersion}"
+    testImplementation "org.apache.httpcomponents:httpclient:${httpComponentVersion}:tests"
 
     // Use JUnit test framework
     testImplementation 'junit:junit:4.13.1'
