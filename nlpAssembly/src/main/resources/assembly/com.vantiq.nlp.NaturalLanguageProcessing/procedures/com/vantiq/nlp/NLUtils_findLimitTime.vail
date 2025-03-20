@@ -1,0 +1,189 @@
+package com.vantiq.nlp
+
+PROCEDURE NLUtils.findLimitTime(intent) HIDDEN
+
+log.debug("findLimitTime(): Intent: " + intent)
+var TIME_RANGE = "builtin.datetimeV2.timerange"
+var DATE_RANGE = "builtin.datetimeV2.daterange"
+var DATETIME_RANGE = "builtin.datetimeV2.datetimerange"
+var BUILTIN_AGE = "builtin.age"
+var CLU_AGE = "age"
+var V3_PLAIN_DATETIME = "datetimeV2" // also CLU
+var desiredEntity = ["builtin.datetimeV2.date",
+                        "builtin.datetimeV2.time",
+                        "builtin.datetimeV2.datetime",
+                        "builtin.datetimeV2.duration",
+                        V3_PLAIN_DATETIME,
+                        TIME_RANGE,
+                        DATE_RANGE,
+                        DATETIME_RANGE,
+                        BUILTIN_AGE,
+                        CLU_AGE]
+var cluVersion = intent.cluVersion
+
+var luisEnt = NLUtils.findRawEntity(intent, desiredEntity)
+
+// in LUIS V3, much of the info we need is in the entity rather than the raw entity.  So snarf it, too.
+
+var ent = NLUtils.findEntity(intent, desiredEntity)
+var entArg
+var limitTime = null
+log.debug("findLimitTime(): (cluVersion: {}), luisEnt: {}", [cluVersion, luisEnt])
+log.debug("findLimitTime(): found ent: {}", [ent])
+var luisVersion
+
+if (luisEnt != null) {
+    if (typeOf(luisEnt) == "List") {
+        luisEnt = luisEnt[0]
+    }
+    if (has(luisEnt, "entity")) {
+        luisVersion = 2
+    } else {
+        luisVersion = 3
+    }
+    // Now, we have the raw entity.  We'll hunt through it to find the ISO time LUIS returns to us.
+    // In this case, we know we found something.  Let's go dig up the base case.
+    // The raw intent looks like this:
+    // rawIntent:[query:Show active collaborations older than yesterday,
+    // topScoringIntent:[intent:system.showActive, score:0.9994987],
+    // entities:[
+    //	[entity:collaborations,
+    //		type:system.typeName,
+    //		startIndex:12,
+    //		endIndex:25,
+    //		score:0.999999344],
+	//	[entity:active,
+    //        type:system.condition_active,
+    //        startIndex:5,
+    //        endIndex:10,
+    //        score:0.9999704],
+	//	[entity:older than,
+    //        type:system.comparator_gt,
+    //        startIndex:27,
+    //        endIndex:36,
+    //        score:0.998014033],
+	//	[entity:yesterday,
+    //        type:builtin.datetimeV2.date,
+    //        startIndex:38,
+    //        endIndex:46,
+    //        resolution:[
+    //            values:[
+    //                [timex:2017-07-10,
+    //                 type:date,
+    //                 value:2017-07-10]
+    //            ]
+    //        ]
+    // ]
+
+    // An alternative form shows up when using "since" or "before" 1 October:
+    // show collaborations before 1 october:
+    // luisEnt:
+    // [ entity:before 1 october,
+    //   type:builtin.datetimeV2.daterange,
+    //   startIndex:27,
+    //   endIndex:42,
+    //   resolution: []
+    //      values:[
+    //          [timex:XXXX-10-01, type:daterange, end:2016-10-01],
+    //          [timex:XXXX-10-01, type:daterange, end:2017-10-01]]]]
+    // In this case, we'll need to determine what the operator is (since or before/gt/lt)
+    // since this text (before 1 october) will occlude the actual operator value
+
+    // Yet another alternative form occurs when queries like "younger than 3 days old" happen.
+    // In this case, LUIS determines that "3 days old" is an age (builtin.age).  In that
+    // case, we get an entity that looks like:
+    //  [ entity:3 days old,
+    //    type:builtin.age,
+    //    startIndex:38,
+    //    endIndex:47,
+    //    resolution:[unit:Day, value:3]] // resolutions in CLU
+    // To process these, we convert the "value unit" (3 days, here) into milliseconds
+    // (for future compatibility -- at present, LUIS only goes down to seconds), then
+    // convert those milliseconds into a duration (PT(millis/1000).(millis%1000)S),
+    // and use our duration converter to do the dirty work.
+
+
+    // We'll need to examine the entity we got back to determine
+    // how the date is specified. If we have a range (of date or time),
+    // we need to process that differently as there's an implied comparator
+    // in many of those cases.
+    if (luisEnt.type == BUILTIN_AGE || luisEnt.category == CLU_AGE) {
+        var unit
+        var val
+        if (cluVersion == 1) {
+            //            show active collaborations younger than 2 days old
+            //            {category=age,
+            //            text=2 days old, offset=34, length=10,
+            //             confidenceScore=1,
+            //             resolutions=[{resolutionKind=AgeResolution, unit=Day, value=2}],
+            //             extraInformation=[{extraInformationKind=EntitySubtype, value=quantity.age}]}
+            unit = luisEnt.resolutions[0].unit
+            val = luisEnt.resolutions[0].value
+        } else if (luisVersion == 3) {
+            // Then we have a LUIS V3 entity.  Determine age based on those conventions
+            unit = ent.val.units
+            val = ent.val.number
+        } else {
+            unit = luisEnt.resolution.unit
+            val = luisEnt.resolution.value.toInteger()
+        }
+        var ageInMillis = date(val, unit, "milliseconds")
+        var timeSpec = "PT" + ageInMillis/1000 + "." + ageInMillis % 1000 + "S"
+
+        log.debug("findLimitTime(): Converted {} {} into duration {}", [val, unit, timeSpec])
+        limitTime = {operator: null,
+                        limit: NLUtils.convertTimeToInternalTime(timeSpec, "duration")}
+    } else {
+        var timeSpec
+        var resolution
+        var limitTime = null
+        if (cluVersion == 1) {
+            entArg = luisEnt
+            resolution = luisEnt.extraInformation[0].value
+            timeSpec = luisEnt.resolutions[0].timex
+        } else if (luisVersion == 3) {
+            // Then we have V3.  Use the info here...
+            var val 
+            if (typeOf(ent.val) == "List") {
+                val = ent.val[0]
+            } else {
+                val = ent.val
+            }
+            entArg = val
+
+            resolution = val.type
+            timeSpec = val.values[0].timex
+        } else {
+            entArg = luisEnt
+            if (typeOf(luisEnt.resolution.values.timex) == "String") {
+               timeSpec = luisEnt.resolution.values.timex
+               resolution = luisEnt.resolution.values.type
+            } else {
+                timeSpec = luisEnt.resolution.values.timex.get(0)
+                resolution = luisEnt.resolution.values.type.get(0)
+            }
+        }
+
+        log.debug("findLimitTime(): timeSpec: {}, resolution: {} for Entity: {}", [timeSpec, resolution, luisEnt])
+
+        if (timeSpec != null && resolution != null) {
+            if (resolution == "daterange" || resolution == "datetime.daterange") {
+                limitTime = NLUtils.parseRange(entArg, timeSpec, "date")
+            } else if (resolution == "timerange" || resolution == "datetime.timerange") {
+                limitTime = NLUtils.parseRange(entArg, timeSpec, "time")
+            } else if (resolution == "datetimerange"|| resolution == "datetime.datetimerange") {
+                limitTime = NLUtils.parseRange(entArg, timeSpec, "datetime")
+            } else {
+                // Now, we have a time specification.
+                //
+                // We'll need to convert it to a vantiq-compatible time
+                if (resolution == "datetime.duration") {
+                    resolution = "duration"
+                }
+                limitTime = { operator: null, limit: NLUtils.convertTimeToInternalTime(timeSpec, resolution) }
+            }
+        }
+    }
+}
+log.debug("findLimitTime(): Returning: " + limitTime + " for NL time " + entArg)
+return limitTime

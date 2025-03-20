@@ -1,0 +1,622 @@
+{
+  "ars_relationships" : [ ],
+  "links" : [ {
+    "source" : "procedure/com.vantiq.nlp.NLCore.respondToConversationalQuery",
+    "target" : "services/com.vantiq.nlp.NLCore"
+  }, {
+    "source" : "services/com.vantiq.nlp.NLCore",
+    "target" : "procedure/com.vantiq.nlp.NLCore.respondToConversationalQuery"
+  }, {
+    "source" : "services/com.vantiq.nlp.NLCore",
+    "target" : "document/com.vantiq.nlp.NLCore.js"
+  }, {
+    "source" : "services/com.vantiq.nlp.NLCore",
+    "target" : "procedure/com.vantiq.nlp.NLCore.publishResponse"
+  }, {
+    "source" : "procedure/com.vantiq.nlp.NLCore.publishResponse",
+    "target" : "services/com.vantiq.nlp.NLCore"
+  }, {
+    "source" : "services/com.vantiq.nlp.NLUtils",
+    "target" : "procedure/com.vantiq.nlp.NLUtils.parseRange"
+  }, {
+    "source" : "services/com.vantiq.nlp.NLUtils",
+    "target" : "procedure/com.vantiq.nlp.NLUtils.findEntity"
+  }, {
+    "source" : "services/com.vantiq.nlp.NLUtils",
+    "target" : "procedure/com.vantiq.nlp.NLUtils.findRawEntity"
+  }, {
+    "source" : "services/com.vantiq.nlp.NLUtils",
+    "target" : "procedure/com.vantiq.nlp.NLUtils.findLimitTime"
+  }, {
+    "source" : "services/com.vantiq.nlp.NLUtils",
+    "target" : "procedure/com.vantiq.nlp.NLUtils.xlateEntToTable"
+  }, {
+    "source" : "services/com.vantiq.nlp.NLUtils",
+    "target" : "procedure/com.vantiq.nlp.NLUtils.markOcclusion"
+  }, {
+    "source" : "services/com.vantiq.nlp.NLUtils",
+    "target" : "procedure/com.vantiq.nlp.NLUtils.findOperator"
+  }, {
+    "source" : "services/com.vantiq.nlp.NLUtils",
+    "target" : "procedure/com.vantiq.nlp.NLUtils.convertTimeToInternalTime"
+  }, {
+    "source" : "services/com.vantiq.nlp.NLUtils",
+    "target" : "procedure/com.vantiq.nlp.NLUtils.findDesiredType"
+  }, {
+    "source" : "services/com.vantiq.nlp.NLUtils",
+    "target" : "procedure/com.vantiq.nlp.NLUtils.prepareText"
+  }, {
+    "source" : "procedure/com.vantiq.nlp.NLSystemExec.executeSystemIntent",
+    "target" : "procedure/com.vantiq.nlp.NLSystemExec.performShowActive"
+  }, {
+    "source" : "procedure/com.vantiq.nlp.NLSystemExec.executeSystemIntent",
+    "target" : "procedure/com.vantiq.nlp.NLSystemExec.performList"
+  }, {
+    "source" : "procedure/com.vantiq.nlp.NLSystemExec.executeSystemIntent",
+    "target" : "procedure/com.vantiq.nlp.NLSystemExec.performDescribe"
+  }, {
+    "source" : "procedure/com.vantiq.nlp.NLCore.processMessage",
+    "target" : "services/com.vantiq.nlp.NLCore"
+  }, {
+    "source" : "services/com.vantiq.nlp.NLCore",
+    "target" : "procedure/com.vantiq.nlp.NLCore.processMessage"
+  }, {
+    "source" : "procedure/com.vantiq.nlp.NLCore.processMessage",
+    "target" : "procedure/com.vantiq.nlp.NLCore.publishResponse"
+  }, {
+    "source" : "procedure/com.vantiq.nlp.NLSystemExec.performDescribe",
+    "target" : "procedure/com.vantiq.nlp.NLUtils.findDesiredType"
+  }, {
+    "source" : "procedure/com.vantiq.nlp.NLSystemExec.performDescribe",
+    "target" : "procedure/com.vantiq.nlp.NLUtils.xlateEntToTable"
+  }, {
+    "source" : "procedure/com.vantiq.nlp.NLSystemExec.performDescribe",
+    "target" : "services/com.vantiq.nlp.NLSystemExec"
+  }, {
+    "source" : "services/com.vantiq.nlp.NLSystemExec",
+    "target" : "procedure/com.vantiq.nlp.NLSystemExec.performDescribe"
+  }, {
+    "source" : "procedure/com.vantiq.nlp.NLSystemExec.performList",
+    "target" : "procedure/com.vantiq.nlp.NLUtils.xlateEntToTable"
+  }, {
+    "source" : "procedure/com.vantiq.nlp.NLSystemExec.performList",
+    "target" : "procedure/com.vantiq.nlp.NLUtils.findDesiredType"
+  }, {
+    "source" : "procedure/com.vantiq.nlp.NLSystemExec.performList",
+    "target" : "procedure/com.vantiq.nlp.NLUtils.findEntity"
+  }, {
+    "source" : "procedure/com.vantiq.nlp.NLSystemExec.performList",
+    "target" : "procedure/com.vantiq.nlp.NLUtils.findLimitTime"
+  }, {
+    "source" : "procedure/com.vantiq.nlp.NLSystemExec.performList",
+    "target" : "procedure/com.vantiq.nlp.NLUtils.findOperator"
+  }, {
+    "source" : "procedure/com.vantiq.nlp.NLSystemExec.performList",
+    "target" : "services/com.vantiq.nlp.NLSystemExec"
+  }, {
+    "source" : "services/com.vantiq.nlp.NLSystemExec",
+    "target" : "procedure/com.vantiq.nlp.NLSystemExec.performList"
+  }, {
+    "source" : "procedure/com.vantiq.nlp.NLUtils.findEntity",
+    "target" : "services/com.vantiq.nlp.NLUtils"
+  }, {
+    "source" : "procedure/com.vantiq.nlp.NLUtils.findOperator",
+    "target" : "services/com.vantiq.nlp.NLUtils"
+  }, {
+    "source" : "services/com.vantiq.nlp.NLCore",
+    "target" : "procedure/com.vantiq.nlp.NLCore.processSystemUtterance"
+  }, {
+    "source" : "services/com.vantiq.nlp.NLCore",
+    "target" : "procedure/com.vantiq.nlp.NLCore.askAzureCLU"
+  }, {
+    "source" : "services/com.vantiq.nlp.NLCore",
+    "target" : "procedure/com.vantiq.nlp.NLCore.interpretConversationalQuery"
+  }, {
+    "source" : "services/com.vantiq.nlp.NLCore",
+    "target" : "procedure/com.vantiq.nlp.NLCore.validateIntent"
+  }, {
+    "source" : "services/com.vantiq.nlp.NLCore",
+    "target" : "procedure/com.vantiq.nlp.NLCore.executeIntent"
+  }, {
+    "source" : "procedure/com.vantiq.nlp.NLSystemExec.performShowActive",
+    "target" : "procedure/com.vantiq.nlp.NLUtils.xlateEntToTable"
+  }, {
+    "source" : "procedure/com.vantiq.nlp.NLSystemExec.performShowActive",
+    "target" : "procedure/com.vantiq.nlp.NLUtils.findOperator"
+  }, {
+    "source" : "procedure/com.vantiq.nlp.NLSystemExec.performShowActive",
+    "target" : "procedure/com.vantiq.nlp.NLUtils.findDesiredType"
+  }, {
+    "source" : "procedure/com.vantiq.nlp.NLSystemExec.performShowActive",
+    "target" : "procedure/com.vantiq.nlp.NLUtils.findLimitTime"
+  }, {
+    "source" : "procedure/com.vantiq.nlp.NLSystemExec.performShowActive",
+    "target" : "services/com.vantiq.nlp.NLSystemExec"
+  }, {
+    "source" : "services/com.vantiq.nlp.NLSystemExec",
+    "target" : "procedure/com.vantiq.nlp.NLSystemExec.performShowActive"
+  }, {
+    "source" : "procedure/com.vantiq.nlp.NLCore.processSystemUtterance",
+    "target" : "procedure/com.vantiq.nlp.NLSystemExec.executeSystemIntent"
+  }, {
+    "source" : "procedure/com.vantiq.nlp.NLCore.processSystemUtterance",
+    "target" : "services/com.vantiq.nlp.NLCore"
+  }, {
+    "source" : "procedure/com.vantiq.nlp.NLUtils.convertTimeToInternalTime",
+    "target" : "services/com.vantiq.nlp.NLUtils"
+  }, {
+    "source" : "procedure/com.vantiq.nlp.NLUtils.parseRange",
+    "target" : "services/com.vantiq.nlp.NLUtils"
+  }, {
+    "source" : "procedure/com.vantiq.nlp.NLUtils.parseRange",
+    "target" : "procedure/com.vantiq.nlp.NLUtils.convertTimeToInternalTime"
+  }, {
+    "source" : "procedure/com.vantiq.nlp.NLUtils.findRawEntity",
+    "target" : "services/com.vantiq.nlp.NLUtils"
+  }, {
+    "source" : "procedure/com.vantiq.nlp.NLUtils.findRawEntity",
+    "target" : "procedure/com.vantiq.nlp.NLUtils.findEntity"
+  }, {
+    "source" : "procedure/com.vantiq.nlp.NLCore.interpretConversationalQuery",
+    "target" : "services/com.vantiq.nlp.NLCore"
+  }, {
+    "source" : "procedure/com.vantiq.nlp.NLCore.interpretConversationalQuery",
+    "target" : "procedure/com.vantiq.nlp.NLCore.askAzureCLU"
+  }, {
+    "source" : "procedure/com.vantiq.nlp.NLCore.interpretConversationalQuery",
+    "target" : "procedure/com.vantiq.nlp.NLCore.validateIntent"
+  }, {
+    "source" : "procedure/com.vantiq.nlp.NLUtils.markOcclusion",
+    "target" : "services/com.vantiq.nlp.NLUtils"
+  }, {
+    "source" : "procedure/com.vantiq.nlp.NLUtils.findLimitTime",
+    "target" : "procedure/com.vantiq.nlp.NLUtils.findEntity"
+  }, {
+    "source" : "procedure/com.vantiq.nlp.NLUtils.findLimitTime",
+    "target" : "procedure/com.vantiq.nlp.NLUtils.parseRange"
+  }, {
+    "source" : "procedure/com.vantiq.nlp.NLUtils.findLimitTime",
+    "target" : "procedure/com.vantiq.nlp.NLUtils.findRawEntity"
+  }, {
+    "source" : "procedure/com.vantiq.nlp.NLUtils.findLimitTime",
+    "target" : "procedure/com.vantiq.nlp.NLUtils.convertTimeToInternalTime"
+  }, {
+    "source" : "procedure/com.vantiq.nlp.NLUtils.findLimitTime",
+    "target" : "services/com.vantiq.nlp.NLUtils"
+  }, {
+    "source" : "procedure/com.vantiq.nlp.NLCore.respondToConversationalQuery",
+    "target" : "procedure/com.vantiq.nlp.NLCore.interpretConversationalQuery"
+  }, {
+    "source" : "procedure/com.vantiq.nlp.NLUtils.findDesiredType",
+    "target" : "procedure/com.vantiq.nlp.NLUtils.findEntity"
+  }, {
+    "source" : "procedure/com.vantiq.nlp.NLUtils.findDesiredType",
+    "target" : "services/com.vantiq.nlp.NLUtils"
+  }, {
+    "source" : "procedure/com.vantiq.nlp.NLCore.executeIntent",
+    "target" : "services/com.vantiq.nlp.NLCore"
+  }, {
+    "source" : "procedure/com.vantiq.nlp.NLCore.executeIntent",
+    "target" : "procedure/com.vantiq.nlp.NLSystemExec.executeSystemIntent"
+  }, {
+    "source" : "procedure/com.vantiq.nlp.NLCore.validateIntent",
+    "target" : "services/com.vantiq.nlp.NLCore"
+  }, {
+    "source" : "procedure/com.vantiq.nlp.NLUtils.xlateEntToTable",
+    "target" : "services/com.vantiq.nlp.NLUtils"
+  }, {
+    "source" : "procedure/com.vantiq.nlp.NLUtils.prepareText",
+    "target" : "services/com.vantiq.nlp.NLUtils"
+  }, {
+    "source" : "procedure/com.vantiq.nlp.NLCore.askAzureCLU",
+    "target" : "services/com.vantiq.nlp.NLCore"
+  }, {
+    "source" : "procedure/com.vantiq.nlp.NLCore.interpretConversationalQuery",
+    "target" : "procedure/com.vantiq.nlp.NLUtils.markOcclusion"
+  }, {
+    "source" : "procedure/com.vantiq.nlp.NLCore.publishResponse",
+    "target" : "services/com.vantiq.nlp.NLUtils"
+  }, {
+    "source" : "procedure/com.vantiq.nlp.NLCore.publishResponse",
+    "target" : "procedure/com.vantiq.nlp.NLUtils.prepareText"
+  }, {
+    "source" : "services/com.vantiq.nlp.NLUtils",
+    "target" : "procedure/com.vantiq.nlp.NLUtils.findEntityName"
+  }, {
+    "source" : "procedure/com.vantiq.nlp.NLUtils.findOperator",
+    "target" : "procedure/com.vantiq.nlp.NLUtils.findEntityName"
+  }, {
+    "source" : "procedure/com.vantiq.nlp.NLUtils.findEntityName",
+    "target" : "services/com.vantiq.nlp.NLUtils"
+  }, {
+    "source" : "procedure/com.vantiq.nlp.NLUtils.findEntityName",
+    "target" : "procedure/com.vantiq.nlp.NLUtils.findEntity"
+  }, {
+    "source" : "procedure/com.vantiq.nlp.NLSystemExec.performShowActive",
+    "target" : "procedure/com.vantiq.nlp.NLUtils.findEntityName"
+  }, {
+    "source" : "procedure/com.vantiq.nlp.NLSystemExec.performDescribe",
+    "target" : "services/com.vantiq.nlp.NLUtils"
+  }, {
+    "source" : "services/com.vantiq.nlp.NLSystemExec",
+    "target" : "document/com.vantiq.nlp.NLSystemExec.js"
+  }, {
+    "source" : "procedure/com.vantiq.nlp.NLSystemExec.performList",
+    "target" : "services/com.vantiq.nlp.NLUtils"
+  }, {
+    "source" : "procedure/com.vantiq.nlp.NLSystemExec.performShowActive",
+    "target" : "services/com.vantiq.nlp.NLUtils"
+  }, {
+    "source" : "services/com.vantiq.nlp.NLSystemExec",
+    "target" : "procedure/com.vantiq.nlp.NLSystemExec.executeSmalltalkIntent"
+  }, {
+    "source" : "procedure/com.vantiq.nlp.NLSystemExec.executeSmalltalkIntent",
+    "target" : "services/com.vantiq.nlp.NLSystemExec"
+  }, {
+    "source" : "procedure/com.vantiq.nlp.NLSystemExec.executeSystemIntent",
+    "target" : "services/com.vantiq.nlp.NLSystemExec"
+  }, {
+    "source" : "services/com.vantiq.nlp.NLSystemExec",
+    "target" : "procedure/com.vantiq.nlp.NLSystemExec.executeSystemIntent"
+  }, {
+    "source" : "procedure/com.vantiq.nlp.NLSystemExec.executeSystemIntent",
+    "target" : "procedure/com.vantiq.nlp.NLSystemExec.executeSmalltalkIntent"
+  } ],
+  "name" : "com.vantiq.nlp.NaturalLanguageProcessing",
+  "options" : {
+    "description" : "",
+    "dockCollapsed" : {
+      "bottom" : false,
+      "left" : false,
+      "right" : false,
+      "top" : false,
+      "viewtabs" : false
+    },
+    "dockDimensions" : {
+      "bottom" : 200,
+      "debug" : [ 780.25, 781.75 ],
+      "left" : 210,
+      "right" : 220,
+      "top" : 0,
+      "viewtabs" : 0
+    },
+    "exclusionList" : [ ],
+    "filterBitArray" : "ffffffffffffffffffffffffffffffff",
+    "isModeloProject" : true,
+    "layoutStyle" : "flex",
+    "openFolders" : [ "com.vantiq.nlp", "com.vantiq.nlp/app", "com.vantiq.nlp/services", "document", "services/com.vantiq.nlp.NLCore", "services/com.vantiq.nlp.NLSystemExec" ],
+    "partitionsSettings" : { },
+    "rootViewFlavor" : 5,
+    "showGrid" : true,
+    "structure" : {
+      "fraction" : 1,
+      "type" : "R[4]"
+    },
+    "type" : "dev",
+    "v" : 6,
+    "viewUUID" : "MAINVIEW"
+  },
+  "partitions" : [ ],
+  "resources" : [ {
+    "label" : "com.vantiq.nlp.InterpretCLU",
+    "name" : "com.vantiq.nlp.InterpretCLU",
+    "resourceReference" : "/collaborationtypes/com.vantiq.nlp.InterpretCLU",
+    "timestamp" : "2025-03-18T23:38:49.461Z",
+    "type" : 12
+  }, {
+    "label" : "com.vantiq.nlp.NLCore",
+    "name" : "com.vantiq.nlp.NLCore",
+    "resourceReference" : "/services/com.vantiq.nlp.NLCore",
+    "timestamp" : "2025-03-18T23:38:46.778Z",
+    "type" : 63
+  }, {
+    "label" : "com.vantiq.nlp.NLCore.askAzureCLU",
+    "name" : "com.vantiq.nlp.NLCore.askAzureCLU",
+    "packageName" : "com.vantiq.nlp",
+    "procedureName" : "askAzureCLU",
+    "resourceReference" : "/procedures/com.vantiq.nlp.NLCore.askAzureCLU",
+    "serviceName" : "NLCore",
+    "timestamp" : "2025-03-18T23:38:48.372Z",
+    "type" : 3
+  }, {
+    "label" : "com.vantiq.nlp.NLCore.executeIntent",
+    "name" : "com.vantiq.nlp.NLCore.executeIntent",
+    "packageName" : "com.vantiq.nlp",
+    "procedureName" : "executeIntent",
+    "resourceReference" : "/procedures/com.vantiq.nlp.NLCore.executeIntent",
+    "serviceName" : "NLCore",
+    "timestamp" : "2025-03-18T23:38:48.762Z",
+    "type" : 3
+  }, {
+    "label" : "com.vantiq.nlp.NLCore.interpretConversationalQuery",
+    "name" : "com.vantiq.nlp.NLCore.interpretConversationalQuery",
+    "packageName" : "com.vantiq.nlp",
+    "procedureName" : "interpretConversationalQuery",
+    "resourceReference" : "/procedures/com.vantiq.nlp.NLCore.interpretConversationalQuery",
+    "serviceName" : "NLCore",
+    "timestamp" : "2025-03-18T23:38:47.565Z",
+    "type" : 3
+  }, {
+    "label" : "com.vantiq.nlp.NLCore.js",
+    "name" : "com.vantiq.nlp.NLCore.js",
+    "resourceReference" : "/documents/com.vantiq.nlp.NLCore.js",
+    "timestamp" : "2025-03-18T23:38:46.956Z",
+    "type" : 19
+  }, {
+    "label" : "com.vantiq.nlp.NLCore.processMessage",
+    "name" : "com.vantiq.nlp.NLCore.processMessage",
+    "packageName" : "com.vantiq.nlp",
+    "procedureName" : "processMessage",
+    "resourceReference" : "/procedures/com.vantiq.nlp.NLCore.processMessage",
+    "serviceName" : "NLCore",
+    "timestamp" : "2025-03-18T23:38:47.063Z",
+    "type" : 3
+  }, {
+    "label" : "com.vantiq.nlp.NLCore.processSystemUtterance",
+    "name" : "com.vantiq.nlp.NLCore.processSystemUtterance",
+    "packageName" : "com.vantiq.nlp",
+    "procedureName" : "processSystemUtterance",
+    "resourceReference" : "/procedures/com.vantiq.nlp.NLCore.processSystemUtterance",
+    "serviceName" : "NLCore",
+    "timestamp" : "2025-03-18T23:38:47.973Z",
+    "type" : 3
+  }, {
+    "label" : "com.vantiq.nlp.NLCore.publishResponse",
+    "name" : "com.vantiq.nlp.NLCore.publishResponse",
+    "packageName" : "com.vantiq.nlp",
+    "procedureName" : "publishResponse",
+    "resourceReference" : "/procedures/com.vantiq.nlp.NLCore.publishResponse",
+    "serviceName" : "NLCore",
+    "timestamp" : "2025-03-18T23:38:48.195Z",
+    "type" : 3
+  }, {
+    "label" : "com.vantiq.nlp.NLCore.respondToConversationalQuery",
+    "name" : "com.vantiq.nlp.NLCore.respondToConversationalQuery",
+    "packageName" : "com.vantiq.nlp",
+    "procedureName" : "respondToConversationalQuery",
+    "resourceReference" : "/procedures/com.vantiq.nlp.NLCore.respondToConversationalQuery",
+    "serviceName" : "NLCore",
+    "timestamp" : "2025-03-18T23:38:48.470Z",
+    "type" : 3
+  }, {
+    "label" : "com.vantiq.nlp.NLCore.validateIntent",
+    "name" : "com.vantiq.nlp.NLCore.validateIntent",
+    "packageName" : "com.vantiq.nlp",
+    "procedureName" : "validateIntent",
+    "resourceReference" : "/procedures/com.vantiq.nlp.NLCore.validateIntent",
+    "serviceName" : "NLCore",
+    "timestamp" : "2025-03-18T23:38:47.076Z",
+    "type" : 3
+  }, {
+    "label" : "com.vantiq.nlp.NLSystemExec",
+    "name" : "com.vantiq.nlp.NLSystemExec",
+    "resourceReference" : "/services/com.vantiq.nlp.NLSystemExec",
+    "timestamp" : "2025-03-18T23:38:46.750Z",
+    "type" : 63
+  }, {
+    "label" : "com.vantiq.nlp.NLSystemExec.executeSmalltalkIntent",
+    "name" : "com.vantiq.nlp.NLSystemExec.executeSmalltalkIntent",
+    "packageName" : "com.vantiq.nlp",
+    "procedureName" : "executeSmalltalkIntent",
+    "resourceReference" : "/procedures/com.vantiq.nlp.NLSystemExec.executeSmalltalkIntent",
+    "serviceName" : "NLSystemExec",
+    "timestamp" : "2025-03-18T23:38:48.607Z",
+    "type" : 3
+  }, {
+    "label" : "com.vantiq.nlp.NLSystemExec.executeSystemIntent",
+    "name" : "com.vantiq.nlp.NLSystemExec.executeSystemIntent",
+    "packageName" : "com.vantiq.nlp",
+    "procedureName" : "executeSystemIntent",
+    "resourceReference" : "/procedures/com.vantiq.nlp.NLSystemExec.executeSystemIntent",
+    "serviceName" : "NLSystemExec",
+    "timestamp" : "2025-03-18T23:38:47.729Z",
+    "type" : 3
+  }, {
+    "label" : "com.vantiq.nlp.NLSystemExec.js",
+    "name" : "com.vantiq.nlp.NLSystemExec.js",
+    "resourceReference" : "/documents/com.vantiq.nlp.NLSystemExec.js",
+    "timestamp" : "2025-03-18T23:38:46.926Z",
+    "type" : 19
+  }, {
+    "label" : "com.vantiq.nlp.NLSystemExec.performDescribe",
+    "name" : "com.vantiq.nlp.NLSystemExec.performDescribe",
+    "packageName" : "com.vantiq.nlp",
+    "procedureName" : "performDescribe",
+    "resourceReference" : "/procedures/com.vantiq.nlp.NLSystemExec.performDescribe",
+    "serviceName" : "NLSystemExec",
+    "timestamp" : "2025-03-18T23:38:47.404Z",
+    "type" : 3
+  }, {
+    "label" : "com.vantiq.nlp.NLSystemExec.performList",
+    "name" : "com.vantiq.nlp.NLSystemExec.performList",
+    "packageName" : "com.vantiq.nlp",
+    "procedureName" : "performList",
+    "resourceReference" : "/procedures/com.vantiq.nlp.NLSystemExec.performList",
+    "serviceName" : "NLSystemExec",
+    "timestamp" : "2025-03-18T23:38:47.067Z",
+    "type" : 3
+  }, {
+    "label" : "com.vantiq.nlp.NLSystemExec.performShowActive",
+    "name" : "com.vantiq.nlp.NLSystemExec.performShowActive",
+    "packageName" : "com.vantiq.nlp",
+    "procedureName" : "performShowActive",
+    "resourceReference" : "/procedures/com.vantiq.nlp.NLSystemExec.performShowActive",
+    "serviceName" : "NLSystemExec",
+    "timestamp" : "2025-03-18T23:38:48.616Z",
+    "type" : 3
+  }, {
+    "label" : "com.vantiq.nlp.NLUtils",
+    "name" : "com.vantiq.nlp.NLUtils",
+    "resourceReference" : "/services/com.vantiq.nlp.NLUtils",
+    "timestamp" : "2025-03-18T23:38:46.755Z",
+    "type" : 63
+  }, {
+    "label" : "com.vantiq.nlp.NLUtils.convertTimeToInternalTime",
+    "name" : "com.vantiq.nlp.NLUtils.convertTimeToInternalTime",
+    "packageName" : "com.vantiq.nlp",
+    "procedureName" : "convertTimeToInternalTime",
+    "resourceReference" : "/procedures/com.vantiq.nlp.NLUtils.convertTimeToInternalTime",
+    "serviceName" : "NLUtils",
+    "timestamp" : "2025-03-18T23:38:48.430Z",
+    "type" : 3
+  }, {
+    "label" : "com.vantiq.nlp.NLUtils.findDesiredType",
+    "name" : "com.vantiq.nlp.NLUtils.findDesiredType",
+    "packageName" : "com.vantiq.nlp",
+    "procedureName" : "findDesiredType",
+    "resourceReference" : "/procedures/com.vantiq.nlp.NLUtils.findDesiredType",
+    "serviceName" : "NLUtils",
+    "timestamp" : "2025-03-18T23:38:48.848Z",
+    "type" : 3
+  }, {
+    "label" : "com.vantiq.nlp.NLUtils.findEntity",
+    "name" : "com.vantiq.nlp.NLUtils.findEntity",
+    "packageName" : "com.vantiq.nlp",
+    "procedureName" : "findEntity",
+    "resourceReference" : "/procedures/com.vantiq.nlp.NLUtils.findEntity",
+    "serviceName" : "NLUtils",
+    "timestamp" : "2025-03-18T23:38:47.063Z",
+    "type" : 3
+  }, {
+    "label" : "com.vantiq.nlp.NLUtils.findEntityName",
+    "name" : "com.vantiq.nlp.NLUtils.findEntityName",
+    "packageName" : "com.vantiq.nlp",
+    "procedureName" : "findEntityName",
+    "resourceReference" : "/procedures/com.vantiq.nlp.NLUtils.findEntityName",
+    "serviceName" : "NLUtils",
+    "timestamp" : "2025-03-18T23:38:47.069Z",
+    "type" : 3
+  }, {
+    "label" : "com.vantiq.nlp.NLUtils.findLimitTime",
+    "name" : "com.vantiq.nlp.NLUtils.findLimitTime",
+    "packageName" : "com.vantiq.nlp",
+    "procedureName" : "findLimitTime",
+    "resourceReference" : "/procedures/com.vantiq.nlp.NLUtils.findLimitTime",
+    "serviceName" : "NLUtils",
+    "timestamp" : "2025-03-18T23:38:47.980Z",
+    "type" : 3
+  }, {
+    "label" : "com.vantiq.nlp.NLUtils.findOperator",
+    "name" : "com.vantiq.nlp.NLUtils.findOperator",
+    "packageName" : "com.vantiq.nlp",
+    "procedureName" : "findOperator",
+    "resourceReference" : "/procedures/com.vantiq.nlp.NLUtils.findOperator",
+    "serviceName" : "NLUtils",
+    "timestamp" : "2025-03-18T23:38:47.078Z",
+    "type" : 3
+  }, {
+    "label" : "com.vantiq.nlp.NLUtils.findRawEntity",
+    "name" : "com.vantiq.nlp.NLUtils.findRawEntity",
+    "packageName" : "com.vantiq.nlp",
+    "procedureName" : "findRawEntity",
+    "resourceReference" : "/procedures/com.vantiq.nlp.NLUtils.findRawEntity",
+    "serviceName" : "NLUtils",
+    "timestamp" : "2025-03-18T23:38:47.620Z",
+    "type" : 3
+  }, {
+    "label" : "com.vantiq.nlp.NLUtils.markOcclusion",
+    "name" : "com.vantiq.nlp.NLUtils.markOcclusion",
+    "packageName" : "com.vantiq.nlp",
+    "procedureName" : "markOcclusion",
+    "resourceReference" : "/procedures/com.vantiq.nlp.NLUtils.markOcclusion",
+    "serviceName" : "NLUtils",
+    "timestamp" : "2025-03-18T23:38:47.820Z",
+    "type" : 3
+  }, {
+    "label" : "com.vantiq.nlp.NLUtils.parseRange",
+    "name" : "com.vantiq.nlp.NLUtils.parseRange",
+    "packageName" : "com.vantiq.nlp",
+    "procedureName" : "parseRange",
+    "resourceReference" : "/procedures/com.vantiq.nlp.NLUtils.parseRange",
+    "serviceName" : "NLUtils",
+    "timestamp" : "2025-03-18T23:38:48.017Z",
+    "type" : 3
+  }, {
+    "label" : "com.vantiq.nlp.NLUtils.prepareText",
+    "name" : "com.vantiq.nlp.NLUtils.prepareText",
+    "packageName" : "com.vantiq.nlp",
+    "procedureName" : "prepareText",
+    "resourceReference" : "/procedures/com.vantiq.nlp.NLUtils.prepareText",
+    "serviceName" : "NLUtils",
+    "timestamp" : "2025-03-18T23:38:47.898Z",
+    "type" : 3
+  }, {
+    "label" : "com.vantiq.nlp.NLUtils.xlateEntToTable",
+    "name" : "com.vantiq.nlp.NLUtils.xlateEntToTable",
+    "packageName" : "com.vantiq.nlp",
+    "procedureName" : "xlateEntToTable",
+    "resourceReference" : "/procedures/com.vantiq.nlp.NLUtils.xlateEntToTable",
+    "serviceName" : "NLUtils",
+    "timestamp" : "2025-03-18T23:38:47.481Z",
+    "type" : 3
+  }, {
+    "label" : "com.vantiq.nlp.ProcessIntent",
+    "name" : "com.vantiq.nlp.ProcessIntent",
+    "resourceReference" : "/collaborationtypes/com.vantiq.nlp.ProcessIntent",
+    "timestamp" : "2025-03-18T23:38:49.461Z",
+    "type" : 12
+  } ],
+  "tools" : [ {
+    "isPinned" : false,
+    "name" : "Errors",
+    "type" : 13
+  }, {
+    "dockLocation" : "top",
+    "isPinned" : false,
+    "name" : "Inactive Panes",
+    "type" : 99
+  }, {
+    "isPinned" : false,
+    "name" : "Log Messages",
+    "type" : 12
+  }, {
+    "isPinned" : false,
+    "name" : "Project Contents",
+    "type" : 2
+  }, {
+    "isPinned" : false,
+    "name" : "com.vantiq.nlp.InterpretCLU",
+    "pane" : {
+      "address" : "R[1]"
+    },
+    "resourceKey" : "app/com.vantiq.nlp.InterpretCLU",
+    "state" : 8,
+    "toolOptions" : { },
+    "type" : 15
+  }, {
+    "isPinned" : false,
+    "name" : "com.vantiq.nlp.NLCore",
+    "pane" : {
+      "address" : "R[0]"
+    },
+    "resourceKey" : "services/com.vantiq.nlp.NLCore",
+    "state" : 8,
+    "type" : 109
+  }, {
+    "isPinned" : false,
+    "name" : "com.vantiq.nlp.NLUtils",
+    "pane" : {
+      "address" : "R[3]",
+      "isActive" : true,
+      "isActiveTool" : true
+    },
+    "resourceKey" : "services/com.vantiq.nlp.NLUtils",
+    "state" : 8,
+    "type" : 109
+  }, {
+    "isPinned" : false,
+    "name" : "com.vantiq.nlp.ProcessIntent",
+    "pane" : {
+      "address" : "R[2]"
+    },
+    "resourceKey" : "app/com.vantiq.nlp.ProcessIntent",
+    "state" : 8,
+    "toolOptions" : { },
+    "type" : 15
+  } ],
+  "type" : "dev",
+  "views" : [ {
+    "name" : "Project Contents",
+    "projectToolKeys" : [ "errorviewer/Errors", "tiledock/Inactive Panes", "logviewer/Log Messages", "list/Project Contents", "app/com.vantiq.nlp.InterpretCLU", "services/com.vantiq.nlp.NLCore", "services/com.vantiq.nlp.NLUtils", "app/com.vantiq.nlp.ProcessIntent" ]
+  } ]
+}

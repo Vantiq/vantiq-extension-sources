@@ -1,0 +1,252 @@
+package com.vantiq.nlp
+
+PRIVATE PROCEDURE NLUtils.parseRange(luisEnt Object, rangeSpec Object, rangeType String) HIDDEN
+
+// In these cases, we're going to split out the times so that the converter can deal with them
+
+// Here, also, the user time is strange parenthesized list.  We'll parse it apart
+// timex=(2017-08-20T02,2017-08-21T04,PT26H), type=datetimerange -- this is a datetime range, but
+// dates are analogous
+
+// CLU -- show collaborations between may 2 at 2 and may 5 at 4
+//               {
+//                  "category": "datetimeV2",
+//                  "text": "between may 2 at 2 and may 5 at 4",
+//                  "offset": 20,
+//                  "length": 33,
+//                  "confidenceScore": 1,
+//                  "resolutions": [
+//                     {
+//                        "resolutionKind": "TemporalSpanResolution",
+//                        "timex": "(XXXX-05-02T02,XXXX-05-05T04,PT74H)",
+//                        "duration": "PT74H",
+//                        "begin": "2022-05-02 02:00:00",
+//                        "end": "2022-05-05 04:00:00"
+//                     },
+//                     {
+//                        "resolutionKind": "TemporalSpanResolution",
+//                        "timex": "(XXXX-05-02T02,XXXX-05-05T04,PT74H)",
+//                        "duration": "PT74H",
+//                        "begin": "2023-05-02 02:00:00",
+//                        "end": "2023-05-05 04:00:00"
+//                     },
+//                     {
+//                        "resolutionKind": "TemporalSpanResolution",
+//                        "timex": "(XXXX-05-02T14,XXXX-05-05T16,PT74H)",
+//                        "duration": "PT74H",
+//                        "begin": "2022-05-02 14:00:00",
+//                        "end": "2022-05-05 16:00:00"
+//                     },
+//                     {
+//                        "resolutionKind": "TemporalSpanResolution",
+//                        "timex": "(XXXX-05-02T14,XXXX-05-05T16,PT74H)",
+//                        "duration": "PT74H",
+//                        "begin": "2023-05-02 14:00:00",
+//                        "end": "2023-05-05 16:00:00"
+//                     }
+//                  ],
+//                  "extraInformation": [
+//                     {
+//                        "extraInformationKind": "EntitySubtype",
+//                        "value": "datetime.datetimerange"
+//                     }
+//                  ]
+//               }
+
+// An alternative form shows up when using "since" or "before" 1 October:
+// show collaborations before 1 october:
+// luisEnt:
+// [ entity:before 1 october,
+//   type:builtin.datetimeV2.daterange,
+//   startIndex:27,
+//   endIndex:42,
+//   resolution: [
+//      values:[
+//          [timex:XXXX-10-01, type:daterange, end:2016-10-01],
+//          [timex:XXXX-10-01, type:daterange, end:2017-10-01]]]]
+// In this case, we'll need to determine what the operator is (since/gt or before/lt)
+// since this text (before 1 october) will occlude the actual operator value
+
+// CLU -- Here, we get 4 resolutions values:  show collaborations since may 2 at 2"
+//                  "resolutions": [
+//                     {
+//                        "resolutionKind": "TemporalSpanResolution",
+//                        "timex": "XXXX-05-02T02",
+//                        "begin": "2022-05-02 02:00:00",
+//                        "modifier": "Since"
+//                     },
+//                     {
+//                        "resolutionKind": "TemporalSpanResolution",
+//                        "timex": "XXXX-05-02T02",
+//                        "begin": "2023-05-02 02:00:00",
+//                        "modifier": "Since"
+//                     },
+//                     {
+//                        "resolutionKind": "TemporalSpanResolution",
+//                        "timex": "XXXX-05-02T14",
+//                        "begin": "2022-05-02 14:00:00",
+//                        "modifier": "Since"
+//                     },
+//                     {
+//                        "resolutionKind": "TemporalSpanResolution",
+//                        "timex": "XXXX-05-02T14",
+//                        "begin": "2023-05-02 14:00:00",
+//                        "modifier": "Since"
+//                     }
+//                  ],
+//                  "extraInformation": [
+//                     {
+//                        "extraInformationKind": "EntitySubtype",
+//                        "value": "datetime.datetimerange"
+//                     }
+//                  ]
+
+var limit1
+var limitTime = null
+var op = null
+
+// According to current LUIS documentation (note: this changed substantially without warning at
+// least twice), the number of values in the values array varies:
+//    1: no ambiguity (3-08-2017 at 2pm)
+//    2: one ambiguity (year or am/pm) e.g. "3-08-2017 at 2" or "march 3"
+//    4: two ambiguities (year & am/pm) e.g. "may 2 at 2 to may 5 at 4"
+//           This could be last may 2nd or next may 2nd (same with may 5) at 2am or 2pm (same with 4)
+//           Thus, you get all the appropriate pairs.  In our case, we'll use the widest
+//           interpretation for now.  The customer can always increase specificity.
+
+// In LUIS V3, there was reversal -- values.resolution rather than resolution.values.  So, we compensate...
+
+var reses
+var isCLU = false
+
+if (luisEnt.resolution != null) {
+    // V2
+    reses = luisEnt.resolution.values
+} else if (luisEnt.resolutions != null) {
+    isCLU = true
+    reses = luisEnt.resolutions
+} else {
+    reses = luisEnt.values[0].resolution
+}
+
+var endValue
+var startValue
+var isList
+if (typeOf(reses) == "List") {
+    // date things are variable at best.  So we code around the inconsistencies.
+    endValue = reses[0].end
+    if (isCLU) {
+        startValue = reses[0].begin
+    } else {
+        startValue = reses[0].start
+    }
+    isList = true
+} else {
+    endValue = reses.end
+    startValue = reses.start
+}
+
+if (isList) {
+    if (reses.size() > 1) {
+        if (startValue != null) {
+            var secondValue
+            if (isCLU) {
+                secondValue = reses.get(1).begin // CLU -- 'start' --> 'begin'
+            } else {
+                secondValue = reses.get(1).start
+            }
+            if (secondValue < startValue) {
+                startValue = secondValue
+            }
+        }
+        if (endValue != null) {
+            var secondValue = reses.get(1).end
+            if (secondValue > endValue) {
+                endValue = secondValue
+            }
+        }
+    }
+    
+    // At this point, {start,end}Value have the widest values for start & end from the first two.
+    
+    if (reses.size() > 2) {
+        var endValue2 = reses.get(2).end
+        var startValue2
+        if (isCLU) {
+            startValue2 = reses.get(2).begin
+        } else {
+            startValue2 = reses.get(2).start
+        }
+        if (startValue != null && startValue2 != null) {
+            var secondValue
+            if (isCLU) {
+                secondValue = reses.get(3).begin
+            } else {
+                secondValue = reses.get(3).start
+            }
+            if (secondValue < startValue2) {
+                startValue2 = secondValue
+            }
+            if (startValue2 < startValue) {
+                startValue = startValue2
+            }
+        }
+        if (endValue != null && endValue2 != null) {
+            var secondValue = reses.get(3).end
+            if (secondValue > endValue2) {
+                endValue2 = secondValue
+            }
+            if (endValue2 > endValue) {
+                endValue = endValue2
+            }
+        }
+    }
+}
+
+// Here, {start,end}Value contain the outermost date/time values.  Now construct the appropriate limit values
+
+log.debug("parseRange(): Checking since/before case -- startValue: {}, endValue: {} -- values[0]: {}",
+                [startValue, endValue, reses])
+
+// We need to check for the "since/before" style of specification.
+// The LUIS behavior here is more than a little confusing.  In these cases,
+// LUIS returns an entity that includes both the date AND the since/before word.
+// The difference is that resolution.values is an array of date/time/datetime specifications
+// that varies depending upon the comparator.  If "since" is specified, there's a value
+// for a 'start' property (presumably because "since" is a starting time);  if "before" is
+// specified, there's an "end" property (presumably because the comparison "ends" at some
+// time.  The array, at least for dates, is set up for 1 year;  we'll just use
+// "before" the later date or "since" the earlier one.
+//
+// Consequently, to determine if we have an operator change (from the pseudo-operator $between),
+// we figure out which property is present.  Overrides must be handled by a more
+// precise time specification.
+
+if ((startValue != null) || (endValue != null)) {
+    if ((startValue != null) && (endValue == null)) {
+        // Then operator is "since" --> $gt
+        op = "$gt"
+        limit1 = NLUtils.convertTimeToInternalTime(startValue, rangeType)
+        limitTime = {operator: op, limit: limit1}
+    } else if ((startValue == null) && (endValue != null)) {
+       // operator is "before" --> $lt
+        op = "$lt"
+        limit1 = NLUtils.convertTimeToInternalTime(endValue, rangeType)
+        limitTime = {operator: op, limit: limit1}
+    } else {
+        // In this case, both start & end are set. When both start & end are set, we'll
+        // use the pseudo operator $between (which is resolved later at query construction time).
+        // Depending upon the level of ambiguity, we may get either one date or two with multiple dates
+        // each.  In such cases, we'll select the outermost dates presented and use those in our
+        // $between query (as outlined above).
+
+        limit1 = NLUtils.convertTimeToInternalTime(startValue, rangeType)
+        var limit2 = NLUtils.convertTimeToInternalTime(endValue, rangeType)
+
+        limitTime = {operator: "$between", lowerLimit: limit1, upperLimit: limit2}
+    }
+}
+
+log.debug("parseRange(): return value: {}", [limitTime])
+
+return limitTime

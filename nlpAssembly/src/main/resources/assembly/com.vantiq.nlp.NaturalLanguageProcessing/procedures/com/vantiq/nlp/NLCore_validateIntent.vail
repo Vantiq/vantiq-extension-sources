@@ -1,0 +1,90 @@
+package com.vantiq.nlp
+
+PRIVATE PROCEDURE NLCore.validateIntent(intentStructure Object) HIDDEN
+var MINIMUM_INTENT_SCORE = 0.65
+var errorPrefix = "io.vantiq.naturalLanguage.validateIntent"
+var errorExtension = null
+var errorsByException = false
+
+// Here, we validate that the intent is valid.  At present, /valid/ means the following:
+//    * the intent is not "None."  The intent "None" is returned by LUIS when it cannot determine any potential
+//          candidates.
+//    * the interpreted intent's score is > .65.  That means, LUIS was "pretty sure" this is what was said
+//    * each entity name appears at most once.  We don't yet have the ability to group things based on position,
+//         so we'll just rule them out to start.
+
+var tsIntent = intentStructure.intent
+var tsiScore = intentStructure.score
+var entities = intentStructure.entities
+var entMap = {}
+var duplicateEntityList = []
+var duplicateEntityForUser = []
+var response = null
+
+if ((tsIntent == "None") || (tsiScore < MINIMUM_INTENT_SCORE)) {
+    errorExtension = "noClearIntent"
+    response = format("You requested, \"{0}\". We could not determine what action to take.  Please rephrase your request.",
+                            intentStructure.query)
+} else {
+    // Now, let's check for duplicate entities
+    for ent in entities {
+        log.debug("NLCore.validateIntent(): Checking: {}", [ent])
+        if (entMap[ent.name]) {
+            // Here, we need to check further.  LUIS, sometimes seems to report that there are two entities (say, the lt comparator)
+            // where there is really just one.  We can figure this out by looking to see if the positions in the original query overlap.
+            // If they do, then this is not really a duplicate -- just a LUIS bug having to do with "list entities."
+
+            var startOK = false
+            var endOK = false
+
+            // I think this is an issue ONLY with system.comparator*, but we'll leave things to ignore
+            // any complete encapsulations
+
+            var startOrig = entMap[ent.name].orig.startIndex
+            var endOrig = startOrig + entMap[ent.name].orig.length + 1
+            var startCur = ent.rawEnt.startIndex
+            var endCur = startCur + ent.rawEnt.length - 1
+
+            if ((startOrig >= startCur && startOrig < endCur)
+                    || (startCur >= startOrig && startCur < endOrig)) {
+                // then we know one starts within the other
+                startOK = true
+            }
+            if ((endOrig <= endCur && endOrig > startCur)
+                || (endCur <= endOrig && endCur > startOrig)) {
+                // then we know one starts within the other
+                endOK = true
+            }
+            log.debug("NLCore.validateIntent(): Orig ({}, {}), new ({}, {}) -- startOK: {}, endOK: {}, isDup: {}",
+                        [startOrig, endOrig, startCur, endCur, startOK, endOK, !(startOK && endOK)])
+
+            if (! (startOK && endOK)) {
+                // If both the start & end are not correctly encapsulated, then fail
+                duplicateEntityList.push({entityName: ent.name, firstEntityValue: entMap[ent.name].entityValue, nextEntityValue: ent.rawEnt.entity})
+                duplicateEntityForUser.push(entMap[ent.name].entityValue)
+                duplicateEntityForUser.push(ent.value)
+                log.debug("NLCore.validateIntent(): Found duplicated (non-overlapping, non-occluded) entities: type {}, values {}/{}.",
+                            [ent.name, entMap[ent.name].orig, ent.rawEnt])
+            } else {
+                log.debug("NLCore.validateIntent(): Ignoring detected overlapping duplicate entities of type {}, values {}/{}.",
+                            [ent.type, entMap[ent.name].orig, ent])
+            }
+        }
+        entMap[ent.name] = {entityName: ent.name, entityValue: ent.value, orig: ent.rawEnt}
+    }
+
+    if (duplicateEntityList.size() > 0) {
+        errorExtension = "duplicateEntities"
+        response = format("You requested \"{0}\". We could not understand the details of your request. The following related details are examples of things specified multiple times {1}. Please rephrase your request.",
+                                    intentStructure.query, duplicateEntityForUser)
+    }
+}
+log.debug("validateIntent(): errorsByException: {}, errorExtension: {}", [errorsByException, errorExtension])
+if (errorsByException && errorExtension) {
+    var errCode = errorPrefix + "." + errorExtension
+    log.debug("Throwing exception {}: {}", [errCode, response])
+    exception(errCode, response)
+}
+return response
+
+

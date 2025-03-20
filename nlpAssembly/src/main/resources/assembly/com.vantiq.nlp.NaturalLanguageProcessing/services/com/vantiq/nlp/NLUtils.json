@@ -1,0 +1,7 @@
+{
+  "active" : true,
+  "ars_properties" : { },
+  "ars_relationships" : [ ],
+  "name" : "com.vantiq.nlp.NLUtils",
+  "replicationFactor" : 1
+}

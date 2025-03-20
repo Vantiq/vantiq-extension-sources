@@ -1,0 +1,67 @@
+{
+  "active" : true,
+  "ars_properties" : {
+    "fragmentList" : [ ]
+  },
+  "ars_relationships" : [ ],
+  "description" : null,
+  "eventTypes" : { },
+  "globalType" : null,
+  "interface" : [ {
+    "name" : "performDescribe",
+    "parameters" : [ {
+      "description" : null,
+      "multi" : false,
+      "name" : "intent",
+      "required" : false,
+      "type" : "Object"
+    } ]
+  }, {
+    "name" : "performList",
+    "parameters" : [ {
+      "description" : null,
+      "multi" : false,
+      "name" : "intent",
+      "required" : false,
+      "type" : "Object"
+    }, {
+      "description" : null,
+      "multi" : false,
+      "name" : "isCount",
+      "required" : false,
+      "type" : "Boolean"
+    } ]
+  }, {
+    "name" : "performShowActive",
+    "parameters" : [ {
+      "description" : null,
+      "multi" : false,
+      "name" : "intent",
+      "required" : false,
+      "type" : "Object"
+    } ]
+  }, {
+    "name" : "executeSmalltalkIntent",
+    "parameters" : [ {
+      "description" : null,
+      "multi" : false,
+      "name" : "intent",
+      "required" : false,
+      "type" : "Object"
+    } ]
+  }, {
+    "name" : "executeSystemIntent",
+    "parameters" : [ {
+      "description" : null,
+      "multi" : false,
+      "name" : "intent",
+      "required" : false,
+      "type" : "Object"
+    } ]
+  } ],
+  "internalEventHandlers" : [ ],
+  "name" : "com.vantiq.nlp.NLSystemExec",
+  "partitionedType" : null,
+  "replicationFactor" : 1,
+  "scheduledProcedures" : { }
+}

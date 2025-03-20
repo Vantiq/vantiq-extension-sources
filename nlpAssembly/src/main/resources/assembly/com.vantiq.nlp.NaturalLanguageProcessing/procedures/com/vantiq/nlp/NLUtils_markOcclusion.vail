@@ -1,0 +1,63 @@
+package com.vantiq.nlp
+
+Procedure NLUtils.markOcclusion(entList Object Array) HIDDEN
+
+// Now, we need to go through the entity list & deal with occluded comparators.
+// Our comparator list (in the language) has things like "less than" meaning $lt, and
+// "equal" or "is" meaning "$eq".  If, however, we are given something like "is less than or equal to"
+// to parse, we get back $eq for is, $eq for equal to, $lt for less than, as well as the real comparator
+// $lte.  We, thus, need to de-dup these things.
+//
+// We'll do this by looping through the found entities, and "promoting" the one with the largest
+// textual span (more correctly, we'll include the one that occludes the others based on their respective
+// places in the original query.
+
+for (ent in entList) {
+   var entIsBuiltin = ent.type.startsWith("builtin.")
+   for (checkEnt in entList) {
+        if ((ent != checkEnt)) {
+            var checkEntIsBuiltin = checkEnt.name.startsWith("builtin.")
+            log.debug("markOcclusion(): ent: {}, checkEnt: {}", [ent.stringify(true), checkEnt.stringify(true)])
+            var startCheck = checkEnt.startIndex
+            var endCheck = startCheck + checkEnt.length - 1
+            var startEnt = ent.startIndex
+            var endEnt = startEnt + ent.length - 1
+
+            if ((startCheck == startEnt) && (endCheck == endEnt)) {
+                // If these entities span the same space, do not let them each occlude the other.
+                // If that were to happen, they cancel each other out.
+                //
+                // This check is a nested if since we want to completely cover the "span same space" case here
+                // rather than accidentally have it handled in one of the other overlap cases below.
+
+                if (!(checkEnt.isOccluded) && !(ent.isOccluded)) {
+                    // Then these two span the same space.  In this case, we'll give priority to
+                    // the one that's not a builtin.  This happens sometimes with queries like
+                    //    list Person whose age < 59
+                    // In this case, we sometimes get 59 classified as both system.propertyValue and builtin.number.
+                    // We always want system.propertyValue to occlude the builtin.number.
+                    if (!entIsBuiltin) {
+                        // then we'll make checkEnt occluded
+                        checkEnt.isOccluded = true
+                        log.debug("markOcclusion(): ent ({}) occludes checkEnt ({}) because ent is not builtin", [ent.name, checkEnt.name])
+                    } else {
+                        ent.isOccluded = true
+                        log.debug("markOcclusion(): checkEnt ({}) occludes ent ({}) because ent is builtin", [checkEnt.name, ent.name])
+                    }
+                }
+            } else if ((startCheck <= startEnt) && (endCheck >= endEnt)) {
+                ent.isOccluded = true
+                log.debug("markOcclusion(): checkEnt ({}) occludes ent ({})", [checkEnt.name, ent.name])
+            } else if ((startEnt <= startCheck) && (endEnt >= endCheck)) {
+                checkEnt.isOccluded = true
+                log.debug("markOcclusion(): ent ({}) occludes checkEnt ({})", [ent.name, checkEnt.name])
+            }
+        }
+    }
+}
+
+for (ent in entList) {
+    log.debug("markOcclusion() :: Entity: {}, value: {}, isOccluded: {}", [ent.name, ent.value, ent.isOccluded])
+}
+
+return entList

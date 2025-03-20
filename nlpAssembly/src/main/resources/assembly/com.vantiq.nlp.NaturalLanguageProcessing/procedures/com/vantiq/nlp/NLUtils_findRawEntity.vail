@@ -1,0 +1,72 @@
+package com.vantiq.nlp
+
+PRIVATE PROCEDURE NLUtils.findRawEntity(intent Object, desiredEntList String MULTI) HIDDEN
+
+log.debug("findRawEntity(): Looking for one of {} in {}", [desiredEntList, intent])
+var desiredType = NLUtils.findEntity(intent, desiredEntList)
+var luisIntent = null
+var entToReturn = null
+
+if (desiredType) {
+    // In this case, we know we found something.  Let's go dig up the base case.
+    // The raw intent looks like this:
+    // rawIntent:[query:Show active collaborations older than yesterday, 
+    // topScoringIntent:[intent:system.showActive, score:0.9994987],
+    // entities:[
+    //	[entity:collaborations,
+    //		type:system.typeName,
+    //		startIndex:12,
+    //		endIndex:25,
+    //		score:0.999999344], 
+	//	[entity:active,
+    //        type:system.condition,
+    //        startIndex:5,
+    //        endIndex:10,
+    //        score:0.9999704],
+	//	[entity:older than,
+    //        type:system.comparator,
+    //        startIndex:27,
+    //        endIndex:36,
+    //        score:0.998014033],
+	//	[entity:yesterday,
+    //        type:builtin.datetimeV2.date,
+    //        startIndex:38,
+    //        endIndex:46,
+    //        resolution:[
+    //            values:[
+    //                [timex:2017-07-10,
+    //                 type:date,
+    //                 value:2017-07-10]
+    //            ]
+    //        ]
+    // ]
+    log.debug("findRawEntity(): Found desired: " + desiredType)
+    
+    var luisIntent = intent.rawIntent
+    if (typeOf(luisIntent.entities) == "List") {
+        // Then this is either a LuisV2 or CLU version of things
+
+        for ent in luisIntent.entities until entToReturn != null {
+            if (ent.category != null) {
+                if (ent.category.equalsIgnoreCase(desiredType.name)) {
+                    entToReturn = ent
+                }
+            } else {
+                // LUIS V2
+                var val = desiredType.val
+                var e = ent.entity
+                if (e.equalsIgnoreCase(val)) {
+                    entToReturn = ent
+                }
+            }
+        }
+    } else {
+            // Then this is LUIS V3 -- no search required.
+            if (desiredType.name != null) {
+                var insts = luisIntent.entities["$instance"]
+                entToReturn = insts[desiredType.name]
+            }
+    }   
+}
+
+return entToReturn

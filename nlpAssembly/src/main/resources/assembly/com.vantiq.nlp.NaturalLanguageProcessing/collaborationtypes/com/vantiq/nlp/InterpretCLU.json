@@ -1,0 +1,287 @@
+{
+  "active" : true,
+  "ars_properties" : {
+    "dataVersion" : 5,
+    "graph" : {
+      "coordinates" : {
+        "561a3716-0796-43b1-8479-0be0229a55bf" : {
+          "x" : -230,
+          "y" : 240
+        },
+        "5a6f7d4f-7655-4c77-8bc6-5fd59544773e" : {
+          "x" : 0,
+          "y" : 0
+        },
+        "5ad7d3a6-d0b7-4d1e-8ed9-f7bd5f2aefc6" : {
+          "x" : -162.734375,
+          "y" : 160
+        },
+        "725e7182-fb80-4ab4-8648-82b0b17e981f" : {
+          "x" : -492.671875,
+          "y" : 240
+        },
+        "78957f01-82c9-4a98-ba15-4feb9c6be372" : {
+          "x" : -492.671875,
+          "y" : 319.45256852235315
+        },
+        "81d8b6ac-56f8-49f2-8431-dc04835f0c98" : {
+          "x" : 5,
+          "y" : 240
+        },
+        "8d683893-9cc0-49a6-86bb-06b91564f9af" : {
+          "x" : 195,
+          "y" : 160
+        },
+        "c2526225-6db4-411b-bb2f-b17744f93198" : {
+          "x" : 0,
+          "y" : 80
+        },
+        "cb426cb8-bf28-42ed-8ffd-47a5b04e2000" : {
+          "x" : 18.359375,
+          "y" : 160
+        },
+        "de802006-989d-4542-ba17-fdade198edfe" : {
+          "x" : -492.671875,
+          "y" : 400
+        },
+        "eebb11d7-b51d-4b6a-b43d-a71ca082c62e" : {
+          "x" : -492.671875,
+          "y" : 480
+        }
+      },
+      "lastZoomRequest" : 0,
+      "scale" : 1.4411791668315757,
+      "translate" : [ 899.0825756439397, 309.4063750681252 ]
+    },
+    "groupSettings" : {
+      "appGroupOpenHash" : {
+        "actions" : true,
+        "filters" : true,
+        "flowControl" : true
+      },
+      "ctGroupOpenHash" : {
+        "actions" : true,
+        "mobile" : true
+      },
+      "ctServiceOpen" : false,
+      "serviceGroupOpenHash" : { }
+    },
+    "paletteWidth" : 170,
+    "propertyWidth" : 280
+  },
+  "ars_relationships" : [ ],
+  "assembly" : {
+    "DirectlyProcessSystemIntent" : {
+      "configuration" : {
+        "childStreams" : [ "FilterResponseToChat" ],
+        "executeIntentProcedure" : "com.vantiq.nlp.NLSystemExec.executeSystemIntent",
+        "imports" : [ {
+          "type" : "Import",
+          "value" : "service com.vantiq.nlp.NLSystemExec"
+        } ],
+        "parentStreams" : [ ],
+        "suppressChatroomSend" : false
+      },
+      "downstreamReferences" : { },
+      "name" : "DirectlyProcessSystemIntent",
+      "pattern" : "ProcessIntent",
+      "patternVersion" : 5,
+      "uuid" : "78957f01-82c9-4a98-ba15-4feb9c6be372"
+    },
+    "FilterCustomIntent" : {
+      "configuration" : {
+        "childStreams" : null,
+        "condition" : "!event.response.intent.startsWith(\"system.\")",
+        "imports" : null,
+        "outboundResource" : null,
+        "outboundResourceConfig" : null,
+        "outboundResourceId" : null,
+        "parentStreams" : [ ],
+        "upsert" : false
+      },
+      "downstreamReferences" : { },
+      "name" : "FilterCustomIntent",
+      "pattern" : "Filter",
+      "patternVersion" : 5,
+      "uuid" : "cb426cb8-bf28-42ed-8ffd-47a5b04e2000"
+    },
+    "FilterResponseToChat" : {
+      "configuration" : {
+        "childStreams" : [ "ReturnResponseToChat" ],
+        "condition" : "event.channelData && event.channelData.id",
+        "imports" : null,
+        "outboundResource" : null,
+        "outboundResourceConfig" : null,
+        "outboundResourceId" : null,
+        "parentStreams" : [ ],
+        "upsert" : false
+      },
+      "downstreamReferences" : { },
+      "name" : "FilterResponseToChat",
+      "pattern" : "Filter",
+      "patternVersion" : 5,
+      "uuid" : "de802006-989d-4542-ba17-fdade198edfe"
+    },
+    "FilterSystemIntent" : {
+      "configuration" : {
+        "childStreams" : [ "shouldProcessSIDirectly" ],
+        "condition" : "event.response.intent.startsWith(\"system.\")",
+        "imports" : null,
+        "outboundResource" : null,
+        "outboundResourceConfig" : null,
+        "outboundResourceId" : null,
+        "parentStreams" : [ ],
+        "upsert" : false
+      },
+      "downstreamReferences" : { },
+      "name" : "FilterSystemIntent",
+      "pattern" : "Filter",
+      "patternVersion" : 5,
+      "uuid" : "5ad7d3a6-d0b7-4d1e-8ed9-f7bd5f2aefc6"
+    },
+    "PerformAzureQuery" : {
+      "configuration" : {
+        "childStreams" : [ "FilterSystemIntent", "FilterCustomIntent" ],
+        "imports" : [ {
+          "type" : "Import",
+          "value" : "service com.vantiq.nlp.NLCore"
+        } ],
+        "parameters" : {
+          "cluDeployment" : "${cluDeployment}",
+          "cluModel" : "${cluModel}",
+          "collab" : "null",
+          "natLangQuery" : "event.text",
+          "naturalLanguageSource" : "${naturalLanguageSource}"
+        },
+        "parentStreams" : [ ],
+        "partitionKey" : null,
+        "procedure" : "com.vantiq.nlp.NLCore.interpretConversationalQuery",
+        "redeliverOnError" : null,
+        "returnBehavior" : "Use Return Value as Outbound event",
+        "returnProperty" : null,
+        "schema" : null
+      },
+      "downstreamReferences" : { },
+      "isRoot" : true,
+      "name" : "PerformAzureQuery",
+      "pattern" : "Procedure",
+      "patternVersion" : 5,
+      "uuid" : "c2526225-6db4-411b-bb2f-b17744f93198"
+    },
+    "ReturnResponseToChat" : {
+      "configuration" : {
+        "childStreams" : null,
+        "imports" : [ {
+          "type" : "Import",
+          "value" : "service com.vantiq.nlp.NLCore"
+        } ],
+        "parameters" : {
+          "chatbotName" : "null",
+          "event" : "event",
+          "response" : "event.response"
+        },
+        "parentStreams" : [ ],
+        "partitionKey" : null,
+        "procedure" : "com.vantiq.nlp.NLCore.publishResponse",
+        "redeliverOnError" : null,
+        "returnBehavior" : "Use Return Value as Outbound event",
+        "returnProperty" : null,
+        "schema" : null
+      },
+      "downstreamReferences" : { },
+      "name" : "ReturnResponseToChat",
+      "pattern" : "Procedure",
+      "patternVersion" : 5,
+      "uuid" : "eebb11d7-b51d-4b6a-b43d-a71ca082c62e"
+    },
+    "shouldProcessSIDirectly" : {
+      "configuration" : {
+        "childStreams" : [ "DirectlyProcessSystemIntent" ],
+        "condition" : "${performSystemIntentsDirectly}",
+        "imports" : null,
+        "outboundResource" : null,
+        "outboundResourceConfig" : null,
+        "outboundResourceId" : null,
+        "parentStreams" : [ ],
+        "upsert" : false
+      },
+      "downstreamReferences" : { },
+      "name" : "shouldProcessSIDirectly",
+      "pattern" : "Filter",
+      "patternVersion" : 5,
+      "uuid" : "725e7182-fb80-4ab4-8648-82b0b17e981f"
+    }
+  },
+  "collaboratorRoles" : [ ],
+  "componentInterface" : {
+    "ars_properties" : {
+      "category" : "standard",
+      "deprecated" : false,
+      "description" : "",
+      "generatorVersion" : 1,
+      "patternGroup" : "app.component"
+    },
+    "configurationProperties" : {
+      "cluDeployment" : {
+        "default" : null,
+        "order" : 2,
+        "required" : true,
+        "type" : "String"
+      },
+      "cluModel" : {
+        "default" : null,
+        "order" : 1,
+        "required" : true,
+        "type" : "String"
+      },
+      "naturalLanguageSource" : {
+        "default" : null,
+        "order" : 0,
+        "required" : true,
+        "type" : "String"
+      },
+      "performSystemIntentsDirectly" : {
+        "default" : false,
+        "order" : 3,
+        "type" : "Boolean"
+      }
+    },
+    "events" : {
+      "ProcessCustomIntent" : {
+        "configurationProperty" : "childStreams",
+        "eventName" : "event",
+        "name" : "ProcessCustomIntent",
+        "schema" : "inherit",
+        "taskName" : "FilterCustomIntent"
+      },
+      "ProcessIntent" : {
+        "configurationProperty" : "childStreams",
+        "eventName" : "event",
+        "name" : "ProcessIntent",
+        "schema" : "inherit",
+        "taskName" : "PerformAzureQuery"
+      },
+      "ProcessSystemIntent" : {
+        "configurationProperty" : "childStreams",
+        "eventName" : "event",
+        "name" : "ProcessSystemIntent",
+        "schema" : "inherit",
+        "taskName" : "FilterSystemIntent"
+      }
+    },
+    "isComponent" : true,
+    "name" : "com.vantiq.nlp.InterpretCLU",
+    "results" : { },
+    "runtimeProperties" : [ ],
+    "templates" : [ "AppGeneration.generateComponent" ]
+  },
+  "contextualizedAssembly" : { },
+  "conversationNames" : [ ],
+  "disableBadging" : false,
+  "entityRoles" : [ ],
+  "isComponent" : true,
+  "isEventHandler" : false,
+  "keyTypes" : [ "collaborations" ],
+  "name" : "com.vantiq.nlp.InterpretCLU",
+  "writeFrequency" : "5 minutes"
+}

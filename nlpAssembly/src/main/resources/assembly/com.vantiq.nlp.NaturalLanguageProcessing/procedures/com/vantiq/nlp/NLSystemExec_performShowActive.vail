@@ -1,0 +1,115 @@
+package com.vantiq.nlp
+
+import service com.vantiq.nlp.NLUtils
+
+//
+// This procedure performs the actions required by the intent *system.showActive*.
+// This intent looks for things that can be active/open or inactive/closed (currently,
+// collaborations), and lists them according the the criteria specified.
+//
+// The entities contained in the *intent* parameter are used to construct the appropriate query,
+// and the query is run, returning the results as the return value of the procedure.  If errors are
+// encountered, they are logged and a suitable human-readable error is returned as the return value.
+//
+// @param intent The "intentSpecification" object.  This is the result of interpretation of the user's utterance
+// @returns String -- Results from the query or an error message.
+//
+
+PROCEDURE NLSystemExec.performShowActive(intent Object)
+
+var desiredType = NLUtils.findDesiredType(intent)
+var resourceInfo = NLUtils.xlateEntToTable(desiredType)
+var tableName = resourceInfo.typeName
+var resourceName = resourceInfo.resourceName
+
+var operator = NLUtils.findOperator(intent)
+var limitTime = NLUtils.findLimitTime(intent)
+var condition = NLUtils.findEntityName(intent, ["system.condition_active", "system.condition_inactive"])
+log.debug("performShowActive(): operator is " + operator + ", limitTime is " + limitTime)
+var returnValue = ""
+
+if (tableName == null) {
+    returnValue = "The name \"" + desiredType + "\" is not a recognized type or resource name."
+} else if (limitTime == null && operator != null) {
+    returnValue = "Cannot determine the time from the query."
+} else if (operator == null && limitTime != null) {
+    returnValue = "Cannot determine the time operator from the query."
+} else if (tableName != "ArsCollaboration") {
+    returnValue = "The entity \"" + tableName + "\" is not subject to being active or closed. "
+} else if (!condition) {
+    returnValue = "Unable to determine condition check desired."
+} else {
+
+    var isCollab = (tableName == "ArsCollaboration")
+    var statusName = (isCollab ? "Status" : "State")
+    var statusProperty = (isCollab ? "status" : "state")
+
+    var qryCondition = {}
+    var openConditions = "system.condition_active"
+
+    if (openConditions.equals(condition)) {
+        qryCondition[statusProperty] =
+                            (isCollab ? "active" : "open")
+    } else if (condition != null) {    // condition is system.condition_inactive
+        // We'll assume other things mean closed
+        qryCondition[statusProperty] = {}
+        qryCondition[statusProperty]["$ne"] =
+                            (isCollab ? "active" : "open")
+    }
+
+    if (operator != null) {
+        // Let's see if we have a better operator guess from the more detailed
+        // examination of the date/time range.  If so, the operator property of limitTime
+        // will be non-null.
+
+        if (limitTime.operator != null) {
+            operator = limitTime.operator
+        }
+
+        if (operator != "$between") {
+            qryCondition.ars_createdAt = {}
+            qryCondition.ars_createdAt[operator] = limitTime.limit
+        } else {
+            // Here, our limit time will have an upper & a lower.  We'll
+            // construct a query that is >= lower && <= upper.
+            qryCondition["$and"] = []
+            var lower = {}
+            lower.ars_createdAt = {}
+            lower.ars_createdAt["$gte"] = limitTime.lowerLimit
+            var upper = {}
+            upper.ars_createdAt= {}
+            upper.ars_createdAt["$lte"] = limitTime.upperLimit
+            qryCondition["$and"] = [lower, upper]
+        }
+    }
+    log.debug("performShowActive(): Generated Query: {}", [qryCondition.stringify(true)])
+
+    var rowCount = 0
+    var hadError = false
+    try {
+        SELECT FROM @resourceName as row WHERE qryCondition
+        {
+            rowCount += 1
+            returnValue += "\u2022 " + rowCount + ": Name: " + row.name + " :: " + statusName  + ": " + row[statusProperty] +
+                    " :: Started: " + row.ars_createdAt
+            if (isCollab) {
+                returnValue += " :: Collaborators: " + row.users + " :: id: " + row.id + ";    "
+            }
+            returnValue += "\n"
+        }
+    }
+    catch (err) {
+        returnValue = format("Error running query: {0}: {1}", err.code, err.message)
+        hadError = true
+    }
+
+    if (!hadError) {
+        if (rowCount == 0) {
+            returnValue = " There are no current " + desiredType + "."
+        } else {
+            returnValue += "\u2022 Total of " + rowCount + " " + desiredType + "."
+        }
+    }
+}
+
+return returnValue

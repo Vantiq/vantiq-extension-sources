@@ -1,0 +1,49 @@
+package com.vantiq.nlp
+
+PROCEDURE NLUtils.findOperator(intent) HIDDEN
+
+log.debug("findOperator(): Entry: " + intent)
+
+
+// First, set up the table we use to locate the operator.
+
+
+var comparator_ents = ["system.comparator_eq",
+                       "system.comparator_ne",
+                       "system.comparator_lt",
+                       "system.comparator_lte",
+                       "system.comparator_gt",
+                       "system.comparator_gte"]
+
+var opInLang = NLUtils.findEntityName(intent, comparator_ents)
+
+if (opInLang == null) {
+    // Let's check for a time/date range query.  In such cases, we'll invent the new operator
+    // "between" and use that.
+
+    opInLang = NLUtils.findEntityName(intent,
+                            ["builtin.datetimeV2.timerange",
+                             "builtin.datetimeV2.daterange",
+                             "builtin.datetimeV2.datetimerange",
+                             "builtin.age",
+                                // CLU does not use the builtin prefix, and the range parts are presented separately
+                             "datetimeV2",
+                             "age",])
+    if (opInLang != null) {
+        opInLang = "system.comparator_between"  // We could add this to the language, too, but unclear if necessary
+    }
+}
+
+// We will use the LUIS service to find the comparator.  Doing things this way allows the LUIS to be the only
+// part of the system that must change for different cultures (LUIS word for locale/language)
+
+// From the findEntityName() call above, we have the comparator (if any).  Now we simply map.
+
+var returnOp = null
+if (opInLang != null) {
+    returnOp = "$" + opInLang.substring(opInLang.indexOf("_") + 1)
+}
+
+log.debug("findOperator(): Returning operator " + returnOp + " based on NL comparator: " + opInLang + " from intent" + intent)
+
+return returnOp

@@ -1,0 +1,51 @@
+package com.vantiq.nlp
+
+PROCEDURE NLUtils.xlateEntToTable(nlType String) HIDDEN
+
+var arsType = null
+var origName
+
+log.debug("NLUtils.xlateEntToTable(): nlType: {}", [nlType])
+
+if (nlType) {
+
+    // No point in querying if there's no reasonable question....
+
+    // Resource names are always lower case.  We'll help our user by converting here...
+    SELECT ONE name, resourceName FROM types AS t WHERE resourceName == nlType.toLowerCase() {
+        if (t != null) {
+          arsType = t.name
+          origName = t.resourceName
+        }
+    }
+
+    if (arsType == null && nlType.toLowerCase() == "procedures") {
+        arsType = "ArsComponent"
+        origName = "procedures"
+    }
+
+    if (arsType != null) {
+        log.debug("NLUtils.xlateEntToTable(): nlType: " +
+                nlType + "/" + origName +
+                " corresponds to " + arsType)
+    } else {
+        log.debug("NLUtils.xlateEntToTable(): Query found no resource.  Looking for type match for {}", [nlType])
+
+        // If we find no reasonable substitutions, use the original
+       SELECT ONE name, resourceName FROM types AS t WHERE name == nlType {
+           if (t != null) {
+             arsType = t.name
+             origName = t.resourceName
+           }
+       }
+       if (arsType == null) {
+           log.debug("xlateEntToTable():  Could not find type: " + nlType)
+       }
+    }
+}
+
+// Return both the resource name and the type name
+if (origName == null) {
+    origName = arsType
+}
+return {resourceName: origName, typeName: arsType}

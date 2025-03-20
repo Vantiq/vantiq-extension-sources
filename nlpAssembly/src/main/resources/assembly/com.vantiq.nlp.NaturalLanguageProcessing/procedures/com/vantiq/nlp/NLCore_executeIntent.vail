@@ -1,0 +1,17 @@
+package com.vantiq.nlp
+
+PROCEDURE NLCore.executeIntent(collab Object, event Object, activityName String) HIDDEN
+
+var intent = event.intentSpecification
+
+log.debug("NLCore.executeIntent(): collab: {}, intent: {}, activityName: {}", [stringify(collab, true), stringify(intent, true), activityName])
+
+// We handle collaboration-specific things here, but pass the more general things off to the lower level routine.
+// This allows the non-collaboration-related intents to be processed in non-collaboration contexts.
+// (At present, there are no collaboration-specific commands.)
+
+var response
+
+response = NLCore.executeSystemIntent(intent)
+
+return response

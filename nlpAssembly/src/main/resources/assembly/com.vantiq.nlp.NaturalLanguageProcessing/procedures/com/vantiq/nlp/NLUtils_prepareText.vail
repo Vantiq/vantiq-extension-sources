@@ -1,0 +1,119 @@
+package com.vantiq.nlp
+
+/**
+ *  NLUtils.prepareText
+ *
+ *  This call prepares the text for processing based on the channel & direction.
+ *  The channel refers to the underlying communication media in use. Choices include, but are not limited to
+ *      slack
+ *      directline  (here meaning the Vantiq Mobile App)
+ * <p>
+ *  @param  channel  String representing the channel
+ *  @param  incoming  Boolean -- true means incoming (toward the system), false means outgoing (toward the user)
+ *  @param  msg  String representing the message in question
+ *  @return String representing the prepared text
+ *
+**/
+PROCEDURE NLUtils.prepareText(channel String, incoming Boolean, msg String)
+
+var convertedText = msg     // Default to unchanged
+var ENCODED_GT = "&gt;"
+var ENCODED_LT = "&lt;"
+var ENCODED_QUOTE = "&quot;"
+var ENCODED_AMPERSAND = "&amp;"
+var BULLET = "\u2022"
+var ASTERISK = "*" // Bullet character does not survive platform changes
+
+var MS_END_AT = "</at>"
+
+log.debug("prepareText(): Converting for {}, incoming: {}", [channel, incoming])
+
+if (channel == null) {
+    log.warn("NLUtils:prepareText(): No channel provided for message where incoming is {}.  No preparation will be available.", [incoming])
+}
+if (msg != null) {
+    if (channel == "slack") {
+        if (incoming) {
+            convertedText = msg.replace(ENCODED_GT, ">")
+            convertedText = convertedText.replace(ENCODED_LT, "<")
+            convertedText = convertedText.replace(ENCODED_AMPERSAND, "&")
+            convertedText = convertedText.replace(ENCODED_QUOTE, "\"")
+       } else {
+                // Note:  Need to do the & -> &amp; first so that those stuck in on the &gt;, etc., don't get clobbered
+            convertedText = convertedText.replace("&", ENCODED_AMPERSAND)
+            convertedText = convertedText.replace(">", ENCODED_GT)
+            convertedText = convertedText.replace("<", ENCODED_LT)
+            convertedText = convertedText.replace("\"", ENCODED_QUOTE)
+            convertedText = convertedText.replace("\\\"", ENCODED_QUOTE)
+            convertedText = convertedText.replace("\\n", "   \n")
+            convertedText = convertedText.replace("\\\\n", "   \\\\n")
+                    // Slack requires spaces before newlines :-(
+        }
+    } else if (channel == "directline") {
+        if (!incoming) {
+            convertedText = convertedText.replace(BULLET, ASTERISK)
+        }
+    } else if (channel == "msteams") {
+        if (incoming) {   // <at/> junk is teams only.
+            // Here, we need to strip out the local addressing pseudo-html
+            // The message will be "address" to us as <at>whatever</at> (where "whatever" is however the chatbot
+            // was added to the team.  To deal with that, we'll just start the string after that sequence.
+
+            var endAddress = convertedText.indexOf(MS_END_AT)
+            if (endAddress >= 0) {
+                // If we found the intial header we expect, skip over it.  Otherwise, leave it alone.
+                endAddress += MS_END_AT.length()
+                convertedText = convertedText.substring(endAddress)
+            }   // Otherwise, nothing here to do...
+        } else {
+            // Microsoft Teams & Skype seem to use some variant of markdown-ish stuff + some pseudo html.
+            // Thus, we'll change our new lines to <br/> to achieve the effect
+            //
+            // Also, their server doesn't handle escaped quotes in JSON strings, nor does it handle the XML escapes
+            // required by Slack. So we change the " to ' (double quotes to single quotes) to avoid the issue.
+            convertedText = convertedText.replace("\"", "'")
+            convertedText = convertedText.replace("\\\"", "'")
+            // Extra backslashes to make it the literal "\\n", which regex will treat as the literal "\n"
+            convertedText = convertedText.replace("\\\\n", "<br/>")
+            convertedText = convertedText.replace("\\n", "<br/>")
+        }
+    } else if (channel == "skype") {
+        // Skype is similar to MSTeams in that it doesn't handle double quotes in JSON.  So we'll have to
+        // swap to singles.  We'll also need to deal with newlines
+        if (incoming) {   // <at/> junk is teams only.
+            // Here, we need to strip out the local addressing pseudo-html
+            // The message will be "address" to us as <at>whatever</at> (where "whatever" is however the chatbot
+            // was added to the team.  To deal with that, we'll just start the string after that sequence.
+
+            // In skype, I've only seen for sure that they do this with "<".  But it seems
+            // safer to deal with all the escapse.
+            convertedText = convertedText.replace(ENCODED_GT, ">")
+            convertedText = convertedText.replace(ENCODED_LT, "<")
+            convertedText = convertedText.replace(ENCODED_AMPERSAND, "&")
+            convertedText = convertedText.replace(ENCODED_QUOTE, "\"")
+
+        } else {
+            // Microsoft Teams & Skype seem to use some variant of markdown-ish stuff + some pseudo html.
+            // Thus, we'll change our new lines to <br/> to achieve the effect
+            //
+            // Also, their server doesn't handle escaped quotes in JSON strings, nor does it handle the XML escapes
+            // required by Slack. So we change the " to ' (double quotes to single quotes) to avoid the issue.
+            convertedText = convertedText.replace("\"", "'")
+            convertedText = convertedText.replace("\\\"", "'")
+            // Extra backslashes to make it the literal "\\n", which regex will treat as the literal "\n"
+            convertedText = convertedText.replace("\\\\n", "  \\\\n")
+            convertedText = convertedText.replace("\\n", "  \\\\n")
+        }
+    } else if (channel == "webchat") {
+        // webchat is the client from the chatbot, at least
+        if (!incoming) {
+            convertedText = convertedText.replace(BULLET, ASTERISK)
+            convertedText = convertedText.replace("\"", "'")
+            convertedText = convertedText.replace("\\\"", "'")
+            // Extra backslashes to make it the literal "\\n", which regex will treat as the literal "\n"
+            convertedText = convertedText.replace("\\\\n", "  \\\\n")
+            convertedText = convertedText.replace("\\n", "  \\\\n")
+        }
+    }
+}
+return convertedText

@@ -1,0 +1,110 @@
+{
+  "active" : true,
+  "ars_properties" : {
+    "dataVersion" : 5,
+    "graph" : {
+      "coordinates" : {
+        "488eaab8-bca6-47ae-8684-811acf9e547e" : {
+          "x" : 0,
+          "y" : 0
+        },
+        "51f14095-895e-4f78-bd33-17d73f5bfdc2" : {
+          "x" : 0,
+          "y" : 160
+        },
+        "c2032ad9-c451-489b-82d8-a16dbed61f8f" : {
+          "x" : 0,
+          "y" : 79.82424556636155
+        }
+      },
+      "lastZoomRequest" : 0,
+      "scale" : 5.6897568914657715,
+      "translate" : [ 587, 89.96368629844369 ]
+    },
+    "groupSettings" : {
+      "appGroupOpenHash" : {
+        "actions" : true,
+        "filters" : true,
+        "flowControl" : true
+      },
+      "ctGroupOpenHash" : {
+        "actions" : true,
+        "mobile" : true
+      },
+      "ctServiceOpen" : false,
+      "serviceGroupOpenHash" : { }
+    },
+    "paletteWidth" : 170,
+    "propertyWidth" : 280
+  },
+  "ars_relationships" : [ ],
+  "assembly" : {
+    "Procedure" : {
+      "configuration" : {
+        "childStreams" : null,
+        "imports" : null,
+        "parameters" : null,
+        "parentStreams" : [ ],
+        "partitionKey" : null,
+        "procedure" : "${executeIntentProcedure}",
+        "redeliverOnError" : null,
+        "returnBehavior" : "Use Return Value as Outbound event",
+        "returnProperty" : null,
+        "schema" : null
+      },
+      "downstreamReferences" : { },
+      "isRoot" : true,
+      "name" : "Procedure",
+      "pattern" : "Procedure",
+      "patternVersion" : 5,
+      "uuid" : "c2032ad9-c451-489b-82d8-a16dbed61f8f"
+    }
+  },
+  "collaboratorRoles" : [ ],
+  "componentInterface" : {
+    "ars_properties" : {
+      "category" : "standard",
+      "deprecated" : false,
+      "description" : "",
+      "generatorVersion" : 1,
+      "patternGroup" : "app.component"
+    },
+    "configurationProperties" : {
+      "executeIntentProcedure" : {
+        "default" : null,
+        "name" : "executeIntentProcedure",
+        "order" : 0,
+        "required" : true,
+        "type" : "ArsComponent"
+      },
+      "suppressChatroomSend" : {
+        "default" : false,
+        "name" : "suppressChatroomSend",
+        "order" : 1,
+        "type" : "Boolean"
+      }
+    },
+    "events" : {
+      "Downstream" : {
+        "configurationProperty" : "childStreams",
+        "eventName" : "event",
+        "name" : "Downstream",
+        "schema" : "inherit",
+        "taskName" : "Procedure"
+      }
+    },
+    "isComponent" : true,
+    "name" : "com.vantiq.nlp.ProcessIntent",
+    "results" : { },
+    "runtimeProperties" : [ ],
+    "templates" : [ "AppGeneration.generateComponent" ]
+  },
+  "contextualizedAssembly" : { },
+  "conversationNames" : [ ],
+  "disableBadging" : false,
+  "entityRoles" : [ ],
+  "isComponent" : true,
+  "isEventHandler" : false,
+  "keyTypes" : [ "collaborations" ],
+  "name" : "com.vantiq.nlp.ProcessIntent"
+}

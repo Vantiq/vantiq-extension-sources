@@ -1,0 +1,32 @@
+package com.vantiq.nlp
+
+PROCEDURE NLCore.processSystemUtterance(utterance String, languageService String, isProcedureBasedTest Boolean) HIDDEN
+
+// Let's figure out if we can translate these into actions...
+var response = "Default Response Value"
+
+if (isProcedureBasedTest == null) {
+    isProcedureBasedTest = false
+}
+try {
+    var interpretation = NLCore.interpretNLQuery(utterance, languageService, isProcedureBasedTest)
+	log.debug("ProcessUtterance() interpretation: {}", [interpretation.stringify(true)])
+	if (interpretation.errorMsg != null) {
+        // Then, we had some error.  Let's just dump that as the response and move on
+        log.debug("ProcessUtterance(): Found Error: {}", [interpretation.errorMsg])
+        response = interpretation.errorMsg
+	} else if (interpretation.response.intent.startsWith("system.")) {
+        var executedString = NLCore.executeSystemIntent(interpretation.response)
+		response = executedString.response
+	} else { // if (!interp.response.intent.startsWith("system.")) {
+        var executedString = interpretation.response
+        executedString.response = "I don't know how to perform the intent: " + executedString.intent
+        response = executedString.response
+	}
+}
+catch (error) {
+	log.error("ProcessUtterance(): Error Encountered: " + stringify(error))
+    response = error.message
+}
+
+return response
