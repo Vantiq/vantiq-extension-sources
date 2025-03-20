@@ -13,6 +13,7 @@ include 'objectRecognitionSource'
 include 'jdbcSource'
 include 'jmsSource'
 include 'fhirAssembly'
+include 'nlpAssembly'
 if (System.env.EASY_MODBUS_LOC) {
     include 'EasyModbusSource' 
 }
