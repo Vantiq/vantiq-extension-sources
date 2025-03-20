@@ -14,7 +14,7 @@ package com.vantiq.nlp
  *  @return String representing the prepared text
  *
 **/
-PROCEDURE NLUtils.prepareText(channel String, incoming Boolean, msg String)
+PROCEDURE NLUtils.prepareText(channel String, incoming Boolean, msg String): String
 
 var convertedText = msg     // Default to unchanged
 var ENCODED_GT = "&gt;"
