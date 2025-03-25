@@ -1,6 +1,7 @@
 package com.vantiq.nlp
-
-PRIVATE PROCEDURE NLUtils.parseRange(luisEnt Object, rangeSpec Object, rangeType String) HIDDEN
+// rangeSpec here can be an object or String.  Vail parsing is unhappy with strings for an Object, so we'll accedt
+// Any type for the rangeSpec.  The value depends on the type of dates and/or ranges specified.
+PRIVATE PROCEDURE NLUtils.parseRange(luisEnt Object, rangeSpec Any, rangeType String) HIDDEN
 
 // In these cases, we're going to split out the times so that the converter can deal with them
 
