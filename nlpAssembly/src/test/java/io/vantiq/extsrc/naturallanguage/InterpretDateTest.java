@@ -57,12 +57,14 @@ public class InterpretDateTest extends NatLangTestBase {
     @Test
     public void dateRangeTest() {
         
+        int testCount = 0;
         for (LinkedHashMap<String, Serializable> test : RANGE_TESTS) {
             LinkedHashMap<String, LinkedHashMap<String, Serializable>> map = new LinkedHashMap<String, LinkedHashMap<String, Serializable>>(
                 1);
             //noinspection unchecked
             map.put("intent", (LinkedHashMap<String, Serializable>) test.get("testIntent"));
-            VantiqResponse vr = v.execute("NaturalLanguageUtils.findLimitTime", map);
+            VantiqResponse vr = v.execute("com.vantiq.nlp.NLUtils.findLimitTime", map);
+            log.debug("findLimitTime() results: {} for test {}", vr, test);
             assertTrue ("findLimitTime failed", vr.isSuccess());
             Map rslt = ((JsonObject) vr.getBody()).asMap();
             
@@ -84,7 +86,9 @@ public class InterpretDateTest extends NatLangTestBase {
                 assertEquals("wrong limit", expResult.get("limit"),
                              ((JsonPrimitive) rslt.get("limit")).getAsString());
             }
+            testCount += 1;
         }
+        log.debug("Tests completed: {}", testCount);
     }
 
     {
