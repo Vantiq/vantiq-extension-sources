@@ -5,7 +5,6 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 import com.google.gson.JsonNull;
-import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
 import io.vantiq.client.Vantiq;
 import io.vantiq.client.VantiqResponse;
@@ -14,7 +13,6 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.junit.rules.ExpectedException;
 
 import java.io.Serializable;
 import java.util.Collections;
@@ -29,6 +27,7 @@ public class NLUtilsTest extends NatLangTestBase {
     public static void setupCat() {
         performSetup(Collections.EMPTY_MAP);
     }
+    
     @Before
     public void setup() {
         v.authenticate(SUB_USER, SUB_USER);

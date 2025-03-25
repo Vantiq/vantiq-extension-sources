@@ -15,6 +15,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.junit.AfterClass;
 
 import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.text.SimpleDateFormat;
 import java.util.Collections;
 import java.util.Date;
@@ -168,5 +171,13 @@ public class NatLangTestBase {
     
     public static VantiqResponse deleteProcedure(Vantiq v, String procName) {
         return v.delete("system.procedures", procName);
+    }
+    
+    public static String fetchFromFile(String fileName) {
+        try {
+            return Files.readString(Path.of("build/resources/test/" + fileName));
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
     }
 }
