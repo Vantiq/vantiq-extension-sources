@@ -1,0 +1,73 @@
+{
+    "kind": "ConversationResult",
+    "result": {
+        "query": "list patients",
+        "prediction": {
+            "topIntent": "system.list",
+            "projectKind": "Conversation",
+            "intents": [
+                {
+                    "category": "system.list",
+                    "confidenceScore": 1
+                },
+                {
+                    "category": "system.count",
+                    "confidenceScore": 0.7683065
+                },
+                {
+                    "category": "system.describeType",
+                    "confidenceScore": 0.752392
+                },
+                {
+                    "category": "health.patientsByCondition",
+                    "confidenceScore": 0.6938996
+                },
+                {
+                    "category": "system.showActive",
+                    "confidenceScore": 0.60078466
+                },
+                {
+                    "category": "system.smalltalk.greetings",
+                    "confidenceScore": 0.5535
+                },
+                {
+                    "category": "system.smalltalk.mindframe",
+                    "confidenceScore": 0.46983096
+                },
+                {
+                    "category": "system.smalltalk.chatbot",
+                    "confidenceScore": 0.46450934
+                },
+                {
+                    "category": "system.smalltalk.bio",
+                    "confidenceScore": 0.44748047
+                },
+                {
+                    "category": "system.smalltalk.thankYou",
+                    "confidenceScore": 0.43951625
+                },
+                {
+                    "category": "system.smalltalk.birthday",
+                    "confidenceScore": 0.42634368
+                },
+                {
+                    "category": "system.endDiscussion",
+                    "confidenceScore": 0.3417826
+                },
+                {
+                    "category": "None",
+                    "confidenceScore": 0
+                }
+            ],
+            "entities": [
+                {
+                    "category": "system.typeName",
+                    "text": "patients",
+                    "offset": 5,
+                    "length": 8,
+                    "confidenceScore": 1
+                }
+            ]
+        }
+    }
+}

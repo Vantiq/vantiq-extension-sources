@@ -1,0 +1,139 @@
+{
+    "kind": "ConversationResult",
+    "result": {
+        "query": "list Patients whose name is greater than or equal to Fred",
+        "prediction": {
+            "topIntent": "system.list",
+            "projectKind": "Conversation",
+            "intents": [
+                {
+                    "category": "system.list",
+                    "confidenceScore": 1
+                },
+                {
+                    "category": "system.count",
+                    "confidenceScore": 0.72182834
+                },
+                {
+                    "category": "health.patientsByCondition",
+                    "confidenceScore": 0.6066247
+                },
+                {
+                    "category": "system.showActive",
+                    "confidenceScore": 0.50224614
+                },
+                {
+                    "category": "system.describeType",
+                    "confidenceScore": 0.48491272
+                },
+                {
+                    "category": "system.smalltalk.chatbot",
+                    "confidenceScore": 0.25685102
+                },
+                {
+                    "category": "system.smalltalk.greetings",
+                    "confidenceScore": 0.24740537
+                },
+                {
+                    "category": "system.smalltalk.mindframe",
+                    "confidenceScore": 0.22868547
+                },
+                {
+                    "category": "system.smalltalk.bio",
+                    "confidenceScore": 0.22669801
+                },
+                {
+                    "category": "system.smalltalk.thankYou",
+                    "confidenceScore": 0.22175255
+                },
+                {
+                    "category": "system.smalltalk.birthday",
+                    "confidenceScore": 0.20858541
+                },
+                {
+                    "category": "system.endDiscussion",
+                    "confidenceScore": 0.15161431
+                },
+                {
+                    "category": "None",
+                    "confidenceScore": 0
+                }
+            ],
+            "entities": [
+                {
+                    "category": "system.typeName",
+                    "text": "Patients",
+                    "offset": 5,
+                    "length": 8,
+                    "confidenceScore": 1
+                },
+                {
+                    "category": "system.propertyName",
+                    "text": "name",
+                    "offset": 20,
+                    "length": 4,
+                    "confidenceScore": 1
+                },
+                {
+                    "category": "system.comparator_eq",
+                    "text": "is",
+                    "offset": 25,
+                    "length": 2,
+                    "confidenceScore": 1,
+                    "extraInformation": [
+                        {
+                            "extraInformationKind": "ListKey",
+                            "key": "is"
+                        }
+                    ]
+                },
+                {
+                    "category": "system.comparator_gt",
+                    "text": "is greater than",
+                    "offset": 25,
+                    "length": 15,
+                    "confidenceScore": 1,
+                    "extraInformation": [
+                        {
+                            "extraInformationKind": "ListKey",
+                            "key": "greater than"
+                        }
+                    ]
+                },
+                {
+                    "category": "system.comparator_gte",
+                    "text": "is greater than or equal to",
+                    "offset": 25,
+                    "length": 27,
+                    "confidenceScore": 1,
+                    "extraInformation": [
+                        {
+                            "extraInformationKind": "ListKey",
+                            "key": "greater than or equal to"
+                        }
+                    ]
+                },
+                {
+                    "category": "system.comparator_eq",
+                    "text": "equal to",
+                    "offset": 44,
+                    "length": 8,
+                    "confidenceScore": 1,
+                    "extraInformation": [
+                        {
+                            "extraInformationKind": "ListKey",
+                            "key": "equal to"
+                        }
+                    ]
+                },
+                {
+                    "category": "system.propertyValue",
+                    "text": "Fred",
+                    "offset": 53,
+                    "length": 4,
+                    "confidenceScore": 1
+                }
+            ]
+        }
+    }
+}

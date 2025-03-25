@@ -1,0 +1,86 @@
+{
+    "kind": "ConversationResult",
+    "result": {
+        "query": "who is sick?",
+        "prediction": {
+            "topIntent": "health.patientsByCondition",
+            "projectKind": "Conversation",
+            "intents": [
+                {
+                    "category": "health.patientsByCondition",
+                    "confidenceScore": 0.9477081
+                },
+                {
+                    "category": "system.count",
+                    "confidenceScore": 0.6917385
+                },
+                {
+                    "category": "system.list",
+                    "confidenceScore": 0.65329224
+                },
+                {
+                    "category": "system.smalltalk.mindframe",
+                    "confidenceScore": 0.6422028
+                },
+                {
+                    "category": "system.showActive",
+                    "confidenceScore": 0.60876733
+                },
+                {
+                    "category": "system.smalltalk.birthday",
+                    "confidenceScore": 0.5967105
+                },
+                {
+                    "category": "system.smalltalk.greetings",
+                    "confidenceScore": 0.5938601
+                },
+                {
+                    "category": "system.smalltalk.chatbot",
+                    "confidenceScore": 0.57427055
+                },
+                {
+                    "category": "system.describeType",
+                    "confidenceScore": 0.5181988
+                },
+                {
+                    "category": "system.smalltalk.bio",
+                    "confidenceScore": 0.4881715
+                },
+                {
+                    "category": "system.endDiscussion",
+                    "confidenceScore": 0.39838865
+                },
+                {
+                    "category": "system.smalltalk.thankYou",
+                    "confidenceScore": 0.3799124
+                },
+                {
+                    "category": "None",
+                    "confidenceScore": 0
+                }
+            ],
+            "entities": [
+                {
+                    "category": "system.comparator_eq",
+                    "text": "is",
+                    "offset": 4,
+                    "length": 2,
+                    "confidenceScore": 1,
+                    "extraInformation": [
+                        {
+                            "extraInformationKind": "ListKey",
+                            "key": "is"
+                        }
+                    ]
+                },
+                {
+                    "category": "health.condition_general",
+                    "text": "sick",
+                    "offset": 7,
+                    "length": 4,
+                    "confidenceScore": 1
+                }
+            ]
+        }
+    }
+}

@@ -1,0 +1,67 @@
+{
+    "kind": "ConversationResult",
+    "result": {
+        "query": "thank you",
+        "prediction": {
+            "topIntent": "system.smalltalk.thankYou",
+            "projectKind": "Conversation",
+            "intents": [
+                {
+                    "category": "system.smalltalk.thankYou",
+                    "confidenceScore": 0.9975827
+                },
+                {
+                    "category": "system.smalltalk.greetings",
+                    "confidenceScore": 0.9333284
+                },
+                {
+                    "category": "system.smalltalk.mindframe",
+                    "confidenceScore": 0.8584052
+                },
+                {
+                    "category": "system.endDiscussion",
+                    "confidenceScore": 0.8164139
+                },
+                {
+                    "category": "system.smalltalk.birthday",
+                    "confidenceScore": 0.79001915
+                },
+                {
+                    "category": "system.count",
+                    "confidenceScore": 0.6685026
+                },
+                {
+                    "category": "system.smalltalk.chatbot",
+                    "confidenceScore": 0.6300162
+                },
+                {
+                    "category": "system.list",
+                    "confidenceScore": 0.62934786
+                },
+                {
+                    "category": "system.describeType",
+                    "confidenceScore": 0.6016505
+                },
+                {
+                    "category": "system.showActive",
+                    "confidenceScore": 0.60031664
+                },
+                {
+                    "category": "health.patientsByCondition",
+                    "confidenceScore": 0.56286836
+                },
+                {
+                    "category": "system.smalltalk.bio",
+                    "confidenceScore": 0.56138664
+                },
+                {
+                    "category": "None",
+                    "confidenceScore": 0
+                }
+            ],
+            "entities": [
+                
+            ]
+        }
+    }
+}

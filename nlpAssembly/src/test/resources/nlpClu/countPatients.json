@@ -1,0 +1,73 @@
+{
+    "kind": "ConversationResult",
+    "result": {
+        "query": "how many Patients are there?",
+        "prediction": {
+            "topIntent": "system.count",
+            "projectKind": "Conversation",
+            "intents": [
+                {
+                    "category": "system.count",
+                    "confidenceScore": 0.998596
+                },
+                {
+                    "category": "system.list",
+                    "confidenceScore": 0.7457545
+                },
+                {
+                    "category": "health.patientsByCondition",
+                    "confidenceScore": 0.73585343
+                },
+                {
+                    "category": "system.describeType",
+                    "confidenceScore": 0.5209297
+                },
+                {
+                    "category": "system.smalltalk.mindframe",
+                    "confidenceScore": 0.50533855
+                },
+                {
+                    "category": "system.smalltalk.greetings",
+                    "confidenceScore": 0.44054967
+                },
+                {
+                    "category": "system.smalltalk.birthday",
+                    "confidenceScore": 0.4397644
+                },
+                {
+                    "category": "system.smalltalk.bio",
+                    "confidenceScore": 0.42264992
+                },
+                {
+                    "category": "system.showActive",
+                    "confidenceScore": 0.40976402
+                },
+                {
+                    "category": "system.smalltalk.chatbot",
+                    "confidenceScore": 0.4067857
+                },
+                {
+                    "category": "system.smalltalk.thankYou",
+                    "confidenceScore": 0.3743765
+                },
+                {
+                    "category": "system.endDiscussion",
+                    "confidenceScore": 0.28745636
+                },
+                {
+                    "category": "None",
+                    "confidenceScore": 0
+                }
+            ],
+            "entities": [
+                {
+                    "category": "system.typeName",
+                    "text": "Patients",
+                    "offset": 9,
+                    "length": 8,
+                    "confidenceScore": 1
+                }
+            ]
+        }
+    }
+}

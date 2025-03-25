@@ -1,0 +1,79 @@
+{
+    "kind": "ConversationResult",
+    "result": {
+        "query": "What is the airspeed velocity of an unladen sparrow",
+        "prediction": {
+            "topIntent": "None",
+            "projectKind": "Conversation",
+            "intents": [
+                {
+                    "category": "system.list",
+                    "confidenceScore": 0.44600093
+                },
+                {
+                    "category": "system.count",
+                    "confidenceScore": 0.43020523
+                },
+                {
+                    "category": "system.smalltalk.mindframe",
+                    "confidenceScore": 0.4215338
+                },
+                {
+                    "category": "system.smalltalk.greetings",
+                    "confidenceScore": 0.38198847
+                },
+                {
+                    "category": "system.smalltalk.thankYou",
+                    "confidenceScore": 0.35048774
+                },
+                {
+                    "category": "system.smalltalk.chatbot",
+                    "confidenceScore": 0.3477887
+                },
+                {
+                    "category": "health.patientsByCondition",
+                    "confidenceScore": 0.3349192
+                },
+                {
+                    "category": "system.describeType",
+                    "confidenceScore": 0.32201284
+                },
+                {
+                    "category": "system.endDiscussion",
+                    "confidenceScore": 0.2884274
+                },
+                {
+                    "category": "system.smalltalk.bio",
+                    "confidenceScore": 0.26156026
+                },
+                {
+                    "category": "system.showActive",
+                    "confidenceScore": 0.26074016
+                },
+                {
+                    "category": "system.smalltalk.birthday",
+                    "confidenceScore": 0.23579963
+                },
+                {
+                    "category": "None",
+                    "confidenceScore": 0
+                }
+            ],
+            "entities": [
+                {
+                    "category": "system.comparator_eq",
+                    "text": "is",
+                    "offset": 5,
+                    "length": 2,
+                    "confidenceScore": 1,
+                    "extraInformation": [
+                        {
+                            "extraInformationKind": "ListKey",
+                            "key": "is"
+                        }
+                    ]
+                }
+            ]
+        }
+    }
+}
