@@ -3,7 +3,7 @@ package com.vantiq.nlp
 import service com.vantiq.nlp.NLSystemExec
 
 /**
-** NLCore.executeSystemIntent
+** NLSystemExec.executeSystemIntent
 **
 ** This procedure receives a natural language query, asks LUIS to interpret it, then returns the description.
 **

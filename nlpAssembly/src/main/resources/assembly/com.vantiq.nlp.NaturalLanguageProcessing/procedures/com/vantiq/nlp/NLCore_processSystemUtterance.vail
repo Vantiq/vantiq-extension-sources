@@ -16,7 +16,7 @@ try {
         log.debug("ProcessUtterance(): Found Error: {}", [interpretation.errorMsg])
         response = interpretation.errorMsg
 	} else if (interpretation.response.intent.startsWith("system.")) {
-        var executedString = NLCore.executeSystemIntent(interpretation.response)
+        var executedString = NLSystemExec.executeSystemIntent(interpretation.response)
 		response = executedString.response
 	} else { // if (!interp.response.intent.startsWith("system.")) {
         var executedString = interpretation.response

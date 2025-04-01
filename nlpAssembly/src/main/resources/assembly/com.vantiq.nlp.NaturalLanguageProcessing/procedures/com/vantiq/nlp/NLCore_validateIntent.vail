@@ -2,7 +2,7 @@ package com.vantiq.nlp
 
 PRIVATE PROCEDURE NLCore.validateIntent(intentStructure Object) HIDDEN
 var MINIMUM_INTENT_SCORE = 0.65
-var errorPrefix = "io.vantiq.naturalLanguage.validateIntent"
+var errorPrefix = "com.vantiq.nlp.validateIntent"
 var errorExtension = null
 var errorsByException = false
 

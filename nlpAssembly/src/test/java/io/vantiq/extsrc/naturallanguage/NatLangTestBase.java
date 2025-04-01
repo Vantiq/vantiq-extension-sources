@@ -5,6 +5,7 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
@@ -180,4 +181,10 @@ public class NatLangTestBase {
             throw new RuntimeException(e);
         }
     }
+    
+    public static Map fetchFromJsonFile(String fileName) {
+        String contents = fetchFromFile(fileName);
+        return new Gson().fromJson(contents, Map.class);
+    }
+    
 }

@@ -251,7 +251,7 @@ public class CLUProcessingTest extends NatLangTestBase {
             "procedure NLTest.testExecIntent(intentUnderTest Object)\n" +
             "    var result\n" +
             "    try {\n" +
-            "        result = NaturalLanguageCore.executeSystemIntent(intentUnderTest)\n" +
+            "        result = com.vantiq.nlp.NLSystemExec.executeSystemIntent(intentUnderTest)\n" +
             "    } \n" +
             "    catch (error) {\n" +
             "        // Something went wrong.  Return the error\n" +
@@ -309,7 +309,8 @@ public class CLUProcessingTest extends NatLangTestBase {
             "        response = interpretation.errorMsg\n" +
             "    } else if (interpretation.response.intent.startsWith(\"system.\")) {\n" +
             "        log.debug(\"ProcessUtterance():  Attempting interpretation of intent: {}\", [interpretation.response.intent])\n" +
-            "        var interpretedString = NaturalLanguageCore.executeSystemIntent(interpretation.response)\n" +
+            "        var interpretedString = " +
+                         "com.vantiq.nlp.NLSystemExec.executeSystemIntent(interpretation.response)\n" +
             "        response = interpretedString.response\n" +
             "    } else { // if (!interp.response.intent.startsWith(\"system.\")) {\n" +
             "        exception(\"io.vantiq.testing.was.execCustomIntent\", \"Trying to call nonexistent NLTest.executeCustomIntent\", [])\n" +
