@@ -114,7 +114,8 @@ public class CLUProcessingTest extends NatLangTestBase {
             "\n// Here, we put in a simplistic NLI to appease the tests\n" +
             "\n//var theIntent = null\n" +
             "//var theEnts = null\n" +
-            "var cluResp = null\n" +
+                
+                "var cluResp = null\n" +
             "if (nlUtterance.equals(\"" + UTTERANCE_BYE_BYE + "\")) {\n" +
             "    cluResp = " + CLU_BYE_BYE + "\n" +
             "} else if (nlUtterance.equals(\"" + UTTERANCE_COUNT_Patients + "\")) {\n" +
@@ -220,7 +221,7 @@ public class CLUProcessingTest extends NatLangTestBase {
             "    var result\n" +
             "    try {\n" +
             "\n        // The last parameter adjusts askLuis's behavior (via intepretNLQuery) to handle a VAIL-procedure-based source\n" +
-            "        result = NaturalLanguageCore.interpretConversationalQuery(nlUtterance, \"" + CLU_SOURCE_NAME + "\",\n" +
+            "        result = com.vantiq.nlp.NLCore.interpretConversationalQuery(nlUtterance, \"" + CLU_SOURCE_NAME + "\",\n" +
             "                        \"VantiqTutorial\", \"mig1\", " + !useAzureSource + ")\n" +
             "    } \n" +
             "    catch (error) {\n" +
@@ -236,7 +237,8 @@ public class CLUProcessingTest extends NatLangTestBase {
             "    try {\n" +
             "        // 'true' as the last parameter adjusts askLuis's behavior (via intepretConversationalQuery) \n" +
             "        // to handle a VAIL-procedure-based source\n" +
-            "        result = NaturalLanguageCore.interpretConversationalQuery(nlUtterance, \"IAmAServiceThatDoesNotExist\",\n" +
+            "        result = com.vantiq.nlp.NLCore.interpretConversationalQuery(nlUtterance, " +
+                "\"IAmAServiceThatDoesNotExist\",\n" +
             "                        \"doesn't\", \"matter\", true)\n" +
             "    } \n" +
             "    catch (error) {\n" +
@@ -300,7 +302,7 @@ public class CLUProcessingTest extends NatLangTestBase {
             "    isProcedureBasedTest = false\n" +
             "}\n" +
             "try {\n" +
-            "    var interpretation = NaturalLanguageCore.interpretConversationalQuery(utterance, \"" + CLU_SOURCE_NAME + "\",\n" +
+            "    var interpretation = com.vantiq.nlp.NLCore.interpretConversationalQuery(utterance, \"" + CLU_SOURCE_NAME + "\",\n" +
             "                                    \"VantiqTutorial\", \"mig1\", " + !useAzureSource + ")\n" +
             "    log.debug(\"ProcessUtterance() interpretation: {}\", [interpretation.stringify(true)])\n" +
             "    if (interpretation.errorMsg != null) {\n" +
@@ -606,6 +608,47 @@ public class CLUProcessingTest extends NatLangTestBase {
             unloadPatients();
         }
 
+    }
+    
+    @Test
+    public void testCheckServiceComposition() {
+        String proc = "package test.it\n" +
+                "\n" +
+                "import service com.vantiq.nlp.NLCore\n" +
+                "\n" +
+                "PROCEDURE NLTest.callService(event Object)\n" +
+                
+                "\n" +
+                "event = NLCore.respondToConversationalQuery(cluDeployment : \"someDeployment\", " +
+                "cluModel : \"someModel\", collab : null, natLangQuery : event.text," +
+                "naturalLanguageSource : \"" + CLU_SOURCE_NAME + "\")\n" +
+                "return event" +
+                "\n";
+        registerProcedure(v, proc);
+        
+        VantiqResponse vr = v.execute("test.it.NLTest.callService", Map.of("event",
+                                                                    Map.of("text", "sillyness")));
+        log.debug("callService response: {}", vr);
+        Assert.assertTrue("service call Failed: " + vr, vr.isSuccess());
+        Map rawResult = ((JsonObject) vr.getBody()).asMap();
+        assert rawResult.size() == 2;
+        String em = null;
+        if (rawResult.get("errorMsg") != null && !(rawResult.get("errorMsg") instanceof JsonNull)) {
+            em = ((JsonPrimitive) rawResult.get("errorMsg")).getAsString();
+        }
+
+        assert rawResult.get("response") != null;
+        Map resp;
+        try {
+            resp = mapper.readValue(new Gson().toJson(((JsonObject) rawResult.get("response"))), Map.class);
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException(e);
+        }
+        assert resp != null;
+        assert resp.get("rawIntent") != null;
+        assert ((Map) resp.get("rawIntent")).get("topIntent") != null;
+        assert ((Map) resp.get("rawIntent")).get("topIntent").equals(INTENT_NONSENSE);
+        
     }
 
     public void checkNLExec(String utterance, String desiredIntent,
