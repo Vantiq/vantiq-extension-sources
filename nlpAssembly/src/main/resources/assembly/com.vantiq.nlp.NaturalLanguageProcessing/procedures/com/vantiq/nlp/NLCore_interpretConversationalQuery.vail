@@ -1,5 +1,7 @@
 package com.vantiq.nlp
 
+import service com.vantiq.nlp.NLCore
+
 /**
 ** NLCore.interpretConversationalQuery
 **

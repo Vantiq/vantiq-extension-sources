@@ -8,7 +8,7 @@ import service com.vantiq.nlp.NLCore
 // use in a collaboration as required.  The lower level service procedure can, than, remain callable as is
 // for use in other, non-collaboration, scenarios.
 
-PROCEDURE NLCore.respondToConversationalQuery(natLangQuery String, collab Object,
+PROCEDURE NLCore.respondToConversationalQuery(natLangQuery String, collab String,
                             naturalLanguageSource String,
                             cluModel String,
                             cluDeployment String) HIDDEN

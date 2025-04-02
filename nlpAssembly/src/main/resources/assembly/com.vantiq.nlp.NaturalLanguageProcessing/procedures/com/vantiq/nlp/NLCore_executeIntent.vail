@@ -1,6 +1,6 @@
 package com.vantiq.nlp
 
-PROCEDURE NLCore.executeIntent(collab String, event Object, activityName String) HIDDEN
+PROCEDURE NLCore.executeIntent(collab String REQUIRED, event Object REQUIRED, activityName String REQUIRED): Object HIDDEN
 
 var intent = event.intentSpecification
 

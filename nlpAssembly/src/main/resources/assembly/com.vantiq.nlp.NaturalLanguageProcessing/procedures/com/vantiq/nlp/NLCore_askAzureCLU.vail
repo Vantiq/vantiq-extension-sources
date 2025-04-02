@@ -3,7 +3,7 @@ package com.vantiq.nlp
 // This procedure takes a string representing the natural language to be interpreted.
 // It returns the CLU-style JSON object representing the interpretation.
 
-PROCEDURE NLCore.askAzureCLU(natLangQuery String REQUIRED,
+private PROCEDURE NLCore.askAzureCLU(natLangQuery String REQUIRED,
 										  naturalLanguageSource String REQUIRED,
 										  projectName String REQUIRED,
 										  deploymentName String REQUIRED,

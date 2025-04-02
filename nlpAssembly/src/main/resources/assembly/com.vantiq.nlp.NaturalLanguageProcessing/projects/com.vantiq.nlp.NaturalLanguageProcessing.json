@@ -55,15 +55,6 @@
     "source" : "procedure/com.vantiq.nlp.NLSystemExec.executeSystemIntent",
     "target" : "procedure/com.vantiq.nlp.NLSystemExec.performDescribe"
   }, {
-    "source" : "procedure/com.vantiq.nlp.NLCore.processMessage",
-    "target" : "services/com.vantiq.nlp.NLCore"
-  }, {
-    "source" : "services/com.vantiq.nlp.NLCore",
-    "target" : "procedure/com.vantiq.nlp.NLCore.processMessage"
-  }, {
-    "source" : "procedure/com.vantiq.nlp.NLCore.processMessage",
-    "target" : "procedure/com.vantiq.nlp.NLCore.publishResponse"
-  }, {
     "source" : "procedure/com.vantiq.nlp.NLSystemExec.performDescribe",
     "target" : "procedure/com.vantiq.nlp.NLUtils.findDesiredType"
   }, {
@@ -342,15 +333,6 @@
     "resourceReference" : "/documents/com.vantiq.nlp.NLCore.js",
     "timestamp" : "2025-03-18T23:38:46.956Z",
     "type" : 19
-  }, {
-    "label" : "com.vantiq.nlp.NLCore.processMessage",
-    "name" : "com.vantiq.nlp.NLCore.processMessage",
-    "packageName" : "com.vantiq.nlp",
-    "procedureName" : "processMessage",
-    "resourceReference" : "/procedures/com.vantiq.nlp.NLCore.processMessage",
-    "serviceName" : "NLCore",
-    "timestamp" : "2025-03-18T23:38:47.063Z",
-    "type" : 3
   }, {
     "label" : "com.vantiq.nlp.NLCore.processSystemUtterance",
     "name" : "com.vantiq.nlp.NLCore.processSystemUtterance",

@@ -10,6 +10,31 @@
   "eventTypes" : { },
   "globalType" : null,
   "interface" : [ {
+    "name" : "executeIntent",
+    "parameters" : [ {
+      "description" : null,
+      "multi" : false,
+      "name" : "collab",
+      "required" : true,
+      "type" : "String"
+    }, {
+      "description" : null,
+      "multi" : false,
+      "name" : "event",
+      "required" : true,
+      "type" : "Object"
+    }, {
+      "description" : null,
+      "multi" : false,
+      "name" : "activityName",
+      "required" : true,
+      "type" : "String"
+    } ],
+    "returnType" : {
+      "multi" : false,
+      "type" : "Object"
+    }
+  },{
     "name" : "interpretConversationalQuery",
     "parameters" : [ {
       "description" : null,
@@ -80,7 +105,7 @@
       "multi" : false,
       "name" : "collab",
       "required" : false,
-      "type" : "Object"
+      "type" : "String"
     }, {
       "description" : null,
       "multi" : false,
