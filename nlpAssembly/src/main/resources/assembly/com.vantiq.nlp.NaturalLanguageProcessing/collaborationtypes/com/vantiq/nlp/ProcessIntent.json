@@ -39,7 +39,7 @@
   },
   "ars_relationships" : [ ],
   "assembly" : {
-    "Procedure" : {
+    "PerformProcessIntent" : {
       "configuration" : {
         "childStreams" : null,
         "imports" : null,

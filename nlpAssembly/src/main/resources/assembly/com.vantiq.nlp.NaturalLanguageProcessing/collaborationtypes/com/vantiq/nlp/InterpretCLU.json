@@ -74,7 +74,7 @@
     "DirectlyProcessSystemIntent" : {
       "configuration" : {
         "childStreams" : [ "FilterResponseToChat" ],
-        "executeIntentProcedure" : "com.vantiq.nlp.NLSystemExec.executeSystemIntent",
+        "executeIntentProcedure" : "com.vantiq.nlp.NLCore.executeIntent",
         "imports" : [ {
           "type" : "Import",
           "value" : "service com.vantiq.nlp.NLSystemExec"
@@ -155,7 +155,7 @@
         },
         "parentStreams" : [ ],
         "partitionKey" : null,
-        "procedure" : "com.vantiq.nlp.NLCore.interpretConversationalQuery",
+        "procedure" : "com.vantiq.nlp.NLCore.respondToConversationalQuery",
         "redeliverOnError" : null,
         "returnBehavior" : "Use Return Value as Outbound event",
         "returnProperty" : null,
