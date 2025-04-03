@@ -12,7 +12,6 @@ import com.google.gson.JsonPrimitive;
 import io.vantiq.client.Vantiq;
 import io.vantiq.client.VantiqResponse;
 import lombok.extern.slf4j.Slf4j;
-import org.codehaus.groovy.runtime.DefaultGroovyMethods;
 import org.codehaus.groovy.runtime.StringGroovyMethods;
 import org.junit.Assert;
 import org.junit.Before;
@@ -539,7 +538,7 @@ public class CLUProcessingTest extends NatLangTestBase {
         LinkedHashMap<String, String> map = new LinkedHashMap<>(2);
         map.put("id", collab1.get("id").toString());
         map.put("status", "complete");
-        v.update("system.collaborations", DefaultGroovyMethods.asType(collab1.get("id"), String.class), map);
+        v.update("system.collaborations", collab1.get("id").toString(), map);
         
         LinkedHashMap<String, String> map1 = new LinkedHashMap<>(2);
         map1.put("id", collab2.get("id").toString());
