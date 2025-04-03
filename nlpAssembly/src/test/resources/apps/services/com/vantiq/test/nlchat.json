@@ -1,0 +1,25 @@
+{
+  "active" : true,
+  "ars_properties" : {
+    "filterPrivateGenerated" : false,
+    "filterPublicGenerated" : false,
+    "fragmentList" : [ ]
+  },
+  "ars_relationships" : [ ],
+  "description" : null,
+  "eventTypes" : {
+    "startchat" : {
+      "direction" : "INBOUND",
+      "implementingResource" : "/collaborationtypes/com.vantiq.test.nlchat.testchat/EventStream",
+      "isReliable" : false
+    }
+  },
+  "globalType" : null,
+  "interface" : [ ],
+  "internalEventHandlers" : [ ],
+  "name" : "com.vantiq.test.nlchat",
+  "partitionedType" : "com.vantiq.test.nlchat.PartitionedState",
+  "replicationFactor" : 1,
+  "scheduledProcedures" : {
+  }
+}
