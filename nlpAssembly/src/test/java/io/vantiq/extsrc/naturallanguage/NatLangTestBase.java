@@ -107,7 +107,7 @@ public class NatLangTestBase {
             assertTrue("Could not authenticate into ns: " + SUBSCRIBER_NS_NAME + " :: " + resp.getErrors(),
                        resp.isSuccess());
             resp = v.execute("Broker.connect",
-                             Map.of("token", tokenString, "uri", "http://localhost:8080","useVQS", false));
+                             Map.of("token", tokenString, "uri", TEST_SERVER,"useVQS", false));
             assertTrue("Unable to connect to catalog:" + resp.getErrors(), resp.isSuccess());
             resp = v.execute("Broker.getAllAssemblies", Map.of("catalogName", CATALOG_NAME));
             assertTrue("Could not list assemblies: " + resp.getErrors(), resp.isSuccess());

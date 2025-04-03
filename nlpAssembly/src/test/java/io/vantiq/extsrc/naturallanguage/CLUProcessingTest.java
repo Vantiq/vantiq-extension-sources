@@ -363,7 +363,7 @@ public class CLUProcessingTest extends NatLangTestBase {
         } else {
             // Otherwise, the normal case, fake it
             LinkedHashMap<String, Serializable> map4 = new LinkedHashMap<>(6);
-            map4.put("uri", "http://localhost:8080/api/v1/resources");
+            map4.put("uri", TEST_SERVER + "/api/v1/resources");
             map4.put("accessToken", v.getAccessToken());
             map4.put("contentType", "application/json");
             map4.put("keepAliveInterval", 0);
