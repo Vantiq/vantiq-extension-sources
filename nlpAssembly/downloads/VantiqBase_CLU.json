@@ -1,0 +1,3293 @@
+{
+    "projectFileVersion": "2022-10-01-preview",
+    "stringIndexType": "Utf16CodeUnit",
+    "metadata": {
+        "projectKind": "Conversation",
+        "settings": {
+            "confidenceThreshold": 0.7
+        },
+        "projectName": "VantiqBase",
+        "multilingual": false,
+        "description": "Vantiq Subset, english culture",
+        "language": "en-us"
+    },
+    "assets": {
+        "projectKind": "Conversation",
+        "intents": [
+            {
+                "category": "None"
+            },
+            {
+                "category": "system.count"
+            },
+            {
+                "category": "system.describeType"
+            },
+            {
+                "category": "system.endDiscussion"
+            },
+            {
+                "category": "system.list"
+            },
+            {
+                "category": "system.showActive"
+            },
+            {
+                "category": "system.smalltalk.bio"
+            },
+            {
+                "category": "system.smalltalk.birthday"
+            },
+            {
+                "category": "system.smalltalk.chatbot"
+            },
+            {
+                "category": "system.smalltalk.greetings"
+            },
+            {
+                "category": "system.smalltalk.mindframe"
+            },
+            {
+                "category": "system.smalltalk.thankYou"
+            }
+        ],
+        "entities": [
+            {
+                "category": "datetimev2",
+                "compositionSetting": "combineComponents"
+            },
+            {
+                "category": "system.plainWord",
+                "compositionSetting": "combineComponents"
+            },
+            {
+                "category": "system.propertyName",
+                "compositionSetting": "combineComponents"
+            },
+            {
+                "category": "system.propertyValue",
+                "compositionSetting": "combineComponents"
+            },
+            {
+                "category": "system.typeName",
+                "compositionSetting": "combineComponents"
+            },
+            {
+                "category": "system.comparator_eq",
+                "compositionSetting": "combineComponents",
+                "list": {
+                    "sublists": [
+                        {
+                            "listKey": "=",
+                            "synonyms": [
+                                {
+                                    "language": "en-us",
+                                    "values": [
+                                        "==",
+                                        "="
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            "listKey": "means",
+                            "synonyms": [
+                                {
+                                    "language": "en-us",
+                                    "values": [
+                                        "means"
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            "listKey": "is",
+                            "synonyms": [
+                                {
+                                    "language": "en-us",
+                                    "values": [
+                                        "is"
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            "listKey": "equal to",
+                            "synonyms": [
+                                {
+                                    "language": "en-us",
+                                    "values": [
+                                        "equalto",
+                                        "is equal",
+                                        "is equal to",
+                                        "is equalto",
+                                        "isequalto",
+                                        "equal to"
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            "listKey": "same",
+                            "synonyms": [
+                                {
+                                    "language": "en-us",
+                                    "values": [
+                                        "same as",
+                                        "is same as",
+                                        "same"
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
+                }
+            },
+            {
+                "category": "system.comparator_gt",
+                "compositionSetting": "combineComponents",
+                "list": {
+                    "sublists": [
+                        {
+                            "listKey": ">",
+                            "synonyms": [
+                                {
+                                    "language": "en-us",
+                                    "values": [
+                                        ">>",
+                                        "> >",
+                                        ">"
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            "listKey": "greater than",
+                            "synonyms": [
+                                {
+                                    "language": "en-us",
+                                    "values": [
+                                        "greaterthan",
+                                        "is greater than",
+                                        "isgreaterthan",
+                                        "greater than"
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            "listKey": "after",
+                            "synonyms": [
+                                {
+                                    "language": "en-us",
+                                    "values": [
+                                        "after"
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            "listKey": "above",
+                            "synonyms": [
+                                {
+                                    "language": "en-us",
+                                    "values": [
+                                        "above"
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            "listKey": "over",
+                            "synonyms": [
+                                {
+                                    "language": "en-us",
+                                    "values": [
+                                        "exceeds",
+                                        "exceed",
+                                        "over"
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            "listKey": "younger than",
+                            "synonyms": [
+                                {
+                                    "language": "en-us",
+                                    "values": [
+                                        "young than",
+                                        "youngerthan",
+                                        "younger than"
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            "listKey": "since",
+                            "synonyms": [
+                                {
+                                    "language": "en-us",
+                                    "values": [
+                                        "since"
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
+                }
+            },
+            {
+                "category": "system.comparator_gte",
+                "compositionSetting": "combineComponents",
+                "list": {
+                    "sublists": [
+                        {
+                            "listKey": ">=",
+                            "synonyms": [
+                                {
+                                    "language": "en-us",
+                                    "values": [
+                                        "> =",
+                                        ">="
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            "listKey": "greater than or equal to",
+                            "synonyms": [
+                                {
+                                    "language": "en-us",
+                                    "values": [
+                                        "greaterthan equalto",
+                                        "greaterthanequalto",
+                                        "is greater than or equal to",
+                                        "greaterthan equal to",
+                                        "is greaterthanequalto",
+                                        "isgreaterthanequalto",
+                                        "greater than equalto",
+                                        "greater than or equal to"
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            "listKey": "at least",
+                            "synonyms": [
+                                {
+                                    "language": "en-us",
+                                    "values": [
+                                        "at least as old as",
+                                        "at least"
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
+                }
+            },
+            {
+                "category": "system.comparator_lt",
+                "compositionSetting": "combineComponents",
+                "list": {
+                    "sublists": [
+                        {
+                            "listKey": "<",
+                            "synonyms": [
+                                {
+                                    "language": "en-us",
+                                    "values": [
+                                        "<<",
+                                        "<"
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            "listKey": "less than",
+                            "synonyms": [
+                                {
+                                    "language": "en-us",
+                                    "values": [
+                                        "is less than",
+                                        "less than"
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            "listKey": "under",
+                            "synonyms": [
+                                {
+                                    "language": "en-us",
+                                    "values": [
+                                        "underneath",
+                                        "is under",
+                                        "is underneath",
+                                        "under"
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            "listKey": "beneath",
+                            "synonyms": [
+                                {
+                                    "language": "en-us",
+                                    "values": [
+                                        "is beneath",
+                                        "beneath"
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            "listKey": "older than",
+                            "synonyms": [
+                                {
+                                    "language": "en-us",
+                                    "values": [
+                                        "older than"
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            "listKey": "before",
+                            "synonyms": [
+                                {
+                                    "language": "en-us",
+                                    "values": [
+                                        "is before",
+                                        "before"
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
+                }
+            },
+            {
+                "category": "system.comparator_lte",
+                "compositionSetting": "combineComponents",
+                "list": {
+                    "sublists": [
+                        {
+                            "listKey": "<=",
+                            "synonyms": [
+                                {
+                                    "language": "en-us",
+                                    "values": [
+                                        "< =",
+                                        "<="
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            "listKey": "less than or equal to",
+                            "synonyms": [
+                                {
+                                    "language": "en-us",
+                                    "values": [
+                                        "less than equal",
+                                        "less than equals",
+                                        "lessthan equalto",
+                                        "lessthanequal",
+                                        "is lessthan equalto",
+                                        "is lessthan or equalto",
+                                        "is lessthanequal",
+                                        "is lessthanequalto",
+                                        "islessthanequalto",
+                                        "is less than or equal to",
+                                        "less than or equal to"
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            "listKey": "no more than",
+                            "synonyms": [
+                                {
+                                    "language": "en-us",
+                                    "values": [
+                                        "no more than"
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            "listKey": "does not exceed",
+                            "synonyms": [
+                                {
+                                    "language": "en-us",
+                                    "values": [
+                                        "does not exceed"
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
+                }
+            },
+            {
+                "category": "system.comparator_ne",
+                "compositionSetting": "combineComponents",
+                "list": {
+                    "sublists": [
+                        {
+                            "listKey": "!=",
+                            "synonyms": [
+                                {
+                                    "language": "en-us",
+                                    "values": [
+                                        "/=",
+                                        "//=",
+                                        "<>",
+                                        "!="
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            "listKey": "is not",
+                            "synonyms": [
+                                {
+                                    "language": "en-us",
+                                    "values": [
+                                        "isn't",
+                                        "isnt",
+                                        "is not"
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            "listKey": "not equal to",
+                            "synonyms": [
+                                {
+                                    "language": "en-us",
+                                    "values": [
+                                        "is not equal to",
+                                        "not equalto",
+                                        "is not equalto",
+                                        "not equal",
+                                        "not equals",
+                                        "not equal to"
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            "listKey": "not same as",
+                            "synonyms": [
+                                {
+                                    "language": "en-us",
+                                    "values": [
+                                        "is not the same as",
+                                        "is not same as",
+                                        "not same",
+                                        "not same as"
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            "listKey": "differs",
+                            "synonyms": [
+                                {
+                                    "language": "en-us",
+                                    "values": [
+                                        "differs from",
+                                        "differs"
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            "listKey": "deviates",
+                            "synonyms": [
+                                {
+                                    "language": "en-us",
+                                    "values": [
+                                        "deviates from",
+                                        "deviates"
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
+                }
+            },
+            {
+                "category": "system.condition_active",
+                "compositionSetting": "combineComponents",
+                "list": {
+                    "sublists": [
+                        {
+                            "listKey": "active",
+                            "synonyms": [
+                                {
+                                    "language": "en-us",
+                                    "values": [
+                                        "active"
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            "listKey": "open",
+                            "synonyms": [
+                                {
+                                    "language": "en-us",
+                                    "values": [
+                                        "open"
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            "listKey": "current",
+                            "synonyms": [
+                                {
+                                    "language": "en-us",
+                                    "values": [
+                                        "currently",
+                                        "current"
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            "listKey": "present",
+                            "synonyms": [
+                                {
+                                    "language": "en-us",
+                                    "values": [
+                                        "presently",
+                                        "present"
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            "listKey": "now",
+                            "synonyms": [
+                                {
+                                    "language": "en-us",
+                                    "values": [
+                                        "now"
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
+                }
+            },
+            {
+                "category": "system.condition_inactive",
+                "compositionSetting": "combineComponents",
+                "list": {
+                    "sublists": [
+                        {
+                            "listKey": "inactive",
+                            "synonyms": [
+                                {
+                                    "language": "en-us",
+                                    "values": [
+                                        "inactive"
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            "listKey": "closed",
+                            "synonyms": [
+                                {
+                                    "language": "en-us",
+                                    "values": [
+                                        "closed"
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            "listKey": "solved",
+                            "synonyms": [
+                                {
+                                    "language": "en-us",
+                                    "values": [
+                                        "resolved",
+                                        "solved"
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            "listKey": "accomplished",
+                            "synonyms": [
+                                {
+                                    "language": "en-us",
+                                    "values": [
+                                        "accomplished"
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            "listKey": "complete",
+                            "synonyms": [
+                                {
+                                    "language": "en-us",
+                                    "values": [
+                                        "completed",
+                                        "complete"
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            "listKey": "finished",
+                            "synonyms": [
+                                {
+                                    "language": "en-us",
+                                    "values": [
+                                        "done",
+                                        "finished"
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
+                }
+            },
+            {
+                "category": "age",
+                "compositionSetting": "combineComponents",
+                "prebuilts": [
+                    {
+                        "category": "Quantity.Age"
+                    }
+                ]
+            },
+            {
+                "category": "datetimeV2",
+                "compositionSetting": "combineComponents",
+                "prebuilts": [
+                    {
+                        "category": "DateTime"
+                    }
+                ]
+            },
+            {
+                "category": "number",
+                "compositionSetting": "combineComponents",
+                "prebuilts": [
+                    {
+                        "category": "Quantity.Number"
+                    }
+                ]
+            }
+        ],
+        "utterances": [
+            {
+                "text": "how many Patients are there?",
+                "language": "en-us",
+                "intent": "system.count",
+                "entities": [
+                    {
+                        "category": "system.typeName",
+                        "offset": 9,
+                        "length": 8
+                    }
+                ],
+                "dataset": "Train"
+            },
+            {
+                "text": "list Patients whose name is greater than or equal to Pat",
+                "language": "en-us",
+                "intent": "system.list",
+                "entities": [
+                    {
+                        "category": "system.typeName",
+                        "offset": 5,
+                        "length": 8
+                    },
+                    {
+                        "category": "system.propertyName",
+                        "offset": 20,
+                        "length": 4
+                    },
+                    {
+                        "category": "system.propertyValue",
+                        "offset": 53,
+                        "length": 3
+                    }
+                ],
+                "dataset": "Train"
+            },
+            {
+                "text": "list Patients whose name is greater than or equal to fred",
+                "language": "en-us",
+                "intent": "system.list",
+                "entities": [
+                    {
+                        "category": "system.typeName",
+                        "offset": 5,
+                        "length": 8
+                    },
+                    {
+                        "category": "system.propertyName",
+                        "offset": 20,
+                        "length": 4
+                    },
+                    {
+                        "category": "system.propertyValue",
+                        "offset": 53,
+                        "length": 4
+                    }
+                ],
+                "dataset": "Train"
+            },
+            {
+                "text": "describe Patients",
+                "language": "en-us",
+                "intent": "system.describeType",
+                "entities": [
+                    {
+                        "category": "system.plainWord",
+                        "offset": 9,
+                        "length": 8
+                    }
+                ],
+                "dataset": "Train"
+            },
+            {
+                "text": "count Patients",
+                "language": "en-us",
+                "intent": "system.count",
+                "entities": [
+                    {
+                        "category": "system.typeName",
+                        "offset": 6,
+                        "length": 8
+                    }
+                ],
+                "dataset": "Train"
+            },
+            {
+                "text": "list Patients whose age <= 40",
+                "language": "en-us",
+                "intent": "system.list",
+                "entities": [
+                    {
+                        "category": "system.typeName",
+                        "offset": 5,
+                        "length": 8
+                    },
+                    {
+                        "category": "system.propertyName",
+                        "offset": 20,
+                        "length": 3
+                    },
+                    {
+                        "category": "system.propertyValue",
+                        "offset": 27,
+                        "length": 2
+                    }
+                ],
+                "dataset": "Train"
+            },
+            {
+                "text": "list Patients",
+                "language": "en-us",
+                "intent": "system.list",
+                "entities": [
+                    {
+                        "category": "system.typeName",
+                        "offset": 5,
+                        "length": 8
+                    }
+                ],
+                "dataset": "Train"
+            },
+            {
+                "text": "list Patients whose name >= Patient",
+                "language": "en-us",
+                "intent": "system.list",
+                "entities": [
+                    {
+                        "category": "system.typeName",
+                        "offset": 5,
+                        "length": 8
+                    },
+                    {
+                        "category": "system.propertyName",
+                        "offset": 20,
+                        "length": 4
+                    },
+                    {
+                        "category": "system.comparator_gte",
+                        "offset": 25,
+                        "length": 2
+                    },
+                    {
+                        "category": "system.propertyValue",
+                        "offset": 28,
+                        "length": 7
+                    }
+                ],
+                "dataset": "Train"
+            },
+            {
+                "text": "list Patients whose name >= Patent",
+                "language": "en-us",
+                "intent": "system.list",
+                "entities": [
+                    {
+                        "category": "system.typeName",
+                        "offset": 5,
+                        "length": 8
+                    },
+                    {
+                        "category": "system.propertyName",
+                        "offset": 20,
+                        "length": 4
+                    },
+                    {
+                        "category": "system.comparator_gte",
+                        "offset": 25,
+                        "length": 2
+                    },
+                    {
+                        "category": "system.propertyValue",
+                        "offset": 28,
+                        "length": 6
+                    }
+                ],
+                "dataset": "Train"
+            },
+            {
+                "text": "list foo, bar, baz",
+                "language": "en-us",
+                "intent": "system.list",
+                "entities": [
+                    {
+                        "category": "system.typeName",
+                        "offset": 5,
+                        "length": 3
+                    },
+                    {
+                        "category": "system.typeName",
+                        "offset": 10,
+                        "length": 3
+                    },
+                    {
+                        "category": "system.typeName",
+                        "offset": 15,
+                        "length": 3
+                    }
+                ],
+                "dataset": "Train"
+            },
+            {
+                "text": "active collaborations",
+                "intent": "system.showActive",
+                "entities": [
+                    {
+                        "category": "system.typeName",
+                        "offset": 7,
+                        "length": 14
+                    }
+                ]
+            },
+            {
+                "text": "are you a chatbot",
+                "intent": "system.smalltalk.chatbot",
+                "entities": []
+            },
+            {
+                "text": "are you bored",
+                "intent": "system.smalltalk.mindframe",
+                "entities": []
+            },
+            {
+                "text": "are you cold",
+                "intent": "system.smalltalk.mindframe",
+                "entities": []
+            },
+            {
+                "text": "are you happy",
+                "intent": "system.smalltalk.mindframe",
+                "entities": []
+            },
+            {
+                "text": "are you hot",
+                "intent": "system.smalltalk.mindframe",
+                "entities": []
+            },
+            {
+                "text": "are you sad",
+                "intent": "system.smalltalk.mindframe",
+                "entities": []
+            },
+            {
+                "text": "bye",
+                "intent": "system.endDiscussion",
+                "entities": []
+            },
+            {
+                "text": "bye bye",
+                "intent": "system.endDiscussion",
+                "entities": []
+            },
+            {
+                "text": "chatbot?",
+                "intent": "system.smalltalk.chatbot",
+                "entities": []
+            },
+            {
+                "text": "count chocula",
+                "intent": "system.count",
+                "entities": [
+                    {
+                        "category": "system.typeName",
+                        "offset": 6,
+                        "length": 7
+                    }
+                ],
+                "dataset": "Train"
+            },
+            {
+                "text": "count collaborations",
+                "intent": "system.count",
+                "entities": [
+                    {
+                        "category": "system.typeName",
+                        "offset": 6,
+                        "length": 14
+                    }
+                ]
+            },
+            {
+                "text": "count foobars",
+                "intent": "system.count",
+                "entities": [
+                    {
+                        "category": "system.typeName",
+                        "offset": 6,
+                        "length": 7
+                    }
+                ],
+                "dataset": "Train"
+            },
+            {
+                "text": "count fred",
+                "intent": "system.count",
+                "entities": [
+                    {
+                        "category": "system.typeName",
+                        "offset": 6,
+                        "length": 4
+                    }
+                ],
+                "dataset": "Train"
+            },
+            {
+                "text": "count hedgehogs",
+                "intent": "system.count",
+                "entities": [
+                    {
+                        "category": "system.typeName",
+                        "offset": 6,
+                        "length": 9
+                    }
+                ],
+                "dataset": "Train"
+            },
+            {
+                "text": "count junk",
+                "intent": "system.count",
+                "entities": [
+                    {
+                        "category": "system.typeName",
+                        "offset": 6,
+                        "length": 4
+                    }
+                ],
+                "dataset": "Train"
+            },
+            {
+                "text": "count patients whose age exceeds 34",
+                "intent": "system.count",
+                "entities": [
+                    {
+                        "category": "system.typeName",
+                        "offset": 6,
+                        "length": 8
+                    },
+                    {
+                        "category": "system.propertyName",
+                        "offset": 21,
+                        "length": 3
+                    }
+                ],
+                "dataset": "Train"
+            },
+            {
+                "text": "count person",
+                "intent": "system.count",
+                "entities": [
+                    {
+                        "category": "system.typeName",
+                        "offset": 6,
+                        "length": 6
+                    }
+                ],
+                "dataset": "Train"
+            },
+            {
+                "text": "count projects",
+                "intent": "system.count",
+                "entities": [
+                    {
+                        "category": "system.plainWord",
+                        "offset": 6,
+                        "length": 8
+                    }
+                ]
+            },
+            {
+                "text": "count types",
+                "intent": "system.count",
+                "entities": [
+                    {
+                        "category": "system.plainWord",
+                        "offset": 6,
+                        "length": 5
+                    }
+                ]
+            },
+            {
+                "text": "count types where name == types",
+                "intent": "system.count",
+                "entities": [
+                    {
+                        "category": "system.typeName",
+                        "offset": 6,
+                        "length": 5
+                    },
+                    {
+                        "category": "system.propertyName",
+                        "offset": 18,
+                        "length": 4
+                    },
+                    {
+                        "category": "system.propertyValue",
+                        "offset": 26,
+                        "length": 5
+                    }
+                ]
+            },
+            {
+                "text": "danke",
+                "intent": "system.smalltalk.thankYou",
+                "entities": []
+            },
+            {
+                "text": "describe foobars",
+                "intent": "system.describeType",
+                "entities": [
+                    {
+                        "category": "system.plainWord",
+                        "offset": 9,
+                        "length": 7
+                    }
+                ]
+            },
+            {
+                "text": "describe project",
+                "intent": "system.describeType",
+                "entities": [
+                    {
+                        "category": "system.plainWord",
+                        "offset": 9,
+                        "length": 7
+                    }
+                ]
+            },
+            {
+                "text": "describe rcspages",
+                "intent": "system.describeType",
+                "entities": [
+                    {
+                        "category": "system.plainWord",
+                        "offset": 9,
+                        "length": 8
+                    }
+                ]
+            },
+            {
+                "text": "describe types",
+                "intent": "system.describeType",
+                "entities": [
+                    {
+                        "category": "system.plainWord",
+                        "offset": 9,
+                        "length": 5
+                    }
+                ]
+            },
+            {
+                "text": "display anything",
+                "intent": "system.list",
+                "entities": [
+                    {
+                        "category": "system.typeName",
+                        "offset": 8,
+                        "length": 8
+                    }
+                ],
+                "dataset": "Train"
+            },
+            {
+                "text": "display anything with names containing bar",
+                "intent": "system.list",
+                "entities": [
+                    {
+                        "category": "system.typeName",
+                        "offset": 8,
+                        "length": 8
+                    },
+                    {
+                        "category": "system.propertyName",
+                        "offset": 22,
+                        "length": 5
+                    },
+                    {
+                        "category": "system.propertyValue",
+                        "offset": 39,
+                        "length": 3
+                    }
+                ],
+                "dataset": "Train"
+            },
+            {
+                "text": "display junk",
+                "intent": "system.list",
+                "entities": [
+                    {
+                        "category": "system.typeName",
+                        "offset": 8,
+                        "length": 4
+                    }
+                ],
+                "dataset": "Train"
+            },
+            {
+                "text": "display machine",
+                "intent": "system.list",
+                "entities": [
+                    {
+                        "category": "system.typeName",
+                        "offset": 8,
+                        "length": 7
+                    }
+                ],
+                "dataset": "Train"
+            },
+            {
+                "text": "display projects",
+                "intent": "system.list",
+                "entities": [
+                    {
+                        "category": "system.typeName",
+                        "offset": 8,
+                        "length": 8
+                    }
+                ],
+                "dataset": "Train"
+            },
+            {
+                "text": "display types",
+                "intent": "system.list",
+                "entities": [
+                    {
+                        "category": "system.typeName",
+                        "offset": 8,
+                        "length": 5
+                    }
+                ],
+                "dataset": "Train"
+            },
+            {
+                "text": "do you have a birthday?",
+                "intent": "system.smalltalk.birthday",
+                "entities": []
+            },
+            {
+                "text": "do you like your job",
+                "intent": "system.smalltalk.mindframe",
+                "entities": []
+            },
+            {
+                "text": "drop dead",
+                "intent": "system.endDiscussion",
+                "entities": []
+            },
+            {
+                "text": "end",
+                "intent": "system.endDiscussion",
+                "entities": []
+            },
+            {
+                "text": "enumerate collaborations",
+                "intent": "system.list",
+                "entities": [
+                    {
+                        "category": "system.typeName",
+                        "offset": 10,
+                        "length": 14
+                    }
+                ]
+            },
+            {
+                "text": "enumerate junk",
+                "intent": "system.list",
+                "entities": [
+                    {
+                        "category": "system.plainWord",
+                        "offset": 10,
+                        "length": 4
+                    }
+                ]
+            },
+            {
+                "text": "enumerate junkola",
+                "intent": "system.list",
+                "entities": [
+                    {
+                        "category": "system.typeName",
+                        "offset": 10,
+                        "length": 7
+                    }
+                ],
+                "dataset": "Train"
+            },
+            {
+                "text": "enumerate lkjadfljkadsf",
+                "intent": "system.list",
+                "entities": [
+                    {
+                        "category": "system.typeName",
+                        "offset": 10,
+                        "length": 13
+                    }
+                ],
+                "dataset": "Train"
+            },
+            {
+                "text": "enumerate lkjasdf",
+                "intent": "system.list",
+                "entities": [
+                    {
+                        "category": "system.typeName",
+                        "offset": 10,
+                        "length": 7
+                    }
+                ],
+                "dataset": "Train"
+            },
+            {
+                "text": "enumerate projects",
+                "intent": "system.list",
+                "entities": [
+                    {
+                        "category": "system.typeName",
+                        "offset": 10,
+                        "length": 8
+                    }
+                ],
+                "dataset": "Train"
+            },
+            {
+                "text": "enumerate types",
+                "intent": "system.list",
+                "entities": [
+                    {
+                        "category": "system.typeName",
+                        "offset": 10,
+                        "length": 5
+                    }
+                ],
+                "dataset": "Train"
+            },
+            {
+                "text": "exit",
+                "intent": "system.endDiscussion",
+                "entities": []
+            },
+            {
+                "text": "find a project whose classification is undefined",
+                "intent": "system.list",
+                "entities": [
+                    {
+                        "category": "system.typeName",
+                        "offset": 7,
+                        "length": 7
+                    },
+                    {
+                        "category": "system.propertyName",
+                        "offset": 21,
+                        "length": 14
+                    },
+                    {
+                        "category": "system.propertyValue",
+                        "offset": 39,
+                        "length": 9
+                    }
+                ]
+            },
+            {
+                "text": "find a project with name bar",
+                "intent": "system.list",
+                "entities": [
+                    {
+                        "category": "system.typeName",
+                        "offset": 7,
+                        "length": 7
+                    },
+                    {
+                        "category": "system.propertyName",
+                        "offset": 20,
+                        "length": 4
+                    },
+                    {
+                        "category": "system.propertyValue",
+                        "offset": 25,
+                        "length": 3
+                    }
+                ]
+            },
+            {
+                "text": "find a table whose name is fred",
+                "intent": "system.list",
+                "entities": [
+                    {
+                        "category": "system.typeName",
+                        "offset": 7,
+                        "length": 5
+                    },
+                    {
+                        "category": "system.propertyName",
+                        "offset": 19,
+                        "length": 4
+                    },
+                    {
+                        "category": "system.propertyValue",
+                        "offset": 27,
+                        "length": 4
+                    }
+                ],
+                "dataset": "Train"
+            },
+            {
+                "text": "find a type whose name is undefined",
+                "intent": "system.list",
+                "entities": [
+                    {
+                        "category": "system.typeName",
+                        "offset": 7,
+                        "length": 4
+                    },
+                    {
+                        "category": "system.propertyName",
+                        "offset": 18,
+                        "length": 4
+                    },
+                    {
+                        "category": "system.propertyValue",
+                        "offset": 26,
+                        "length": 9
+                    }
+                ]
+            },
+            {
+                "text": "find all airplanes whose wing is bent",
+                "intent": "system.list",
+                "entities": [
+                    {
+                        "category": "system.typeName",
+                        "offset": 9,
+                        "length": 9
+                    },
+                    {
+                        "category": "system.propertyName",
+                        "offset": 25,
+                        "length": 4
+                    },
+                    {
+                        "category": "system.propertyValue",
+                        "offset": 33,
+                        "length": 4
+                    }
+                ],
+                "dataset": "Train"
+            },
+            {
+                "text": "find all hondas whose headlight is missing",
+                "intent": "system.list",
+                "entities": [
+                    {
+                        "category": "system.typeName",
+                        "offset": 9,
+                        "length": 6
+                    },
+                    {
+                        "category": "system.propertyName",
+                        "offset": 22,
+                        "length": 9
+                    },
+                    {
+                        "category": "system.propertyValue",
+                        "offset": 35,
+                        "length": 7
+                    }
+                ],
+                "dataset": "Train"
+            },
+            {
+                "text": "find all junk whose foo is bar",
+                "intent": "system.list",
+                "entities": [
+                    {
+                        "category": "system.typeName",
+                        "offset": 9,
+                        "length": 4
+                    },
+                    {
+                        "category": "system.propertyName",
+                        "offset": 20,
+                        "length": 3
+                    },
+                    {
+                        "category": "system.propertyValue",
+                        "offset": 27,
+                        "length": 3
+                    }
+                ]
+            },
+            {
+                "text": "find all person where age >= 34",
+                "intent": "system.list",
+                "entities": [
+                    {
+                        "category": "system.typeName",
+                        "offset": 9,
+                        "length": 6
+                    },
+                    {
+                        "category": "system.propertyName",
+                        "offset": 22,
+                        "length": 3
+                    }
+                ],
+                "dataset": "Train"
+            },
+            {
+                "text": "find all person where name <= linda",
+                "intent": "system.list",
+                "entities": [
+                    {
+                        "category": "system.typeName",
+                        "offset": 9,
+                        "length": 6
+                    },
+                    {
+                        "category": "system.propertyName",
+                        "offset": 22,
+                        "length": 4
+                    },
+                    {
+                        "category": "system.propertyValue",
+                        "offset": 30,
+                        "length": 5
+                    }
+                ],
+                "dataset": "Train"
+            },
+            {
+                "text": "find all person where name >= fred",
+                "intent": "system.list",
+                "entities": [
+                    {
+                        "category": "system.typeName",
+                        "offset": 9,
+                        "length": 6
+                    },
+                    {
+                        "category": "system.propertyName",
+                        "offset": 22,
+                        "length": 4
+                    },
+                    {
+                        "category": "system.propertyValue",
+                        "offset": 30,
+                        "length": 4
+                    }
+                ],
+                "dataset": "Train"
+            },
+            {
+                "text": "find all person whose name isn't linda",
+                "intent": "system.list",
+                "entities": [
+                    {
+                        "category": "system.typeName",
+                        "offset": 9,
+                        "length": 6
+                    },
+                    {
+                        "category": "system.propertyName",
+                        "offset": 22,
+                        "length": 4
+                    },
+                    {
+                        "category": "system.propertyValue",
+                        "offset": 33,
+                        "length": 5
+                    }
+                ],
+                "dataset": "Train"
+            },
+            {
+                "text": "find all persons whose name is fred",
+                "intent": "system.list",
+                "entities": [
+                    {
+                        "category": "system.typeName",
+                        "offset": 9,
+                        "length": 7
+                    },
+                    {
+                        "category": "system.propertyName",
+                        "offset": 23,
+                        "length": 4
+                    },
+                    {
+                        "category": "system.propertyValue",
+                        "offset": 31,
+                        "length": 4
+                    }
+                ],
+                "dataset": "Train"
+            },
+            {
+                "text": "find all toyotas whose seat is blue",
+                "intent": "system.list",
+                "entities": [
+                    {
+                        "category": "system.typeName",
+                        "offset": 9,
+                        "length": 7
+                    },
+                    {
+                        "category": "system.propertyName",
+                        "offset": 23,
+                        "length": 4
+                    },
+                    {
+                        "category": "system.propertyValue",
+                        "offset": 31,
+                        "length": 4
+                    }
+                ],
+                "dataset": "Train"
+            },
+            {
+                "text": "find anything with name = fred",
+                "intent": "system.list",
+                "entities": [
+                    {
+                        "category": "system.typeName",
+                        "offset": 5,
+                        "length": 8
+                    },
+                    {
+                        "category": "system.propertyName",
+                        "offset": 19,
+                        "length": 4
+                    },
+                    {
+                        "category": "system.propertyValue",
+                        "offset": 26,
+                        "length": 4
+                    }
+                ],
+                "dataset": "Train"
+            },
+            {
+                "text": "find machine with name = fred",
+                "intent": "system.list",
+                "entities": [
+                    {
+                        "category": "system.typeName",
+                        "offset": 5,
+                        "length": 7
+                    },
+                    {
+                        "category": "system.propertyName",
+                        "offset": 18,
+                        "length": 4
+                    },
+                    {
+                        "category": "system.propertyValue",
+                        "offset": 25,
+                        "length": 4
+                    }
+                ],
+                "dataset": "Train"
+            },
+            {
+                "text": "find me a type whose name is junk",
+                "intent": "system.list",
+                "entities": [
+                    {
+                        "category": "system.typeName",
+                        "offset": 10,
+                        "length": 4
+                    },
+                    {
+                        "category": "system.propertyName",
+                        "offset": 21,
+                        "length": 4
+                    },
+                    {
+                        "category": "system.propertyValue",
+                        "offset": 29,
+                        "length": 4
+                    }
+                ]
+            },
+            {
+                "text": "find person where age is less than or equal to 99",
+                "intent": "system.list",
+                "entities": [
+                    {
+                        "category": "system.typeName",
+                        "offset": 5,
+                        "length": 6
+                    },
+                    {
+                        "category": "system.propertyName",
+                        "offset": 18,
+                        "length": 3
+                    }
+                ],
+                "dataset": "Train"
+            },
+            {
+                "text": "find person whose age < 75",
+                "intent": "system.list",
+                "entities": [
+                    {
+                        "category": "system.typeName",
+                        "offset": 5,
+                        "length": 6
+                    },
+                    {
+                        "category": "system.propertyValue",
+                        "offset": 18,
+                        "length": 3
+                    }
+                ],
+                "dataset": "Train"
+            },
+            {
+                "text": "find person whose name is fred",
+                "intent": "system.list",
+                "entities": [
+                    {
+                        "category": "system.typeName",
+                        "offset": 5,
+                        "length": 6
+                    },
+                    {
+                        "category": "system.propertyName",
+                        "offset": 18,
+                        "length": 4
+                    },
+                    {
+                        "category": "system.propertyValue",
+                        "offset": 26,
+                        "length": 4
+                    }
+                ],
+                "dataset": "Train"
+            },
+            {
+                "text": "find person whose name isn't linda",
+                "intent": "system.list",
+                "entities": [
+                    {
+                        "category": "system.typeName",
+                        "offset": 5,
+                        "length": 6
+                    },
+                    {
+                        "category": "system.propertyName",
+                        "offset": 18,
+                        "length": 4
+                    },
+                    {
+                        "category": "system.propertyValue",
+                        "offset": 29,
+                        "length": 5
+                    }
+                ],
+                "dataset": "Train"
+            },
+            {
+                "text": "find projects",
+                "intent": "system.list",
+                "entities": [
+                    {
+                        "category": "system.typeName",
+                        "offset": 5,
+                        "length": 8
+                    }
+                ],
+                "dataset": "Train"
+            },
+            {
+                "text": "find projects whose name is fred",
+                "intent": "system.list",
+                "entities": [
+                    {
+                        "category": "system.typeName",
+                        "offset": 5,
+                        "length": 8
+                    },
+                    {
+                        "category": "system.propertyName",
+                        "offset": 20,
+                        "length": 4
+                    },
+                    {
+                        "category": "system.propertyValue",
+                        "offset": 28,
+                        "length": 4
+                    }
+                ]
+            },
+            {
+                "text": "find stuff whose name is fred",
+                "intent": "system.list",
+                "entities": [
+                    {
+                        "category": "system.typeName",
+                        "offset": 5,
+                        "length": 5
+                    },
+                    {
+                        "category": "system.propertyName",
+                        "offset": 17,
+                        "length": 4
+                    },
+                    {
+                        "category": "system.propertyValue",
+                        "offset": 25,
+                        "length": 4
+                    }
+                ],
+                "dataset": "Train"
+            },
+            {
+                "text": "g'day",
+                "intent": "system.smalltalk.greetings",
+                "entities": []
+            },
+            {
+                "text": "g'day!",
+                "intent": "system.smalltalk.greetings",
+                "entities": []
+            },
+            {
+                "text": "go away",
+                "intent": "system.endDiscussion",
+                "entities": []
+            },
+            {
+                "text": "good afternoon",
+                "intent": "system.smalltalk.greetings",
+                "entities": []
+            },
+            {
+                "text": "good bye",
+                "intent": "system.endDiscussion",
+                "entities": []
+            },
+            {
+                "text": "good day",
+                "intent": "system.smalltalk.greetings",
+                "entities": []
+            },
+            {
+                "text": "good day!",
+                "intent": "system.smalltalk.greetings",
+                "entities": []
+            },
+            {
+                "text": "good evening",
+                "intent": "system.smalltalk.greetings",
+                "entities": []
+            },
+            {
+                "text": "good evening!",
+                "intent": "system.smalltalk.greetings",
+                "entities": []
+            },
+            {
+                "text": "good morning",
+                "intent": "system.smalltalk.greetings",
+                "entities": []
+            },
+            {
+                "text": "goodbye",
+                "intent": "system.endDiscussion",
+                "entities": []
+            },
+            {
+                "text": "gracias",
+                "intent": "system.smalltalk.thankYou",
+                "entities": []
+            },
+            {
+                "text": "hello",
+                "intent": "system.smalltalk.greetings",
+                "entities": []
+            },
+            {
+                "text": "hi",
+                "intent": "system.smalltalk.greetings",
+                "entities": []
+            },
+            {
+                "text": "hi!",
+                "intent": "system.smalltalk.greetings",
+                "entities": []
+            },
+            {
+                "text": "how did you get into this business?",
+                "intent": "system.smalltalk.bio",
+                "entities": []
+            },
+            {
+                "text": "how did you get started",
+                "intent": "system.smalltalk.bio",
+                "entities": []
+            },
+            {
+                "text": "how many applications are there",
+                "intent": "system.count",
+                "entities": [
+                    {
+                        "category": "system.typeName",
+                        "offset": 9,
+                        "length": 12
+                    }
+                ],
+                "dataset": "Train"
+            },
+            {
+                "text": "how many cars are there",
+                "intent": "system.count",
+                "entities": [
+                    {
+                        "category": "system.typeName",
+                        "offset": 9,
+                        "length": 4
+                    }
+                ],
+                "dataset": "Train"
+            },
+            {
+                "text": "how many instances of type foo are there",
+                "intent": "system.count",
+                "entities": [
+                    {
+                        "category": "system.typeName",
+                        "offset": 27,
+                        "length": 3
+                    }
+                ],
+                "dataset": "Train"
+            },
+            {
+                "text": "how many lefthandedbaseballbats are there",
+                "intent": "system.count",
+                "entities": [
+                    {
+                        "category": "system.typeName",
+                        "offset": 9,
+                        "length": 22
+                    }
+                ],
+                "dataset": "Train"
+            },
+            {
+                "text": "how many person are there",
+                "intent": "system.count",
+                "entities": [
+                    {
+                        "category": "system.typeName",
+                        "offset": 9,
+                        "length": 6
+                    }
+                ],
+                "dataset": "Train"
+            },
+            {
+                "text": "how many sofas are there?",
+                "intent": "system.count",
+                "entities": [
+                    {
+                        "category": "system.typeName",
+                        "offset": 9,
+                        "length": 5
+                    }
+                ],
+                "dataset": "Train"
+            },
+            {
+                "text": "how many widgets are there",
+                "intent": "system.count",
+                "entities": [
+                    {
+                        "category": "system.typeName",
+                        "offset": 9,
+                        "length": 7
+                    }
+                ],
+                "dataset": "Train"
+            },
+            {
+                "text": "how many wombats are there",
+                "intent": "system.count",
+                "entities": [
+                    {
+                        "category": "system.plainWord",
+                        "offset": 9,
+                        "length": 7
+                    }
+                ]
+            },
+            {
+                "text": "how's it goin",
+                "intent": "system.smalltalk.mindframe",
+                "entities": []
+            },
+            {
+                "text": "how's it going",
+                "intent": "system.smalltalk.mindframe",
+                "entities": []
+            },
+            {
+                "text": "howdy",
+                "intent": "system.smalltalk.greetings",
+                "entities": []
+            },
+            {
+                "text": "howdy!",
+                "intent": "system.smalltalk.greetings",
+                "entities": []
+            },
+            {
+                "text": "hows it goin",
+                "intent": "system.smalltalk.mindframe",
+                "entities": []
+            },
+            {
+                "text": "info about projects",
+                "intent": "system.describeType",
+                "entities": [
+                    {
+                        "category": "system.plainWord",
+                        "offset": 11,
+                        "length": 8
+                    }
+                ]
+            },
+            {
+                "text": "info on projects",
+                "intent": "system.describeType",
+                "entities": [
+                    {
+                        "category": "system.plainWord",
+                        "offset": 8,
+                        "length": 8
+                    }
+                ]
+            },
+            {
+                "text": "info on rcspages",
+                "intent": "system.describeType",
+                "entities": [
+                    {
+                        "category": "system.plainWord",
+                        "offset": 8,
+                        "length": 8
+                    }
+                ]
+            },
+            {
+                "text": "information about collaboration",
+                "intent": "system.describeType",
+                "entities": [
+                    {
+                        "category": "system.plainWord",
+                        "offset": 18,
+                        "length": 13
+                    }
+                ]
+            },
+            {
+                "text": "information about collaborations",
+                "intent": "system.describeType",
+                "entities": [
+                    {
+                        "category": "system.plainWord",
+                        "offset": 18,
+                        "length": 14
+                    }
+                ]
+            },
+            {
+                "text": "information about types",
+                "intent": "system.describeType",
+                "entities": [
+                    {
+                        "category": "system.plainWord",
+                        "offset": 18,
+                        "length": 5
+                    }
+                ]
+            },
+            {
+                "text": "information about wandering",
+                "intent": "system.describeType",
+                "entities": [
+                    {
+                        "category": "system.plainWord",
+                        "offset": 18,
+                        "length": 9
+                    }
+                ]
+            },
+            {
+                "text": "information relating to pages",
+                "intent": "system.describeType",
+                "entities": [
+                    {
+                        "category": "system.plainWord",
+                        "offset": 24,
+                        "length": 5
+                    }
+                ]
+            },
+            {
+                "text": "information relating to rcs_pages",
+                "intent": "system.describeType",
+                "entities": [
+                    {
+                        "category": "system.plainWord",
+                        "offset": 24,
+                        "length": 9
+                    }
+                ]
+            },
+            {
+                "text": "information relating to rcspages",
+                "intent": "system.describeType",
+                "entities": [
+                    {
+                        "category": "system.plainWord",
+                        "offset": 24,
+                        "length": 8
+                    }
+                ]
+            },
+            {
+                "text": "is it your birthday",
+                "intent": "system.smalltalk.birthday",
+                "entities": []
+            },
+            {
+                "text": "list all types",
+                "intent": "system.list",
+                "entities": [
+                    {
+                        "category": "system.typeName",
+                        "offset": 9,
+                        "length": 5
+                    }
+                ]
+            },
+            {
+                "text": "list anything",
+                "intent": "system.list",
+                "entities": [
+                    {
+                        "category": "system.typeName",
+                        "offset": 5,
+                        "length": 8
+                    }
+                ],
+                "dataset": "Train"
+            },
+            {
+                "text": "list arbitraryname",
+                "intent": "system.list",
+                "entities": [
+                    {
+                        "category": "system.typeName",
+                        "offset": 5,
+                        "length": 13
+                    }
+                ],
+                "dataset": "Train"
+            },
+            {
+                "text": "list bongo",
+                "intent": "system.list",
+                "entities": [
+                    {
+                        "category": "system.typeName",
+                        "offset": 5,
+                        "length": 5
+                    }
+                ],
+                "dataset": "Train"
+            },
+            {
+                "text": "list collaborations",
+                "intent": "system.list",
+                "entities": [
+                    {
+                        "category": "system.typeName",
+                        "offset": 5,
+                        "length": 14
+                    }
+                ]
+            },
+            {
+                "text": "list collaborations where name is fred",
+                "intent": "system.list",
+                "entities": [
+                    {
+                        "category": "system.typeName",
+                        "offset": 5,
+                        "length": 14
+                    },
+                    {
+                        "category": "system.propertyName",
+                        "offset": 26,
+                        "length": 4
+                    },
+                    {
+                        "category": "system.propertyValue",
+                        "offset": 34,
+                        "length": 4
+                    }
+                ]
+            },
+            {
+                "text": "list collaborations where name isn't fred",
+                "intent": "system.list",
+                "entities": [
+                    {
+                        "category": "system.typeName",
+                        "offset": 5,
+                        "length": 14
+                    },
+                    {
+                        "category": "system.propertyName",
+                        "offset": 26,
+                        "length": 4
+                    },
+                    {
+                        "category": "system.propertyValue",
+                        "offset": 37,
+                        "length": 4
+                    }
+                ]
+            },
+            {
+                "text": "list collaborations whose name is fred",
+                "intent": "system.list",
+                "entities": [
+                    {
+                        "category": "system.typeName",
+                        "offset": 5,
+                        "length": 14
+                    },
+                    {
+                        "category": "system.propertyName",
+                        "offset": 26,
+                        "length": 4
+                    },
+                    {
+                        "category": "system.propertyValue",
+                        "offset": 34,
+                        "length": 4
+                    }
+                ]
+            },
+            {
+                "text": "list crapola",
+                "intent": "system.list",
+                "entities": [
+                    {
+                        "category": "system.typeName",
+                        "offset": 5,
+                        "length": 7
+                    }
+                ],
+                "dataset": "Train"
+            },
+            {
+                "text": "list junk",
+                "intent": "system.list",
+                "entities": [
+                    {
+                        "category": "system.typeName",
+                        "offset": 5,
+                        "length": 4
+                    }
+                ],
+                "dataset": "Train"
+            },
+            {
+                "text": "list junk whose name is fred",
+                "intent": "system.list",
+                "entities": [
+                    {
+                        "category": "system.typeName",
+                        "offset": 5,
+                        "length": 4
+                    },
+                    {
+                        "category": "system.propertyName",
+                        "offset": 16,
+                        "length": 4
+                    },
+                    {
+                        "category": "system.propertyValue",
+                        "offset": 24,
+                        "length": 4
+                    }
+                ]
+            },
+            {
+                "text": "list junkola",
+                "intent": "system.list",
+                "entities": [
+                    {
+                        "category": "system.typeName",
+                        "offset": 5,
+                        "length": 7
+                    }
+                ],
+                "dataset": "Train"
+            },
+            {
+                "text": "list lkajds whose name is fred",
+                "intent": "system.list",
+                "entities": [
+                    {
+                        "category": "system.typeName",
+                        "offset": 5,
+                        "length": 6
+                    },
+                    {
+                        "category": "system.propertyName",
+                        "offset": 18,
+                        "length": 4
+                    },
+                    {
+                        "category": "system.propertyValue",
+                        "offset": 26,
+                        "length": 4
+                    }
+                ],
+                "dataset": "Train"
+            },
+            {
+                "text": "list lkasf",
+                "intent": "system.list",
+                "entities": [
+                    {
+                        "category": "system.typeName",
+                        "offset": 5,
+                        "length": 5
+                    }
+                ],
+                "dataset": "Train"
+            },
+            {
+                "text": "list lkjadfsf whose id is 3",
+                "intent": "system.list",
+                "entities": [
+                    {
+                        "category": "system.typeName",
+                        "offset": 5,
+                        "length": 8
+                    },
+                    {
+                        "category": "system.propertyName",
+                        "offset": 20,
+                        "length": 2
+                    },
+                    {
+                        "category": "system.propertyValue",
+                        "offset": 26,
+                        "length": 1
+                    }
+                ],
+                "dataset": "Train"
+            },
+            {
+                "text": "list lkjasdflkj",
+                "intent": "system.list",
+                "entities": [
+                    {
+                        "category": "system.typeName",
+                        "offset": 5,
+                        "length": 10
+                    }
+                ],
+                "dataset": "Train"
+            },
+            {
+                "text": "list machines",
+                "intent": "system.list",
+                "entities": [
+                    {
+                        "category": "system.typeName",
+                        "offset": 5,
+                        "length": 8
+                    }
+                ],
+                "dataset": "Train"
+            },
+            {
+                "text": "list patients",
+                "intent": "system.list",
+                "entities": [
+                    {
+                        "category": "system.typeName",
+                        "offset": 5,
+                        "length": 8
+                    }
+                ],
+                "dataset": "Train"
+            },
+            {
+                "text": "list patients whose name is fred",
+                "intent": "system.list",
+                "entities": [
+                    {
+                        "category": "system.typeName",
+                        "offset": 5,
+                        "length": 8
+                    },
+                    {
+                        "category": "system.propertyName",
+                        "offset": 20,
+                        "length": 4
+                    },
+                    {
+                        "category": "system.propertyValue",
+                        "offset": 28,
+                        "length": 4
+                    }
+                ],
+                "dataset": "Train"
+            },
+            {
+                "text": "list person where age < 59",
+                "intent": "system.list",
+                "entities": [
+                    {
+                        "category": "system.typeName",
+                        "offset": 5,
+                        "length": 6
+                    },
+                    {
+                        "category": "system.propertyName",
+                        "offset": 18,
+                        "length": 3
+                    },
+                    {
+                        "category": "system.propertyValue",
+                        "offset": 24,
+                        "length": 2
+                    }
+                ],
+                "dataset": "Train"
+            },
+            {
+                "text": "list person where name >= fred",
+                "intent": "system.list",
+                "entities": [
+                    {
+                        "category": "system.typeName",
+                        "offset": 5,
+                        "length": 6
+                    },
+                    {
+                        "category": "system.propertyName",
+                        "offset": 18,
+                        "length": 4
+                    },
+                    {
+                        "category": "system.propertyValue",
+                        "offset": 26,
+                        "length": 4
+                    }
+                ],
+                "dataset": "Train"
+            },
+            {
+                "text": "list person where name >= pat",
+                "intent": "system.list",
+                "entities": [
+                    {
+                        "category": "system.typeName",
+                        "offset": 5,
+                        "length": 6
+                    },
+                    {
+                        "category": "system.propertyName",
+                        "offset": 18,
+                        "length": 4
+                    },
+                    {
+                        "category": "system.propertyValue",
+                        "offset": 26,
+                        "length": 3
+                    }
+                ],
+                "dataset": "Train"
+            },
+            {
+                "text": "list person where whositz >= borfo",
+                "intent": "system.list",
+                "entities": [
+                    {
+                        "category": "system.typeName",
+                        "offset": 5,
+                        "length": 6
+                    },
+                    {
+                        "category": "system.propertyName",
+                        "offset": 18,
+                        "length": 7
+                    },
+                    {
+                        "category": "system.propertyValue",
+                        "offset": 29,
+                        "length": 5
+                    }
+                ],
+                "dataset": "Train"
+            },
+            {
+                "text": "list person whose age < 69",
+                "intent": "system.list",
+                "entities": [
+                    {
+                        "category": "system.typeName",
+                        "offset": 5,
+                        "length": 6
+                    },
+                    {
+                        "category": "system.propertyName",
+                        "offset": 18,
+                        "length": 3
+                    }
+                ],
+                "dataset": "Train"
+            },
+            {
+                "text": "list person whose age < 75",
+                "intent": "system.list",
+                "entities": [
+                    {
+                        "category": "system.typeName",
+                        "offset": 5,
+                        "length": 6
+                    },
+                    {
+                        "category": "system.propertyName",
+                        "offset": 18,
+                        "length": 3
+                    }
+                ],
+                "dataset": "Train"
+            },
+            {
+                "text": "list person whose name isn't linda",
+                "intent": "system.list",
+                "entities": [
+                    {
+                        "category": "system.typeName",
+                        "offset": 5,
+                        "length": 6
+                    },
+                    {
+                        "category": "system.propertyName",
+                        "offset": 18,
+                        "length": 4
+                    },
+                    {
+                        "category": "system.propertyValue",
+                        "offset": 29,
+                        "length": 5
+                    }
+                ],
+                "dataset": "Train"
+            },
+            {
+                "text": "list projects",
+                "intent": "system.list",
+                "entities": [
+                    {
+                        "category": "system.typeName",
+                        "offset": 5,
+                        "length": 8
+                    }
+                ],
+                "dataset": "Train"
+            },
+            {
+                "text": "list sources",
+                "intent": "system.list",
+                "entities": [
+                    {
+                        "category": "system.typeName",
+                        "offset": 5,
+                        "length": 7
+                    }
+                ],
+                "dataset": "Train"
+            },
+            {
+                "text": "list types",
+                "intent": "system.list",
+                "entities": [
+                    {
+                        "category": "system.typeName",
+                        "offset": 5,
+                        "length": 5
+                    }
+                ],
+                "dataset": "Train"
+            },
+            {
+                "text": "list wherewithall whose address <= somerandomword",
+                "intent": "system.list",
+                "entities": [
+                    {
+                        "category": "system.typeName",
+                        "offset": 5,
+                        "length": 12
+                    },
+                    {
+                        "category": "system.propertyName",
+                        "offset": 24,
+                        "length": 7
+                    },
+                    {
+                        "category": "system.propertyValue",
+                        "offset": 35,
+                        "length": 14
+                    }
+                ],
+                "dataset": "Train"
+            },
+            {
+                "text": "list whosits",
+                "intent": "system.list",
+                "entities": [
+                    {
+                        "category": "system.typeName",
+                        "offset": 5,
+                        "length": 7
+                    }
+                ],
+                "dataset": "Train"
+            },
+            {
+                "text": "please count chocula",
+                "intent": "system.count",
+                "entities": [
+                    {
+                        "category": "system.typeName",
+                        "offset": 13,
+                        "length": 7
+                    }
+                ],
+                "dataset": "Train"
+            },
+            {
+                "text": "please count collaborations",
+                "intent": "system.count",
+                "entities": [
+                    {
+                        "category": "system.typeName",
+                        "offset": 13,
+                        "length": 14
+                    }
+                ]
+            },
+            {
+                "text": "please count excelsiors",
+                "intent": "system.count",
+                "entities": [
+                    {
+                        "category": "system.typeName",
+                        "offset": 13,
+                        "length": 10
+                    }
+                ],
+                "dataset": "Train"
+            },
+            {
+                "text": "please count person where name >= types",
+                "intent": "system.count",
+                "entities": [
+                    {
+                        "category": "system.typeName",
+                        "offset": 13,
+                        "length": 6
+                    },
+                    {
+                        "category": "system.propertyName",
+                        "offset": 26,
+                        "length": 4
+                    },
+                    {
+                        "category": "system.propertyValue",
+                        "offset": 34,
+                        "length": 5
+                    }
+                ],
+                "dataset": "Train"
+            },
+            {
+                "text": "please count projects",
+                "intent": "system.count",
+                "entities": [
+                    {
+                        "category": "system.typeName",
+                        "offset": 13,
+                        "length": 8
+                    }
+                ],
+                "dataset": "Train"
+            },
+            {
+                "text": "please count types",
+                "intent": "system.count",
+                "entities": [
+                    {
+                        "category": "system.typeName",
+                        "offset": 13,
+                        "length": 5
+                    }
+                ],
+                "dataset": "Train"
+            },
+            {
+                "text": "please count types whose mask exceeds 2",
+                "intent": "system.count",
+                "entities": [
+                    {
+                        "category": "system.typeName",
+                        "offset": 13,
+                        "length": 5
+                    },
+                    {
+                        "category": "system.propertyName",
+                        "offset": 25,
+                        "length": 4
+                    }
+                ]
+            },
+            {
+                "text": "please find all person where name <= linda",
+                "intent": "system.list",
+                "entities": [
+                    {
+                        "category": "system.typeName",
+                        "offset": 16,
+                        "length": 6
+                    },
+                    {
+                        "category": "system.propertyName",
+                        "offset": 29,
+                        "length": 4
+                    },
+                    {
+                        "category": "system.propertyValue",
+                        "offset": 37,
+                        "length": 5
+                    }
+                ],
+                "dataset": "Train"
+            },
+            {
+                "text": "please find all person whose age = 59",
+                "intent": "system.list",
+                "entities": [
+                    {
+                        "category": "system.typeName",
+                        "offset": 16,
+                        "length": 6
+                    },
+                    {
+                        "category": "system.propertyName",
+                        "offset": 29,
+                        "length": 3
+                    },
+                    {
+                        "category": "system.propertyValue",
+                        "offset": 35,
+                        "length": 2
+                    }
+                ],
+                "dataset": "Train"
+            },
+            {
+                "text": "please find all person whose age = 69",
+                "intent": "system.list",
+                "entities": [
+                    {
+                        "category": "system.typeName",
+                        "offset": 16,
+                        "length": 6
+                    },
+                    {
+                        "category": "system.propertyName",
+                        "offset": 29,
+                        "length": 3
+                    }
+                ],
+                "dataset": "Train"
+            },
+            {
+                "text": "please find all person whose age > 59",
+                "intent": "system.list",
+                "entities": [
+                    {
+                        "category": "system.typeName",
+                        "offset": 16,
+                        "length": 6
+                    },
+                    {
+                        "category": "system.propertyName",
+                        "offset": 29,
+                        "length": 3
+                    },
+                    {
+                        "category": "system.propertyValue",
+                        "offset": 35,
+                        "length": 2
+                    }
+                ],
+                "dataset": "Train"
+            },
+            {
+                "text": "please show me person whose name is fred",
+                "intent": "system.list",
+                "entities": [
+                    {
+                        "category": "system.typeName",
+                        "offset": 22,
+                        "length": 5
+                    },
+                    {
+                        "category": "system.propertyName",
+                        "offset": 28,
+                        "length": 4
+                    },
+                    {
+                        "category": "system.propertyValue",
+                        "offset": 36,
+                        "length": 4
+                    }
+                ]
+            },
+            {
+                "text": "provide a count of projects",
+                "intent": "system.count",
+                "entities": [
+                    {
+                        "category": "system.typeName",
+                        "offset": 19,
+                        "length": 8
+                    }
+                ],
+                "dataset": "Train"
+            },
+            {
+                "text": "provide information about type",
+                "intent": "system.describeType",
+                "entities": [
+                    {
+                        "category": "system.plainWord",
+                        "offset": 26,
+                        "length": 4
+                    }
+                ]
+            },
+            {
+                "text": "quit",
+                "intent": "system.endDiscussion",
+                "entities": []
+            },
+            {
+                "text": "recent collaborations",
+                "intent": "system.showActive",
+                "entities": [
+                    {
+                        "category": "system.typeName",
+                        "offset": 7,
+                        "length": 14
+                    }
+                ]
+            },
+            {
+                "text": "show active collaborations",
+                "intent": "system.showActive",
+                "entities": [
+                    {
+                        "category": "system.typeName",
+                        "offset": 12,
+                        "length": 14
+                    }
+                ]
+            },
+            {
+                "text": "show active collaborations over a week old",
+                "intent": "system.showActive",
+                "entities": [
+                    {
+                        "category": "system.typeName",
+                        "offset": 12,
+                        "length": 14
+                    }
+                ]
+            },
+            {
+                "text": "show collaborations older than a year old",
+                "intent": "system.showActive",
+                "entities": [
+                    {
+                        "category": "system.typeName",
+                        "offset": 5,
+                        "length": 14
+                    }
+                ]
+            },
+            {
+                "text": "show collaborations where name isn't fred",
+                "intent": "system.list",
+                "entities": [
+                    {
+                        "category": "system.typeName",
+                        "offset": 5,
+                        "length": 14
+                    },
+                    {
+                        "category": "system.propertyName",
+                        "offset": 26,
+                        "length": 4
+                    },
+                    {
+                        "category": "system.propertyValue",
+                        "offset": 37,
+                        "length": 4
+                    }
+                ]
+            },
+            {
+                "text": "show current collaborations",
+                "intent": "system.showActive",
+                "entities": [
+                    {
+                        "category": "system.typeName",
+                        "offset": 13,
+                        "length": 14
+                    }
+                ]
+            },
+            {
+                "text": "show current projects",
+                "intent": "system.showActive",
+                "entities": [
+                    {
+                        "category": "system.typeName",
+                        "offset": 13,
+                        "length": 8
+                    }
+                ]
+            },
+            {
+                "text": "show inactive collaborations",
+                "intent": "system.showActive",
+                "entities": [
+                    {
+                        "category": "system.typeName",
+                        "offset": 14,
+                        "length": 14
+                    }
+                ]
+            },
+            {
+                "text": "show inactive potholes",
+                "intent": "system.showActive",
+                "entities": [
+                    {
+                        "category": "system.typeName",
+                        "offset": 14,
+                        "length": 8
+                    }
+                ]
+            },
+            {
+                "text": "show me a collab where classificaiton is unusual",
+                "intent": "system.list",
+                "entities": [
+                    {
+                        "category": "system.typeName",
+                        "offset": 10,
+                        "length": 6
+                    },
+                    {
+                        "category": "system.propertyName",
+                        "offset": 23,
+                        "length": 14
+                    },
+                    {
+                        "category": "system.propertyValue",
+                        "offset": 41,
+                        "length": 7
+                    }
+                ]
+            },
+            {
+                "text": "show me a type whose name is undefined",
+                "intent": "system.list",
+                "entities": [
+                    {
+                        "category": "system.typeName",
+                        "offset": 10,
+                        "length": 4
+                    },
+                    {
+                        "category": "system.propertyName",
+                        "offset": 21,
+                        "length": 4
+                    },
+                    {
+                        "category": "system.propertyValue",
+                        "offset": 29,
+                        "length": 9
+                    }
+                ]
+            },
+            {
+                "text": "show me a whosit where classification is undefined",
+                "intent": "system.list",
+                "entities": [
+                    {
+                        "category": "system.typeName",
+                        "offset": 10,
+                        "length": 6
+                    },
+                    {
+                        "category": "system.propertyName",
+                        "offset": 23,
+                        "length": 14
+                    },
+                    {
+                        "category": "system.propertyValue",
+                        "offset": 41,
+                        "length": 9
+                    }
+                ]
+            },
+            {
+                "text": "show me collaborations over a week old",
+                "intent": "system.showActive",
+                "entities": [
+                    {
+                        "category": "system.typeName",
+                        "offset": 8,
+                        "length": 14
+                    }
+                ]
+            },
+            {
+                "text": "show me collaborations where name equal fred",
+                "intent": "system.list",
+                "entities": [
+                    {
+                        "category": "system.typeName",
+                        "offset": 8,
+                        "length": 14
+                    },
+                    {
+                        "category": "system.propertyName",
+                        "offset": 29,
+                        "length": 4
+                    },
+                    {
+                        "category": "system.propertyValue",
+                        "offset": 40,
+                        "length": 4
+                    }
+                ]
+            },
+            {
+                "text": "show me collaborations where name equals fred",
+                "intent": "system.list",
+                "entities": [
+                    {
+                        "category": "system.typeName",
+                        "offset": 8,
+                        "length": 14
+                    },
+                    {
+                        "category": "system.propertyName",
+                        "offset": 29,
+                        "length": 4
+                    },
+                    {
+                        "category": "system.propertyValue",
+                        "offset": 41,
+                        "length": 4
+                    }
+                ]
+            },
+            {
+                "text": "show me collaborations where name isn't fred",
+                "intent": "system.list",
+                "entities": [
+                    {
+                        "category": "system.typeName",
+                        "offset": 8,
+                        "length": 14
+                    },
+                    {
+                        "category": "system.propertyName",
+                        "offset": 29,
+                        "length": 4
+                    },
+                    {
+                        "category": "system.propertyValue",
+                        "offset": 40,
+                        "length": 4
+                    }
+                ]
+            },
+            {
+                "text": "show me collaborations younger than a year",
+                "intent": "system.showActive",
+                "entities": [
+                    {
+                        "category": "system.typeName",
+                        "offset": 8,
+                        "length": 14
+                    }
+                ]
+            },
+            {
+                "text": "show me person whose name is fred",
+                "intent": "system.list",
+                "entities": [
+                    {
+                        "category": "system.typeName",
+                        "offset": 8,
+                        "length": 6
+                    },
+                    {
+                        "category": "system.propertyName",
+                        "offset": 21,
+                        "length": 4
+                    },
+                    {
+                        "category": "system.propertyValue",
+                        "offset": 29,
+                        "length": 4
+                    }
+                ],
+                "dataset": "Train"
+            },
+            {
+                "text": "show recent collaborations",
+                "intent": "system.showActive",
+                "entities": [
+                    {
+                        "category": "system.typeName",
+                        "offset": 12,
+                        "length": 14
+                    }
+                ]
+            },
+            {
+                "text": "show recent collaborations since 10am yesterday",
+                "intent": "system.showActive",
+                "entities": [
+                    {
+                        "category": "system.typeName",
+                        "offset": 12,
+                        "length": 14
+                    }
+                ]
+            },
+            {
+                "text": "show recent collaborations since yesterday",
+                "intent": "system.showActive",
+                "entities": [
+                    {
+                        "category": "system.typeName",
+                        "offset": 12,
+                        "length": 14
+                    }
+                ]
+            },
+            {
+                "text": "show resolved collaborations",
+                "intent": "system.showActive",
+                "entities": [
+                    {
+                        "category": "system.typeName",
+                        "offset": 14,
+                        "length": 14
+                    }
+                ]
+            },
+            {
+                "text": "show type",
+                "intent": "system.list",
+                "entities": [
+                    {
+                        "category": "system.typeName",
+                        "offset": 5,
+                        "length": 4
+                    }
+                ],
+                "dataset": "Train"
+            },
+            {
+                "text": "tell me about cement",
+                "intent": "system.describeType",
+                "entities": [
+                    {
+                        "category": "system.plainWord",
+                        "offset": 14,
+                        "length": 6
+                    }
+                ]
+            },
+            {
+                "text": "tell me about collaborations",
+                "intent": "system.describeType",
+                "entities": [
+                    {
+                        "category": "system.plainWord",
+                        "offset": 14,
+                        "length": 14
+                    }
+                ]
+            },
+            {
+                "text": "tell me about collabs",
+                "intent": "system.describeType",
+                "entities": [
+                    {
+                        "category": "system.plainWord",
+                        "offset": 14,
+                        "length": 7
+                    }
+                ]
+            },
+            {
+                "text": "tell me about junkola",
+                "intent": "system.describeType",
+                "entities": [
+                    {
+                        "category": "system.plainWord",
+                        "offset": 14,
+                        "length": 7
+                    }
+                ]
+            },
+            {
+                "text": "tell me about steamshovels",
+                "intent": "system.describeType",
+                "entities": [
+                    {
+                        "category": "system.plainWord",
+                        "offset": 14,
+                        "length": 12
+                    }
+                ]
+            },
+            {
+                "text": "tell me about yourself",
+                "intent": "system.smalltalk.bio",
+                "entities": []
+            },
+            {
+                "text": "thank you",
+                "intent": "system.smalltalk.thankYou",
+                "entities": []
+            },
+            {
+                "text": "thanks",
+                "intent": "system.smalltalk.thankYou",
+                "entities": []
+            },
+            {
+                "text": "thanx",
+                "intent": "system.smalltalk.thankYou",
+                "entities": []
+            },
+            {
+                "text": "what is it like to be a chatbot",
+                "intent": "system.smalltalk.chatbot",
+                "entities": []
+            },
+            {
+                "text": "what is your story",
+                "intent": "system.smalltalk.bio",
+                "entities": []
+            },
+            {
+                "text": "what's it like to be a chatbot",
+                "intent": "system.smalltalk.chatbot",
+                "entities": []
+            },
+            {
+                "text": "when is your birthday",
+                "intent": "system.smalltalk.birthday",
+                "entities": []
+            }
+        ]
+    }
+}
