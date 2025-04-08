@@ -50,7 +50,6 @@ public class Utils {
     public static final String OPC_PUBLIC_SERVER_7  = "opc.tcp://mfactorengineering.com:4840";
     public static final String OPC_PUBLIC_SERVER_8 = "opc.tcp://opcua.machinetool.app:4840";
     public static final String OPC_PUBLIC_SERVER_9 = "opc.tcp://opcua.umati.app:4840";
-    public static final String OPC_PUBLIC_SERVER_10 = "opc.tcp://opc.mtconnect.org:4840";
     
     
     public static final List<String> OPC_PUBLIC_SERVERS = Arrays.asList(
@@ -62,8 +61,7 @@ public class Utils {
             OPC_PUBLIC_SERVER_6,
             OPC_PUBLIC_SERVER_7, // Flaky support -- sometimes times out after discovery, sometimes before
             OPC_PUBLIC_SERVER_8,
-            OPC_PUBLIC_SERVER_9,
-            OPC_PUBLIC_SERVER_10
+            OPC_PUBLIC_SERVER_9
     );
 
     public static final String OPC_INPROCESS_SERVER = "opc.tcp://localhost:12686/milo";
