@@ -1,0 +1,67 @@
+{
+    "kind": "ConversationResult",
+    "result": {
+        "query": "are you sad?",
+        "prediction": {
+            "topIntent": "system.smalltalk.mindframe",
+            "projectKind": "Conversation",
+            "intents": [
+                {
+                    "category": "system.smalltalk.mindframe",
+                    "confidenceScore": 0.9565128
+                },
+                {
+                    "category": "system.smalltalk.greetings",
+                    "confidenceScore": 0.92713124
+                },
+                {
+                    "category": "system.smalltalk.thankYou",
+                    "confidenceScore": 0.8303207
+                },
+                {
+                    "category": "system.smalltalk.birthday",
+                    "confidenceScore": 0.8007056
+                },
+                {
+                    "category": "system.endDiscussion",
+                    "confidenceScore": 0.7880551
+                },
+                {
+                    "category": "system.smalltalk.bio",
+                    "confidenceScore": 0.7433865
+                },
+                {
+                    "category": "system.smalltalk.chatbot",
+                    "confidenceScore": 0.7345311
+                },
+                {
+                    "category": "health.patientsByCondition",
+                    "confidenceScore": 0.72938067
+                },
+                {
+                    "category": "system.list",
+                    "confidenceScore": 0.71705
+                },
+                {
+                    "category": "system.count",
+                    "confidenceScore": 0.6725505
+                },
+                {
+                    "category": "system.showActive",
+                    "confidenceScore": 0.6633827
+                },
+                {
+                    "category": "system.describeType",
+                    "confidenceScore": 0.6512129
+                },
+                {
+                    "category": "None",
+                    "confidenceScore": 0
+                }
+            ],
+            "entities": [
+                
+            ]
+        }
+    }
+}

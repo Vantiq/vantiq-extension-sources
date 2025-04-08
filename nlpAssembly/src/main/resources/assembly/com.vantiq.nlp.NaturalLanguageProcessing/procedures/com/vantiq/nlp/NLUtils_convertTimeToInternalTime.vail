@@ -1,0 +1,121 @@
+package com.vantiq.nlp
+
+PRIVATE PROCEDURE NLUtils.convertTimeToInternalTime(userTime String, resolution String) HIDDEN
+var systemTime = userTime // Simple/worst case
+
+log.debug("convertTimeToInternalTime(): Converting {} using resolution {}", [userTime, resolution])
+
+// We start here with an ISO time.  However, these may be date only, time only or a duration.  In all of these cases, we need to convert the time into
+// something that represents a time in the vantiq model.  
+//
+// If we have a date only, assume midnight on that date
+// If we have a time only, assume today
+// If we have a duration, in this case, we'll assume that this is "now" minus that duration (i.e. that duration "ago")
+
+var convertedDate
+var hms = regExp("T\d\d:\d\d:\d\d")
+var hm = regExp("T\d\d:\d\d")
+
+// CLU Fix -- strip leading 'datetime.' from resolution
+
+if (resolution.startsWith("datetime.")) {
+    resolution = substring(resolution, 9, length(resolution))
+}
+if (resolution == "date") {
+    if (userTime.startsWith("XXXX")) {
+        // Then the user has provided something like 'first of January'
+        // LUIS doesn't substitute the year, so we'll do that.
+        var theYear = toString(year(now()))
+        userTime = userTime.replace("XXXX", theYear)
+    }
+    convertedDate = parseDate(userTime, "yyyy-MM-dd")
+    // Then we have date only -- assume midnight that day
+    systemTime = convertedDate // TODO -- need to convert timezones
+} else if (resolution == "time") {
+
+    // When LUIS returns a resolution of 'time', then we get only a time (e.g. T12:34)
+    // We need to turn that into an absolute time.  We do that by figuring out what "today" is,
+    // and prepending that date.  Thus, if the user says something about 2am, we assume that it's
+    // 2am "today" and construct an internal absolute time accordingly.
+
+    // Vail-ism:  format("{0,date,yyyy-MM-dd}", now()) internally converts the Instant produced by now()
+    // into a Java Date -- which is always localized.  This can give us the wrong value for "today"
+    // when we are within the timezone offset.
+    //
+    // Consequently, we'll go a more circuitous route, getting ourselves an ISO date (which is already
+    // in UTC) and stripping the time part -- in ISO format, the part after the "T".  We strip the time part
+    // because we're going to add our time in locally.  We've decreed that, just as with other things
+    // VANTIQ-esque, we assume any time specifications, even in NLP, are in UTC time.
+    //
+
+    var thisInstant = date(now(), "date", "ISO")
+    // Now, we'll toss the time part of this because we're going to replace it below
+    var splitDate = split(thisInstant, "T", 2)
+    var fullTime = splitDate[0]
+
+    // LUIS will return only as much as provided -- "10am" --> T10
+    // Vantiq, OTOH, wants a complete spec.  thus, we convert
+    // based on how much is there...
+
+    var hasAT = userTime.match("T")
+    if (!hasAT) {
+        // In this case, we're getting a time string with no 'T' on the front of it.  Add one and use as is
+        fullTime = fullTime + "T" + userTime
+        if (!fullTime.endsWith("Z")) {
+            // Then we need to complete the time specification for Vantiq.
+            fullTime += ".000Z"
+        }
+    } else {
+        // Here, we may be getting various variations from LUIS.  See what we can construct from what we're given
+        var isHMS = userTime.match(hms)
+        var isHM = userTime.match(hm)
+
+        // First, complete the time
+        fullTime = fullTime + userTime
+        if (isHMS) {
+            fullTime = fullTime + ".000Z"
+        } else if (isHM) {
+            fullTime = fullTime + ":00.000Z"
+        } else {
+            fullTime = fullTime + ":00:00.000Z"
+        }
+     }
+
+    systemTime = fullTime.toDate()
+
+} else if (resolution == "datetime") {
+    var fullTime
+    var hasAT = userTime.match("T") // Look for the T (time separator) in our time spec
+    if (!hasAT) {
+        // Here, we've been given a date time spec with a space instead of a "T"
+        // Rectify that before attempting conversion
+
+        fullTime = userTime.replace(" ", "T")
+        if (!fullTime.endsWith("Z")) {
+            fullTime += ".000Z"
+        }
+    } else {
+        var isHMS = userTime.match(hms)
+        var isHM = userTime.match(hm)
+
+        // Based on the data given, we add the appropriate defaults to satisfy toDate().
+
+        if (isHMS) {
+            fullTime = userTime + ".000Z"
+        } else if (isHM) {
+            fullTime = userTime + ":00.000Z"
+        } else {
+            fullTime = userTime + ":00:00.000Z"
+        }
+    }
+    convertedDate = fullTime.toDate()
+    systemTime = convertedDate
+} else if (resolution == "duration") {
+    var ms = durationInMillis(userTime)
+
+    var thisInstant = now()
+    systemTime = thisInstant.minusMillis(ms)
+}
+log.debug("convertTimeToInternalTime(): userTime " + userTime + " converted to systemTime: " + systemTime)
+
+return systemTime

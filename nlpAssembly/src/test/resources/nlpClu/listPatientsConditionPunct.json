@@ -1,0 +1,120 @@
+{
+    "kind": "ConversationResult",
+    "result": {
+        "query": "list Patients where name >= Fred",
+        "prediction": {
+            "topIntent": "system.list",
+            "projectKind": "Conversation",
+            "intents": [
+                {
+                    "category": "system.list",
+                    "confidenceScore": 0.9554914
+                },
+                {
+                    "category": "system.count",
+                    "confidenceScore": 0.67880625
+                },
+                {
+                    "category": "health.patientsByCondition",
+                    "confidenceScore": 0.66114795
+                },
+                {
+                    "category": "system.describeType",
+                    "confidenceScore": 0.61438197
+                },
+                {
+                    "category": "system.showActive",
+                    "confidenceScore": 0.60825676
+                },
+                {
+                    "category": "system.smalltalk.mindframe",
+                    "confidenceScore": 0.39837122
+                },
+                {
+                    "category": "system.smalltalk.greetings",
+                    "confidenceScore": 0.37956452
+                },
+                {
+                    "category": "system.smalltalk.chatbot",
+                    "confidenceScore": 0.33041987
+                },
+                {
+                    "category": "system.smalltalk.birthday",
+                    "confidenceScore": 0.31618237
+                },
+                {
+                    "category": "system.smalltalk.bio",
+                    "confidenceScore": 0.3114928
+                },
+                {
+                    "category": "system.endDiscussion",
+                    "confidenceScore": 0.26953155
+                },
+                {
+                    "category": "system.smalltalk.thankYou",
+                    "confidenceScore": 0.26746833
+                },
+                {
+                    "category": "None",
+                    "confidenceScore": 0
+                }
+            ],
+            "entities": [
+                {
+                    "category": "system.typeName",
+                    "text": "Patients",
+                    "offset": 5,
+                    "length": 8,
+                    "confidenceScore": 1
+                },
+                {
+                    "category": "system.propertyName",
+                    "text": "name",
+                    "offset": 20,
+                    "length": 4,
+                    "confidenceScore": 1
+                },
+                {
+                    "category": "system.comparator_gt",
+                    "text": ">",
+                    "offset": 25,
+                    "length": 1,
+                    "confidenceScore": 1,
+                    "extraInformation": [
+                        {
+                            "extraInformationKind": "ListKey",
+                            "key": ">"
+                        }
+                    ]
+                },
+                {
+                    "category": "system.comparator_gte",
+                    "text": ">=",
+                    "offset": 25,
+                    "length": 2,
+                    "confidenceScore": 1
+                },
+                {
+                    "category": "system.comparator_eq",
+                    "text": "=",
+                    "offset": 26,
+                    "length": 1,
+                    "confidenceScore": 1,
+                    "extraInformation": [
+                        {
+                            "extraInformationKind": "ListKey",
+                            "key": "="
+                        }
+                    ]
+                },
+                {
+                    "category": "system.propertyValue",
+                    "text": "Fred",
+                    "offset": 28,
+                    "length": 4,
+                    "confidenceScore": 1
+                }
+            ]
+        }
+    }
+}

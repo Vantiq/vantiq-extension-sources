@@ -1,0 +1,105 @@
+package com.vantiq.nlp
+
+// This procedure takes a string representing the natural language to be interpreted.
+// It returns the CLU-style JSON object representing the interpretation.
+
+private PROCEDURE NLCore.askAzureCLU(natLangQuery String REQUIRED,
+										  naturalLanguageSource String REQUIRED,
+										  projectName String REQUIRED,
+										  deploymentName String REQUIRED,
+										  isProcedureBasedTest Boolean) HIDDEN
+
+var xlate
+var retVal
+
+//{
+//  "kind": "Conversation",
+//  "analysisInput": {
+//    "conversationItem": {
+//      "id": "1",
+//      "participantId": "1",
+//      "text": "Text 1"
+//    }
+//  },
+//  "parameters": {
+//    "projectName": "{PROJECT-NAME}",
+//    "deploymentName": "{DEPLOYMENT-NAME}",
+//    "stringIndexType": "TextElement_V8"
+//  }
+// }
+var conversationUser = "Vantiq-" + Context.namespace() + "-" + Context.username()
+var theQuery = { kind: "Conversation",
+                 analysisInput: {
+                    conversationItem: {
+                        id: conversationUser,
+                        participantId: conversationUser,
+                        text: natLangQuery
+                    }
+                 },
+                 parameters: {
+                    projectName: projectName,
+                    deploymentName: deploymentName,
+                    StringIndexType: "Utf16CodeUnit"    // Used for Java, as per .Net docs
+                 }
+               }
+
+if (isProcedureBasedTest == null) {
+    isProcedureBasedTest = false
+}
+
+if (isProcedureBasedTest) {
+    // For some tests, we define a simple source that accesses a VAIL procedure.  This procedure simulates
+    // the MicroSoft LUIS service.  Unfortunately, accessing VAIL procedures as a service follows a strict
+    // protocol wherein the set of parameters are supplied in a map.  Thus, for this test case, we must
+    // send things as a map.  LUIS, fo' real, doesn't want this -- it just wants a simple JSON object that's just
+    // just a string.  Therefore, based on the caller, we handle the parameter differently.
+
+    theQuery = { nlUtterance: natLangQuery }
+}
+
+// Loop at most twice if we need to find the right protocol
+
+log.debug("Attempting CLU call: query: {}", [theQuery])
+retVal = {}     // Reinitialize in case of failure.
+
+try {
+    log.debug("askCLU(): Querying CLU source {} for query: {}",
+                    [naturalLanguageSource, natLangQuery])
+
+    xlate = SELECT ONE FROM SOURCE @naturalLanguageSource
+                WITH
+                method = "POST",
+                body = theQuery,
+                responseType = "application/json"
+
+    var rawVal = xlate
+
+    if (!isProcedureBasedTest) {
+        log.debug("askCLU(): Query on source {} returned {}", [naturalLanguageSource, xlate])
+        log.debug("askCLU(): Query: {}, predicted intent: {}, ents: {} (all intents: {})",
+                                [rawVal.result.query, rawVal.result.prediction.topIntent,
+                                    rawVal.result.prediction.entities, rawVal.result.prediction.intents])
+        retVal.isCLU = true
+        retVal.xlate = xlate
+    } else {
+        retVal.isCLU = true
+        retVal.xlate = xlate
+    }
+} catch (error) {
+        log.debug("Checking params: {}:{}", [error.params.size(), typeOf(error.params[2]), stringify(error.params, true)])
+        if (error.params.size() == 3) {
+            var embeddedError = error.params[2]
+            log.debug("Checking embedded error: {}", [embeddedError])
+        }
+    log.error("askCLU(): Error calling CLU source {}: {}",
+        [naturalLanguageSource, error])
+    retVal.error = error.message
+    retVal.isError = true
+
+}
+
+log.trace("askCLU(): retVal: {}", [stringify(retVal, true) ])
+
+log.debug("askCLU(): Interpretation of {} via {}: {}", [natLangQuery, naturalLanguageSource, retVal.stringify(true)])
+log.debug("askCLU(): Interpretation of {} via {}: {}", [natLangQuery, naturalLanguageSource, retVal.stringify(true)])
+return retVal

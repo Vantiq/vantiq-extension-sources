@@ -1,0 +1,113 @@
+{
+    "kind": "ConversationResult",
+    "result": {
+        "query": "show active collaborations younger than 2 days",
+        "prediction": {
+            "topIntent": "system.showActive",
+            "projectKind": "Conversation",
+            "intents": [
+                {
+                    "category": "system.showActive",
+                    "confidenceScore": 0.9034225
+                },
+                {
+                    "category": "system.list",
+                    "confidenceScore": 0.69548756
+                },
+                {
+                    "category": "system.describeType",
+                    "confidenceScore": 0.67834014
+                },
+                {
+                    "category": "system.count",
+                    "confidenceScore": 0.59159213
+                },
+                {
+                    "category": "system.smalltalk.greetings",
+                    "confidenceScore": 0.51518583
+                },
+                {
+                    "category": "system.smalltalk.birthday",
+                    "confidenceScore": 0.46843535
+                },
+                {
+                    "category": "system.smalltalk.mindframe",
+                    "confidenceScore": 0.44697735
+                },
+                {
+                    "category": "health.patientsByCondition",
+                    "confidenceScore": 0.43937677
+                },
+                {
+                    "category": "system.smalltalk.thankYou",
+                    "confidenceScore": 0.41984162
+                },
+                {
+                    "category": "system.smalltalk.chatbot",
+                    "confidenceScore": 0.35793447
+                },
+                {
+                    "category": "system.endDiscussion",
+                    "confidenceScore": 0.33834428
+                },
+                {
+                    "category": "system.smalltalk.bio",
+                    "confidenceScore": 0.31649756
+                },
+                {
+                    "category": "None",
+                    "confidenceScore": 0
+                }
+            ],
+            "entities": [
+                {
+                    "category": "system.condition_active",
+                    "text": "active",
+                    "offset": 5,
+                    "length": 6,
+                    "confidenceScore": 1
+                },
+                {
+                    "category": "system.typeName",
+                    "text": "collaborations",
+                    "offset": 12,
+                    "length": 14,
+                    "confidenceScore": 1
+                },
+                {
+                    "category": "system.comparator_gt",
+                    "text": "younger than",
+                    "offset": 27,
+                    "length": 12,
+                    "confidenceScore": 1,
+                    "extraInformation": [
+                        {
+                            "extraInformationKind": "ListKey",
+                            "key": "younger than"
+                        }
+                    ]
+                },
+                {
+                    "category": "datetimeV2",
+                    "text": "2 days",
+                    "offset": 40,
+                    "length": 6,
+                    "confidenceScore": 1,
+                    "resolutions": [
+                        {
+                            "resolutionKind": "TemporalSpanResolution",
+                            "timex": "P2D",
+                            "duration": "P2D"
+                        }
+                    ],
+                    "extraInformation": [
+                        {
+                            "extraInformationKind": "EntitySubtype",
+                            "value": "datetime.duration"
+                        }
+                    ]
+                }
+            ]
+        }
+    }
+}

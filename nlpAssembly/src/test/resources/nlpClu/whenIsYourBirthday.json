@@ -1,0 +1,79 @@
+{
+    "kind": "ConversationResult",
+    "result": {
+        "query": "when is your birthday?",
+        "prediction": {
+            "topIntent": "system.smalltalk.birthday",
+            "projectKind": "Conversation",
+            "intents": [
+                {
+                    "category": "system.smalltalk.birthday",
+                    "confidenceScore": 0.9145159
+                },
+                {
+                    "category": "system.smalltalk.greetings",
+                    "confidenceScore": 0.69305086
+                },
+                {
+                    "category": "system.smalltalk.mindframe",
+                    "confidenceScore": 0.68012637
+                },
+                {
+                    "category": "system.showActive",
+                    "confidenceScore": 0.6568584
+                },
+                {
+                    "category": "system.smalltalk.bio",
+                    "confidenceScore": 0.61170053
+                },
+                {
+                    "category": "system.endDiscussion",
+                    "confidenceScore": 0.5117714
+                },
+                {
+                    "category": "system.smalltalk.thankYou",
+                    "confidenceScore": 0.49979356
+                },
+                {
+                    "category": "system.smalltalk.chatbot",
+                    "confidenceScore": 0.48138073
+                },
+                {
+                    "category": "system.count",
+                    "confidenceScore": 0.47669727
+                },
+                {
+                    "category": "system.list",
+                    "confidenceScore": 0.47364557
+                },
+                {
+                    "category": "health.patientsByCondition",
+                    "confidenceScore": 0.47186813
+                },
+                {
+                    "category": "system.describeType",
+                    "confidenceScore": 0.41195577
+                },
+                {
+                    "category": "None",
+                    "confidenceScore": 0
+                }
+            ],
+            "entities": [
+                {
+                    "category": "system.comparator_eq",
+                    "text": "is",
+                    "offset": 5,
+                    "length": 2,
+                    "confidenceScore": 1,
+                    "extraInformation": [
+                        {
+                            "extraInformationKind": "ListKey",
+                            "key": "is"
+                        }
+                    ]
+                }
+            ]
+        }
+    }
+}

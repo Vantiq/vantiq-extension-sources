@@ -1,0 +1,166 @@
+package com.vantiq.nlp
+
+import service com.vantiq.nlp.NLCore
+
+/**
+** NLCore.interpretConversationalQuery
+**
+** This procedure receives a natural language query, asks the Conversational Language Understanding-based language
+** to interpret it, then returns the description.
+**
+** @param natLangQuery -- A string containing the natural language query
+** @param naturalLanguageSource -- a string containing the name of the source registered to perform the interpretation
+** @param projectName -- String containing the name of the Azure CLU project
+** @param deploymentName -- String containing the name of the Azure deployment
+** @returns -- an intentStructure with the resulting interpretation.  Null if no valid intent.
+**
+**
+**/
+
+// Note: We don't mark this with the collaboration service tag as it's not really designed for that purpose.
+// This procedure is available for calling so that non-collaboration scenarios can make use of it.
+
+PROCEDURE NLCore.interpretConversationalQuery(natLangQuery String REQUIRED,
+                                                           naturalLanguageSource String REQUIRED,
+                                                           projectName String REQUIRED,
+                                                           deploymentName String REQUIRED,
+                                                           isProcedureBasedTest Boolean): Object
+
+var retVal = {}
+var errorMsg = null
+var response = null
+var errorPhase = null
+
+if (isProcedureBasedTest == null) {
+    isProcedureBasedTest = false
+}
+try {
+    errorPhase = "understand"
+    var cluResp = NLCore.askAzureCLU(natLangQuery, naturalLanguageSource,
+                            projectName, deploymentName, isProcedureBasedTest)
+
+    // CLU sends back an array of results, but generally only has one element.  And, if an array, the array
+    // is returned in the order of score.  So we always want the first element.  Thus, we'll get the
+    // first element's parts and deal with those as we should expect.
+    if (cluResp.isError) {
+        errorMsg = cluResp.error
+    } else if (cluResp.xlate != null) {
+        errorPhase = "parseIntent"
+        
+        // We currently support CLU's first version.  LUIS is handled by the deprecated interpretNLQuery()
+        // To make things easier (both for us in general and for these versions), we convert
+        // both to a simplified format, and use that simplified format throughout where possible for the
+        // remainder of the NLP work. There are some places where we need to lower level details,
+        // so we include raw{Intent,Entity} fields as appropriate.  This also makes this
+        // information available to customers building NLP-based systems.
+        
+        var rawIntent
+        var intent
+        var intentStruct
+        var entities
+        var localEntities = []
+        var entDescription = ""
+        var onceThru = false
+
+        if (cluResp.isCLU) {
+            rawIntent = cluResp.xlate.result.prediction
+
+            var intentName = rawIntent.topIntent
+            intent = null
+            for (i in rawIntent.intents until intent != null) {
+                if (i.category == intentName) {
+                    intent = i
+                }
+            }
+            intentStruct = { intent : intentName,
+                             score: intent.confidenceScore,
+                             entities : [],
+                             query: cluResp.xlate.result.query,
+                             rawIntent: rawIntent,
+                             luisVersion: 4, // Just to mark that it's not LUIS 2 or 3
+                             cluVersion: 1,
+                             rawCluResp: cluResp.xlate}
+
+            var entities = rawIntent.entities
+            if (entities != null) {
+                log.debug("interpretConversationalQuery(): Processing {} entities",
+                    [size(entities), stringify(entities, true)])
+
+                for (ent in entities) {
+                    var entName = ent.category
+                    var entValue = ent.text
+
+                    log.debug("interpretConversationalQuery(): Processing entity: {} :: {}-{}", [entName, entValue, ent])
+                    if (onceThru) {
+                        entDescription = entDescription + ", "
+                    } else {
+                        onceThru = true
+                    }
+
+                    // As with intents, entities is now an object keyed by entity role or name (role if available,
+                    // name if not.  At this level, each key has a value the value of the entity.  If verbose was true,
+                    // then $instance object contains the metadata about the entity.  We will use this if it's available,
+                    // mostly for handling occlusion.
+
+                    log.debug("interpretConversationalQuery(): value for {}: ({}) {}",
+                                    [entName, typeOf(ent), ent])
+
+                    entDescription = entDescription + entName + " :: " + entValue
+
+                    // Note: V2 reported entities by start & endIndex.  V3 changes this to report
+                    // startIndex & length.  Since v3 is the way of now, we'll convert to that &
+                    // have V2 figure the length from the two indices.  Go forward!
+
+                    localEntities.push( { name: entName,
+                                          type: ent.category,
+                                          value : entValue,
+                                          startIndex : ent.offset,
+                                          length : ent.length,
+                                          rawEnt : ent} )
+                }
+            }
+        } else {
+            errorMsg = "Interpreter did not return a recognized format for CLU messages."
+        }
+        log.debug("interpretConversationalQuery():  Found entities: {}", [entDescription])
+        log.debug("interpretConversationalQuery(): localEntities: {}", [stringify(localEntities, true)])
+
+        // Now, we need to go through the entity list & deal with occluded comparators.
+        // Our comparator list (in the language) has things like "less than" meaning $lt, and
+        // "equal" or "is" meaning "$eq".  If, however, we are given something like "is less than or equal to"
+        // to parse, we get back $eq for is, $eq for equal to, $lt for less than, as well as the real comparator
+        // $lte.  We, thus, need to de-dup these things.
+
+        errorPhase = "resolveOccludedEntities"
+        var markedList = NLUtils.markOcclusion(localEntities)
+        log.debug("interpretConversationalQuery(): markedList: {}", [stringify(markedList, true)])
+
+        // Now, we'll rattle through the marked entlist and copy anything across that's NOT occluded.
+        for (e in markedList) {
+            if (!e.isOccluded) {// Either not set (== null) || e.isOccluded)
+                intentStruct.entities.push(e)
+            }
+        }
+        log.debug("interpretConversationalQuery():  Post occlusion check, found entities: {}", [stringify(intentStruct.entities, true)])
+        errorPhase = "validate"
+        var invalid = NLCore.validateIntent(intentStruct)
+         if (invalid) {
+             log.error("interpretConversationalQuery():  Found invalid intent: {}", [invalid])
+             errorMsg = invalid
+         }
+         response = intentStruct
+	} else {
+	    errorMsg = "Encountered error calling the language interpreter.  Please try again in a little while."
+	}
+}
+catch (error) {
+    response = null
+	log.error("NLCore.interpretConversationalQuery(): Error: {}", [error])
+	log.error("NLCore.interpretConversationalQuery(): Error encountered attempting to {} using source {}: '{}'",
+	                            [errorPhase, naturalLanguageSource, natLangQuery])
+	errorMsg = format("Error encountered responding to your query.  The underlying error was {0}: {1}.", error.code, error.message)
+}
+retVal.response = response
+retVal.errorMsg = errorMsg
+
+return retVal

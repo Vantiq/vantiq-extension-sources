@@ -1,0 +1,146 @@
+{
+    "kind": "ConversationResult",
+    "result": {
+        "query": "list Patients whose age <= 40",
+        "prediction": {
+            "topIntent": "system.list",
+            "projectKind": "Conversation",
+            "intents": [
+                {
+                    "category": "system.list",
+                    "confidenceScore": 1
+                },
+                {
+                    "category": "system.count",
+                    "confidenceScore": 0.80827194
+                },
+                {
+                    "category": "health.patientsByCondition",
+                    "confidenceScore": 0.655279
+                },
+                {
+                    "category": "system.showActive",
+                    "confidenceScore": 0.5440012
+                },
+                {
+                    "category": "system.describeType",
+                    "confidenceScore": 0.5104076
+                },
+                {
+                    "category": "system.smalltalk.birthday",
+                    "confidenceScore": 0.29116514
+                },
+                {
+                    "category": "system.smalltalk.chatbot",
+                    "confidenceScore": 0.2905203
+                },
+                {
+                    "category": "system.smalltalk.bio",
+                    "confidenceScore": 0.28778687
+                },
+                {
+                    "category": "system.smalltalk.mindframe",
+                    "confidenceScore": 0.2618461
+                },
+                {
+                    "category": "system.smalltalk.greetings",
+                    "confidenceScore": 0.24537963
+                },
+                {
+                    "category": "system.smalltalk.thankYou",
+                    "confidenceScore": 0.18956436
+                },
+                {
+                    "category": "system.endDiscussion",
+                    "confidenceScore": 0.1455003
+                },
+                {
+                    "category": "None",
+                    "confidenceScore": 0
+                }
+            ],
+            "entities": [
+                {
+                    "category": "system.typeName",
+                    "text": "Patients",
+                    "offset": 5,
+                    "length": 8,
+                    "confidenceScore": 1
+                },
+                {
+                    "category": "system.propertyName",
+                    "text": "age",
+                    "offset": 20,
+                    "length": 3,
+                    "confidenceScore": 1
+                },
+                {
+                    "category": "age",
+                    "text": "age",
+                    "offset": 20,
+                    "length": 3,
+                    "confidenceScore": 1,
+                    "resolutions": [
+                        {
+                            "resolutionKind": "AgeResolution",
+                            "unit": "Unspecified",
+                            "value": "NaN"
+                        }
+                    ],
+                    "extraInformation": [
+                        {
+                            "extraInformationKind": "EntitySubtype",
+                            "value": "quantity.age"
+                        }
+                    ]
+                },
+                {
+                    "category": "system.comparator_lt",
+                    "text": "<",
+                    "offset": 24,
+                    "length": 1,
+                    "confidenceScore": 1,
+                    "extraInformation": [
+                        {
+                            "extraInformationKind": "ListKey",
+                            "key": "<"
+                        }
+                    ]
+                },
+                {
+                    "category": "system.comparator_lte",
+                    "text": "<=",
+                    "offset": 24,
+                    "length": 2,
+                    "confidenceScore": 1,
+                    "extraInformation": [
+                        {
+                            "extraInformationKind": "ListKey",
+                            "key": "<="
+                        }
+                    ]
+                },
+                {
+                    "category": "system.comparator_eq",
+                    "text": "=",
+                    "offset": 25,
+                    "length": 1,
+                    "confidenceScore": 1,
+                    "extraInformation": [
+                        {
+                            "extraInformationKind": "ListKey",
+                            "key": "="
+                        }
+                    ]
+                },
+                {
+                    "category": "system.propertyValue",
+                    "text": "40",
+                    "offset": 27,
+                    "length": 2,
+                    "confidenceScore": 1
+                }
+            ]
+        }
+    }
+}

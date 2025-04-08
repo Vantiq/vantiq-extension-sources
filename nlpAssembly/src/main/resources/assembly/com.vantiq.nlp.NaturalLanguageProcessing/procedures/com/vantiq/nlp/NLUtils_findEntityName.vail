@@ -1,0 +1,13 @@
+package com.vantiq.nlp
+
+import service com.vantiq.nlp.NLUtils
+
+PROCEDURE NLUtils.findEntityName(intent Object, desiredEntList String MULTI) HIDDEN
+
+var res = NLUtils.findEntity(intent, desiredEntList)
+
+var retVal = null
+if (res != null) {
+    retVal = res.name
+}
+return retVal

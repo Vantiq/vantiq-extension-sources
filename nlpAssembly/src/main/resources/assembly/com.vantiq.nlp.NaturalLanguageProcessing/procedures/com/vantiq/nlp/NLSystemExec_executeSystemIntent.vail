@@ -1,0 +1,57 @@
+package com.vantiq.nlp
+
+import service com.vantiq.nlp.NLSystemExec
+
+/**
+** NLSystemExec.executeSystemIntent
+**
+** This procedure receives a natural language query, asks LUIS to interpret it, then returns the description.
+**
+** @param intent -- an intent structure such as that returned by the NLCore.interpretNLQuery()
+** @returns -- an intentStructure with a response field set to the text response to the query.  Note that this could be an error message. If so, the isError field will be set to true.
+**
+**
+**/
+
+// Note: We don't mark this with the collaboration service tag as it's not really designed for that purpose.
+// This procedure is available for calling so that non-collaboration scenarios can make use of it.
+
+PROCEDURE NLSystemExec.executeSystemIntent(intent Object)
+
+// Based on intent specified, execute preferred action
+var lclIntent = intent.intent
+var response = ""
+var error = false
+
+log.debug("NLSystemExec.executeSystemIntent(): Got Intent: " + lclIntent)
+
+try {
+        // Note that we assume that system.endDiscussion is handled above us.  We don't do collaboration-related things
+    if (lclIntent == "system.list") {
+        response = NLSystemExec.performList(intent, false)
+    } else if (lclIntent == "system.count") {
+        response = NLSystemExec.performList(intent, true)
+    } else if (lclIntent == "system.showActive") {
+        response = NLSystemExec.performShowActive(intent)
+    } else if (lclIntent == "system.describeType") {
+        response = NLSystemExec.performDescribe(intent)
+    } else if (lclIntent == "system.endDiscussion") {
+        response = "Goodbye for now. It has been a pleasure."
+    } else if (lclIntent.startsWith("system.smalltalk")) {
+        var smalltalkIntent = NLSystemExec.executeSmalltalkIntent(intent)
+        response = smalltalkIntent.response
+        error = smalltalkIntent.isError
+    } else {
+        response = "I don't know how to do " + lclIntent + " yet."
+        error = true
+    }
+}
+catch (err) {
+    log.error("executeSystemIntent():  Trapped error {}: {} attempting to execute intent {}", [err.code, err.message, intent])
+    response = format("Encountered error {0}: {1} trying to execute {2}", err.code, err.message, intent.intent)
+    error = true
+}
+
+intent.response = response
+intent.isError = error
+return intent

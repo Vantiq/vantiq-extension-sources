@@ -1,0 +1,6 @@
+{
+  "ars_relationships" : [ ],
+  "name" : "com.vantiq.test.nlchat.PartitionedState",
+  "properties" : { },
+  "role" : "schema"
+}

@@ -76,7 +76,7 @@ subprojects {
     }
     apply plugin: 'com.vantiq.gradle-dcompose-plugin'
 
-    if (it.name != 'fhirAssembly') {
+    if (!(['fhirAssembly', 'nlpAssembly'].contains(it.name))) {
         // Using gradle-dcompose-plugin to build/push docker images
         dcompose {
             if (rootProject.hasProperty('dockerRegistry') && rootProject.hasProperty('pathToRepo')) {

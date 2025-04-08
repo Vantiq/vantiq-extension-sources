@@ -1,0 +1,54 @@
+package com.vantiq.nlp
+
+import service com.vantiq.nlp.NLUtils
+
+//
+// This procedure performs the actions required by the intent *system.describeType*.
+// This intent lists the properties and datatypes thereof for some resource type in the VANTIQ system.
+//
+// The entities contained in the *intent* parameter are used to construct the appropriate query,
+// and the query is run, returning the results as the return value of the procedure.  If errors are
+// encountered, they are logged and a suitable human-readable error is returned as the return value.
+//
+// @param intent The "intentSpecification" object.  This is the result of interpretation of the user's utterance
+// @returns String -- Results from the query or an error message.
+//
+
+PROCEDURE NLSystemExec.performDescribe(intent Object)
+
+var desiredType = NLUtils.findDesiredType(intent)
+var resourceInfo = NLUtils.xlateEntToTable(desiredType)
+var tableName = resourceInfo.typeName
+var returnValue = ""
+var NO_SUCH_TYPE_ERROR = "The name \"" + desiredType + "\" is not a recognized type or resource name."
+
+if (tableName == null) {
+    returnValue = NO_SUCH_TYPE_ERROR
+}
+else {
+    var rowCount = 0
+    var row
+    var info = SELECT ONE properties FROM types where name == tableName
+    if (!info) {
+        // This should not happen since xlateEntToTable() above already checked.  However, there's always
+        // a chance that someone's deleting the type, so we'll protect ourselves nonetheless.
+        returnValue = NO_SUCH_TYPE_ERROR
+    } else {
+        log.debug("performDescribe(): Properties for {}: {}", [tableName, info.stringify(true)])
+        returnValue = "Properties for " + desiredType + "... " + "\n"
+        var passedFirst = false
+        for (prop in info.properties) {
+            if (! (prop.key.startsWith("ars_") || (prop.key == "_id"))) {
+                if (passedFirst) {
+                    returnValue += ", " + "\n"
+                } else {
+                    passedFirst = true
+                }
+                returnValue += "\u2022 " + prop.key + " : " + prop.value.type
+            }
+         }
+    }
+}
+return returnValue
+
+

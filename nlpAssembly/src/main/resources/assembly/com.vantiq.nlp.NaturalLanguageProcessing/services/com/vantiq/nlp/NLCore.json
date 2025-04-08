@@ -1,0 +1,134 @@
+{
+  "active" : true,
+  "ars_properties" : {
+    "filterPrivateGenerated" : false,
+    "filterPublicGenerated" : false,
+    "fragmentList" : [ ]
+  },
+  "ars_relationships" : [ ],
+  "description" : null,
+  "eventTypes" : { },
+  "globalType" : null,
+  "interface" : [ {
+    "name" : "executeIntent",
+    "parameters" : [ {
+      "description" : null,
+      "multi" : false,
+      "name" : "collab",
+      "required" : true,
+      "type" : "String"
+    }, {
+      "description" : null,
+      "multi" : false,
+      "name" : "event",
+      "required" : true,
+      "type" : "Object"
+    }, {
+      "description" : null,
+      "multi" : false,
+      "name" : "activityName",
+      "required" : true,
+      "type" : "String"
+    } ],
+    "returnType" : {
+      "multi" : false,
+      "type" : "Object"
+    }
+  },{
+    "name" : "interpretConversationalQuery",
+    "parameters" : [ {
+      "description" : null,
+      "multi" : false,
+      "name" : "natLangQuery",
+      "required" : true,
+      "type" : "String"
+    }, {
+      "description" : null,
+      "multi" : false,
+      "name" : "naturalLanguageSource",
+      "required" : true,
+      "type" : "String"
+    }, {
+      "description" : null,
+      "multi" : false,
+      "name" : "projectName",
+      "required" : true,
+      "type" : "String"
+    }, {
+      "description" : null,
+      "multi" : false,
+      "name" : "deploymentName",
+      "required" : true,
+      "type" : "String"
+    }, {
+      "description" : null,
+      "multi" : false,
+      "name" : "isProcedureBasedTest",
+      "required" : false,
+      "type" : "Boolean"
+    } ],
+    "returnType" : {
+      "multi" : false,
+      "type" : "Object"
+    }
+  }, {
+    "name" : "publishResponse",
+    "parameters" : [ {
+      "description" : null,
+      "multi" : false,
+      "name" : "event",
+      "required" : false,
+      "type" : "Object"
+    }, {
+      "description" : null,
+      "multi" : false,
+      "name" : "response",
+      "required" : false,
+      "type" : "String"
+    }, {
+      "description" : null,
+      "multi" : false,
+      "name" : "chatbotName",
+      "required" : false,
+      "type" : "String"
+    } ]
+  }, {
+    "name" : "respondToConversationalQuery",
+    "parameters" : [ {
+      "description" : null,
+      "multi" : false,
+      "name" : "natLangQuery",
+      "required" : false,
+      "type" : "String"
+    }, {
+      "description" : null,
+      "multi" : false,
+      "name" : "collab",
+      "required" : false,
+      "type" : "String"
+    }, {
+      "description" : null,
+      "multi" : false,
+      "name" : "naturalLanguageSource",
+      "required" : false,
+      "type" : "String"
+    }, {
+      "description" : null,
+      "multi" : false,
+      "name" : "cluModel",
+      "required" : false,
+      "type" : "String"
+    }, {
+      "description" : null,
+      "multi" : false,
+      "name" : "cluDeployment",
+      "required" : false,
+      "type" : "String"
+    } ]
+  } ],
+  "internalEventHandlers" : [ ],
+  "name" : "com.vantiq.nlp.NLCore",
+  "partitionedType" : null,
+  "replicationFactor" : 1,
+  "scheduledProcedures" : { }
+}

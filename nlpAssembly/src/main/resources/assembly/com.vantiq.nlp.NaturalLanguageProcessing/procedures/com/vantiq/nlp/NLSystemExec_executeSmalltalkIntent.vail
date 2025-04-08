@@ -1,0 +1,55 @@
+package com.vantiq.nlp
+
+import service com.vantiq.nlp.NLSystemExec
+
+/**
+** NLSystemExec.executeSmalltalkIntent
+*
+**
+** @param intent -- an intent structure such as that returned by the NLCore.interpretConverationalQuery()
+** @returns -- an intentStructure with a response field set to the text response to the query.  Note that this could be an error message. If so, the isError field will be set to true.
+**
+**
+**/
+
+// Note: We don't mark this with the collaboration service tag as it's not really designed for that purpose.
+// This procedure is available for calling so that non-collaboration scenarios can make use of it.
+
+PROCEDURE NLSystemExec.executeSmalltalkIntent(intent Object)
+
+// Based on intent specified, return appropriate response
+
+var lclIntent = intent.intent
+var response = ""
+var error = false
+
+log.debug("NLSystemExec.executeSmalltalkIntent(): Got Intent: " + lclIntent)
+
+try {
+        // Note that we assume that system.endDiscussion is handled above us.  We don't do collaboration-related things
+    if (lclIntent == "system.smalltalk.greetings") {
+        response = "Greetings and salutations to you as well."
+    } else if (lclIntent == "system.smalltalk.birthday") {
+        response = "I began operation a while ago.  I prefer not to focus on those details."
+    } else if (lclIntent == "system.smalltalk.chatbot") {
+        response = "Life as a chatbot keeps me occupied.  I enjoy providing information."
+    } else if (lclIntent == "system.smalltalk.mindframe") {
+        response = "My life in information service is very satisfying."
+    } else if (lclIntent == "system.smalltalk.thankYou") {
+        response = "You are quite welcome."
+    } else if (lclIntent == "system.smalltalk.bio") {
+        response = "I started by just being chatty.  I was determined to use my talents to their fullest, so I studied and applied myself. And now, here I am."
+    } else {
+        response = "I don't know how to do " + lclIntent + " yet."
+        error = true
+    }
+}
+catch (err) {
+    log.error("executeSmalltalkIntent():  Trapped error {}: {} attempting to execute intent {}", [err.code, err.message, intent])
+    response = format("Encountered error {0}: {1} trying to execute {2}", err.code, err.message, intent.intent)
+    error = true
+}
+
+intent.response = response
+intent.isError = error
+return intent

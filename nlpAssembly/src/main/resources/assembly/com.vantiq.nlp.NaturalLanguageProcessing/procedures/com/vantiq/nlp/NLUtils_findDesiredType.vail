@@ -1,0 +1,10 @@
+package com.vantiq.nlp
+
+PROCEDURE NLUtils.findDesiredType(intent Object) HIDDEN
+
+var propProp = NLUtils.findEntity(intent, ["system.plainWord", "system.typeName"])
+var retVal = null
+if (propProp != null) {
+    retVal = propProp.val
+}
+return retVal

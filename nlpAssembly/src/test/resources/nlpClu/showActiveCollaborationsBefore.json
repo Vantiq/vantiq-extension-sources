@@ -1,0 +1,120 @@
+{
+    "kind": "ConversationResult",
+    "result": {
+        "query": "show active collaborations before 1 May",
+        "prediction": {
+            "topIntent": "system.showActive",
+            "projectKind": "Conversation",
+            "intents": [
+                {
+                    "category": "system.showActive",
+                    "confidenceScore": 0.94653094
+                },
+                {
+                    "category": "system.list",
+                    "confidenceScore": 0.76494735
+                },
+                {
+                    "category": "system.describeType",
+                    "confidenceScore": 0.6363924
+                },
+                {
+                    "category": "system.count",
+                    "confidenceScore": 0.60005236
+                },
+                {
+                    "category": "system.smalltalk.birthday",
+                    "confidenceScore": 0.4767729
+                },
+                {
+                    "category": "health.patientsByCondition",
+                    "confidenceScore": 0.45687157
+                },
+                {
+                    "category": "system.smalltalk.mindframe",
+                    "confidenceScore": 0.45492572
+                },
+                {
+                    "category": "system.smalltalk.bio",
+                    "confidenceScore": 0.41387206
+                },
+                {
+                    "category": "system.smalltalk.greetings",
+                    "confidenceScore": 0.36958808
+                },
+                {
+                    "category": "system.smalltalk.chatbot",
+                    "confidenceScore": 0.3167541
+                },
+                {
+                    "category": "system.smalltalk.thankYou",
+                    "confidenceScore": 0.2793501
+                },
+                {
+                    "category": "system.endDiscussion",
+                    "confidenceScore": 0.27199313
+                },
+                {
+                    "category": "None",
+                    "confidenceScore": 0
+                }
+            ],
+            "entities": [
+                {
+                    "category": "system.condition_active",
+                    "text": "active",
+                    "offset": 5,
+                    "length": 6,
+                    "confidenceScore": 1
+                },
+                {
+                    "category": "system.typeName",
+                    "text": "collaborations",
+                    "offset": 12,
+                    "length": 14,
+                    "confidenceScore": 1
+                },
+                {
+                    "category": "system.comparator_lt",
+                    "text": "before",
+                    "offset": 27,
+                    "length": 6,
+                    "confidenceScore": 1,
+                    "extraInformation": [
+                        {
+                            "extraInformationKind": "ListKey",
+                            "key": "before"
+                        }
+                    ]
+                },
+                {
+                    "category": "datetimeV2",
+                    "text": "before 1 May",
+                    "offset": 27,
+                    "length": 12,
+                    "confidenceScore": 1,
+                    "resolutions": [
+                        {
+                            "resolutionKind": "TemporalSpanResolution",
+                            "timex": "XXXX-05-01",
+                            "end": "2022-05-01",
+                            "modifier": "Before"
+                        },
+                        {
+                            "resolutionKind": "TemporalSpanResolution",
+                            "timex": "XXXX-05-01",
+                            "end": "2023-05-01",
+                            "modifier": "Before"
+                        }
+                    ],
+                    "extraInformation": [
+                        {
+                            "extraInformationKind": "EntitySubtype",
+                            "value": "datetime.daterange"
+                        }
+                    ]
+                }
+            ]
+        }
+    }
+}

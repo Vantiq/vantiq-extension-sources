@@ -1,0 +1,24 @@
+package com.vantiq.nlp
+
+PROCEDURE NLUtils.findEntity(intent Object, desiredEntList String MULTI) HIDDEN
+
+var desiredType = null
+var desiredName = null
+
+for ent in intent.entities until desiredType != null {
+    // builtin date types vary w/r/t case & placement, at least as compared to V2
+    // The following takes that into account & works around the discrepancies.
+    for dent in desiredEntList until desiredType != null {
+        if (dent.equalsIgnoreCase(ent.name) || dent.equalsIgnoreCase(ent.type) || dent.equalsIgnoreCase(ent.category)) {
+            desiredType = ent.value
+            desiredName = ent.name
+        }
+    }
+}
+
+// LUIS V3 doesn't include the name, so we'll provide it to callers.  It is used in interpretation
+var retVal = null
+if (desiredType != null) {
+    retVal = { name: desiredName, val: desiredType }
+}
+return retVal

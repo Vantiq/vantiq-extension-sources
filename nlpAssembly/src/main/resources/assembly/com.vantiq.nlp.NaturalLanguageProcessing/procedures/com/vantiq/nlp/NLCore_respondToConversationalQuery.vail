@@ -1,0 +1,16 @@
+package com.vantiq.nlp
+
+import service com.vantiq.nlp.NLCore
+
+// This procedure receives a natural language query, asks CLU to interpret it, then returns the appropriate response
+
+// This procedure passes through to a lower level service.  It remains here, allowing us to adapt it for
+// use in a collaboration as required.  The lower level service procedure can, than, remain callable as is
+// for use in other, non-collaboration, scenarios.
+
+PROCEDURE NLCore.respondToConversationalQuery(natLangQuery String, collab String,
+                            naturalLanguageSource String,
+                            cluModel String,
+                            cluDeployment String) HIDDEN
+
+return NLCore.interpretConversationalQuery(natLangQuery, naturalLanguageSource, cluModel, cluDeployment)

@@ -1,0 +1,229 @@
+package com.vantiq.nlp
+
+import service com.vantiq.nlp.NLUtils
+
+//
+// This procedure performs the actions required by the intent *system.list*.
+// This intent looks for a particular resource type and lists the values contained therein,
+// modulo a simple predicate optionally included in the natural language utterance.
+//
+// The entities contained in the *intent* parameter are used to construct the appropriate query,
+// and the query is run, returning the results as the return value of the procedure.  If errors are
+// encountered, they are logged and a suitable human-readable error is returned as the return value.
+//
+// @param intent The "intentSpecification" object.  This is the result of interpretation of the user's utterance
+// @returns String -- Results from the query or an error message.
+//
+
+PROCEDURE NLSystemExec.performList(intent Object, isCount Boolean)
+
+// Here, we process the "system.list" intent.  This is intended to list things the system knows about.
+
+// First, we'll translate the entity vantiq.typeName to a table name.
+
+var returnValue = ""
+var desiredType = NLUtils.findDesiredType(intent)
+var resourceInfo = NLUtils.xlateEntToTable(desiredType)
+var tableName = resourceInfo.typeName
+var resourceName = resourceInfo.resourceName
+var propNameProp = NLUtils.findEntity(intent, ["system.propertyName"])
+var propName = null
+if (propNameProp) {
+    propName = propNameProp.val
+}
+var comparator = NLUtils.findOperator(intent)
+var propValueProp = NLUtils.findEntity(intent,
+                    ["system.propertyValue", "builtin.number", "system.plainWord", "number"]) // CLU drops builtin.
+var propValue = null
+if (propValueProp != null) {
+    log.debug("Found property: {}:{}", [propValueProp.name, propValueProp.val])
+    propValue = propValueProp.val
+}
+var limitTime = NLUtils.findLimitTime(intent)
+var hadError = false
+var MAX_ROWS = 15
+
+var propListByTable = {
+                        ArsCollaboration:     ["name", "collaborationType", "collaborators", "status", "id"],
+                        ArsCollaborationType: ["name", "active", "keyTypes", "collaboratorRoles", "entityRoles" ],
+                        ArsComponent:         ["name", "language", "serviceName", "version", "isHidden"],
+                        ArsProject:           ["name"],
+                        ArsRuleSet:           ["name", "active", "version"],
+                        ArsSource:            ["name", "type", "active"],
+                        ArsType:              ["name", "naturalKey", "resourceName"]
+                      }
+var propsToPrint = null
+
+log.debug("performList(): Called to perform list on {}, for intent {}.  Is Count: {}", [tableName, intent.intent, isCount])
+
+if (tableName == null) {
+    returnValue = "The name \"" + desiredType + "\" is not a recognized type or resource name."
+    hadError = true
+} else {
+    var qryCondition = null
+    var propInfo = SELECT ONE properties FROM types where name == tableName
+    if (limitTime && propName == "the") {
+        // Then this is probably a misinterpretation of "since the 12th of never"
+        // In this case, we'll drop the prop name
+        propName = null
+    }
+    if (!propName && limitTime) {
+        // Then we'll be helpful & set the propName to ars_createdAt as a default
+        propName = "ars_createdAt"
+    }
+    if (propInfo) {
+        if (propName || comparator || propValue || limitTime) {
+            log.debug("List Query: property: {}, comparator: {}, value: {}, limitTime: {}",
+                        [propName, comparator, propValue, limitTime])
+            if (propName && comparator && (propValue || (limitTime && limitTime.size() == 1))) {
+                var qryValue = propValue
+                var thisProp = propInfo.properties[propName]
+                if (thisProp != null) {
+                    if (thisProp.type == "Integer") {
+                        qryValue = toInteger(qryValue)
+                    } else if (thisProp.type == "Real") {
+                        qryValue = toReal(qryValue)
+                    } else if (thisProp.type == "Boolean") {
+                        qryValue = qryValue.toBoolean()
+                    }
+                } else {
+                    var errMsg = format("Property {0} does not exist in type {1}", propName, desiredType)
+                    log.error("performList(): {}", [errMsg])
+                    returnValue = errMsg
+                    hadError = true
+                }
+                if (!hadError) {
+                    qryCondition = {}
+                    var propDoc = {}
+                    if (propValue) {
+                        propDoc[comparator] = qryValue
+                    } else if (limitTime.size() == 1) {
+                        propDoc[comparator] = limitTime.limit
+                    }
+                    qryCondition[propName] = propDoc
+                    log.debug("performList(): Query Condition {}", [qryCondition])
+                }
+            } else {
+                    // Generally, this is a language interpreter (LUIS or whatever) bug.
+                log.error("NLSystemExec.performList(): Partial condition returned in {}", [intent.stringify(true)])
+                returnValue = "Only found partial query. Please rephrase the request."
+                hadError = true
+            }
+        }
+        if (!hadError && !isCount) {
+            // Whilst here, let's construct the list we'll give to the user.
+            if (propListByTable[tableName] != null) {
+                // Then we have a list.  Use that.
+                propsToPrint = propListByTable[tableName]
+            } else {
+                // for other things, we'll give the user everything except internal stuff.
+                propsToPrint = []
+                for (p in propInfo.properties) {
+                    if ((! (p.key.startsWith("ars_") || p.key.equals("_id")))) {
+                        propsToPrint.push(p.key)
+                    }
+                }
+            }
+        }
+    } else {
+        // Type doesn't exist -- it disappeared sometime after validating it!
+        hadError = true
+        returnValue tableName + " is not a valid type or resource name."
+    }
+
+    if (!hadError) {
+        var rowCount = 0
+
+        try {
+                // This section sets up some query restrictions, unless overridden by the caller
+            if (tableName == "ArsType") {
+                // To match "normal" behavior, we will ask only for types
+                // that ar not metadata types (i.e. system types).
+                if (!qryCondition) {
+                    qryCondition = {}
+                }
+
+                // Need to query in this negative way since the metadata property is not always
+                // set for (at least) custom types.  Consequently, checking for "is false" doesn't
+                // always get what we want.  So we'll check for "isn't true" to be safe.
+                
+                if (!qryCondition["metadata"]) {
+                    qryCondition["metadata"] = {}
+                    qryCondition["metadata"]["$ne"] = true
+                }
+            } else if (tableName == "ArsRuleSet" || tableName == "ArsRuleConfiguration") {
+                if (!qryCondition) {
+                    qryCondition = {}
+                }
+                if (!qryCondition["ars_properties.isHidden"]) {
+                    qryCondition["ars_properties.isHidden"] = {"$ne": true}    // don't show hidden rules
+                }
+                if (!qryCondition["ars_namespace"]) {
+                    qryCondition["ars_namespace"] = {}
+                    qryCondition["ars_namespace"]["$ne"] = "system"
+                }
+
+            } else if (tableName == "ArsComponent") {
+
+                if (!qryCondition) {
+                    qryCondition = {}
+                }
+
+
+                if (!qryCondition["ars_properties.isHidden"]) {
+                    qryCondition["ars_properties.isHidden"] = {"$ne": true}    // don't show hidden rules
+                }
+                if (desiredType == "procedures") {
+                        // Here, we fake things a bit.  Specifically, we'll restrict to things that are
+                        // not hidden & whose language of implementation is VAIL.  That's what a procedure is
+                    if (!qryCondition["language"]) {
+                        qryCondition["language"] = "VAIL"
+                    }
+                }
+                if (!qryCondition["ars_namespace"]) {
+                    qryCondition["ars_namespace"] = {}
+                    qryCondition["ars_namespace"]["$ne"] = "system"
+                }
+            } else if (!qryCondition) {
+                qryCondition = {}
+            }
+
+            if (isCount) {
+                 SELECT qryCount = count(*) FROM @resourceName AS row WHERE qryCondition {
+                    rowCount = row.qryCount
+                 }
+            } else {
+                SELECT * FROM @resourceName AS row WITH LIMIT = MAX_ROWS WHERE qryCondition {
+                    var isFirst = true
+                    var thisRow = ""
+                    for (p in row) {
+                       if (propsToPrint.contains(p.key)) {
+                                // We'll skip the internal properties.  TODO: Should there be a way to see them?
+                            if (!isFirst) {
+                                thisRow += ", "
+                            } else {
+                                isFirst = false
+                            }
+                            thisRow += p.key + ": " + p.value
+                        }
+                    }
+                    returnValue += "\u2022 " + thisRow + "\n"
+                    rowCount += 1
+                }
+            }
+       } catch (error) {
+            log.error("NLSystemExec.performList(): Error running query: " + error)
+            returnValue = "I could not get the list due to an internal error.  Please report this to VANTIQ."
+            hadError = true
+       }
+    }
+
+    if (!hadError) {
+      if (rowCount == 1) {
+        returnValue += "\u2022 There is " + rowCount + " item of type " + desiredType + "."
+      } else {
+	    returnValue += "\u2022 There are " + rowCount + " items of type " + desiredType + "."
+	  }
+   }
+}
+return returnValue

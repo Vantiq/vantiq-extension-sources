@@ -1,0 +1,61 @@
+package com.vantiq.nlp
+
+import service com.vantiq.nlp.NLUtils
+import service system.Chat
+
+Procedure NLCore.publishResponse(event Object, response String, chatbotName String)
+
+var outGoing = response
+var NAME_IN_CHATROOM = "VANTIQ"
+var MSG_SIZE_LIMIT = 2000
+
+var msg = NLUtils.prepareText(event.channelId, false, outGoing)
+log.debug("publishResponse(): Attempting to publish '{}' to chatbot {}", [msg, chatbotName])
+if ((event.channelData && event.channelData.id) || chatbotName) {
+    var chatRoomId = event.channelData.id
+
+    for (i in range(0, msg.length(), 1) until msg.length() <= 0) {
+
+        // Here, we want to divide a long message into bubble-sized chunks for the chatroom
+        // To do this, we'll pick off a reasonably sized chunk, then split the end of it at a
+        // word boundary (white space).  We use the white space boundary to spit.
+
+        var msgLength = msg.length()
+        var localLimit = (msgLength > MSG_SIZE_LIMIT ? MSG_SIZE_LIMIT : msgLength)
+        var thisChunk = msg.substr(0, localLimit)
+        if (msgLength - localLimit > 0) {
+
+                // Note here:  We could work to try & divide this up using split("\\p{javaWhitespace}+").
+                // However, we don't think this is necessary.  The VANTIQ code will, generally, produce
+                // things with "regular" spaces in them, so it is sufficient to split on that.
+                // Until proven otherwise.
+                //
+                // We prefer not to split these very large string up into individual words (or sub-words, in the
+                // possible case of the Mongolian vowel separator -- indeed, in this case, it's not a word separator;
+                // it's an in-word "thin" space)
+
+            var lastWS = thisChunk.lastIndexOf(" ")
+            thisChunk = msg.substr(0, lastWS)
+            msg = msg.substr(lastWS, msgLength - thisChunk.length())
+        } else {
+            thisChunk = msg
+            msg = ""
+        }
+
+        if (chatRoomId) {
+            Chat.sendMessage(chatRoomId,
+                "text",
+                thisChunk,
+                null, // metadata
+                null, // theUserList
+                NAME_IN_CHATROOM) // theSender
+        } else {
+            // Then this is just a "publish back to sender.  We'll reuse the event...
+            event.text = thisChunk
+            publish event to SOURCE @chatbotName
+        }
+    }
+    log.debug("publishResponse(): Published message '{}' as response to {}", [msg, event.channelData])
+} else {
+    log.debug("publishResponse(): Did not publish msg '{}' because there was no channel information available.", [msg])
+}
