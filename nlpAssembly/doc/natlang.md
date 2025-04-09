@@ -116,7 +116,7 @@ In order to more easily distinguish custom elements from Vantiq elements, the fo
 #### System Entities
 There are a number of entities that are defined as part of the Vantiq NLS.  These may, of course, be used as part of the custom application.
 These entities are described below.
-It is important to note the following.
+It is important to note the following:
 Natural language processing is imprecise.
 Consequently, the entities returned can vary from exactly what would be expected.
 Thus, it is important to have some flexibility in the interpretation to handle these inconsistencies.
@@ -207,7 +207,7 @@ See the [Vantiq Natural Language Subset section](#SectionVantiqNLS) for more det
 
 The Vantiq system will interact with this source using the POST method.
 
-To create the source, find the URL from the [Language Studio][CLUStudio].  Specifically, go to the _Deploying a model_ item, and press the _Get prediction URL_ button, looking for the _Prediction URL'.  Provide that as the `Server URI` property.
+To create the source, find the URL from the [Language Studio][CLUStudio].  Specifically, go to the _Deploying a model_ item, and press the _Get prediction URL_ button, looking for the _Prediction URL_.  Provide that as the `Server URI` property.
 The `Response Type` property should be `application/json`.
 The `Headers` property should have one header `Ocp-Apim-Subscription-Key`, with a value corresponding to the subscription key of your CLU application.
 Generally, this value is sensitive and should be stored in a Vantiq Secret.
