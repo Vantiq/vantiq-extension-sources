@@ -95,9 +95,6 @@
     "target" : "services/com.vantiq.nlp.NLUtils"
   }, {
     "source" : "services/com.vantiq.nlp.NLCore",
-    "target" : "procedure/com.vantiq.nlp.NLCore.processSystemUtterance"
-  }, {
-    "source" : "services/com.vantiq.nlp.NLCore",
     "target" : "procedure/com.vantiq.nlp.NLCore.askAzureCLU"
   }, {
     "source" : "services/com.vantiq.nlp.NLCore",
@@ -126,12 +123,6 @@
   }, {
     "source" : "services/com.vantiq.nlp.NLSystemExec",
     "target" : "procedure/com.vantiq.nlp.NLSystemExec.performShowActive"
-  }, {
-    "source" : "procedure/com.vantiq.nlp.NLCore.processSystemUtterance",
-    "target" : "procedure/com.vantiq.nlp.NLSystemExec.executeSystemIntent"
-  }, {
-    "source" : "procedure/com.vantiq.nlp.NLCore.processSystemUtterance",
-    "target" : "services/com.vantiq.nlp.NLCore"
   }, {
     "source" : "procedure/com.vantiq.nlp.NLUtils.convertTimeToInternalTime",
     "target" : "services/com.vantiq.nlp.NLUtils"
@@ -334,15 +325,6 @@
     "timestamp" : "2025-03-18T23:38:46.956Z",
     "type" : 19
   }, {
-    "label" : "com.vantiq.nlp.NLCore.processSystemUtterance",
-    "name" : "com.vantiq.nlp.NLCore.processSystemUtterance",
-    "packageName" : "com.vantiq.nlp",
-    "procedureName" : "processSystemUtterance",
-    "resourceReference" : "/procedures/com.vantiq.nlp.NLCore.processSystemUtterance",
-    "serviceName" : "NLCore",
-    "timestamp" : "2025-03-18T23:38:47.973Z",
-    "type" : 3
-  }, {
     "label" : "com.vantiq.nlp.NLCore.publishResponse",
     "name" : "com.vantiq.nlp.NLCore.publishResponse",
     "packageName" : "com.vantiq.nlp",
@@ -531,12 +513,6 @@
     "serviceName" : "NLUtils",
     "timestamp" : "2025-03-18T23:38:47.481Z",
     "type" : 3
-  }, {
-    "label" : "com.vantiq.nlp.ProcessIntent",
-    "name" : "com.vantiq.nlp.ProcessIntent",
-    "resourceReference" : "/collaborationtypes/com.vantiq.nlp.ProcessIntent",
-    "timestamp" : "2025-03-18T23:38:49.461Z",
-    "type" : 12
   } ],
   "tools" : [ {
     "isPinned" : false,
@@ -585,20 +561,10 @@
     "resourceKey" : "services/com.vantiq.nlp.NLUtils",
     "state" : 8,
     "type" : 109
-  }, {
-    "isPinned" : false,
-    "name" : "com.vantiq.nlp.ProcessIntent",
-    "pane" : {
-      "address" : "R[2]"
-    },
-    "resourceKey" : "app/com.vantiq.nlp.ProcessIntent",
-    "state" : 8,
-    "toolOptions" : { },
-    "type" : 15
   } ],
   "type" : "dev",
   "views" : [ {
     "name" : "Project Contents",
-    "projectToolKeys" : [ "errorviewer/Errors", "tiledock/Inactive Panes", "logviewer/Log Messages", "list/Project Contents", "app/com.vantiq.nlp.InterpretCLU", "services/com.vantiq.nlp.NLCore", "services/com.vantiq.nlp.NLUtils", "app/com.vantiq.nlp.ProcessIntent" ]
+    "projectToolKeys" : [ "errorviewer/Errors", "tiledock/Inactive Panes", "logviewer/Log Messages", "list/Project Contents", "app/com.vantiq.nlp.InterpretCLU", "services/com.vantiq.nlp.NLCore", "services/com.vantiq.nlp.NLUtils" ]
   } ]
 }
