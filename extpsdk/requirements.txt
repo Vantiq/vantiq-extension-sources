@@ -38,14 +38,14 @@ frozenlist==1.5.0
     # via
     #   aiohttp
     #   aiosignal
+id==1.5.0
+    # via twine
 idna==3.10
     # via
     #   requests
     #   yarl
 importlib-metadata==8.5.0
-    # via
-    #   keyring
-    #   twine
+    # via keyring
 iniconfig==2.0.0
     # via pytest
 jaraco-classes==3.4.0
@@ -54,7 +54,7 @@ jaraco-context==6.0.1
     # via keyring
 jaraco-functools==4.1.0
     # via keyring
-jinja2==3.1.5
+jinja2==3.1.6
     # via
     #   -r requirements-build.in
     #   pytest-html
@@ -83,12 +83,11 @@ packaging==24.2
     #   aioresponses
     #   build
     #   pytest
+    #   twine
 pip==24.3.1
     # via pip-tools
 pip-tools==7.4.1
     # via -r requirements-build.in
-pkginfo==1.10.0
-    # via twine
 pluggy==1.5.0
     # via pytest
 propcache==0.2.0
@@ -123,6 +122,7 @@ readme-renderer==44.0
 requests==2.32.3
     # via
     #   -r requirements-sdk.in
+    #   id
     #   requests-toolbelt
     #   twine
 requests-toolbelt==1.0.0
@@ -140,7 +140,7 @@ tomli==2.1.0
     #   build
     #   pip-tools
     #   pytest
-twine==5.1.1
+twine==6.1.0
     # via -r requirements-build.in
 typing-extensions==4.12.2
     # via
