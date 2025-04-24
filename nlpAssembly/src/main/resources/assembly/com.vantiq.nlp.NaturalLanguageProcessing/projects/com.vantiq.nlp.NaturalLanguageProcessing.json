@@ -1,5 +1,6 @@
 {
   "ars_relationships" : [ ],
+  "isAssembly" : true,
   "links" : [ {
     "source" : "procedure/com.vantiq.nlp.NLCore.respondToConversationalQuery",
     "target" : "services/com.vantiq.nlp.NLCore"
