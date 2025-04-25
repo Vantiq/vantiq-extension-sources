@@ -563,6 +563,24 @@
     "state" : 8,
     "type" : 109
   } ],
+  "visibleResources": [
+    {
+      "resourceReference": "/collaborationtypes/com.vantiq.nlp.InterpretCLU",
+      "description": "App Component for interpreting Conversational Language"
+    },
+    {
+      "resourceReference": "/services/com.vantiq.nlp.NLCore",
+      "description": "Core service for natural language processing"
+    },
+    {
+      "resourceReference": "/services/com.vantiq.nlp.NLUtils",
+      "description": "Utilities service for natural language processing"
+    },
+    {
+      "resourceReference": "/services/com.vantiq.nlp.NLSystemExec",
+      "description": "Service for execution of system commands"
+    }
+  ],
   "type" : "dev",
   "views" : [ {
     "name" : "Project Contents",
