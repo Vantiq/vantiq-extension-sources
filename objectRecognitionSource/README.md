@@ -7,7 +7,7 @@ This implementation of the Object Recognition Source includes built-in functiona
 *   Camera Retriever - used to retrieve images from a serially-connected camera.
 *   Network Stream Retriever - used to retrieve images from a network-connected camera.
 *   File Retriever - used to retrieve images and videos from disk.
-*   FTP Retriever - used to retrieve images trhough FTP, FTPS, and SFTP.
+*   FTP Retriever - used to retrieve images through FTP, FTPS, and SFTP.
 
 Again, other types of images and videos can be processed by implementing the ImageRetrieverInterface.
 
@@ -147,7 +147,6 @@ The Configuration document may look similar to the following example:
              "saveImage": "both",
              "saveRate": 1,
              "outputDir": "imageOut",
-             "uploadAsImage": true,
              "savedResolution": {
                 "longEdge": 400
              },
@@ -235,9 +234,6 @@ is set to be either "local" or "both".
 captured). If not specified, the value will default to 1 which saves every captured image.
 *   `labelImage`: Optional. If set to "true", images will be saved with bounding boxes and labels. If set to "false", or if not 
 set at all, the images will be saved with no bounding boxes or labels.
-*   `uploadAsImage`: Optional. If set to "true", images will be uploaded to VANTIQ as VANTIQ Images, (the default behavior 
-uploads images as VANTIQ Documents).
-    *   **NOTE**: This option is only relevant if "saveImage" has been set to either "vantiq" or "both".
 *   `savedResolution`: Optional. A map containing options for adjusting the resolution of the saved images.
     * *Options for savedResolution:*
     1. `longEdge`: Optional. This sets the maximum long edge dimension for saved images. Must be a non-negative integer that is 
@@ -568,8 +564,6 @@ it will be set to the default value, "processNextFrame".
         is defined here as a query parameter, it will override the value set in the source configuration, otherwise the source 
         configuration value will be used. The setting cannot be larger than that provided in the source configuration (since 
         that defines how the images are saved).
-        *   uploadAsImage: Optional. If set to "true", images will be uploaded to VANTIQ as VANTIQ Images, (the default 
-        behavior uploads images as VANTIQ Documents).
     
 *   **Delete locally saved images:**
     *   The user can specify an image or a set of images specified by their date & time to be deleted. The images will be 
@@ -599,8 +593,6 @@ it will be set to the default value, "processNextFrame".
         *   "cropBeforeAnalysis": Optional. This value can be set exactly like the "cropBeforeAnalysis" value in the source 
         configuration. If no cropBeforeAnalysis value is set as a query parameter, the source configuration's 
         cropBeforeAnalysis value will be used.
-        *   "uploadAsImage": Optional. If set to "true", images will be uploaded to VANTIQ as VANTIQ Images, (the default 
-        behavior uploads images as VANTIQ Documents).
         *   "includeEncodedImage": Optional.  If set to "true", a Base64-encoded image will be included in the results when `sendFullResponse` is set.
     
 **EXAMPLE QUERIES**:
@@ -619,8 +611,7 @@ SELECT * FROM SOURCE Camera1 AS results WITH
 ```
 SELECT * FROM SOURCE Camera1 AS results WITH
         operation:"upload",
-        imageDate:["2019-02-08--10-33-36", "2019-02-08--12-45-18"],
-        uploadAsImage: true
+        imageDate:["2019-02-08--10-33-36", "2019-02-08--12-45-18"]
 ```
 
 *   Delete Query using imageName:
@@ -679,8 +670,7 @@ SELECT * FROM SOURCE Camera1 AS results WITH
 SELECT * FROM SOURCE Camera1 AS results WITH
         operation:"processNextFrame",
         NNsaveImage:"vantiq",
-        NNfileName:"testFile",
-        uploadAsImage: true
+        NNfileName:"testFile"
 ```
 
 *   Process Next Frame Query without specifying operation *(not recommended)*:
