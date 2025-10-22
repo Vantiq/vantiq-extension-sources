@@ -247,7 +247,7 @@
   } ],
   "name" : "com.vantiq.nlp.NaturalLanguageProcessing",
   "options" : {
-    "description" : "This assembly adds conversational language capability to the namespace. This capability works in conjunction with an external natural language interpreter to understand an utterance. The com.vantiq.nlp.InterpretCLU component enables this in an event handler.",
+    "description" : "This assembly adds conversational language capability to the namespace. This capability works in conjunction with an external natural language interpreter to understand an utterance. The com.vantiq.nlp.InterpretCLU component enables this in an event handler. See the following link for detailed documentation: https://github.com/Vantiq/vantiq-extension-sources/blob/master/nlpAssembly/doc/natlang.md",
     "dockCollapsed" : {
       "bottom" : false,
       "left" : false,

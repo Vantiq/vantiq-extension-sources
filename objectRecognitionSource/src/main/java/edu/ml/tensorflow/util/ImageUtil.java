@@ -31,7 +31,6 @@ public class ImageUtil {
     public int frameSize;
     public Boolean queryResize = false;
     public int longEdge = 0;
-    public Boolean uploadAsImage = false;
 
     // Used to upload image to VANTIQ as VANTIQ Image
     static final String IMAGE_RESOURCE_PATH = "/resources/images";
@@ -153,19 +152,10 @@ public class ImageUtil {
             }
         };
 
-        // Check if we should upload as a document, or image
-        if (uploadAsImage) {
-            vantiq.upload(fileToUpload,
-                    "image/jpeg",
-                    "objectRecognition/" + sourceName + '/'  + target,
-                    IMAGE_RESOURCE_PATH,
-                    responseHandler);
-        } else {
-            vantiq.upload(fileToUpload,
-                    "image/jpeg",
-                    "objectRecognition/" + sourceName + '/'  + target,
-                    responseHandler);
-        }
+        vantiq.upload(fileToUpload,
+                "image/jpeg",
+                "objectRecognition/" + sourceName + '/'  + target,
+                responseHandler);
     }
     
     /**

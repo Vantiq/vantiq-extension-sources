@@ -24,6 +24,7 @@ import java.util.Map;
 
 import edu.ml.tensorflow.util.ImageUtil;
 import org.junit.AfterClass;
+import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.FixMethodOrder;
 import org.junit.Test;
@@ -54,7 +55,7 @@ public class TestNoProcessor extends NeuralNetTestBase {
 
     // A single processor is used for the entire class because it is very expensive to do initial setup
     @BeforeClass
-    public static void classSetup() {
+    public static void classSetup() throws Exception {
         noProcessor = new NoProcessor();
 
         Map<String, Object> config = new LinkedHashMap<>();
@@ -130,7 +131,7 @@ public class TestNoProcessor extends NeuralNetTestBase {
     }
 
     @Test
-    public void testInvalidConfig() {
+    public void testInvalidConfig() throws Exception {
         Map<String, Object> config = new LinkedHashMap<>();
         NoProcessor npProcessor = new NoProcessor();
         NoProcessor npProcessor2 = new NoProcessor();
@@ -147,7 +148,7 @@ public class TestNoProcessor extends NeuralNetTestBase {
     }
 
     @Test
-    public void testValidConfig() {
+    public void testValidConfig() throws Exception {
         Map<String, Object> config = new LinkedHashMap<>();
         NoProcessor npProcessor = new NoProcessor();
         NoProcessor npProcessor2 = new NoProcessor();
@@ -169,7 +170,7 @@ public class TestNoProcessor extends NeuralNetTestBase {
     }
 
     @Test
-    public void testImageSavingLocal() throws ImageProcessingException, InterruptedException {
+    public void testImageSavingLocal() throws Exception {
 
         // Only run test with intended vantiq availability
         assumeTrue(testAuthToken != null && testVantiqServer != null);
@@ -246,7 +247,7 @@ public class TestNoProcessor extends NeuralNetTestBase {
 
     // Identical to testImageSavingLocal(), but saveImage is set to "both". Behavior should be identical.
     @Test
-    public void testImageSavingBoth() throws ImageProcessingException, InterruptedException {
+    public void testImageSavingBoth() throws Exception {
 
         // Only run test with intended vantiq availability
         assumeTrue(testAuthToken != null && testVantiqServer != null);
@@ -326,7 +327,7 @@ public class TestNoProcessor extends NeuralNetTestBase {
     // Similar to testImageSavingVantiq(), but includes returning the image in a Base64-encoded form.
     // No images should be saved locally.
     @Test
-    public void testImageSavingVantiqPlusEncoded() throws ImageProcessingException, InterruptedException {
+    public void testImageSavingVantiqPlusEncoded() throws Exception {
         
         // Only run test with intended vantiq availability
         assumeTrue(testAuthToken != null && testVantiqServer != null);
@@ -392,7 +393,7 @@ public class TestNoProcessor extends NeuralNetTestBase {
     // Similar to testImageSavingLocal() and testImageSavingBoth(), but saveImage is set to "vantiq".
     // No images should be saved locally.
     @Test
-    public void testImageSavingVantiq() throws ImageProcessingException, InterruptedException {
+    public void testImageSavingVantiq() throws Exception {
 
         // Only run test with intended vantiq availability
         assumeTrue(testAuthToken != null && testVantiqServer != null);
@@ -436,16 +437,16 @@ public class TestNoProcessor extends NeuralNetTestBase {
     }
 
     @Test
-    public void testQuery() throws ImageProcessingException, InterruptedException {
+    public void testQuery() throws Exception {
         doQueryTest(false);
     }
     
     @Test
-    public void testQueryWithEncoded() throws ImageProcessingException, InterruptedException {
+    public void testQueryWithEncoded() throws Exception {
         doQueryTest(true);
     }
     
-    void doQueryTest(boolean includeEncoded) throws ImageProcessingException, InterruptedException {
+    void doQueryTest(boolean includeEncoded) throws Exception {
         // Only run test with intended vantiq availability
         assumeTrue(testAuthToken != null && testVantiqServer != null);
 
@@ -592,7 +593,7 @@ public class TestNoProcessor extends NeuralNetTestBase {
     }
 
     @Test
-    public void testUploadAsImage() throws ImageProcessingException, InterruptedException {
+    public void testUploadAsImage() throws Exception {
         // Only run test with intended vantiq availability
         assumeTrue(testAuthToken != null && testVantiqServer != null);
 
@@ -604,36 +605,12 @@ public class TestNoProcessor extends NeuralNetTestBase {
         config.put("saveRate", SAVE_RATE);
         config.put("saveImage", "vantiq");
         config.put("uploadAsImage", true);
-        npProcessor.setupImageProcessing(config, SOURCE_NAME, MODEL_DIRECTORY, testAuthToken, testVantiqServer);
-
-        File d = new File(OUTPUT_DIR);
         try {
-            // Ensure no results from previous tests
-            if (d.exists()) {
-                deleteDirectory(OUTPUT_DIR);
-            }
-
-            NeuralNetResults results = npProcessor.processImage(getTestImage());
-            assert results.getResults() == null;
-
-            // Should not exist since images are not being saved locally.
-            assert !d.exists();
-
-            // Checking that image was saved to VANTIQ as an image
-            Thread.sleep(1000);
-            lastFilename = "objectRecognition/" + SOURCE_NAME + '/' + npProcessor.lastFilename;
-            checkUploadToVantiq(lastFilename, vantiq, VANTIQ_IMAGES);
-            vantiqSavedImageFiles.add(lastFilename);
-
-            // Checking that image was not saved to VANTIQ as a document
-            checkNotUploadToVantiq(lastFilename, vantiq, VANTIQ_DOCUMENTS);
-
+            npProcessor.setupImageProcessing(config, SOURCE_NAME, MODEL_DIRECTORY, testAuthToken, testVantiqServer);
+            Assert.fail("Should not have been able to use the removed uploadAsImage option");
+        } catch (Exception e) {
+            assertTrue(e.getMessage().contains("The uploadAsImage option is no longer supported"));
         } finally {
-            // delete the directory even if the test fails
-            if (d.exists()) {
-                deleteDirectory(OUTPUT_DIR);
-            }
-
             npProcessor.close();
         }
     }

@@ -1,5 +1,6 @@
 package io.vantiq.extsrc.objectRecognition.neuralNet;
 
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeTrue;
 
@@ -10,6 +11,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.junit.AfterClass;
+import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -291,17 +293,9 @@ public class TestNoProcessorQueries extends NeuralNetTestBase {
         params.put("uploadAsImage", true);
         params.put("NNfileName", QUERY_FILENAME);
 
-        querySource(params);
-
-        // Check that file was saved to Vantiq as an Image
-        Thread.sleep(1000);
-        checkUploadToVantiq(IMAGE.get("filename"), vantiq, VANTIQ_IMAGES);
-
-        // Check that it wasn't saved to Vantiq as a Document
-        checkNotUploadToVantiq(IMAGE.get("filename"), vantiq, VANTIQ_DOCUMENTS);
-
-        // Deleting file
-        deleteFileFromVantiq(IMAGE.get("filename"));
+        VantiqResponse response = vantiq.query(SOURCE_NAME, params);
+        assertTrue(response.hasErrors());
+        assertTrue(response.getErrors().get(0).getMessage().contains("The uploadAsImage option is no longer supported"));
     }
     
     // ================================================= Helper functions =================================================

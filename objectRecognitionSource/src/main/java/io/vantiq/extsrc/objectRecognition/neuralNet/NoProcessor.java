@@ -58,12 +58,12 @@ public class NoProcessor implements NeuralNetInterface {
     int saveRate = 1;
     int frameCount = 0;
     int fileCount = 0; // Used for saving files with same name
-    boolean uploadAsImage = false;
     boolean includeEncodedImage = false;
     
     @SuppressWarnings("PMD.CognitiveComplexity")
     @Override
-    public void setupImageProcessing(Map<String, ?> neuralNetConfig, String sourceName, String modelDirectory, String authToken, String server) {
+    public void setupImageProcessing(Map<String, ?> neuralNetConfig, String sourceName, String modelDirectory,
+                                     String authToken, String server) throws Exception {
         this.server = server;
         this.authToken = authToken;
         this.sourceName = sourceName;
@@ -88,14 +88,15 @@ public class NoProcessor implements NeuralNetInterface {
 
                 // Check if images should be uploaded to VANTIQ as VANTIQ IMAGES
                 if (neuralNetConfig.get(UPLOAD_AS_IMAGE) instanceof Boolean && (Boolean) neuralNetConfig.get(UPLOAD_AS_IMAGE)) {
-                    uploadAsImage = (Boolean) neuralNetConfig.get(UPLOAD_AS_IMAGE);
+                    throw new Exception(this.getClass().getCanonicalName() + ".images.no.longer.supported: "
+                            + "The uploadAsImage option is no longer supported. All images must be uploaded as " +
+                            "Vantiq Documents.");
                 }
             }
             imageUtil.outputDir = outputDir;
             imageUtil.vantiq = vantiq;
             imageUtil.saveImage = true;
             imageUtil.sourceName = sourceName;
-            imageUtil.uploadAsImage = uploadAsImage;
             if (neuralNetConfig.get(SAVE_RATE) instanceof Integer) {
                 saveRate = (Integer) neuralNetConfig.get(SAVE_RATE);
                 frameCount = saveRate;
@@ -149,7 +150,6 @@ public class NoProcessor implements NeuralNetInterface {
         String outputDir = null;
         String fileName = null;
         Vantiq vantiq = null;
-        boolean uploadAsImage = false;
         ImageUtil queryImageUtil = new ImageUtil();
         
         if (request.get(NN_SAVE_IMAGE) instanceof String) {
@@ -164,7 +164,9 @@ public class NoProcessor implements NeuralNetInterface {
 
                     // Check if images should be uploaded to VANTIQ as VANTIQ IMAGES
                     if (request.get(UPLOAD_AS_IMAGE) instanceof Boolean && (Boolean) request.get(UPLOAD_AS_IMAGE)) {
-                        uploadAsImage = (Boolean) request.get(UPLOAD_AS_IMAGE);
+                        throw new ImageProcessingException(this.getClass().getCanonicalName() + ".images.no.longer.supported: "
+                                + "The uploadAsImage option is no longer supported. All images must be uploaded as " +
+                                "Vantiq Documents.");
                     }
                 }
                 if (!saveImage.equalsIgnoreCase(VANTIQ)) {
@@ -182,7 +184,6 @@ public class NoProcessor implements NeuralNetInterface {
                 queryImageUtil.vantiq = vantiq;
                 queryImageUtil.saveImage = true;
                 queryImageUtil.sourceName = sourceName;
-                queryImageUtil.uploadAsImage = uploadAsImage;
             }
         } else {
             queryImageUtil.saveImage = false;
