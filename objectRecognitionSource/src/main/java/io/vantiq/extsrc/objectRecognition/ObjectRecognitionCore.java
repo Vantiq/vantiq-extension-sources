@@ -462,7 +462,7 @@ public class ObjectRecognitionCore {
     * @param request        The parameters sent with the query.
     * @param replyAddress   The replyAddress used to send a query response.
     */
-   public void uploadLocalImages(Map<String, ?> request, String replyAddress) {       
+   public void uploadLocalImages(Map<String, ?> request, String replyAddress) throws Exception {
        Map<String,Object> parsedParameterResult = handleQueryParameters(request, replyAddress, UPLOAD);
        if (parsedParameterResult == null) {
            return;
@@ -556,7 +556,7 @@ public class ObjectRecognitionCore {
     * @param request    The parameters sent with the query.
     * @return           The instantiated ImageUtil class, setup with properties based on the request
     */
-   public ImageUtil setupQueryImageUtil(Map<String, ?> request) {   
+   public ImageUtil setupQueryImageUtil(Map<String, ?> request) throws Exception {
        ImageUtil imageUtil = new ImageUtil();
        Vantiq vantiq = new io.vantiq.client.Vantiq(targetVantiqServer);
        vantiq.setAccessToken(authToken);
@@ -578,7 +578,9 @@ public class ObjectRecognitionCore {
 
        // Check if images should be uploaded to VANTIQ as VANTIQ IMAGES
        if (request.get(UPLOAD_AS_IMAGE) instanceof Boolean && (Boolean) request.get(UPLOAD_AS_IMAGE)) {
-            imageUtil.uploadAsImage = (Boolean) request.get(UPLOAD_AS_IMAGE);
+           throw new Exception(this.getClass().getCanonicalName() + ".images.no.longer.supported: "
+                   + "The uploadAsImage option is no longer supported. All images must be uploaded as " +
+                   "Vantiq Documents.");
        }
        
        return imageUtil;

@@ -1053,29 +1053,9 @@ public class TestYoloQueries extends NeuralNetTestBase {
         imageDate.add(START_DATE);
         imageDate.add(END_DATE);
         params.put("imageDate", imageDate);
-
-        querySource(params);
-
-        // Checking that all images were uploaded to VANTIQ as images
-        Thread.sleep(3000);
-        checkUploadToVantiq(IMAGE_2.get("filename"), vantiq, VANTIQ_IMAGES);
-        checkUploadToVantiq(IMAGE_3.get("filename"), vantiq, VANTIQ_IMAGES);
-        checkUploadToVantiq(IMAGE_4.get("filename"), vantiq, VANTIQ_IMAGES);
-
-        // Checking that the other images were not uploaded to VANTIQ as images
-        checkNotUploadToVantiq(IMAGE_1.get("filename"), vantiq, VANTIQ_IMAGES);
-        checkNotUploadToVantiq(IMAGE_5.get("filename"), vantiq, VANTIQ_IMAGES);
-        checkNotUploadToVantiq(IMAGE_6.get("filename"), vantiq, VANTIQ_IMAGES);
-        checkNotUploadToVantiq(IMAGE_7.get("filename"), vantiq, VANTIQ_IMAGES);
-
-        // Checking that no images were uploaded to VANTIQ as documents
-        checkNotUploadToVantiq(IMAGE_1.get("filename"), vantiq, VANTIQ_DOCUMENTS);
-        checkNotUploadToVantiq(IMAGE_2.get("filename"), vantiq, VANTIQ_DOCUMENTS);
-        checkNotUploadToVantiq(IMAGE_3.get("filename"), vantiq, VANTIQ_DOCUMENTS);
-        checkNotUploadToVantiq(IMAGE_4.get("filename"), vantiq, VANTIQ_DOCUMENTS);
-        checkNotUploadToVantiq(IMAGE_5.get("filename"), vantiq, VANTIQ_DOCUMENTS);
-        checkNotUploadToVantiq(IMAGE_6.get("filename"), vantiq, VANTIQ_DOCUMENTS);
-        checkNotUploadToVantiq(IMAGE_7.get("filename"), vantiq, VANTIQ_DOCUMENTS);
+        VantiqResponse response = vantiq.query(SOURCE_NAME, params);
+        assertTrue(response.hasErrors());
+        assertTrue(response.getErrors().get(0).getMessage().contains("The uploadAsImage option is no longer supported"));
     }
     
     // ================================================= Helper functions =================================================

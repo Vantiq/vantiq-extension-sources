@@ -51,6 +51,7 @@ import lombok.extern.slf4j.Slf4j;
 import okhttp3.Response;
 import okio.BufferedSource;
 import org.junit.AfterClass;
+import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.FixMethodOrder;
 import org.junit.Test;
@@ -1794,20 +1795,9 @@ public class TestYoloProcessor extends NeuralNetTestBase {
         config.put("uploadAsImage", true);
         try {
             ypImageSaver.setupImageProcessing(config, SOURCE_NAME, MODEL_DIRECTORY, testAuthToken, testVantiqServer);
+            Assert.fail("Should not have been able to use the removed uploadAsImage option");
         } catch (Exception e) {
-            fail("Could not setup the YoloProcessor");
-        }
-        try {
-
-            NeuralNetResults results = ypImageSaver.processImage(getTestImage());
-            assert results != null;
-            assert results.getResults() != null;
-
-            // Checking that image was saved to VANTIQ
-            Thread.sleep(1000);
-            checkUploadToVantiq(results.getLastFilename(), vantiq, VANTIQ_IMAGES);
-            vantiqSavedImageFiles.add(results.getLastFilename());
-
+            assertTrue(e.getMessage().contains("The uploadAsImage option is no longer supported"));
         } finally {
             ypImageSaver.close();
         }
@@ -1836,7 +1826,6 @@ public class TestYoloProcessor extends NeuralNetTestBase {
         config.put("saveRate", SAVE_RATE);
         if (shouldSaveImage) {
             config.put("saveImage", "vantiq");
-            config.put("uploadAsImage", true);
         }
         config.put("includeEncodedImage", true);
 
@@ -1880,7 +1869,7 @@ public class TestYoloProcessor extends NeuralNetTestBase {
                 if (log.isDebugEnabled()) {
                     log.debug("Checking for image file: {}", results.getLastFilename());
                 }
-                checkUploadToVantiq(results.getLastFilename(), vantiq, VANTIQ_IMAGES);
+                checkUploadToVantiq(results.getLastFilename(), vantiq, VANTIQ_DOCUMENTS);
                 vantiqSavedImageFiles.add(results.getLastFilename());
             }
         } finally {

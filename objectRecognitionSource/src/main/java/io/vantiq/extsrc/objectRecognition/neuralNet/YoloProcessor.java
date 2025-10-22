@@ -78,7 +78,6 @@ public class YoloProcessor extends NeuralNetUtils implements NeuralNetInterface2
     ImageUtil imageUtil;
     float threshold = 0.5f;
     int saveRate = 1;
-    boolean uploadAsImage = false;
     boolean includeEncodedImage = false;
 
     // Variables for pre crop
@@ -245,7 +244,9 @@ public class YoloProcessor extends NeuralNetUtils implements NeuralNetInterface2
 
                // Check if images should be uploaded to VANTIQ as VANTIQ IMAGES
                if (neuralNet.get(UPLOAD_AS_IMAGE) instanceof Boolean && (Boolean) neuralNet.get(UPLOAD_AS_IMAGE)) {
-                   uploadAsImage = (Boolean) neuralNet.get(UPLOAD_AS_IMAGE);
+                   throw new Exception(this.getClass().getCanonicalName() + ".images.no.longer.supported: "
+                           + "The uploadAsImage option is no longer supported. All images must be uploaded as " +
+                           "Vantiq Documents.");
                }
            }
            
@@ -271,7 +272,6 @@ public class YoloProcessor extends NeuralNetUtils implements NeuralNetInterface2
            imageUtil.vantiq = vantiq;
            imageUtil.saveImage = true;
            imageUtil.sourceName = sourceName;
-           imageUtil.uploadAsImage = uploadAsImage;
            if (neuralNet.get(SAVE_RATE) instanceof Integer) {
                saveRate = (Integer) neuralNet.get(SAVE_RATE);
            }
@@ -456,7 +456,9 @@ public class YoloProcessor extends NeuralNetUtils implements NeuralNetInterface2
 
                     // Check if images should be uploaded to VANTIQ as VANTIQ IMAGES
                     if (request.get(UPLOAD_AS_IMAGE) instanceof Boolean && (Boolean) request.get(UPLOAD_AS_IMAGE)) {
-                        uploadAsImage = (Boolean) request.get(UPLOAD_AS_IMAGE);
+                        throw new ImageProcessingException(this.getClass().getCanonicalName() + ".images.no.longer.supported: "
+                                + "The uploadAsImage option is no longer supported. All images must be uploaded as " +
+                                "Vantiq Documents.");
                     }
                 }
                 if (!saveImage.equalsIgnoreCase(VANTIQ)) {
@@ -566,6 +568,8 @@ public class YoloProcessor extends NeuralNetUtils implements NeuralNetInterface2
 
     @Override
     public void close() {
+        if (objectDetector != null) {
         objectDetector.close();
+        }
     }
 }

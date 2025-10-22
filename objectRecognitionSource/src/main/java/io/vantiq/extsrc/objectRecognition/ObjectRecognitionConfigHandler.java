@@ -155,7 +155,12 @@ public class ObjectRecognitionConfigHandler extends Handler<ExtensionServiceMess
                 
                 // Check value of operation, proceed accordingly
                 if (operation.equals(UPLOAD)) {
-                    source.uploadLocalImages(request, replyAddress);
+                    try {
+                        source.uploadLocalImages(request, replyAddress);
+                    } catch (Exception ex) {
+                        client.sendQueryError(replyAddress, "io.vantiq.extsrc.objectRecognition.invalidImageRequest",
+                                "{0}", new String[]{ex.getMessage()});
+                    }
                 } else if (operation.equals(DELETE)) {
                     source.deleteLocalImages(request, replyAddress);
                 } else if (operation.equals(PROCESS_NEXT_FRAME)) {

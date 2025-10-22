@@ -63,7 +63,8 @@ public class NoProcessor implements NeuralNetInterface {
     
     @SuppressWarnings("PMD.CognitiveComplexity")
     @Override
-    public void setupImageProcessing(Map<String, ?> neuralNetConfig, String sourceName, String modelDirectory, String authToken, String server) {
+    public void setupImageProcessing(Map<String, ?> neuralNetConfig, String sourceName, String modelDirectory,
+                                     String authToken, String server) throws Exception {
         this.server = server;
         this.authToken = authToken;
         this.sourceName = sourceName;
@@ -88,7 +89,9 @@ public class NoProcessor implements NeuralNetInterface {
 
                 // Check if images should be uploaded to VANTIQ as VANTIQ IMAGES
                 if (neuralNetConfig.get(UPLOAD_AS_IMAGE) instanceof Boolean && (Boolean) neuralNetConfig.get(UPLOAD_AS_IMAGE)) {
-                    uploadAsImage = (Boolean) neuralNetConfig.get(UPLOAD_AS_IMAGE);
+                    throw new Exception(this.getClass().getCanonicalName() + ".images.no.longer.supported: "
+                            + "The uploadAsImage option is no longer supported. All images must be uploaded as " +
+                            "Vantiq Documents.");
                 }
             }
             imageUtil.outputDir = outputDir;
@@ -164,7 +167,9 @@ public class NoProcessor implements NeuralNetInterface {
 
                     // Check if images should be uploaded to VANTIQ as VANTIQ IMAGES
                     if (request.get(UPLOAD_AS_IMAGE) instanceof Boolean && (Boolean) request.get(UPLOAD_AS_IMAGE)) {
-                        uploadAsImage = (Boolean) request.get(UPLOAD_AS_IMAGE);
+                        throw new ImageProcessingException(this.getClass().getCanonicalName() + ".images.no.longer.supported: "
+                                + "The uploadAsImage option is no longer supported. All images must be uploaded as " +
+                                "Vantiq Documents.");
                     }
                 }
                 if (!saveImage.equalsIgnoreCase(VANTIQ)) {

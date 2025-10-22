@@ -184,7 +184,7 @@ public class TestUploadAndDeleteQuery extends NeuralNetTestBase {
     }
     
     @Test
-    public void testInvalidImageUploadParameters() throws InterruptedException {
+    public void testInvalidImageUploadParameters() throws InterruptedException, Exception {
         // Only run test with intended vantiq availability
         assumeTrue(testAuthToken != null && testVantiqServer != null);
         
@@ -310,7 +310,7 @@ public class TestUploadAndDeleteQuery extends NeuralNetTestBase {
     }
     
     @Test
-    public void testInvalidImageDeleteParameters() {
+    public void testInvalidImageDeleteParameters() throws Exception {
         // Only run test with intended vantiq availability
         assumeTrue(testAuthToken != null && testVantiqServer != null);
         
@@ -384,7 +384,7 @@ public class TestUploadAndDeleteQuery extends NeuralNetTestBase {
     }
     
     @Test
-    public void testImageNameUploadOne() throws InterruptedException {
+    public void testImageNameUploadOne() throws Exception {
         // Only run test with intended vantiq availability
         assumeTrue(testAuthToken != null && testVantiqServer != null);
         
@@ -408,7 +408,7 @@ public class TestUploadAndDeleteQuery extends NeuralNetTestBase {
     }
     
     @Test
-    public void testImageDateUploadAll() throws InterruptedException {
+    public void testImageDateUploadAll() throws Exception {
         // Only run test with intended vantiq availability
         assumeTrue(testAuthToken != null && testVantiqServer != null);
         
@@ -433,7 +433,7 @@ public class TestUploadAndDeleteQuery extends NeuralNetTestBase {
     }
     
     @Test
-    public void testImageDateUploadOne() throws InterruptedException {
+    public void testImageDateUploadOne() throws Exception {
         // Only run test with intended vantiq availability
         assumeTrue(testAuthToken != null && testVantiqServer != null);
         
@@ -459,7 +459,7 @@ public class TestUploadAndDeleteQuery extends NeuralNetTestBase {
     }
     
     @Test
-    public void testImageDateUploadBefore() throws InterruptedException {
+    public void testImageDateUploadBefore() throws Exception {
         // Only run test with intended vantiq availability
         assumeTrue(testAuthToken != null && testVantiqServer != null);
         
@@ -485,7 +485,7 @@ public class TestUploadAndDeleteQuery extends NeuralNetTestBase {
     }
     
     @Test
-    public void testImageDateUploadAfter() throws InterruptedException {
+    public void testImageDateUploadAfter() throws Exception {
         // Only run test with intended vantiq availability
         assumeTrue(testAuthToken != null && testVantiqServer != null);
         
@@ -511,7 +511,7 @@ public class TestUploadAndDeleteQuery extends NeuralNetTestBase {
     }
     
     @Test
-    public void testImageDateUploadRange() throws InterruptedException {
+    public void testImageDateUploadRange() throws Exception {
         // Only run test with intended vantiq availability
         assumeTrue(testAuthToken != null && testVantiqServer != null);
         
@@ -537,7 +537,7 @@ public class TestUploadAndDeleteQuery extends NeuralNetTestBase {
     }
     
     @Test
-    public void testImageUploadChangeResolution() throws InterruptedException, IOException {
+    public void testImageUploadChangeResolution() throws Exception {
         // Only run test with intended vantiq availability
         assumeTrue(testAuthToken != null && testVantiqServer != null);
         
