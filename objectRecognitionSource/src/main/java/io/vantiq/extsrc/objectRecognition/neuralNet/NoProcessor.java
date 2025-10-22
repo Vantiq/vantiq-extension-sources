@@ -58,7 +58,6 @@ public class NoProcessor implements NeuralNetInterface {
     int saveRate = 1;
     int frameCount = 0;
     int fileCount = 0; // Used for saving files with same name
-    boolean uploadAsImage = false;
     boolean includeEncodedImage = false;
     
     @SuppressWarnings("PMD.CognitiveComplexity")
@@ -98,7 +97,6 @@ public class NoProcessor implements NeuralNetInterface {
             imageUtil.vantiq = vantiq;
             imageUtil.saveImage = true;
             imageUtil.sourceName = sourceName;
-            imageUtil.uploadAsImage = uploadAsImage;
             if (neuralNetConfig.get(SAVE_RATE) instanceof Integer) {
                 saveRate = (Integer) neuralNetConfig.get(SAVE_RATE);
                 frameCount = saveRate;
@@ -152,7 +150,6 @@ public class NoProcessor implements NeuralNetInterface {
         String outputDir = null;
         String fileName = null;
         Vantiq vantiq = null;
-        boolean uploadAsImage = false;
         ImageUtil queryImageUtil = new ImageUtil();
         
         if (request.get(NN_SAVE_IMAGE) instanceof String) {
@@ -187,7 +184,6 @@ public class NoProcessor implements NeuralNetInterface {
                 queryImageUtil.vantiq = vantiq;
                 queryImageUtil.saveImage = true;
                 queryImageUtil.sourceName = sourceName;
-                queryImageUtil.uploadAsImage = uploadAsImage;
             }
         } else {
             queryImageUtil.saveImage = false;

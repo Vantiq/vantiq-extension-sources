@@ -31,7 +31,6 @@ public class ImageUtil {
     public int frameSize;
     public Boolean queryResize = false;
     public int longEdge = 0;
-    public Boolean uploadAsImage = false;
 
     // Used to upload image to VANTIQ as VANTIQ Image
     static final String IMAGE_RESOURCE_PATH = "/resources/images";

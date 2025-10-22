@@ -115,7 +115,7 @@ public class TestJDBC extends TestJDBCBase {
     // Queries to test errors
     static final String NO_TABLE = "SELECT * FROM jibberish";
     static final String NO_FIELD = "SELECT jibberish FROM Test";
-    static final String SYNTAX_ERROR = "LECT * FROM Test";
+    static final String SYNTAX_ERROR = "ELECT * FROM Test";
     static final String INSERT_NO_FIELD = "INSERT INTO Test VALUES (1, 25, 'Santa', 'Claus', 'jibberish')";
     static final String INSERT_WRONG_TYPE = "INSERT INTO Test VALUES ('string', 'string', 3, 4)";
     

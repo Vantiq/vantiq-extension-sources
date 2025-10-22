@@ -215,8 +215,6 @@ public class ObjectDetector {
      *                      and {@code outputDir} is non-null, then the file is saved as
      *                      "&lt;year&gt;-&lt;month&gt;-&lt;day&gt;--&lt;hour&gt;-&lt;minute&gt;-&lt;second&gt;.jpg"
      * @param vantiq        The Vantiq variable used to connect to the VANTIQ SDK. Either authenticated, or set to null.
-     * @param uploadAsImage The boolean flag used to specify if images should be uploaded to VANTIQ as
-     *                      Documents or VANTIQ Images
      * @param localLabelImage Boolean indicating whether this query should produce labels, overriding
      *                      the connector setting.
      * @return              ResultHolder containing a List of Maps, each of which has a {@code label} stating the type
@@ -227,7 +225,7 @@ public class ObjectDetector {
      *                      was returned.
      */
     public ResultHolder detect(final byte[] image, String outputDir, String fileName, Vantiq vantiq,
-                               boolean uploadAsImage, boolean localLabelImage) {
+                               boolean localLabelImage) {
         try (Tensor<Float> normalizedImage = normalizeImage(image)) {
             List<Recognition> recognitions = YOLOClassifier.getInstance(threshold, anchorArray, frameSize).classifyImage(executeYOLOGraph(normalizedImage), labels);
             BufferedImage buffImage = ImageUtil.createImageFromBytes(image);
@@ -239,7 +237,6 @@ public class ObjectDetector {
                 imageUtil.vantiq = vantiq;
                 imageUtil.sourceName = sourceName;
                 imageUtil.frameSize = frameSize;
-                imageUtil.uploadAsImage = uploadAsImage;
                 lastFilename = fileName;
                 if (labelImage || localLabelImage) {
                     buffImage = imageUtil.labelImage(buffImage, recognitions);

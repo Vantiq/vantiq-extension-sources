@@ -431,7 +431,6 @@ public class YoloProcessor extends NeuralNetUtils implements NeuralNetInterface2
         String fileName = null;
         Vantiq vantiq = null;
         boolean includeEncodedImage;
-        boolean uploadAsImage = false;
         boolean localLabelRequest = false;
         boolean savingSomewhere = false;
 
@@ -527,8 +526,7 @@ public class YoloProcessor extends NeuralNetUtils implements NeuralNetInterface2
         long after;
         long before = System.currentTimeMillis();
         try {
-            ObjectDetector.ResultHolder rh = objectDetector.detect(image, outputDir, fileName, vantiq,
-                    uploadAsImage, localLabelRequest);
+            ObjectDetector.ResultHolder rh = objectDetector.detect(image, outputDir, fileName, vantiq, localLabelRequest);
             foundObjects = rh.results;
             if (rh.image != null) {
                 image = rh.image;
