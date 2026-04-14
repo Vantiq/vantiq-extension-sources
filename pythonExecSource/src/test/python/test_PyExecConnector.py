@@ -9,6 +9,7 @@ from datetime import datetime
 import json
 import os
 import traceback
+import re
 
 from aioresponses import aioresponses
 import pytest
@@ -697,8 +698,10 @@ class TestSingleConnection:
                         'ars_modifiedAt': mod_time_for_docs}
             print('Mocking up:', f'/api/v1/resources/documents/{doc[DOC_NAME]}')
             # Since we loop these around more than once, make sure we tell aioresponses not to delete after 1 use
-            mocked.get(f'/api/v1/resources/documents/{doc[DOC_NAME]}', status=200, repeat=True, payload=doc_resp)
-            mocked.get(doc_resp['content'], status=200, body=doc[DOC_CONTENTS], repeat=True)
+            doc_pattern = re.compile(f'.*/api/v1/resources/documents/{doc[DOC_NAME]}')
+            content_pattern = re.compile('.*' + doc_resp['content'])
+            mocked.get(doc_pattern, status=200, repeat=True, payload=doc_resp)
+            mocked.get(content_pattern, status=200, body=doc[DOC_CONTENTS], repeat=True)
 
     @pytest.mark.asyncio
     @pytest.mark.timeout(10)
