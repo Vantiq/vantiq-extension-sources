@@ -196,11 +196,11 @@ async def run_server(port, config, pub_count, note_count=0, server_disc_count=0)
     publish_count = pub_count
     notify_count = note_count
     disconnect_count = server_disc_count
-    cf = None
     try:
-        cf = open(config)
         global props
-        props = jprops.load_properties(cf)
+        with open(config) as cf:
+            props = jprops.load_properties(cf)
+        
         loop = asyncio.get_event_loop()
 
         # The stop condition is set when receiving SIGTERM.
@@ -239,4 +239,3 @@ async def run_server(port, config, pub_count, note_count=0, server_disc_count=0)
         if stop and not stop.done():
             stop.cancel()
             await stop
-        cf.close()

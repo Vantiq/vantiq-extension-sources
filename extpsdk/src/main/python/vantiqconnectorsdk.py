@@ -853,13 +853,16 @@ class VantiqConnectorSet:
         """This handler handles messages for the Kubernetes probe.
 
         There are no messages sent here -- the Kubernetes TPC probe is successful if the connection
-        can be opened. But a handler is required, so here it is.
+        can be opened. But a handler is required, so here it is. We also need to close the writer
+        immediately so that the connection is fully cleaned up, which allows Server.wait_closed()
+        to complete in Python 3.12+.
 
         Parameters:
             reader, writer : StreamReader, StreamWriter
-                Reader & writer for the socket.  Not currently used since we only care about opening the socket.
+                Reader & writer for the socket.
         """
-        return
+        writer.close()
+        await writer.wait_closed()
 
     async def declare_healthy(self):
         """(Async) Declare that this connector is healthy.

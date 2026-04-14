@@ -1,7 +1,7 @@
 import org.gradle.internal.os.OperatingSystem
 
 plugins {
-    id 'ru.vyarus.use-python' version '3.0.0'
+    id 'ru.vyarus.use-python' version '4.1.0'
 }
 
 ext {
@@ -25,7 +25,7 @@ python {
     environment = [:]
 
     // minimal required python version (m.m.m)
-    minPythonVersion = '3.10'
+    minPythonVersion = '3.12'
     // minimal required pip version (m.m.m)
     minPipVersion = '9'
 
