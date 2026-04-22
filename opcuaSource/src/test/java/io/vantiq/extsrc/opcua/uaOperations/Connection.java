@@ -100,9 +100,9 @@ public class Connection extends OpcUaTestBase {
         assert client == null;
 
         String osName = System.getProperty("os.name");
-        // k8s-jenkins doesn't let us see the real root, so it allows this here. Add in some bad characters to see if
-        // we can break it there too
-        String fileNameWeCannotCreate = "/this/directory/should/never/really/and/truly/exist/\\/\0/moreStuff/../[*?{|/abcd";
+        // K8s can sometimes allow editing let us add a top-level directory, or at least appear to. We add in several
+        // bad characters to make sure it breaks
+        String fileNameWeCannotCreate = "/this/directory/should/never//exist/\\/\0/moreStuff/../[*?{|/abcd";
         if (osName != null && osName.toLowerCase().contains("windows")) {
 
             // For windows, we need some different bogus string.  On windows, it's OK to create a top-level
