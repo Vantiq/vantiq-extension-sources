@@ -234,14 +234,13 @@ Notifications are messages that the source will pass on to Vantiq rules that inc
 `WHEN EVENT OCCURS ON "/sources/<source name>"`. To send one, simply call
 `VantiqSourceConnection.send_notification(<message to be sent>)`, which will translate the message into JSON and add everything Vantiq needs to recognize the message.  The _message to be sent_ shoud be a `dict` object.
 
-> **Do not `await` a send (`send_notification()` / `send_query_response()`) from inside the
-> `connect` handler.** Both wait until the SDK marks the connection ready, which happens only
-> *after* the `connect` handler returns — so awaiting one there deadlocks: the socket connects and
-> the config arrives, then no messages flow either way and no error is logged. To emit as soon as a
-> source connects (initial poll, heartbeat, first event), schedule it instead —
-> `asyncio.create_task(connection.send_notification(...))` (keep a reference) — and let the handler
-> return. Sends from the `publish` / `query` handlers run after the connection is ready and need no
-> such care.
+> **Don't `await` a send (`send_notification()` / `send_query_response()`) from inside the `connect`
+> handler.** Sends block until the SDK marks the connection ready, which happens only *after* the
+> `connect` handler returns — so awaiting one there deadlocks: the socket connects and the config is
+> delivered, then no messages flow either way and no error is logged. To emit as soon as a source
+> connects (initial poll, heartbeat, first event), schedule the send and let the handler return —
+> `asyncio.create_task(conn.send_notification(...))` (keep a reference to the task). Sends from the
+> `publish` / `query` handlers run after the connection is ready and need no such care.
 
 #### Queries
 
