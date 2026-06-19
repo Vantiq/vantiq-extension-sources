@@ -25,6 +25,17 @@ Working with the VANTIQ system,
 an extension source can be constructed and operated outside the VANTIQ installation.
 This allows these sources to fully participate in VANTIQ edge or full installations.
 
+## Quick Start — Build a Connector
+
+A connector is a program that runs outside Vantiq and communicates with it over a WebSocket; it backs a custom **source** in a Vantiq namespace. Pick a language SDK and follow its README — each is self-contained (a minimal quickstart, the example to copy, build/run, the `server.config` contract, and the SDK-specific gotchas):
+
+- **Java** — [`extjsdk/README.md`](extjsdk/README.md); copy the [`testConnector`](testConnector) example (`TestConnectorMain` / `TestConnectorCore` / `TestConnectorHandleConfiguration`).
+- **Python** — [`extpsdk/README.md`](extpsdk/README.md); copy [`pythonExecSource`](pythonExecSource)'s `src/main/python/pyExecConnector.py`.
+
+The message protocol between a connector and Vantiq is documented in the **Operations** section below.
+
+> Building with an automated coding agent (e.g. Claude Code)? Start with [`AGENTS.md`](AGENTS.md) — a one-page orientation that routes to the right SDK README.
+
 ## Repository Contents & Conventions
 
 The various directories within this repository represent either SDKs to build extension sources or extension sources themselves.
