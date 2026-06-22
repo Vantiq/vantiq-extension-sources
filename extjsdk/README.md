@@ -9,6 +9,42 @@ ExtensionWebSocketListener to handle various message types.
 *	[ExtensionServiceMessage](#extSvcMsg) -- A class that represents source-related messages sent from the Vantiq server.
 *	[Response](#httpResponse) -- A class that represents non source-related messages sent from the Vantiq server.
 
+## Quick Start (minimal Java connector)
+
+A complete, runnable example using this pattern is in [`testConnector`](../testConnector) (classes
+`TestConnectorMain` / `TestConnectorCore` / `TestConnectorHandleConfiguration`). The minimal shape:
+
+```java
+Properties config = Utils.obtainServerConfig();                 // reads serverConfig/server.config
+String source = config.getProperty("sources");
+ExtensionWebSocketClient client = new ExtensionWebSocketClient(source);  // 1-arg ctor: shares the config above
+
+client.setConfigHandler(new Handler<ExtensionServiceMessage>() {
+    public void handleMessage(ExtensionServiceMessage m) {
+        // source config = ((Map) m.getObject()).get("config"); start your work here
+    }
+});
+client.setPublishHandler(new Handler<ExtensionServiceMessage>() {
+    public void handleMessage(ExtensionServiceMessage m) {
+        Object payload = m.getObject();   // the "PUBLISH ... TO SOURCE" payload from Vantiq
+    }
+});
+client.setReconnectHandler(new Handler<ExtensionServiceMessage>() {
+    public void handleMessage(ExtensionServiceMessage m) { client.connectToSource(); }
+});
+client.setAutoReconnect(true);
+
+boolean ok = client.initiateFullConnection(
+        config.getProperty("targetServer"), config.getProperty("authToken")).get(10, TimeUnit.SECONDS);
+// then client.sendNotification(map) to emit a source event to Vantiq; keep main alive (e.g. a CountDownLatch).
+```
+
+## Gotchas
+
+- **`Handler<T>` is an abstract class**, not a functional interface — use anonymous classes (as above), not lambdas.
+- **Client and config must share one `InstanceConfigUtils`.** Pair static `Utils.obtainServerConfig()` with the **1-arg** `new ExtensionWebSocketClient(sourceName)` (as above) so the client sees the config you loaded, including `sendPings`. If you use the `(sourceName, InstanceConfigUtils)` constructor with your own instance, call `obtainServerConfig()` on that instance first.
+- **Logging:** the fat jar bundles a log4j2 binding that emits ERROR-only without config (see [Logging](#logging)); don't add a second SLF4J binding.
+
 ## How to Include In Your Own Project
 
 ### Method 1 - .jar with no dependencies included
@@ -30,8 +66,13 @@ dependencies on mvnrepository.com are included.
 
 
 ## Logging
-The SDK uses the Slf4j logging interface with no implementation provided. The names of the loggers are the fully
+The SDK uses the Slf4j logging interface. The names of the loggers are the fully
 qualified class name, appended by a '#' and the name of the source they are associated with.
+
+The SLF4J binding depends on how you included the SDK:
+
+*   **Plain `extjsdk.jar` (Method 1):** no binding is bundled — add one yourself (`slf4j-simple`, logback, or log4j2).
+*   **`extjsdk-fat.jar` (Method 2):** a **log4j2** binding is bundled. Supply a `log4j2.xml` on the classpath (log4j2's default logs ERROR only, so the connector's INFO output won't appear without it), and don't add a second binding, or SLF4J will warn about multiple bindings.
 
 ## <a name="serverConfig" id="serverConfig"></a>Connector Startup Configuration
 Generally, connectors need a minimum of three configuration properties at startup:

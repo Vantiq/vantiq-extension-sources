@@ -374,7 +374,7 @@ class VantiqSourceConnection:
         _vlog.debug('Using character set: %s', sys.getdefaultencoding())
         do_pings = True
         if VantiqConnector.SEND_PINGS not in self.config.keys() \
-                or self.config[VantiqConnector.SEND_PINGS].lower == 'false':
+                or self.config[VantiqConnector.SEND_PINGS].lower() == 'false':
             do_pings = False
 
         self._is_connected_future = asyncio.get_event_loop().create_future()
@@ -590,19 +590,19 @@ class VantiqSourceConnection:
                 VantiqConnector.RESPONSE_ADDRESS entries.
             message : dict
                 The error message to return.  The error message should contain the following entries:
-                    VantiqConnector.MESSAGE_CODE --  a string containing a short name for the error
-                    VantiqConnector.MESSAGE_TEMPLATE  -- a string describing the problem.  Parameters in this template
+                    VantiqConnector.ERROR_CODE --  a string containing a short name for the error
+                    VantiqConnector.ERROR_TEMPLATE  -- a string describing the problem.  Parameters in this template
                                         are indexed from 0, and indicated using {index}.
-                    VanticConnector.PARAMETERS -- a list/array containing the parameters to be substituted
+                    VantiqConnector.ERROR_PARAMETERS -- a list/array containing the parameters to be substituted
                                         in the template.
 
         Examples:
         ::
             # Assumes ctx was provided by the handler, and that cnx is the VantiqSourceConnection
 
-            await cnx.send_query_error(ctx, {VantiqConnector.MESSAGE_CODE: 'my.connector.badparameter',
-                                       VantiqConnector:MESSAGE_TEMPLATE: 'The parameter {0} with value {1} is invalid',
-                                       VantiqConnector.MESSAGE_PARAMETERS: ['some_param_name', some_bad_value]})
+            await cnx.send_query_error(ctx, {VantiqConnector.ERROR_CODE: 'my.connector.badparameter',
+                                       VantiqConnector.ERROR_TEMPLATE: 'The parameter {0} with value {1} is invalid',
+                                       VantiqConnector.ERROR_PARAMETERS: ['some_param_name', some_bad_value]})
         """
         if (ctx is None
                 or VantiqConnector.SOURCE_NAME not in ctx

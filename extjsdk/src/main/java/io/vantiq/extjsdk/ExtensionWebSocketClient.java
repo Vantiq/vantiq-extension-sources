@@ -223,8 +223,9 @@ public class ExtensionWebSocketClient {
         log = LoggerFactory.getLogger(this.getClass().getCanonicalName() + "#" + sourceName);
         if (utility == null) {
             utility = Utils.getInstanceUtilsConfigInstance();
-            utils = utility;
         }
+        // Assign unconditionally: a caller-supplied InstanceConfigUtils must be honored too.
+        utils = utility;
         listener = new ExtensionWebSocketListener(this);
 
         // Check for Environment Variable to overwrite failedMessageQueue size, otherwise use default

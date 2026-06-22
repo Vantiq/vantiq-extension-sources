@@ -67,9 +67,16 @@ The Vantiq Connector SDK includes the following items:
 ### Logging
 
 The SDK uses the standard Python logging. Logger names are constructed from the class name.
-If you need to setup logging, you can call the `VantiqConnector.setup_logging()` call.  This
+If you need to setup logging, you can call `setup_logging()` (imported from `vantiqconnectorsdk`).  This
 will look for a `logger.ini` file in the `serverConfig` directory.  This is the same place we look
 for the `server.config` file (see [below](#serverConfig)).
+
+**Call `setup_logging()` early — before creating the `VantiqConnectorSet`.** The SDK's internal
+logger is not initialized until `setup_logging()` runs, so logging that occurs earlier (for example
+while reading the configuration) can fail. By default the SDK writes to a file named
+`VantiqConnector.log` in the working directory; to send output to the console instead, provide a
+`serverConfig/logger.ini` that defines a `StreamHandler` (an example `logger.ini` ships in the test
+resources).
 
 ### <a name="serverConfig" id="serverConfig"></a>Connector Startup Configuration
 Connectors need a minimum of three configuration properties at startup:
@@ -128,6 +135,48 @@ provided as JSON -- lowercase.)
 
 If the connection closes, the SDK will automatically re-initiate the connection.  This will result in calls the `connect` handlers again, etc.  Such a reconnection can happen due to network or connection issues.  It can also happen if the source configuration on the Vantiq side is changed.  A changed configuration requires a that the connector obtain the new configuration, and that is done by simply making a new connection.
 
+### Quick Start (minimal connector)
+
+A complete first-party example is
+[`pyExecConnector.py`](../pythonExecSource/src/main/python/pyExecConnector.py) — focus on `main()`,
+the `Connectors` class, and `establish_handlers()` plus the handler methods. The minimal shape is:
+
+```python
+import asyncio
+from vantiqconnectorsdk import VantiqConnectorSet, VantiqConnector, setup_logging
+
+connectors = None
+
+async def handle_connect(ctx, config):    # source config; called on EVERY (re)connect
+    ...
+async def handle_publish(ctx, message):   # "PUBLISH ... TO SOURCE" arrives here
+    ...
+async def handle_query(ctx, message):     # "SELECT ... FROM SOURCE"; you MUST respond
+    conn = connectors.get_connection_for_source(ctx[VantiqConnector.SOURCE_NAME])
+    await conn.send_query_response(ctx, VantiqConnector.QUERY_COMPLETE, {'result': 1})
+async def handle_close(ctx):
+    ...
+
+async def run():
+    global connectors
+    connectors = VantiqConnectorSet()                                    # reads serverConfig/server.config
+    connectors.configure_handlers_for_all(handle_close, handle_connect,  # order: close, connect, publish, query
+                                          handle_publish, handle_query)
+    await connectors.run_connectors()                                    # blocks; auto-reconnects
+
+if __name__ == '__main__':
+    setup_logging()                                                      # call first (see Logging above)
+    asyncio.run(run())
+```
+
+### Gotchas
+
+- **Call `setup_logging()` before creating `VantiqConnectorSet`.** Early logging fails otherwise; output goes to `VantiqConnector.log` unless a `serverConfig/logger.ini` defines a `StreamHandler` (see [Logging](#logging)).
+- **No reconnect handler.** Only four handlers (close, connect, publish, query); a reconnect is delivered as close→connect, so treat every `connect` as a possibly-new configuration.
+- **Don't block the event loop.** Handlers are `async`; offload long work with `asyncio.create_task(...)` (keep a reference).
+- **Don't `await` a send inside the `connect` handler.** `send_notification()` / `send_query_response()` deadlock there — the connection is marked ready only *after* `connect` returns; schedule with `asyncio.create_task(...)` instead (see [Notifications](#notifications)). Sends from `publish` / `query` are fine.
+- **Answer every query** via `send_query_response()` / `send_query_error()`, passing `ctx` back verbatim.
+
 
 	
 ## <a name="VantiqSourceConnection" id="sourceConnection"></a>Using VantiqSourceConnection
@@ -184,6 +233,14 @@ The following sections outline the work involved here.
 Notifications are messages that the source will pass on to Vantiq rules that include 
 `WHEN EVENT OCCURS ON "/sources/<source name>"`. To send one, simply call
 `VantiqSourceConnection.send_notification(<message to be sent>)`, which will translate the message into JSON and add everything Vantiq needs to recognize the message.  The _message to be sent_ shoud be a `dict` object.
+
+> **Don't `await` a send (`send_notification()` / `send_query_response()`) from inside the `connect`
+> handler.** Sends block until the SDK marks the connection ready, which happens only *after* the
+> `connect` handler returns — so awaiting one there deadlocks: the socket connects and the config is
+> delivered, then no messages flow either way and no error is logged. To emit as soon as a source
+> connects (initial poll, heartbeat, first event), schedule the send and let the handler return —
+> `asyncio.create_task(conn.send_notification(...))` (keep a reference to the task). Sends from the
+> `publish` / `query` handlers run after the connection is ready and need no such care.
 
 #### Queries
 
