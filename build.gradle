@@ -14,7 +14,7 @@ plugins {
     id("io.freefair.lombok") version "6.3.0" // version "8.7.1
     id 'pl.allegro.tech.build.axion-release' version '1.6.0'
     id 'jacoco'
-    id 'com.vantiq.gradle-dcompose-plugin' version '0.18.0' apply false
+    id 'com.vantiq.gradle-dcompose-plugin' version '0.19.0' apply false
     id 'idea'
 }
 
