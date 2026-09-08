@@ -58,7 +58,7 @@ public class Utils {
             OPC_PUBLIC_SERVER_3,
 //            OPC_PUBLIC_SERVER_4,  // not responding
             OPC_PUBLIC_SERVER_5,  // returns that the service is unsupported.
-            OPC_PUBLIC_SERVER_6,
+//            OPC_PUBLIC_SERVER_6, // Seems to have stopped supporting Anonymous/Security-None connections
             OPC_PUBLIC_SERVER_7, // Flaky support -- sometimes times out after discovery, sometimes before
             OPC_PUBLIC_SERVER_8,
             OPC_PUBLIC_SERVER_9
