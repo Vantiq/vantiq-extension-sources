@@ -1,9 +1,14 @@
-# Building a Vantiq Extension Source — Agent Guide
+# Vantiq Extension Sources — Agent Guide
 
-This repository provides the tools to build a **Vantiq extension source** (a.k.a. *Enterprise
-Connector* / *external source*). This file is the entry point for an automated coding agent: it
-orients you, then hands off to the per-language SDK README, which is the self-contained build guide
-(quickstart, gotchas, `server.config`).
+This repository holds ready-to-run **Vantiq extension sources** (a.k.a. *Enterprise Connectors* /
+*external sources*) and the SDKs to build new ones. This file is the entry point for an automated
+coding agent. Decide first which of two jobs you have:
+
+- **Using a connector that ships here** — your Vantiq application calls a source backed by one of
+  these connectors. Nothing is built; read that connector's documentation (see *Using a connector that
+  ships in this repo* below) before writing VAIL against the source.
+- **Building or modifying a connector** — pick an SDK and follow its README, the self-contained build
+  guide (quickstart, gotchas, `server.config`).
 
 ## The two halves of an extension source
 
@@ -14,6 +19,22 @@ orients you, then hands off to the per-language SDK README, which is the self-co
    `testConnector/src/test/resources/testConnectorImpl.json`.
 2. **Connector** (this repo): the external program that connects to Vantiq over a WebSocket.
    Build it with one of the SDKs below.
+
+## Using a connector that ships in this repo
+
+Each connector lives in its own top-level directory with a `README.md` and, for some, a `docs/` folder
+(for example `pythonExecSource/docs/Usage.md`). That documentation is the connector's call contract: the
+`WITH` options a `SELECT` accepts, what a `PUBLISH` must contain, the shape of each response row, the
+events it emits, and the `config` document it expects. Vantiq passes all of these through to the
+connector unchanged, so they are defined nowhere else.
+
+- Most connectors ship their `sourceimpls` definition as a `*Impl.json` file, usually under
+  `src/test/resources/` (`pythonExecSource` keeps its under `src/main/resources/pythonExecImpl.json`).
+  Create the implementation from it (`insert` on `sourceimpls`) instead of writing one.
+- Install and run instructions (PyPI or Maven package, Docker image, `server.config`) are in the same
+  README.
+- The wire protocol every connector follows — how `WITH` becomes the query message, response statuses,
+  how a response body becomes rows, the error body format — is in the root `README.md` → **Operations**.
 
 ## Build a connector — pick an SDK, then follow its README
 
