@@ -53,9 +53,19 @@ public class ObjRecTestBase {
     public static final String IP_CAMERA_JAPAN =
             "http://115.179.100.76:8080/SnapshotJPEG?Resolution=640x480&Quality=Standard&View=Normal&Count=224935296";
     public static final String IP_CAMERA_SYDNEY_HARBOR = "http://220.233.144.165:8888/mjpg/video.mjpg"; // Sydney
+    // Public cameras for the camera tests: an MJPEG stream and a single-snapshot endpoint, on two different cameras.
+    // They are not ours and go offline from time to time, which makes reachableCamera() fail with their URLs.
+    // Their frames must be larger than 400x300: the resize tests expect images to be scaled down, never up.
+    public static final String IP_CAMERA_MJPEG =
+            "http://61.211.241.239/nphMotionJpeg?Resolution=640x480&Quality=Standard";
+    public static final String IP_CAMERA_SNAPSHOT =
+            "http://honjin1.miemasu.net/SnapshotJPEG?Resolution=640x480&Quality=Standard";
+    
     // harbour camera
     public static final List<String> CAMERA_CHOICE = List.of(
 //            IP_CAMERA_CALTRANS_WALNUTCREEK, unreliable
+            IP_CAMERA_MJPEG,
+            IP_CAMERA_SNAPSHOT,
             IP_CAMERA_JAPAN,
             IP_CAMERA_SYDNEY_HARBOR
     );
